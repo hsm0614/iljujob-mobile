@@ -1,0 +1,34 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-label="World Clock Trend Icon" role="img">
+  <!-- 배경 -->
+  <rect width="1024" height="1024" fill="#1675F4"/>
+
+  <!-- 중앙의 굵은 원형 다이얼(눈금 최소화) -->
+  <!-- 다이얼 외곽 큰 원 -->
+  <circle cx="512" cy="512" r="320" fill="none" stroke="white" stroke-width="60" />
+
+  <!-- 최소 눈금 12개 (원 둘레를 따라 위치) -->
+  <!-- 각 눈금은 반경 320에서 302로 들어오는 짧은 선 -->
+  <line x1="814" y1="512" x2="832" y2="512" stroke="white" stroke-width="12" />
+  <line x1="774" y1="663" x2="789" y2="672" stroke="white" stroke-width="12" />
+  <line x1="663" y1="774" x2="672" y2="789" stroke="white" stroke-width="12" />
+  <line x1="512" y1="814" x2="512" y2="832" stroke="white" stroke-width="12" />
+  <line x1="361" y1="774" x2="352" y2="789" stroke="white" stroke-width="12" />
+  <line x1="250" y1="663" x2="234" y2="672" stroke="white" stroke-width="12" />
+  <line x1="210" y1="512" x2="192" y2="512" stroke="white" stroke-width="12" />
+  <line x1="250" y1="361" x2="235" y2="352" stroke="white" stroke-width="12" />
+  <line x1="361" y1="250" x2="352" y2="235" stroke="white" stroke-width="12" />
+  <line x1="512" y1="210" x2="512" y2="192" stroke="white" stroke-width="12" />
+  <line x1="663" y1="251" x2="672" y2="235" stroke="white" stroke-width="12" />
+  <line x1="774" y1="361" x2="789" y2="352" stroke="white" stroke-width="12" />
+
+  <!-- 우상향 곡선 궤적(가장자리를 따라) -->
+  <!-- 큰 반지름 아치 경로: 시작점 ~ 끝점이 좌상단에서 우하단으로 포지션하는 형태를 따라 우상향 느낌 -->
+  <path d="M 180 840 A 420 420 0 0 1 840 180" fill="none" stroke="white" stroke-width="12" stroke-linecap="round"/>
+
+  <!-- 비행기 실루엣(흰색, 벡터 느낌의 단순 모양) -->
+  <!-- 궤적 끝 근처에 위치시키고, 궤적 방향에 맞추어 약간 회전 -->
+  <g transform="translate(820 160) rotate(-60)" fill="white">
+    <!-- 간단한 비행기 형태: 몸통 + 날개 -->
+    <path d="M0 0 L22 -6 L40 -2 L46 0 L40 6 L22 2 Z" fill="white"/>
+  </g>
+</svg>

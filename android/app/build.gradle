@@ -1,0 +1,100 @@
+plugins {
+    id "com.android.application"
+    id "org.jetbrains.kotlin.android"      // ← 하나만 남기기
+    id "dev.flutter.flutter-gradle-plugin"
+    id "com.google.gms.google-services"
+    // id "com.google.firebase.crashlytics" // 쓰면 활성화
+}
+
+// keystore
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.exists()) {
+  keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+android {
+    namespace "kr.co.iljujob"        // ← Groovy 문법
+    compileSdk 35
+    ndkVersion "27.0.12077973"
+
+    defaultConfig {
+        applicationId "kr.co.iljujob"
+        minSdk 23
+        targetSdk 35
+        versionCode flutter.versionCode.toInteger()
+        versionName flutter.versionName
+        multiDexEnabled true
+    }
+
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled false
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            debuggable true
+            // signingConfig signingConfigs.debug  ← 굳이 지정하지 않아도 기본 debug 서명 사용
+        }
+    }
+
+    // 🔴 meta-inf 충돌 해결은 여기! (android 블록 "바로 아래" 레벨)
+    packaging {
+        resources {
+            // 방법 A: 완전 제외(권장)
+            excludes += [
+                "META-INF/DEPENDENCIES",
+                "META-INF/DEPENDENCIES.txt",
+                "META-INF/LICENSE",
+                "META-INF/LICENSE.txt",
+                "META-INF/NOTICE",
+                "META-INF/NOTICE.txt",
+                "META-INF/AL2.0",
+                "META-INF/LGPL2.1"
+            ]
+            // 방법 B: 하나만 채택(위 excludes 대신 사용 가능)
+            // pickFirsts += ["META-INF/DEPENDENCIES", "META-INF/DEPENDENCIES.txt"]
+        }
+        jniLibs {
+            useLegacyPackaging true
+        }
+    }
+
+    buildFeatures { buildConfig true }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+        coreLibraryDesugaringEnabled true
+    }
+    kotlinOptions { jvmTarget = "17" }
+}
+
+dependencies {
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.0.4"
+
+    implementation platform("com.google.firebase:firebase-bom:33.13.0")
+    implementation "com.google.firebase:firebase-messaging"
+    implementation "com.google.firebase:firebase-analytics"
+
+    implementation "androidx.appcompat:appcompat:1.6.1"
+    implementation "com.google.android.material:material:1.11.0"
+    implementation "androidx.core:core-splashscreen:1.0.1"
+    implementation "androidx.multidex:multidex:2.0.1"
+}
+
+// 반드시 맨 아래
+flutter { source "../.." }

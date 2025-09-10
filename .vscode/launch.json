@@ -1,0 +1,17 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    
+    {
+      "name": "Run with APK",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "debug",
+      "program": "lib/main.dart",
+      "toolArgs": [
+        "--use-application-binary",
+        "android/app/build/outputs/flutter-apk/app-release.apk"
+      ]
+    }
+  ]
+}

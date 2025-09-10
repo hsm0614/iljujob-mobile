@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "343460016618",
+    "project_id": "iljujob",
+    "storage_bucket": "iljujob.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:343460016618:android:f571c1cde8449460f98293",
+        "android_client_info": {
+          "package_name": "com.example.iljujob"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6QBkUgjxjnPC2RYQHKsrPFxSuflfMDiQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:343460016618:android:d355e4fe7ecf540df98293",
+        "android_client_info": {
+          "package_name": "kr.co.iljujob"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6QBkUgjxjnPC2RYQHKsrPFxSuflfMDiQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
