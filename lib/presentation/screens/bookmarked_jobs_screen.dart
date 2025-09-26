@@ -8,7 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/models/job.dart';
 import '../../data/services/job_service.dart';
 import 'job_detail_screen.dart';
-
+const kBrand  = Color(0xFF3B8AFF);
+const kBorder = Color(0xFFE2E7EF);
+const kBg     = Color(0xFFF7F9FC);
 /// ------------------------------------------------------------
 /// BookmarkedJobsScreen (refactor)
 /// - 안정적인 로딩/에러/빈 상태 처리
@@ -182,92 +184,132 @@ class _BookmarkedJobsScreenState extends State<BookmarkedJobsScreen> {
     await _loadBookmarkedJobs();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('내가 찜한 공고'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadBookmarkedJobs,
-            tooltip: '새로고침',
-          ),
-        ],
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    backgroundColor: kBg,
+    appBar: AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      title: const Text(
+        '내가 찜한 공고',
+        style: TextStyle(
+          fontWeight: FontWeight.w800,
+          color: kBrand,
+        ),
       ),
-      body: Column(
-        children: [
-          _buildSearchAndFilter(),
-          const Divider(height: 1),
-          Expanded(
-            child: _isLoading
-                ? const _Loading()
-                : _isError
-                    ? _Error(onRetry: _loadBookmarkedJobs)
-                    : RefreshIndicator(
-                        onRefresh: _onRefresh,
-                        child: _filteredJobs.isEmpty
-                            ? const _Empty()
-                            : ListView.separated(
-                                padding: const EdgeInsets.symmetric(vertical: 8),
-                                itemCount: _filteredJobs.length,
-                                separatorBuilder: (_, __) => const SizedBox(height: 8),
-                                itemBuilder: (context, index) {
-                                  final job = _filteredJobs[index];
-                                  return _JobTile(
-                                    job: job,
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => JobDetailScreen(job: job),
-                                        ),
-                                      );
-                                    },
-                                    onDelete: () => _removeBookmark(job),
-                                  );
-                                },
-                              ),
-                      ),
-          ),
-        ],
-      ),
-    );
-  }
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.refresh, color: Colors.black87),
+          onPressed: _loadBookmarkedJobs,
+          tooltip: '새로고침',
+        ),
+      ],
+    ),
+    body: Column(
+      children: [
+        _buildSearchAndFilter(),
+        const Divider(height: 1),
+        Expanded(
+          child: _isLoading
+              ? const _Loading()
+              : _isError
+                  ? _Error(onRetry: _loadBookmarkedJobs)
+                  : RefreshIndicator(
+                      onRefresh: _onRefresh,
+                      child: _filteredJobs.isEmpty
+                          ? const _Empty()
+                          : ListView.separated(
+                              padding: const EdgeInsets.fromLTRB(12, 10, 12, 16),
+                              itemCount: _filteredJobs.length,
+                              separatorBuilder: (_, __) => const SizedBox(height: 10),
+                              itemBuilder: (context, index) {
+                                final job = _filteredJobs[index];
+                                return _JobTile(
+                                  job: job,
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => JobDetailScreen(job: job),
+                                      ),
+                                    );
+                                  },
+                                  onDelete: () => _removeBookmark(job),
+                                );
+                              },
+                            ),
+                    ),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildSearchAndFilter() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-      child: Column(
-        children: [
-          TextField(
-            controller: _searchCtrl,
-            onChanged: (val) => _debouncer(() {
-              setState(() => _searchQuery = val);
-            }),
-            decoration: InputDecoration(
-              hintText: '제목/지역/분야 검색',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-              isDense: true,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+  InputDecoration deco(String hint) => InputDecoration(
+        hintText: hint,
+        prefixIcon: const Icon(Icons.search),
+        isDense: true,
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: kBorder),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: kBorder),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: kBrand, width: 1.6),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      );
+
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+    child: Column(
+      children: [
+        TextField(
+          controller: _searchCtrl,
+          onChanged: (val) => _debouncer(() => setState(() => _searchQuery = val)),
+          decoration: deco('제목/지역/분야 검색'),
+        ),
+        const SizedBox(height: 12),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
             children: ['전체', '공고중', '마감'].map((status) {
               final selected = _filterStatus == status;
-              return ChoiceChip(
-                label: Text(status),
+              return FilterChip(
+                label: Text(
+                  status,
+                  style: TextStyle(
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected ? kBrand : Colors.black87,
+                  ),
+                ),
                 selected: selected,
                 onSelected: (_) => setState(() => _filterStatus = status),
+                showCheckmark: true,
+                checkmarkColor: kBrand,
+                backgroundColor: Colors.white,
+                selectedColor: kBrand.withOpacity(0.12),
+                side: BorderSide(color: selected ? kBrand : kBorder, width: 1.2),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               );
             }).toList(),
           ),
-        ],
-      ),
-    );
-  }
+        ),
+      ],
+    ),
+  );
+}
 }
 
 class _JobTile extends StatelessWidget {
@@ -285,98 +327,137 @@ class _JobTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final isActive = job.status == 'active';
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12),
-      elevation: 0.5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: kBorder),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 22,
+            offset: const Offset(0, 10),
+            color: Colors.black.withOpacity(0.04),
+          ),
+        ],
+      ),
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         onTap: onTap,
         child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: Column(
+          padding: const EdgeInsets.all(14),
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+              // 상태 뱃지 (세로)
+              Padding(
+                padding: const EdgeInsets.only(right: 10, top: 2),
+                child: _StatusBadge(isActive: isActive),
+              ),
+
+              // 본문
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 카테고리 + 타이틀
+                    Text(
+                      '[${job.category}] ${job.title}',
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15.5,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+
+                    // 위치
+                    Row(
                       children: [
-                        Row(
-                          children: [
-                            _StatusBadge(isActive: isActive),
-                            const SizedBox(width: 6),
-                            Flexible(
-                              child: Text(
-                                '[${job.category}] ${job.title}',
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontWeight: FontWeight.w700),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            const Icon(Icons.place_outlined, size: 16),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                job.location,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(Icons.schedule_outlined, size: 16),
-                            const SizedBox(width: 4),
-                            Text(_formatDateRange(job)),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            const Icon(Icons.attach_money, size: 16),
-                            const SizedBox(width: 4),
-                            Text('₩${job.pay} (${job.payType})'),
-                            const SizedBox(width: 8),
-                            Text('등록일 ${_formatDate(job.createdAt)}', style: const TextStyle(color: Colors.grey)),
-                          ],
+                        const Icon(Icons.place_outlined, size: 16, color: Colors.black54),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            job.location,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: Colors.black87),
+                          ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 4),
+
+                    // 날짜
+                    Row(
+                      children: [
+                        const Icon(Icons.schedule_outlined, size: 16, color: Colors.black54),
+                        const SizedBox(width: 4),
+                        Text(_formatDateRange(job),
+                            style: const TextStyle(color: Colors.black87)),
+                      ],
+                    ),
+                    const SizedBox(height: 6),
+
+                    // 급여 + 등록일 (필)
+                    Wrap(
+                      spacing: 10,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        _pill('₩${job.pay} · ${job.payType}'),
+                        Text(
+                          '등록일 ${_formatDate(job.createdAt)}',
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              // 액션
+              Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chat_bubble_outline, color: kBrand),
+                    tooltip: '채팅',
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('채팅 기능 준비중')),
+                      );
+                    },
                   ),
-                  const SizedBox(width: 8),
-                  Column(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.chat_bubble_outline, color: Colors.indigo),
-                        tooltip: '채팅',
-                        onPressed: () {
-                          // TODO: 채팅 화면 이동 연결
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('채팅 기능 준비중')),
-                          );
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete_outline, color: Colors.red),
-                        tooltip: '찜 삭제',
-                        onPressed: onDelete,
-                      ),
-                    ],
-                  )
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                    tooltip: '찜 삭제',
+                    onPressed: onDelete,
+                  ),
                 ],
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _pill(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: kBrand.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: kBrand.withOpacity(0.35)),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 12.5,
+          fontWeight: FontWeight.w700,
+          color: kBrand,
         ),
       ),
     );
@@ -401,18 +482,58 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bg  = isActive ? kBrand.withOpacity(0.12) : Colors.grey.shade300;
+    final txt = isActive ? kBrand : Colors.grey.shade800;
+    final icn = isActive ? Icons.flash_on : Icons.pause_circle_outline;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: isActive ? Colors.blue.shade100 : Colors.grey.shade300,
+        color: bg,
         borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: isActive ? kBrand : Colors.grey.shade400),
       ),
-      child: Text(
-        isActive ? '채용중' : '마감',
-        style: TextStyle(
-          fontSize: 12,
-          color: isActive ? Colors.blue : Colors.grey.shade800,
-          fontWeight: FontWeight.w600,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icn, size: 14, color: txt),
+          const SizedBox(width: 4),
+          Text(
+            isActive ? '채용중' : '마감',
+            style: TextStyle(
+              fontSize: 12,
+              color: txt,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Empty extends StatelessWidget {
+  const _Empty();
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.bookmark_border, size: 42, color: Colors.black38),
+            SizedBox(height: 10),
+            Text(
+              '찜한 공고가 없습니다.',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+            SizedBox(height: 4),
+            Text(
+              '마음에 드는 공고를 찜해 보세요.',
+              style: TextStyle(color: Colors.black54),
+            ),
+          ],
         ),
       ),
     );
@@ -426,20 +547,6 @@ class _Loading extends StatelessWidget {
     return const Center(child: CircularProgressIndicator());
   }
 }
-
-class _Empty extends StatelessWidget {
-  const _Empty();
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Padding(
-        padding: EdgeInsets.all(24),
-        child: Text('찜한 공고가 없습니다.'),
-      ),
-    );
-  }
-}
-
 class _Error extends StatelessWidget {
   final VoidCallback onRetry;
   const _Error({required this.onRetry});

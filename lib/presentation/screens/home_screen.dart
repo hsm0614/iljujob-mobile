@@ -18,6 +18,12 @@ import 'package:iljujob/presentation/chat/chat_room_screen.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/promo_service.dart';
 import 'package:iljujob/data/models/promo_model.dart';
+import 'package:iljujob/data/services/ai_api.dart';
+import 'package:iljujob/widget/recommended_section.dart';
+
+const BRAND_COLOR  = Color(0xFF1675f4); // 예: 인디고
+const BRAND_DARK   = Color(0xFF1675f4); // 음영
+const AI_LABEL     = 'AI 추천';
 class HomeScreen extends StatefulWidget {
   final int initialTabIndex;
 
@@ -37,6 +43,7 @@ class _HomeScreenState extends State<HomeScreen> {
       FlutterLocalNotificationsPlugin();
 bool _promoShownThisSession = false; // 세션 중 중복 방지
 late final PromoService promoService = PromoService(baseUrl); // baseUrl 주입
+late final AiApi _aiApi = AiApi(baseUrl); // AI 추천 API
 
 
 
@@ -222,6 +229,40 @@ void _setupFirebaseMessagingListeners() {
 
 
 }
+Offset _bubblePos = const Offset(0, 0);
+bool _bubbleInit = false;
+bool _isSheetOpen = false;
+Future<void> _openRecommendSheet() async {
+  if (_isSheetOpen) return;
+  _isSheetOpen = true;
+  try {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useRootNavigator: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
+      builder: (ctx) {
+        final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
+        return Padding(
+          padding: EdgeInsets.only(bottom: bottomInset),
+          child: FractionallySizedBox(
+            heightFactor: 0.85,
+            child: ClipRRect(
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+              child: Material(
+                color: Colors.white,
+                child: _RecommendSheet(api: _aiApi),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  } finally {
+    _isSheetOpen = false;
+  }
+}
 
   @override
   void dispose() {
@@ -382,17 +423,167 @@ final url = Uri.parse('$baseUrl/api/chat/unread-count?userId=$userId&userType=$u
     ];
   }
 
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    body: _buildScreens()[_selectedIndex],
+
+    // 오른쪽 하단 위치 그대로
+    floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+
+    // 홈 탭(인덱스 2)에서만 노출 + 브랜드 컬러 + 'AI 추천' 라벨
+  floatingActionButton: (_selectedIndex == 2)
+  ? FloatingActionButton.extended(
+      heroTag: 'aiFab',
+      backgroundColor: BRAND_COLOR,
+      foregroundColor: Colors.white,
+      icon: const Icon(Icons.auto_awesome),
+      label: const Text('AI 추천'),
+      onPressed: _openRecommendSheet,
+    )
+  : null,
+
+
+bottomNavigationBar: BottomNavigationBar(
+  currentIndex: _selectedIndex,
+  onTap: _onItemTapped,
+  selectedItemColor: BRAND_COLOR,       // ← 변경
+  unselectedItemColor: Colors.grey,
+  type: BottomNavigationBarType.fixed,
+  items: _buildNavItems(),
+),
+
+  );
+}
+}
+class _AIBubble extends StatelessWidget {
+  final Offset pos;
+  final void Function(Offset delta) onDrag;
+  final VoidCallback onTap;
+
+  const _AIBubble({
+    required this.pos,
+    required this.onDrag,
+    required this.onTap,
+  });
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _buildScreens()[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        selectedItemColor: Colors.indigo,
-        unselectedItemColor: Colors.grey,
-        type: BottomNavigationBarType.fixed,
-        items: _buildNavItems(),
+    const size = 64.0;
+    return Positioned(
+      left: pos.dx,
+      top: pos.dy,
+      child: Semantics(
+        label: AI_LABEL,
+        button: true,
+        child: GestureDetector(
+          onTap: onTap,
+          onPanUpdate: (d) => onDrag(d.delta),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // 본체
+              Container(
+                width: size,
+                height: size,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const LinearGradient(
+                    colors: [BRAND_COLOR, BRAND_DARK],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: BRAND_COLOR.withOpacity(.4),
+                      blurRadius: 12,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(Icons.auto_awesome, color: Colors.white, size: 22), // ✨
+                      SizedBox(height: 2),
+                      Text('AI', style: TextStyle(
+                        color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 말풍선 라벨 (처음부터 항상 보이게 / 필요시 애니메로 바꿔도 됨)
+              Positioned(
+                right: size + 8,
+                top: (size - 28) / 2,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.black87,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Text(
+                    AI_LABEL,
+                    style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ),
+
+              // 테두리 반짝(가벼운 존재감)
+              Positioned.fill(
+                child: IgnorePointer(
+                  ignoring: true,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white.withOpacity(.35), width: 1),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+class _RecommendSheet extends StatelessWidget {
+  final AiApi api;
+  const _RecommendSheet({super.key, required this.api});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Column(
+        // ⬇️ 이 줄만 수정
+        mainAxisSize: MainAxisSize.max,
+        children: [
+          const SizedBox(height: 8),
+          Container(
+            width: 40, height: 4,
+            decoration: BoxDecoration(
+              color: Colors.black26,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text('AI 맞춤 추천', style: TextStyle(
+            fontSize: 18, fontWeight: FontWeight.w700)),
+          const SizedBox(height: 8),
+
+          Expanded(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: RecommendedSection(api: api),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

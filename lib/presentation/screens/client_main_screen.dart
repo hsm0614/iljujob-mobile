@@ -17,7 +17,7 @@ import '../chat/chat_list_screen.dart';
 import '../../config/constants.dart';
 import 'client_real_main_screen.dart';
 import 'worker_map_screen.dart';
-
+import '../../data/services/ai_api.dart';
 class ClientMainScreen extends StatefulWidget {
   final int initialTabIndex;
 
@@ -35,7 +35,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
   String userType = 'client';
   Timer? _unreadTimer;
   IO.Socket? socket;
-
+late final AiApi _api;
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 static const _promoEtagKey = 'promo_etag_client_v1';
@@ -44,6 +44,7 @@ bool _promoShownThisSession = false;
 @override
 void initState() {
   super.initState();
+  _api = AiApi(baseUrl); // ← 한 번만 생성
   WidgetsBinding.instance.addObserver(this);
 
   _selectedIndex = widget.initialTabIndex;
@@ -421,7 +422,7 @@ void _onItemTapped(int index) {
     return [
   
       const ClientRealMainScreen(),
-      const ClientHomeScreen(),
+      ClientHomeScreen(api: _api),     // ← const 제거 + api 넘김
       const WorkerMapSheet(),
       ChatListScreen(onMessagesRead: _fetchUnreadCount),
       const ClientMyPageScreen(),

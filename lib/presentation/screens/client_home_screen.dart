@@ -9,17 +9,22 @@ import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:iljujob/data/services/ai_api.dart';
+import 'package:iljujob/widget/recommended_workers_sheet.dart'; // 앞서 만든 바텀시트 위젯
+import '../../data/services/ai_api.dart';
 
 class ClientHomeScreen extends StatefulWidget {
-  const ClientHomeScreen({super.key});
+  final AiApi api; // 👈 추가
+
+  const ClientHomeScreen({
+    super.key,
+    required this.api, // 👈 추가
+  });
 
   @override
   State<ClientHomeScreen> createState() => _ClientHomeScreenState();
 }
 DateTime _nowLocal() => DateTime.now();
-
-int _payToInt(String s) =>
-    int.tryParse(s.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
 
 bool isJobReserved(Job j) =>
     j.publishAt != null && j.publishAt!.isAfter(_nowLocal());
@@ -49,6 +54,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   int monthCount = 0;
   late TabController _tabController;
   bool isSafeCompany = false;
+  
   @override
   void initState() {
     super.initState();
@@ -322,6 +328,122 @@ bool _matchesQuery(Job j, String q) {
   }
 
   return filtered;
+}
+Future<void> _openRecommendedWorkersByJobId(String jobIdStr) async {
+  final jid = int.tryParse(jobIdStr);
+  if (jid == null) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('잘못된 공고 ID 입니다.')),
+    );
+    return;
+  }
+
+  // ✅ 구독 확인
+  final api = AiApi(baseUrl);
+  final sub = await api.fetchMySubscription();
+  final isSubscribed = sub.active && (sub.plan != null && sub.plan!.toLowerCase() != 'free');
+
+  if (!isSubscribed) {
+    if (!mounted) return;
+    await _showPaywall();                 // 결제 유도 모달
+    return;                               // 🔒 여기서 종료
+  }
+
+  if (!mounted) return;
+  // ✅ 통과하면 시트 열기
+  await showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    useRootNavigator: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => FractionallySizedBox(
+      heightFactor: 0.90,
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        child: Material(
+          color: Colors.white,
+          child: RecommendedWorkersSheet(
+            api: AiApi(baseUrl),
+            jobId: jid,
+          ),
+        ),
+      ),
+    ),
+  );
+}
+Future<void> _showPaywall() async {
+  if (!mounted) return;
+  await showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,                 // ✅ 시스템 인셋 자동 반영
+    backgroundColor: Colors.transparent,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    ),
+    builder: (ctx) {
+      final mq = MediaQuery.of(ctx);
+      final bottomInset = mq.viewInsets.bottom;  // 키보드
+      final bottomPad   = mq.padding.bottom;     // 제스처/3버튼 네비 바
+
+      return FractionallySizedBox(
+        
+        child: ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+          child: Material(
+            color: Colors.white,
+            child: SafeArea(
+              top: false, // 상단은 둥근 모서리 살리기
+              child: SingleChildScrollView(
+                // ✅ 하단이 겹치지 않도록 여유 패딩 추가
+                padding: EdgeInsets.fromLTRB(16, 16, 16, 24 + bottomInset + bottomPad),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.auto_awesome, size: 32, color: Color(0xFF4F46E5)),
+                    const SizedBox(height: 8),
+                    const Text('맞춤 인재 보기는 구독 전용',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'AI가 공고와 잘 맞는 인재를 추천합니다.\n구독 후 이용해 보세요!',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.black54),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text('나중에'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF4F46E5),
+                            ),
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              Navigator.pushNamed(context, '/subscribe');
+                            },
+                            child: const Text('구독하기', style: TextStyle(color: Colors.white)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    },
+  );
 }
 
 
@@ -957,7 +1079,45 @@ Widget _buildJobCard(Job job) {
       }
     },
     child: const Text('즉시 게시'),
+  ), if (!isClosed)
+  Tooltip(
+    message: 'AI가 이 공고와 잘 맞는 인재를 추천해요',
+    child: TextButton.icon(
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(Icons.group_add_outlined),
+          // ✨ 스파클
+          const Positioned(
+            left: -8, bottom: -8,
+            child: Icon(Icons.auto_awesome, size: 14, color: Color(0xFF4F46E5)),
+          ),
+          // 🏷️ AI 배지
+          Positioned(
+            right: -10, top: -8,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+              decoration: BoxDecoration(
+                color: const Color(0xFF4F46E5),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text(
+                'AI',
+                style: TextStyle(
+                  color: Colors.white, fontSize: 9, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ),
+        ],
+      ),
+      label: const Text('맞춤 인재'),
+      style: TextButton.styleFrom(
+        foregroundColor: const Color(0xFF4F46E5),
+      ),
+   onPressed: () => _openRecommendedWorkersByJobId(job.id.toString()),
+    ),
   ),
+
               IconButton(
                 icon: const Icon(Icons.people),
                 tooltip: '지원자 보기',

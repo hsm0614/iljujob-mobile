@@ -23,6 +23,9 @@ import 'package:flutter/cupertino.dart';
 import 'package:iljujob/core/suspension.dart';
 import 'package:iljujob/core/suspension_guard.dart';
 import 'package:iljujob/widget/suspension_banner.dart';
+import '../../../config/ai_secrets.dart';
+
+import '../../../data/services/ai_job_description_service.dart';
 const int minWagePerHour = 10030;
 
 class PostJobForm extends StatefulWidget {
@@ -80,6 +83,12 @@ class _PostJobFormState extends State<PostJobForm> {
 bool _passCountLoading = false;
    SuspensionState? _suspension;
   bool _suspLoaded = false; // 로딩 완료 표시(레이스 방지)
+bool _isProUser = false;
+bool _isAIGenerating = false;
+
+  String managerPhone = ''; // 이 줄 추가
+
+
   Future<void> _loadSuspension() async {
   try {
     final prefs = await SharedPreferences.getInstance();
@@ -140,17 +149,7 @@ bool _passCountLoading = false;
     }
   }
 
-  String _untilKstMidnight() {
-    final nowUtc = DateTime.now().toUtc();
-    final kstNow = nowUtc.add(const Duration(hours: 9));
-    final kstMidnight = DateTime(
-      kstNow.year,
-      kstNow.month,
-      kstNow.day,
-    ).add(const Duration(days: 1));
-    final left = kstMidnight.difference(kstNow);
-    return '${left.inHours}시간 ${left.inMinutes % 60}분';
-  }
+
 
   @override
   void initState() {
@@ -159,7 +158,7 @@ bool _passCountLoading = false;
      WidgetsBinding.instance.addPostFrameCallback((_) => _refreshPaidPassCount());
     _fetchFreeUsage(); // 초기 무료 사용량 조회
     _loadSuspension();               
-
+  _checkProStatus(); 
   }
 
   @override
@@ -170,6 +169,54 @@ bool _passCountLoading = false;
     _locationController.dispose();
     super.dispose();
   }
+
+
+  // 기존 _checkProStatus() 메서드를 이것으로 교체
+
+Future<void> _checkProStatus() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('authToken');
+    
+    if (token == null || token.isEmpty) {
+      setState(() => _isProUser = false);
+      return;
+    }
+
+    // 서버에서 구독 상태 조회
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/subscription/status'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    ).timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final isActive = data['active'] == true;
+      final plan = data['plan']?.toString() ?? '';
+      
+      // Pro나 Premium 플랜이고 활성 상태면 Pro 사용자
+      final isProPlan = (plan == 'pro' || plan == 'premium') && isActive;
+      
+      setState(() {
+        _isProUser = isProPlan;
+      });
+      
+      // 디버깅용 로그
+      print('구독 상태: active=$isActive, plan=$plan, isProUser=$_isProUser');
+      
+    } else {
+      print('구독 상태 조회 실패: ${response.statusCode}');
+      setState(() => _isProUser = false);
+    }
+    
+  } catch (e) {
+    print('Pro 상태 확인 오류: $e');
+    setState(() => _isProUser = false);
+  }
+}
 Future<void> _refreshPaidPassCount() async {
   try {
     setState(() => _passCountLoading = true);
@@ -289,6 +336,7 @@ Future<void> _openPaidFlow() async {
       setState(() {
         companyName = data['company_name'] ?? '';
         managerName = data['manager_name'] ?? '';
+        managerPhone = data['manager_phone'] ?? data['phone'] ?? ''; // 전화번호 추가
       });
     } else {
       print('❌ 클라이언트 정보 조회 실패: ${response.body}');
@@ -902,7 +950,161 @@ void _validatePay() {
           ),
     );
   }
+// PostJobForm 클래스 내부에 추가할 메서드들
 
+// AI 공고문 생성 다이얼로그 표시
+void _showAIGenerationDialog() {
+  // 필수 정보 검증
+  if (!_validateBasicInfo()) return;
+
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => Container(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+      ),
+      child: AIJobDescriptionWidget(
+        title: _titleController.text.trim(),
+        category: category,
+        location: location,
+        payType: payType,
+        pay: pay,
+        workingTime: (startTime != null && endTime != null)
+            ? '${startTime!.format(context)} ~ ${endTime!.format(context)}'
+            : null,
+        weekdays: isShortTerm ? null : selectedWeekdays,
+        companyName: companyName.trim().isNotEmpty ? companyName.trim() : null,
+         managerName: managerName.trim().isNotEmpty ? managerName.trim() : null, // 추가
+  managerPhone: managerPhone.trim().isNotEmpty ? managerPhone.trim() : null, // 추가
+        isShortTerm: isShortTerm,
+        onGenerated: (generatedText) {
+          setState(() {
+            description = generatedText;
+            _descController.text = generatedText;
+          });
+          Navigator.pop(context);
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('AI 공고문이 적용되었습니다!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        },
+        onClose: () => Navigator.pop(context),
+      ),
+    ),
+  );
+}
+
+// 기본 정보 유효성 검사
+bool _validateBasicInfo() {
+  final errors = <String>[];
+  
+  if (_titleController.text.trim().isEmpty) {
+    errors.add('제목을 입력해주세요');
+  }
+  if (location.trim().isEmpty) {
+    errors.add('지역을 선택해주세요');
+  }
+  if (pay <= 0) {
+    errors.add('급여를 입력해주세요');
+  }
+  
+  if (errors.isNotEmpty) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('정보 부족'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('AI 공고문 생성을 위해 다음 정보가 필요합니다:'),
+            const SizedBox(height: 8),
+            ...errors.map((error) => Text('• $error')),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('확인'),
+          ),
+        ],
+      ),
+    );
+    return false;
+  }
+  return true;
+}
+
+// Pro 업그레이드 안내 다이얼로그
+void _showProUpgradeDialog() {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: Colors.amber,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: const Icon(
+              Icons.star,
+              color: Colors.white,
+              size: 16,
+            ),
+          ),
+          const SizedBox(width: 8),
+          const Text('Pro 전용 기능'),
+        ],
+      ),
+      content: const Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'AI 공고문 생성은 Pro 사용자만 이용할 수 있습니다.',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          SizedBox(height: 12),
+          Text('Pro 플랜의 혜택:'),
+          SizedBox(height: 8),
+          Text('• AI 공고문 자동 생성'),
+          Text('• 무제한 공고 등록'),
+          Text('• 프리미엄 노출 서비스'),
+          Text('• 고급 통계 및 분석'),
+          Text('• 우선 고객 지원'),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('나중에'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(context);
+            // Pro 업그레이드 페이지로 이동 (라우트가 있다면)
+             Navigator.pushNamed(context, '/subscription/manage');
+           
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.amber,
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('Pro로 업그레이드'),
+        ),
+      ],
+    ),
+  );
+}
   Future<void> _showPublishTypeSheet() async {
     await _fetchFreeUsage(); // ← 이것만 추가
 
@@ -2484,24 +2686,161 @@ final previewDisabled = !suspLoaded || (susp?.isSuspended ?? false); // 로딩�
                 ),
               ],
               const SizedBox(height: 16),
-              SizedBox(
-                height: 320, // 원하는 고정 높이
-                child: TextFormField(
-                  controller: _descController,
-                  maxLines: null, // 줄 수 제한 없음
-                  expands: true, // 높이를 꽉 채움
-                  keyboardType: TextInputType.multiline,
-                  textInputAction: TextInputAction.newline,
-                  style: const TextStyle(fontSize: 16),
-                  decoration: const InputDecoration(
-                    labelText: '자세한 설명',
-                    hintText: '부적절하거나 불쾌감을 줄 수 있는 내용을 작성할 경우 제재를 받을 수 있습니다.',
-                    border: OutlineInputBorder(),
-                    alignLabelWithHint: true, // 라벨 위치 맞춤
-                  ),
-                  onSaved: (val) => description = val ?? '',
+            // AI 생성 버튼 섹션
+Container(
+  width: double.infinity,
+  margin: const EdgeInsets.only(bottom: 12),
+  padding: const EdgeInsets.all(16),
+  decoration: BoxDecoration(
+    gradient: LinearGradient(
+      colors: [
+        const Color(0xFF3B8AFF).withOpacity(0.1),
+        const Color(0xFF8B5FBF).withOpacity(0.1),
+      ],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+    borderRadius: BorderRadius.circular(12),
+    border: Border.all(
+      color: const Color(0xFF3B8AFF).withOpacity(0.3),
+    ),
+  ),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF3B8AFF).withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.auto_awesome,
+              color: Color(0xFF3B8AFF),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Text(
+                      'AI 공고문 생성',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF3B8AFF),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    if (!_isProUser)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.amber,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          'PRO',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-              ),
+                const Text(
+                  '입력 정보를 바탕으로 매력적인 공고문을 자동 생성',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.black54,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 12),
+      SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: _isAIGenerating
+              ? null
+              : (_isProUser ? _showAIGenerationDialog : _showProUpgradeDialog),
+          icon: _isAIGenerating
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Icon(Icons.auto_awesome),
+          label: Text(_isAIGenerating 
+              ? 'AI 생성 중...' 
+              : 'AI로 공고문 생성하기'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _isProUser 
+                ? const Color(0xFF3B8AFF) 
+                : Colors.amber,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+      ),
+    ],
+  ),
+),
+
+// 기존 텍스트 입력 필드
+SizedBox(
+  height: 320,
+  child: TextFormField(
+    controller: _descController,
+    maxLines: null,
+    expands: true,
+    keyboardType: TextInputType.multiline,
+    textInputAction: TextInputAction.newline,
+    style: const TextStyle(fontSize: 16),
+    decoration: InputDecoration(
+      labelText: '자세한 설명',
+      hintText: description.isEmpty 
+          ? '부적절하거나 불쾌감을 줄 수 있는 내용을 작성할 경우 제재를 받을 수 있습니다.'
+          : null,
+      border: const OutlineInputBorder(),
+      alignLabelWithHint: true,
+      suffixIcon: description.isNotEmpty
+          ? IconButton(
+              onPressed: () {
+                setState(() {
+                  description = '';
+                  _descController.clear();
+                });
+              },
+              icon: const Icon(Icons.clear),
+              tooltip: '내용 지우기',
+            )
+          : null,
+    ),
+    onSaved: (val) => description = val ?? '',
+    onChanged: (val) => setState(() => description = val),
+  ),
+),
               const SizedBox(height: 24),
               const LaborAgreementNotice(),
              SizedBox(

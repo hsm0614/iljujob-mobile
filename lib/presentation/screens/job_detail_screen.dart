@@ -88,8 +88,10 @@ String _getWorkingPeriodText(Job job) {
   return '근무 기간 미정';
 }
 String _formatDate(DateTime date) {
-  return '${date.month}월 ${date.day}일';
+  final local = date.toLocal();           // ✅ 로컬(KST)로 변환
+  return '${local.month}월 ${local.day}일';
 }
+
 
 bool _shouldShowReportButton() {
   // 클라이언트이고 내 공고라면 신고 버튼 숨김

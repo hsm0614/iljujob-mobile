@@ -68,7 +68,8 @@ import 'package:iljujob/data/services/auth_interceptor.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-
+import 'package:iljujob/presentation/screens/subscription_payment_webview.dart';
+import 'package:iljujob/presentation/screens/subscription_manage_screen.dart';
 
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
@@ -524,6 +525,8 @@ class MyApp extends StatelessWidget {
             companyPhone: args['companyPhone'],
           );
         },
+ '/subscribe': (_) => const SubscribeScreen(),
+'/subscription/manage': (_) => const SubscriptionManageScreen(), // 이번에 추가
      '/job-detail': (context) {
   final args = ModalRoute.of(context)?.settings.arguments;
   if (args == null || args is! Job) {

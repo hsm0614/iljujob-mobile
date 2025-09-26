@@ -46,7 +46,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.7.1</string>
+	<string>2.7.5</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleSupportedPlatforms</key>
@@ -86,6 +86,8 @@
 	<string>16F6</string>
 	<key>FirebaseAppDelegateProxyEnabled</key>
 	<false/>
+	<key>KAKAO_APP_KEY</key>
+	<string>f1091d43764e475154945e49f2aec294</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>ispmobile</string>
@@ -100,6 +102,7 @@
 		<string>supertoss</string>
 		<string>naverpayapp</string>
 		<string>kbbank</string>
+		<string>kakaomap</string>
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>

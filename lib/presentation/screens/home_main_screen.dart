@@ -29,7 +29,7 @@ class _HomeMainScreenState extends State<HomeMainScreen> {
   List<int> appliedJobIds = [];
   String searchQuery = '';
   String selectedCategory = '전체';
-  String sortType = '거리순';
+  String sortType = '최신순';
   double currentLatitude = 0.0;
   double currentLongitude = 0.0;
   double selectedDistance = 50;
@@ -69,14 +69,6 @@ void initState() {
       _loadMoreItems();
     }
   });
-}
-void _bmLog(String msg) {
-  assert(() {
-    final ts = DateTime.now().toIso8601String();
-    // 길어도 끊김 없이 찍히도록 debugPrint 사용
-    debugPrint('[BM][$ts] $msg');
-    return true;
-  }());
 }
 
 @override
@@ -1313,9 +1305,10 @@ Widget _buildEmptyJobsView() {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.year}.${date.month.toString().padLeft(2, '0')}.${date.day.toString().padLeft(2, '0')}';
-  }
+String _formatDate(DateTime date) {
+  final d = date.isUtc ? date.toLocal() : date; // ✅ 로컬(KST) 변환 보정
+  return '${d.year}.${d.month.toString().padLeft(2, '0')}.${d.day.toString().padLeft(2, '0')}';
+}
 Widget _buildPinnedBadgeSmall() {
   return const Text(
     '광고',

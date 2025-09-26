@@ -20,6 +20,8 @@ import 'package:photo_view/photo_view_gallery.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:iljujob/presentation/chat/chat_image_screen.dart';
 import 'package:uuid/uuid.dart';
+import '../../data/services/ai_api.dart';
+import 'package:provider/provider.dart';
 class ChatRoomScreen extends StatefulWidget {
   final int chatRoomId;
 
@@ -93,7 +95,25 @@ if (v == null) return 0;
 if (dt == null) return 0;
 return (dt.isUtc ? dt : dt.toUtc()).millisecondsSinceEpoch;
 }
+String _status = 'active';      // 'pending' | 'active' | 'blocked' ...
+String _initiator = 'client';   // 'client' | 'worker'
 
+bool _consentBusy = false;
+
+// 메시지 입력 가능 여부 (기업이 pending이면 false)
+bool get _inputEnabled {
+  if (userType == 'client' && _status == 'pending') return false;
+  return true;
+}
+
+
+// 워커가 수락/거절 버튼을 봐야 하는지
+bool get _workerSeeConsentButtons =>
+    (userType == 'worker') && (_initiator == 'client') && (_status == 'pending');
+
+// 클라이언트가 대기 배너를 봐야 하는지
+bool get _clientSeeWaitingBanner =>
+    (userType == 'client') && (_status == 'pending');
 Map<String, dynamic> _normalizeIncoming(Map raw) {
   final createdRaw = raw['createdAt'] ?? raw['created_at'] ?? raw['timestamp'] ?? raw['sent_at'];
   final createdAtMs = _toMs(createdRaw);
@@ -402,46 +422,100 @@ socket!.on('receive_message', (data) async {
 }
 
 
-  Future<void> _fetchChatRoomDetail() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken') ?? '';
+Future<void> _fetchChatRoomDetail() async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('authToken');
 
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/chat/detail/${widget.chatRoomId}'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          isConfirmed =
-              data['is_confirmed'] == 1 || data['is_confirmed'] == true;
-          isCompleted =
-              data['is_completed'] == 1 || data['is_completed'] == true;
-        });
-      } else {
-        print('❌ 상세 정보 요청 실패: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('❌ 상세 정보 요청 중 오류: $e');
-    }
-  }
-
-  Future<void> _fetchChatStatus() async {
-    final response = await http.get(
-      Uri.parse('$baseUrl/api/chat/status?roomId=${widget.chatRoomId}'),
+  try {
+    final resp = await http.get(
+      Uri.parse('$baseUrl/api/chat/detail/${widget.chatRoomId}'),
+      headers: {
+        if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      },
     );
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      setState(() {
-        isConfirmed = data['is_confirmed'] == true;
-        isCompleted = data['is_completed'] == true;
-      });
-    }
-  }
 
+    if (resp.statusCode != 200) {
+      debugPrint('❌ 상세 정보 요청 실패: ${resp.statusCode} ${resp.body}');
+      if (!mounted) return;
+      setState(() {
+        // 최소한 로딩만 해제
+        _isLoadingJobInfo = false;
+      });
+      return;
+    }
+
+    final decoded = jsonDecode(utf8.decode(resp.bodyBytes));
+    if (decoded is! Map) {
+      debugPrint('❌ 잘못된 응답 형식: ${resp.body}');
+      if (!mounted) return;
+      setState(() => _isLoadingJobInfo = false);
+      return;
+    }
+
+    // 1) 상태/주도자 (서버가 안주면 기본값으로 보정)
+    final status = (decoded['status'] ?? decoded['room_status'] ?? 'active').toString();
+    final initiator =
+        (decoded['initiatorType'] ?? decoded['initiator_type'] ?? 'client').toString();
+
+    // 2) 확정/완료 플래그 다양한 케이스 흡수
+    bool _asBool(dynamic v) {
+      if (v == null) return false;
+      if (v is bool) return v;
+      if (v is num) return v != 0;
+      final s = v.toString().toLowerCase();
+      return s == 'true' || s == '1' || s == 'yes';
+    }
+
+    final bool confirmed = _asBool(decoded['is_confirmed']) ||
+        _asBool((decoded['application'] as Map?)?['is_confirmed']);
+    final bool completed = _asBool(decoded['is_completed']) ||
+        _asBool((decoded['application'] as Map?)?['is_completed']);
+
+    // 3) jobInfo 채우기 (서버가 job 객체로 주면 그대로, 아니면 낱개 필드로 구성)
+    Map<String, dynamic> jobInfo = {};
+    if (decoded['job'] is Map) {
+      jobInfo = Map<String, dynamic>.from(decoded['job'] as Map);
+    } else {
+      jobInfo = {
+        if (decoded['job_id'] != null) 'id': decoded['job_id'],
+        if (decoded['title'] != null) 'title': decoded['title'],
+        if (decoded['job_title'] != null) 'title': decoded['job_title'],
+        if (decoded['pay'] != null) 'pay': decoded['pay'],
+        if (decoded['created_at'] != null) 'created_at': decoded['created_at'],
+        if (decoded['client_company_name'] != null)
+          'client_company_name': decoded['client_company_name'],
+      }..removeWhere((_, v) => v == null);
+    }
+
+    if (!mounted) return;
+    setState(() {
+      // 화면 상태 반영
+      _status = status;          // 'pending'이면 입력 비활성에 쓰임
+      _initiator = initiator;    // 'client'가 요청한 pending이면 워커에게 수락/거절 버튼 노출
+
+      isConfirmed = confirmed;
+      isCompleted = completed;
+
+      // 상단 요약에 사용할 jobInfo 갱신 (기존 인자와 merge)
+      _jobInfo = {
+        ...?widget.jobInfo,
+        ...jobInfo,
+      };
+      _isLoadingJobInfo = false;
+    });
+  } catch (e) {
+    debugPrint('❌ 상세 정보 요청 중 오류: $e');
+    if (!mounted) return;
+    setState(() {
+      _isLoadingJobInfo = false;
+    });
+  }
+}
   Future<void> _pickAndSendImage() async {
+     if (!_inputEnabled) {
+    _showErrorSnackbar('아직 채팅이 활성화되지 않았습니다. 상대방의 수락을 기다려주세요.');
+    return;
+  }
     final picker = ImagePicker();
     final pickedFile = await picker.pickImage(source: ImageSource.gallery);
     if (pickedFile == null) return;
@@ -603,7 +677,10 @@ void _markFailed(String clientTempId, [String? reason]) {
 }
 void _sendMessage() async {
   if (socket == null || !socket!.connected) return;
-
+ if (!_inputEnabled) {
+    _showErrorSnackbar('아직 채팅이 활성화되지 않았습니다. 상대방의 수락을 기다려주세요.');
+    return;
+  }
   final prefs = await SharedPreferences.getInstance();
   final userId = prefs.getInt('userId');
   final sender = userType == 'worker' ? 'worker' : 'client';
@@ -655,8 +732,48 @@ void _sendMessage() async {
     if (stillPending) _markFailed(clientTempId, '서버 응답 없음');
   });
 }
+late final AiApi _api = AiApi(baseUrl);
+Future<void> _sendConsent(bool accept) async {
+  if (!mounted || _consentBusy) return;
+  setState(() => _consentBusy = true);
 
+  try {
+    final result = await _api.consentDecision(
+      roomId: widget.chatRoomId,
+      accept: accept,
+    );
 
+    if (!mounted) return;
+    setState(() => _consentBusy = false);
+
+    if (!result.ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.message ?? '처리에 실패했습니다.')),
+      );
+      return;
+    }
+
+    final newStatus = (result.status ?? (accept ? 'active' : 'blocked')).toLowerCase();
+    setState(() => _status = newStatus);
+
+    if (accept) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('수락되었습니다. 이제 채팅이 가능합니다.')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('대화 요청을 거절했습니다.')),
+      );
+      Navigator.of(context).maybePop();
+    }
+  } catch (e) {
+    if (!mounted) return;
+    setState(() => _consentBusy = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('네트워크 오류: $e')),
+    );
+  }
+}
   Future<void> _confirmHire() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('authToken') ?? '';
@@ -1551,8 +1668,54 @@ for (var msg in messages) {
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
   }
+Widget _buildClientWaitingBanner() {
+  final shouldShow = userType == 'client' && _status == 'pending';
+  if (!shouldShow) return const SizedBox.shrink();
+  return Container(
+    color: const Color(0xFFFFF8E1),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    child: Row(
+      children: const [
+        Icon(Icons.hourglass_bottom, size: 18),
+        SizedBox(width: 8),
+        Expanded(child: Text('구직자의 수락을 기다리는 중입니다. 메세지 전송은 수락 후 가능합니다.')),
+      ],
+    ),
+  );
+}
+Widget _buildConsentBanner() {
+  final bool shouldShow =
+      userType == 'worker' && _status == 'pending' && _initiator == 'client';
 
+  if (!shouldShow) return const SizedBox.shrink();
 
+  return Container(
+    color: const Color(0xFFFEF3C7), // 연한 노랑
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    child: Row(
+      children: [
+        const Icon(Icons.info_outline, size: 18),
+        const SizedBox(width: 8),
+        const Expanded(child: Text('기업의 대화 요청입니다. 수락하시겠어요?')),
+        const SizedBox(width: 8),
+        TextButton(
+          onPressed: _consentBusy ? null : () => _sendConsent(false),
+          child: const Text('거절', style: TextStyle(color: Colors.red)),
+        ),
+        const SizedBox(width: 4),
+        ElevatedButton(
+          onPressed: _consentBusy ? null : () => _sendConsent(true),
+          child: _consentBusy
+              ? const SizedBox(
+                  width: 16, height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('수락'),
+        ),
+      ],
+    ),
+  );
+}
   @override
   Widget build(BuildContext context) {
     String? targetName;
@@ -1644,7 +1807,9 @@ for (var msg in messages) {
           body: Column(
             children: [
               _buildJobSummary(),
-
+                  // ✅ 워커가 보는 수락/거절 배너
+    _buildConsentBanner(),
+    _buildClientWaitingBanner(),
               Expanded(
                 child:
                     isLoading
@@ -1660,23 +1825,26 @@ for (var msg in messages) {
                   padding: const EdgeInsets.all(8),
                   child: Row(
                     children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _messageController,
-                          decoration: const InputDecoration(
-                            hintText: '메시지를 입력하세요...',
-                          ),
-                          onSubmitted: (_) => _sendMessage(),
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.image),
-                        onPressed: _pickAndSendImage, // 나중에 구현할 함수
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.send),
-                        onPressed: _sendMessage,
-                      ),
+                     Expanded(
+  child: TextField(
+    controller: _messageController,
+    enabled: _inputEnabled, // ✅ pending이면 입력 불가
+    decoration: InputDecoration(
+      hintText: _inputEnabled
+          ? '메시지를 입력하세요...'
+          : '상대방의 수락을 기다리는 중입니다',
+    ),
+    onSubmitted: (_) => _sendMessage(),
+  ),
+),
+                    IconButton(
+  icon: const Icon(Icons.image),
+  onPressed: _inputEnabled ? _pickAndSendImage : null, // ✅
+),
+IconButton(
+  icon: const Icon(Icons.send),
+  onPressed: _inputEnabled ? _sendMessage : null, // ✅
+),
                     ],
                   ),
                 ),

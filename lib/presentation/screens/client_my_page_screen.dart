@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/constants.dart'; // baseUrl
-
+import '../../data/services/ai_api.dart'; // ← fetchMySubscription() 쓰려고
 class ClientMyPageScreen extends StatefulWidget {
   const ClientMyPageScreen({super.key});
   @override
@@ -18,6 +18,8 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
   String managerName = '담당자명';
   String phoneNumber = '전화번호';
   String logoUrl = '';
+    bool _subLoading = true;
+  SubscriptionStatus? _sub;
 
   // Helpers
   String _getFullImageUrl(String path) {
@@ -33,12 +35,40 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
     return phone;
   }
 
+
   @override
   void initState() {
     super.initState();
     _loadProfileInfo();
+    _loadSubscription(); // ✅ 구독 상태도 로드
+  }
+  Future<void> _loadSubscription() async {
+    final api = AiApi(baseUrl);
+    final s = await api.fetchMySubscription(); // 서버의 clients.subscription_* 조회
+    if (!mounted) return;
+    setState(() {
+      _sub = s;
+      _subLoading = false;
+    });
   }
 
+  // 새로고침에 구독도 묶기
+  Future<void> _refreshAll() async {
+    await Future.wait([
+      _loadProfileInfo(),
+      _loadSubscription(),
+    ]);
+  }
+
+  String _subSummaryText() {
+    if (_subLoading) return '조회 중...';
+    if (!(_sub?.active ?? false)) return '미구독';
+    final plan = (_sub!.plan ?? '구독').toUpperCase();
+    final d = _sub!.expiresAt;
+    final days = (d != null) ? d.difference(DateTime.now()).inDays : null;
+    final left = (days != null) ? 'D-$days' : '';
+    return '$plan $left';
+  }
   Future<void> _loadProfileInfo() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -63,7 +93,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F7FB),
       body: RefreshIndicator(
-        onRefresh: _loadProfileInfo,
+        onRefresh: _refreshAll,
         color: brandBlue,
         child: CustomScrollView(
           slivers: [
@@ -127,6 +157,26 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
                 child: _SectionCard(
                   title: '사용자',
                   children: [
+                     _ItemTile(
+          icon: Icons.workspace_premium,
+          label: '구독 관리',
+          trailing: _StatusPill(text: _subSummaryText()),
+          onTap: () async {
+            await Navigator.pushNamed(context, '/subscription/manage');
+            if (mounted) _loadSubscription();
+          },
+        ),
+
+        // ✅ 미구독일 때만 “구독하기” 빠른 진입
+        if (!(_sub?.active ?? false))
+          _ItemTile(
+            icon: Icons.credit_card,
+            label: '구독하기',
+            onTap: () async {
+              final ok = await Navigator.pushNamed(context, '/subscribe');
+              if (ok == true && mounted) _loadSubscription();
+            },
+          ),
                     _ItemTile(
                       icon: Icons.credit_card,
                       label: '이용권 구매',
@@ -564,6 +614,28 @@ class _BizInfoItem extends StatelessWidget {
             child: Text(v, style: const TextStyle(fontSize: 13.5, color: Colors.black87)),
           ),
         ],
+      ),
+    );
+  }
+}
+class _StatusPill extends StatelessWidget {
+  final String text;
+  const _StatusPill({required this.text});
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF1F6FF),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          color: Color(0xFF3B8AFF),
+        ),
       ),
     );
   }

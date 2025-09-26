@@ -4,14 +4,13 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_map_marker_cluster/flutter_map_marker_cluster.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:iljujob/config/constants.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
+import 'package:kakao_map_sdk/kakao_map_sdk.dart';
 
 import 'worker_profile_screen.dart';
+import 'dart:math' as math;
 
 class WorkerMapSheet extends StatefulWidget {
   const WorkerMapSheet({super.key});
@@ -21,19 +20,20 @@ class WorkerMapSheet extends StatefulWidget {
 }
 
 class _WorkerMapSheetState extends State<WorkerMapSheet> with WidgetsBindingObserver {
-  final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
 
   List<Map<String, dynamic>> workers = [];
   bool isLoading = true;
   bool showOnlyAvailableToday = false;
-  double _currentZoom = 14.0;
 
-  // ==== Zoom -> Marker size (28~56px) ====
-  double _iconSizeForZoom(double z) {
-    final clamped = z.clamp(10.0, 18.0);
-    return 28 + (clamped - 10) * 3.5;
-  }
+  KakaoMapController? _mapController;
+  static const LatLng _defaultCenter = LatLng(37.5665, 126.9780);
+
+  // 렌더링 상태 관리
+  final Map<String, KImage> _iconCache = {};
+  int _lastZoomLevel = -1;
+  Timer? _renderDebounce;
+  bool _isRendering = false;
 
   @override
   void initState() {
@@ -46,22 +46,12 @@ class _WorkerMapSheetState extends State<WorkerMapSheet> with WidgetsBindingObse
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _searchController.dispose();
+    _renderDebounce?.cancel();
+    _iconCache.clear();
     super.dispose();
   }
 
-  void _centerToFirstOrDefault() {
-    if (workers.isNotEmpty) {
-      final w = workers.first;
-      _mapController.move(
-        LatLng((w['lat'] as num).toDouble(), (w['lng'] as num).toDouble()),
-        14,
-      );
-    } else {
-      _mapController.move(const LatLng(37.5665, 126.9780), 13);
-    }
-  }
-
-  // ==== Fetch workers with robust parsing + camera fit ====
+  // Worker 데이터 가져오기
   Future<void> fetchWorkers() async {
     if (!mounted) return;
     setState(() => isLoading = true);
@@ -77,28 +67,8 @@ class _WorkerMapSheetState extends State<WorkerMapSheet> with WidgetsBindingObse
 
       if (response.statusCode == 200) {
         final dynamic decoded = jsonDecode(response.body);
-
-        final List<Map<String, dynamic>> items = (decoded is List)
-            ? decoded.map<Map<String, dynamic>>((e) {
-                if (e is Map<String, dynamic>) return e;
-                if (e is Map) return Map<String, dynamic>.from(e);
-                return <String, dynamic>{};
-              }).toList()
-            : <Map<String, dynamic>>[];
-
-        bool _isNum(x) => x is num;
-        bool _finite(num v) => !v.isNaN && v.isFinite;
-        bool _validLat(num v) => v >= -90 && v <= 90;
-        bool _validLng(num v) => v >= -180 && v <= 180;
-
-        final cleaned = items.where((m) {
-          final latRaw = m['lat'];
-          final lngRaw = m['lng'];
-          if (!_isNum(latRaw) || !_isNum(lngRaw)) return false;
-          final lat = latRaw as num;
-          final lng = lngRaw as num;
-          return _finite(lat) && _finite(lng) && _validLat(lat) && _validLng(lng);
-        }).toList();
+        final List<Map<String, dynamic>> items = _parseWorkerData(decoded);
+        final cleaned = _validateWorkerCoordinates(items);
 
         if (!mounted) return;
         setState(() {
@@ -106,62 +76,368 @@ class _WorkerMapSheetState extends State<WorkerMapSheet> with WidgetsBindingObse
           isLoading = false;
         });
 
-        if (workers.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            try {
-              final bounds = LatLngBounds.fromPoints([
-                for (final w in workers)
-                  LatLng((w['lat'] as num).toDouble(), (w['lng'] as num).toDouble()),
-              ]);
-              _mapController.fitCamera(
-                CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(32)),
-              );
-            } catch (_) {
-              final first = workers.first;
-              _mapController.move(
-                LatLng((first['lat'] as num).toDouble(), (first['lng'] as num).toDouble()),
-                14,
-              );
-            }
-          });
+        if (_mapController != null) {
+          await _renderWorkers();
+          await _fitToWorkersOrCenter();
         }
       } else {
         if (!mounted) return;
         setState(() => isLoading = false);
       }
-    } on FormatException {
-      if (!mounted) return;
-      setState(() => isLoading = false);
-    } on SocketException {
-      if (!mounted) return;
-      setState(() => isLoading = false);
-    } on TimeoutException {
-      if (!mounted) return;
-      setState(() => isLoading = false);
     } catch (e) {
       if (!mounted) return;
       setState(() => isLoading = false);
-      debugPrint('❌ 알 수 없는 오류: $e');
+      debugPrint('Worker 데이터 로딩 실패: $e');
     }
   }
 
-  // ==== Address search -> move camera ====
+  List<Map<String, dynamic>> _parseWorkerData(dynamic decoded) {
+    if (decoded is! List) return [];
+    
+    return decoded.map<Map<String, dynamic>>((e) {
+      if (e is Map<String, dynamic>) return e;
+      if (e is Map) return Map<String, dynamic>.from(e);
+      return <String, dynamic>{};
+    }).toList();
+  }
+
+  List<Map<String, dynamic>> _validateWorkerCoordinates(List<Map<String, dynamic>> items) {
+    return items.where((worker) {
+      final lat = worker['lat'];
+      final lng = worker['lng'];
+      
+      if (lat is! num || lng is! num) return false;
+      if (!lat.isFinite || !lng.isFinite) return false;
+      if (lat < -90 || lat > 90) return false;
+      if (lng < -180 || lng > 180) return false;
+      
+      return true;
+    }).toList();
+  }
+
+  // 간단한 클러스터링 로직
+  Future<void> _renderWorkers() async {
+    if (_mapController == null || workers.isEmpty || _isRendering) return;
+    
+    _isRendering = true;
+    try {
+      final cameraPos = await _mapController!.getCameraPosition();
+      final zoomLevel = cameraPos.zoomLevel;
+      
+      // 모든 POI 제거
+      await _mapController!.labelLayer.hideAllPoi();
+      
+      if (zoomLevel >= 14) {
+        // 충분히 확대된 경우: 개별 워커 표시
+        await _renderIndividualWorkers();
+      } else {
+        // 축소된 경우: 클러스터 표시
+        await _renderClusters(zoomLevel);
+      }
+      
+      _lastZoomLevel = zoomLevel;
+    } finally {
+      _isRendering = false;
+    }
+  }
+
+  Future<void> _renderIndividualWorkers() async {
+    for (int i = 0; i < workers.length; i++) {
+      final worker = workers[i];
+      final workerId = (worker['id'] as num).toInt();
+      final lat = (worker['lat'] as num).toDouble();
+      final lng = (worker['lng'] as num).toDouble();
+      final profileUrl = worker['profileUrl']?.toString();
+      
+      final icon = await _getWorkerIcon(profileUrl, 32);
+      
+      await _mapController!.labelLayer.addPoi(
+        LatLng(lat, lng),
+        id: 'worker_$workerId',
+        style: PoiStyle(icon: icon),
+        onClick: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => WorkerProfileScreen(workerId: workerId),
+            ),
+          );
+        },
+      );
+    }
+  }
+
+  Future<void> _renderClusters(int zoomLevel) async {
+    // 간단한 거리 기반 클러스터링
+    final clusters = _createClusters(zoomLevel);
+    
+    for (int i = 0; i < clusters.length; i++) {
+      final cluster = clusters[i];
+      final workerCount = cluster['workers'].length;
+      final centerLat = cluster['centerLat'] as double;
+      final centerLng = cluster['centerLng'] as double;
+      
+      if (workerCount == 1) {
+        // 단일 워커
+        final worker = cluster['workers'][0];
+        final workerId = (worker['id'] as num).toInt();
+        final profileUrl = worker['profileUrl']?.toString();
+        final icon = await _getWorkerIcon(profileUrl, 28);
+        
+        await _mapController!.labelLayer.addPoi(
+          LatLng(centerLat, centerLng),
+          id: 'single_$workerId',
+          style: PoiStyle(icon: icon),
+          onClick: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => WorkerProfileScreen(workerId: workerId),
+              ),
+            );
+          },
+        );
+      } else {
+        // 클러스터
+        final icon = await _getClusterIcon(workerCount, 36);
+        
+        await _mapController!.labelLayer.addPoi(
+          LatLng(centerLat, centerLng),
+          id: 'cluster_$i',
+          style: PoiStyle(icon: icon),
+          onClick: () async {
+            final nextZoom = (zoomLevel + 3).clamp(3, 20);
+            await _mapController!.moveCamera(
+              CameraUpdate.newCenterPosition(
+                LatLng(centerLat, centerLng),
+                zoomLevel: nextZoom,
+              ),
+              animation: const CameraAnimation.new(300, autoElevation: true),
+            );
+          },
+        );
+      }
+    }
+  }
+
+  List<Map<String, dynamic>> _createClusters(int zoomLevel) {
+    if (workers.isEmpty) return [];
+    
+    // 줌 레벨에 따른 클러스터 반경 - 간단하고 직관적으로
+    double clusterRadius;
+    if (zoomLevel >= 14) {
+      clusterRadius = 0.008; // ~800m - 개별 표시 직전
+    } else if (zoomLevel >= 12) {
+      clusterRadius = 0.025; // ~2.5km - 동네 단위
+    } else if (zoomLevel >= 10) {
+      clusterRadius = 0.08; // ~8km - 구/시 단위  
+    } else if (zoomLevel >= 8) {
+      clusterRadius = 0.25; // ~25km - 시/군 단위
+    } else {
+      clusterRadius = 0.8; // ~80km - 광역시/도 단위
+    }
+    
+    final clusters = <Map<String, dynamic>>[];
+    final processed = List<bool>.filled(workers.length, false);
+    
+    for (int i = 0; i < workers.length; i++) {
+      if (processed[i]) continue;
+      
+      final mainWorker = workers[i];
+      final mainLat = (mainWorker['lat'] as num).toDouble();
+      final mainLng = (mainWorker['lng'] as num).toDouble();
+      
+      final clusterWorkers = <Map<String, dynamic>>[mainWorker];
+      processed[i] = true;
+      
+      // 근처 워커들 찾기
+      for (int j = i + 1; j < workers.length; j++) {
+        if (processed[j]) continue;
+        
+        final otherWorker = workers[j];
+        final otherLat = (otherWorker['lat'] as num).toDouble();
+        final otherLng = (otherWorker['lng'] as num).toDouble();
+        
+        final distance = _calculateDistance(mainLat, mainLng, otherLat, otherLng);
+        
+        if (distance <= clusterRadius) {
+          clusterWorkers.add(otherWorker);
+          processed[j] = true;
+        }
+      }
+      
+      // 클러스터 중심 계산
+      double centerLat = 0;
+      double centerLng = 0;
+      for (final worker in clusterWorkers) {
+        centerLat += (worker['lat'] as num).toDouble();
+        centerLng += (worker['lng'] as num).toDouble();
+      }
+      centerLat /= clusterWorkers.length;
+      centerLng /= clusterWorkers.length;
+      
+      clusters.add({
+        'workers': clusterWorkers,
+        'centerLat': centerLat,
+        'centerLng': centerLng,
+      });
+    }
+    
+    return clusters;
+  }
+
+  double _calculateDistance(double lat1, double lng1, double lat2, double lng2) {
+    return math.sqrt(math.pow(lat2 - lat1, 2) + math.pow(lng2 - lng1, 2));
+  }
+
+  // 아이콘 생성
+  Future<KImage> _getWorkerIcon(String? profileUrl, double size) async {
+    final key = 'worker_${profileUrl ?? 'default'}_$size';
+    if (_iconCache.containsKey(key)) {
+      return _iconCache[key]!;
+    }
+
+    final widget = ClipOval(
+      child: Container(
+        width: size, 
+        height: size,
+        color: Colors.indigo.shade300,
+        child: (profileUrl != null && profileUrl.isNotEmpty)
+            ? Image.network(
+                profileUrl, 
+                fit: BoxFit.cover, 
+                width: size, 
+                height: size,
+                errorBuilder: (context, error, stackTrace) => Icon(
+                  Icons.person, 
+                  size: size * 0.6, 
+                  color: Colors.white
+                ),
+              )
+            : Center(
+                child: Icon(Icons.person, size: size * 0.6, color: Colors.white),
+              ),
+      ),
+    );
+
+    final icon = await KImage.fromWidget(
+      widget,
+      Size(size, size),
+      pixelRatio: MediaQuery.of(context).devicePixelRatio.clamp(1.0, 3.0),
+    );
+    
+    _iconCache[key] = icon;
+    return icon;
+  }
+
+  Future<KImage> _getClusterIcon(int count, double size) async {
+    final key = 'cluster_${count}_$size';
+    if (_iconCache.containsKey(key)) {
+      return _iconCache[key]!;
+    }
+
+    final widget = Container(
+      width: size, 
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.indigo.withOpacity(0.95),
+        shape: BoxShape.circle,
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black26, 
+            blurRadius: 6, 
+            offset: Offset(0, 2)
+          )
+        ],
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        count > 999 ? '999+' : '$count',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: size * 0.38,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+
+    final icon = await KImage.fromWidget(
+      widget,
+      Size(size, size),
+      pixelRatio: MediaQuery.of(context).devicePixelRatio.clamp(1.0, 3.0),
+    );
+    
+    _iconCache[key] = icon;
+    return icon;
+  }
+
+  // 카메라 조작
+  Future<void> _centerToFirstOrDefault() async {
+    if (_mapController == null) return;
+
+    if (workers.isNotEmpty) {
+      final worker = workers.first;
+      final target = LatLng(
+        (worker['lat'] as num).toDouble(),
+        (worker['lng'] as num).toDouble(),
+      );
+      await _mapController!.moveCamera(
+        CameraUpdate.newCenterPosition(target, zoomLevel: 16),
+        animation: const CameraAnimation.new(350),
+      );
+    } else {
+      await _mapController!.moveCamera(
+        CameraUpdate.newCenterPosition(_defaultCenter, zoomLevel: 14),
+        animation: const CameraAnimation.new(350),
+      );
+    }
+  }
+
+  Future<void> _fitToWorkersOrCenter() async {
+    if (_mapController == null) return;
+
+    if (workers.isEmpty) {
+      await _mapController!.moveCamera(
+        CameraUpdate.newCenterPosition(_defaultCenter, zoomLevel: 14),
+        animation: const CameraAnimation.new(300),
+      );
+      return;
+    }
+
+    final points = workers
+        .map((w) => LatLng(
+              (w['lat'] as num).toDouble(),
+              (w['lng'] as num).toDouble(),
+            ))
+        .toList();
+
+    await _mapController!.moveCamera(
+      CameraUpdate.fitMapPoints(points, padding: 50),
+      animation: const CameraAnimation.new(300),
+    );
+  }
+
+  // 주소 검색
   Future<void> _searchLocation() async {
     final query = _searchController.text.trim();
-    if (query.isEmpty) return;
+    if (query.isEmpty || _mapController == null) return;
+
     try {
       final locations = await locationFromAddress(query);
       if (locations.isNotEmpty) {
-        final lat = locations.first.latitude;
-        final lng = locations.first.longitude;
-        _mapController.move(LatLng(lat, lng), 13);
+        final target = LatLng(locations.first.latitude, locations.first.longitude);
+        await _mapController!.moveCamera(
+          CameraUpdate.newCenterPosition(target, zoomLevel: 16),
+          animation: const CameraAnimation.new(300),
+        );
       }
     } catch (e) {
-      debugPrint('❌ 위치 검색 실패: $e');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('위치 검색에 실패했습니다. 다른 키워드로 시도해 주세요.')),
-      );
+      debugPrint('위치 검색 실패: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('위치를 찾을 수 없습니다.')),
+        );
+      }
     }
   }
 
@@ -177,32 +453,31 @@ class _WorkerMapSheetState extends State<WorkerMapSheet> with WidgetsBindingObse
     return SafeArea(
       top: true,
       child: Padding(
-        padding: MediaQuery.of(context).viewInsets, // 키보드 대응
+        padding: MediaQuery.of(context).viewInsets,
         child: SizedBox(
           height: MediaQuery.of(context).size.height * 0.85,
           child: Column(
             children: [
-              // ==== Search + Toggle (카드로 묶기) ====
+              // 검색 + 토글 UI
               Padding(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
+                padding: const EdgeInsets.all(12),
                 child: Material(
                   elevation: 1,
                   borderRadius: BorderRadius.circular(12),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+                    padding: const EdgeInsets.all(12),
                     child: Column(
                       children: [
                         TextField(
                           controller: _searchController,
                           onSubmitted: (_) => _searchLocation(),
                           decoration: InputDecoration(
-                            hintText: '위치, 지하철역, 동 이름으로 검색',
+                            hintText: '위치 검색',
                             prefixIcon: const Icon(Icons.search),
-                            isDense: true,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
-                            suffixIcon: (_searchController.text.isNotEmpty)
+                            suffixIcon: _searchController.text.isNotEmpty
                                 ? IconButton(
                                     icon: const Icon(Icons.clear),
                                     onPressed: () {
@@ -213,23 +488,18 @@ class _WorkerMapSheetState extends State<WorkerMapSheet> with WidgetsBindingObse
                                 : null,
                           ),
                         ),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 12),
                         SwitchListTile.adaptive(
                           dense: true,
                           contentPadding: EdgeInsets.zero,
                           title: Text(
-                            showOnlyAvailableToday
-                                ? '오늘 가능한 알바생만 보는중'
-                                : '전체 알바생 보는중',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            showOnlyAvailableToday ? '오늘 가능한 알바생만' : '전체 알바생',
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                           ),
                           value: showOnlyAvailableToday,
-                          onChanged: (v) async {
-                            setState(() => showOnlyAvailableToday = v);
-                            await fetchWorkers();
+                          onChanged: (value) {
+                            setState(() => showOnlyAvailableToday = value);
+                            fetchWorkers();
                           },
                         ),
                       ],
@@ -238,9 +508,9 @@ class _WorkerMapSheetState extends State<WorkerMapSheet> with WidgetsBindingObse
                 ),
               ),
 
-              // ==== 섹션 헤더 ====
+              // 헤더
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Row(
                   children: [
                     const Text(
@@ -249,159 +519,96 @@ class _WorkerMapSheetState extends State<WorkerMapSheet> with WidgetsBindingObse
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.indigo.withOpacity(0.10),
-                        borderRadius: BorderRadius.circular(999),
+                        color: Colors.indigo.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
                         '${workers.length}명',
-                        style:
-                            const TextStyle(fontSize: 12, color: Colors.indigo),
+                        style: const TextStyle(fontSize: 12, color: Colors.indigo),
                       ),
                     ),
                     const Spacer(),
                     IconButton(
                       icon: const Icon(Icons.refresh),
-                      tooltip: '새로고침',
                       onPressed: fetchWorkers,
                     ),
                   ],
                 ),
               ),
 
-              // ==== Map ====
+              // 지도
               Expanded(
                 child: ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(12)),
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                   child: Stack(
                     children: [
-                      FlutterMap(
-                        mapController: _mapController,
-                        options: MapOptions(
-                          center: workers.isNotEmpty
+                      KakaoMap(
+                        option: KakaoMapOption(
+                          position: workers.isNotEmpty
                               ? LatLng(
                                   (workers.first['lat'] as num).toDouble(),
                                   (workers.first['lng'] as num).toDouble(),
                                 )
-                              : const LatLng(37.5665, 126.9780),
-                          zoom: 14,
-                          onMapEvent: (evt) {
-                            final z = _mapController.camera.zoom;
-                            if (z != _currentZoom) {
-                              setState(() => _currentZoom = z);
-                            }
-                          },
+                              : _defaultCenter,
+                          zoomLevel: 12,
+                          mapType: MapType.normal,
                         ),
-                        children: [
-                          TileLayer(
-                            urlTemplate:
-                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            userAgentPackageName: Platform.isAndroid
-                                ? 'kr.co.iljujob'
-                                : 'com.iljujob.kr',
-                          ),
-                          MarkerClusterLayerWidget(
-                            options: MarkerClusterLayerOptions(
-                              maxClusterRadius: 60,
-                              size: const Size(44, 44),
-                              alignment: Alignment.center,
-                              spiderfyCircleRadius: 60,
-                              spiderfySpiralDistanceMultiplier: 2,
-                              showPolygon: false,
-                              builder: (context, cluster) => Container(
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  color: Colors.indigo.withOpacity(0.92),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Text(
-                                  '${cluster.length}',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                              markers: workers.map((w) {
-                                final pos = LatLng(
-                                  (w['lat'] as num).toDouble(),
-                                  (w['lng'] as num).toDouble(),
-                                );
-                                final imageUrl =
-                                    (w['profileUrl'] ?? '').toString();
-                                final workerId = (w['id'] as num).toInt();
-                                final size = _iconSizeForZoom(_currentZoom);
-
-                                return Marker(
-                                  point: pos,
-                                  width: size,
-                                  height: size,
-                                  alignment: Alignment.center,
-                                  child: GestureDetector(
-                                    onTap: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => WorkerProfileScreen(
-                                            workerId: workerId,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child:
-                                        ClipOval(child: _avatar(imageUrl, size)),
-                                  ),
-                                );
-                              }).toList(),
-                            ),
-                          ),
-                        ],
+                        onMapReady: (controller) async {
+                          _mapController = controller;
+                          await Future.delayed(const Duration(milliseconds: 100)); // 안정화 대기
+                          await _fitToWorkersOrCenter();
+                          await _renderWorkers();
+                        },
+                        onCameraMoveEnd: (position, gesture) {
+                          _renderDebounce?.cancel();
+                          _renderDebounce = Timer(const Duration(milliseconds: 200), () {
+                            if (position.zoomLevel != _lastZoomLevel) {
+                              _renderWorkers();
+                            }
+                          });
+                        },
                       ),
 
-                      // 상단 중앙: 현재 필터 배지 (전체/오늘가능)
+                      // 필터 표시
                       Positioned(
                         top: 10,
                         left: 0,
                         right: 0,
                         child: Center(
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
-                              color: Colors.black.withOpacity(0.55),
-                              borderRadius: BorderRadius.circular(999),
+                              color: Colors.black54,
+                              borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              showOnlyAvailableToday
-                                  ? '오늘 가능한 알바생만 보기'
-                                  : '전체 알바생 보기',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
+                              showOnlyAvailableToday ? '오늘 가능한 알바생만' : '전체 알바생',
+                              style: const TextStyle(color: Colors.white, fontSize: 12),
                             ),
                           ),
                         ),
                       ),
 
-                      // 오른쪽 아래: 내 위치 / 새로고침
+                      // 컨트롤 버튼
                       Positioned(
                         right: 12,
                         bottom: 12,
                         child: Column(
                           children: [
-                            _SmallFab(
-                              icon: Icons.my_location,
-                              onTap: _centerToFirstOrDefault,
+                            FloatingActionButton.small(
+                              heroTag: 'location',
+                              onPressed: _centerToFirstOrDefault,
+                              backgroundColor: Colors.white,
+                              child: const Icon(Icons.my_location, color: Colors.black87),
                             ),
                             const SizedBox(height: 8),
-                            _SmallFab(
-                              icon: Icons.refresh,
-                              onTap: fetchWorkers,
+                            FloatingActionButton.small(
+                              heroTag: 'refresh',
+                              onPressed: fetchWorkers,
+                              backgroundColor: Colors.white,
+                              child: const Icon(Icons.refresh, color: Colors.black87),
                             ),
                           ],
                         ),
@@ -416,65 +623,4 @@ class _WorkerMapSheetState extends State<WorkerMapSheet> with WidgetsBindingObse
       ),
     );
   }
-}
-
-// 작은 플로팅 버튼
-class _SmallFab extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onTap;
-  const _SmallFab({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      shape: const CircleBorder(),
-      elevation: 2,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Icon(icon, size: 20),
-        ),
-      ),
-    );
-  }
-}
-
-// 아바타 위젯
-Widget _avatar(String? imageUrl, double size) {
-  if (imageUrl == null || imageUrl.isEmpty) {
-    return CircleAvatar(
-      radius: size / 2,
-      backgroundColor: Colors.grey[300],
-      child: Icon(
-        Icons.person,
-        size: size * 0.55,
-        color: Colors.grey[700],
-      ),
-    );
-  }
-  return ClipOval(
-    child: CachedNetworkImage(
-      imageUrl: imageUrl,
-      width: size,
-      height: size,
-      fit: BoxFit.cover,
-      placeholder: (_, __) => const SizedBox(
-        width: 24,
-        height: 24,
-        child: CircularProgressIndicator(strokeWidth: 2),
-      ),
-      errorWidget: (_, __, ___) => CircleAvatar(
-        radius: size / 2,
-        backgroundColor: Colors.grey[300],
-        child: Icon(
-          Icons.person,
-          size: size * 0.55,
-          color: Colors.grey[700],
-        ),
-      ),
-    ),
-  );
 }
