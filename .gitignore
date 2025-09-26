@@ -57,3 +57,4 @@ macos/firebase_app_id_file.json
 # ── Symbolication / Obfuscation ──────────────────────────────────────────────
 app.*.symbols
 app.*.map.json
+lib/config/ai_secrets.dart
