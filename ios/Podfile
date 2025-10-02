@@ -26,8 +26,9 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 flutter_ios_podfile_setup
 
 target 'Runner' do
- 
+  use_frameworks! :linkage => :static
   use_modular_headers!
+
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 
   target 'RunnerTests' do
@@ -37,13 +38,11 @@ end
 
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    
     flutter_additional_ios_build_settings(target)
 
     target.build_configurations.each do |config|
       # ✅ Apple Silicon 대응
-      config.build_settings['ENABLE_MODULES'] = 'YES' # ✅ 이거 추가
-     
+      config.build_settings['ENABLE_MODULES'] = 'YES'
       config.build_settings['EXCLUDED_ARCHS[sdk=iphonesimulator*]'] = 'arm64'
 
       # ✅ firebase_messaging 모듈 오류 방지

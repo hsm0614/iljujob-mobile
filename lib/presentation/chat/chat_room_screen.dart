@@ -1810,16 +1810,17 @@ Widget _buildConsentBanner() {
                   // ✅ 워커가 보는 수락/거절 배너
     _buildConsentBanner(),
     _buildClientWaitingBanner(),
-              Expanded(
-                child:
-                    isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : _buildMessageList(
-                          onTap,
-                          targetThumbnailUrl,
-                          targetName,
-                        ),
-              ),
+             Expanded(
+  child: isLoading
+      ? const Center(child: CircularProgressIndicator())
+      : NotificationListener<ScrollStartNotification>(
+          onNotification: (_) {
+            FocusScope.of(context).unfocus(); // ★ 추가
+            return false;
+          },
+          child: _buildMessageList(onTap, targetThumbnailUrl, targetName),
+        ),
+),
               SafeArea(
                 child: Padding(
                   padding: const EdgeInsets.all(8),
@@ -1827,15 +1828,14 @@ Widget _buildConsentBanner() {
                     children: [
                      Expanded(
   child: TextField(
-    controller: _messageController,
-    enabled: _inputEnabled, // ✅ pending이면 입력 불가
-    decoration: InputDecoration(
-      hintText: _inputEnabled
-          ? '메시지를 입력하세요...'
-          : '상대방의 수락을 기다리는 중입니다',
-    ),
-    onSubmitted: (_) => _sendMessage(),
+  controller: _messageController,
+  enabled: _inputEnabled,
+  onTapOutside: (_) => FocusScope.of(context).unfocus(), // ★ 추가
+  decoration: InputDecoration(
+    hintText: _inputEnabled ? '메시지를 입력하세요...' : '상대방의 수락을 기다리는 중입니다',
   ),
+  onSubmitted: (_) => _sendMessage(),
+),
 ),
                     IconButton(
   icon: const Icon(Icons.image),

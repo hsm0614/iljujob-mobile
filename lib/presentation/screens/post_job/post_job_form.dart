@@ -1145,7 +1145,7 @@ void _showProUpgradeDialog() {
                 _buildTrendyCard(
                   emoji: '💸',
                   title: '무료 등록',
-                  description: '12시간 노출, 푸시 알림 없음',
+                  description: '24시간 노출, 푸시 알림 없음',
                   // trailing / subtitle 지원이 없다면 아래 3번 참고해서 확장
                   trailing: Container(
                     padding: const EdgeInsets.symmetric(
@@ -1233,7 +1233,7 @@ void _showProUpgradeDialog() {
              _buildTrendyCard(
   emoji: '🔥',
   title: '유료 등록 (이용권 사용)',
-  description: '24시간 노출, 푸시 전송, 4시간 상단 고정',
+  description: '72시간 노출, 푸시 전송, 6시간 상단 고정',
   trailing: Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     decoration: BoxDecoration(

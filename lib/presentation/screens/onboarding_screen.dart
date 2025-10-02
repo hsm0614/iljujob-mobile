@@ -77,7 +77,7 @@ class OnboardingScreen extends StatelessWidget {
                                     onTap: () {
                                       // 번호 입력 → 본인인증 → (기존) 자동 로그인 / (신규) 회원정보 입력
                                       HapticFeedback.lightImpact();
-                                      Navigator.pushNamed(context, '/signup_worker'); // 기존 구조 유지
+                                      Navigator.pushNamed(context, '/signup-choice'); // 기존 구조 유지
                                     },
                                     variant: CardVariant.filled, // 브랜드 그라디언트
                                   ),

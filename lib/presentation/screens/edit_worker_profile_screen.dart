@@ -117,6 +117,8 @@ String? formatBirthYear(String? raw) {
 
   return null;
 }
+final Set<int> _deletingLicenseIds = {};
+final Set<int> _deletingExperienceIds = {};
   @override
   void initState() {
     super.initState();
@@ -302,45 +304,213 @@ Future<void> _selectBirthYear() async {
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
   }
-  void _deleteExperience(int id) async {
-  final confirm = await showDialog<bool>(
+Future<bool> _confirmDeleteExperience({required String titleForUi}) async {
+  final result = await showModalBottomSheet<bool>(
     context: context,
-    builder: (_) => AlertDialog(
-      title: const Text('경력 삭제'),
-      content: const Text('해당 경력을 삭제하시겠습니까?'),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('취소')),
-        TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('삭제')),
-      ],
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
     ),
+    builder: (ctx) {
+      return SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 38, height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.black12, borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text('경력 삭제', style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+              Text(
+                '"$titleForUi" 항목을 삭제하시겠어요?\n삭제 후 되돌릴 수 없습니다.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13.5, color: Colors.black54),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('취소'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE53935),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('삭제'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
   );
+  return result == true;
+}
+  Future<void> _deleteExperience(int id, String titleForUi) async {
+  // 중복 탭 가드
+  if (_deletingExperienceIds.contains(id)) return;
+  setState(() => _deletingExperienceIds.add(id));
 
-  if (confirm != true) return;
+  try {
+    // 확인 시트
+    final yes = await _confirmDeleteExperience(titleForUi: titleForUi);
+    if (!mounted) return;
+    if (!yes) {
+      setState(() => _deletingExperienceIds.remove(id));
+      return;
+    }
 
-  final response = await http.delete(Uri.parse('$baseUrl/api/worker/experience/$id'));
-  if (response.statusCode == 200) {
-    setState(() {
-      experiences.removeWhere((e) => e.id == id);
-    });
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('삭제 실패')),
-    );
+    // 실제 삭제
+    final resp = await http.delete(Uri.parse('$baseUrl/api/worker/experience/$id'));
+    if (!mounted) return;
+
+    if (resp.statusCode == 200) {
+      setState(() {
+        experiences.removeWhere((e) => e.id == id);
+        _deletingExperienceIds.remove(id);
+      });
+      ScaffoldMessenger.maybeOf(context)
+          ?.showSnackBar(const SnackBar(content: Text('삭제 완료')));
+    } else {
+      ScaffoldMessenger.maybeOf(context)
+          ?.showSnackBar(SnackBar(content: Text('삭제 실패 (${resp.statusCode})')));
+      setState(() => _deletingExperienceIds.remove(id));
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.maybeOf(context)
+          ?.showSnackBar(SnackBar(content: Text('네트워크 오류: $e')));
+      setState(() => _deletingExperienceIds.remove(id));
+    }
   }
 }
-
-void _deleteLicense(int licenseId) async {
-  final res = await http.delete(
-    Uri.parse('$baseUrl/api/worker/licenses/$licenseId'),
+Future<bool> _confirmDeleteLicense({required String name}) async {
+  final result = await showModalBottomSheet<bool>(
+    context: context,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+    ),
+    builder: (ctx) {
+      return SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 38, height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.black12, borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text('자격증 삭제', style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800)),
+              const SizedBox(height: 8),
+              Text(
+                '"$name"을(를) 삭제하시겠어요?\n삭제 후 되돌릴 수 없습니다.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13.5, color: Colors.black54),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('취소'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE53935),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('삭제'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
   );
+  return result == true;
+}
+Future<void> _deleteLicense(int licenseId, String nameForUi) async {
+  // 중복 탭 방지
+  if (_deletingLicenseIds.contains(licenseId)) return;
+  setState(() => _deletingLicenseIds.add(licenseId));
 
-  if (res.statusCode == 200) {
-    setState(() {
-     licenses.removeWhere((l) => (l as Map<String, dynamic>)['id'] == licenseId);
-    });
+  try {
+    // 확인 모달
+    final yes = await _confirmDeleteLicense(name: nameForUi);
+    if (!mounted) return;
+    if (!yes) {
+      setState(() => _deletingLicenseIds.remove(licenseId));
+      return;
+    }
+
+    // 실제 삭제 요청
+    final res = await http.delete(Uri.parse('$baseUrl/api/worker/licenses/$licenseId'));
+    if (!mounted) return;
+
+    if (res.statusCode == 200) {
+      setState(() {
+        licenses.removeWhere((l) => (l as Map<String, dynamic>)['id'] == licenseId);
+        _deletingLicenseIds.remove(licenseId);
+      });
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(const SnackBar(content: Text('삭제 완료')));
+    } else {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text('삭제 실패 (${res.statusCode})')),
+      );
+      setState(() => _deletingLicenseIds.remove(licenseId));
+    }
+  } catch (e) {
+    if (mounted) {
+      ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+        SnackBar(content: Text('네트워크 오류: $e')),
+      );
+      setState(() => _deletingLicenseIds.remove(licenseId));
+    }
   }
 }
-
 void _showAddLicenseBottomSheet() {
   final nameController = TextEditingController();
   final issuedAtController = TextEditingController();
@@ -795,6 +965,7 @@ Widget _pill(String text) {
 
 
   Widget _buildResumeFields() {
+    
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -815,6 +986,7 @@ Widget _pill(String text) {
       
     _buildSectionLabel('경력'),
 Column(
+  
   crossAxisAlignment: CrossAxisAlignment.start,
   children: [
     // 🔼 경력 카드 리스트
@@ -853,15 +1025,21 @@ Column(
               ],
             ),
           ),
+          
           // 🔹 삭제 버튼
-          IconButton(
-            icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-            onPressed: () => _deleteExperience(e.id),
-            tooltip: '삭제',
-          ),
-        ],
-      ),
-    )),
+  Builder(builder: (context) {
+        final isDel = _deletingExperienceIds.contains(e.id);
+        return IconButton(
+          icon: isDel
+              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.delete_outline, color: Colors.redAccent),
+          onPressed: isDel ? null : () => _deleteExperience(e.id, e.place),
+          tooltip: '삭제',
+        );
+      }),
+    ],
+  ),
+)),
 
     const SizedBox(height: 8),
 
@@ -913,7 +1091,10 @@ Column(
       ),
       IconButton(
         icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-        onPressed: () => _deleteLicense(l['id']),
+       onPressed: _deletingLicenseIds.contains(l['id'])
+    ? null
+    : () => _deleteLicense(l['id'], l['name'] ?? ''),
+
         tooltip: '삭제',
       ),
     ],

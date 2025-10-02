@@ -46,7 +46,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.7.5</string>
+	<string>2.7.8</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleSupportedPlatforms</key>
@@ -63,6 +63,14 @@
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>albailju</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>kakaof1091d43764e475154945e49f2aec294</string>
 			</array>
 		</dict>
 	</array>
@@ -92,6 +100,8 @@
 	<array>
 		<string>ispmobile</string>
 		<string>kakaotalk</string>
+		<string>kakaokompassauth</string>
+		<string>kakaolink</string>
 		<string>kftc-bankpay</string>
 		<string>lpayapp</string>
 		<string>shinhan-sr-ansimclick</string>

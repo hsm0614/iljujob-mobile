@@ -47,6 +47,10 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
 
   // ─────────────────────────────────────────────────────────────────────────────
 
+  void _dismissKeyboard() {
+    FocusScope.of(context).unfocus();
+  }
+
   InputDecoration _decoration({
     String? hint,
     String? label,
@@ -85,9 +89,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
   }
 
   Future<void> _pickYearBottomSheet() async {
-    final initial = selectedYear != null
-        ? yearOptions.indexOf(selectedYear!)
-        : 0;
+    final initial = selectedYear != null ? yearOptions.indexOf(selectedYear!) : 0;
     final controller = FixedExtentScrollController(
       initialItem: initial >= 0 ? initial : 0,
     );
@@ -118,8 +120,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                 ),
                 const SizedBox(height: 12),
                 const Text('일한 연도 선택',
-                    style:
-                        TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
                 const SizedBox(height: 8),
                 Expanded(
                   child: ListWheelScrollView.useDelegate(
@@ -129,9 +130,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                     onSelectedItemChanged: (i) => temp = yearOptions[i],
                     childDelegate: ListWheelChildBuilderDelegate(
                       builder: (context, index) {
-                        if (index < 0 || index >= yearOptions.length) {
-                          return null;
-                        }
+                        if (index < 0 || index >= yearOptions.length) return null;
                         final y = yearOptions[index];
                         final selected = y == temp;
                         return Center(
@@ -139,9 +138,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                             y,
                             style: TextStyle(
                               fontSize: selected ? 18 : 16,
-                              fontWeight: selected
-                                  ? FontWeight.w800
-                                  : FontWeight.w500,
+                              fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
                               color: selected ? kBrand : Colors.black87,
                             ),
                           ),
@@ -152,8 +149,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                   ),
                 ),
                 Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   child: Row(
                     children: [
                       Expanded(
@@ -225,11 +221,9 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
       );
 
       if (res.statusCode == 200) {
-        // 서버가 id를 돌려주는 경우에 대비
         int? newId;
         try {
           final data = jsonDecode(res.body);
-          // { id: 123 } 또는 { experience: { id: 123, ... } } 형태 대응
           if (data is Map<String, dynamic>) {
             if (data['id'] is int) newId = data['id'];
             if (data['experience'] is Map &&
@@ -240,7 +234,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
         } catch (_) {}
 
         Navigator.pop(context, {
-          'id': newId, // null일 수도 있지만, 부모는 가능하면 이 값을 사용
+          'id': newId,
           'place': placeController.text.trim(),
           'description': descriptionController.text.trim(),
           'year': selectedYear,
@@ -276,113 +270,122 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: Form(
-            key: _formKey,
-            child: ListView(
-              children: [
-                // 카드 컨테이너
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    border: Border.all(color: kBorder),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        blurRadius: 24,
-                        offset: const Offset(0, 10),
-                        color: Colors.black.withOpacity(0.04),
-                      ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _sectionTitle('일한 곳'),
-                      TextFormField(
-                        controller: placeController,
-                        textInputAction: TextInputAction.next,
-                        decoration: _decoration(
-                          hint: '예) 알바일주 송도점',
-                          label: '근무지/업체명',
-                          icon: Icons.store_mall_directory_outlined,
+      // 👇 빈 공간 탭 시 키보드 닫힘
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onTap: _dismissKeyboard,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag, // 드래그 시 닫힘
+                children: [
+                  // 카드 컨테이너
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: kBorder),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          blurRadius: 24,
+                          offset: const Offset(0, 10),
+                          color: Colors.black.withOpacity(0.04),
                         ),
-                        validator: (v) =>
-                            (v == null || v.trim().isEmpty) ? '근무지를 입력해주세요' : null,
-                      ),
+                      ],
+                    ),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _sectionTitle('일한 곳'),
+                        TextFormField(
+                          controller: placeController,
+                          textInputAction: TextInputAction.next,
+                          decoration: _decoration(
+                            hint: '예) 알바일주 송도점',
+                            label: '근무지/업체명',
+                            icon: Icons.store_mall_directory_outlined,
+                          ),
+                          validator: (v) =>
+                              (v == null || v.trim().isEmpty) ? '근무지를 입력해주세요' : null,
+                        ),
 
-                      _sectionTitle('했던 일'),
-                      TextFormField(
-                        controller: descriptionController,
-                        maxLines: 4,
-                        decoration: _decoration(
-                          hint: '어떤 일을 했었는지 간단히 적어주세요',
-                          label: '업무 내용',
-                          icon: Icons.task_outlined,
-                        ).copyWith(counterText: ''),
-                        validator: (v) =>
-                            (v == null || v.trim().isEmpty) ? '업무 내용을 입력해주세요' : null,
-                      ),
+                        _sectionTitle('했던 일'),
+                        TextFormField(
+                          controller: descriptionController,
+                          maxLines: 4,
+                          decoration: _decoration(
+                            hint: '어떤 일을 했었는지 간단히 적어주세요',
+                            label: '업무 내용',
+                            icon: Icons.task_outlined,
+                          ).copyWith(counterText: ''),
+                          validator: (v) =>
+                              (v == null || v.trim().isEmpty) ? '업무 내용을 입력해주세요' : null,
+                        ),
 
-                      _sectionTitle('일한 연도'),
-                      GestureDetector(
-                        onTap: _pickYearBottomSheet,
-                        child: AbsorbPointer(
-                          child: TextFormField(
-                            decoration: _decoration(
-                              hint: '연도 선택',
-                              label: '연도',
-                              icon: Icons.calendar_month_outlined,
+                        _sectionTitle('일한 연도'),
+                        GestureDetector(
+                          onTap: () {
+                            _dismissKeyboard();
+                            _pickYearBottomSheet();
+                          },
+                          child: AbsorbPointer(
+                            child: TextFormField(
+                              decoration: _decoration(
+                                hint: '연도 선택',
+                                label: '연도',
+                                icon: Icons.calendar_month_outlined,
+                              ),
+                              controller: TextEditingController(
+                                  text: selectedYear ?? ''),
+                              validator: (_) =>
+                                  (selectedYear == null) ? '연도를 선택해주세요' : null,
                             ),
-                            controller: TextEditingController(
-                                text: selectedYear ?? ''),
-                            validator: (_) =>
-                                (selectedYear == null) ? '연도를 선택해주세요' : null,
                           ),
                         ),
-                      ),
 
-                      _sectionTitle('일한 기간'),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 10,
-                        children: durationOptions.map((d) {
-                          final isSel = selectedDuration == d;
-                          return ChoiceChip(
-                            label: Text(
-                              d,
-                              style: TextStyle(
-                                fontWeight:
-                                    isSel ? FontWeight.w700 : FontWeight.w500,
-                                color: isSel ? kBrand : Colors.black87,
+                        _sectionTitle('일한 기간'),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 10,
+                          children: durationOptions.map((d) {
+                            final isSel = selectedDuration == d;
+                            return ChoiceChip(
+                              label: Text(
+                                d,
+                                style: TextStyle(
+                                  fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                                  color: isSel ? kBrand : Colors.black87,
+                                ),
                               ),
-                            ),
-                            selected: isSel,
-                            onSelected: (v) {
-                              HapticFeedback.selectionClick();
-                              setState(() => selectedDuration = v ? d : null);
-                            },
-                            selectedColor: kBrand.withOpacity(0.12),
-                            backgroundColor: Colors.white,
-                            side: BorderSide(
-                              color: isSel ? kBrand : kBorder,
-                              width: 1.2,
-                            ),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(999)),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 8),
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 8),
-                    ],
+                              selected: isSel,
+                              onSelected: (v) {
+                                HapticFeedback.selectionClick();
+                                setState(() => selectedDuration = v ? d : null);
+                              },
+                              selectedColor: kBrand.withOpacity(0.12),
+                              backgroundColor: Colors.white,
+                              side: BorderSide(
+                                color: isSel ? kBrand : kBorder,
+                                width: 1.2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(999)),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
+                            );
+                          }).toList(),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -409,8 +412,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2))
                   : const Text(
                       '입력 완료',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                     ),
             ),
           ),

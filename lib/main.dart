@@ -70,7 +70,8 @@ import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:iljujob/presentation/screens/subscription_payment_webview.dart';
 import 'package:iljujob/presentation/screens/subscription_manage_screen.dart';
-
+import 'package:iljujob/presentation/screens/signup_choice_screen.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -217,6 +218,10 @@ void checkInitialMessage() async {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   debugPrint('🚀 [main.dart] Flutter 바인딩 초기화 완료');
+    kakao.KakaoSdk.init(
+    nativeAppKey: 'f1091d43764e475154945e49f2aec294',
+    loggingEnabled: true, // ✅ 디버그 로그 켜기
+  );
   initializeDio();
    await KakaoMapsFlutter.init('f1091d43764e475154945e49f2aec294'); // 네이티브 앱 키
   const platform = MethodChannel('deeplink/albailju');
@@ -264,6 +269,7 @@ FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
 
   final userType = prefs.getString('userType') ?? 'worker';
   final userPhone = prefs.getString('userPhone');
+  final userId = prefs.getInt('userId');  // 추가
   final token = prefs.getString('authToken') ?? '';
   final refreshToken = prefs.getString('refreshToken');
 
@@ -333,20 +339,19 @@ FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
       await FirebaseMessaging.instance.getInitialMessage();
 
   /// ✅ 초기 화면은 무조건 홈 또는 온보딩/로그인
-  Widget startScreen;
-  if (!hasSeenOnboarding) {
-    startScreen = const OnboardingScreen();
-  } else if (userPhone == null) {
-    startScreen = const LoginScreen();
-  } else {
-    startScreen = userType == 'client'
-        ? const ClientMainScreen()
-        : const HomeScreen();
-  }
-
-
-// 테스트 중엔 이전 ‘표시함’ 기록을 지워서 항상 뜨게
-
+// main.dart 수정
+Widget startScreen;
+if (!hasSeenOnboarding) {
+  startScreen = const OnboardingScreen();  // 첫 실행 시 온보딩
+} else if (userPhone == null && userId == null) {  
+  startScreen = const OnboardingScreen();  // ✅ LoginScreen 대신 OnboardingScreen으로
+} else if (token.isNotEmpty) {
+  startScreen = userType == 'client'
+      ? const ClientMainScreen()
+      : const HomeScreen();
+} else {
+  startScreen = const OnboardingScreen();  // ✅ 여기도 OnboardingScreen으로
+}
 
 runApp(MyApp(startScreen: startScreen, upgrader: upgrader));
 
@@ -544,6 +549,7 @@ class MyApp extends StatelessWidget {
               ModalRoute.of(context)!.settings.arguments as int;
           return ClientProfileScreen(clientId: clientId);
         },
+'/signup-choice': (context) => const SignupChoiceScreen(),
 
   '/edit_profile': (context) => const EditClientProfileScreen(),
  '/edit_profile_worker': (_) => const EditWorkerProfileScreen(),

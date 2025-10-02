@@ -233,8 +233,9 @@ void _showReportDialog(String targetType, int targetId) {
   title: const Text(
     '알바생 프로필',
     style: TextStyle(
+      fontFamily: 'Jalnan2TTF',
       color: Color(0xFF3B8AFF),
-      fontWeight: FontWeight.bold,
+      
       fontSize: 20,
     ),
   ),
