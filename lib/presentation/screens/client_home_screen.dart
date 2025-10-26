@@ -12,7 +12,9 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:iljujob/data/services/ai_api.dart';
 import 'package:iljujob/widget/recommended_workers_sheet.dart';
 import '../../data/services/ai_api.dart';
-
+import '../../data/models/banner_ad.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'dart:async';
 class ClientHomeScreen extends StatefulWidget {
   final AiApi api;
 
@@ -45,7 +47,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     with SingleTickerProviderStateMixin {
   List<Job> myJobs = [];
   bool isLoading = false;
-  
+   List<BannerAd> bannerAds = [];
+  int _currentBannerIndex = 0;
+  Timer? _bannerTimer;
   // 페이지네이션 관련 변수들
   int currentPage = 1;
   int totalPages = 1;
@@ -94,6 +98,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     _requestNotificationPermission();
     _saveClientFcmToken();
     _fetchClientProfile();
+      // ✅ 배너 로딩 추가
+  _loadBannerAds();
+  _startBannerAutoSlide();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       if (_tabController.index == 0) {
@@ -176,9 +183,115 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   @override
   void dispose() {
     _tabController.dispose();
+      _bannerTimer?.cancel(); // ✅ 추가
     super.dispose();
   }
+Future<void> _loadBannerAds() async {
+  try {
+    final response = await http.get(Uri.parse('$baseUrl/api/banners'));
+    
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      if (!mounted) return;
+      
+      setState(() {
+        bannerAds = data.map((json) => BannerAd.fromJson(json)).toList();
+      });
+    }
+  } catch (e) {
+    print('❌ 배너 로드 예외: $e');
+  }
+}
 
+void _startBannerAutoSlide() {
+  _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+    if (bannerAds.isEmpty) return;
+    setState(() {
+      _currentBannerIndex = (_currentBannerIndex + 1) % bannerAds.length;
+    });
+  });
+}
+
+Widget _buildBannerSlider() {
+  if (bannerAds.isEmpty) return const SizedBox.shrink();
+
+  return Container(
+    height: 100,
+    margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    child: Stack(
+      children: [
+        PageView.builder(
+          itemCount: bannerAds.length,
+          onPageChanged: (index) {
+            setState(() => _currentBannerIndex = index);
+          },
+          itemBuilder: (context, index) {
+            final banner = bannerAds[index];
+            return GestureDetector(
+              onTap: () async {
+                if (banner.linkUrl != null && banner.linkUrl!.isNotEmpty) {
+                  final Uri url = Uri.parse(banner.linkUrl!);
+                  try {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  } catch (e) {
+                    print('❌ 링크 열기 실패: $e');
+                  }
+                }
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.grey[200],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    '$baseUrl${banner.imageUrl}',
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Center(
+                        child: Icon(Icons.error_outline, color: Colors.grey),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        Positioned(
+          bottom: 6,
+          left: 0,
+          right: 0,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              bannerAds.length,
+              (index) => Container(
+                width: 6,
+                height: 6,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _currentBannerIndex == index
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.4),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
   // 수정된 _loadMyJobs 메서드
   Future<void> _loadMyJobs({int? page}) async {
     
@@ -685,7 +798,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _buildSummarySection()),
-
+  SliverToBoxAdapter(child: _buildBannerSlider()),
           if (!isSafeCompany)
             SliverToBoxAdapter(
               child: Padding(

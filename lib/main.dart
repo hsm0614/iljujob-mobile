@@ -53,11 +53,8 @@ import 'package:iljujob/presentation/admin/admin_safe_company_screen.dart';
 import 'package:iljujob/presentation/admin/admin_report_screen.dart';
 import 'package:iljujob/presentation/admin/admin_event_write_screen.dart';
 import 'package:iljujob/data/services/job_service.dart';
-import 'package:iljujob/data/models/job.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:iljujob/presentation/screens/mypagescreen/block_detail_screen.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
@@ -72,39 +69,197 @@ import 'package:iljujob/presentation/screens/subscription_payment_webview.dart';
 import 'package:iljujob/presentation/screens/subscription_manage_screen.dart';
 import 'package:iljujob/presentation/screens/signup_choice_screen.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
+
+// ============================================================
+// 전역 변수
+// ============================================================
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
+// ============================================================
+// Firebase 백그라운드 메시지 핸들러
+// ============================================================
 @pragma('vm:entry-point')
-void checkTokenExpiration(String token) {
-  if (JwtDecoder.isExpired(token)) {
-    print("❌ 토큰 만료됨");
-  } else {
-    // 토큰 유효함
-  }
-}
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
-
   if (Platform.isIOS) {
-    await _showNotification(message); // iOS만 수동 띄움
+    await _showNotification(message);
   }
 }
-Future<void> initFirebaseAndAnalytics() async {
+
+// ============================================================
+// 초기화 함수들
+// ============================================================
+
+/// Firebase 및 Analytics 초기화
+Future<void> _initFirebaseAndAnalytics() async {
   await Firebase.initializeApp();
-  // Analytics 수집 활성화
   await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
 }
 
-/// 앱 최초 실행 시 1회만 전송하는 커스텀 first_open 이벤트 + 디버그용 연습 이벤트
-Future<void> sendFirstOpenIfNeeded() async {
+/// 로컬 알림 초기화
+Future<void> _initializeLocalNotifications() async {
+  const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const iosInit = DarwinInitializationSettings();
+  const initSettings = InitializationSettings(android: androidInit, iOS: iosInit);
+  await flutterLocalNotificationsPlugin.initialize(initSettings);
+}
+
+/// WebView 플랫폼 설정
+void _setupWebViewPlatform() {
+  if (WebViewPlatform.instance is! WebKitWebViewPlatform &&
+      defaultTargetPlatform == TargetPlatform.iOS) {
+    WebViewPlatform.instance = WebKitWebViewPlatform();
+  }
+  if (WebViewPlatform.instance is! AndroidWebViewPlatform &&
+      defaultTargetPlatform == TargetPlatform.android) {
+    WebViewPlatform.instance = AndroidWebViewPlatform();
+  }
+}
+
+// ============================================================
+// 유저 정보 관리
+// ============================================================
+
+/// 서버에서 유저 정보를 가져와 로컬 보정
+Future<void> _hydrateUserInfo() async {
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('authToken');
+
+  if (token == null || token.isEmpty || JwtDecoder.isExpired(token)) {
+    return;
+  }
+
+  final userId = prefs.getInt('userId');
+  final userPhone = prefs.getString('userPhone');
+
+  // 이미 둘 다 있으면 생략
+  if (userId != null && userPhone != null) return;
+
+  try {
+    final resp = await http.get(
+      Uri.parse('$baseUrl/api/user/me'),
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (resp.statusCode == 200) {
+      final data = jsonDecode(resp.body);
+      if (data['id'] != null) await prefs.setInt('userId', data['id']);
+      if (data['phone'] != null) await prefs.setString('userPhone', data['phone']);
+      if (data['name'] != null) await prefs.setString('userName', data['name']);
+      debugPrint('✅ 유저 정보 보정 완료: id=${data['id']} phone=${data['phone']}');
+    }
+  } catch (e) {
+    debugPrint('❌ 유저 정보 보정 실패: $e');
+  }
+}
+
+/// Access Token 갱신
+Future<bool> _refreshAccessToken(SharedPreferences prefs) async {
+  final token = prefs.getString('authToken') ?? '';
+  final refreshToken = prefs.getString('refreshToken');
+
+  // 아직 만료 안 됐으면 패스
+  if (token.isEmpty || !JwtDecoder.isExpired(token)) return true;
+
+  debugPrint('⛔️ accessToken 만료됨 → refresh-token 요청');
+
+  if (refreshToken == null || refreshToken.isEmpty) {
+    debugPrint('❌ refreshToken 없음');
+    await prefs.clear();
+    return false;
+  }
+
+  try {
+    final dio = Dio();
+    final response = await dio.post(
+      '$baseUrl/api/auth/refresh-token',
+      data: {'refreshToken': refreshToken},
+      // ✅ 만료된 AT를 Authorization으로 보내지 말 것
+      options: Options(headers: {'Authorization': null}),
+    );
+
+    // ✅ 서버는 accessToken(표준) + token(하위호환) 둘 다 내려주게 했음
+    final newAT = response.data['accessToken'] ?? response.data['token'];
+    if (response.statusCode == 200 && newAT is String && newAT.isNotEmpty) {
+      await prefs.setString('authToken', newAT);
+      debugPrint('✅ 토큰 갱신 성공');
+      return true;
+    } else {
+      await prefs.clear();
+      return false;
+    }
+  } catch (e) {
+    debugPrint('🔥 토큰 갱신 실패: $e');
+    await prefs.clear();
+    return false;
+  }
+}
+
+// ============================================================
+// FCM 토큰 관리
+// ============================================================
+
+/// FCM 토큰을 서버에 전송 (userId 우선, userPhone 백업)
+Future<void> sendFcmTokenUnified() async {
+  if (kIsWeb) return;
+
+  try {
+    // iOS 권한 재확인
+    if (Platform.isIOS) {
+      final settings = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+      if (settings.authorizationStatus != AuthorizationStatus.authorized) {
+        debugPrint('⚠️ iOS 알림 권한 없음');
+        return;
+      }
+    }
+
+    final fcm = await FirebaseMessaging.instance.getToken();
+    if (fcm == null) {
+      debugPrint('❌ FCM 토큰 null');
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('userId');
+    final userPhone = prefs.getString('userPhone');
+    final userType = prefs.getString('userType') ?? 'worker';
+
+    if (userId == null && userPhone == null) {
+      debugPrint('⚠️ userId와 userPhone 모두 없음, FCM 전송 생략');
+      return;
+    }
+
+    final resp = await http.post(
+      Uri.parse('$baseUrl/api/user/update-token'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        if (userId != null) 'userId': userId,
+        if (userPhone != null) 'userPhone': userPhone,
+        'userType': userType,
+        'fcmToken': fcm,
+      }),
+    );
+
+    debugPrint('✅ FCM 토큰 전송: ${resp.statusCode} ${resp.body}');
+  } catch (e) {
+    debugPrint('❌ FCM 토큰 전송 실패: $e');
+  }
+}
+
+/// 앱 최초 실행 시 first_open 이벤트 전송
+Future<void> _sendFirstOpenIfNeeded() async {
   final prefs = await SharedPreferences.getInstance();
   final alreadySent = prefs.getBool('first_open_sent') ?? false;
 
   if (!alreadySent) {
     await FirebaseAnalytics.instance.logEvent(
-      name: 'first_open_custom',              // ← GA4 전환으로 켤 이벤트 이름
+      name: 'first_open_custom',
       parameters: {
         'platform': Platform.isIOS ? 'ios' : 'android',
         'app': 'iljujob',
@@ -113,69 +268,35 @@ Future<void> sendFirstOpenIfNeeded() async {
     await prefs.setBool('first_open_sent', true);
   }
 }
-Future<void> sendFcmTokenToServer(String userPhone, String userType) async {
-   if (kIsWeb) {
-    print('⚠️ Web 플랫폼에서는 FCM 토큰 전송을 생략합니다.');
-    return;
-  }
-  try {
-    final token = await FirebaseMessaging.instance.getToken();
 
+// ============================================================
+// 알림 관련
+// ============================================================
 
-    if (token == null) {
-      print('❌ FCM 토큰이 null입니다. 전송 중단');
-      return;
-    }
-
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/user/update-token'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'userPhone': userPhone,
-        'userType': userType,
-        'fcmToken': token,
-      }),
-    );
-  } catch (e) {
-    print('❌ FCM 토큰 전송 실패: $e');
-    // ⚠️ 실패해도 앱 흐름이 중단되지 않도록
-  }
-}
-
-Future<void> initializeLocalNotifications() async {
-  const AndroidInitializationSettings androidInit =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
-  const DarwinInitializationSettings iosInit = DarwinInitializationSettings();
-  const InitializationSettings initSettings = InitializationSettings(
-    android: androidInit,
-    iOS: iosInit,
-  );
-  await flutterLocalNotificationsPlugin.initialize(initSettings);
-}
-
+/// 로컬 알림 표시 (iOS용)
 Future<void> _showNotification(RemoteMessage message) async {
-  RemoteNotification? notification = message.notification;
-  if (notification != null) {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-          'basic_channel',
-          '기본 채널',
-          channelDescription: '일반 알림을 위한 채널',
-          importance: Importance.max,
-          priority: Priority.high,
-        );
-    const NotificationDetails platformDetails = NotificationDetails(
-      android: androidDetails,
-    );
-    await flutterLocalNotificationsPlugin.show(
-      notification.hashCode,
-      notification.title,
-      notification.body,
-      platformDetails,
-    );
-  }
+  final notification = message.notification;
+  if (notification == null) return;
+
+  const androidDetails = AndroidNotificationDetails(
+    'basic_channel',
+    '기본 채널',
+    channelDescription: '일반 알림을 위한 채널',
+    importance: Importance.max,
+    priority: Priority.high,
+  );
+  const platformDetails = NotificationDetails(android: androidDetails);
+
+  await flutterLocalNotificationsPlugin.show(
+    notification.hashCode,
+    notification.title,
+    notification.body,
+    platformDetails,
+  );
 }
-void _handleJobNotification(RemoteMessage message) async {
+
+/// Job 알림 처리
+Future<void> _handleJobNotification(RemoteMessage message) async {
   final jobIdStr = message.data['jobId'];
   if (jobIdStr == null) return;
 
@@ -188,251 +309,30 @@ void _handleJobNotification(RemoteMessage message) async {
   final job = await JobService.fetchJobByIdWithToken(jobId, token);
   if (job == null) return;
 
-  navigatorKey.currentState?.pushNamed(
-    '/job-detail',
-    arguments: job, // ✅ 이제 Job 객체로 넘긴다
+  navigatorKey.currentState?.push(
+    MaterialPageRoute(builder: (_) => JobDetailScreen(job: job)),
   );
 }
-void checkInitialMessage() async {
-  RemoteMessage? initialMessage =
-      await FirebaseMessaging.instance.getInitialMessage();
 
-
-  if (initialMessage != null && initialMessage.data['chatRoomId'] != null) {
-    navigatorKey.currentState?.pushNamed(
-      '/chat-room',
-      arguments: {
-        'chatRoomId': int.parse(initialMessage.data['chatRoomId']),
-        'jobInfo': {
-          'id': int.parse(initialMessage.data['jobId']),
-          'senderName': initialMessage.data['senderName'],
-
-        },
-      },
-    );
-  }
-}
-
-
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  debugPrint('🚀 [main.dart] Flutter 바인딩 초기화 완료');
-    kakao.KakaoSdk.init(
-    nativeAppKey: 'f1091d43764e475154945e49f2aec294',
-    loggingEnabled: true, // ✅ 디버그 로그 켜기
-  );
-  initializeDio();
-   await KakaoMapsFlutter.init('f1091d43764e475154945e49f2aec294'); // 네이티브 앱 키
-  const platform = MethodChannel('deeplink/albailju');
-
-final upgrader = Upgrader(
-  countryCode: 'KR',
-
-  messages: UpgraderMessagesKo(),
-  durationUntilAlertAgain: const Duration(days: 3),
-  
-);
-
-
-  // ✅ WebView 설정
-  if (WebViewPlatform.instance is! WebKitWebViewPlatform &&
-      defaultTargetPlatform == TargetPlatform.iOS) {
-    WebViewPlatform.instance = WebKitWebViewPlatform();
-  }
-
-  if (WebViewPlatform.instance is! AndroidWebViewPlatform &&
-      defaultTargetPlatform == TargetPlatform.android) {
-    WebViewPlatform.instance = AndroidWebViewPlatform();
-  }
-
-  print('🔥 main 시작');
-  await initializeDateFormatting('ko', null);
-  await initializeLocalNotifications();
-  await initFirebaseAndAnalytics();
-  await FirebaseMessaging.instance.requestPermission();
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
-  await sendFirstOpenIfNeeded();   
-  final prefs = await SharedPreferences.getInstance();
-  final userPhone = prefs.getString('userPhone');
-  final userType = prefs.getString('userType');
-
-  if (userPhone != null && userType != null) {
-    await sendFcmTokenToServer(userPhone, userType);
-   
-  }
-});
-
-  final prefs = await SharedPreferences.getInstance();
-  await Future.delayed(const Duration(milliseconds: 300));
-
-  final userType = prefs.getString('userType') ?? 'worker';
-  final userPhone = prefs.getString('userPhone');
-  final userId = prefs.getInt('userId');  // 추가
-  final token = prefs.getString('authToken') ?? '';
-  final refreshToken = prefs.getString('refreshToken');
-
-  // ✅ 토큰 갱신
-  if (token.isNotEmpty && JwtDecoder.isExpired(token)) {
-    print('⛔️ accessToken 만료됨 → refresh-token 요청');
-    if (refreshToken == null) {
-
-
-    }
-    try {
-      final dio = Dio();
-      final response = await dio.post(
-        '$baseUrl/api/auth/refresh-token',
-        data: {'refreshToken': refreshToken},
-        options: Options(headers: {'Authorization': 'Bearer $token'}),
-      );
-      if (response.statusCode == 200 && response.data['token'] != null) {
-        await prefs.setString('authToken', response.data['token']);
-        print('✅ 토큰 갱신 성공');
-      } else {
-        await prefs.clear();
-      }
-    } catch (e) {
-      print('🔥 네트워크 오류: $e');
-      await prefs.clear();
-    }
-  }
-
-  final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
-
-  // ✅ FCM 토큰 등록
-  final fcmSettings = await FirebaseMessaging.instance.getNotificationSettings();
-  if (fcmSettings.authorizationStatus == AuthorizationStatus.authorized &&
-      userPhone != null) {
-    await sendFcmTokenToServer(userPhone, userType);
-  }
-
-  // ✅ 알림 수신 (포그라운드)
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-    if (Theme.of(navigatorKey.currentContext!).platform == TargetPlatform.iOS) {
-      final notification = message.notification;
-      if (notification != null) {
-        flutterLocalNotificationsPlugin.show(
-          0,
-          notification.title,
-          notification.body,
-          const NotificationDetails(iOS: DarwinNotificationDetails()),
-        );
-      }
-    }
-  });
-
-  // ✅ 알림 클릭 처리 (백그라운드)
-  FirebaseMessaging.onMessageOpenedApp.listen((message) async {
-    final type = message.data['type'];
-
-    if (type == 'new_nearby_job' || type == 'custom_matched_job') {
-      _handleJobNotification(message);
-    } else if (message.data['chatRoomId'] != null) {
-      await _handleNotificationClick(message);
-    }
-  });
-
-  // ✅ 알림 클릭으로 앱 시작된 경우
-  final RemoteMessage? initialMessage =
-      await FirebaseMessaging.instance.getInitialMessage();
-
-  /// ✅ 초기 화면은 무조건 홈 또는 온보딩/로그인
-// main.dart 수정
-Widget startScreen;
-if (!hasSeenOnboarding) {
-  startScreen = const OnboardingScreen();  // 첫 실행 시 온보딩
-} else if (userPhone == null && userId == null) {  
-  startScreen = const OnboardingScreen();  // ✅ LoginScreen 대신 OnboardingScreen으로
-} else if (token.isNotEmpty) {
-  startScreen = userType == 'client'
-      ? const ClientMainScreen()
-      : const HomeScreen();
-} else {
-  startScreen = const OnboardingScreen();  // ✅ 여기도 OnboardingScreen으로
-}
-
-runApp(MyApp(startScreen: startScreen, upgrader: upgrader));
-
-  // ✅ runApp 이후 채팅 알림이면 ChatRoom push
-    if (initialMessage != null) {
-    final navigator = navigatorKey.currentState;
-    final type = initialMessage.data['type'];
-
-
-
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (navigator == null) return;
-
-      if (type == 'new_nearby_job' || type == 'custom_matched_job') {
-        final jobId = int.tryParse(initialMessage.data['jobId'] ?? '');
-        if (jobId != null) {
-          final token = prefs.getString('authToken') ?? '';
-          final job = await JobService.fetchJobByIdWithToken(jobId, token);
-
-          
-          if (job != null) {
-            navigator.push(MaterialPageRoute(
-              builder: (_) => JobDetailScreen(job: job),
-            ));
-          }
-        }
-      } else if (initialMessage.data['chatRoomId'] != null) {
-        final chatRoomId = int.tryParse(initialMessage.data['chatRoomId'] ?? '');
-        final jobId = int.tryParse(initialMessage.data['jobId'] ?? '');
-        final senderName = initialMessage.data['senderName'];
-
-        if (chatRoomId != null && jobId != null) {
-          final jobInfo = {'id': jobId, 'senderName': senderName};
-          
-          // ✅ 홈 화면에 채팅탭으로 먼저 이동
-          final Widget homeWithChatTab = userType == 'client'
-              ? const ClientMainScreen(initialTabIndex: 3) // ← 채팅 탭 index
-              : const HomeScreen(initialTabIndex: 3);
-
-          navigator.push(MaterialPageRoute(builder: (_) => homeWithChatTab));
-
-          // ✅ 그 다음 채팅방 push
-          navigator.push(MaterialPageRoute(
-            builder: (_) => ChatRoomScreen(
-              chatRoomId: chatRoomId,
-              jobInfo: jobInfo,
-            ),
-          ));
-        }
-      }
-    });
-    };
-  }
-
-/// ✅ 알림 클릭 처리 함수 (앱이 열려 있을 때 클릭 시)
-Future<void> _handleNotificationClick(RemoteMessage message) async {
+/// 채팅 알림 클릭 처리
+Future<void> _handleChatNotification(RemoteMessage message) async {
   final data = message.data;
-  final roomIdStr = data['chatRoomId'];
-  final jobIdStr  = data['jobId'];
-
-  final chatRoomId = int.tryParse(roomIdStr ?? '');
-  final jobId      = int.tryParse(jobIdStr ?? '');
+  final chatRoomId = int.tryParse(data['chatRoomId'] ?? '');
+  final jobId = int.tryParse(data['jobId'] ?? '');
 
   final prefs = await SharedPreferences.getInstance();
   final userType = prefs.getString('userType');
-  final userId   = prefs.getInt('userId');           // 로그인한 나의 id
-  final token    = prefs.getString('authToken') ?? '';
+  final userId = prefs.getInt('userId');
+  final token = prefs.getString('authToken') ?? '';
 
   if (chatRoomId == null || jobId == null || userId == null || userType == null) {
-    debugPrint('❌ 필수 정보 누락: chatRoomId=$chatRoomId, jobId=$jobId, userId=$userId, userType=$userType');
+    debugPrint('❌ 필수 정보 누락');
     return;
   }
 
-  // ✅ 나의 타입에 따라 올바른 파라미터 이름 사용
-  final isWorker   = userType == 'worker';
-  final paramName  = isWorker ? 'workerId' : 'clientId';
-  final idParam    = userId.toString();  // 푸시 payload 말고 "내" 로그인 정보 사용
-
-  final url = Uri.parse(
-    '$baseUrl/api/chat/get-room-by-id?jobId=$jobId&$paramName=$idParam',
-  );
+  final isWorker = userType == 'worker';
+  final paramName = isWorker ? 'workerId' : 'clientId';
+  final url = Uri.parse('$baseUrl/api/chat/get-room-by-id?jobId=$jobId&$paramName=$userId');
 
   try {
     final resp = await http.get(url, headers: {
@@ -449,8 +349,8 @@ Future<void> _handleNotificationClick(RemoteMessage message) async {
         arguments: {'chatRoomId': chatRoomId, 'jobInfo': jobInfo},
       );
     } else if (resp.statusCode == 401 || resp.statusCode == 403) {
-      debugPrint('❌ 권한 오류(${resp.statusCode}): ${resp.body}');
-      // 🔁 안전망: jobInfo만 별도 조회해서라도 채팅방으로 이동
+      debugPrint('❌ 권한 오류(${resp.statusCode})');
+      // 백업: jobInfo만 조회해서라도 이동
       final jobResp = await http.get(
         Uri.parse('$baseUrl/api/job/$jobId'),
         headers: {'Authorization': 'Bearer $token'},
@@ -463,35 +363,209 @@ Future<void> _handleNotificationClick(RemoteMessage message) async {
         );
       }
     } else {
-      debugPrint('❌ jobInfo 조회 실패(${resp.statusCode}): ${resp.body}');
+      debugPrint('❌ jobInfo 조회 실패(${resp.statusCode})');
     }
   } catch (e) {
     debugPrint('❌ 알림 클릭 처리 중 예외: $e');
   }
 }
 
+/// 앱 시작 시 initialMessage 처리
+Future<void> _handleInitialMessage(SharedPreferences prefs, String userType) async {
+  final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+  if (initialMessage == null) return;
+
+  final navigator = navigatorKey.currentState;
+  if (navigator == null) return;
+
+  final type = initialMessage.data['type'];
+
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    if (type == 'new_nearby_job' || type == 'custom_matched_job') {
+      final jobId = int.tryParse(initialMessage.data['jobId'] ?? '');
+      if (jobId != null) {
+        final token = prefs.getString('authToken') ?? '';
+        final job = await JobService.fetchJobByIdWithToken(jobId, token);
+        if (job != null) {
+          navigator.push(MaterialPageRoute(builder: (_) => JobDetailScreen(job: job)));
+        }
+      }
+    } else if (initialMessage.data['chatRoomId'] != null) {
+      final chatRoomId = int.tryParse(initialMessage.data['chatRoomId'] ?? '');
+      final jobId = int.tryParse(initialMessage.data['jobId'] ?? '');
+      final senderName = initialMessage.data['senderName'];
+
+      if (chatRoomId != null && jobId != null) {
+        final jobInfo = {'id': jobId, 'senderName': senderName};
+        final homeWithChatTab = userType == 'client'
+            ? const ClientMainScreen(initialTabIndex: 3)
+            : const HomeScreen(initialTabIndex: 3);
+
+        navigator.push(MaterialPageRoute(builder: (_) => homeWithChatTab));
+        navigator.push(MaterialPageRoute(
+          builder: (_) => ChatRoomScreen(chatRoomId: chatRoomId, jobInfo: jobInfo),
+        ));
+      }
+    }
+  });
+}
+
+// ============================================================
+// 시작 화면 결정
+// ============================================================
+Widget _determineStartScreen({
+  required bool hasSeenOnboarding,
+  required String? userPhone,
+  required int? userId,
+  required String token,
+  required String userType,
+}) {
+  if (!hasSeenOnboarding) {
+    return const OnboardingScreen();
+  }
+  if (userPhone == null && userId == null) {
+    return const OnboardingScreen();
+  }
+  if (token.isNotEmpty) {
+    return userType == 'client' ? const ClientMainScreen() : const HomeScreen();
+  }
+  return const OnboardingScreen();
+}
+
+// ============================================================
+// main 함수
+// ============================================================
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  debugPrint('🚀 [main.dart] Flutter 바인딩 초기화 완료');
+
+  // 1. 기본 SDK 초기화
+  kakao.KakaoSdk.init(
+    nativeAppKey: 'f1091d43764e475154945e49f2aec294',
+    loggingEnabled: true,
+  );
+  initializeDio();
+  await KakaoMapsFlutter.init('f1091d43764e475154945e49f2aec294');
+
+  // 2. WebView 설정
+  _setupWebViewPlatform();
+
+  // 3. Upgrader 설정
+  final upgrader = Upgrader(
+    countryCode: 'KR',
+    messages: UpgraderMessagesKo(),
+    durationUntilAlertAgain: const Duration(days: 3),
+  );
+
+  // 4. 날짜, 알림, Firebase 초기화
+  await initializeDateFormatting('ko', null);
+  await _initializeLocalNotifications();
+  await _initFirebaseAndAnalytics();
+
+  // 5. Firebase Messaging 권한 요청
+  await FirebaseMessaging.instance.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+
+  // 6. 백그라운드 메시지 핸들러 등록
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  // 7. FCM 토큰 갱신 리스너
+  FirebaseMessaging.instance.onTokenRefresh.listen((_) async {
+    await _sendFirstOpenIfNeeded();
+    await sendFcmTokenUnified();
+  });
+
+  // 8. SharedPreferences 로드
+  final prefs = await SharedPreferences.getInstance();
+  await Future.delayed(const Duration(milliseconds: 300));
+
+  final userType = prefs.getString('userType') ?? 'worker';
+  final userPhone = prefs.getString('userPhone');
+  final userId = prefs.getInt('userId');
+  final token = prefs.getString('authToken') ?? '';
+
+
+  // 9. 토큰 갱신
+  await _refreshAccessToken(prefs);
+
+  // 10. 유저 정보 보정
+  await _hydrateUserInfo();
+final hasSeenOnboarding   = prefs.getBool('hasSeenOnboarding') ?? false;
+final refreshedToken      = prefs.getString('authToken') ?? '';
+final refreshedUserType   = prefs.getString('userType') ?? 'worker';
+final refreshedUserPhone  = prefs.getString('userPhone');
+final refreshedUserId     = prefs.getInt('userId');
+  // 11. FCM 토큰 등록
+  final fcmSettings = await FirebaseMessaging.instance.getNotificationSettings();
+  if (fcmSettings.authorizationStatus == AuthorizationStatus.authorized) {
+    await sendFcmTokenUnified();
+  }
+
+  // 12. 포그라운드 알림 수신
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    if (Platform.isIOS) {
+      final notification = message.notification;
+      if (notification != null) {
+        flutterLocalNotificationsPlugin.show(
+          0,
+          notification.title,
+          notification.body,
+          const NotificationDetails(iOS: DarwinNotificationDetails()),
+        );
+      }
+    }
+  });
+
+  // 13. 백그라운드 알림 클릭 처리
+  FirebaseMessaging.onMessageOpenedApp.listen((message) async {
+    final type = message.data['type'];
+    if (type == 'new_nearby_job' || type == 'custom_matched_job') {
+      await _handleJobNotification(message);
+    } else if (message.data['chatRoomId'] != null) {
+      await _handleChatNotification(message);
+    }
+  });
+
+  // 14. 시작 화면 결정
+final startScreen = _determineStartScreen(
+  hasSeenOnboarding: hasSeenOnboarding,
+  userPhone: refreshedUserPhone,
+  userId: refreshedUserId,
+  token: refreshedToken,
+  userType: refreshedUserType,
+);
+
+  // 15. 앱 실행
+  runApp(MyApp(startScreen: startScreen, upgrader: upgrader));
+
+  // 16. 앱 시작 시 initialMessage 처리
+await _handleInitialMessage(prefs, refreshedUserType); // ✅
+}
+
+// ============================================================
+// MyApp 위젯
+// ============================================================
 class MyApp extends StatelessWidget {
   final Widget startScreen;
-    final Upgrader upgrader;
- const MyApp({super.key, required this.startScreen, required this.upgrader});
-  
+  final Upgrader upgrader;
+
+  const MyApp({super.key, required this.startScreen, required this.upgrader});
 
   @override
   Widget build(BuildContext context) {
-  return MaterialApp(
-  navigatorKey: navigatorKey,
-  title: '알바일주',
-  debugShowCheckedModeBanner: false,
-  theme: ThemeData(
-    fontFamily: 'Jalnan2TTF',
-    textTheme: ThemeData.light().textTheme,
-    colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-  ),
-  // ✅ 여기서만 UpgradeAlert로 한 번 감싸기
-   home: UpgradeAlert(
-        upgrader: upgrader,
-        child: startScreen,
+    return MaterialApp(
+      navigatorKey: navigatorKey,
+      title: '알바일주',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        fontFamily: 'Jalnan2TTF',
+        textTheme: ThemeData.light().textTheme,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
       ),
+      home: UpgradeAlert(upgrader: upgrader, child: startScreen),
       routes: {
         '/admin': (context) => const AdminMainScreen(),
         '/admin_users': (context) => const AdminUserListScreen(),
@@ -504,7 +578,6 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/signup_worker': (context) => const SignupWorkerScreen(),
         '/signup_client': (context) => const SignupClientScreen(),
-
         '/post_job': (context) => const PostJobScreen(),
         '/client_main': (context) => const ClientMainScreen(),
         '/edit_job': (context) => const EditJobScreen(),
@@ -519,7 +592,7 @@ class MyApp extends StatelessWidget {
         '/report-history': (context) => const ReportHistoryScreen(),
         '/applicants': (context) => const ApplicantListScreen(),
         '/client_business_info': (context) => const ClientBusinessInfoScreen(),
-        '/review': (context) => ReviewScreenRouter(), // 예: arguments 받는 별도 래퍼
+        '/review': (context) => ReviewScreenRouter(),
         '/purchase-pass': (context) => const PurchasePassScreen(),
         '/blocked-users': (context) => const BlockedUserListScreen(),
         '/portone-payment': (context) {
@@ -530,58 +603,63 @@ class MyApp extends StatelessWidget {
             companyPhone: args['companyPhone'],
           );
         },
- '/subscribe': (_) => const SubscribeScreen(),
-'/subscription/manage': (_) => const SubscriptionManageScreen(), // 이번에 추가
-     '/job-detail': (context) {
-  final args = ModalRoute.of(context)?.settings.arguments;
-  if (args == null || args is! Job) {
-    return const Scaffold(body: Center(child: Text('잘못된 접근입니다.')));
-  }
-  return JobDetailScreen(job: args);
-},
+        '/subscribe': (_) => const SubscribeScreen(),
+        '/subscription/manage': (_) => const SubscriptionManageScreen(),
+        '/job-detail': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args == null || args is! Job) {
+            return const Scaffold(body: Center(child: Text('잘못된 접근입니다.')));
+          }
+          return JobDetailScreen(job: args);
+        },
         '/worker-profile': (context) {
-          final int workerId =
-              ModalRoute.of(context)!.settings.arguments as int;
+          final int workerId = ModalRoute.of(context)!.settings.arguments as int;
           return WorkerProfileScreen(workerId: workerId);
         },
         '/client-profile': (context) {
-          final int clientId =
-              ModalRoute.of(context)!.settings.arguments as int;
+          final int clientId = ModalRoute.of(context)!.settings.arguments as int;
           return ClientProfileScreen(clientId: clientId);
         },
-'/signup-choice': (context) => const SignupChoiceScreen(),
-
-  '/edit_profile': (context) => const EditClientProfileScreen(),
- '/edit_profile_worker': (_) => const EditWorkerProfileScreen(),
+        '/signup-choice': (context) => const SignupChoiceScreen(),
+        '/edit_profile': (context) => const EditClientProfileScreen(),
+        '/edit_profile_worker': (_) => const EditWorkerProfileScreen(),
         '/notifications': (context) => const NotificationSettingsScreen(),
         '/terms-list': (context) => const TermsListScreen(),
       },
-
       onGenerateRoute: (settings) {
         if (settings.name == '/chat-room') {
           final args = settings.arguments as Map<String, dynamic>;
           return MaterialPageRoute(
-            builder:
-                (context) => ChatRoomScreen(
-                  chatRoomId: args['chatRoomId'],
-                  jobInfo: args['jobInfo'],
-                ),
+            builder: (context) => ChatRoomScreen(
+              chatRoomId: args['chatRoomId'],
+              jobInfo: args['jobInfo'],
+            ),
           );
         }
         return MaterialPageRoute(
-          builder:
-              (_) =>
-                  const Scaffold(body: Center(child: Text('페이지를 찾을 수 없습니다'))),
+          builder: (_) => const Scaffold(
+            body: Center(child: Text('페이지를 찾을 수 없습니다')),
+          ),
         );
       },
     );
   }
 }
+
+// ============================================================
+// 한국어 업데이트 메시지
+// ============================================================
 class UpgraderMessagesKo extends UpgraderMessages {
-  @override String get title => '업데이트 안내';
-  @override String get body => '새 버전이 공개되었습니다. 지금 업데이트하시겠어요?';
-  @override String get prompt => '스토어로 이동';
-  @override String get ignore => '나중에';
-  @override String get later  => '다음에';
-  @override String get releaseNotes => '변경사항';
+  @override
+  String get title => '업데이트 안내';
+  @override
+  String get body => '새 버전이 공개되었습니다. 지금 업데이트하시겠어요?';
+  @override
+  String get prompt => '스토어로 이동';
+  @override
+  String get ignore => '나중에';
+  @override
+  String get later => '다음에';
+  @override
+  String get releaseNotes => '변경사항';
 }

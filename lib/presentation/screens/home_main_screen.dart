@@ -15,6 +15,9 @@ import 'package:http/http.dart' as http; // http.get, http.post
 import 'dart:async' show TimeoutException;
 import 'dart:async';
 import 'package:flutter/foundation.dart'; // ✅ kDebugMode, debugPrint 등
+import '../../data/models/banner_ad.dart';
+import 'package:url_launcher/url_launcher.dart';
+
 class HomeMainScreen extends StatefulWidget {
   const HomeMainScreen({super.key});
   
@@ -41,11 +44,14 @@ class _HomeMainScreenState extends State<HomeMainScreen> {
   String selectedPayType = 'all'; // 기본값: 전체
 int _jobsReqSeq = 0;     // 최신 요청만 반영
 bool _isLoadingJobs = false;  // 중복 호출 방지
-
+List<BannerAd> bannerAds = [];
+int _currentBannerIndex = 0;
+Timer? _bannerTimer;
   @override
 void initState() {
   super.initState();
-
+_loadBannerAds(); // 배너 로드
+  _startBannerAutoSlide(); // 자동 슬라이드 시작
   _requestNotificationPermission();
 
   _loadAvailableTodayStatus(); // 그대로
@@ -69,11 +75,13 @@ void initState() {
       _loadMoreItems();
     }
   });
+  
 }
 
 @override
 void dispose() {
   _debounce?.cancel();   // ← 추가
+    _bannerTimer?.cancel(); // 배너 타이머 정리
   _scrollController.dispose();
   super.dispose();
 }
@@ -96,7 +104,44 @@ void _applyFiltersThrottled() {
     _isApplying = false;
   }
 }
+// _loadBannerAds() 함수에 더 자세한 로그 추가
+Future<void> _loadBannerAds() async {
+  try {
+    print('🔍 배너 로딩 시작...');
+    final response = await http.get(Uri.parse('$baseUrl/api/banners'));
+    
+    print('📡 응답 코드: ${response.statusCode}');
+    print('📄 응답 본문: ${response.body}');
+    
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      print('✅ 배너 ${data.length}개 파싱 완료');
+      
+      if (!mounted) return;
+      
+      setState(() {
+        bannerAds = data.map((json) => BannerAd.fromJson(json)).toList();
+      });
+      
+      print('✅ 배너 상태 업데이트 완료');
+    } else {
+      print('❌ 배너 로드 실패: ${response.statusCode}');
+    }
+  } catch (e, stackTrace) {
+    print('❌ 배너 로드 예외: $e');
+    print('스택 트레이스: $stackTrace');
+  }
+}
 
+// 자동 슬라이드
+void _startBannerAutoSlide() {
+  _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+    if (bannerAds.isEmpty) return;
+    setState(() {
+      _currentBannerIndex = (_currentBannerIndex + 1) % bannerAds.length;
+    });
+  });
+}
   Future<void> _loadJobsWithAppliedStatus() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('userId');
@@ -719,6 +764,10 @@ Widget build(BuildContext context) {
                     padding: const EdgeInsets.all(16),
                     sliver: SliverToBoxAdapter(child: _buildSearchAndLocationRow()),
                   ),
+                   // ✨ 배너 광고 추가
+                  SliverToBoxAdapter(child: _buildBannerSlider()),
+                  const SliverToBoxAdapter(child: SizedBox(height: 16)),
+                  
                   const SliverToBoxAdapter(child: SizedBox(height: 16)),
                   SliverToBoxAdapter(
                     child: Padding(
@@ -1320,4 +1369,101 @@ Widget _buildPinnedBadgeSmall() {
     ),
   );
 }
+Widget _buildBannerSlider() {
+  if (bannerAds.isEmpty) return const SizedBox.shrink();
+
+  return Container(
+    height: 100,
+    margin: const EdgeInsets.symmetric(horizontal: 16),
+    child: Stack(
+      children: [
+        PageView.builder(
+          itemCount: bannerAds.length,
+          onPageChanged: (index) {
+            setState(() => _currentBannerIndex = index);
+          },
+          itemBuilder: (context, index) {
+            final banner = bannerAds[index];
+            return GestureDetector(
+              onTap: () => _onBannerTap(banner), // 클릭 핸들러 호출
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.grey[200],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    '$baseUrl${banner.imageUrl}',
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Center(
+                        child: Icon(Icons.error_outline, color: Colors.grey),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        Positioned(
+          bottom: 6,
+          left: 0,
+          right: 0,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              bannerAds.length,
+              (index) => Container(
+                width: 6,
+                height: 6,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _currentBannerIndex == index
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.4),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+// 배너 클릭 핸들러 (기존 함수 수정)
+Future<void> _onBannerTap(BannerAd banner) async {
+  if (banner.linkUrl == null || banner.linkUrl!.isEmpty) {
+    return;
+  }
+
+  final Uri url = Uri.parse(banner.linkUrl!);
+
+  try {
+    // ✅ 에뮬레이터용: platformDefault로 변경
+    await launchUrl(
+      url,
+      mode: LaunchMode.platformDefault, // externalApplication → platformDefault
+    );
+  } catch (e) {
+    print('❌ 링크 열기 오류: $e');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('링크 열기 실패: $e')),
+      );
+    }
+  }
+}
+
+
 }

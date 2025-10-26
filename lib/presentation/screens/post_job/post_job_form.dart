@@ -2302,7 +2302,9 @@ Future<void> _pickTimeRangeAndroid() async {
     final susp = _suspension;                       // 현재 불러온 정지 상태
 final suspLoaded = _suspLoaded;                 // /public/suspension 로딩 완료 여부
 final previewDisabled = !suspLoaded || (susp?.isSuspended ?? false); // 로딩중 or 정지면 비활성화
-    return Form(
+    return UnfocusOnTap(
+      child:
+    Form(
       key: _formKey,
       child: SafeArea(
         child: SingleChildScrollView(
@@ -2913,6 +2915,7 @@ SizedBox(
           ),
         ),
       ),
+    ),
     );
   }
 }
@@ -2995,6 +2998,25 @@ class _LaborAgreementNoticeState extends State<LaborAgreementNotice> {
           ),
         ],
       ],
+    );
+  }
+}
+// 파일 상단 임포트는 그대로 두고, 클래스 밖(같은 파일 맨 아래여도 OK)에 추가
+class UnfocusOnTap extends StatelessWidget {
+  final Widget child;
+  const UnfocusOnTap({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent, // 빈 공간 터치도 감지
+      onTap: () {
+        final currentFocus = FocusScope.of(context);
+        if (!currentFocus.hasPrimaryFocus && currentFocus.focusedChild != null) {
+          currentFocus.unfocus();
+        }
+      },
+      child: child,
     );
   }
 }

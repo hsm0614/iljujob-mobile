@@ -13,7 +13,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/presentation/screens/signup_worker_screen.dart';
-
+import 'package:iljujob/presentation/screens/AppleExtraInfoScreen.dart';
 const kBrand = Color(0xFF3B8AFF);
 
 class SignupChoiceScreen extends StatefulWidget {
@@ -24,7 +24,7 @@ class SignupChoiceScreen extends StatefulWidget {
 
 class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
   bool _loading = false;
-
+bool _showProfileSetup = false;
   // final _google = GoogleSignIn(scopes: ['email', 'profile']); // ❌ 구글 비활성화
 
   ButtonStyle _primaryBtnStyle({Color? bg, Color? fg}) {
@@ -43,30 +43,49 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
   }
 
   Future<void> _saveAndGoHome(Map<String, dynamic> data) async {
-    if (data['success'] != true) {
-      _toast('로그인 실패: ${data['message'] ?? '알 수 없음'}');
-      return;
+  if (data['success'] != true) {
+    _toast('로그인 실패: ${data['message'] ?? '알 수 없음'}');
+    return;
+  }
+
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('authToken', data['token'] ?? '');
+  await prefs.setString('userType', 'worker');
+  await prefs.setInt('userId', data['workerId'] ?? 0);
+
+  final isNewUser = data['isNewUser'] == true;
+  final provider = data['socialProvider'] ?? ''; // ✅ 여기 추가!
+  debugPrint('🆕 신규 회원 여부: $isNewUser / provider: $provider');
+
+  if (!mounted) return;
+
+  if (isNewUser) {
+    if (provider == 'apple') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AppleProfileSetupScreen(workerId: data['workerId']),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => Scaffold(
+            backgroundColor: const Color(0xFFF8FAFC),
+            appBar: AppBar(title: const Text('프로필 설정'), centerTitle: true, elevation: 0),
+            body: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              child: _buildProfileSetupWidget(),
+            ),
+          ),
+        ),
+      );
     }
-    final prefs = await SharedPreferences.getInstance();
-    final token = (data['token'] ?? '') as String;
-    final workerId = (data['workerId'] ?? 0) as int;
-
-    await prefs.setString('authToken', token);
-    await prefs.setString('userType', 'worker');
-    await prefs.setInt('userId', workerId);
-    await prefs.setBool('hasSeenOnboarding', true);
-
-    final prof = data['profile'];
-    if (prof is Map) {
-      if (prof['name'] is String) await prefs.setString('userName', prof['name']);
-      if (prof['email'] is String) await prefs.setString('userEmail', prof['email']);
-      if (prof['avatarUrl'] is String) await prefs.setString('userAvatar', prof['avatarUrl']);
-      if (prof['phone'] is String) await prefs.setString('userPhone', prof['phone']);
-    }
-
-    if (!mounted) return;
+  } else {
     Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
   }
+}
 
   // ───────────────────────────────────────────
   // Google (비활성화)
@@ -225,7 +244,9 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
+              
               child: Column(
+                
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
@@ -328,4 +349,107 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
       ),
     );
   }
+  Widget _buildProfileSetupWidget() {
+  final List<String> _strengths = [];
+  final List<String> _traits = [];
+  final strengthOptions = ['포장', '상하차', '물류', 'F&B', '사무보조', '기타'];
+  final traitOptions = ['꼼꼼해요', '책임감 있어요', '상냥해요', '빠릿해요', '체력이 좋아요', '성실해요'];
+
+  return StatefulBuilder( // 👈 이게 포인트!
+    builder: (context, setState) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 6))],
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('💪 자신 있는 업무 (2개까지)', style: TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 8,
+              children: strengthOptions.map((item) {
+                final isSelected = _strengths.contains(item);
+                return FilterChip(
+                  label: Text(item),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected && _strengths.length < 2) _strengths.add(item);
+                      else _strengths.remove(item);
+                    });
+                  },
+                  selectedColor: kBrand.withOpacity(0.25),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+            const Text('🌟 나를 표현하는 단어', style: TextStyle(fontWeight: FontWeight.w800)),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              runSpacing: 8,
+              children: traitOptions.map((item) {
+                final isSelected = _traits.contains(item);
+                return FilterChip(
+                  label: Text(item),
+                  selected: isSelected,
+                  onSelected: (selected) {
+                    setState(() {
+                      if (selected) _traits.add(item);
+                      else _traits.remove(item);
+                    });
+                  },
+                  selectedColor: const Color(0xFF10B981).withOpacity(0.25),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  final prefs = await SharedPreferences.getInstance();
+                  final token = prefs.getString('authToken') ?? '';
+                  final workerId = prefs.getInt('userId');
+                  try {
+                    await http.post(
+                      Uri.parse('$baseUrl/api/worker/update-profile'),
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer $token',
+                      },
+                      body: jsonEncode({
+                        'workerId': workerId,
+                        'strengths': _strengths,
+                        'traits': _traits,
+                      }),
+                    );
+                    if (!context.mounted) return;
+                    Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('프로필 저장 중 오류: $e')),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: kBrand,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('완료하고 시작하기'),
+              ),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
 }

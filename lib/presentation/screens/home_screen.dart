@@ -237,28 +237,26 @@ Future<void> _openRecommendSheet() async {
   _isSheetOpen = true;
   try {
     await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useRootNavigator: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black54,
-      builder: (ctx) {
-        final bottomInset = MediaQuery.of(ctx).viewInsets.bottom;
-        return Padding(
-          padding: EdgeInsets.only(bottom: bottomInset),
-          child: FractionallySizedBox(
-            heightFactor: 0.85,
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Material(
-                color: Colors.white,
-                child: _RecommendSheet(api: _aiApi),
-              ),
-            ),
-          ),
-        );
-      },
+  context: context,
+  isScrollControlled: true,
+  useRootNavigator: false, // 반드시 false
+  backgroundColor: Colors.transparent,
+  barrierColor: Colors.black54,
+  builder: (ctx) {
+    return FractionallySizedBox(
+      heightFactor: 0.85,
+      widthFactor: 1.0, // ← 명시적으로 추가
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        child: Material(
+          color: Colors.white,
+          child: _RecommendSheet(api: _aiApi),
+        ),
+      ),
     );
+  },
+);
+
   } finally {
     _isSheetOpen = false;
   }

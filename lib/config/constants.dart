@@ -11,3 +11,4 @@ String getBaseUrl() {
   }
 }
 final String baseUrl = getBaseUrl();
+const String vworldApiKey = '6F9CB6D9-FF03-3CD5-8140-D33D84A59E24';

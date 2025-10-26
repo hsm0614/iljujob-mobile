@@ -7,7 +7,9 @@ import 'package:intl/intl.dart';
 import 'chat_room_screen.dart';
 import '../../config/constants.dart';
 import 'package:iljujob/utiles/auth_util.dart';
-
+import '../../data/models/banner_ad.dart';
+import 'dart:async';
+import 'package:url_launcher/url_launcher.dart';
 class ChatListScreen extends StatefulWidget {
   final VoidCallback? onMessagesRead;
 
@@ -24,7 +26,10 @@ class _ChatListScreenState extends State<ChatListScreen> with WidgetsBindingObse
   String userType = 'worker';
   int? myId;
   String? myType;
-
+ // ✅ 배너 관련 추가
+  List<BannerAd> bannerAds = [];
+  int _currentBannerIndex = 0;
+  Timer? _bannerTimer;
   // UI 상태
   bool _isRefreshing = false;
   String _query = '';
@@ -33,6 +38,8 @@ class _ChatListScreenState extends State<ChatListScreen> with WidgetsBindingObse
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+     _loadBannerAds();
+  _startBannerAutoSlide();
     _loadMyIdAndType().then((_) {
       _loadUserTypeAndFetchChats();
     });
@@ -41,6 +48,7 @@ class _ChatListScreenState extends State<ChatListScreen> with WidgetsBindingObse
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+     _bannerTimer?.cancel(); // ✅ 추가
     super.dispose();
   }
 
@@ -50,7 +58,112 @@ class _ChatListScreenState extends State<ChatListScreen> with WidgetsBindingObse
       _fetchChatRooms();
     }
   }
+Future<void> _loadBannerAds() async {
+  try {
+    final response = await http.get(Uri.parse('$baseUrl/api/banners'));
+    
+    if (response.statusCode == 200) {
+      final List<dynamic> data = jsonDecode(response.body);
+      if (!mounted) return;
+      
+      setState(() {
+        bannerAds = data.map((json) => BannerAd.fromJson(json)).toList();
+      });
+    }
+  } catch (e) {
+    print('❌ 배너 로드 예외: $e');
+  }
+}
 
+void _startBannerAutoSlide() {
+  _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+    if (bannerAds.isEmpty) return;
+    setState(() {
+      _currentBannerIndex = (_currentBannerIndex + 1) % bannerAds.length;
+    });
+  });
+}
+
+Widget _buildBannerSlider() {
+  if (bannerAds.isEmpty) return const SizedBox.shrink();
+
+  return Container(
+    height: 100,
+    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    child: Stack(
+      children: [
+        PageView.builder(
+          itemCount: bannerAds.length,
+          onPageChanged: (index) {
+            setState(() => _currentBannerIndex = index);
+          },
+          itemBuilder: (context, index) {
+            final banner = bannerAds[index];
+            return GestureDetector(
+              onTap: () async {
+                if (banner.linkUrl != null && banner.linkUrl!.isNotEmpty) {
+                  final Uri url = Uri.parse(banner.linkUrl!);
+                  try {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  } catch (e) {
+                    print('❌ 링크 열기 실패: $e');
+                  }
+                }
+              },
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.grey[200],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    '$baseUrl${banner.imageUrl}',
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      );
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Center(
+                        child: Icon(Icons.error_outline, color: Colors.grey),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        Positioned(
+          bottom: 6,
+          left: 0,
+          right: 0,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              bannerAds.length,
+              (index) => Container(
+                width: 6,
+                height: 6,
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _currentBannerIndex == index
+                      ? Colors.white
+                      : Colors.white.withOpacity(0.4),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
   Future<void> _loadMyIdAndType() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
@@ -529,9 +642,10 @@ class _ChatListScreenState extends State<ChatListScreen> with WidgetsBindingObse
                       Tab(text: '안읽음'),
                     ],
                   ),
+                  
                 ),
               ),
-
+ SliverToBoxAdapter(child: _buildBannerSlider()),
               // 콘텐츠
               if (isLoading)
                 const SliverFillRemaining(

@@ -21,46 +21,62 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
     _fetchMyJobs();
   }
 
-  Future<void> _fetchMyJobs() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final clientId = prefs.getInt('userId');
+ Future<void> _fetchMyJobs() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final clientId = prefs.getInt('userId');
 
-      if (clientId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('로그인 정보를 불러올 수 없습니다.')),
-        );
-        return;
-      }
+    if (clientId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('로그인 정보를 불러올 수 없습니다.')),
+      );
+      return;
+    }
 
-      final res = await http.get(Uri.parse('$baseUrl/api/job/my-jobs?clientId=$clientId'));
+    final res = await http.get(Uri.parse('$baseUrl/api/job/my-jobs?clientId=$clientId'));
 
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        if (mounted) {
-          setState(() {
-            myJobs = data;
-            isLoading = false;
-          });
-        }
+    if (res.statusCode == 200) {
+      final data = jsonDecode(res.body);
+      
+      // 🔥 수정: data의 타입에 따라 처리
+      List<dynamic> jobsList;
+      if (data is List) {
+        jobsList = data;
+      } else if (data is Map && data.containsKey('jobs')) {
+        // API가 { "jobs": [...] } 형태로 반환하는 경우
+        jobsList = data['jobs'] as List<dynamic>;
+      } else if (data is Map && data.containsKey('data')) {
+        // API가 { "data": [...] } 형태로 반환하는 경우
+        jobsList = data['data'] as List<dynamic>;
       } else {
-        final errorMsg = jsonDecode(res.body)['message'] ?? '공고 조회 실패';
-        if (mounted) {
-          setState(() => isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('❌ $errorMsg')),
-          );
-        }
+        // 다른 형태라면 빈 리스트
+        jobsList = [];
       }
-    } catch (e) {
+      
+      if (mounted) {
+        setState(() {
+          myJobs = jobsList;
+          isLoading = false;
+        });
+      }
+    } else {
+      final errorMsg = jsonDecode(res.body)['message'] ?? '공고 조회 실패';
       if (mounted) {
         setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('오류 발생: ${e.toString()}')),
+          SnackBar(content: Text('❌ $errorMsg')),
         );
       }
     }
+  } catch (e) {
+    if (mounted) {
+      setState(() => isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('오류 발생: ${e.toString()}')),
+      );
+    }
   }
+}
 
   @override
   Widget build(BuildContext context) {
