@@ -1,21 +1,15 @@
 import 'dart:convert';
 import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../config/constants.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:http_parser/http_parser.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class EditClientProfileScreen extends StatefulWidget {
-  const EditClientProfileScreen({super.key});
-
-  @override
-  State<EditClientProfileScreen> createState() =>
-      _EditClientProfileScreenState();
-}
+import '../../config/constants.dart';
 
 // 유연한 키 대응
 T? pickFirstNonNull<T>(Map src, List<String> keys) {
@@ -26,32 +20,61 @@ T? pickFirstNonNull<T>(Map src, List<String> keys) {
   return null;
 }
 
+class EditClientProfileScreen extends StatefulWidget {
+  const EditClientProfileScreen({super.key});
+
+  @override
+  State<EditClientProfileScreen> createState() => _EditClientProfileScreenState();
+}
+
 class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
+  // ---- 스타일
+  static const kBrand = Color(0xFF3B8AFF);
+  static const kBg = Color(0xFFF6F7FB);
+
+  final picker = ImagePicker();
+
+  // ---- 상태
+  bool isLoading = true;
+  bool _saving = false;
+
   String phone = '';
   String logoUrl = '';
   String certificateUrl = '';
-  final picker = ImagePicker();
   String? _authHeaderToken;
 
+  File? selectedLogoImage;
+  PlatformFile? selectedCertificateFile;
+
+  // ---- 컨트롤러
   final managerController = TextEditingController();
   final companyController = TextEditingController();
   final emailController = TextEditingController();
   final descriptionController = TextEditingController();
 
-  File? selectedLogoImage;
-  PlatformFile? selectedCertificateFile;
-
-  bool isLoading = true;
-
-  // ---- 스타일 상수
-  static const kBrand = Color(0xFF3B8AFF);
-
+  // ---- helpers
   String _getFullImageUrl(String path) {
     if (path.isEmpty) return path;
     if (path.startsWith('http://') || path.startsWith('https://')) return path;
     if (path.startsWith('/')) return '$baseUrl$path';
     return '$baseUrl/$path';
   }
+
+  void _showSnackbar(String message) {
+    if (!mounted) return;
+    final sm = ScaffoldMessenger.of(context);
+    sm.hideCurrentSnackBar();
+    sm.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  String _maskPhone(String raw) {
+    final p = raw.replaceAll(RegExp(r'\D'), '');
+    if (p.length == 11) return '${p.substring(0, 3)}-${p.substring(3, 7)}-****';
+    if (p.length == 10) return '${p.substring(0, 3)}-${p.substring(3, 6)}-****';
+    return raw;
+  }
+
+  bool get _canSave => !_saving;
 
   @override
   void initState() {
@@ -64,10 +87,25 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
     _loadProfile();
   }
 
+  @override
+  void dispose() {
+    managerController.dispose();
+    companyController.dispose();
+    emailController.dispose();
+    descriptionController.dispose();
+    super.dispose();
+  }
+
   Future<void> _openCertificate() async {
     final url = _getFullImageUrl(certificateUrl);
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    if (url.trim().isEmpty) {
+      _showSnackbar('열 수 있는 파일이 없습니다.');
+      return;
+    }
+
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
       _showSnackbar('파일을 열 수 없습니다.');
     }
@@ -76,9 +114,10 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
   Future<void> _loadProfile() async {
     final prefs = await SharedPreferences.getInstance();
     final clientId = prefs.getInt('userId');
+
     if (clientId == null) {
       _showSnackbar('로그인 정보가 없습니다.');
-      setState(() => isLoading = false);
+      if (mounted) setState(() => isLoading = false);
       return;
     }
 
@@ -105,11 +144,12 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                 'certificateUrl',
                 'business_certificate_url',
                 'biz_cert_url',
-                'certificate'
+                'certificate',
               ],
             ) ??
             '';
 
+        if (!mounted) return;
         setState(() {
           phone = data['phone']?.toString() ?? '';
           managerController.text = data['manager_name']?.toString() ?? '';
@@ -121,20 +161,21 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
           isLoading = false;
         });
 
+        // 캐시(선택)
         await prefs.setString('cached_logo_url', logoUrl);
         await prefs.setString('cached_certificate_url', certificateUrl);
       } else {
-        _showSnackbar('프로필 불러오기 실패 (${resp.statusCode})');
-        setState(() => isLoading = false);
+        _showSnackbar('프로필을 불러오지 못했습니다. (${resp.statusCode})');
+        if (mounted) setState(() => isLoading = false);
       }
     } catch (e) {
-      _showSnackbar('네트워크 오류 발생');
-      setState(() => isLoading = false);
+      _showSnackbar('네트워크 오류가 발생했습니다.');
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
   Future<void> _pickLogoImage() async {
-    final picked = await picker.pickImage(source: ImageSource.gallery);
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
     if (picked != null) {
       setState(() {
         selectedLogoImage = File(picked.path);
@@ -142,90 +183,8 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
     }
   }
 
-  Future<void> _pickCertificateFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
-    );
-
-    if (result != null && result.files.single.path != null) {
-      setState(() {
-        selectedCertificateFile = result.files.single;
-      });
-    }
-  }
-
-  Future<void> _saveProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    final phone = prefs.getString('userPhone');
-    if (phone == null) {
-      _showSnackbar('로그인 정보가 없습니다.');
-      return;
-    }
-
-    final managerName = managerController.text.trim();
-    final companyName = companyController.text.trim();
-    final email = emailController.text.trim();
-    final description = descriptionController.text.trim();
-
-    try {
-      final uri = Uri.parse('$baseUrl/api/client/upload-logo');
-      final request = http.MultipartRequest('POST', uri);
-
-      final token = prefs.getString('authToken');
-      if (token != null && token.isNotEmpty) {
-        request.headers['Authorization'] = 'Bearer $token';
-      }
-
-      request.fields['phone'] = phone;
-      request.fields['manager_name'] = managerName;
-      request.fields['company_name'] = companyName;
-      request.fields['email'] = email;
-      request.fields['description'] = description;
-
-      if (selectedLogoImage != null) {
-        request.files.add(await http.MultipartFile.fromPath(
-          'logo',
-          selectedLogoImage!.path,
-          contentType: MediaType('image', 'jpeg'),
-        ));
-      }
-
-      if (selectedCertificateFile != null) {
-        final ext = (selectedCertificateFile!.extension ?? '').toLowerCase();
-        final isPdf = ext == 'pdf';
-        final mime = isPdf ? 'application/pdf' : 'image/$ext';
-
-        request.files.add(http.MultipartFile.fromBytes(
-          'certificate',
-          File(selectedCertificateFile!.path!).readAsBytesSync(),
-          filename: selectedCertificateFile!.name,
-          contentType: MediaType.parse(mime),
-        ));
-      }
-
-      final streamed = await request.send();
-      final body = await streamed.stream.bytesToString();
-
-      if (streamed.statusCode == 200) {
-        _showSnackbar('✅ 저장 성공. 최신 정보를 불러옵니다...');
-        await _loadProfile();
-        setState(() {
-          selectedLogoImage = null;
-          selectedCertificateFile = null;
-        });
-      } else {
-        debugPrint('❌ 서버 오류 ${streamed.statusCode}: $body');
-        _showSnackbar('저장 실패 (${streamed.statusCode})');
-      }
-    } catch (e) {
-      debugPrint('❌ 네트워크 오류: $e');
-      _showSnackbar('네트워크 오류 발생');
-    }
-  }
-
   Future<void> _pickCertificateFromCamera() async {
-    final picked = await picker.pickImage(source: ImageSource.camera);
+    final picked = await picker.pickImage(source: ImageSource.camera, imageQuality: 90);
     if (picked != null) {
       setState(() {
         selectedCertificateFile = PlatformFile(
@@ -239,7 +198,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
   }
 
   Future<void> _pickCertificateFromGallery() async {
-    final picked = await picker.pickImage(source: ImageSource.gallery);
+    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
     if (picked != null) {
       setState(() {
         selectedCertificateFile = PlatformFile(
@@ -256,6 +215,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
+      withData: false,
     );
     if (result != null && result.files.single.path != null) {
       setState(() {
@@ -267,235 +227,314 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
   void _showCertificatePickerOptions() {
     showModalBottomSheet(
       context: context,
-      builder: (_) {
-        return SafeArea(
-          child: Wrap(
-            children: [
-              ListTile(
-                leading: const Icon(Icons.camera_alt),
-                title: const Text('카메라로 촬영'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickCertificateFromCamera();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.photo),
-                title: const Text('갤러리에서 선택'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickCertificateFromGallery();
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.insert_drive_file),
-                title: const Text('파일에서 선택'),
-                onTap: () {
-                  Navigator.pop(context);
-                  _pickCertificateFromFile();
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // ---- 기존 즉시 탈퇴 함수는 더 이상 직접 호출하지 않음(새 플로우 내에서만 사용)
- Future<void> _deleteAccountDirect() async {
-  final prefs = await SharedPreferences.getInstance();
-  final phone = prefs.getString('userPhone');
-  if (phone == null || phone.isEmpty) {
-    _showSnackbar('전화번호 정보가 없습니다.');
-    return;
-  }
-
-  try {
-    final res = await http.delete(
-      Uri.parse('$baseUrl/api/client/profile?phone=$phone'),
-    );
-
-    if (res.statusCode == 200) {
-      await prefs.clear();
-      if (!mounted) return;
-      Navigator.pushNamedAndRemoveUntil(context, '/onboarding', (route) => false);
-    } else {
-      _showSnackbar('회원 탈퇴 실패 (${res.statusCode})');
-    }
-  } catch (e) {
-    _showSnackbar('네트워크 오류 발생');
-  }
-}
-
-  void _showSnackbar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-  }
-
-  String maskPhoneNumber(String phone) {
-    return phone; // 필요 시 마스킹 규칙 적용
-  }
-
-  // --------------------------- UI ---------------------------
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
-          '계정 관리',
-          style: TextStyle(
-            fontFamily: 'Jalnan2TTF',
-            color: kBrand,
-            fontSize: 20,
-          ),
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _BottomSheetCard(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _SheetHeader(title: '사업자등록증 업로드'),
+            const SizedBox(height: 6),
+            _SheetTile(
+              icon: Icons.camera_alt,
+              label: '카메라로 촬영',
+              onTap: () {
+                Navigator.pop(context);
+                _pickCertificateFromCamera();
+              },
+            ),
+            _SheetTile(
+              icon: Icons.photo,
+              label: '갤러리에서 선택',
+              onTap: () {
+                Navigator.pop(context);
+                _pickCertificateFromGallery();
+              },
+            ),
+            _SheetTile(
+              icon: Icons.insert_drive_file,
+              label: '파일에서 선택 (PDF 가능)',
+              onTap: () {
+                Navigator.pop(context);
+                _pickCertificateFromFile();
+              },
+            ),
+            const SizedBox(height: 10),
+          ],
         ),
       ),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Theme(
-                data: Theme.of(context).copyWith(
-                  inputDecorationTheme: InputDecorationTheme(
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 12),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide:
-                          const BorderSide(color: kBrand, width: 1.2),
-                    ),
-                    labelStyle: const TextStyle(fontSize: 13),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _profileHeaderCard(),
-                    const SizedBox(height: 16),
-                    const _SectionTitle('계정 정보'),
-                    const SizedBox(height: 10),
-
-                    TextField(
-                      controller: managerController,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(labelText: '담당자명'),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: companyController,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: const InputDecoration(labelText: '회사명'),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      autofillHints: const [AutofillHints.email],
-                      decoration: const InputDecoration(labelText: '이메일'),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: descriptionController,
-                      decoration: const InputDecoration(labelText: '회사 소개'),
-                      maxLines: 3,
-                    ),
-
-                    const SizedBox(height: 22),
-                    _certificateSection(),
-
-                    const SizedBox(height: 24),
-                    ElevatedButton.icon(
-                      onPressed: _saveProfile,
-                      icon: const Icon(Icons.save_outlined),
-                      label: const Text('저장하기'),
-                      style: ElevatedButton.styleFrom(
-                        padding:
-                            const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-
-                    // ✅ 탈퇴 버튼 제거 → 하단 "계정 관리" 섹션의 작은 텍스트 링크로 대체
-                    const SizedBox(height: 12),
-                    _accountManageSection(),
-                  ],
-                ),
-              ),
-            ),
     );
   }
 
-  Widget _profileHeaderCard() {
-    final avatar = CircleAvatar(
-      radius: 40,
-      backgroundImage: selectedLogoImage != null
-          ? FileImage(selectedLogoImage!)
-          : (logoUrl.isNotEmpty
-              ? NetworkImage(_getFullImageUrl(logoUrl))
-              : null),
-      child: (selectedLogoImage == null && logoUrl.isEmpty)
-          ? const Icon(Icons.business, size: 40, color: Colors.white)
-          : null,
-      backgroundColor: kBrand.withOpacity(.25),
+  Future<void> _saveProfile() async {
+    if (_saving) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final userPhone = prefs.getString('userPhone');
+    if (userPhone == null || userPhone.isEmpty) {
+      _showSnackbar('로그인 정보가 없습니다.');
+      return;
+    }
+
+    final managerName = managerController.text.trim();
+    final companyName = companyController.text.trim();
+    final email = emailController.text.trim();
+    final description = descriptionController.text.trim();
+
+    if (companyName.isEmpty) {
+      _showSnackbar('회사명을 입력해주세요.');
+      return;
+    }
+    if (managerName.isEmpty) {
+      _showSnackbar('담당자명을 입력해주세요.');
+      return;
+    }
+
+    setState(() => _saving = true);
+
+    try {
+      final uri = Uri.parse('$baseUrl/api/client/upload-logo');
+      final request = http.MultipartRequest('POST', uri);
+
+      final token = prefs.getString('authToken');
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      request.fields['phone'] = userPhone;
+      request.fields['manager_name'] = managerName;
+      request.fields['company_name'] = companyName;
+      request.fields['email'] = email;
+      request.fields['description'] = description;
+
+      if (selectedLogoImage != null) {
+        request.files.add(await http.MultipartFile.fromPath(
+          'logo',
+          selectedLogoImage!.path,
+          contentType: MediaType('image', 'jpeg'),
+        ));
+      }
+
+      if (selectedCertificateFile != null && selectedCertificateFile!.path != null) {
+        final ext = (selectedCertificateFile!.extension ?? '').toLowerCase();
+        final isPdf = ext == 'pdf';
+        final mime = isPdf ? 'application/pdf' : 'image/${ext.isEmpty ? 'jpeg' : ext}';
+
+        request.files.add(http.MultipartFile.fromBytes(
+          'certificate',
+          File(selectedCertificateFile!.path!).readAsBytesSync(),
+          filename: selectedCertificateFile!.name,
+          contentType: MediaType.parse(mime),
+        ));
+      }
+
+      final streamed = await request.send();
+      final body = await streamed.stream.bytesToString();
+
+      if (!mounted) return;
+
+      if (streamed.statusCode == 200) {
+        _showSnackbar('저장되었습니다. 최신 정보를 불러옵니다.');
+        await _loadProfile();
+        setState(() {
+          selectedLogoImage = null;
+          selectedCertificateFile = null;
+        });
+      } else {
+        debugPrint('upload error ${streamed.statusCode}: $body');
+        _showSnackbar('저장에 실패했습니다. (${streamed.statusCode})');
+      }
+    } catch (e) {
+      debugPrint('save error: $e');
+      if (mounted) _showSnackbar('네트워크 오류가 발생했습니다.');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _confirmLeaveIfDirty() async {
+    final dirty = selectedLogoImage != null || selectedCertificateFile != null;
+    if (!dirty) {
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ConfirmSheet(
+        title: '저장하지 않고 나갈까요?',
+        message: '변경 사항이 저장되지 않습니다.',
+        confirmText: '나가기',
+        confirmColor: const Color(0xFFDC2626),
+        icon: Icons.warning_amber_rounded,
+      ),
     );
+
+    if (ok == true && mounted) Navigator.pop(context);
+  }
+
+  @override
+Widget build(BuildContext context) {
+  final bottomSafe = MediaQuery.of(context).viewPadding.bottom;
+
+  return Scaffold(
+    backgroundColor: kBg,
+    resizeToAvoidBottomInset: true,
+    appBar: AppBar(
+      backgroundColor: Colors.white,
+      elevation: 0,
+      centerTitle: false,
+      iconTheme: const IconThemeData(color: Colors.black),
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: _confirmLeaveIfDirty,
+      ),
+      title: const Text(
+        '계정 관리',
+        style: TextStyle(
+          fontFamily: 'Jalnan2TTF',
+          color: kBrand,
+          fontSize: 20,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _canSave ? _saveProfile : null,
+          child: Text(
+            _saving ? '저장 중…' : '저장',
+            style: TextStyle(
+              color: _canSave ? kBrand : Colors.black26,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+      ],
+    ),
+
+    // ✅ 저장 버튼을 하단 고정 + SafeArea로 올림 (안드 뒤로가기 영역 회피)
+    bottomNavigationBar: SafeArea(
+      top: false,
+      child: Container(
+        color: kBg,
+        padding: EdgeInsets.fromLTRB(16, 10, 16, 12 + (bottomSafe > 0 ? 0 : 0)),
+        child: _SaveButton(
+          busy: _saving,
+          onPressed: _canSave ? _saveProfile : null,
+        ),
+      ),
+    ),
+
+    body: isLoading
+        ? const Center(child: CircularProgressIndicator())
+        : RefreshIndicator(
+            color: kBrand,
+            onRefresh: _loadProfile,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              children: [
+                _profileHeaderCard(),
+                const SizedBox(height: 14),
+                _SectionCard(
+                  title: '기본 정보',
+                  children: [
+                    _LabeledField(
+                      label: '담당자명',
+                      child: TextField(
+                        controller: managerController,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(hintText: '예) 홍길동'),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _LabeledField(
+                      label: '회사명',
+                      child: TextField(
+                        controller: companyController,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(hintText: '예) 알바일주'),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _LabeledField(
+                      label: '이메일',
+                      child: TextField(
+                        controller: emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
+                        decoration: const InputDecoration(hintText: '예) hello@company.com'),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    _LabeledField(
+                      label: '회사 소개',
+                      child: TextField(
+                        controller: descriptionController,
+                        maxLines: 3,
+                        decoration: const InputDecoration(hintText: '간단한 소개를 입력해주세요.'),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+                _certificateSection(),
+
+                // ❌ 여기 있던 _SaveButton 제거 (bottomNavigationBar로 이동)
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+  );
+}
+
+  Widget _profileHeaderCard() {
+    final hasRemoteLogo = logoUrl.trim().isNotEmpty;
+    final imgProvider = selectedLogoImage != null
+        ? FileImage(selectedLogoImage!)
+        : (hasRemoteLogo ? NetworkImage(_getFullImageUrl(logoUrl)) : null);
 
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFFEEF5FF), Color(0xFFFFFFFF)],
-        ),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(.04),
-              blurRadius: 12,
-              offset: const Offset(0, 6))
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 6)),
         ],
       ),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       child: Row(
         children: [
           Stack(
-            clipBehavior: Clip.none,
             children: [
-              avatar,
+              CircleAvatar(
+                radius: 34,
+                backgroundColor: const Color(0xFFEAF2FF),
+                backgroundImage: imgProvider as ImageProvider?,
+                child: (imgProvider == null)
+                    ? const Icon(Icons.business, size: 32, color: Colors.black54)
+                    : null,
+              ),
               Positioned(
                 bottom: -2,
                 right: -2,
-                child: InkWell(
-                  onTap: _pickLogoImage,
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.grey.shade300),
-                      boxShadow: [
-                        BoxShadow(
-                            color: Colors.black.withOpacity(.08),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2))
-                      ],
+                child: Material(
+                  color: Colors.white,
+                  shape: const CircleBorder(),
+                  child: InkWell(
+                    customBorder: const CircleBorder(),
+                    onTap: _pickLogoImage,
+                    child: Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: kBrand,
+                        shape: BoxShape.circle,
+                        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                      ),
+                      child: const Icon(Icons.edit, size: 16, color: Colors.white),
                     ),
-                    child: const Icon(Icons.edit, size: 16),
                   ),
                 ),
               ),
@@ -506,27 +545,27 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('내 계정',
-                    style:
-                        TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                Text(
+                  companyController.text.trim().isEmpty ? '회사명' : companyController.text.trim(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                ),
                 const SizedBox(height: 4),
-                Text(maskPhoneNumber(phone),
-                    style:
-                        const TextStyle(color: Colors.grey, fontSize: 13)),
+                Text(
+                  _maskPhone(phone),
+                  style: const TextStyle(color: Colors.black54, fontSize: 13),
+                ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          FilledButton.icon(
-            onPressed: _saveProfile,
-            icon: const Icon(Icons.check_circle_outline),
-            label: const Text('저장'),
-            style: FilledButton.styleFrom(
-              backgroundColor: kBrand,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+          const SizedBox(width: 10),
+          IconButton.filledTonal(
+            onPressed: _pickLogoImage,
+            icon: const Icon(Icons.photo_camera_back_outlined),
+            style: IconButton.styleFrom(
+              backgroundColor: const Color(0xFFEAF2FF),
+              foregroundColor: kBrand,
             ),
           ),
         ],
@@ -549,10 +588,11 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       preview = isPdfLocal
           ? _pdfRow(selectedCertificateFile!.name)
           : ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
               child: Image.file(
                 File(selectedCertificateFile!.path!),
-                height: 100,
+                height: 120,
+                width: double.infinity,
                 fit: BoxFit.cover,
               ),
             );
@@ -561,468 +601,390 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         preview = _pdfRow('업로드된 사업자등록증 (PDF)');
       } else {
         preview = ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
           child: Image(
-            height: 100,
+            height: 120,
+            width: double.infinity,
             fit: BoxFit.cover,
             image: NetworkImage(
               _getFullImageUrl(certificateUrl),
               headers: {
-                if ((_authHeaderToken ?? '').isNotEmpty)
-                  'Authorization': 'Bearer ${_authHeaderToken!}',
+                if ((_authHeaderToken ?? '').isNotEmpty) 'Authorization': 'Bearer ${_authHeaderToken!}',
               },
             ),
-            errorBuilder: (_, __, ___) => const Text('이미지를 불러오지 못했습니다.',
-                style: TextStyle(color: Colors.black45)),
+            errorBuilder: (_, __, ___) => Container(
+              height: 120,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F4F6),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Text('파일을 불러오지 못했습니다.', style: TextStyle(color: Colors.black45)),
+            ),
           ),
         );
       }
     } else {
-      preview = const Text('아직 업로드된 파일이 없습니다.',
-          style: TextStyle(color: Colors.black45));
+      preview = Container(
+        height: 90,
+        decoration: BoxDecoration(
+          color: const Color(0xFFF3F4F6),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        alignment: Alignment.center,
+        child: const Text('아직 업로드된 파일이 없습니다.', style: TextStyle(color: Colors.black45)),
+      );
     }
 
+    return _SectionCard(
+      title: '사업자등록증',
+      trailing: TextButton.icon(
+        onPressed: _showCertificatePickerOptions,
+        icon: const Icon(Icons.upload_file),
+        label: const Text('업로드'),
+      ),
+      children: [
+        Text(
+          '업로드 후 관리자 검토가 진행됩니다. 검토 완료 시 “안심기업” 표시가 적용됩니다.',
+          style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600, height: 1.35),
+        ),
+        const SizedBox(height: 10),
+        preview,
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: hasRemote ? _openCertificate : null,
+                icon: const Icon(Icons.open_in_new),
+                label: const Text('기존 파일 열기'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: kBrand,
+                  side: const BorderSide(color: Color(0xFFD1E3FF)),
+                  backgroundColor: const Color(0xFFEAF2FF),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: hasLocal
+                    ? () => setState(() => selectedCertificateFile = null)
+                    : null,
+                icon: const Icon(Icons.close),
+                label: const Text('선택 해제'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.black54,
+                  side: BorderSide(color: Colors.grey.shade300),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _pdfRow(String name) => Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF1F2),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFFECACA)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.picture_as_pdf, color: Colors.red),
+            const SizedBox(width: 8),
+            Expanded(child: Text(name, overflow: TextOverflow.ellipsis)),
+          ],
+        ),
+      );
+}
+
+/* --------------------------- UI pieces --------------------------- */
+
+class _SectionCard extends StatelessWidget {
+  final String title;
+  final Widget? trailing;
+  final List<Widget> children;
+
+  const _SectionCard({
+    required this.title,
+    required this.children,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(.03),
-              blurRadius: 10,
-              offset: const Offset(0, 4))
-        ],
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
       ),
       padding: const EdgeInsets.all(14),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
               Container(
-                width: 34,
-                height: 34,
+                width: 6,
+                height: 18,
                 decoration: BoxDecoration(
-                    color: Colors.amber.shade100, shape: BoxShape.circle),
-                child: const Icon(Icons.verified_user, color: Colors.orange),
+                  color: _EditClientProfileScreenState.kBrand,
+                  borderRadius: BorderRadius.circular(4),
+                ),
               ),
               const SizedBox(width: 10),
-              const Expanded(
-                child: Text('사업자등록증 업로드',
-                    style: TextStyle(fontWeight: FontWeight.w700)),
-              ),
-              TextButton.icon(
-                onPressed: () => _showCertificatePickerOptions(),
-                icon: const Icon(Icons.upload_file),
-                label: const Text('파일 선택'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '등록 시 관리자 검토 후 "안심기업" 뱃지가 표시됩니다. (1~2일 소요)',
-            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-          ),
-          const SizedBox(height: 10),
-          preview,
-          if (hasRemote) ...[
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.link, size: 16),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    certificateUrl,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style:
-                        const TextStyle(fontSize: 12, color: Colors.black54),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontFamily: 'Jalnan2TTF',
+                    fontSize: 15,
+                    color: Colors.black87,
                   ),
                 ),
-                TextButton(
-                  onPressed: _openCertificate,
-                  child: const Text('열기'),
-                ),
-              ],
-            ),
-          ],
+              ),
+              if (trailing != null) trailing!,
+            ],
+          ),
+          const SizedBox(height: 10),
+          ...children,
         ],
       ),
     );
   }
+}
 
-  Widget _pdfRow(String name) => Row(
-        children: [
-          const Icon(Icons.picture_as_pdf, color: Colors.red),
-          const SizedBox(width: 8),
-          Expanded(child: Text(name, overflow: TextOverflow.ellipsis)),
-        ],
-      );
+class _LabeledField extends StatelessWidget {
+  final String label;
+  final Widget child;
 
-  // ----------------- 계정 관리(탈퇴 진입 최소화) -----------------
+  const _LabeledField({required this.label, required this.child});
 
-  Widget _accountManageSection() {
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Divider(height: 32),
-        const _SectionTitle('계정 관리'),
+        Text(label, style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
         const SizedBox(height: 6),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton(
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
-              foregroundColor: Colors.black54,
-            ),
-            onPressed: _showDeleteAccountFlow,
-            child: const Text(
-              '회원 탈퇴',
-              style: TextStyle(
-                fontSize: 13,
-                decoration: TextDecoration.underline,
+        Theme(
+          data: theme.copyWith(
+            inputDecorationTheme: InputDecorationTheme(
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: _EditClientProfileScreenState.kBrand, width: 1.3),
               ),
             ),
           ),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          '※ 진행 중 공고/채팅/결제 이력이 있으면 탈퇴가 제한됩니다.',
-          style: TextStyle(fontSize: 12, color: Colors.black38),
+          child: child,
         ),
       ],
     );
   }
-
-  // ----------------- 탈퇴 플로우 -----------------
-
-  Future<void> _showDeleteAccountFlow() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt('userId');
-
-    bool hasActivePostings = false;
-    bool hasOngoingChat = false;
-    bool hasUnpaidInvoice = false;
-
-    try {
-      // 실제 API는 서비스 상황에 맞춰 교체
-      final postings = await http.get(
-          Uri.parse('$baseUrl/api/client/postings/active?clientId=$userId'));
-      if (postings.statusCode == 200) {
-        final js = jsonDecode(postings.body);
-        hasActivePostings = (js['count'] ?? 0) > 0;
-      }
-
-      final chats = await http
-          .get(Uri.parse('$baseUrl/api/chat/ongoing?clientId=$userId'));
-      if (chats.statusCode == 200) {
-        final js = jsonDecode(chats.body);
-        hasOngoingChat = (js['count'] ?? 0) > 0;
-      }
-
-      final invoices = await http
-          .get(Uri.parse('$baseUrl/api/billing/unpaid?clientId=$userId'));
-      if (invoices.statusCode == 200) {
-        final js = jsonDecode(invoices.body);
-        hasUnpaidInvoice = (js['count'] ?? 0) > 0;
-      }
-    } catch (_) {}
-
-    if (hasActivePostings || hasOngoingChat || hasUnpaidInvoice) {
-      await showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-        ),
-        builder: (ctx) {
-          return SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('탈퇴 불가 안내',
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 12),
-                  if (hasActivePostings)
-                    const Text('• 진행 중인 공고가 있습니다. 공고 종료 또는 삭제 후 진행해주세요.',
-                        style: TextStyle(color: Colors.black87)),
-                  if (hasOngoingChat)
-                    const Text('• 진행 중인 채팅이 있습니다. 채팅 종료 후 진행해주세요.',
-                        style: TextStyle(color: Colors.black87)),
-                  if (hasUnpaidInvoice)
-                    const Text('• 미결제 내역이 있습니다. 결제 후 진행해주세요.',
-                        style: TextStyle(color: Colors.black87)),
-                  const SizedBox(height: 16),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('확인'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-      return;
-    }
-
-    // 다단계 실제 탈퇴 진행
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return _ClientDeleteFlowSheet(
-          onConfirm: (String reason, bool agree1, bool agree2) async {
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final phone = prefs.getString('userPhone'); // ← 백엔드 스펙: phone 쿼리 사용
-    if (phone == null || phone.isEmpty) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('전화번호 정보가 없습니다.')),
-      );
-      return;
-    }
-
-    final uri = Uri.parse('$baseUrl/api/client/profile?phone=$phone');
-    final res = await http.delete(uri); // 바디/Content-Type 불필요
-
-    if (!mounted) return;
-    if (res.statusCode == 200) {
-      await prefs.clear();
-      Navigator.pop(context); // 바텀시트 닫기
-      Navigator.pushNamedAndRemoveUntil(context, '/onboarding', (_) => false);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('탈퇴 실패 (${res.statusCode})')),
-      );
-    }
-  } catch (e) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('네트워크 오류: $e')),
-    );
-  }
-},
-        );
-      },
-    );
-  }
 }
 
-class _ClientDeleteFlowSheet extends StatefulWidget {
-  final Future<void> Function(String reason, bool a1, bool a2) onConfirm;
-  const _ClientDeleteFlowSheet({required this.onConfirm});
+class _SaveButton extends StatelessWidget {
+  final bool busy;
+  final VoidCallback? onPressed;
 
-  @override
-  State<_ClientDeleteFlowSheet> createState() => _ClientDeleteFlowSheetState();
-}
-
-class _ClientDeleteFlowSheetState extends State<_ClientDeleteFlowSheet> {
-  final _reasonCtrl = TextEditingController();
-  final _typeCtrl = TextEditingController();
-  bool _agree1 = false; // 데이터 삭제/복구 불가
-  bool _agree2 = false; // 결제/법정 보존 안내
-  bool _busy = false;
-  int _countdown = 3;
-
-  @override
-  void dispose() {
-    _reasonCtrl.dispose();
-    _typeCtrl.dispose();
-    super.dispose();
-  }
-String? _errorMessage;
- Future<void> _runConfirm() async {
-  if (_busy) return;
-
-  final confirmText = _typeCtrl.text.trim();
-
-  if (confirmText.isEmpty) {
-    setState(() => _errorMessage = '확인 문구를 입력해주세요. (예: 탈퇴)');
-    return;
-  }
-  if (confirmText != '탈퇴') {
-    setState(() => _errorMessage = '확인 문구로 "탈퇴"를 입력해주세요.');
-    return;
-  }
-  if (!_agree1 || !_agree2) {
-    setState(() => _errorMessage = '안내 사항에 모두 동의해주세요.');
-    return;
-  }
-
-  setState(() {
-    _errorMessage = null;
-    _busy = true;
-  });
-
-  try {
-    await widget.onConfirm(_reasonCtrl.text.trim(), _agree1, _agree2);
-  } catch (e) {
-    setState(() => _errorMessage = '탈퇴 처리 중 오류가 발생했습니다.');
-  } finally {
-    if (mounted) setState(() => _busy = false);
-  }
-}
-
+  const _SaveButton({required this.busy, required this.onPressed});
 
   @override
   Widget build(BuildContext context) {
-    final inset = MediaQuery.of(context).viewInsets;
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + inset.bottom),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: onPressed,
+        icon: busy
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+            : const Icon(Icons.save_outlined),
+        label: Text(busy ? '저장 중…' : '저장하기'),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _EditClientProfileScreenState.kBrand,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          elevation: 0,
+        ),
+      ),
+    );
+  }
+}
+
+/* --------------------------- Bottom Sheets --------------------------- */
+
+class _BottomSheetCard extends StatelessWidget {
+  final Widget child;
+  const _BottomSheetCard({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomSafe = MediaQuery.of(context).viewPadding.bottom;
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      padding: EdgeInsets.fromLTRB(16, 10, 16, 16 + bottomSafe),
+      child: child,
+    );
+  }
+}
+
+class _SheetHeader extends StatelessWidget {
+  final String title;
+  const _SheetHeader({required this.title});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Container(
+          width: 42,
+          height: 5,
+          decoration: BoxDecoration(
+            color: const Color(0xFFE5E7EB),
+            borderRadius: BorderRadius.circular(999),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+        ),
+      ],
+    );
+  }
+}
+
+class _SheetTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+
+  const _SheetTile({required this.icon, required this.label, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: Icon(icon, color: _EditClientProfileScreenState.kBrand),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+      onTap: onTap,
+    );
+  }
+}
+
+/* --------------------------- Confirm Sheet --------------------------- */
+
+class _ConfirmSheet extends StatelessWidget {
+  final String title;
+  final String message;
+  final String confirmText;
+  final Color confirmColor;
+  final IconData icon;
+
+  const _ConfirmSheet({
+    required this.title,
+    required this.message,
+    required this.confirmText,
+    required this.confirmColor,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomSafe = MediaQuery.of(context).viewPadding.bottom;
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomSafe),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 42,
+            height: 5,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE5E7EB),
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: confirmColor.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: confirmColor),
+          ),
+          const SizedBox(height: 12),
+          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+          const SizedBox(height: 6),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontSize: 12.5, color: Color(0xFF6B7280), height: 1.35),
+          ),
+          const SizedBox(height: 14),
+          Row(
             children: [
-              Center(
-                child: Container(
-                  width: 44,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: Colors.black12,
-                    borderRadius: BorderRadius.circular(999),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF111827),
+                    side: const BorderSide(color: Color(0xFFE5E7EB)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   ),
+                  child: const Text('취소', style: TextStyle(fontWeight: FontWeight.w900)),
                 ),
               ),
-              const SizedBox(height: 14),
-              const Text('회원 탈퇴',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-              const SizedBox(height: 10),
-              const Text(
-                '탈퇴 시 아래 정보가 영구 삭제되며 복구할 수 없습니다.',
-                style: TextStyle(color: Colors.black87),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                '• 기업 프로필, 공고/채팅/알림 이력\n• 이용권·구독 혜택 및 적립/포인트',
-                style: TextStyle(color: Colors.black54),
-              ),
-              const SizedBox(height: 16),
-
-              const Text('탈퇴 사유 (선택 또는 직접 입력)',
-                  style: TextStyle(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  for (final s in [
-                    '채용/매칭 효율이 낮아요',
-                    '요금/결제 이슈',
-                    '원하는 인재가 없어요',
-                    '다른 서비스를 이용해요'
-                  ])
-                    ChoiceChip(
-                      label: Text(s),
-                      selected: _reasonCtrl.text == s,
-                      onSelected: (v) =>
-                          setState(() => _reasonCtrl.text = v ? s : ''),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _reasonCtrl,
-                decoration: const InputDecoration(
-                  hintText: '기타 사유를 입력하세요(선택)',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 16),
-
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                value: _agree1,
-                onChanged: (v) => setState(() => _agree1 = v ?? false),
-                title: const Text('모든 데이터가 삭제되며 복구되지 않음을 이해했습니다.'),
-              ),
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                value: _agree2,
-                onChanged: (v) => setState(() => _agree2 = v ?? false),
-                title: const Text('결제/영수증/법정 보존 항목은 관계 법령에 따라 보관될 수 있음을 확인합니다.'),
-              ),
-              const SizedBox(height: 10),
-
-            const Text('확인 문구 입력', style: TextStyle(fontWeight: FontWeight.w700)),
-const SizedBox(height: 6),
-TextField(
-  controller: _typeCtrl,
-  decoration: const InputDecoration(
-    hintText: '탈퇴',
-    border: OutlineInputBorder(),
-  ),
-),
-if (_errorMessage != null) // ✅ 에러 문구 표시
-  Padding(
-    padding: const EdgeInsets.only(top: 6, left: 4),
-    child: Text(
-      _errorMessage!,
-      style: const TextStyle(color: Colors.red, fontSize: 13),
-    ),
-  ),
-const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
+              const SizedBox(width: 10),
+              Expanded(
                 child: ElevatedButton(
-                  onPressed: _busy ? null : _runConfirm,
+                  onPressed: () => Navigator.pop(context, true),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE53935),
+                    backgroundColor: confirmColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
                   ),
-                  child: Text(_busy ? '진행 중… $_countdown' : '계정 영구 삭제'),
+                  child: Text(confirmText, style: const TextStyle(fontWeight: FontWeight.w900)),
                 ),
               ),
             ],
           ),
-        ),
+        ],
       ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  final String text;
-  const _SectionTitle(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-            width: 8,
-            height: 8,
-            decoration:
-                const BoxDecoration(color: _EditClientProfileScreenState.kBrand, shape: BoxShape.circle)),
-        const SizedBox(width: 8),
-        Text(text,
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        const SizedBox(width: 8),
-        Expanded(
-            child: Divider(
-                height: 1, thickness: 1, color: Colors.grey.shade300)),
-      ],
     );
   }
 }

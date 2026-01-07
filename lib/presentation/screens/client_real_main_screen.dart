@@ -652,7 +652,7 @@ Widget build(BuildContext context) {
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          builder: (context) => const WorkerMapSheet(),
+          builder: (context) => const WorkerMapScreen(),
         );
       },
       icon: const Icon(Icons.map),
@@ -661,71 +661,103 @@ Widget build(BuildContext context) {
       foregroundColor: Colors.white,
     ),
 
-    appBar: AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      centerTitle: false,
-      iconTheme: const IconThemeData(color: Colors.black),
-      title: const Text(
-        '알바 공고 리스트',
-        style: TextStyle(
-          fontFamily: 'Jalnan2TTF',
-          color: kBrandBlue,
-          fontSize: 20,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-      actions: [
-        TextButton.icon(
-          onPressed: () async {
-            final prefs = await SharedPreferences.getInstance();
-            final clientId = prefs.getInt('userId')?.toString();
+appBar: AppBar(
+  backgroundColor: Colors.white,
+  elevation: 0,
+  centerTitle: false,
+  iconTheme: const IconThemeData(color: Colors.black),
+  title: const Text(
+    '알바 공고 리스트',
+    style: TextStyle(
+      fontFamily: 'Jalnan2TTF',
+      color: kBrandBlue,
+      fontSize: 20,
+      fontWeight: FontWeight.w700,
+    ),
+  ),
+  actions: [
+    Padding(
+      padding: const EdgeInsets.only(right: 12),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: () async {
+          final prefs = await SharedPreferences.getInstance();
+          final clientId = prefs.getInt('userId')?.toString();
 
-            if (clientId == null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('로그인 정보가 없습니다')),
-              );
-              return;
-            }
+          if (clientId == null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('로그인 정보가 없습니다')),
+            );
+            return;
+          }
 
-            try {
-              final response = await http.get(
-                Uri.parse('$baseUrl/api/client/business-info-status?clientId=$clientId'),
-              );
+          try {
+            final response = await http.get(
+              Uri.parse('$baseUrl/api/client/business-info-status?clientId=$clientId'),
+            );
 
-              if (response.statusCode == 200) {
-                final data = jsonDecode(response.body);
-                final hasInfo = data['hasInfo'] == true;
-                final needsUpdate = data['needsUpdate'] == true;
+            if (response.statusCode == 200) {
+              final data = jsonDecode(response.body);
+              final hasInfo = data['hasInfo'] == true;
+              final needsUpdate = data['needsUpdate'] == true;
 
-                if (hasInfo && !needsUpdate) {
-                  Navigator.pushNamed(context, '/post_job');
-                } else {
-                  Navigator.pushNamed(context, '/client_business_info');
-                }
+              if (hasInfo && !needsUpdate) {
+                Navigator.pushNamed(context, '/post_job');
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('사업자 정보 확인 실패')),
-                );
+                Navigator.pushNamed(context, '/client_business_info');
               }
-            } catch (e) {
-              debugPrint('❌ 사업자 확인 오류: $e');
+            } else {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('서버 통신 오류')),
+                const SnackBar(content: Text('사업자 정보 확인 실패')),
               );
             }
-          },
-          icon: const Icon(Icons.add_circle_outline, color: kBrandBlue),
-          label: const Text(
-            '공고 등록',
-            style: TextStyle(
-              color: kBrandBlue,
-              fontWeight: FontWeight.w600,
-            ),
+          } catch (e) {
+            debugPrint('❌ 사업자 확인 오류: $e');
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('서버 통신 오류')),
+            );
+          }
+        },
+        child: Container(
+          height: 38,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: kBrandBlue.withOpacity(.08),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: kBrandBlue.withOpacity(.35)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  color: kBrandBlue.withOpacity(.18),
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: const Icon(Icons.add, size: 18, color: kBrandBlue),
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                '공고 등록',
+                style: TextStyle(
+                  color: kBrandBlue,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  // 폰트 대소문자 혼용 때문에 적용 안될 수 있어서 통일 추천
+                  fontFamily: 'Jalnan2TTF',
+                ),
+              ),
+              const SizedBox(width: 2),
+            ],
           ),
         ),
-      ],
+      ),
     ),
+  ],
+),
+
 
     body: isLoading
         ? const Center(child: CircularProgressIndicator())

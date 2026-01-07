@@ -55,14 +55,15 @@ final List<Map<String, dynamic>> _passOptions = [
   {
     'count': 20,
     'price': 148000,
-    'label': '🔥 추천! 20회 이용권  · 약 16% 할인 · 회당 최저가',
+    'label': '🔥 추천! 20회 이용권  · 약 16% 할인', // ✅ "회당 최저가" 제거
   },
   {
     'count': 30,
     'price': 184000,
-    'label': '🎁 30회 이용권  · 약 30% 할인 ',
+    'label': '🎁 30회 이용권  · 약 30% 할인',
   },
 ];
+
 Future<String?> _getAppReceiptBase64() async {
   try {
     final receipt = await SKReceiptManager.retrieveReceiptData();
@@ -652,14 +653,16 @@ Widget build(BuildContext context) {
               ),
             ),
             const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                '이용권은 공고 등록 시 1건당 1회 차감돼요. 여러 회차를 한 번에 구매하시면 더 저렴해요!',
-                style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+           Expanded(
+  child: Text(
+    '이용권은 공고 등록 시 1건당 1회 차감돼요. 여러 회차를 한 번에 구매하시면 더 저렴해요!',
+    style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+    // ✅ 잘림 제거
+    // maxLines: 2,
+    // overflow: TextOverflow.ellipsis,
+  ),
+),
+
           ],
         ),
       ],
@@ -808,24 +811,7 @@ Widget build(BuildContext context) {
                     ),
 
                     // 상단 리본 (20회)
-                    if (isBest)
-                      const Positioned(
-                        left: 0, top: 0,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: Color(0xFF22C55E),
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(16),
-                              bottomRight: Radius.circular(12),
-                            ),
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            child: Text('BEST VALUE',
-                                style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                          ),
-                        ),
-                      ),
+            
                   ],
                 ),
               );

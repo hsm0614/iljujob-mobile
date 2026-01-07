@@ -422,7 +422,8 @@ class _InquiryScreenState extends State<InquiryScreen> {
                 final title = (item['title'] ?? '제목 없음').toString();
                 final type = (item['inquiryType'] ?? '').toString();
                 final status = (item['status'] ?? '진행 중').toString();
-                final createdAt = (item['created_at'] ?? '').toString();
+               final createdAt = (item['createdAt'] ?? '').toString();
+
                 final answerPreview = (item['answer'] ?? '').toString();
 
                 return InkWell(
@@ -479,7 +480,8 @@ class _InquiryScreenState extends State<InquiryScreen> {
     final type = (inquiry['inquiryType'] ?? '').toString();
     final status = (inquiry['status'] ?? '진행 중').toString();
     final content = (inquiry['content'] ?? '내용 없음').toString();
-    final createdAt = (inquiry['created_at'] ?? '').toString();
+   final createdAt = (inquiry['createdAt'] ?? '').toString();
+
     final answer = (inquiry['answer'] ?? '').toString();
 
     showModalBottomSheet(

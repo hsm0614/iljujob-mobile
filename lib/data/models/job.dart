@@ -88,6 +88,35 @@ DateTime? _parseWithReferenceUtc(dynamic raw, {DateTime? refUtc}) {
   return kstVer ?? utcVer;
 }
 
+/// ✅ 이미지 URL만 따로 모아서 List<String> 으로 만들어주는 헬퍼
+List<String> _parseImageUrlsFromJson(Map<String, dynamic> json) {
+  final List<String> result = [];
+
+  // 1) 배열 필드들
+  final raw1 = json['image_urls'];
+  final raw2 = json['imageUrls'];
+
+  if (raw1 is List) {
+    result.addAll(raw1.map((e) => e.toString()));
+  }
+  if (raw2 is List) {
+    result.addAll(raw2.map((e) => e.toString()));
+  }
+
+  // 2) 단일 URL 필드들(있으면 추가)
+  final single = json['image_url'] ??
+      json['imageUrl'] ??
+      json['thumbnail_url'] ??
+      json['thumbUrl'];
+
+  if (single != null && single.toString().trim().isNotEmpty) {
+    result.add(single.toString());
+  }
+
+  // 3) 중복 제거
+  return result.toSet().toList();
+}
+
 // ---------- 모델 ----------
 class Job {
   final String id;
@@ -156,9 +185,11 @@ class Job {
   });
 
   String get workingHours => '$startTime ~ $endTime';
-// Job 클래스 내부에 추가 (UTC 가정)
-DateTime? get postedAtUtc => publishAt ?? createdAt;
-bool get isScheduled => publishAt != null && publishAt!.isAfter(DateTime.now().toUtc());
+
+  // Job 클래스 내부에 추가 (UTC 가정)
+  DateTime? get postedAtUtc => publishAt ?? createdAt;
+  bool get isScheduled =>
+      publishAt != null && publishAt!.isAfter(DateTime.now().toUtc());
 
   factory Job.fromJson(Map<String, dynamic> json) {
     T? _pick<T>(List<String> keys) {
@@ -170,35 +201,39 @@ bool get isScheduled => publishAt != null && publishAt!.isAfter(DateTime.now().t
     }
 
     // 정책: 서버 스탬프(created/updated 등)는 UTC, 노출/스케줄(publish/start/end)은 KST 의미
-   final publishAtUtc  = _parseServerDateTimeUtc(json['publish_at']   ?? json['publishAt']);
-final createdAtUtc  = _parseServerDateTimeUtc(json['created_at']   ?? json['createdAt']);
-final expiresAtUtc  = _parseServerDateTimeUtc(json['expires_at']   ?? json['expiresAt']);
-final pinnedUntilUtc= _parseServerDateTimeUtc(json['pinned_until'] ?? json['pinnedUntil']);
-
+    final publishAtUtc =
+        _parseServerDateTimeUtc(json['publish_at'] ?? json['publishAt']);
+    final createdAtUtc =
+        _parseServerDateTimeUtc(json['created_at'] ?? json['createdAt']);
+    final expiresAtUtc =
+        _parseServerDateTimeUtc(json['expires_at'] ?? json['expiresAt']);
+    final pinnedUntilUtc =
+        _parseServerDateTimeUtc(json['pinned_until'] ?? json['pinnedUntil']);
 
     return Job(
       id: json['id']?.toString() ?? '',
-      userNumber: json['userNumber']?.toString() ?? json['user_number']?.toString(),
+      userNumber:
+          json['userNumber']?.toString() ?? json['user_number']?.toString(),
       title: json['title'] ?? '',
       location: json['location'] ?? '',
-      locationCity: _pick<String>(['location_city','locationCity']) ?? '',
+      locationCity: _pick<String>(['location_city', 'locationCity']) ?? '',
       pay: json['pay']?.toString() ?? '',
-      payType: _pick<String>(['pay_type','payType']) ?? '일급',
-      startTime: _pick<String>(['start_time','startTime'])?.toString() ?? '',
-      endTime: _pick<String>(['end_time','endTime'])?.toString() ?? '',
+      payType: _pick<String>(['pay_type', 'payType']) ?? '일급',
+      startTime: _pick<String>(['start_time', 'startTime'])?.toString() ?? '',
+      endTime: _pick<String>(['end_time', 'endTime'])?.toString() ?? '',
       category: json['category'] ?? '기타',
       description: json['description'],
       company: json['company'],
 
       // ✅ UTC 보관
-  publishAt:  publishAtUtc,
-createdAt:  createdAtUtc,
-expiresAt:  expiresAtUtc,
-pinnedUntil:pinnedUntilUtc,
+      publishAt: publishAtUtc,
+      createdAt: createdAtUtc,
+      expiresAt: expiresAtUtc,
+      pinnedUntil: pinnedUntilUtc,
 
       // 날짜만: KST 자정 의미 → UTC 보관
-      startDate: _parseDateOnlyUtcFromKST(_pick(['start_date','startDate'])),
-      endDate:   _parseDateOnlyUtcFromKST(_pick(['end_date','endDate'])),
+      startDate: _parseDateOnlyUtcFromKST(_pick(['start_date', 'startDate'])),
+      endDate: _parseDateOnlyUtcFromKST(_pick(['end_date', 'endDate'])),
 
       weekdays: json['weekdays'],
       lat: (() {
@@ -215,11 +250,10 @@ pinnedUntil:pinnedUntilUtc,
         if (v is String) return double.tryParse(v) ?? 0.0;
         return 0.0;
       })(),
-      imageUrls: (json['image_urls'] as List?)
-                  ?.map((e) => e.toString()).toList()
-                ?? (json['imageUrls'] as List?)
-                  ?.map((e) => e.toString()).toList()
-                ?? [],
+
+      // 🔥 여기만 변경됨: 배열 + 단일 URL 모두 처리
+      imageUrls: _parseImageUrlsFromJson(json),
+
       status: json['status'] ?? 'active',
       chatRoomId: () {
         final v = json['chat_room_id'];
@@ -239,9 +273,13 @@ pinnedUntil:pinnedUntilUtc,
         if (v is String) return int.tryParse(v) ?? 0;
         return 0;
       }(),
-      isSameDayPay: json['is_same_day_pay'] == 1 || json['is_same_day_pay'] == true,
-      isCertifiedCompany: json['is_certified_company'] == 1 || json['is_certified_company'] == true,
-      isPaid: json['is_paid'] == null ? true : (json['is_paid'] == 1 || json['is_paid'] == true),
+      isSameDayPay:
+          json['is_same_day_pay'] == 1 || json['is_same_day_pay'] == true,
+      isCertifiedCompany: json['is_certified_company'] == 1 ||
+          json['is_certified_company'] == true,
+      isPaid: json['is_paid'] == null
+          ? true
+          : (json['is_paid'] == 1 || json['is_paid'] == true),
     );
   }
 

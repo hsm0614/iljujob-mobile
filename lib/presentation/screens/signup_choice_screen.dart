@@ -49,13 +49,23 @@ bool _showProfileSetup = false;
   }
 
   final prefs = await SharedPreferences.getInstance();
+
   await prefs.setString('authToken', data['token'] ?? '');
+  await prefs.setString('refreshToken', data['refreshToken'] ?? '');
   await prefs.setString('userType', 'worker');
   await prefs.setInt('userId', data['workerId'] ?? 0);
 
+  // ⭐ 여기 추가 1: 온보딩은 본 걸로 처리
+  await prefs.setBool('hasSeenOnboarding', true);
+
+  // ⭐ 여기 추가 2: 서버에서 내려준 phone도 있으면 같이 저장
+  final profile = data['profile'];
+  if (profile is Map && profile['phone'] is String) {
+    await prefs.setString('userPhone', profile['phone']);
+  }
+
   final isNewUser = data['isNewUser'] == true;
-  final provider = data['socialProvider'] ?? ''; // ✅ 여기 추가!
-  debugPrint('🆕 신규 회원 여부: $isNewUser / provider: $provider');
+  final provider = data['socialProvider'] ?? '';
 
   if (!mounted) return;
 
@@ -349,9 +359,11 @@ bool _showProfileSetup = false;
       ),
     );
   }
-  Widget _buildProfileSetupWidget() {
+ Widget _buildProfileSetupWidget() {
   final List<String> _strengths = [];
   final List<String> _traits = [];
+  String? _gender; // ⬅️ 성별 저장용
+
   final strengthOptions = ['포장', '상하차', '물류', 'F&B', '사무보조', '기타'];
   final traitOptions = ['꼼꼼해요', '책임감 있어요', '상냥해요', '빠릿해요', '체력이 좋아요', '성실해요'];
 
@@ -361,13 +373,71 @@ bool _showProfileSetup = false;
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 6))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('💪 자신 있는 업무 (2개까지)', style: TextStyle(fontWeight: FontWeight.w800)),
+            // ─────────────────────────────
+            // 1) 성별 선택 영역
+            // ─────────────────────────────
+            const Text(
+              '성별',
+              style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 10,
+              children: [
+            ChoiceChip(
+  label: const Text('남자'),
+  selected: _gender == '남성',
+  onSelected: (selected) {
+    setState(() {
+      _gender = selected ? '남성' : null;
+    });
+  },
+),
+ChoiceChip(
+  label: const Text('여자'),
+  selected: _gender == '여성',
+  onSelected: (selected) {
+    setState(() {
+      _gender = selected ? '여성' : null;
+    });
+  },
+),
+ChoiceChip(
+  label: const Text('선택 안 함'),
+  selected: _gender == '선택안함',
+  onSelected: (selected) {
+    setState(() {
+      _gender = selected ? '선택안함' : null;
+    });
+  },
+),
+              ],
+            ),
+
+            const SizedBox(height: 24),
+
+            // ─────────────────────────────
+            // 2) 자신 있는 업무
+            // ─────────────────────────────
+            const Text(
+              '💪 자신 있는 업무 (2개까지)',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 10,
@@ -379,16 +449,27 @@ bool _showProfileSetup = false;
                   selected: isSelected,
                   onSelected: (selected) {
                     setState(() {
-                      if (selected && _strengths.length < 2) _strengths.add(item);
-                      else _strengths.remove(item);
+                      if (selected && _strengths.length < 2) {
+                        _strengths.add(item);
+                      } else {
+                        _strengths.remove(item);
+                      }
                     });
                   },
                   selectedColor: kBrand.withOpacity(0.25),
                 );
               }).toList(),
             ),
+
             const SizedBox(height: 20),
-            const Text('🌟 나를 표현하는 단어', style: TextStyle(fontWeight: FontWeight.w800)),
+
+            // ─────────────────────────────
+            // 3) 나를 표현하는 단어
+            // ─────────────────────────────
+            const Text(
+              '🌟 나를 표현하는 단어',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
             const SizedBox(height: 12),
             Wrap(
               spacing: 10,
@@ -400,22 +481,38 @@ bool _showProfileSetup = false;
                   selected: isSelected,
                   onSelected: (selected) {
                     setState(() {
-                      if (selected) _traits.add(item);
-                      else _traits.remove(item);
+                      if (selected) {
+                        _traits.add(item);
+                      } else {
+                        _traits.remove(item);
+                      }
                     });
                   },
                   selectedColor: const Color(0xFF10B981).withOpacity(0.25),
                 );
               }).toList(),
             ),
+
             const SizedBox(height: 24),
+
+            // ─────────────────────────────
+            // 4) 완료 버튼
+            // ─────────────────────────────
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
+                  if (_gender == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('성별을 선택해주세요.')),
+                    );
+                    return;
+                  }
+
                   final prefs = await SharedPreferences.getInstance();
                   final token = prefs.getString('authToken') ?? '';
                   final workerId = prefs.getInt('userId');
+
                   try {
                     await http.post(
                       Uri.parse('$baseUrl/api/worker/update-profile'),
@@ -427,10 +524,16 @@ bool _showProfileSetup = false;
                         'workerId': workerId,
                         'strengths': _strengths,
                         'traits': _traits,
+                        'gender': _gender, // ⬅️ 서버로 같이 전송
                       }),
                     );
+
                     if (!context.mounted) return;
-                    Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      '/home',
+                      (_) => false,
+                    );
                   } catch (e) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('프로필 저장 중 오류: $e')),
@@ -440,7 +543,9 @@ bool _showProfileSetup = false;
                 style: ElevatedButton.styleFrom(
                   backgroundColor: kBrand,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: const Text('완료하고 시작하기'),
               ),
@@ -451,5 +556,4 @@ bool _showProfileSetup = false;
     },
   );
 }
-
 }

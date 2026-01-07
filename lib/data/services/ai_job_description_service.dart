@@ -84,74 +84,81 @@ class AIJobDescriptionService {
   }
 
   static String _buildAdvancedPrompt({
-    required String title,
-    required String category,
-    required String location,
-    required String payType,
-    required int pay,
-    String? workingTime,
-    List<String>? weekdays,
-    String? companyName,
-    required bool isShortTerm,
-    required String tone,
-  }) {
-    final weekdaysText = weekdays?.isNotEmpty == true ? weekdays!.join(', ') : '';
-    final periodText = isShortTerm ? '단기' : '장기';
-    final payFormatted = NumberFormat('#,###').format(pay);
-    final categoryTemplate = AIConfig.categoryTemplates[category] ?? AIConfig.categoryTemplates['기타']!;
-    
-    // 톤에 따른 문체 조정
-    String toneInstruction = '';
-    switch (tone) {
-      case 'professional':
-        toneInstruction = '정중하고 전문적인 어조로 작성해주세요. 격식을 갖춘 표현을 사용하세요.';
-        break;
-      case 'casual':
-        toneInstruction = '편안하고 친근한 어조로 작성해주세요. 반말이나 이모티콘 사용도 괜찮습니다.';
-        break;
-      default: // friendly
-        toneInstruction = '친근하지만 정중한 어조로 작성해주세요. 읽기 쉽고 따뜻한 느낌이 나도록 해주세요.';
-    }
+  required String title,
+  required String category,
+  required String location,
+  required String payType,
+  required int pay,
+  String? workingTime,
+  List<String>? weekdays,
+  String? companyName,
+  required bool isShortTerm,
+  required String tone,
+}) {
+  final weekdaysText = weekdays?.isNotEmpty == true ? weekdays!.join(', ') : '';
+  final periodText = isShortTerm ? '단기' : '장기';
+  final payFormatted = NumberFormat('#,###').format(pay);
 
-    return '''
-알바 구인공고를 작성해주세요. 아래 정보를 바탕으로 매력적이고 실용적인 공고문을 작성해주세요.
+  String toneInstruction = '';
+  switch (tone) {
+    case 'professional':
+      toneInstruction = '정중하고 신뢰감 있는 문장. 과장/이모티콘 최소.';
+      break;
+    case 'casual':
+      toneInstruction = '친근하고 가벼운 문장. 이모티콘 1개까지 허용. 반말 금지.';
+      break;
+    default:
+      toneInstruction = '친근하지만 깔끔한 문장. 과장 없이 따뜻하게.';
+  }
 
-**기본 정보:**
-- 제목: $title
-- 업종: $category
-- 지역: $location
-- 근무형태: $periodText
-- 급여: $payType $payFormatted원
-${workingTime?.isNotEmpty == true ? '- 근무시간: $workingTime' : ''}
-${weekdaysText.isNotEmpty ? '- 근무요일: $weekdaysText' : ''}
-${companyName?.isNotEmpty == true ? '- 회사명: $companyName' : ''}
+  final wt = (workingTime != null && workingTime.trim().isNotEmpty) ? workingTime.trim() : '';
+  final wn = weekdaysText.isNotEmpty ? weekdaysText : '';
+  final cn = (companyName != null && companyName.trim().isNotEmpty) ? companyName.trim() : '';
 
-**업종별 특화 가이드:**
-$categoryTemplate
+  return '''
+너는 한국 채용 공고 전문 카피라이터다. 알바일주 앱에 게시될 현실적인 알바 공고문을 작성한다.
 
-**작성 스타일:**
+절대 규칙
+- 허위 정보 금지: 외부 플랫폼명, 이메일, 전화번호, 링크, 존재하지 않는 복지/간식/셔틀/교통비/식사 제공 등을 만들지 말 것
+- 성별/연령/외모 차별 표현 금지
+- 과장 문구(압도적/최고/무조건/돈 많이 벌어요 등) 금지
+- 마크다운 금지(별표/샵/과한 목록). 일반 텍스트만
+- 글자수 340~480자 근접
+- “알바일주” 브랜드 언급은 자연스럽게 1회만(첫 문장 또는 마지막 문장)
+
+가장 중요한 규칙(업무 추측 금지)
+- 업종이 "$category"로만 주어졌다면, 업무를 “생산/포장/검수/피킹/조립/라인”처럼 특정하지 말 것
+- 대신 반드시 “$category 보조”, “$category 관련 단순 보조”, “$category 현장 보조” 같은 표현만 사용
+- 예외: 제목(title) 또는 입력 정보에 특정 업무 단어가 이미 들어있을 때만, 그 단어를 그대로 1회 사용 가능(새로 만들어내면 안 됨)
+
+입력 정보
+제목: $title
+업종: $category
+지역: $location
+근무형태: $periodText
+급여: $payType $payFormatted원
+근무시간: ${wt.isNotEmpty ? wt : '미정(협의 가능)'}
+근무요일: ${wn.isNotEmpty ? wn : '미정(협의 가능)'}
+회사명: ${cn.isNotEmpty ? cn : '미정'}
+
+문체
 $toneInstruction
 
-**필수 포함사항:**
-1. 업무내용을 구체적이고 명확하게 설명
-2. 근무환경의 장점이나 복리혜택 언급
-3. 지원자격 또는 우대사항 (경험무관 환영 등)
-4. 2025년 최저시급(시급 10,030원) 준수 언급
-5. 지원방법이나 문의사항에 대한 안내
+반드시 포함할 내용
+1) 업무 설명: “$category 보조” 중심으로 2문장(업무 특정 금지)
+2) 초보 가능(경험무관 환영) 문장 1회
+3) 근무 조건(미정이면 협의 가능으로)
+4) 2025년 최저시급 10,030원 준수 문장 1회
+5) 지원 방법 마지막 줄로 고정:
+지원: 알바일주 앱에서 ‘지원하기’ 버튼
 
-**주의사항:**
-- 과장된 표현이나 허위정보 금지
-- 성별, 연령, 외모 차별적 표현 금지
-- 300-600자 내외로 작성
-- 읽기 쉽게 문단 구분
+출력 포맷
+- 문단 3개, 각 문단 2문장
+- 마지막 줄은 위 지원 문구 그대로
 
-아래와 같은 형식으로 공고문만 작성해주세요:
-
-[여기에 공고문 내용]
-
----END---
+공고문만 출력해라.
 ''';
-  }
+}
 
   static String _postProcessDescription(String content) {
     // 불필요한 접두사/접미사 제거

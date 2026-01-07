@@ -83,12 +83,17 @@ Future<ConsentResult> consentDecision({
   }
 
   // list 응답을 안전하게 꺼내기: {items: []} | []
-  List _asList(dynamic decoded) {
-    if (decoded is List) return decoded;
-    if (decoded is Map && decoded['items'] is List) return decoded['items'] as List;
-    return const [];
+List _asList(dynamic decoded) {
+  if (decoded is List) return decoded;
+
+  if (decoded is Map) {
+    if (decoded['items'] is List) return decoded['items'] as List;
+    if (decoded['data'] is List) return decoded['data'] as List;
+    if (decoded['workers'] is List) return decoded['workers'] as List;
   }
 
+  return const [];
+}
   Map<String, dynamic> _asMap(dynamic decoded) {
     if (decoded is Map<String, dynamic>) return decoded;
     if (decoded is Map) return Map<String, dynamic>.from(decoded);
@@ -115,35 +120,71 @@ Future<ConsentResult> consentDecision({
     } catch (_) {}
   }
 
-  Future<List<dynamic>> fetchCandidatesForJob(int jobId, {int limit = 50}) async {
-    final url = Uri.parse('$base/api/target/workers?jobId=$jobId&limit=$limit');
-final r = await _get(url); // <-- __get -> _get 로 수정
-    if (r.statusCode != 200) return [];
-    final decoded = _decode<dynamic>(r);
-    return _asList(decoded);
-  }
+Future<List<dynamic>> fetchCandidatesForJob(int jobId, {int limit = 50}) async {
+  final url = Uri.parse('$base/api/target/workers?jobId=$jobId&limit=$limit');
+  final r = await _get(url);
+  if (r.statusCode != 200) return [];
+
+  final decoded = _decode<dynamic>(r);
+  final list = _asList(decoded);
+
+  // 🔥 여기서 서버 응답을 정규화해서 name / photoUrl / workerId를 강제로 붙여줌
+  return list.map((e) {
+    if (e is! Map) return e;
+    final m = Map<String, dynamic>.from(e as Map);
+
+    // workerId 추출 (worker_id / workerId / id 아무거나)
+    final rawId = m['worker_id'] ?? m['workerId'] ?? m['id'];
+    int? workerId;
+    if (rawId is num) {
+      workerId = rawId.toInt();
+    } else if (rawId is String) {
+      workerId = int.tryParse(rawId);
+    }
+
+    // 이름 / 프로필 이미지 여러 키에 대응
+    final rawName = (m['name'] ?? m['worker_name'] ?? m['user_name']);
+    final rawPhoto = (m['photo_url'] ??
+        m['thumbnail_url'] ??
+        m['photoUrl'] ??
+        m['thumbnailUrl']);
+
+    return {
+      ...m,
+      if (workerId != null) 'workerId': workerId,
+      if (rawName != null) 'name': rawName.toString(),
+      if (rawPhoto != null) 'photoUrl': rawPhoto.toString(),
+    };
+  }).toList();
+}
+
 
   /// 인재 간략 프로필 배치 조회 (이름/사진 등)
-  Future<Map<int, Map<String, dynamic>>> fetchWorkerBriefBatch(List<int> ids) async {
-    if (ids.isEmpty) return {};
-    final url = Uri.parse('$base/api/worker/brief-batch');
-    final r = await _post(url, {'ids': ids});
-    if (r.statusCode != 200) return {};
+   Future<Map<int, Map<String, dynamic>>> fetchWorkerBriefBatch(List<int> ids) async {
+  if (ids.isEmpty) return {};
+  final url = Uri.parse('$base/api/worker/brief-batch');
 
-    final decoded = _decode<dynamic>(r);
-    final list = _asList(decoded);
+ 
+  final r = await _post(url, {'ids': ids});
 
-    final out = <int, Map<String, dynamic>>{};
-    for (final e in list) {
-      if (e is Map) {
-        final m = Map<String, dynamic>.from(e);
-        final id = (m['id'] as num?)?.toInt();
-        if (id != null) out[id] = m;
-      }
+ 
+
+  if (r.statusCode != 200) return {};
+
+  final decoded = _decode<dynamic>(r);
+  final list = _asList(decoded);
+
+  final out = <int, Map<String, dynamic>>{};
+  for (final e in list) {
+    if (e is Map) {
+      final m = Map<String, dynamic>.from(e);
+      final id = (m['id'] as num?)?.toInt();
+      if (id != null) out[id] = m;
     }
-    return out;
   }
-
+  
+  return out;
+}
   /// 공고 상세를 다양한 응답 모양에서 안전하게 파싱해 Map<String,dynamic>으로 반환
   Future<Map<String, dynamic>?> fetchJobDetailRaw(int jobId) async {
     final candidates = <Uri>[

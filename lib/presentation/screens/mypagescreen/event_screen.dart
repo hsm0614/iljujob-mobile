@@ -110,49 +110,76 @@ class _EventScreenState extends State<EventScreen> {
         child: CustomScrollView(
           slivers: [
             // 헤더
-            SliverAppBar(
-              pinned: true,
-              elevation: 0,
-              backgroundColor: Colors.white,
-              expandedHeight: 160,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [Color(0xFF3B8AFF), Color(0xFF6EB6FF)],
-                    ),
-                  ),
-                  child: SafeArea(
-                    bottom: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '이벤트',
-                            style: TextStyle(
-                              fontFamily: 'Jalnan2TTF',
-                              color: Colors.white,
-                              fontSize: 22,
-                              height: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          _SearchField(
-                            hintText: '이벤트 검색',
-                            onChanged: (v) => setState(() => _query = v),
-                          ),
-                        ],
+           SliverAppBar(
+  pinned: true,
+  elevation: 0,
+  backgroundColor: Colors.white,
+  expandedHeight: 170,
+  automaticallyImplyLeading: false,
+  flexibleSpace: FlexibleSpaceBar(
+    background: Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF3B8AFF), Color(0xFF6EB6FF)],
+        ),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ✅ 상단: 뒤로가기 + 타이틀
+              Row(
+                children: [
+                  InkWell(
+                    onTap: () => Navigator.maybePop(context),
+                    borderRadius: BorderRadius.circular(999),
+                    child: Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.18),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios_new,
+                        size: 18,
+                        color: Colors.white,
                       ),
                     ),
                   ),
-                ),
+                  const SizedBox(width: 10),
+                  const Text(
+                    '이벤트',
+                    style: TextStyle(
+                      fontFamily: 'Jalnan2TTF',
+                      color: Colors.white,
+                      fontSize: 22,
+                      height: 1.2,
+                    ),
+                  ),
+                ],
               ),
-              toolbarHeight: 0,
-            ),
+
+              const SizedBox(height: 12),
+
+              // ✅ 검색
+              _SearchField(
+                hintText: '이벤트 검색',
+                onChanged: (v) => setState(() => _query = v),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  ),
+  toolbarHeight: 0,
+),
+
 
             if (isLoading)
               const SliverFillRemaining(
@@ -243,20 +270,26 @@ class _EventCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 썸네일
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: img.isNotEmpty
-                    ? Image.network(img, fit: BoxFit.cover)
-                    : Container(
-                        color: const Color(0xFFE9EEF8),
-                        child: const Center(
-                          child: Icon(Icons.image_outlined, size: 40, color: Colors.black26),
-                        ),
-                      ),
+           ClipRRect(
+  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+  child: AspectRatio(
+    aspectRatio: 16 / 9,
+    child: Container(
+      color: const Color(0xFFE9EEF8), // ✅ 빈 공간 배경
+      child: img.isNotEmpty
+          ? Image.network(
+              img,
+              fit: BoxFit.contain, // ✅ 온전하게 보이게
+              errorBuilder: (_, __, ___) => const Center(
+                child: Icon(Icons.broken_image_outlined, size: 40, color: Colors.black26),
               ),
+            )
+          : const Center(
+              child: Icon(Icons.image_outlined, size: 40, color: Colors.black26),
             ),
+    ),
+  ),
+),
 
             // 본문
             Padding(

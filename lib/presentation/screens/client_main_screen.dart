@@ -406,28 +406,26 @@ void _initSocket() {
   }
 
 void _onItemTapped(int index) {
-  setState(() {
-    _selectedIndex = index;
-  });
-  // ✅ 탭 바꿨는데 2면 모달 체크
+
+
+  setState(() => _selectedIndex = index);
+
   if (index == 1) {
-    // 다음 프레임에 띄우면 UI 튐 방지
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _maybeFetchAndShowServerPromo();
     });
   }
 }
 
-  List<Widget> _buildScreens() {
-    return [
-  
-      const ClientRealMainScreen(),
-      ClientHomeScreen(api: _api),     // ← const 제거 + api 넘김
-      const WorkerMapSheet(),
-      ChatListScreen(onMessagesRead: _fetchUnreadCount),
-      const ClientMyPageScreen(),
-    ];
-  }
+List<Widget> _buildScreens() {
+  return [
+    const ClientRealMainScreen(),
+    ClientHomeScreen(api: _api),
+    const WorkerMapScreen(),  // ✅ 여기 교체
+    ChatListScreen(onMessagesRead: _fetchUnreadCount),
+    const ClientMyPageScreen(),
+  ];
+}
 
 List<BottomNavigationBarItem> _buildNavItems() {
   return [

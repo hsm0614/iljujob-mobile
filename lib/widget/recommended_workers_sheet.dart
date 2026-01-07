@@ -332,21 +332,33 @@ class _WorkerCard extends StatelessWidget {
     this.inviteState = InviteState.idle,
   });
 
-  @override
+   @override
   Widget build(BuildContext context) {
     final workerId = (data['workerId'] as num).toInt();
     final score = ((data['score'] ?? 0) as num).toDouble().clamp(0, 1);
     final dist = ((data['distKm'] ?? 0) as num).toDouble();
     final reasons = (data['reasons'] as List? ?? const []).cast<String>();
 
-    final name = (profile?['name'] as String?)?.trim();
-    final photoUrl = profile?['photoUrl'] as String?;
-    final displayName = name != null && name.isNotEmpty ? maskName(name) : '인재 #$workerId';
+    // 🔥 이름 우선순위: profile.name > data.name
+    final nameFromProfile = (profile?['name'] as String?)?.trim();
+    final nameFromData    = (data['name'] as String?)?.trim();
+    final rawName = (nameFromProfile != null && nameFromProfile.isNotEmpty)
+        ? nameFromProfile
+        : (nameFromData != null && nameFromData.isNotEmpty
+            ? nameFromData
+            : null);
+ debugPrint('AI SHEET workerId=$workerId, profileName=${profile?['name']}, dataName=${data['name']}');
+    final displayName = rawName != null && rawName.isNotEmpty
+        ? maskName(rawName)
+        : '인재 #$workerId';
 
     Widget avatar;
-    if (photoUrl != null && photoUrl.isNotEmpty) {
-      avatar = const SizedBox.shrink();
-      avatar = CircleAvatar(radius: 20, backgroundImage: NetworkImage(photoUrl));
+    if (profile?['photoUrl'] != null &&
+        (profile!['photoUrl'] as String).isNotEmpty) {
+      avatar = CircleAvatar(
+        radius: 20,
+        backgroundImage: NetworkImage(profile!['photoUrl'] as String),
+      );
     } else {
       final initial = displayName.isNotEmpty ? displayName[0] : '?';
       avatar = CircleAvatar(
@@ -376,7 +388,8 @@ class _WorkerCard extends StatelessWidget {
         ctaLabel = '전송 중...';
         ctaOnPressed = null;
         ctaIcon = const SizedBox(
-          width: 16, height: 16,
+          width: 16,
+          height: 16,
           child: CircularProgressIndicator(strokeWidth: 2),
         );
       } else {
@@ -404,42 +417,57 @@ class _WorkerCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(displayName, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    Text(
+                      displayName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
                     const SizedBox(height: 2),
-                    Text('거리 ${dist.toStringAsFixed(1)}km',
-                        style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                    Text(
+                      '거리 ${dist.toStringAsFixed(1)}km',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.black54,
+                      ),
+                    ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: _brand.withOpacity(.08),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
                   'AI 매칭 ${NumberFormat('0.0').format(score * 100)}%',
-                  style: const TextStyle(fontSize: 12, color: _brand, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: _brand,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
           ),
-
           const SizedBox(height: 8),
-
           if (reasons.isNotEmpty)
             Wrap(
-              spacing: 6, runSpacing: -6,
+              spacing: 6,
+              runSpacing: -6,
               children: reasons.take(3).map((r) {
                 return Chip(
-                  label: Text(r, style: const TextStyle(fontSize: 11)),
+                  label: Text(
+                    r,
+                    style: const TextStyle(fontSize: 11),
+                  ),
                   visualDensity: VisualDensity.compact,
                 );
               }).toList(),
             ),
-
           const SizedBox(height: 10),
-
           Row(
             children: [
               Expanded(

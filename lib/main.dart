@@ -69,7 +69,9 @@ import 'package:iljujob/presentation/screens/subscription_payment_webview.dart';
 import 'package:iljujob/presentation/screens/subscription_manage_screen.dart';
 import 'package:iljujob/presentation/screens/signup_choice_screen.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
-
+import 'package:iljujob/presentation/screens/worker_map_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:iljujob/presentation/screens/worker_calendar_screen.dart';
 // ============================================================
 // 전역 변수
 // ============================================================
@@ -556,15 +558,32 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    
     return MaterialApp(
+      
       navigatorKey: navigatorKey,
       title: '알바일주',
       debugShowCheckedModeBanner: false,
+       locale: const Locale('ko', 'KR'),
+    supportedLocales: const [
+      Locale('ko', 'KR'),
+      Locale('en', 'US'),
+    ],
+    localizationsDelegates: const [
+      GlobalMaterialLocalizations.delegate,
+      GlobalWidgetsLocalizations.delegate,
+      GlobalCupertinoLocalizations.delegate,
+    ],
+
       theme: ThemeData(
+        useMaterial3: true, // ✅ 이게 핵심 (안드로이드 촌스러움 크게 줄어듦)
         fontFamily: 'Jalnan2TTF',
         textTheme: ThemeData.light().textTheme,
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
       ),
+        navigatorObservers: [
+        FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+      ],
       home: UpgradeAlert(upgrader: upgrader, child: startScreen),
       routes: {
         '/admin': (context) => const AdminMainScreen(),
@@ -579,7 +598,16 @@ class MyApp extends StatelessWidget {
         '/signup_worker': (context) => const SignupWorkerScreen(),
         '/signup_client': (context) => const SignupClientScreen(),
         '/post_job': (context) => const PostJobScreen(),
-        '/client_main': (context) => const ClientMainScreen(),
+       '/client_main': (context) {
+  final args = ModalRoute.of(context)?.settings.arguments;
+  int initialTabIndex = 1; // 기본값
+
+  if (args is Map && args['initialTabIndex'] is int) {
+    initialTabIndex = args['initialTabIndex'];
+  }
+
+  return ClientMainScreen(initialTabIndex: initialTabIndex);
+},
         '/edit_job': (context) => const EditJobScreen(),
         '/mypage': (context) => const WorkerMyPageScreen(),
         '/client-mypage': (context) => const ClientMyPageScreen(),
@@ -595,6 +623,7 @@ class MyApp extends StatelessWidget {
         '/review': (context) => ReviewScreenRouter(),
         '/purchase-pass': (context) => const PurchasePassScreen(),
         '/blocked-users': (context) => const BlockedUserListScreen(),
+         '/worker_map': (context) => const WorkerMapScreen(),
         '/portone-payment': (context) {
           final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
           return PortonePaymentScreen(
@@ -612,6 +641,7 @@ class MyApp extends StatelessWidget {
           }
           return JobDetailScreen(job: args);
         },
+        
         '/worker-profile': (context) {
           final int workerId = ModalRoute.of(context)!.settings.arguments as int;
           return WorkerProfileScreen(workerId: workerId);
@@ -625,6 +655,7 @@ class MyApp extends StatelessWidget {
         '/edit_profile_worker': (_) => const EditWorkerProfileScreen(),
         '/notifications': (context) => const NotificationSettingsScreen(),
         '/terms-list': (context) => const TermsListScreen(),
+        '/worker-calendar': (_) => const WorkerCalendarScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/chat-room') {

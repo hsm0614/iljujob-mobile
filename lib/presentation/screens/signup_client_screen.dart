@@ -263,11 +263,11 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
         _showSnackbar('가입 완료');
 
         if (!mounted) return;
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          isAdmin ? '/admin' : '/client_main',
-          (_) => false,
-        );
+Navigator.pushNamedAndRemoveUntil(
+  context,
+  isAdmin ? '/admin' : '/client_business_info',
+  (_) => false,
+);
       } else {
         _showSnackbar('가입 실패: ${data['message']}');
       }
@@ -598,7 +598,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
   }
 
   Widget _buildPhonePage() {
-    final bypassPhones = ['01046533004', '01046533005'];
+    final bypassPhones = ['01046533004', '01046533005', '01048838013'];
     return Center(
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 360),

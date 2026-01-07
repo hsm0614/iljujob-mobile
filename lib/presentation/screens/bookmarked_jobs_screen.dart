@@ -192,6 +192,7 @@ Widget build(BuildContext context) {
       backgroundColor: Colors.white,
       elevation: 0,
       title: const Text(
+        
         '내가 찜한 공고',
         style: TextStyle(
           fontWeight: FontWeight.w800,

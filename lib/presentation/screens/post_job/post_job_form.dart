@@ -75,10 +75,10 @@ class _PostJobFormState extends State<PostJobForm> {
   bool isSameDayPay = false;
   String negotiationText = ''; // 요일 협의 입력 값
   String longTermMode = '요일 지정'; // ← '요일 지정' or '요일 협의'
-
-  int _freeLimit = 3;
-  int _freeUsed = 0;
-  int _freeRemaining = 3;
+String _resetAtText = '';
+int _freeLimit = 5;
+int _freeUsed = 0;
+int _freeRemaining = 5;
   int _paidPassCount = 0;      // 보유 이용권 수
 bool _passCountLoading = false;
    SuspensionState? _suspension;
@@ -87,8 +87,22 @@ bool _isProUser = false;
 bool _isAIGenerating = false;
 
   String managerPhone = ''; // 이 줄 추가
+// ===== Weekly FREE AI (non-pro) =====
+static const String _kAiFreeWeekKey = 'ai_free_week_key'; // 이번주 기준키(월요일 날짜)
+static const String _kAiFreeUsedKey = 'ai_free_used';     // 0/1
 
-
+int _weeklyFreeAiRemaining = 0; // 무료유저 주 1회 남은 횟수
+String _weeklyFreeAiResetText = ''; // 다음 리셋 안내
+  final TextEditingController _hourlyController =
+      TextEditingController(text: minWagePerHour.toString());
+  int? _hourlyPreview;        // 시급 계산 결과(원)
+  String? _hourlyMessage;     // 안내 문구
+final _scrollController = ScrollController();
+final _titleFieldKey = GlobalKey<FormFieldState>();
+final _descFieldKey  = GlobalKey<FormFieldState>();
+final _locationFieldKey = GlobalKey<FormFieldState>(); // 🔹 지역
+final _payFieldKey      = GlobalKey<FormFieldState>(); // 🔹 급여
+final _dateSectionKey   = GlobalKey();                 // 🔹 날짜(시작/종료)
   Future<void> _loadSuspension() async {
   try {
     final prefs = await SharedPreferences.getInstance();
@@ -117,6 +131,193 @@ bool _isAIGenerating = false;
     _suspLoaded = true;
   });
 }
+DateTime _weekStart(DateTime d) {
+  final d0 = DateTime(d.year, d.month, d.day);
+  // Monday=1 ... Sunday=7
+  return d0.subtract(Duration(days: d0.weekday - 1));
+}
+
+String _currentWeekKey() {
+  final ws = _weekStart(DateTime.now());
+  return DateFormat('yyyy-MM-dd').format(ws); // 예: 2025-12-15 (월요일)
+}
+
+DateTime _nextWeekStart() {
+  return _weekStart(DateTime.now()).add(const Duration(days: 7));
+}
+
+Future<void> _loadWeeklyFreeAiQuota() async {
+  final prefs = await SharedPreferences.getInstance();
+
+  final nowKey = _currentWeekKey();
+  final savedKey = prefs.getString(_kAiFreeWeekKey);
+  int used = prefs.getInt(_kAiFreeUsedKey) ?? 0;
+
+  // ✅ 주가 바뀌면 자동 리셋
+  if (savedKey != nowKey) {
+    await prefs.setString(_kAiFreeWeekKey, nowKey);
+    await prefs.setInt(_kAiFreeUsedKey, 0);
+    used = 0;
+  }
+
+  final remain = (used >= 1) ? 0 : 1;
+  final resetText = DateFormat('M월 d일 00:00', 'ko_KR').format(_nextWeekStart());
+
+  if (!mounted) return;
+  setState(() {
+    _weeklyFreeAiRemaining = remain;
+    _weeklyFreeAiResetText = resetText;
+  });
+}
+
+Future<void> _consumeWeeklyFreeAi() async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString(_kAiFreeWeekKey, _currentWeekKey());
+  await prefs.setInt(_kAiFreeUsedKey, 1);
+
+  if (!mounted) return;
+  setState(() {
+    _weeklyFreeAiRemaining = 0;
+  });
+}
+
+void _showWeeklyFreeAiExhaustedDialog() {
+  showDialog(
+    context: context,
+    barrierDismissible: true,
+    builder: (_) {
+      const brandBlue = Color(0xFF3B8AFF);
+
+      return Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.12),
+                blurRadius: 18,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 헤더 아이콘
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: brandBlue.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.auto_awesome, color: brandBlue, size: 26),
+              ),
+              const SizedBox(height: 12),
+
+              const Text(
+                '이번 주 무료 AI 사용 완료',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+
+              Text(
+                '무료 AI 공고문 생성은\n주 1회 제공됩니다.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.35,
+                  color: Colors.grey.shade700,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // 리셋 안내 박스
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF5F7FF),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFFE3E9FF)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.schedule, size: 18, color: brandBlue),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '다음 무료 충전: $_weeklyFreeAiResetText',
+                        style: const TextStyle(
+                          fontSize: 13,
+                          height: 1.25,
+                          color: Color(0xFF1F2A44),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              // 버튼 영역
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        side: BorderSide(color: Colors.grey.shade300),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        '확인',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.pushNamed(context, '/subscription/manage');
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        backgroundColor: brandBlue,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Pro로 업그레이드',
+                        style: TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
   Future<void> _fetchFreeUsage() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -159,6 +360,7 @@ bool _isAIGenerating = false;
     _fetchFreeUsage(); // 초기 무료 사용량 조회
     _loadSuspension();               
   _checkProStatus(); 
+   _loadWeeklyFreeAiQuota();
   }
 
   @override
@@ -167,10 +369,46 @@ bool _isAIGenerating = false;
     _descController.dispose();
     _payController.dispose();
     _locationController.dispose();
+    _hourlyController.dispose(); // ← 추가
     super.dispose();
   }
+// 시급을 기준으로, 현재 근무시간/날짜 설정에 맞춰 일급 또는 주급을 계산
+int _calculatePayFromHourly(int hourlyWage) {
+  // 근무 시간 없으면 계산 불가
+  final mins = _dailyWorkingMinutes(startTime, endTime);
+  if (mins <= 0) return 0;
 
+  final hours = mins / 60.0;
 
+  if (payType == '일급') {
+    // 하루 근무시간 × 시급
+    return (hours * hourlyWage).ceil();
+  }
+
+  // payType == '주급'
+  int daysPerWeek = 0;
+
+  if (isShortTerm) {
+    // 단기 + 주급: 시작~종료일 기준으로 최대 7일
+    if (startDate != null && endDate != null) {
+      final d = _inclusiveDays(startDate!, endDate!);
+      daysPerWeek = d.clamp(1, 7);
+    } else {
+      return 0; // 날짜 없으면 계산 불가
+    }
+  } else {
+    // 장기
+    if (longTermMode == '요일 지정') {
+      daysPerWeek = selectedWeekdays.length;
+      if (daysPerWeek <= 0) return 0;
+    } else {
+      // '요일 협의'는 며칠 일하는지 몰라서 계산 스킵
+      return 0;
+    }
+  }
+
+  return (hours * hourlyWage * daysPerWeek).ceil();
+}
   // 기존 _checkProStatus() 메서드를 이것으로 교체
 
 Future<void> _checkProStatus() async {
@@ -456,7 +694,42 @@ void _validatePay() {
     }
   });
 }
+void _scrollToFirstError() {
+  // 1) FormField 기반 에러(제목, 지역, 급여, 설명)부터 체크
+  final formKeys = <GlobalKey<FormFieldState>>[
+    _titleFieldKey,
+    _locationFieldKey,
+    _payFieldKey,
+    _descFieldKey,
+  ];
 
+  for (final key in formKeys) {
+    final state = key.currentState;
+    if (state != null && state.hasError) {
+      final ctx = state.context;
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: 0.2, // 화면 윗부분에 살짝 걸쳐 보이게
+      );
+      return;
+    }
+  }
+
+  // 2) FormField 에러는 없는데, 날짜가 비어있는 경우(단기)
+  if (isShortTerm && (startDate == null || endDate == null)) {
+    final ctx = _dateSectionKey.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: 0.1,
+      );
+    }
+  }
+}
   void _showError(String msg) {
     showDialog(
       context: context,
@@ -474,17 +747,16 @@ void _validatePay() {
     );
   }
 
-  Future<void> _submit({required bool isPaid}) async {
-    if (!_formKey.currentState!.validate()) return;
-    _formKey.currentState!.save();
+ Future<void> _submit({required bool isPaid}) async {
+  if (!_formKey.currentState!.validate()) {
+    _scrollToFirstError();  // 🔹 에러 위치로 스크롤
+    return;
+  }
+  _formKey.currentState!.save();
 
-    // 1) 기본 검증
-    const int minWorkingHours = 4;
-    final int minWage = minWagePerHour * minWorkingHours;
-    if (pay < minWage) {
-      _showError('급여가 너무 낮습니다');
-      return;
-    }
+  // 1) 기본 검증
+  
+
 
     // 단기: 날짜 필수
     if (isShortTerm && (startDate == null || endDate == null)) {
@@ -719,6 +991,7 @@ void _validatePay() {
           top: false,
           minimum: EdgeInsets.fromLTRB(20, 24, 20, bottomPad),
           child: SingleChildScrollView(
+            
             // 작은 화면/큰 폰트 대비
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -953,9 +1226,10 @@ void _validatePay() {
 // PostJobForm 클래스 내부에 추가할 메서드들
 
 // AI 공고문 생성 다이얼로그 표시
-void _showAIGenerationDialog() {
-  // 필수 정보 검증
+void _showAIGenerationDialog({required bool isWeeklyFree}) {
   if (!_validateBasicInfo()) return;
+
+  setState(() => _isAIGenerating = true);
 
   showModalBottomSheet(
     context: context,
@@ -977,25 +1251,39 @@ void _showAIGenerationDialog() {
             : null,
         weekdays: isShortTerm ? null : selectedWeekdays,
         companyName: companyName.trim().isNotEmpty ? companyName.trim() : null,
-         managerName: managerName.trim().isNotEmpty ? managerName.trim() : null, // 추가
-  managerPhone: managerPhone.trim().isNotEmpty ? managerPhone.trim() : null, // 추가
+        managerName: managerName.trim().isNotEmpty ? managerName.trim() : null,
+        managerPhone: managerPhone.trim().isNotEmpty ? managerPhone.trim() : null,
         isShortTerm: isShortTerm,
-        onGenerated: (generatedText) {
+
+        onGenerated: (generatedText) async {
+          // ✅ 생성 성공 시에만 "주 1회" 소모 처리
+          if (isWeeklyFree) {
+            await _consumeWeeklyFreeAi();
+          }
+
+          if (!mounted) return;
           setState(() {
             description = generatedText;
             _descController.text = generatedText;
+            _isAIGenerating = false;
           });
+
           Navigator.pop(context);
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('AI 공고문이 적용되었습니다!'),
+            SnackBar(
+              content: Text(isWeeklyFree ? '무료 AI 1회가 사용되었습니다!' : 'AI 공고문이 적용되었습니다!'),
               backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
+              duration: const Duration(seconds: 2),
             ),
           );
         },
-        onClose: () => Navigator.pop(context),
+
+        onClose: () {
+          if (!mounted) return;
+          setState(() => _isAIGenerating = false);
+          Navigator.pop(context);
+        },
       ),
     ),
   );
@@ -1107,6 +1395,8 @@ void _showProUpgradeDialog() {
 }
   Future<void> _showPublishTypeSheet() async {
     await _fetchFreeUsage(); // ← 이것만 추가
+final nextReset = _nextMonthFirstDay();
+final resetText = DateFormat('M월 d일 00:00', 'ko_KR').format(nextReset);
 
     showModalBottomSheet(
       context: context,
@@ -1179,8 +1469,8 @@ void _showProUpgradeDialog() {
                   subtitle:
                       (_freeRemaining <= 0)
                           ? Text(
-                            '오늘 무료 한도를 모두 사용했어요.\n'
-                            '무료 등록은 자정 이후 다시 $_freeLimit개가 지급됩니다. ',
+                            '이번 달 무료 한도를 모두 사용했어요.\n'
+                            '무료 등록은 다음 달 1일($resetText) 다시 $_freeLimit개가 지급됩니다.',
                             style: const TextStyle(
                               fontSize: 12,
                               color: Colors.redAccent,
@@ -1190,49 +1480,132 @@ void _showProUpgradeDialog() {
                   onTap: () async {
                     if (_freeRemaining <= 0) {
                       final goPaid = await showDialog<bool>(
-                        context: ctx,
-                        barrierDismissible: false, // 바깥 터치로 닫힘 방지(선택)
-                        builder:
-                            (dialogCtx) => AlertDialog(
-                              title: const Text('무료 한도 초과'),
-                              content: Text(
-                                '무료 등록은 하루 $_freeLimit개까지입니다.\n'
-                                '유료 등록으로 진행하시겠어요?',
-                              ),
-                              actions: [
-                                TextButton(
-                                  onPressed:
-                                      () => Navigator.of(dialogCtx).pop(false),
-                                  child: const Text('닫기'),
-                                ),
-                                TextButton(
-                                  onPressed:
-                                      () => Navigator.of(dialogCtx).pop(true),
-                                  child: const Text('유료로 진행'),
-                                ),
-                              ],
-                            ),
-                      );
+  context: ctx,
+  barrierDismissible: false,
+  builder: (dialogCtx) {
+    return AlertDialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      titlePadding: const EdgeInsets.fromLTRB(20, 18, 20, 8),
+      contentPadding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+      actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      title: Row(
+        children: const [
+          Icon(Icons.lock_clock, color: Color(0xFF3B8AFF), size: 22),
+          SizedBox(width: 8),
+          Text(
+            '무료 한도 초과',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+          ),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '이번 달 무료 등록은 $_freeLimit개까지예요.',
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '유료 등록으로 진행하면 바로 노출돼요.',
+            style: TextStyle(
+              fontSize: 13,
+              height: 1.35,
+              color: Colors.black.withOpacity(0.65),
+            ),
+          ),
+          if ((_resetAtText ?? '').toString().isNotEmpty) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF3F7FF),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: const Color(0xFF3B8AFF).withOpacity(0.18)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline,
+                      size: 18, color: const Color(0xFF3B8AFF).withOpacity(0.95)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '다음 무료 충전: $_resetAtText',
+                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+      actions: [
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  side: BorderSide(color: Colors.black.withOpacity(0.15)),
+                ),
+                onPressed: () => Navigator.of(dialogCtx).pop(false),
+                child: const Text('닫기', style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(48),
+                  elevation: 0,
+                  backgroundColor: const Color(0xFF3B8AFF),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: () => Navigator.of(dialogCtx).pop(true),
+                child: const Text('유료로 진행', style: TextStyle(fontWeight: FontWeight.w800)),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  },
+);
 
-                      if (goPaid == true) {
-                        // 다이얼로그 닫힌 뒤 바텀시트 닫고 유료 플로우
-                        Navigator.pop(ctx);
-                        _submit(isPaid: true);
-                      }
-                      return;
-                    }
+                
+    if (goPaid == true) {
+      // ✅ 1) 현재(무료 선택) 바텀시트 닫기
+      Navigator.pop(ctx);
 
-                    // 한도 남아있으면 무료 등록 진행
-                    Navigator.pop(ctx);
-                    _submit(isPaid: false);
-                  },
+      // ✅ 2) 유료 등록 시트 띄우기 (즉시 submit 금지)
+      if (!mounted) return;
+      await Future.delayed(const Duration(milliseconds: 150));
+      if (!mounted) return;
+      _showPublishOptionDialog();
+    }
+    return;
+  }
+
+  // 무료 등록
+  Navigator.pop(ctx);
+  _submit(isPaid: false);
+},
                 ),
 
                 const SizedBox(height: 16),
 
              _buildTrendyCard(
-  emoji: '🔥',
-  title: '유료 등록 (이용권 사용)',
+  emoji: '🚀',
+  title: '부스터 모드 (이용권 사용)',
   description: '72시간 노출, 푸시 전송, 6시간 상단 고정',
   trailing: Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1286,7 +1659,147 @@ void _showProUpgradeDialog() {
       },
     );
   }
+Widget _buildHourlyCalculator() {
+  final formatter = NumberFormat('#,###');
 
+  String _expectedLabel() {
+    if (payType == '일급') return '예상 일급';
+    if (payType == '주급') return '예상 주급';
+    return '예상 금액';
+  }
+
+  return Container(
+    margin: const EdgeInsets.only(top: 8),
+    padding: const EdgeInsets.all(14),
+    decoration: BoxDecoration(
+      color: const Color(0xFFF7F9FF),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFFE0E4FF)),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(Icons.calculate, size: 18, color: Color(0xFF3B8AFF)),
+            const SizedBox(width: 6),
+            const Text(
+              '시급 계산기 (선택)',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '시급을 입력하면 현재 설정된 근무 시간과 기간을 기준으로\n'
+          '일급/주급을 자동 계산해 드립니다.',
+          style: TextStyle(fontSize: 12, color: Colors.black54),
+        ),
+        const SizedBox(height: 10),
+
+        // 시급 입력 + 버튼
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _hourlyController,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  isDense: true,
+                  labelText: '시급 (원)',
+                  border: const OutlineInputBorder(),
+                  helperText: '최저시급 ${formatter.format(minWagePerHour)}원 이상 권장',
+                  helperStyle: const TextStyle(fontSize: 11),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: () {
+                final raw = _hourlyController.text
+                    .replaceAll(RegExp(r'[^0-9]'), '');
+                if (raw.isEmpty) {
+                  setState(() {
+                    _hourlyPreview = null;
+                    _hourlyMessage = '시급을 입력해주세요.';
+                  });
+                  return;
+                }
+
+                final hourly = int.parse(raw);
+
+                // 근무시간 / 일수 체크
+                final auto = _calculatePayFromHourly(hourly);
+                if (auto <= 0) {
+                  setState(() {
+                    _hourlyPreview = null;
+                    _hourlyMessage =
+                        '근무 시간과 날짜(또는 요일)를 먼저 설정한 뒤 다시 시도해주세요.';
+                  });
+                  return;
+                }
+
+                setState(() {
+                  _hourlyPreview = auto;
+                  _hourlyMessage = null;
+                });
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF3B8AFF),
+                foregroundColor: Colors.white,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              ),
+              child: const Text('계산'),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 8),
+
+        // 결과 or 메시지
+        if (_hourlyMessage != null)
+          Text(
+            _hourlyMessage!,
+            style: const TextStyle(fontSize: 12, color: Colors.redAccent),
+          )
+        else if (_hourlyPreview != null)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${_expectedLabel()} : ${formatter.format(_hourlyPreview!)}원',
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  if (_hourlyPreview == null) return;
+                  final value = _hourlyPreview!;
+                  final text = formatter.format(value);
+
+                  setState(() {
+                    pay = value;
+                    _payController.text = text;
+                    _validatePay(); // 최저시급 검증도 같이 반영
+                  });
+
+                 
+                },
+                child: const Text('급여에 적용'),
+              ),
+            ],
+          ),
+      ],
+    ),
+  );
+}
   Widget _buildTrendyCard({
     required String emoji,
     required String title,
@@ -1361,33 +1874,40 @@ void _showProUpgradeDialog() {
     );
   }
 
-  Widget _buildTextField(
-    String label, {
-    bool isNumber = false,
-    int maxLines = 1,
-    required FormFieldSetter<String> onSaved,
-    String? initialValue,
-    TextEditingController? controller, // ✅ 추가
-  }) {
-    return TextFormField(
-      controller: controller, // ✅ 우선순위: controller가 있으면 이걸 씀
-      initialValue: controller == null ? initialValue : null, // ✅ 둘 다 쓰면 오류
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-      keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-      maxLines: maxLines,
-      validator: (val) => (val == null || val.isEmpty) ? '입력해주세요' : null,
-      onSaved: onSaved,
-    );
-  }
+ Widget _buildTextField(
+  String label, {
+  bool isNumber = false,
+  int maxLines = 1,
+  required FormFieldSetter<String> onSaved,
+  String? initialValue,
+  TextEditingController? controller,
+  Key? fieldKey, // 🔹 추가
+}) {
+  return TextFormField(
+    key: fieldKey,                            // 🔹 이 줄
+    controller: controller,
+    initialValue: controller == null ? initialValue : null,
+    decoration: InputDecoration(
+      labelText: label,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+    ),
+    keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+    maxLines: maxLines,
+    validator: (val) => (val == null || val.isEmpty) ? '입력해주세요' : null,
+    onSaved: onSaved,
+  );
+}
 
   // ===================== 공통 헬퍼 =====================
   DateTime get _today0 {
     final now = DateTime.now();
     return DateTime(now.year, now.month, now.day);
   }
+// ✅ 월간 리셋용: 다음 달 1일 00:00
+DateTime _nextMonthFirstDay() {
+  final now = DateTime.now();
+  return DateTime(now.year, now.month + 1, 1);
+}
 
   DateTime _d0(DateTime d) => DateTime(d.year, d.month, d.day);
   DateTime _clampDate(DateTime d, DateTime min, DateTime max) {
@@ -1449,32 +1969,34 @@ void _showProUpgradeDialog() {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          TableCalendar(
-                            locale: 'ko_KR',
-                            focusedDay: focusedDay,
-                            firstDay: first,
-                            lastDay: last,
-                            selectedDayPredicate:
-                                (day) => isSameDay(day, selectedDate),
-                            onDaySelected: (day, f) {
-                              setModalState(() {
-                                selectedDate = _d0(day);
-                                focusedDay = day;
-                              });
-                            },
-                            onPageChanged:
-                                (f) => setModalState(() => focusedDay = f),
-                            calendarStyle: const CalendarStyle(
-                              todayDecoration: BoxDecoration(
-                                color: Color(0xFF3B8AFF),
-                                shape: BoxShape.circle,
-                              ),
-                              selectedDecoration: BoxDecoration(
-                                color: Colors.black87,
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                          ),
+                      TableCalendar(
+  locale: 'ko_KR',
+  focusedDay: focusedDay,
+  firstDay: first,
+  lastDay: last,
+  selectedDayPredicate: (day) => isSameDay(day, selectedDate),
+  onDaySelected: (day, f) {
+    setModalState(() {
+      selectedDate = _d0(day);
+      focusedDay = day;
+    });
+  },
+  onPageChanged: (f) => setModalState(() => focusedDay = f),
+  calendarStyle: const CalendarStyle(
+    todayDecoration: BoxDecoration(
+      color: Color(0xFF3B8AFF),
+      shape: BoxShape.circle,
+    ),
+    selectedDecoration: BoxDecoration(
+      color: Colors.black87,
+      shape: BoxShape.circle,
+    ),
+  ),
+  // ✅ 여기 추가
+  headerStyle: const HeaderStyle(
+    formatButtonVisible: false, // 월/2주/주 전환 버튼 숨기기
+  ),
+)
                         ],
                       ),
                     ),
@@ -2070,235 +2592,82 @@ void _showTimeRangePickerBottomSheet() {
   );
 }
 void _openTimePicker() {
-  if (Platform.isAndroid) {
-    _pickTimeRangeAndroid();        // ← 앞서 드린 Android 다이얼 함수
-  } else {
-    _showTimeRangePickerBottomSheet(); // ← 지금 쓰는 iOS 휠 바텀시트
-  }
+  _showTimeRangePickerBottomSheet(); // ✅ iOS/Android 공통
 }
-Future<void> _pickTimeRangeAndroid() async {
-  final use24 = MediaQuery.of(context).alwaysUse24HourFormat;
 
-  // ── helpers ──────────────────────────────────────────────────────────
-  String _fmt(TimeOfDay t) =>
-      MaterialLocalizations.of(context).formatTimeOfDay(
-        t, alwaysUse24HourFormat: use24,
-      );
+Widget _buildCategoryDropdown() {
+  final categories = ['제조', '물류', '서비스', '건설', '사무', '청소', '기타'];
 
-  int _toMin(TimeOfDay t) => t.hour * 60 + t.minute;
+  return DropdownButtonFormField<String>(
+    value: category.isNotEmpty ? category : null,
+    isExpanded: true,
+    icon: const Icon(Icons.keyboard_arrow_down_rounded),
+    borderRadius: BorderRadius.circular(16),   // ✅ 뜨는 메뉴 라운드
+    dropdownColor: Colors.white,               // ✅ 메뉴 배경
+    menuMaxHeight: 340,                        // ✅ 길어지면 스크롤
+    elevation: 6,                              // ✅ 메뉴 그림자 느낌
+    style: const TextStyle(fontSize: 14, color: Colors.black87),
 
-  TimeOfDay _snap10(TimeOfDay t) {
-    int m = ((t.minute + 5) ~/ 10) * 10;
-    int h = t.hour;
-    if (m >= 60) { m = 0; h = (h + 1) % 24; }
-    return TimeOfDay(hour: h, minute: m);
-  }
+    decoration: InputDecoration(
+      labelText: '하는 일',
+      hintText: '업종을 선택하세요',
+      filled: true,
+      fillColor: const Color(0xFFF7F8FA),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
 
-  // ✅ 자정 넘어가면 +24시간 해서 양수로 만들어주는 총 근무시간
-  int _durAcrossMidnight(TimeOfDay s, TimeOfDay e) {
-    final sm = _toMin(s), em = _toMin(e);
-    var d = em - sm;
-    if (d <= 0) d += 24 * 60; // 익일(또는 동일 시각) 처리
-    return d;
-  }
-
-  String _durLabel(int mins) {
-    final h = mins ~/ 60, m = mins % 60;
-    if (m == 0) return '총 근무시간 ${h}시간';
-    if (h == 0) return '총 근무시간 ${m}분';
-    return '총 근무시간 ${h}시간 ${m}분';
-  }
-
-  Future<TimeOfDay?> _pickOne(TimeOfDay init, String help) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: init,
-      initialEntryMode: TimePickerEntryMode.input, // 숫자 입력 우선
-      builder: (ctx, child) => MediaQuery(
-        data: MediaQuery.of(ctx).copyWith(alwaysUse24HourFormat: use24),
-        child: child!,
+      // ✅ 필드 자체도 라운드 + 테두리
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
       ),
-      helpText: help,
-      cancelText: '취소',
-      confirmText: '확인',
-    );
-    return picked == null ? null : _snap10(picked);
-  }
-
-  // ── 초기값 ───────────────────────────────────────────────────────────
-  TimeOfDay s = _snap10(startTime ?? const TimeOfDay(hour: 9, minute: 0));
-  TimeOfDay e = _snap10(endTime   ?? const TimeOfDay(hour: 18, minute: 0));
-
-  await showModalBottomSheet(
-    context: context,
-    isScrollControlled: true,
-    useSafeArea: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Color(0xFF3B8AFF), width: 1.6),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Colors.red),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Colors.red, width: 1.6),
+      ),
     ),
-    builder: (ctx) {
-      return StatefulBuilder(
-        builder: (ctx, setSt) {
-          final overnight = _toMin(e) <= _toMin(s);     // ✅ 익일 여부
-          final mins = _durAcrossMidnight(s, e);        // ✅ 자정 넘어도 양수
 
-          return Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 헤더
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.pop(ctx),
-                      ),
-                      const Expanded(
-                        child: Text('근무 시간 선택',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      const SizedBox(width: 48),
-                    ],
-                  ),
-                ),
+    // ✅ Form validate에 바로 걸림
+    validator: (_) => category.trim().isEmpty ? '업종을 선택하세요' : null,
 
-                // 미리보기 (익일 표시)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF4F7FF),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '${_fmt(s)} ~ ${overnight ? '익일 ' : ''}${_fmt(e)}',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          _durLabel(mins),
-                          style: const TextStyle(color: Colors.black54),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                // 시작/종료 선택
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () async {
-                            final picked = await _pickOne(s, '시작 시간');
-                            if (picked != null) setSt(() => s = picked);
-                          },
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.play_arrow, size: 18),
-                              const SizedBox(width: 6),
-                              Text('시작 ${_fmt(s)}'),
-                            ],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () async {
-                            final picked = await _pickOne(e, '종료 시간');
-                            if (picked != null) setSt(() => e = picked);
-                          },
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.stop, size: 18),
-                              const SizedBox(width: 6),
-                              Text('종료 ${_fmt(e)}'),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 8),
-                const Divider(height: 1),
-
-                // 확인
-                SafeArea(
-                  top: false,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          // ✅ 동일 시각(24시간) 방지 + 최소 근무 10분 보장
-                          if (_toMin(e) == _toMin(s)) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('시작과 종료 시간이 같습니다')),
-                            );
-                            return;
-                          }
-                          final total = _durAcrossMidnight(s, e);
-                          if (total < 10) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('근무시간은 최소 10분 이상이어야 합니다')),
-                            );
-                            return;
-                          }
-
-                          setState(() { startTime = s; endTime = e; });
-                          _validatePay();
-                          Navigator.pop(ctx);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text('확인'),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+    items: categories.map((c) {
+      return DropdownMenuItem<String>(
+        value: c,
+        child: Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: Color(0xFF3B8AFF),
+                shape: BoxShape.circle,
+              ),
             ),
-          );
-        },
+            const SizedBox(width: 10),
+            Text(c),
+          ],
+        ),
       );
+    }).toList(),
+
+    onChanged: (val) {
+      if (val == null) return;
+      setState(() => category = val);
     },
   );
 }
 
 
-
   @override
   Widget build(BuildContext context) {
+     final categories = ['제조', '물류', '서비스', '건설', '사무', '청소', '기타'];
     final susp = _suspension;                       // 현재 불러온 정지 상태
 final suspLoaded = _suspLoaded;                 // /public/suspension 로딩 완료 여부
 final previewDisabled = !suspLoaded || (susp?.isSuspended ?? false); // 로딩중 or 정지면 비활성화
@@ -2308,6 +2677,7 @@ final previewDisabled = !suspLoaded || (susp?.isSuspended ?? false); // 로딩�
       key: _formKey,
       child: SafeArea(
         child: SingleChildScrollView(
+          controller: _scrollController,          
           padding: const EdgeInsets.all(16), // 여기에 전체 padding 줘도 OK
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -2351,58 +2721,56 @@ final previewDisabled = !suspLoaded || (susp?.isSuspended ?? false); // 로딩�
                   ),
                 ),
               ),
-              _buildTextField(
-                '제목',
-                controller: _titleController,
-                onSaved: (val) => title = val!,
-              ),
+            _buildTextField(
+              '제목',
+              controller: _titleController,
+              fieldKey: _titleFieldKey,          // 🔹 추가
+              onSaved: (val) => title = val!,
+            ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: category,
-                items:
-                    ['제조', '물류', '서비스', '건설', '사무', '청소', '기타']
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
-                onChanged: (val) {
-                  setState(() {
-                    category = val!;
-                  });
-                },
-                decoration: const InputDecoration(labelText: '하는 일'),
-              ),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _locationController,
-                readOnly: true,
-                decoration: const InputDecoration(labelText: '지역'),
-                onTap: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (_) => KpostalView(
-                            useLocalServer: false,
-                            callback: (result) async {
-                              setState(() {
-                                location = result.address;
-                                locationCity = _extractCity(result.address);
-                                _locationController.text = result.address;
-                              });
-                              final loc = await locationFromAddress(
-                                result.address,
-                              );
-                              if (loc.isNotEmpty) {
-                                setState(() {
-                                  lat = loc.first.latitude;
-                                  lng = loc.first.longitude;
-                                });
-                              }
-                            },
-                          ),
-                    ),
-                  );
-                },
-              ),
+             
+
+const SizedBox(height: 16),
+_buildCategoryDropdown(),
+const SizedBox(height: 16),
+
+
+            TextFormField(
+  key: _locationFieldKey,
+  controller: _locationController,
+  readOnly: true,
+  decoration: const InputDecoration(labelText: '지역'),
+  validator: (val) {
+    if (val == null || val.trim().isEmpty) {
+      return '지역을 선택해주세요';
+    }
+    return null;
+  },
+  onTap: () async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => KpostalView(
+          useLocalServer: false,
+          callback: (result) async {
+            setState(() {
+              location = result.address;
+              locationCity = _extractCity(result.address);
+              _locationController.text = result.address;
+            });
+            final loc = await locationFromAddress(result.address);
+            if (loc.isNotEmpty) {
+              setState(() {
+                lat = loc.first.latitude;
+                lng = loc.first.longitude;
+              });
+            }
+          },
+        ),
+      ),
+    );
+  },
+),
               const SizedBox(height: 16),
               const Text('일하는 기간은 얼마나 되나요?'),
               const SizedBox(height: 8),
@@ -2415,7 +2783,11 @@ final previewDisabled = !suspLoaded || (susp?.isSuspended ?? false); // 로딩�
               ),
 
               const SizedBox(height: 16),
-              _buildWorkingPeriodInput(),
+              
+Container(
+  key: _dateSectionKey,
+  child: _buildWorkingPeriodInput(),
+),
               const SizedBox(height: 16),
               const Text('일하는 시간'),
               const SizedBox(height: 8),
@@ -2542,46 +2914,52 @@ final previewDisabled = !suspLoaded || (susp?.isSuspended ?? false); // 로딩�
               ),
 
               const SizedBox(height: 16),
+_buildHourlyCalculator(),
 
-              TextFormField(
-                controller: _payController,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: '급여',
-                  border: OutlineInputBorder(),
-                  errorText: _payWarning,
-                ),
-                onChanged: (val) {
-                  // 1) 숫자만 추출
-                  final numeric = val.replaceAll(RegExp(r'[^0-9]'), '');
+const SizedBox(height: 12),
+            TextFormField(
+  key: _payFieldKey,
+  controller: _payController,
+  keyboardType: TextInputType.number,
+  decoration: InputDecoration(
+    labelText: '급여',
+    border: const OutlineInputBorder(),
+    errorText: _payWarning,
+  ),
+  validator: (val) {
+    final numeric = (val ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+    if (numeric.isEmpty) {
+      return '급여를 입력해주세요';
+    }
+    // 최저임금 미달이면 _payWarning에 문구가 들어 있음
+    if (_payWarning != null) {
+      return _payWarning;
+    }
+    return null;
+  },
+  onChanged: (val) {
+    final numeric = val.replaceAll(RegExp(r'[^0-9]'), '');
+    final parsed = numeric.isEmpty ? 0 : int.parse(numeric);
 
-                  // 2) 상태(pay)와 경고 갱신
-                  final parsed = numeric.isEmpty ? 0 : int.parse(numeric);
-                  setState(() {
-                    pay = parsed;
-                    _validatePay();
-                  });
-                  final _payFormatter = NumberFormat(
-                    '#,###',
-                  ); // 파일 상단에 import intl 되어있음
-                  // 3) 표시값을 천단위 콤마로 재설정 (커서 위치 유지)
-                  if (val != _payFormatter.format(parsed)) {
-                    final formatted =
-                        numeric.isEmpty ? '' : _payFormatter.format(parsed);
-                    _payController.value = TextEditingValue(
-                      text: formatted,
-                      selection: TextSelection.collapsed(
-                        offset: formatted.length,
-                      ),
-                    );
-                  }
-                },
-                onSaved: (val) {
-                  // 저장 시에도 안전하게 숫자만 추출
-                  final numeric = (val ?? '').replaceAll(RegExp(r'[^0-9]'), '');
-                  pay = numeric.isEmpty ? 0 : int.parse(numeric);
-                },
-              ),
+    setState(() {
+      pay = parsed;
+      _validatePay(); // ← 최저임금 체크
+    });
+
+    final _payFormatter = NumberFormat('#,###');
+    if (val != _payFormatter.format(parsed)) {
+      final formatted = numeric.isEmpty ? '' : _payFormatter.format(parsed);
+      _payController.value = TextEditingValue(
+        text: formatted,
+        selection: TextSelection.collapsed(offset: formatted.length),
+      );
+    }
+  },
+  onSaved: (val) {
+    final numeric = (val ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+    pay = numeric.isEmpty ? 0 : int.parse(numeric);
+  },
+),
               const SizedBox(height: 16),
 
               CheckboxListTile(
@@ -2725,61 +3103,103 @@ Container(
             ),
           ),
           const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Text(
-                      'AI 공고문 생성',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF3B8AFF),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    if (!_isProUser)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.amber,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Text(
-                          'PRO',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const Text(
-                  '입력 정보를 바탕으로 매력적인 공고문을 자동 생성',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.black54,
-                  ),
-                ),
-              ],
+       Expanded(
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // ✅ Row → Wrap (오버플로 방지)
+      Wrap(
+        spacing: 8,
+        runSpacing: 6,
+        crossAxisAlignment: WrapCrossAlignment.center,
+        children: [
+          const Text(
+            'AI 공고문 생성',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF3B8AFF),
             ),
           ),
+
+          // ✅ 무료 유저: FREE 뱃지 (문구 짧게)
+          if (!_isProUser)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: _weeklyFreeAiRemaining > 0
+                    ? const Color(0xFF3B8AFF)
+                    : Colors.grey,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: Text(
+                _weeklyFreeAiRemaining > 0 ? 'FREE 주1회' : 'FREE 소진',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+
+          // ✅ 프로 유저: PRO 뱃지
+          if (_isProUser)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.amber,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'PRO',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
         ],
       ),
+
+      const SizedBox(height: 4),
+
+      const Text(
+        '입력 정보를 바탕으로 매력적인 공고문을 자동 생성',
+        style: TextStyle(
+          fontSize: 12,
+          color: Colors.black54,
+        ),
+      ),
+    ],
+  ),
+),
+        ]
+      ),  
+      
       const SizedBox(height: 12),
       SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
-          onPressed: _isAIGenerating
-              ? null
-              : (_isProUser ? _showAIGenerationDialog : _showProUpgradeDialog),
+       onPressed: _isAIGenerating
+    ? null
+    : () async {
+        // 매번 최신 상태 보장
+        await _loadWeeklyFreeAiQuota();
+
+        if (_isProUser) {
+          _showAIGenerationDialog(isWeeklyFree: false);
+          return;
+        }
+
+        // 무료유저: 주 1회
+        if (_weeklyFreeAiRemaining <= 0) {
+          _showWeeklyFreeAiExhaustedDialog();
+          return;
+        }
+
+        _showAIGenerationDialog(isWeeklyFree: true);
+      },
           icon: _isAIGenerating
               ? const SizedBox(
                   width: 16,
@@ -2810,21 +3230,43 @@ Container(
 ),
 
 // 기존 텍스트 입력 필드
+// “자세한 설명” 라벨을 위에 따로 배치
+const SizedBox(height: 8),
+const Text(
+  '자세한 설명',
+  style: TextStyle(
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+  ),
+),
+
+// 실제 입력 박스
+const SizedBox(height: 8),
 SizedBox(
-  height: 320,
+  height: 260,
   child: TextFormField(
+    key: _descFieldKey,
     controller: _descController,
     maxLines: null,
     expands: true,
     keyboardType: TextInputType.multiline,
     textInputAction: TextInputAction.newline,
-    style: const TextStyle(fontSize: 16),
+    textAlignVertical: TextAlignVertical.top,
+    textAlign: TextAlign.start,
+    style: const TextStyle(fontSize: 14),
     decoration: InputDecoration(
-      labelText: '자세한 설명',
-      hintText: description.isEmpty 
-          ? '부적절하거나 불쾌감을 줄 수 있는 내용을 작성할 경우 제재를 받을 수 있습니다.'
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      contentPadding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+      hintText: description.isEmpty
+          ? '부적절하거나 불쾌감을 줄 수 있는 내용을 작성할 경우\n제재를 받을 수 있습니다.'
           : null,
-      border: const OutlineInputBorder(),
+      hintStyle: const TextStyle(
+        fontSize: 13,
+        color: Color(0xFF9E9E9E),
+        height: 1.4,
+      ),
       alignLabelWithHint: true,
       suffixIcon: description.isNotEmpty
           ? IconButton(
@@ -2839,29 +3281,58 @@ SizedBox(
             )
           : null,
     ),
-    onSaved: (val) => description = val ?? '',
+
+    // ✅ 선택 입력: 항상 통과
+    validator: (_) => null,
+
+    onSaved: (val) => description = (val ?? '').trim(),
     onChanged: (val) => setState(() => description = val),
   ),
 ),
-              const SizedBox(height: 24),
-              const LaborAgreementNotice(),
-             SizedBox(
-  width: double.infinity,
-  child: ElevatedButton(
-    style: ElevatedButton.styleFrom(
-      backgroundColor: previewDisabled ? Colors.grey : const Color(0xFF3B8AFF),
-      foregroundColor: Colors.white,
-      padding: const EdgeInsets.symmetric(vertical: 16),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    ),
-    onPressed: previewDisabled ? null : () {
-      // ✅ 최종 방어(토스트/다이얼로그 포함)
-      final s = susp ?? const SuspensionState(
-        suspendedType: null, suspendedUntil: null, suspendedReason: null,
-      );
-      if (!guardSuspended(context, s)) return;
 
-      if (_formKey.currentState!.validate()) {
+             const SizedBox(height: 24),
+Container(
+  width: double.infinity,
+  padding: const EdgeInsets.all(16),
+  decoration: BoxDecoration(
+    color: const Color(0xFFF7F9FF),
+    borderRadius: BorderRadius.circular(16),
+  ),
+  child: Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      const LaborAgreementNotice(),      // 안내 문장
+      const SizedBox(height: 12),        // ⬅️ 안내문과 버튼 사이 여백
+
+      SizedBox(
+        width: double.infinity,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor:
+                previewDisabled ? Colors.grey : const Color(0xFF3B8AFF),
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+  onPressed: previewDisabled
+    ? null
+    : () {
+        final s = susp ??
+            const SuspensionState(
+              suspendedType: null,
+              suspendedUntil: null,
+              suspendedReason: null,
+            );
+        if (!guardSuspended(context, s)) return;
+
+        final ok = _formKey.currentState!.validate();
+        if (!ok) {
+          _scrollToFirstError();  // 🔹 에러 필드로 스크롤
+          return;
+        }
+
         _formKey.currentState!.save();
 
         Navigator.push(
@@ -2871,14 +3342,17 @@ SizedBox(
               title: title,
               category: category,
               location: location,
-              // lat/lng는 double non-null이라 ?? 필요 없음
               lat: lat,
               lng: lng,
               companyName: companyName,
               managerName: managerName,
-              startDate: isShortTerm ? startDate?.toString().split(' ')[0] : null,
-              endDate:   isShortTerm ? endDate?.toString().split(' ')[0]   : null,
-              weekdays:  isShortTerm ? [] : selectedWeekdays,
+              startDate: isShortTerm
+                  ? startDate?.toString().split(' ')[0]
+                  : null,
+              endDate: isShortTerm
+                  ? endDate?.toString().split(' ')[0]
+                  : null,
+              weekdays: isShortTerm ? [] : selectedWeekdays,
               workingTime: (startTime != null && endTime != null)
                   ? '${startTime!.format(context)} ~ ${endTime!.format(context)}'
                   : '시간 미정',
@@ -2893,22 +3367,30 @@ SizedBox(
             ),
           ),
         );
-      }
-    },
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Icon(Icons.visibility, color: Colors.white),
-        const SizedBox(width: 8),
-        Text(
-          !suspLoaded
-              ? '계정 상태 확인 중…'
-              : (susp?.isSuspended ?? false) ? '정지된 계정' : '미리보기',
-          style: const TextStyle(
-            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+      },
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center, // ← 아이콘+텍스트 가운데
+            children: [
+              const Icon(Icons.visibility, color: Colors.white),
+              const SizedBox(width: 8),
+              Text(
+                !suspLoaded
+                    ? '계정 상태 확인 중…'
+                    : (susp?.isSuspended ?? false)
+                        ? '정지된 계정'
+                        : '미리보기',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
         ),
-      ],
-    ),
+      ),
+    ],
   ),
 ),
             ],

@@ -3,11 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:intl/intl.dart';
-import 'package:kpostal/kpostal.dart';
-import '../../config/constants.dart';
-import 'post_job/post_job_form.dart';
-import 'post_job/post_job_screen.dart'; // ← 전체 등록 흐름을 포함한 진짜 화면
+import 'package:firebase_analytics/firebase_analytics.dart';
+import '../../config/constants.dart'; // ✅ kBrandBlue, baseUrl, odCloudApiKeyEnc
+
+const kBrandBlue = Color(0xFF3B8AFF);
 
 class ClientBusinessInfoScreen extends StatefulWidget {
   const ClientBusinessInfoScreen({super.key});
@@ -18,183 +17,242 @@ class ClientBusinessInfoScreen extends StatefulWidget {
 
 class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
   final _bizNumberController = TextEditingController();
-  final _companyNameController = TextEditingController();
-  DateTime? _selectedDate;
-  String? _selectedAddress;
-  bool _isLoading = false;
+  final _storeNameController = TextEditingController();
+  bool _loading = false;
+  bool _verified = false;
+  String? _errorMessage;
 
-  Future<void> _submitBusinessInfo() async {
-    final prefs = await SharedPreferences.getInstance();
-    final clientId = prefs.getInt('userId');
-    final bizNumber = _bizNumberController.text.trim();
-    final companyName = _companyNameController.text.trim();
-    final address = _selectedAddress;
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance; // ✅ Analytics 인스턴스
 
-    if (bizNumber.length != 10 || _selectedDate == null || companyName.isEmpty || address == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('모든 항목을 정확히 입력해주세요')),
-      );
-      
+  @override
+  void initState() {
+    super.initState();
+    _analytics.logEvent(name: 'biz_verify_page_view'); // ✅ 화면 진입 이벤트
+  }
+
+  Future<void> _lookup() async {
+    FocusScope.of(context).unfocus();
+
+    final biz = _bizNumberController.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+    if (biz.length != 10) {
+      setState(() => _errorMessage = "사업자등록번호는 숫자 10자리여야 합니다.");
       return;
     }
 
-    setState(() => _isLoading = true);
+    _analytics.logEvent(name: 'biz_verify_attempt', parameters: {"biz": biz}); // ✅ 조회 시도 이벤트
+
+    setState(() {
+      _loading = true;
+      _errorMessage = null;
+      _verified = false;
+    });
+
+    final uri = Uri.parse(
+      "https://api.odcloud.kr/api/nts-businessman/v1/status"
+      "?serviceKey=$odCloudApiKeyEnc&returnType=JSON",
+    );
+
+    final body = jsonEncode({"b_no": [biz]});
 
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/client/update-bizinfo'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'clientId': clientId,
-          'bizNumber': bizNumber,
-          'companyName': companyName,
-          'openDate': _selectedDate!.toIso8601String().split('T')[0],
-          'address': address,
-        }),
+      final res = await http.post(
+        uri,
+        headers: {"Content-Type": "application/json"},
+        body: body,
       );
 
-if (response.statusCode == 200) {
-  // ✅ SharedPreferences에 저장
-  await prefs.setString('companyName', companyName);
-
-Navigator.pushReplacementNamed(context, '/post_job');
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('등록 실패')),
-        );
+      if (res.statusCode != 200) {
+        setState(() => _errorMessage = "조회가 지연되고 있어요. 잠시 후 다시 시도해주세요.");
+        return;
       }
-    } catch (e) {
-      print('❌ 오류: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('서버 오류 발생')),
-      );
+
+      final json = jsonDecode(res.body);
+      final List data = (json["data"] is List) ? json["data"] : [];
+
+      if (data.isEmpty) {
+        setState(() => _errorMessage = "등록되지 않은 사업자번호입니다.");
+        _analytics.logEvent(name: 'biz_verify_fail', parameters: {"reason": "not_registered"});
+        return;
+      }
+
+      final item = data.first;
+      final bStt = item["b_stt"];
+      final bSttCd = item["b_stt_cd"];
+
+      if (bStt == "계속사업자" || bSttCd == "01") {
+        setState(() => _verified = true);
+        _analytics.logEvent(name: 'biz_verify_success', parameters: {"biz": biz}); // ✅ 성공 이벤트
+      } else {
+        setState(() => _errorMessage = "폐업/휴업 상태로 확인됩니다.");
+        _analytics.logEvent(name: 'biz_verify_fail', parameters: {"reason": "closed_or_paused"});
+      }
+
+    } catch (_) {
+      setState(() => _errorMessage = "네트워크 연결을 확인해주세요.");
+      _analytics.logEvent(name: 'biz_verify_fail', parameters: {"reason": "network"});
     } finally {
-      setState(() => _isLoading = false);
+      setState(() => _loading = false);
     }
   }
 
-  @override
+  Future<void> _saveAndGo() async {
+    _analytics.logEvent(name: 'biz_verify_cta_post_job'); // ✅ CTA 클릭 이벤트
+
+    final prefs = await SharedPreferences.getInstance();
+    final clientId = prefs.getInt("userId");
+    final biz = _bizNumberController.text.replaceAll(RegExp(r'[^0-9]'), '');
+    final storeName = _storeNameController.text.trim().isEmpty
+        ? null
+        : _storeNameController.text.trim();
+
+    try {
+      final res = await http.post(
+        Uri.parse("$baseUrl/api/client/update-bizinfo"),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "clientId": clientId,
+          "bizNumber": biz,
+          "companyName": storeName,
+          "openDate": null,
+          "address": null
+        }),
+      );
+
+      final json = jsonDecode(res.body);
+
+      if (res.statusCode == 200 && json["success"] == true) {
+        await prefs.setString("bizNumber", biz);
+        if (storeName != null) await prefs.setString("companyName", storeName);
+
+Navigator.pushReplacementNamed(
+  context,
+  '/client_main',
+  arguments: {'initialTabIndex': 2},
+);
+      } else {
+        setState(() => _errorMessage = "저장 중 문제가 발생했어요. 다시 시도해주세요.");
+      }
+    } catch (_) {
+      setState(() => _errorMessage = "서버 연결이 불안정합니다.");
+    }
+  }
+
+@override
 Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(title: const Text('사업자 정보 입력')),
-    body: GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(), // ✅ 다른 데 탭하면 키보드 내림
-      child: SingleChildScrollView( // ✅ overflow 방지
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('사업자 정보를 입력해주세요', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text('공고 등록 전에 사업자 정보를 한 번만 입력하시면 됩니다.', style: TextStyle(fontSize: 14, color: Colors.grey)),
-             const SizedBox(height: 4),
-             const Text(
-      '사업자 번호가 없을 땐 hsm@outfind.co.kr 로 문의 주세요.',
-      style: TextStyle(fontSize: 13, color: Colors.grey),
-    ),
-            const SizedBox(height: 32),
+  final bottom = MediaQuery.of(context).padding.bottom; // ✅ 하단 안전구역 확보
 
-            const Text('사업자등록번호', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _bizNumberController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                hintText: '예) 1234567890',
-                border: OutlineInputBorder(),
+  return GestureDetector(
+    onTap: () => FocusScope.of(context).unfocus(),
+    child: Scaffold(
+      resizeToAvoidBottomInset: true, // ✅ 키보드/네비바 회피
+      backgroundColor: Colors.white,
+appBar: AppBar(
+  title: const Text("사업자 인증"),
+  backgroundColor: Colors.white,
+  elevation: 0,
+  leading: IconButton(
+    icon: const Icon(Icons.arrow_back),
+    onPressed: () {
+      // ✅ client_main 으로 돌아가며 client 탭은 '내 공고(1)'
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        '/client_main',
+        (route) => false,
+        arguments: {'initialTabIndex': 1},
+      );
+    },
+  ),
+),
+      body: SafeArea(
+        child: SingleChildScrollView( // ✅ 가려짐 방지
+          padding: EdgeInsets.fromLTRB(20, 8, 20, 20 + bottom), // ✅ 하단 패딩 자동 반영
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 14),
+              const Text(
+                "사장님, 공고 등록 전에\n사업자번호만 확인할게요.",
+                style: TextStyle(fontSize: 21, fontWeight: FontWeight.w700),
               ),
-            ),
+              const SizedBox(height: 8),
+              Text("휴업/폐업 여부만 간단히 체크해요.", style: TextStyle(fontSize: 14, color: Colors.grey)),
+              const SizedBox(height: 6),
+              Text("사업자등록번호가 없으시면\nhsm@outfind.co.kr 로 문의해주세요 😊",
+                  style: TextStyle(fontSize: 13, color: Colors.grey)),
+              const SizedBox(height: 32),
 
-            const SizedBox(height: 20),
-            const Text('상호(법인/단체명)', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            TextField(
-              controller: _companyNameController,
-              decoration: const InputDecoration(
-                hintText: '예) (주)알바일주',
-                border: OutlineInputBorder(),
-              ),
-            ),
+              _inputField(controller: _bizNumberController, hint: "사업자등록번호 (숫자 10자리)"),
+              const SizedBox(height: 14),
+              _inputField(controller: _storeNameController, hint: "상호명 (선택)"),
 
-            const SizedBox(height: 20),
-            const Text('개업연월일', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime(1980),
-                  lastDate: DateTime.now(),
-                );
-                if (picked != null) {
-                  setState(() => _selectedDate = picked);
-                }
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  _selectedDate == null
-                      ? '예) 2022년 1월 30일'
-                      : DateFormat('yyyy년 M월 d일').format(_selectedDate!),
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
+              if (_loading) ...[
+                const SizedBox(height: 24),
+                const Center(child: CircularProgressIndicator(color: kBrandBlue)),
+              ],
 
-            const SizedBox(height: 20),
-            const Text('사업장 주소', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            GestureDetector(
-              onTap: () async {
-                await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => KpostalView(
-                      useLocalServer: false,
-                      callback: (result) {
-                        setState(() {
-                          _selectedAddress = result.address;
-                        });
-                      },
-                    ),
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 14),
+                Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+              ],
+
+              if (_verified) ...[
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Color(0xFFE9F3FF),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                );
-              },
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(8),
+                  child: Text(
+                    "✅ 계속사업자로 확인되었습니다.\n바로 공고 등록하실 수 있어요.",
+                    style: TextStyle(fontSize: 15, color: kBrandBlue),
+                  ),
                 ),
-                child: Text(
-                  _selectedAddress ?? '주소 검색',
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
+              ],
 
-            const SizedBox(height: 40),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _submitBusinessInfo,
-                child: _isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('완료'),
+              const SizedBox(height: 28),
+
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _verified ? _saveAndGo : _lookup,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kBrandBlue,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  child: Text(
+                    _verified ? "공고 등록하기 🚀" : "사업자 확인하기",
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.white),
+                  ),
+                ),
               ),
-            ),
-          ],
+
+            ],
+          ),
         ),
       ),
     ),
   );
 }
+
+
+  Widget _inputField({required TextEditingController controller, required String hint}) {
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        hintText: hint,
+        filled: true,
+        fillColor: const Color(0xFFF6F8FA),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: kBrandBlue, width: 2),
+        ),
+      ),
+    );
+  }
 }
