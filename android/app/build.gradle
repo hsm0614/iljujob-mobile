@@ -7,6 +7,7 @@ plugins {
 }
 
 // keystore
+
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file("key.properties")
 if (keystorePropertiesFile.exists()) {
@@ -15,12 +16,12 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace "kr.co.iljujob"        // ← Groovy 문법
-    compileSdk 35
+    compileSdk 36
     ndkVersion "27.0.12077973"
 
     defaultConfig {
         applicationId "kr.co.iljujob"
-        minSdk 23
+        minSdkVersion flutter.minSdkVersion
         targetSdk 35
         versionCode flutter.versionCode.toInteger()
         versionName flutter.versionName

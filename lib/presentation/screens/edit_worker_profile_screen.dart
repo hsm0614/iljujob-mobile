@@ -12,17 +12,27 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/constants.dart';
 import 'package:iljujob/presentation/screens/add_experience_screen.dart';
 
-/// =============================
-/// Models
-/// =============================
+// =====================
+// 알바일주 색상 팔레트 (worker_calendar_screen과 통일)
+// =====================
+const kBrandBlue = Color(0xFF3B8AFF);
+const kBg        = Color(0xFFF7F8FA);
+const kCard      = Colors.white;
+const kBorder    = Color(0xFFE5E7EB);
+const kMuted     = Color(0xFF6B7280);
+const kText      = Color(0xFF111827);
+
+// =====================
+// Models
+// =====================
 class Experience {
-  final int id;
+  final int    id;
   final String place;
   final String description;
   final String year;
   final String duration;
 
-  Experience({
+  const Experience({
     required this.id,
     required this.place,
     required this.description,
@@ -30,58 +40,60 @@ class Experience {
     required this.duration,
   });
 
-  factory Experience.fromJson(Map<String, dynamic> json) {
-    return Experience(
-      id: (json['id'] as num).toInt(),
-      place: (json['place'] ?? '').toString(),
-      description: (json['description'] ?? '').toString(),
-      year: (json['year'] ?? '').toString(),
-      duration: (json['duration'] ?? '').toString(),
-    );
-  }
+  factory Experience.fromJson(Map<String, dynamic> json) => Experience(
+        id:          (json['id'] as num).toInt(),
+        place:       (json['place']       ?? '').toString(),
+        description: (json['description'] ?? '').toString(),
+        year:        (json['year']        ?? '').toString(),
+        duration:    (json['duration']    ?? '').toString(),
+      );
 }
 
 class LicenseItem {
-  final int id;
+  final int    id;
   final String name;
-  final String issuedAt; // YYYY/MM/DD
+  final String issuedAt;
 
-  LicenseItem({
+  const LicenseItem({
     required this.id,
     required this.name,
     required this.issuedAt,
   });
 
-  factory LicenseItem.fromJson(Map<String, dynamic> json) {
-    return LicenseItem(
-      id: (json['id'] as num).toInt(),
-      name: (json['name'] ?? '').toString(),
-      issuedAt: (json['issued_at'] ?? '').toString(),
-    );
-  }
+  factory LicenseItem.fromJson(Map<String, dynamic> json) => LicenseItem(
+        id:       (json['id'] as num).toInt(),
+        name:     (json['name']      ?? '').toString(),
+        issuedAt: (json['issued_at'] ?? '').toString(),
+      );
 }
 
-/// YYYY/MM/DD 자동 포맷
+// =====================
+// YYYY/MM/DD 자동 포맷
+// =====================
 class YmdSlashInputFormatter extends TextInputFormatter {
   @override
-  TextEditingValue formatEditUpdate(TextEditingValue oldValue, TextEditingValue newValue) {
-    final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits  = newValue.text.replaceAll(RegExp(r'\D'), '');
     final clipped = digits.length <= 8 ? digits : digits.substring(0, 8);
-
-    final buf = StringBuffer();
+    final buf     = StringBuffer();
     for (int i = 0; i < clipped.length; i++) {
       if (i == 4 || i == 6) buf.write('/');
       buf.write(clipped[i]);
     }
-
     final text = buf.toString();
-    return TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
+    return TextEditingValue(
+      text:      text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
   }
 }
 
-/// =============================
-/// Screen
-/// =============================
+// =====================
+// EditWorkerProfileScreen
+// =====================
 class EditWorkerProfileScreen extends StatefulWidget {
   const EditWorkerProfileScreen({super.key});
 
@@ -90,85 +102,102 @@ class EditWorkerProfileScreen extends StatefulWidget {
 }
 
 class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
-  // ===== Branding =====
-  static const kBrand = Color(0xFF3B8AFF);
-  static const kBg = Color(0xFFF7F9FC);
-
-  // ===== State =====
+  // ── 로딩/저장 상태
   bool _initialLoading = true;
-  bool _saving = false;
+  bool _saving         = false;
 
-  int? _workerId;
+  // ── 사용자 정보
+  int?    _workerId;
+  String  _phone           = '';
+  String  _profileImageUrl = '';
+  File?   _selectedImage;
+  String? _birthYear; // yyyymmdd
+  String? _gender;
+  bool    _resumeConsent = true;
+  int     _mannerPoint   = 0;
+  int     _penaltyPoint  = 0;
 
-  String phone = '';
-  String profileImageUrl = '';
-  File? selectedImage;
-  final picker = ImagePicker();
+  // ── SharedPreferences 캐시 (매번 재호출 방지)
+  SharedPreferences? _prefs;
 
-  String? birthYear; // yyyymmdd (서버 저장 포맷)
-  String? gender; // '남성'/'여성'/null
+  // ── Controllers
+  final _nameCtrl         = TextEditingController();
+  final _introductionCtrl = TextEditingController();
+  final _experienceCtrl   = TextEditingController(); // 레거시 유지
 
-  // ✅ 서버에서 null이어도 기본 ON으로 보이게
-  bool resumeConsent = true;
+  // ── UI 토글
+  bool _isResumeExpanded = true;
 
-  // ✅ 점수
-  int mannerPoint = 0;
-  int penaltyPoint = 0;
-
-  // Controllers
-  final nameController = TextEditingController();
-  final introductionController = TextEditingController();
-  final experienceController = TextEditingController(); // 레거시(유지)
-
-  // UI toggle
-  bool isResumeExpanded = true;
-
-  // ===== Category / Options =====
-  final Map<String, List<String>> workCategoryMap = const {
+  // ── 카테고리/옵션
+  static const _workCategoryMap = <String, List<String>>{
     '물류/제조': ['상하차', '물류', '포장', '제조보조', '검수/피킹', '분류/적재'],
     '매장/서비스': ['서빙', '주방보조', '카페', '매장보조', '캐셔', '행사스태프'],
     '사무/기타': ['사무보조', '전단/홍보', '데이터입력', '고객응대', '기타'],
   };
   String? _selectedWorkCategory;
 
-  final List<String> strengthOptions = const [
-    '꼼꼼해요',
-    '책임감 있어요',
-    '상냥해요',
-    '빠릿해요',
-    '체력이 좋아요',
-    '성실해요',
+  static const _strengthOptions = [
+    '꼼꼼해요', '책임감 있어요', '상냥해요', '빠릿해요', '체력이 좋아요', '성실해요',
   ];
-  final List<String> dayOptions = const ['월', '화', '수', '목', '금', '토', '일'];
-  final List<String> timeOptions = const ['06-12', '12-18', '18-24'];
+  static const _dayOptions  = ['월', '화', '수', '목', '금', '토', '일'];
+  static const _timeOptions = ['06-12', '12-18', '18-24'];
 
-  // Data lists
-  List<Experience> experiences = [];
-  List<LicenseItem> licenses = [];
+  // ── 데이터 목록
+  List<Experience>  _experiences = [];
+  List<LicenseItem> _licenses    = [];
 
-  List<String> selectedWorks = [];
-  List<String> selectedStrengths = [];
-  List<String> selectedDays = [];
-  List<String> selectedTimes = [];
+  List<String> _selectedWorks     = [];
+  List<String> _selectedStrengths = [];
+  List<String> _selectedDays      = [];
+  List<String> _selectedTimes     = [];
 
-  // Deleting states
-  final Set<int> _deletingLicenseIds = {};
+  // ── 삭제 진행 중 ID 셋
+  final Set<int> _deletingLicenseIds    = {};
   final Set<int> _deletingExperienceIds = {};
 
-  // ---------- UI utils ----------
-  BoxDecoration get _cardDecoration => BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE8ECF3)),
-      );
+  final _imagePicker = ImagePicker();
 
-  void _toast(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.maybeOf(context)?.showSnackBar(SnackBar(content: Text(message)));
+  // ──────────────────────────────────────────
+  // 초기화
+  // ──────────────────────────────────────────
+  @override
+  void initState() {
+    super.initState();
+    _init();
   }
 
+  @override
+  void dispose() {
+    _nameCtrl.dispose();
+    _introductionCtrl.dispose();
+    _experienceCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _init() async {
+    _prefs    = await SharedPreferences.getInstance();
+    _workerId = _prefs!.getInt('userId');
+
+    if (_workerId == null) {
+      if (mounted) setState(() => _initialLoading = false);
+      _toast('로그인 정보가 없어요 🙏');
+      return;
+    }
+
+    await Future.wait([
+      _loadProfile(),
+      _fetchExperiences(),
+      _fetchLicenses(),
+    ]);
+
+    if (!mounted) return;
+    setState(() => _initialLoading = false);
+  }
+
+  // ──────────────────────────────────────────
+  // 파싱 헬퍼
+  // ──────────────────────────────────────────
   bool _parseResumeConsent(dynamic flag) {
-    // ✅ null이면 기본 ON
     if (flag == null) return true;
     if (flag is bool) return flag;
     if (flag is num) return flag == 1;
@@ -179,14 +208,12 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
     return true;
   }
 
-  List<String> _parseList(dynamic value) {
-    return (value ?? '')
-        .toString()
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
-  }
+  List<String> _parseList(dynamic value) => (value ?? '')
+      .toString()
+      .split(',')
+      .map((e) => e.trim())
+      .where((e) => e.isNotEmpty)
+      .toList();
 
   String _fmtYmdSlash(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}/${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}';
@@ -208,213 +235,140 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
   String _birthDisplayText(String? yyyymmdd) {
     final digits = (yyyymmdd ?? '').replaceAll(RegExp(r'\D'), '');
     if (digits.length != 8) return '생년월일 미입력';
-    final y = digits.substring(0, 4);
-    final m = digits.substring(4, 6);
-    final d = digits.substring(6, 8);
-    return '$y/$m/$d';
+    return '${digits.substring(0, 4)}/${digits.substring(4, 6)}/${digits.substring(6, 8)}';
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _init();
-  }
-
-  @override
-  void dispose() {
-    nameController.dispose();
-    introductionController.dispose();
-    experienceController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _init() async {
-    final prefs = await SharedPreferences.getInstance();
-    _workerId = prefs.getInt('userId');
-
-    if (_workerId == null) {
-      setState(() => _initialLoading = false);
-      _toast('로그인 정보가 없습니다.');
-      return;
-    }
-
-    await Future.wait([
-      _loadProfile(),
-      _fetchExperiences(),
-      _fetchLicenses(),
-    ]);
-
-    if (!mounted) return;
-    setState(() => _initialLoading = false);
-  }
-
-  /// =============================
-  /// API calls (서버 컨트롤러 그대로 사용)
-  /// =============================
+  // ──────────────────────────────────────────
+  // API
+  // ──────────────────────────────────────────
   Future<void> _loadProfile() async {
     if (_workerId == null) return;
-
     try {
       final res = await http.get(Uri.parse('$baseUrl/api/worker/profile?id=$_workerId'));
-      if (res.statusCode != 200) {
-        _toast('프로필 불러오기 실패 (${res.statusCode})');
-        return;
-      }
+      if (res.statusCode != 200) { _toast('프로필 불러오기 실패 (${res.statusCode})'); return; }
 
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       if (!mounted) return;
 
       setState(() {
-        nameController.text = (data['name'] ?? '').toString();
-        profileImageUrl = (data['profile_image_url'] ?? '').toString();
-
-        selectedWorks = _parseList(data['desired_work']);
-        selectedStrengths = _parseList(data['strengths']);
-        selectedDays = _parseList(data['available_days']);
-        selectedTimes = _parseList(data['available_times']);
-
-        introductionController.text = (data['introduction'] ?? '').toString();
-        experienceController.text = (data['experience'] ?? '').toString();
-
-        phone = (data['phone'] ?? '').toString();
-        birthYear = data['birth_year']?.toString();
-        gender = data['gender']?.toString();
-
-        resumeConsent = _parseResumeConsent(data['resume_consent']);
-
-        mannerPoint = int.tryParse('${data['manner_point'] ?? 0}') ?? 0;
-        penaltyPoint = int.tryParse('${data['penalty_point'] ?? 0}') ?? 0;
+        _nameCtrl.text         = (data['name'] ?? '').toString();
+        _profileImageUrl       = (data['profile_image_url'] ?? '').toString();
+        _selectedWorks         = _parseList(data['desired_work']);
+        _selectedStrengths     = _parseList(data['strengths']);
+        _selectedDays          = _parseList(data['available_days']);
+        _selectedTimes         = _parseList(data['available_times']);
+        _introductionCtrl.text = (data['introduction'] ?? '').toString();
+        _experienceCtrl.text   = (data['experience']   ?? '').toString();
+        _phone                 = (data['phone']         ?? '').toString();
+        _birthYear             = data['birth_year']?.toString();
+        _gender                = data['gender']?.toString();
+        _resumeConsent         = _parseResumeConsent(data['resume_consent']);
+        _mannerPoint           = int.tryParse('${data['manner_point']  ?? 0}') ?? 0;
+        _penaltyPoint          = int.tryParse('${data['penalty_point'] ?? 0}') ?? 0;
+        // 카테고리 초기값 한 번만 세팅
+        _selectedWorkCategory ??= _workCategoryMap.keys.first;
       });
 
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setString('workerProfileImageUrl', profileImageUrl);
-
-      _selectedWorkCategory ??= workCategoryMap.keys.first;
+      _prefs?.setString('workerProfileImageUrl', _profileImageUrl);
     } catch (_) {
-      _toast('네트워크 오류 발생');
+      _toast('네트워크 오류가 났어요 🥲');
     }
   }
 
   Future<void> _fetchExperiences() async {
     if (_workerId == null) return;
-
     try {
       final res = await http.get(Uri.parse('$baseUrl/api/worker/experiences?workerId=$_workerId'));
       if (res.statusCode != 200) return;
-
       final raw = jsonDecode(res.body);
-      if (raw is! List) return;
-
-      if (!mounted) return;
+      if (raw is! List || !mounted) return;
       setState(() {
-        experiences = raw.map((e) => Experience.fromJson(e as Map<String, dynamic>)).toList();
+        _experiences = raw.map((e) => Experience.fromJson(e as Map<String, dynamic>)).toList();
       });
     } catch (_) {}
   }
 
   Future<void> _fetchLicenses() async {
     if (_workerId == null) return;
-
     try {
       final res = await http.get(Uri.parse('$baseUrl/api/worker/licenses?workerId=$_workerId'));
       if (res.statusCode != 200) return;
-
       final raw = jsonDecode(res.body);
-      if (raw is! List) return;
-
-      if (!mounted) return;
+      if (raw is! List || !mounted) return;
       setState(() {
-        licenses = raw.map((e) => LicenseItem.fromJson(e as Map<String, dynamic>)).toList();
+        _licenses = raw.map((e) => LicenseItem.fromJson(e as Map<String, dynamic>)).toList();
       });
     } catch (_) {}
   }
 
-  /// ✅ 이미지(있으면) 업로드: 서버 uploadProfileImage 컨트롤러와 동일 필드 사용
-  Future<String?> _uploadProfileImageIfNeeded({
-    required int workerId,
+  Future<String?> _uploadProfileImage({
+    required int    workerId,
     required String birthDigits,
   }) async {
-    if (selectedImage == null) return null;
+    if (_selectedImage == null) return null;
 
     final req = http.MultipartRequest(
       'POST',
       Uri.parse('$baseUrl/api/worker/upload-profile-image'),
     );
-
-    req.fields['id'] = workerId.toString();
-    req.fields['name'] = nameController.text.trim();
-    req.fields['birth_year'] = birthDigits; // yyyymmdd
-    req.fields['desired_work'] = selectedWorks.join(',');
-    req.fields['strengths'] = selectedStrengths.join(',');
-    req.fields['available_days'] = selectedDays.join(',');
-    req.fields['available_times'] = selectedTimes.join(',');
-    req.fields['introduction'] = introductionController.text.trim();
-    req.fields['experience'] = experienceController.text.trim();
-
-    req.files.add(await http.MultipartFile.fromPath('image', selectedImage!.path));
+    req.fields['id']              = workerId.toString();
+    req.fields['name']            = _nameCtrl.text.trim();
+    req.fields['birth_year']      = birthDigits;
+    req.fields['desired_work']    = _selectedWorks.join(',');
+    req.fields['strengths']       = _selectedStrengths.join(',');
+    req.fields['available_days']  = _selectedDays.join(',');
+    req.fields['available_times'] = _selectedTimes.join(',');
+    req.fields['introduction']    = _introductionCtrl.text.trim();
+    req.fields['experience']      = _experienceCtrl.text.trim();
+    req.files.add(await http.MultipartFile.fromPath('image', _selectedImage!.path));
 
     final response = await req.send();
-    final body = await response.stream.bytesToString();
+    final body     = await response.stream.bytesToString();
 
     if (response.statusCode != 200) {
-      throw Exception('이미지 업로드 실패 (${response.statusCode}) $body');
+      throw Exception('이미지 업로드 실패 (${response.statusCode})');
     }
-
     final decoded = jsonDecode(body);
-    final url = decoded is Map<String, dynamic> ? decoded['imageUrl']?.toString() : null;
-    return url;
+    return decoded is Map<String, dynamic> ? decoded['imageUrl']?.toString() : null;
   }
 
-  /// ✅ 핵심: resume_consent / gender 포함 저장은 updateProfile로!
-Future<void> _updateProfileJson({
-  required int workerId,
-  required String birthDigits,
-}) async {
-  final payload = {
-    // ✅ 서버가 요구하는 필드
-    'workerId': workerId,
+  Future<void> _updateProfileJson({
+    required int    workerId,
+    required String birthDigits,
+  }) async {
+    final payload = {
+      'workerId':       workerId,
+      'id':             workerId,
+      'name':           _nameCtrl.text.trim(),
+      'gender':         _gender ?? '',
+      'birth_year':     birthDigits.isEmpty ? null : birthDigits,
+      'strengths':      _selectedStrengths.join(','),
+      'traits':         '',
+      'desired_work':   _selectedWorks.join(','),
+      'available_days': _selectedDays.join(','),
+      'available_times':_selectedTimes.join(','),
+      'introduction':   _introductionCtrl.text.trim(),
+      'experience':     _experienceCtrl.text.trim(),
+      'resume_consent': _resumeConsent ? 1 : 0,
+    };
 
-    // (서버가 id도 쓰면 같이 둬도 무방)
-    'id': workerId,
+    final res = await http.post(
+      Uri.parse('$baseUrl/api/worker/update-profile'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(payload),
+    );
 
-    'name': nameController.text.trim(),
-    'gender': gender ?? '',
-
-    // 서버가 yyyymmdd를 받는 구조라면 유지
-    'birth_year': birthDigits.isEmpty ? null : birthDigits,
-
-    'strengths': selectedStrengths.join(','),
-    'traits': '',
-    'desired_work': selectedWorks.join(','),
-    'available_days': selectedDays.join(','),
-    'available_times': selectedTimes.join(','),
-    'introduction': introductionController.text.trim(),
-    'experience': experienceController.text.trim(),
-    'resume_consent': resumeConsent ? 1 : 0,
-  };
-
-  final res = await http.post(
-    Uri.parse('$baseUrl/api/worker/update-profile'),
-    headers: {'Content-Type': 'application/json'},
-    body: jsonEncode(payload),
-  );
-
-  debugPrint('update-profile status=${res.statusCode}');
-  debugPrint('update-profile body=${res.body}');
-  debugPrint('update-profile payload=${jsonEncode(payload)}');
-
-  if (res.statusCode < 200 || res.statusCode >= 300) {
-    throw Exception('프로필 저장 실패 (${res.statusCode}) ${res.body}');
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw Exception('프로필 저장 실패 (${res.statusCode})');
+    }
   }
-}
+
   Future<void> _saveProfile() async {
-    if (_saving) return;
-    if (_workerId == null) return;
+    if (_saving || _workerId == null) return;
 
-    final birthDigits = _birthDigitsToDate(birthYear, fallback: DateTime(2000, 1, 1));
-    final birthTextDigits = (birthYear ?? '').replaceAll(RegExp(r'\D'), '');
-    // 입력이 있었다면 8자리 검증
-    if ((birthYear ?? '').isNotEmpty && birthTextDigits.isNotEmpty && birthTextDigits.length != 8) {
+    // ✅ birthDigits 변수 통일 (기존 코드에서 혼선 있던 부분)
+    final birthDigits = (_birthYear ?? '').replaceAll(RegExp(r'\D'), '');
+    if ((_birthYear ?? '').isNotEmpty && birthDigits.isNotEmpty && birthDigits.length != 8) {
       _toast('생년월일 형식을 확인해주세요 (YYYY/MM/DD)');
       return;
     }
@@ -422,611 +376,504 @@ Future<void> _updateProfileJson({
     setState(() => _saving = true);
 
     try {
-      final digits = birthTextDigits; // yyyymmdd or ''
+      // 1) 이미지 업로드 (실패 시 저장 중단)
       String? newImageUrl;
-
-      // 1) 이미지가 있으면 업로드
-      if (selectedImage != null) {
-        newImageUrl = await _uploadProfileImageIfNeeded(
-          workerId: _workerId!,
-          birthDigits: digits,
+      if (_selectedImage != null) {
+        newImageUrl = await _uploadProfileImage(
+          workerId:    _workerId!,
+          birthDigits: birthDigits,
         );
       }
 
-      // 2) resume_consent/gender 포함 전체 저장은 updateProfile(JSON)
-      await _updateProfileJson(
-        workerId: _workerId!,
-        birthDigits: digits,
-      );
+      // 2) 프로필 JSON 저장
+      await _updateProfileJson(workerId: _workerId!, birthDigits: birthDigits);
 
       if (!mounted) return;
-
       setState(() {
         if (newImageUrl != null && newImageUrl.isNotEmpty) {
-          profileImageUrl = newImageUrl!;
+          _profileImageUrl = newImageUrl;
         }
-        selectedImage = null;
-        // birthYear는 digits로 통일
-        birthYear = digits.isEmpty ? null : digits;
+        _selectedImage = null;
+        _birthYear     = birthDigits.isEmpty ? null : birthDigits;
       });
 
-      final prefs = await SharedPreferences.getInstance();
-      prefs.setString('workerProfileImageUrl', profileImageUrl);
-
-      _toast('저장 완료!');
+      _prefs?.setString('workerProfileImageUrl', _profileImageUrl);
+      _toast('저장 완료! ✅');
     } catch (e) {
-      _toast('저장 중 오류: $e');
+      _toast('저장 중 오류가 났어요 🥲');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
   }
 
   Future<void> _pickImage() async {
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
-    if (picked != null && mounted) setState(() => selectedImage = File(picked.path));
-  }
-
-  /// =============================
-  /// Delete Experience
-  /// =============================
-  Future<bool> _confirmDeleteSheet({
-    required String title,
-    required String message,
-    required String confirmLabel,
-    Color confirmColor = const Color(0xFFE53935),
-  }) async {
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
-      builder: (ctx) {
-        return SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 38,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.black12,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(title, style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w900)),
-                const SizedBox(height: 8),
-                Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 13.5, color: Colors.black54),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(ctx, false),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: const Text('취소'),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () => Navigator.pop(ctx, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: confirmColor,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        child: Text(confirmLabel, style: const TextStyle(fontWeight: FontWeight.w900)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
+    final picked = await _imagePicker.pickImage(
+      source:       ImageSource.gallery,
+      imageQuality: 85,
     );
-
-    return result == true;
+    if (picked != null && mounted) {
+      setState(() => _selectedImage = File(picked.path));
+    }
   }
 
+  // ──────────────────────────────────────────
+  // 삭제 (confirm 먼저, 플래그는 확인 후)
+  // ──────────────────────────────────────────
   Future<void> _deleteExperience(Experience exp) async {
-    final id = exp.id;
-    if (_deletingExperienceIds.contains(id)) return;
+    if (_deletingExperienceIds.contains(exp.id)) return;
 
-    setState(() => _deletingExperienceIds.add(id));
+    // ✅ confirm 먼저
+    final yes = await _confirmBottomSheet(
+      title:        '경력 삭제',
+      message:      '"${exp.place}" 경력을 삭제할까요?\n삭제 후 되돌릴 수 없어요.',
+      confirmLabel: '삭제',
+    );
+    if (!yes || !mounted) return;
+
+    // ✅ 확인 후 플래그 세팅
+    setState(() => _deletingExperienceIds.add(exp.id));
 
     try {
-      final yes = await _confirmDeleteSheet(
-        title: '경력 삭제',
-        message: '"${exp.place}" 경력을 삭제할까요?\n삭제 후 되돌릴 수 없습니다.',
-        confirmLabel: '삭제',
-      );
-      if (!mounted) return;
-
-      if (!yes) {
-        setState(() => _deletingExperienceIds.remove(id));
-        return;
-      }
-
-      final resp = await http.delete(Uri.parse('$baseUrl/api/worker/experience/$id'));
+      final resp = await http.delete(Uri.parse('$baseUrl/api/worker/experience/${exp.id}'));
       if (!mounted) return;
 
       if (resp.statusCode == 200) {
         setState(() {
-          experiences.removeWhere((e) => e.id == id);
-          _deletingExperienceIds.remove(id);
+          _experiences.removeWhere((e) => e.id == exp.id);
         });
-        _toast('삭제 완료');
+        _toast('삭제됐어요 🗑️');
       } else {
         _toast('삭제 실패 (${resp.statusCode})');
-        setState(() => _deletingExperienceIds.remove(id));
       }
     } catch (e) {
-      _toast('네트워크 오류: $e');
-      if (mounted) setState(() => _deletingExperienceIds.remove(id));
+      _toast('네트워크 오류가 났어요 🥲');
+    } finally {
+      if (mounted) setState(() => _deletingExperienceIds.remove(exp.id));
     }
   }
 
-  /// =============================
-  /// Delete License
-  /// =============================
   Future<void> _deleteLicense(LicenseItem item) async {
-    final id = item.id;
-    if (_deletingLicenseIds.contains(id)) return;
+    if (_deletingLicenseIds.contains(item.id)) return;
 
-    setState(() => _deletingLicenseIds.add(id));
+    // ✅ confirm 먼저
+    final yes = await _confirmBottomSheet(
+      title:        '자격증 삭제',
+      message:      '"${item.name}"을(를) 삭제할까요?\n삭제 후 되돌릴 수 없어요.',
+      confirmLabel: '삭제',
+    );
+    if (!yes || !mounted) return;
+
+    // ✅ 확인 후 플래그 세팅
+    setState(() => _deletingLicenseIds.add(item.id));
 
     try {
-      final yes = await _confirmDeleteSheet(
-        title: '자격증 삭제',
-        message: '"${item.name}"을(를) 삭제할까요?\n삭제 후 되돌릴 수 없습니다.',
-        confirmLabel: '삭제',
-      );
-      if (!mounted) return;
-
-      if (!yes) {
-        setState(() => _deletingLicenseIds.remove(id));
-        return;
-      }
-
-      final res = await http.delete(Uri.parse('$baseUrl/api/worker/licenses/$id'));
+      final res = await http.delete(Uri.parse('$baseUrl/api/worker/licenses/${item.id}'));
       if (!mounted) return;
 
       if (res.statusCode == 200) {
         setState(() {
-          licenses.removeWhere((x) => x.id == id);
-          _deletingLicenseIds.remove(id);
+          _licenses.removeWhere((x) => x.id == item.id);
         });
-        _toast('삭제 완료');
+        _toast('삭제됐어요 🗑️');
       } else {
         _toast('삭제 실패 (${res.statusCode})');
-        setState(() => _deletingLicenseIds.remove(id));
       }
     } catch (e) {
-      _toast('네트워크 오류: $e');
-      if (mounted) setState(() => _deletingLicenseIds.remove(id));
+      _toast('네트워크 오류가 났어요 🥲');
+    } finally {
+      if (mounted) setState(() => _deletingLicenseIds.remove(item.id));
     }
   }
 
-  /// =============================
-  /// Add Experience
-  /// =============================
+  // ──────────────────────────────────────────
+  // 경력/자격증 추가
+  // ──────────────────────────────────────────
   Future<void> _showAddExperienceModal() async {
-    final result = await Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const AddExperienceScreen()),
     );
-
     if (!mounted) return;
-    if (result == null) return;
-
-    // AddExperienceScreen이 서버 저장까지 하고 {id, place, ...} 리턴한다고 가정
-    setState(() {
-      experiences.insert(
-        0,
-        Experience(
-          id: (result['id'] as num).toInt(),
-          place: (result['place'] ?? '').toString(),
-          description: (result['description'] ?? '').toString(),
-          year: (result['year'] ?? '').toString(),
-          duration: (result['duration'] ?? '').toString(),
-        ),
-      );
-    });
+    // 성공/취소 상관없이 서버에서 최신 목록 다시 fetch
+    await _fetchExperiences();
   }
 
-  /// =============================
-  /// Add License
-  /// =============================
-  Future<void> _showAddLicenseBottomSheet() async {
-    String name = '';
+  Future<void> _showAddLicenseSheet() async {
+    String name     = '';
     String issuedAt = '';
+    final issuedCtrl = TextEditingController();
 
     await showModalBottomSheet<void>(
-      context: context,
+      context:            context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(22))),
+      backgroundColor:    Colors.transparent,
       builder: (ctx) {
-        final inset = MediaQuery.of(ctx).viewInsets.bottom;
         return SafeArea(
           top: false,
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + inset),
-            child: StatefulBuilder(
-              builder: (ctx, setLocal) {
-                Future<void> pickIssuedAt() async {
-                  final now = DateTime.now();
-                  final picked = await showKoWheelDatePickerSheet(
-                    context,
-                    title: '취득일 선택',
-                    initial: DateTime(2020, 1, 1),
-                    min: DateTime(1950, 1, 1),
-                    max: now,
-                    brand: kBrand,
-                  );
-                  if (picked != null) setLocal(() => issuedAt = _fmtYmdSlash(picked));
-                }
+          child: Container(
+            margin:  const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            decoration: BoxDecoration(
+              color:        Colors.white,
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: [
+                BoxShadow(
+                  color:      Colors.black.withOpacity(0.10),
+                  blurRadius: 24,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            // ✅ SingleChildScrollView로 감싸서 키보드 올라올 때 overflow 방지
+            child: SingleChildScrollView(
+              child: StatefulBuilder(
+                builder: (ctx, setLocal) {
+                  final inset   = MediaQuery.of(ctx).viewInsets.bottom;
+                  final canSave = name.trim().isNotEmpty && issuedAt.trim().isNotEmpty;
 
-                final canSave = name.trim().isNotEmpty && issuedAt.trim().isNotEmpty;
+                  Future<void> pickIssuedAt() async {
+                    final picked = await showKoWheelDatePickerSheet(
+                      context,
+                      title:   '취득일 선택',
+                      initial: DateTime(2020, 1, 1),
+                      min:     DateTime(1950, 1, 1),
+                      max:     DateTime.now(),
+                      brand:   kBrandBlue,
+                    );
+                    if (picked != null) {
+                      final text = _fmtYmdSlash(picked);
+                      setLocal(() {
+                        issuedAt        = text;
+                        issuedCtrl.text = text;
+                      });
+                    }
+                  }
 
-                return Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Container(
-                        width: 42,
-                        height: 4,
-                        decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(99)),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text('자격증 추가', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
-                    const SizedBox(height: 14),
-                    TextField(
-                      onChanged: (v) => setLocal(() => name = v),
-                      decoration: InputDecoration(
-                        labelText: '자격증 이름',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      readOnly: true,
-                      controller: TextEditingController(text: issuedAt),
-                      decoration: InputDecoration(
-                        labelText: '취득일 (YYYY/MM/DD)',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        suffixIcon: IconButton(
-                          icon: const Icon(Icons.edit_calendar, color: kBrand),
-                          onPressed: pickIssuedAt,
-                        ),
-                      ),
-                      onTap: pickIssuedAt,
-                    ),
-                    const SizedBox(height: 14),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF2F6FF),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFE2E7EF)),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(Icons.info_outline, color: kBrand, size: 18),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '증빙 첨부(사진/파일)는 준비중이에요. 먼저 이름/취득일만 저장됩니다.',
-                              style: TextStyle(fontSize: 12.5, color: Colors.black87),
+                  return Padding(
+                    // ✅ 키보드 inset을 Column 바깥 Padding으로 처리
+                    padding: EdgeInsets.only(bottom: inset),
+                    child: Column(
+                      mainAxisSize:       MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width:  42,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color:        kBorder,
+                              borderRadius: BorderRadius.circular(999),
                             ),
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: canSave
-                            ? () async {
-                                if (_workerId == null) return;
-
-                                final digits = issuedAt.replaceAll(RegExp(r'\D'), '');
-                                if (digits.length != 8) {
-                                  _toast('취득일 형식을 확인해주세요 (YYYY/MM/DD)');
-                                  return;
-                                }
-
-                                try {
-                                  final response = await http.post(
-                                    Uri.parse('$baseUrl/api/worker/licenses'),
-                                    headers: {'Content-Type': 'application/json'},
-                                    body: jsonEncode({
-                                      'worker_id': _workerId,
-                                      'name': name.trim(),
-                                      'issued_at': issuedAt.trim(),
-                                    }),
-                                  );
-
-                                  if (response.statusCode == 200) {
-                                    if (mounted) Navigator.pop(ctx);
-                                    await _fetchLicenses();
-                                  } else {
-                                    _toast('저장 실패 (${response.statusCode})');
-                                  }
-                                } catch (e) {
-                                  _toast('네트워크 오류: $e');
-                                }
-                              }
-                            : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kBrand,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
                         ),
-                        child: const Text('저장하기', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
-                      ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          '자격증 추가',
+                          style: TextStyle(
+                            fontSize:   18,
+                            fontWeight: FontWeight.w900,
+                            color:      kText,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        _inputField(
+                          label:     '자격증 이름',
+                          hint:      '예) 지게차 운전기능사',
+                          onChanged: (v) => setLocal(() => name = v),
+                        ),
+                        const SizedBox(height: 12),
+                        _inputField(
+                          label:      '취득일',
+                          hint:       'YYYY/MM/DD',
+                          controller: issuedCtrl,
+                          readOnly:   true,
+                          onTap:      pickIssuedAt,
+                          suffixIcon: IconButton(
+                            icon:      const Icon(Icons.edit_calendar_rounded, color: kBrandBlue),
+                            onPressed: pickIssuedAt,
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+                        _infoBox('증빙 첨부(사진/파일)는 준비중이에요.\n이름/취득일만 먼저 저장됩니다.'),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: canSave
+                                ? () async {
+                                    if (_workerId == null) return;
+                                    final digits = issuedAt.replaceAll(RegExp(r'\D'), '');
+                                    if (digits.length != 8) {
+                                      _toast('취득일 형식을 확인해주세요 🙂');
+                                      return;
+                                    }
+                                    try {
+                                      final response = await http.post(
+                                        Uri.parse('$baseUrl/api/worker/licenses'),
+                                        headers: {'Content-Type': 'application/json'},
+                                        body: jsonEncode({
+                                          'worker_id': _workerId,
+                                          'name':      name.trim(),
+                                          'issued_at': issuedAt.trim(),
+                                        }),
+                                      );
+                                      if (response.statusCode == 200) {
+                                        // ✅ pop 먼저, fetch는 sheet 완전히 닫힌 후
+                                        if (ctx.mounted) Navigator.pop(ctx);
+                                      } else {
+                                        _toast('저장 실패 (${response.statusCode})');
+                                      }
+                                    } catch (e) {
+                                      _toast('네트워크 오류가 났어요 🥲');
+                                    }
+                                  }
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: kBrandBlue,
+                              foregroundColor: Colors.white,
+                              elevation:       0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: const Text(
+                              '저장하기',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         );
       },
     );
+
+    // ✅ sheet가 완전히 닫힌 후에 dispose + fetch (순서 중요)
+    issuedCtrl.dispose();
+    if (mounted) await _fetchLicenses();
   }
 
-  /// =============================
-  /// Basic Info Sheet
-  /// =============================
+  // ──────────────────────────────────────────
+  // 기본정보 수정 시트
+  // ──────────────────────────────────────────
   Future<void> _showBasicInfoSheet() async {
-    String tempName = nameController.text;
-    String? tempGender = gender;
-    DateTime tempBirth = _birthDigitsToDate(birthYear, fallback: DateTime(2000, 1, 1));
+    String   tempName   = _nameCtrl.text;
+    String?  tempGender = _gender;
+    DateTime tempBirth  = _birthDigitsToDate(_birthYear, fallback: DateTime(2000, 1, 1));
 
     await showModalBottomSheet<void>(
-      context: context,
+      context:          context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withOpacity(0.35),
+      barrierColor:    Colors.black.withOpacity(0.35),
       builder: (ctx) {
-        final inset = MediaQuery.of(ctx).viewInsets.bottom;
-
-        Widget seg(String label, void Function(void Function()) setLocal) {
-          final selected = tempGender == label;
-          return Expanded(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(14),
-              onTap: () => setLocal(() => tempGender = label),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: BoxDecoration(
-                  color: selected ? kBrand.withOpacity(0.12) : const Color(0xFFF7F9FC),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: selected ? kBrand : const Color(0xFFE2E7EF),
-                    width: selected ? 1.6 : 1.2,
-                  ),
-                ),
-                child: Center(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      color: selected ? kBrand : Colors.black87,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        }
-
-        Widget fieldCard({required Widget child}) {
-          return Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF7F9FC),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE8ECF3)),
-            ),
-            child: child,
-          );
-        }
-
-        Widget labelRow(String label, {String? sub}) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
-                if (sub != null) ...[
-                  const SizedBox(height: 3),
-                  Text(sub, style: const TextStyle(fontSize: 12.5, color: Colors.black54)),
-                ],
-              ],
-            ),
-          );
-        }
-
         return SafeArea(
           top: false,
           child: Container(
-            margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            margin:  const EdgeInsets.fromLTRB(12, 0, 12, 12),
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color:        Colors.white,
               borderRadius: BorderRadius.circular(22),
               boxShadow: [
                 BoxShadow(
-                  blurRadius: 24,
+                  blurRadius:   24,
                   spreadRadius: 2,
-                  color: Colors.black.withOpacity(0.10),
+                  color:        Colors.black.withOpacity(0.10),
                 ),
               ],
             ),
             child: StatefulBuilder(
               builder: (ctx, setLocal) {
+                final inset = MediaQuery.of(ctx).viewInsets.bottom;
+
                 Future<void> pickBirth() async {
                   final picked = await showKoWheelDatePickerSheet(
                     context,
-                    title: '생년월일 선택',
+                    title:   '생년월일 선택',
                     initial: tempBirth,
-                    min: DateTime(1950, 1, 1),
-                    max: DateTime.now(),
-                    brand: kBrand,
+                    min:     DateTime(1950, 1, 1),
+                    max:     DateTime.now(),
+                    brand:   kBrandBlue,
                   );
                   if (picked != null) setLocal(() => tempBirth = picked);
                 }
 
-                final birthText = _fmtYmdSlash(tempBirth);
+                Widget genderChip(String label) {
+                  final selected = tempGender == label;
+                  return Expanded(
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(14),
+                      onTap: () => setLocal(() => tempGender = label),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 160),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        decoration: BoxDecoration(
+                          color:        selected ? kBrandBlue.withOpacity(0.12) : kBg,
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: selected ? kBrandBlue : kBorder,
+                            width: selected ? 1.6 : 1.2,
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              color: selected ? kBrandBlue : kMuted,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
 
                 return ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+                  ),
                   child: SingleChildScrollView(
                     padding: EdgeInsets.fromLTRB(0, 0, 0, inset),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Column(
-                          children: [
-                            Container(
-                              width: 44,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: Colors.black12,
-                                borderRadius: BorderRadius.circular(99),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                const Expanded(
-                                  child: Text(
-                                    '기본 정보 수정',
-                                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                                  ),
-                                ),
-                                IconButton(
-                                  onPressed: () => Navigator.pop(ctx),
-                                  icon: const Icon(Icons.close_rounded),
-                                  splashRadius: 20,
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-
-                        // 이름
-                        labelRow('이름'),
-                        fieldCard(
-                          child: TextFormField(
-                            initialValue: tempName,
-                            textInputAction: TextInputAction.done,
-                            onChanged: (v) => tempName = v,
-                            decoration: const InputDecoration(
-                              isDense: true,
-                              hintText: '이름 입력',
-                              prefixIcon: Icon(Icons.badge_outlined),
-                              border: InputBorder.none,
+                        // 핸들
+                        Center(
+                          child: Container(
+                            width:  44,
+                            height: 5,
+                            decoration: BoxDecoration(
+                              color:        kBorder,
+                              borderRadius: BorderRadius.circular(999),
                             ),
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                '기본 정보 수정',
+                                style: TextStyle(
+                                  fontSize:   18,
+                                  fontWeight: FontWeight.w900,
+                                  color:      kText,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              icon: const Icon(Icons.close_rounded),
+                              splashRadius: 20,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
 
+                        // 이름
+                        _sheetLabel('이름'),
+                        _sheetFieldCard(
+                          child: TextFormField(
+                            initialValue:    tempName,
+                            textInputAction: TextInputAction.done,
+                            onChanged:       (v) => tempName = v,
+                            style: const TextStyle(fontWeight: FontWeight.w900, color: kText),
+                            decoration: const InputDecoration(
+                              isDense:    true,
+                              hintText:   '이름 입력',
+                              prefixIcon: Icon(Icons.badge_outlined, color: kMuted),
+                              border:     InputBorder.none,
+                            ),
+                          ),
+                        ),
                         const SizedBox(height: 14),
 
                         // 성별
-                        labelRow('성별', sub: '선택해도 되고, 안 해도 돼요'),
+                        _sheetLabel('성별', sub: '선택 안 해도 괜찮아요'),
                         Row(
                           children: [
-                            seg('남성', setLocal),
+                            genderChip('남성'),
                             const SizedBox(width: 10),
-                            seg('여성', setLocal),
+                            genderChip('여성'),
                           ],
                         ),
-
                         const SizedBox(height: 14),
 
                         // 생년월일
-                        labelRow('생년월일', sub: '휠로 고르면 더 편해요'),
+                        _sheetLabel('생년월일', sub: '휠로 고르면 더 편해요'),
                         InkWell(
                           borderRadius: BorderRadius.circular(16),
-                          onTap: pickBirth,
-                          child: fieldCard(
+                          onTap:        pickBirth,
+                          child: _sheetFieldCard(
                             child: Row(
                               children: [
-                                const Icon(Icons.cake_outlined, color: Colors.black54),
+                                const Icon(Icons.cake_outlined, color: kMuted),
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
-                                    birthText,
-                                    style: const TextStyle(fontWeight: FontWeight.w900),
+                                    _fmtYmdSlash(tempBirth),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      color:      kText,
+                                    ),
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical:   7,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: kBrand.withOpacity(0.10),
+                                    color:        kBrandBlue.withOpacity(0.10),
                                     borderRadius: BorderRadius.circular(999),
-                                    border: Border.all(color: kBrand.withOpacity(0.18)),
+                                    border: Border.all(
+                                      color: kBrandBlue.withOpacity(0.18),
+                                    ),
                                   ),
                                   child: const Text(
                                     '선택',
-                                    style: TextStyle(fontWeight: FontWeight.w900, color: kBrand),
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      color:      kBrandBlue,
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                           ),
                         ),
-
                         const SizedBox(height: 14),
 
-                        // 전화번호
-                        labelRow('전화번호'),
-                        fieldCard(
+                        // 전화번호 (읽기 전용)
+                        _sheetLabel('전화번호'),
+                        _sheetFieldCard(
                           child: Row(
                             children: [
-                              const Icon(Icons.phone_iphone_outlined, color: Colors.black54),
+                              const Icon(Icons.phone_iphone_outlined, color: kMuted),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
-                                  phone.isNotEmpty ? phone : '전화번호 없음',
-                                  style: const TextStyle(
+                                  _phone.isNotEmpty ? _phone : '전화번호 없음',
+                                  style: TextStyle(
                                     fontWeight: FontWeight.w900,
-                                    color: Colors.black54,
+                                    color: _phone.isNotEmpty ? kText : kMuted,
                                   ),
                                 ),
                               ),
                             ],
                           ),
                         ),
+                        const SizedBox(height: 20),
 
-                        const SizedBox(height: 18),
-
+                        // 버튼
                         Row(
                           children: [
                             Expanded(
@@ -1034,10 +881,16 @@ Future<void> _updateProfileJson({
                                 onPressed: () => Navigator.pop(ctx),
                                 style: OutlinedButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                                  side: const BorderSide(color: Color(0xFFE2E7EF)),
+                                  shape:   RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  side: const BorderSide(color: kBorder),
+                                  foregroundColor: kText,
                                 ),
-                                child: const Text('취소', style: TextStyle(fontWeight: FontWeight.w900)),
+                                child: const Text(
+                                  '취소',
+                                  style: TextStyle(fontWeight: FontWeight.w900),
+                                ),
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -1045,20 +898,25 @@ Future<void> _updateProfileJson({
                               child: ElevatedButton(
                                 onPressed: () {
                                   setState(() {
-                                    nameController.text = tempName.trim();
-                                    gender = tempGender;
-                                    birthYear = _fmtYmdDigits(tempBirth);
+                                    _nameCtrl.text = tempName.trim();
+                                    _gender        = tempGender;
+                                    _birthYear     = _fmtYmdDigits(tempBirth);
                                   });
                                   Navigator.pop(ctx);
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: kBrand,
+                                  backgroundColor: kBrandBlue,
                                   foregroundColor: Colors.white,
-                                  elevation: 0,
+                                  elevation:       0,
                                   padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
                                 ),
-                                child: const Text('적용하기', style: TextStyle(fontWeight: FontWeight.w900)),
+                                child: const Text(
+                                  '적용하기',
+                                  style: TextStyle(fontWeight: FontWeight.w900),
+                                ),
                               ),
                             ),
                           ],
@@ -1075,77 +933,355 @@ Future<void> _updateProfileJson({
     );
   }
 
-  /// =============================
-  /// Widgets
-  /// =============================
+  // ──────────────────────────────────────────
+  // Confirm bottom sheet
+  // ──────────────────────────────────────────
+  Future<bool> _confirmBottomSheet({
+    required String title,
+    required String message,
+    required String confirmLabel,
+    Color confirmColor = const Color(0xFFDC2626),
+  }) async {
+    final result = await showModalBottomSheet<bool>(
+      context:         context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        final safeBottom = MediaQuery.of(ctx).viewPadding.bottom;
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.only(bottom: safeBottom),
+            child: Container(
+              margin:  const EdgeInsets.fromLTRB(14, 0, 14, 14),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              decoration: BoxDecoration(
+                color:        Colors.white,
+                borderRadius: BorderRadius.circular(22),
+                border:       Border.all(color: kBorder),
+                boxShadow: [
+                  BoxShadow(
+                    color:      Colors.black.withOpacity(0.12),
+                    blurRadius: 30,
+                    offset:     const Offset(0, 18),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width:  42,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color:        kBorder,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    width:  56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color:        confirmColor.withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                    child: Icon(
+                      Icons.delete_forever_rounded,
+                      color: confirmColor,
+                      size:  28,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontFamily: 'Jalnan2TTF',
+                      fontSize:   16,
+                      fontWeight: FontWeight.w800,
+                      color:      kText,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize:   13,
+                      height:     1.35,
+                      fontWeight: FontWeight.w700,
+                      color:      kMuted,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: kText,
+                            side:            const BorderSide(color: kBorder),
+                            padding:         const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            backgroundColor: kBg,
+                          ),
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text(
+                            '취소',
+                            style: TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: confirmColor,
+                            foregroundColor: Colors.white,
+                            elevation:       0,
+                            padding:         const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: Text(
+                            confirmLabel,
+                            style: const TextStyle(fontWeight: FontWeight.w900),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+    return result == true;
+  }
+
+  // ──────────────────────────────────────────
+  // 회원 탈퇴
+  // ──────────────────────────────────────────
+  Future<void> _handleDeleteAccount() async {
+    if (_workerId == null) return;
+
+    final yes = await _confirmBottomSheet(
+      title:        '회원 탈퇴',
+      message:      '정말 탈퇴할까요?\n채팅방이 아카이브되고 계정이 삭제돼요.',
+      confirmLabel: '탈퇴',
+    );
+    if (!yes || !mounted) return;
+
+    try {
+      final res = await http.delete(
+        Uri.parse('$baseUrl/api/worker/profile?id=$_workerId'),
+      );
+      if (res.statusCode == 200) {
+        await _prefs?.clear();
+        if (!mounted) return;
+        _toast('탈퇴가 완료됐어요.');
+        // ✅ 로그인 화면으로 이동 (Navigator.pushNamedAndRemoveUntil 등으로 교체)
+        Navigator.of(context).popUntil((route) => route.isFirst);
+      } else {
+        _toast('탈퇴 실패 (${res.statusCode})');
+      }
+    } catch (e) {
+      _toast('네트워크 오류가 났어요 🥲');
+    }
+  }
+
+  // ──────────────────────────────────────────
+  // UI 헬퍼
+  // ──────────────────────────────────────────
+  void _toast(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(
+        content:  Text(msg),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  BoxDecoration _cardDeco() => BoxDecoration(
+        color:        kCard,
+        borderRadius: BorderRadius.circular(18),
+        border:       Border.all(color: kBorder),
+        boxShadow: [
+          BoxShadow(
+            color:      Colors.black.withOpacity(0.04),
+            blurRadius: 18,
+            offset:     const Offset(0, 10),
+          ),
+        ],
+      );
+
   Widget _sectionTitle(String title, {String? sub}) {
     return Padding(
-      padding: const EdgeInsets.only(top: 14, bottom: 10),
+      padding: const EdgeInsets.only(top: 16, bottom: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize:   14,
+              color:      kText,
+            ),
+          ),
           if (sub != null) ...[
             const SizedBox(height: 4),
-            Text(sub, style: const TextStyle(fontSize: 12.5, color: Colors.black54)),
+            Text(
+              sub,
+              style: const TextStyle(fontSize: 12.5, color: kMuted),
+            ),
           ],
         ],
       ),
     );
   }
 
+  Widget _sheetLabel(String label, {String? sub}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(fontWeight: FontWeight.w900, color: kText),
+          ),
+          if (sub != null) ...[
+            const SizedBox(height: 3),
+            Text(sub, style: const TextStyle(fontSize: 12.5, color: kMuted)),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _sheetFieldCard({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color:        kBg,
+        borderRadius: BorderRadius.circular(14),
+        border:       Border.all(color: kBorder),
+      ),
+      child: child,
+    );
+  }
+
+  Widget _inputField({
+    required String        label,
+    required String        hint,
+    TextEditingController? controller,
+    void Function(String)? onChanged,
+    bool                   readOnly  = false,
+    VoidCallback?          onTap,
+    Widget?                suffixIcon,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize:   12,
+            fontWeight: FontWeight.w900,
+            color:      kText,
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextField(
+          controller:  controller,
+          onChanged:   onChanged,
+          readOnly:    readOnly,
+          onTap:       onTap,
+          style: const TextStyle(fontWeight: FontWeight.w900, color: kText),
+          decoration: InputDecoration(
+            hintText:   hint,
+            hintStyle:  const TextStyle(color: kMuted, fontWeight: FontWeight.w700),
+            filled:     true,
+            fillColor:  Colors.white,
+            suffixIcon: suffixIcon,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide:   const BorderSide(color: kBorder),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(14),
+              borderSide:   const BorderSide(color: kBrandBlue, width: 1.4),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _pillChip(String text, bool selected, VoidCallback onTap) {
     return InkWell(
       borderRadius: BorderRadius.circular(999),
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      onTap:        onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        padding:  const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
-          color: selected ? kBrand.withOpacity(0.12) : Colors.white,
+          color:        selected ? kBrandBlue.withOpacity(0.12) : Colors.white,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: selected ? kBrand : const Color(0xFFE2E7EF), width: 1.4),
+          border: Border.all(
+            color: selected ? kBrandBlue : kBorder,
+            width: selected ? 1.6 : 1.2,
+          ),
         ),
         child: Text(
           text,
           style: TextStyle(
             fontWeight: FontWeight.w900,
-            fontSize: 12.5,
-            color: selected ? kBrand : Colors.black87,
+            fontSize:   12.5,
+            color:      selected ? kBrandBlue : kMuted,
           ),
         ),
       ),
     );
   }
 
-  Widget _wrapMulti(List<String> options, List<String> selected) {
+  // ✅ _wrapMulti: onToggle 콜백으로 리팩 (외부 리스트 직접 수정 제거)
+  Widget _wrapMulti(
+    List<String> options,
+    List<String> selected,
+    void Function(String item, bool nowSelected) onToggle,
+  ) {
     return Wrap(
-      spacing: 8,
+      spacing:    8,
       runSpacing: 10,
       children: options.map((o) {
         final isSel = selected.contains(o);
-        return _pillChip(o, isSel, () {
-          setState(() {
-            if (isSel) {
-              selected.remove(o);
-            } else {
-              selected.add(o);
-            }
-          });
-        });
+        return _pillChip(o, isSel, () => onToggle(o, !isSel));
       }).toList(),
     );
   }
 
-  Widget _daysOneLine() {
+  Widget _daysRow() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: dayOptions.map((d) {
-          final sel = selectedDays.contains(d);
+        children: _dayOptions.map((d) {
+          final sel = _selectedDays.contains(d);
           return Padding(
             padding: const EdgeInsets.only(right: 8),
             child: _pillChip(d, sel, () {
-              setState(() => sel ? selectedDays.remove(d) : selectedDays.add(d));
+              setState(() => sel
+                  ? _selectedDays.remove(d)
+                  : _selectedDays.add(d));
             }),
           );
         }).toList(),
@@ -1154,8 +1290,8 @@ Future<void> _updateProfileJson({
   }
 
   Widget _workCategorySelect() {
-    final categories = workCategoryMap.keys.toList();
-    final current = _selectedWorkCategory ?? categories.first;
+    final categories = _workCategoryMap.keys.toList();
+    final current    = _selectedWorkCategory ?? categories.first;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1167,102 +1303,135 @@ Future<void> _updateProfileJson({
               final sel = current == c;
               return Padding(
                 padding: const EdgeInsets.only(right: 8),
-                child: _pillChip(c, sel, () => setState(() => _selectedWorkCategory = c)),
+                child: _pillChip(c, sel,
+                    () => setState(() => _selectedWorkCategory = c)),
               );
             }).toList(),
           ),
         ),
         const SizedBox(height: 12),
-        _wrapMulti(workCategoryMap[current]!, selectedWorks),
+        _wrapMulti(
+          _workCategoryMap[current]!,
+          _selectedWorks,
+          (item, nowSel) => setState(() => nowSel
+              ? _selectedWorks.add(item)
+              : _selectedWorks.remove(item)),
+        ),
       ],
     );
   }
 
-  Widget _buildProfileCard() {
-    final avatarProvider = selectedImage != null
-        ? FileImage(selectedImage!)
-        : (profileImageUrl.isNotEmpty ? NetworkImage(profileImageUrl) : null);
-
+  Widget _infoBox(String text) {
     return Container(
-      decoration: _cardDecoration,
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color:        const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(14),
+        border:       Border.all(color: const Color(0xFFC7D2FE)),
+      ),
       child: Row(
         children: [
-          GestureDetector(
-            onTap: _pickImage,
-            child: CircleAvatar(
-              radius: 22,
-              backgroundImage: avatarProvider as ImageProvider?,
-              backgroundColor: const Color(0xFFF2F6FF),
-              child: avatarProvider == null ? const Icon(Icons.person, color: Colors.black54) : null,
-            ),
-          ),
-          const SizedBox(width: 12),
+          const Icon(Icons.info_outline_rounded, size: 18, color: kBrandBlue),
+          const SizedBox(width: 8),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  nameController.text.isNotEmpty ? nameController.text : '이름 미입력',
-                  style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  _birthDisplayText(birthYear),
-                  style: const TextStyle(fontSize: 13, color: kBrand, fontWeight: FontWeight.w900),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  phone.isNotEmpty ? phone : '전화번호 미입력',
-                  style: const TextStyle(fontSize: 12.5, color: Colors.black54),
-                ),
-              ],
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize:   12,
+                color:      Color(0xFF1D4ED8),
+                fontWeight: FontWeight.w700,
+                height:     1.35,
+              ),
             ),
-          ),
-          IconButton(
-            onPressed: _showBasicInfoSheet,
-            icon: const Icon(Icons.edit_outlined, color: kBrand),
-            tooltip: '기본정보 수정',
           ),
         ],
       ),
     );
   }
 
-  Widget _buildResumeCard() {
+  // ──────────────────────────────────────────
+  // build sections
+  // ──────────────────────────────────────────
+  Widget _buildProfileCard() {
+    final avatarProvider = _selectedImage != null
+        ? FileImage(_selectedImage!) as ImageProvider
+        : (_profileImageUrl.isNotEmpty
+            ? NetworkImage(_profileImageUrl) as ImageProvider
+            : null);
+
     return Container(
-      decoration: _cardDecoration,
-      child: Column(
+      decoration: _cardDeco(),
+      padding:    const EdgeInsets.all(16),
+      child: Row(
         children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => setState(() => isResumeExpanded = !isResumeExpanded),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 6, 14),
-              child: Row(
-                children: [
-                  const Expanded(
-                    child: Text(
-                      '내 지원서',
-                      style: TextStyle(
-                        color: kBrand,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 15.5,
-                      ),
+          GestureDetector(
+            onTap: _pickImage,
+            child: Stack(
+              children: [
+                CircleAvatar(
+                  radius:          28,
+                  backgroundImage: avatarProvider,
+                  backgroundColor: const Color(0xFFEFF6FF),
+                  child: avatarProvider == null
+                      ? const Icon(Icons.person_rounded, color: kBrandBlue, size: 28)
+                      : null,
+                ),
+                Positioned(
+                  right:  0,
+                  bottom: 0,
+                  child: Container(
+                    width:  22,
+                    height: 22,
+                    decoration: const BoxDecoration(
+                      color:  kBrandBlue,
+                      shape:  BoxShape.circle,
                     ),
+                    child: const Icon(Icons.edit_rounded, size: 13, color: Colors.white),
                   ),
-                  Icon(isResumeExpanded ? Icons.expand_less : Icons.expand_more, color: Colors.black38),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
-          AnimatedCrossFade(
-            duration: const Duration(milliseconds: 200),
-            crossFadeState: isResumeExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-            firstChild: const SizedBox.shrink(),
-            secondChild: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-              child: _buildResumeFields(),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _nameCtrl.text.isNotEmpty ? _nameCtrl.text : '이름 미입력',
+                  style: const TextStyle(
+                    fontSize:   16,
+                    fontWeight: FontWeight.w900,
+                    color:      kText,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _birthDisplayText(_birthYear),
+                  style: const TextStyle(
+                    fontSize:   13,
+                    color:      kBrandBlue,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  _phone.isNotEmpty ? _phone : '전화번호 미입력',
+                  style: const TextStyle(fontSize: 12.5, color: kMuted),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color:        kBrandBlue.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(12),
+              border:       Border.all(color: kBrandBlue.withOpacity(0.18)),
+            ),
+            child: IconButton(
+              onPressed: _showBasicInfoSheet,
+              icon:  const Icon(Icons.edit_outlined, color: kBrandBlue, size: 20),
+              tooltip: '기본정보 수정',
             ),
           ),
         ],
@@ -1271,51 +1440,137 @@ Future<void> _updateProfileJson({
   }
 
   Widget _buildPointCard() {
-    Widget badge(int v, {required Color bg, required Color fg}) {
+    Widget pointBadge(int v, {required Color bg, required Color fg}) {
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: bg,
+          color:        bg,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: const Color(0xFFE8ECF3)),
+          border:       Border.all(color: kBorder),
         ),
         child: Text(
-          '$v',
-          style: TextStyle(fontWeight: FontWeight.w900, color: fg),
+          '$v점',
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            color:      fg,
+          ),
         ),
       );
     }
 
     return Container(
-      decoration: _cardDecoration,
+      decoration: _cardDeco(),
       child: Column(
         children: [
           ListTile(
-            title: const Text('매너포인트', style: TextStyle(fontWeight: FontWeight.w900)),
-            subtitle: const Text('사장님이 평가한 근무태도 점수입니다', style: TextStyle(fontSize: 12.5)),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                badge(mannerPoint, bg: const Color(0xFFF2F6FF), fg: kBrand),
-                const SizedBox(width: 6),
-                const Icon(Icons.chevron_right, color: Colors.black26),
-              ],
+            leading: Container(
+              width:  40,
+              height: 40,
+              decoration: BoxDecoration(
+                color:        const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.thumb_up_rounded, color: kBrandBlue, size: 20),
             ),
-            onTap: () {},
+            title: const Text(
+              '매너포인트',
+              style: TextStyle(fontWeight: FontWeight.w900, color: kText),
+            ),
+            subtitle: const Text(
+              '사장님이 평가한 근무태도 점수예요',
+              style: TextStyle(fontSize: 12.5, color: kMuted),
+            ),
+            trailing: pointBadge(
+              _mannerPoint,
+              bg: const Color(0xFFEFF6FF),
+              fg: kBrandBlue,
+            ),
           ),
-          const Divider(height: 1),
+          Divider(height: 1, color: kBorder),
           ListTile(
-            title: const Text('패널티포인트', style: TextStyle(fontWeight: FontWeight.w900)),
-            subtitle: const Text('노쇼 및 지각으로 인한 패널티 제도입니다', style: TextStyle(fontSize: 12.5)),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                badge(penaltyPoint, bg: const Color(0xFFFFF1F1), fg: const Color(0xFFE53935)),
-                const SizedBox(width: 6),
-                const Icon(Icons.chevron_right, color: Colors.black26),
-              ],
+            leading: Container(
+              width:  40,
+              height: 40,
+              decoration: BoxDecoration(
+                color:        const Color(0xFFFFF1F2),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 20),
             ),
-            onTap: () {},
+            title: const Text(
+              '패널티포인트',
+              style: TextStyle(fontWeight: FontWeight.w900, color: kText),
+            ),
+            subtitle: const Text(
+              '노쇼 및 지각으로 인한 패널티예요',
+              style: TextStyle(fontSize: 12.5, color: kMuted),
+            ),
+            trailing: pointBadge(
+              _penaltyPoint,
+              bg: const Color(0xFFFFF1F2),
+              fg: const Color(0xFFDC2626),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResumeCard() {
+    return Container(
+      decoration: _cardDeco(),
+      child: Column(
+        children: [
+          // 헤더 (접기/펼치기)
+          InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: () => setState(() => _isResumeExpanded = !_isResumeExpanded),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
+              child: Row(
+                children: [
+                  Container(
+                    width:  36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color:        kBrandBlue.withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.description_rounded,
+                      color: kBrandBlue,
+                      size:  20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      '내 지원서',
+                      style: TextStyle(
+                        color:      kBrandBlue,
+                        fontWeight: FontWeight.w900,
+                        fontSize:   15.5,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    _isResumeExpanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    color: kMuted,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          // ✅ AnimatedCrossFade 제거 → AnimatedSize + Visibility 조합
+          // TextField가 있는 부분이 unmount되지 않도록 Offstage 사용
+          Offstage(
+            offstage: !_isResumeExpanded,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: _buildResumeFields(),
+            ),
           ),
         ],
       ),
@@ -1326,105 +1581,124 @@ Future<void> _updateProfileJson({
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 이력서 열람 동의
         _sectionTitle('이력서 열람 동의', sub: '동의 ON 시 사장님이 내 이력서 상세를 볼 수 있어요.'),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E7EF)),
+            color:        Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border:       Border.all(color: kBorder),
           ),
           child: Row(
             children: [
-              Icon(resumeConsent ? Icons.visibility : Icons.visibility_off, size: 20, color: resumeConsent ? kBrand : Colors.grey),
+              Icon(
+                _resumeConsent ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                size:  20,
+                color: _resumeConsent ? kBrandBlue : kMuted,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  resumeConsent ? '사장님이 내 이력서를 볼 수 있도록 동의합니다.' : '사장님은 기본 정보만 볼 수 있어요.',
-                  style: const TextStyle(fontSize: 13),
+                  _resumeConsent
+                      ? '사장님이 내 이력서를 볼 수 있어요.'
+                      : '사장님은 기본 정보만 볼 수 있어요.',
+                  style: TextStyle(
+                    fontSize:   13,
+                    color:      _resumeConsent ? kText : kMuted,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               Switch(
-                value: resumeConsent,
-                onChanged: (v) => setState(() => resumeConsent = v),
-                activeColor: kBrand,
+                value:       _resumeConsent,
+                onChanged:   (v) => setState(() => _resumeConsent = v),
+                activeColor: kBrandBlue,
               ),
             ],
           ),
         ),
 
+        // 근무 가능시간
         _sectionTitle('근무 가능시간'),
-        _wrapMulti(timeOptions, selectedTimes),
+        _wrapMulti(
+          _timeOptions,
+          _selectedTimes,
+          (item, nowSel) => setState(() => nowSel
+              ? _selectedTimes.add(item)
+              : _selectedTimes.remove(item)),
+        ),
 
+        // 강점
         _sectionTitle('강점'),
-        _wrapMulti(strengthOptions, selectedStrengths),
+        _wrapMulti(
+          _strengthOptions,
+          _selectedStrengths,
+          (item, nowSel) => setState(() => nowSel
+              ? _selectedStrengths.add(item)
+              : _selectedStrengths.remove(item)),
+        ),
 
-        _sectionTitle('자격증'),
-        if (licenses.isEmpty)
-          const Text('등록된 자격증이 없어요.', style: TextStyle(color: Colors.black54))
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: licenses.map((l) => _pillChip(l.name, true, () {})).toList(),
-          ),
-
+        // 희망업무
         _sectionTitle('희망업무'),
         _workCategorySelect(),
 
-        _sectionTitle('자기소개', sub: '사장님이 먼저 보는 핵심이에요. 2~3줄만 깔끔하게!'),
+        // 자기소개
+        _sectionTitle('자기소개', sub: '사장님이 먼저 보는 핵심이에요. 2~3줄이면 충분해요!'),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E7EF)),
+            color:        Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border:       Border.all(color: kBorder),
           ),
           padding: const EdgeInsets.all(12),
           child: TextField(
-            controller: introductionController,
-            minLines: 5,
-            maxLines: 7,
-            maxLength: 300,
-            decoration: const InputDecoration(
+            controller: _introductionCtrl,
+            minLines:   5,
+            maxLines:   7,
+            maxLength:  300,
+            style: const TextStyle(fontSize: 14.5, height: 1.4, color: kText),
+            decoration: InputDecoration(
               hintText: '예) 평일 저녁 가능 / 상하차 3개월 경험 / 책임감 있게 마무리합니다',
-              border: InputBorder.none,
-              isDense: true,
-              counterStyle: TextStyle(fontSize: 12, color: Colors.black45),
+              hintStyle: const TextStyle(color: kMuted, fontWeight: FontWeight.w600),
+              border:    InputBorder.none,
+              isDense:   true,
+              counterStyle: const TextStyle(fontSize: 12, color: kMuted),
               contentPadding: EdgeInsets.zero,
             ),
-            style: const TextStyle(fontSize: 14.5, height: 1.35),
           ),
         ),
 
+        // 가능 요일
         _sectionTitle('가능 요일', sub: '최소 2개 이상 선택하면 매칭이 더 잘 돼요'),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE2E7EF)),
+            color:        Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border:       Border.all(color: kBorder),
           ),
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _daysOneLine(),
+              _daysRow(),
               const SizedBox(height: 10),
               Wrap(
-                spacing: 8,
+                spacing:    8,
                 runSpacing: 8,
                 children: [
                   _pillChip(
                     '평일',
-                    selectedDays.toSet().containsAll(['월', '화', '수', '목', '금']),
+                    _selectedDays.toSet().containsAll(['월', '화', '수', '목', '금']),
                     () {
                       setState(() {
-                        final wk = ['월', '화', '수', '목', '금'];
-                        final all = selectedDays.toSet().containsAll(wk);
+                        const wk  = ['월', '화', '수', '목', '금'];
+                        final all = _selectedDays.toSet().containsAll(wk);
                         if (all) {
-                          selectedDays.removeWhere((d) => wk.contains(d));
+                          _selectedDays.removeWhere(wk.contains);
                         } else {
                           for (final d in wk) {
-                            if (!selectedDays.contains(d)) selectedDays.add(d);
+                            if (!_selectedDays.contains(d)) _selectedDays.add(d);
                           }
                         }
                       });
@@ -1432,220 +1706,273 @@ Future<void> _updateProfileJson({
                   ),
                   _pillChip(
                     '주말',
-                    selectedDays.toSet().containsAll(['토', '일']),
+                    _selectedDays.toSet().containsAll(['토', '일']),
                     () {
                       setState(() {
-                        final wk = ['토', '일'];
-                        final all = selectedDays.toSet().containsAll(wk);
+                        const wk  = ['토', '일'];
+                        final all = _selectedDays.toSet().containsAll(wk);
                         if (all) {
-                          selectedDays.removeWhere((d) => wk.contains(d));
+                          _selectedDays.removeWhere(wk.contains);
                         } else {
                           for (final d in wk) {
-                            if (!selectedDays.contains(d)) selectedDays.add(d);
+                            if (!_selectedDays.contains(d)) _selectedDays.add(d);
                           }
                         }
                       });
                     },
                   ),
-                  _pillChip('전체 해제', selectedDays.isEmpty, () => setState(() => selectedDays.clear())),
+                  _pillChip(
+                    '전체 해제',
+                    _selectedDays.isEmpty,
+                    () => setState(() => _selectedDays.clear()),
+                  ),
                 ],
               ),
             ],
           ),
         ),
 
+        // 경력
         _sectionTitle('경력', sub: '일한 곳/기간/무슨 일(간단)을 써두면 매칭이 쉬워져요.'),
-        if (experiences.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E7EF)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    color: kBrand.withOpacity(0.10),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.work_outline, color: kBrand),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    '등록된 경력이 없어요.\n간단히라도 추가하면 신뢰도가 확 올라가요.',
-                    style: TextStyle(fontSize: 13.5, color: Colors.black87, height: 1.25),
-                  ),
-                ),
-              ],
-            ),
+        if (_experiences.isEmpty)
+          _emptyCard(
+            icon:  Icons.work_outline_rounded,
+            label: '등록된 경력이 없어요.\n간단히라도 추가하면 신뢰도가 확 올라가요.',
           )
         else
-          ...experiences.map((e) {
-            final isDel = _deletingExperienceIds.contains(e.id);
+          ..._experiences.map((e) => _buildExperienceItem(e)),
 
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE2E7EF)),
-              ),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF7F9FC),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFE8ECF3)),
+        const SizedBox(height: 10),
+        _addButton(label: '경력 추가하기', onPressed: _showAddExperienceModal),
+
+        // 자격증
+        _sectionTitle('자격증 / 면허', sub: '신뢰도에 도움돼요. (증빙 첨부는 준비중)'),
+        if (_licenses.isEmpty)
+          _emptyCard(
+            icon:  Icons.card_membership_rounded,
+            label: '등록된 자격증이 없어요.',
+          )
+        else
+          ..._licenses.map((l) => _buildLicenseItem(l)),
+
+        const SizedBox(height: 10),
+        _addButton(label: '자격증 추가하기', onPressed: _showAddLicenseSheet),
+      ],
+    );
+  }
+
+  Widget _buildExperienceItem(Experience e) {
+    final isDel = _deletingExperienceIds.contains(e.id);
+    return Container(
+      margin:     const EdgeInsets.only(bottom: 10),
+      padding:    const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color:        Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border:       Border.all(color: kBorder),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width:  36,
+            height: 36,
+            decoration: BoxDecoration(
+              color:        kBg,
+              borderRadius: BorderRadius.circular(10),
+              border:       Border.all(color: kBorder),
+            ),
+            child: const Icon(Icons.badge_outlined, color: kMuted, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  e.place,
+                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5, color: kText),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing:    8,
+                  runSpacing: 6,
+                  children: [
+                    _tagPill('${e.year}년', blue: true),
+                    _tagPill(e.duration),
+                  ],
+                ),
+                if (e.description.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    e.description,
+                    style: const TextStyle(
+                      fontSize: 13.5,
+                      color:    kMuted,
+                      height:   1.3,
                     ),
-                    child: const Icon(Icons.badge_outlined, color: Colors.black54, size: 20),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(e.place, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14.8)),
-                        const SizedBox(height: 6),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: kBrand.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(999),
-                                border: Border.all(color: kBrand.withOpacity(0.18)),
-                              ),
-                              child: Text(
-                                '${e.year}년',
-                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12.5, color: kBrand),
-                              ),
-                            ),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF7F9FC),
-                                borderRadius: BorderRadius.circular(999),
-                                border: Border.all(color: const Color(0xFFE8ECF3)),
-                              ),
-                              child: Text(
-                                e.duration,
-                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12.5, color: Colors.black87),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (e.description.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          Text(
-                            e.description,
-                            style: const TextStyle(fontSize: 13.5, color: Colors.black87, height: 1.25),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: isDel
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
-                    onPressed: isDel ? null : () => _deleteExperience(e),
-                    splashRadius: 20,
-                    tooltip: '삭제',
                   ),
                 ],
-              ),
-            );
-          }).toList(),
-
-        ElevatedButton.icon(
-          onPressed: _showAddExperienceModal,
-          icon: const Icon(Icons.add),
-          label: const Text('경력 추가하기', style: TextStyle(fontWeight: FontWeight.w900)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: kBrand,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-        ),
-
-        _sectionTitle('자격증 / 면허', sub: '신뢰도에 도움돼요. (증빙 첨부는 준비중)'),
-        ...licenses.map((l) {
-          final isDel = _deletingLicenseIds.contains(l.id);
-
-          return Container(
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF7F9FC),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE8ECF3)),
+              ],
             ),
-            child: Row(
+          ),
+          isDel
+              ? const SizedBox(
+                  width:  20,
+                  height: 20,
+                  child:  CircularProgressIndicator(strokeWidth: 2, color: kMuted),
+                )
+              : IconButton(
+                  icon:        const Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626)),
+                  onPressed:   () => _deleteExperience(e),
+                  splashRadius: 20,
+                  tooltip:     '삭제',
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLicenseItem(LicenseItem l) {
+    final isDel = _deletingLicenseIds.contains(l.id);
+    return Container(
+      margin:     const EdgeInsets.only(bottom: 10),
+      padding:    const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color:        kBg,
+        borderRadius: BorderRadius.circular(14),
+        border:       Border.all(color: kBorder),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                Text(
+                  l.name,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize:   14.5,
+                    color:      kText,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${l.issuedAt} 취득',
+                  style: const TextStyle(color: kMuted, fontSize: 13),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  decoration: BoxDecoration(
+                    color:        Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border:       Border.all(color: kBorder),
+                  ),
+                  child: const Row(
                     children: [
-                      Text(l.name, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5)),
-                      const SizedBox(height: 4),
-                      Text('${l.issuedAt} 취득', style: const TextStyle(color: Colors.black54)),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: const Color(0xFFE2E7EF)),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.attachment_outlined, size: 18, color: Colors.black54),
-                            SizedBox(width: 6),
-                            Expanded(child: Text('증빙 첨부 준비중', style: TextStyle(fontSize: 12.5, color: Colors.black54))),
-                          ],
+                      Icon(Icons.attachment_rounded, size: 18, color: kMuted),
+                      SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '증빙 첨부 준비중',
+                          style: TextStyle(fontSize: 12.5, color: kMuted),
                         ),
                       ),
                     ],
                   ),
                 ),
-                IconButton(
-                  icon: isDel
-                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.delete_outline, color: Colors.redAccent),
-                  onPressed: isDel ? null : () => _deleteLicense(l),
-                ),
               ],
             ),
-          );
-        }).toList(),
+          ),
+          isDel
+              ? const SizedBox(
+                  width:  20,
+                  height: 20,
+                  child:  CircularProgressIndicator(strokeWidth: 2, color: kMuted),
+                )
+              : IconButton(
+                  icon:     const Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626)),
+                  onPressed: () => _deleteLicense(l),
+                ),
+        ],
+      ),
+    );
+  }
 
-        ElevatedButton.icon(
-          onPressed: _showAddLicenseBottomSheet,
-          icon: const Icon(Icons.add),
-          label: const Text('자격증 추가하기', style: TextStyle(fontWeight: FontWeight.w900)),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: kBrand,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  Widget _tagPill(String label, {bool blue = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color:        blue ? kBrandBlue.withOpacity(0.10) : kBg,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: blue ? kBrandBlue.withOpacity(0.20) : kBorder,
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontWeight: FontWeight.w900,
+          fontSize:   12.5,
+          color:      blue ? kBrandBlue : kMuted,
+        ),
+      ),
+    );
+  }
+
+  Widget _emptyCard({required IconData icon, required String label}) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color:        Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border:       Border.all(color: kBorder),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width:  40,
+            height: 40,
+            decoration: BoxDecoration(
+              color:        kBrandBlue.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: kBrandBlue, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13.5,
+                color:    kMuted,
+                height:   1.3,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _addButton({required String label, required VoidCallback onPressed}) {
+    return SizedBox(
+      width: double.infinity,
+      child: OutlinedButton.icon(
+        onPressed: onPressed,
+        icon:  const Icon(Icons.add_rounded, size: 18),
+        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: kBrandBlue,
+          side:            const BorderSide(color: kBrandBlue, width: 1.4),
+          padding:         const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -1653,73 +1980,59 @@ Future<void> _updateProfileJson({
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 12),
-        const Divider(height: 32),
-        const Text('계정 관리', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15.5)),
+        const SizedBox(height: 8),
+        Divider(height: 32, color: kBorder),
+        const Text(
+          '계정 관리',
+          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: kText),
+        ),
         const SizedBox(height: 6),
-        const Text('※ 탈퇴는 결제·채팅·지원 이력 정리 후 진행됩니다.', style: TextStyle(fontSize: 12, color: Colors.black38)),
-        const SizedBox(height: 12),
+        const Text(
+          '※ 탈퇴는 결제·채팅·지원 이력 정리 후 진행됩니다.',
+          style: TextStyle(fontSize: 12, color: kMuted),
+        ),
+        const SizedBox(height: 14),
         SizedBox(
           width: double.infinity,
           child: OutlinedButton(
             onPressed: _handleDeleteAccount,
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFFE53935),
-              side: const BorderSide(color: Color(0xFFE53935)),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              foregroundColor: const Color(0xFFDC2626),
+              side:            const BorderSide(color: Color(0xFFDC2626)),
+              padding:         const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
             ),
-            child: const Text('회원 탈퇴', style: TextStyle(fontWeight: FontWeight.w900)),
+            child: const Text(
+              '회원 탈퇴',
+              style: TextStyle(fontWeight: FontWeight.w900),
+            ),
           ),
         ),
       ],
     );
   }
 
-  Future<void> _handleDeleteAccount() async {
-    if (_workerId == null) return;
-
-    final yes = await _confirmDeleteSheet(
-      title: '회원 탈퇴',
-      message: '정말 탈퇴할까요?\n채팅방이 아카이브되고 계정이 삭제됩니다.',
-      confirmLabel: '탈퇴',
-      confirmColor: const Color(0xFFE53935),
-    );
-
-    if (!yes || !mounted) return;
-
-    try {
-      final res = await http.delete(Uri.parse('$baseUrl/api/worker/profile?id=$_workerId'));
-      if (res.statusCode == 200) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.clear();
-        if (!mounted) return;
-        _toast('탈퇴가 완료되었습니다.');
-        Navigator.pop(context); // 필요하면 로그인 화면으로 이동 로직으로 교체
-      } else {
-        _toast('탈퇴 실패 (${res.statusCode})');
-      }
-    } catch (e) {
-      _toast('네트워크 오류: $e');
-    }
-  }
-
+  // ──────────────────────────────────────────
+  // build
+  // ──────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.black87),
-        titleSpacing: 16,
+        elevation:       0.8,
+        iconTheme:       const IconThemeData(color: kText),
+        titleSpacing:    16,
         title: const Text(
           '프로필 수정',
           style: TextStyle(
             fontFamily: 'Jalnan2TTF',
-            color: kBrand,
+            color:      kBrandBlue,
             fontWeight: FontWeight.w900,
-            fontSize: 22,
+            fontSize:   22,
           ),
         ),
         actions: [
@@ -1728,28 +2041,32 @@ Future<void> _updateProfileJson({
             child: TextButton.icon(
               onPressed: _saving ? null : _saveProfile,
               icon: _saving
-                  ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.check, size: 18),
+                  ? const SizedBox(
+                      width:  16,
+                      height: 16,
+                      child:  CircularProgressIndicator(strokeWidth: 2, color: kBrandBlue),
+                    )
+                  : const Icon(Icons.check_rounded, size: 18),
               label: const Text('저장', style: TextStyle(fontWeight: FontWeight.w900)),
               style: TextButton.styleFrom(
-                foregroundColor: kBrand,
-                textStyle: const TextStyle(fontSize: 14),
+                foregroundColor: kBrandBlue,
+                textStyle:       const TextStyle(fontSize: 14),
               ),
             ),
           ),
         ],
       ),
       body: _initialLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: CircularProgressIndicator(color: kBrandBlue))
           : SafeArea(
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                 children: [
                   _buildProfileCard(),
                   const SizedBox(height: 14),
-                  _buildResumeCard(),
-                  const SizedBox(height: 14),
                   _buildPointCard(),
+                  const SizedBox(height: 14),
+                  _buildResumeCard(),
                   _buildAccountSection(),
                 ],
               ),
@@ -1758,9 +2075,9 @@ Future<void> _updateProfileJson({
   }
 }
 
-/// =============================
-/// Wheel Date Picker (Korean)
-/// =============================
+// =====================
+// Wheel Date Picker (Korean)
+// =====================
 class _MouseWheelScrollBehavior extends MaterialScrollBehavior {
   @override
   Set<PointerDeviceKind> get dragDevices => {
@@ -1774,15 +2091,15 @@ class _MouseWheelScrollBehavior extends MaterialScrollBehavior {
 
 Future<DateTime?> showKoWheelDatePickerSheet(
   BuildContext context, {
-  required String title,
+  required String   title,
   required DateTime initial,
   required DateTime min,
   required DateTime max,
-  required Color brand,
+  required Color    brand,
 }) async {
   DateTime clamp(DateTime d) {
     if (d.isBefore(min)) return min;
-    if (d.isAfter(max)) return max;
+    if (d.isAfter(max))  return max;
     return d;
   }
 
@@ -1791,67 +2108,66 @@ Future<DateTime?> showKoWheelDatePickerSheet(
     return firstNext.subtract(const Duration(days: 1)).day;
   }
 
-  int year = initial.year.clamp(min.year, max.year);
+  int year  = initial.year.clamp(min.year, max.year);
   int month = initial.month;
-  int day = initial.day;
+  int day   = initial.day;
 
-  final yearList = List<int>.generate(max.year - min.year + 1, (i) => min.year + i);
+  final yearList  = List<int>.generate(max.year - min.year + 1, (i) => min.year + i);
   final monthList = List<int>.generate(12, (i) => i + 1);
+  List<int> dayList = List<int>.generate(daysInMonth(year, month), (i) => i + 1);
 
-  List<int> makeDayList() {
-    final last = daysInMonth(year, month);
-    return List<int>.generate(last, (i) => i + 1);
-  }
-
-  var dayList = makeDayList();
-
-  final yearCtrl = FixedExtentScrollController(initialItem: yearList.indexOf(year));
+  final yearCtrl  = FixedExtentScrollController(initialItem: yearList.indexOf(year));
   final monthCtrl = FixedExtentScrollController(initialItem: month - 1);
-  final dayCtrl = FixedExtentScrollController(initialItem: (day - 1).clamp(0, dayList.length - 1));
+  final dayCtrl   = FixedExtentScrollController(
+    initialItem: (day - 1).clamp(0, dayList.length - 1),
+  );
 
   String pretty(DateTime d) => '${d.year}년 ${d.month}월 ${d.day}일';
 
   return showModalBottomSheet<DateTime>(
-    context: context,
+    context:         context,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withOpacity(0.35),
+    barrierColor:    Colors.black.withOpacity(0.35),
     builder: (ctx) {
       DateTime temp = clamp(DateTime(year, month, day));
 
-      Widget labelBox(String text) {
-        return Container(
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Text(text, style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.black54)),
-        );
-      }
+      Widget labelBox(String text) => Container(
+            alignment: Alignment.center,
+            padding:   const EdgeInsets.symmetric(vertical: 10),
+            child: Text(
+              text,
+              style: const TextStyle(fontWeight: FontWeight.w900, color: kMuted),
+            ),
+          );
 
       Widget wheel<T>({
-        required List<T> items,
-        required FixedExtentScrollController controller,
-        required void Function(int index) onSelected,
-        required String Function(T v) label,
+        required List<T>                          items,
+        required FixedExtentScrollController      controller,
+        required void Function(int index)         onSelected,
+        required String Function(T v)             label,
       }) {
         return ScrollConfiguration(
           behavior: _MouseWheelScrollBehavior(),
           child: CupertinoPicker(
-            scrollController: controller,
-            itemExtent: 40,
-            diameterRatio: 1.9,
-            squeeze: 1.05,
-            useMagnifier: true,
-            magnification: 1.08,
-            selectionOverlay: const SizedBox.shrink(),
+            scrollController:  controller,
+            itemExtent:        40,
+            diameterRatio:     1.9,
+            squeeze:           1.05,
+            useMagnifier:      true,
+            magnification:     1.08,
+            selectionOverlay:  const SizedBox.shrink(),
             onSelectedItemChanged: onSelected,
             children: items
-                .map(
-                  (v) => Center(
-                    child: Text(
-                      label(v),
-                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
-                    ),
-                  ),
-                )
+                .map((v) => Center(
+                      child: Text(
+                        label(v),
+                        style: const TextStyle(
+                          fontSize:   18,
+                          fontWeight: FontWeight.w900,
+                          color:      kText,
+                        ),
+                      ),
+                    ))
                 .toList(),
           ),
         );
@@ -1860,13 +2176,17 @@ Future<DateTime?> showKoWheelDatePickerSheet(
       return SafeArea(
         top: false,
         child: Container(
-          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          margin:  const EdgeInsets.fromLTRB(12, 0, 12, 12),
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color:        Colors.white,
             borderRadius: BorderRadius.circular(22),
             boxShadow: [
-              BoxShadow(blurRadius: 24, spreadRadius: 2, color: Colors.black.withOpacity(0.10)),
+              BoxShadow(
+                blurRadius:   24,
+                spreadRadius: 2,
+                color:        Colors.black.withOpacity(0.10),
+              ),
             ],
           ),
           child: StatefulBuilder(
@@ -1874,10 +2194,8 @@ Future<DateTime?> showKoWheelDatePickerSheet(
               void syncTemp() {
                 final last = daysInMonth(year, month);
                 if (day > last) day = last;
-
                 final idx = (day - 1).clamp(0, dayList.length - 1);
                 if (dayCtrl.hasClients) dayCtrl.jumpToItem(idx);
-
                 temp = clamp(DateTime(year, month, day));
               }
 
@@ -1885,45 +2203,60 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width: 44,
-                    height: 4,
-                    decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(99)),
+                    width:  44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color:        kBorder,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
                       Expanded(
-                        child: Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+                        child: Text(
+                          title,
+                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: kText),
+                        ),
                       ),
-                      TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('취소')),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('취소', style: TextStyle(color: kMuted)),
+                      ),
                       const SizedBox(width: 6),
                       ElevatedButton(
                         onPressed: () => Navigator.pop(ctx, temp),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: brand,
                           foregroundColor: Colors.white,
-                          elevation: 0,
+                          elevation:       0,
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(999),
+                          ),
                         ),
                         child: const Text('완료', style: TextStyle(fontWeight: FontWeight.w900)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
+                  // 선택된 날짜 미리보기
                   Container(
-                    width: double.infinity,
+                    width:   double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
-                      color: brand.withOpacity(0.08),
+                      color:        brand.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: brand.withOpacity(0.18)),
+                      border:       Border.all(color: brand.withOpacity(0.18)),
                     ),
                     child: Row(
                       children: [
                         Icon(CupertinoIcons.calendar, color: brand.withOpacity(0.9), size: 18),
                         const SizedBox(width: 8),
-                        Text(pretty(temp), style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5)),
+                        Text(
+                          pretty(temp),
+                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5, color: kText),
+                        ),
                       ],
                     ),
                   ),
@@ -1931,9 +2264,9 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                   Container(
                     height: 240,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF7F9FC),
+                      color:        kBg,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE8ECF3)),
+                      border:       Border.all(color: kBorder),
                     ),
                     child: Stack(
                       alignment: Alignment.center,
@@ -1941,76 +2274,68 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                         Row(
                           children: [
                             Expanded(
-                              child: Column(
-                                children: [
-                                  labelBox('년'),
-                                  Expanded(
-                                    child: wheel<int>(
-                                      items: yearList,
-                                      controller: yearCtrl,
-                                      label: (v) => '$v',
-                                      onSelected: (idx) {
-                                        setLocal(() {
-                                          year = yearList[idx];
-                                          dayList = makeDayList();
-                                          syncTemp();
-                                        });
-                                      },
-                                    ),
+                              child: Column(children: [
+                                labelBox('년'),
+                                Expanded(
+                                  child: wheel<int>(
+                                    items:      yearList,
+                                    controller: yearCtrl,
+                                    label:      (v) => '$v',
+                                    onSelected: (idx) => setLocal(() {
+                                      year    = yearList[idx];
+                                      dayList = List<int>.generate(daysInMonth(year, month), (i) => i + 1);
+                                      syncTemp();
+                                    }),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ]),
                             ),
                             Expanded(
-                              child: Column(
-                                children: [
-                                  labelBox('월'),
-                                  Expanded(
-                                    child: wheel<int>(
-                                      items: monthList,
-                                      controller: monthCtrl,
-                                      label: (v) => '$v',
-                                      onSelected: (idx) {
-                                        setLocal(() {
-                                          month = monthList[idx];
-                                          dayList = makeDayList();
-                                          syncTemp();
-                                        });
-                                      },
-                                    ),
+                              child: Column(children: [
+                                labelBox('월'),
+                                Expanded(
+                                  child: wheel<int>(
+                                    items:      monthList,
+                                    controller: monthCtrl,
+                                    label:      (v) => '$v',
+                                    onSelected: (idx) => setLocal(() {
+                                      month   = monthList[idx];
+                                      dayList = List<int>.generate(daysInMonth(year, month), (i) => i + 1);
+                                      syncTemp();
+                                    }),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ]),
                             ),
                             Expanded(
-                              child: Column(
-                                children: [
-                                  labelBox('일'),
-                                  Expanded(
-                                    child: wheel<int>(
-                                      items: dayList,
-                                      controller: dayCtrl,
-                                      label: (v) => '$v',
-                                      onSelected: (idx) {
-                                        setLocal(() {
-                                          day = dayList[idx];
-                                          syncTemp();
-                                        });
-                                      },
-                                    ),
+                              child: Column(children: [
+                                labelBox('일'),
+                                Expanded(
+                                  child: wheel<int>(
+                                    items:      dayList,
+                                    controller: dayCtrl,
+                                    label:      (v) => '$v',
+                                    onSelected: (idx) => setLocal(() {
+                                      day = dayList[idx];
+                                      syncTemp();
+                                    }),
                                   ),
-                                ],
-                              ),
+                                ),
+                              ]),
                             ),
                           ],
                         ),
+                        // 선택 하이라이트 오버레이
                         IgnorePointer(
                           child: Container(
                             height: 44,
                             margin: const EdgeInsets.symmetric(horizontal: 10),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: brand.withOpacity(0.25), width: 1.3),
+                              border: Border.all(
+                                color: brand.withOpacity(0.25),
+                                width: 1.3,
+                              ),
                               color: Colors.white.withOpacity(0.35),
                             ),
                           ),

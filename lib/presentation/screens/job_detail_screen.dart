@@ -23,6 +23,7 @@ import 'job_meta_section.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/services.dart'; // Clipboard
 import 'package:url_launcher/url_launcher.dart';
+import 'package:iljujob/data/services/log_service.dart';
 
 const kBrand = Color(0xFF3B8AFF);
 class JobDetailScreen extends StatefulWidget {
@@ -135,7 +136,13 @@ bool _locContextLoading = false;
 
     _loadSuspension(); // ← 추가: 정지 상태 로드
     _loadLocationContext(); 
-
+final jobId = int.tryParse(widget.job.id.toString());
+  if (jobId != null) {
+  LogService.instance.logEvent(
+  eventType: LogService.view,   // ← view 로 수정
+  jobId: jobId,
+);
+  }
   }
 String _formatCount(int n) {
   if (n >= 1000000) return '${(n / 1000000).toStringAsFixed(1)}M';
@@ -640,10 +647,20 @@ Future<bool> _showChatMoveNoticeDialog() async {
       }
 
       // 2-2) 정상 처리
-        if (response.statusCode == 200) {
-        _showSnack('✅ 지원 완료');
-        await _fetchApplicantCount();
-        setState(() => hasApplied = true);
+     if (response.statusCode == 200) {
+  _showSnack('✅ 지원 완료');
+
+  // ✅ apply 로그 추가
+final jobIdInt = int.tryParse(widget.job.id.toString());
+if (jobIdInt != null) {
+ LogService.instance.logEvent(
+  eventType: LogService.apply,  // ← apply 로 수정
+  jobId: jobIdInt,
+);
+}
+
+  await _fetchApplicantCount();
+  setState(() => hasApplied = true);
 
         final roomId = await startChatRoom(workerId, jobId, clientId);
         if (roomId != null) {
@@ -742,39 +759,58 @@ Future<bool> _showChatMoveNoticeDialog() async {
   }
 
   Widget _buildApplyButton() {
-    if (isLoading) return const SizedBox();
-    final isSuspended = _suspension?.isSuspended ?? false; // ← 추가
-    final isButtonDisabled =
-        hasApplied || isClosed || isBlocked || isSuspended; // ← 추가
+  if (isLoading) return const SizedBox();
 
+  // ✅ 대행공고 여부 (null-safe)
+  final isAgency = (widget.job.isAgency == true);
+
+  // ✅ 대행공고는 채팅/지원 기능을 막고, 전화/이메일만 노출
+  if (isAgency) {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: isButtonDisabled ? Colors.grey : Colors.blue,
-            minimumSize: const Size.fromHeight(50),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-          onPressed: isButtonDisabled ? null : _applyToJob,
-          child: Text(
-            isClosed
-                ? '마감된 공고'
-                : hasApplied
-                ? '지원 완료'
-                : isBlocked
-                ? '차단된 기업'
-                : isSuspended
-                ? '정지된 계정' // ← 추가(원하면)
-                : '지원하기',
-            style: const TextStyle(fontSize: 16, color: Colors.white),
-          ),
+        child: _AgencyApplyBar(
+          phone: widget.job.agencyPhone,
+          email: widget.job.agencyEmail,
+          note: widget.job.agencyNote,
+          onSnack: _showSnack,
         ),
       ),
     );
   }
+
+  // ---- 기존 로직(일반 공고) 유지 ----
+  final isSuspended = _suspension?.isSuspended ?? false;
+  final isButtonDisabled = hasApplied || isClosed || isBlocked || isSuspended;
+
+  return SafeArea(
+    child: Padding(
+      padding: const EdgeInsets.all(12),
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isButtonDisabled ? Colors.grey : Colors.blue,
+          minimumSize: const Size.fromHeight(50),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+        onPressed: isButtonDisabled ? null : _applyToJob,
+        child: Text(
+          isClosed
+              ? '마감된 공고'
+              : hasApplied
+                  ? '지원 완료'
+                  : isBlocked
+                      ? '차단된 기업'
+                      : isSuspended
+                          ? '정지된 계정'
+                          : '지원하기',
+          style: const TextStyle(fontSize: 16, color: Colors.white),
+        ),
+      ),
+    ),
+  );
+}
 
   void _showReportDialog() {
     final TextEditingController _reasonDetailController =
@@ -1035,8 +1071,7 @@ Widget build(BuildContext context) {
               ),
             ],
           ),
-    bottomNavigationBar:
-        userType == 'worker' ? _buildApplyButton() : null,
+bottomNavigationBar: userType == 'worker' ? _buildApplyButton() : null,
   );
 }
 Widget _buildHeaderCard(String postedLabel, DateTime? postedUtc) {
@@ -1187,10 +1222,13 @@ Widget _infoChip(String text) {
   );
 }
 Widget _buildJobCoreSection() {
-  final description =
-      widget.job.description?.trim().isNotEmpty == true
-          ? widget.job.description!.trim()
-          : '상세 설명이 많이 적혀 있지 않아요.\n궁금한 점은 채팅으로 바로 물어보면 좋아요 👀';
+  final isAgency = (widget.job.isAgency == true);
+final description =
+    widget.job.description?.trim().isNotEmpty == true
+        ? widget.job.description!.trim()
+        : isAgency
+            ? '상세 설명이 많이 적혀 있지 않아요.\n지원은 아래 “전화/이메일” 버튼으로 진행해주세요.'
+            : '상세 설명이 많이 적혀 있지 않아요.\n궁금한 점은 채팅으로 바로 물어보면 좋아요 👀';
 
   return Container(
     padding: const EdgeInsets.all(16),
@@ -2018,4 +2056,180 @@ class _MapWithSafeMarkerState extends State<MapWithSafeMarker> {
       ),
     );
   }
+}
+
+class _AgencyApplyBar extends StatelessWidget {
+  final String? phone;
+  final String? email;
+  final String? note;
+  final void Function(String msg) onSnack;
+
+  const _AgencyApplyBar({
+    super.key,
+    required this.phone,
+    required this.email,
+    required this.note,
+    required this.onSnack,
+  });
+
+  bool get _hasPhone => (phone != null && phone!.trim().isNotEmpty);
+  bool get _hasEmail => (email != null && email!.trim().isNotEmpty);
+
+  Future<void> _callPhone() async {
+    final p = phone!.trim().replaceAll(' ', '');
+    final uri = Uri.parse('tel:$p');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      onSnack('전화 앱을 열 수 없어요');
+    }
+  }
+
+  Future<void> _sendEmail() async {
+    final e = email!.trim();
+    final uri = Uri.parse('mailto:$e');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      onSnack('이메일 앱을 열 수 없어요');
+    }
+  }
+
+ @override
+Widget build(BuildContext context) {
+  final defaultNote =
+      '이 공고는 알바일주 공식계정이 대행 등록한 공고입니다.\n'
+      '지원은 아래 연락처로 진행해주세요.\n\n'
+      '연락하실 때 “알바일주 보고 연락드렸어요” 한마디만 부탁드려요 🙂';
+
+  final safeNote = (note != null && note!.trim().isNotEmpty)
+      ? note!.trim()
+      : defaultNote;
+
+  return Container(
+    decoration: BoxDecoration(
+      color: Colors.white,
+      border: Border(top: BorderSide(color: Colors.grey.shade200)),
+    ),
+    padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 안내문
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                color: kBrand.withOpacity(0.10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.campaign_outlined, color: kBrand, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                safeNote,
+                style: const TextStyle(
+                  fontSize: 12,
+                  height: 1.35,
+                  color: Color(0xFF374151),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 10),
+
+        // 버튼 두 개(가능한 것만)
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size.fromHeight(46),
+                  side: BorderSide(color: Colors.grey.shade300),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: _hasPhone ? _callPhone : null,
+                icon: Icon(
+                  Icons.call,
+                  size: 18,
+                  color: _hasPhone ? kBrand : Colors.grey.shade400,
+                ),
+                label: Text(
+                  _hasPhone ? '전화로 지원' : '전화 정보 없음',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: _hasPhone ? const Color(0xFF111827) : Colors.grey.shade500,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _hasEmail ? kBrand : Colors.grey.shade300,
+                  minimumSize: const Size.fromHeight(46),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 0,
+                ),
+                onPressed: _hasEmail ? _sendEmail : null,
+                icon: Icon(
+                  Icons.email_outlined,
+                  size: 18,
+                  color: _hasEmail ? Colors.white : Colors.grey.shade500,
+                ),
+                label: Text(
+                  _hasEmail ? '이메일 지원' : '이메일 없음',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w900,
+                    color: _hasEmail ? Colors.white : Colors.grey.shade600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        // 연락처 표시(투명하게)
+        const SizedBox(height: 8),
+        if (_hasPhone || _hasEmail)
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              if (_hasPhone) _miniChip('전화', phone!.trim()),
+              if (_hasEmail) _miniChip('이메일', email!.trim()),
+            ],
+          ),
+      ],
+    ),
+  );
+}
+
+static Widget _miniChip(String k, String v) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: const Color(0xFFF5F7FB),
+      borderRadius: BorderRadius.circular(999),
+      border: Border.all(color: const Color(0xFFE5E7EB)),
+    ),
+    child: Text(
+      '$k: $v',
+      style: const TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w800,
+        color: Color(0xFF374151),
+      ),
+    ),
+  );
+}
 }

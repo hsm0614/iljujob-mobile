@@ -58,3 +58,4 @@ macos/firebase_app_id_file.json
 app.*.symbols
 app.*.map.json
 lib/config/ai_secrets.dart
+node_modules

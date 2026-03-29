@@ -2,35 +2,60 @@ package kr.co.iljujob
 
 import android.content.Intent
 import android.os.Bundle
-import io.flutter.embedding.android.FlutterActivity
-import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.plugin.common.MethodChannel
-
-// 👇 키 해시 로그용 import
 import android.os.Build
 import android.content.pm.PackageManager
 import android.util.Base64
 import android.util.Log
 import java.security.MessageDigest
 import android.content.pm.Signature
+import android.view.WindowManager
+import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+    // ✅ CHANNEL 중복 선언 제거 — 하나로 통합
+    private val DEEPLINK_CHANNEL = "deeplink/albailju"
+    private val KEYBOARD_CHANNEL = "com.iljujob/keyboard"
 
-    private val CHANNEL = "deeplink/albailju"
-    private var methodChannel: MethodChannel? = null
+    private var deeplinkChannel: MethodChannel? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        methodChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
+
+        // 딥링크 채널
+        deeplinkChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            DEEPLINK_CHANNEL
+        )
+
+        // ✅ 키보드 모드 채널
+        MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            KEYBOARD_CHANNEL
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "setAdjustResize" -> {
+                    window.setSoftInputMode(
+                        WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+                    )
+                    result.success(null)
+                }
+                "setAdjustPan" -> {
+                    window.setSoftInputMode(
+                        WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN
+                    )
+                    result.success(null)
+                }
+                else -> result.notImplemented()
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // ✅ 실행중 키 해시 출력 (nullable/버전 호환)
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, true)
         printKeyHashes()
-
-        // 기존 딥링크 처리
         handleDeepLink(intent)
     }
 
@@ -43,36 +68,40 @@ class MainActivity : FlutterActivity() {
     private fun handleDeepLink(intent: Intent?) {
         intent?.data?.let { uri ->
             val uriStr = uri.toString()
-            methodChannel?.invokeMethod("onDeepLink", uriStr)
+            deeplinkChannel?.invokeMethod("onDeepLink", uriStr)
         }
     }
 
     private fun printKeyHashes() {
         try {
-            // API 33(TIRAMISU)+에서 flags API가 바뀜
             val pkgInfo = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 packageManager.getPackageInfo(
                     packageName,
-                    PackageManager.PackageInfoFlags.of(PackageManager.GET_SIGNING_CERTIFICATES.toLong())
+                    PackageManager.PackageInfoFlags.of(
+                        PackageManager.GET_SIGNING_CERTIFICATES.toLong()
+                    )
                 )
             } else {
                 @Suppress("DEPRECATION")
-                packageManager.getPackageInfo(packageName, PackageManager.GET_SIGNING_CERTIFICATES)
+                packageManager.getPackageInfo(
+                    packageName,
+                    PackageManager.GET_SIGNING_CERTIFICATES
+                )
             }
 
-            // API 28(P)+에서는 signingInfo, 이하에서는 signatures 사용
-            val signatures: Array<Signature> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                pkgInfo.signingInfo?.apkContentsSigners ?: emptyArray()  // ← 안전 호출
-            } else {
-                @Suppress("DEPRECATION")
-                pkgInfo.signatures ?: emptyArray()
-            }
+            val signatures: Array<Signature> =
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                    pkgInfo.signingInfo?.apkContentsSigners ?: emptyArray()
+                } else {
+                    @Suppress("DEPRECATION")
+                    pkgInfo.signatures ?: emptyArray()
+                }
 
             val md = MessageDigest.getInstance("SHA")
             signatures.forEach { sig ->
                 md.update(sig.toByteArray())
                 val keyHash = Base64.encodeToString(md.digest(), Base64.NO_WRAP)
-                Log.i("KeyHash", ">>> $keyHash") // 이 값을 Kakao 콘솔 Android 플랫폼 '키 해시'에 추가
+                Log.i("KeyHash", ">>> $keyHash")
             }
         } catch (e: Exception) {
             Log.e("KeyHash", "error", e)

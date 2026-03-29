@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "@apps-in-toss/web-framework": "^2.0.8",
     "node-cron": "^3.0.3"
   }
 }

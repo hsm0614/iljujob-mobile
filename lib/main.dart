@@ -542,7 +542,10 @@ final startScreen = _determineStartScreen(
 
   // 15. 앱 실행
   runApp(MyApp(startScreen: startScreen, upgrader: upgrader));
-
+// ✅ 커스텀 업데이트 모달 (우리 UI)
+WidgetsBinding.instance.addPostFrameCallback((_) async {
+  await _maybeShowUpgradeDialog(upgrader);
+});
   // 16. 앱 시작 시 initialMessage 처리
 await _handleInitialMessage(prefs, refreshedUserType); // ✅
 }
@@ -584,7 +587,7 @@ class MyApp extends StatelessWidget {
         navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
       ],
-      home: UpgradeAlert(upgrader: upgrader, child: startScreen),
+    home: startScreen,
       routes: {
         '/admin': (context) => const AdminMainScreen(),
         '/admin_users': (context) => const AdminUserListScreen(),
@@ -693,4 +696,166 @@ class UpgraderMessagesKo extends UpgraderMessages {
   String get later => '다음에';
   @override
   String get releaseNotes => '변경사항';
+}
+bool _upgradeDialogShown = false;
+
+Future<void> _maybeShowUpgradeDialog(Upgrader upgrader) async {
+  if (_upgradeDialogShown) return;
+  _upgradeDialogShown = true;
+
+  try {
+    await upgrader.initialize();
+    final shouldDisplay = upgrader.shouldDisplayUpgrade();
+    if (!shouldDisplay) return;
+
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null) return;
+
+    const force = false;
+
+    await showDialog(
+      context: ctx,
+      barrierDismissible: !force,
+      builder: (_) => _AlbailjuUpgradeDialog(upgrader: upgrader, force: force),
+    );
+  } catch (e) {
+    debugPrint('❌ 업그레이드 모달 체크 실패: $e');
+  }
+}
+
+class _AlbailjuUpgradeDialog extends StatelessWidget {
+  final Upgrader upgrader;
+  final bool force;
+
+  const _AlbailjuUpgradeDialog({
+    required this.upgrader,
+    required this.force,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 18),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 헤더
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: const Color(0xFF3B8AFF).withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.system_update_alt, color: Color(0xFF3B8AFF), size: 26),
+            ),
+            const SizedBox(height: 12),
+
+            const Text(
+              '업데이트가 있어요',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 6),
+
+            Text(
+              force
+                  ? '안정적인 이용을 위해 최신 버전으로 업데이트가 필요합니다.'
+                  : '더 빠르고 편해진 알바일주를 써보세요.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.35,
+                color: Color(0xFF4B5563),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // 릴리즈 노트 (있으면)
+            _ReleaseNotesBox(text: upgrader.releaseNotes),
+
+            const SizedBox(height: 14),
+
+            // 버튼
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: force ? null : () => Navigator.pop(context),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(46),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      side: const BorderSide(color: Color(0xFFE5E7EB)),
+                    ),
+                    child: Text(
+                      force ? '필수 업데이트' : '나중에',
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      // ✅ 스토어로 이동
+                      await upgrader.sendUserToAppStore();
+                      // 강제가 아니면 닫기
+                      if (!force && context.mounted) Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF3B8AFF),
+                      minimumSize: const Size.fromHeight(46),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      elevation: 0,
+                    ),
+                    child: const Text(
+                      '업데이트하기',
+                      style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+
+            // 작은 안내
+            if (!force)
+              const Text(
+                '업데이트는 스토어에서 진행됩니다.',
+                style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w700),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ReleaseNotesBox extends StatelessWidget {
+  final String? text;
+  const _ReleaseNotesBox({this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = (text ?? '').trim();
+    if (t.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FAFB),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
+      ),
+      child: Text(
+        t,
+        style: const TextStyle(fontSize: 12, height: 1.35, color: Color(0xFF374151), fontWeight: FontWeight.w700),
+      ),
+    );
+  }
 }

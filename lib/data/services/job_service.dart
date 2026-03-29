@@ -155,9 +155,11 @@ static Future<List<Job>> fetchJobs({int? clientId}) async {
   return jobs;
 }
     // 🔹 2. 공고 등록 (이미지 + 요일 + 위치 위경도 포함)
-   static Future<void> postJobWithImages({
+static Future<void> postJobWithImages({
   required String title,
   required String category,
+   String? categoryMajor,  // ✅ 추가
+  String? categorySub,    // ✅ 추가
   required String location,
   required String locationCity,
   required String startDate,
@@ -172,11 +174,18 @@ static Future<List<Job>> fetchJobs({int? clientId}) async {
   String? weekdays,
   double? lat,
   double? lng,
- List<File> images = const [], // ✅ 여러 장
+  List<File> images = const [],
   String? publishAt,
   bool isSameDayPay = false,
   required bool isPaid,
+
+  // ✅ 추가 (대행)
+  bool isAgency = false,
+  String? agencyPhone,
+  String? agencyEmail,
+  String? agencyNote,
 }) async {
+
   final uri = Uri.parse('$baseUrl/api/job/post_job');
 
   // 🔐 토큰 읽어서 Authorization 헤더에 붙임
@@ -188,29 +197,35 @@ static Future<List<Job>> fetchJobs({int? clientId}) async {
 
   final request = http.MultipartRequest('POST', uri)
     ..headers['Authorization'] = 'Bearer $token'
-    ..fields.addAll({
-      // 🔎 최소한의 정리/트림
-      'title': title.trim(),
-      'category': category.trim(),
-      'location': location.trim(),
-      'locationCity': locationCity.trim(),
-      'startDate': startDate, // "YYYY-MM-DD"
-      'endDate': endDate,     // "YYYY-MM-DD"
-      'startTime': startTime, // "HH:mm"
-      'endTime': endTime,     // "HH:mm"
-      'payType': payType,     // 서버 허용값(daily/weekly 등)만 넘기기
-      'pay': pay.toString(),
-      'description': description.trim(),
-      'clientId': clientId.toString(),
-      'isSameDayPay': isSameDayPay.toString(),
-      if (weekdays != null && weekdays.isNotEmpty) 'weekdays': weekdays,
-      if (lat != null) 'lat': lat.toString(),
-      if (lng != null) 'lng': lng.toString(),
-    });
+  ..fields.addAll({
+  'title': title.trim(),
+   'category': category.trim(),
+  if (categoryMajor != null && categoryMajor.isNotEmpty) 'category_major': categoryMajor.trim(),  // ✅ 추가
+  if (categorySub != null && categorySub.isNotEmpty)    'category_sub':   categorySub.trim(),     // ✅ 추가
+  'location': location.trim(),
+  'location_city': locationCity.trim(),
+  'start_date': startDate,
+  'end_date': endDate,
+  'start_time': startTime,
+  'end_time': endTime,
+  'pay_type': payType,
+  'pay': pay.toString(),
+  'description': description.trim(),
+  'client_id': clientId.toString(),
+  'is_same_day_pay': isSameDayPay ? '1' : '0',
+  if (weekdays != null && weekdays.isNotEmpty) 'weekdays': weekdays,
+  if (lat != null) 'lat': lat.toString(),
+  if (lng != null) 'lng': lng.toString(),
 
+  // ✅ 대행
+  'is_agency': isAgency ? '1' : '0',
+  if (agencyPhone != null && agencyPhone.trim().isNotEmpty) 'agency_phone': agencyPhone.trim(),
+  if (agencyEmail != null && agencyEmail.trim().isNotEmpty) 'agency_email': agencyEmail.trim(),
+  if (agencyNote  != null && agencyNote.trim().isNotEmpty)  'agency_note': agencyNote.trim(),
+});
   // ⏰ 예약 공개면 publishAt 포함(비어있으면 아예 안보냄)
 if (publishAt != null && publishAt.isNotEmpty) {
-  request.fields['publishAt'] = publishAt; // UTC ISO(Z)
+  request.fields['publish_at'] = publishAt; // UTC ISO(Z)
 }
   // 💰 유료 여부(서버가 '1'/'0' 읽으므로 그대로)
   request.fields['is_paid'] = isPaid ? '1' : '0';
@@ -223,11 +238,12 @@ if (publishAt != null && publishAt.isNotEmpty) {
   final resp = await request.send();
   final body = await resp.stream.bytesToString();
 
-  if (resp.statusCode != 200) {
-    // 서버에서 남은 이용권 0이면 메시지가 body에 들어옵니다.
-    print('❌ POST /post_job 실패: ${resp.statusCode} | $body');
-    throw Exception('공고 등록 실패 (${resp.statusCode})');
-  } else {
+ if (resp.statusCode != 200) {
+  debugPrint('❌ POST /post_job 실패: ${resp.statusCode} | $body');
+
+  // ✅ body를 그대로 throw에 포함 (여기서 모달 트리거 문자열이 살아있어야 함)
+  throw Exception('HTTP_${resp.statusCode}: $body');
+} else {
 
   }
 }

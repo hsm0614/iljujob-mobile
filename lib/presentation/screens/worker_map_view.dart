@@ -1,8 +1,10 @@
-//worker_map_view.dart
+// worker_map_view.dart
+// 추가 기능: 내 위치 초기화 + FAB + 마커 탭 바텀시트 + 반경 필터
 
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -13,8 +15,136 @@ import 'package:iljujob/config/constants.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
-import 'worker_profile_screen.dart';
 
+// ──────────────────────────────────────────────
+// 상수
+// ──────────────────────────────────────────────
+class _MapConst {
+  const _MapConst._();
+
+  static const double minZoom = 7.0;
+  static const double maxZoom = 19.0;
+  static const double defaultZoom = 14.0;
+  static const LatLng seoulCenter = LatLng(37.5665, 126.9780);
+
+  static final LatLngBounds koreaBounds = LatLngBounds(
+    const LatLng(33.0, 124.5),
+    const LatLng(38.7, 132.1),
+  );
+
+  static const Duration searchDebounce = Duration(milliseconds: 300);
+  static const Duration networkTimeout = Duration(seconds: 10);
+
+  static const Map<int, double> zoomBuckets = {
+    0: 20.0,
+    1: 28.0,
+    2: 36.0,
+    3: 46.0,
+  };
+
+  static int zoomBucket(double z) {
+    if (z < 10) return 0;
+    if (z < 13) return 1;
+    if (z < 16) return 2;
+    return 3;
+  }
+
+  static double iconSize(double z) => zoomBuckets[zoomBucket(z)]!;
+}
+
+// ──────────────────────────────────────────────
+// 디자인 토큰
+// ──────────────────────────────────────────────
+class _C {
+  const _C._();
+  static const primary     = Color(0xFF3182F6);
+  static const surface     = Color(0xFFFFFFFF);
+  static const background  = Color(0xFFF2F4F6);
+  static const textPrimary   = Color(0xFF191F28);
+  static const textSecondary = Color(0xFF8B95A1);
+  static const border      = Color(0xFFE5E8EB);
+}
+
+// ──────────────────────────────────────────────
+// 반경 enum
+// ──────────────────────────────────────────────
+enum RadiusFilter {
+  none(label: '전체', meters: 0),
+  km1(label: '1km', meters: 1000),
+  km3(label: '3km', meters: 3000),
+  km5(label: '5km', meters: 5000);
+
+  const RadiusFilter({required this.label, required this.meters});
+  final String label;
+  final int meters;
+}
+
+// ──────────────────────────────────────────────
+// 모델
+// ──────────────────────────────────────────────
+class WorkerMarkerData {
+  const WorkerMarkerData({
+    required this.id,
+    required this.lat,
+    required this.lng,
+    required this.profileUrl,
+    this.name = '',
+    this.skills = '',
+    this.rating,
+  });
+
+  final int id;
+  final double lat;
+  final double lng;
+  final String profileUrl;
+  final String name;
+  final String skills;
+  final double? rating;
+
+  LatLng get position => LatLng(lat, lng);
+
+  factory WorkerMarkerData.fromMap(Map<String, dynamic> map) {
+    return WorkerMarkerData(
+      id: (map['id'] as num).toInt(),
+      lat: (map['lat'] as num).toDouble(),
+      lng: (map['lng'] as num).toDouble(),
+      profileUrl: (map['profileUrl'] ?? '').toString(),
+      name: (map['name'] ?? '').toString(),
+      skills: (map['skills'] ?? '').toString(),
+      rating: map['rating'] != null ? (map['rating'] as num).toDouble() : null,
+    );
+  }
+
+  static bool isValid(Map<String, dynamic> m) {
+    final lat = m['lat'];
+    final lng = m['lng'];
+    if (lat is! num || lng is! num) return false;
+    final la = lat.toDouble();
+    final lo = lng.toDouble();
+    if (la.isNaN || lo.isNaN || la.isInfinite || lo.isInfinite) return false;
+    if (la < -90 || la > 90 || lo < -180 || lo > 180) return false;
+    return true;
+  }
+
+  /// Haversine 거리 (미터)
+  double distanceTo(LatLng other) {
+    const r = 6371000.0;
+    final dLat = _rad(other.latitude - lat);
+    final dLng = _rad(other.longitude - lng);
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_rad(lat)) *
+            math.cos(_rad(other.latitude)) *
+            math.sin(dLng / 2) *
+            math.sin(dLng / 2);
+    return r * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+  }
+
+  static double _rad(double deg) => deg * math.pi / 180;
+}
+
+// ──────────────────────────────────────────────
+// 메인 위젯
+// ──────────────────────────────────────────────
 class WorkerMapView extends StatefulWidget {
   const WorkerMapView({super.key});
 
@@ -22,534 +152,458 @@ class WorkerMapView extends StatefulWidget {
   State<WorkerMapView> createState() => _WorkerMapViewState();
 }
 
-class _WorkerMapViewState extends State<WorkerMapView> with WidgetsBindingObserver {
+class _WorkerMapViewState extends State<WorkerMapView>
+    with WidgetsBindingObserver {
   final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
 
-  List<Map<String, dynamic>> _workersRaw = [];
-  List<Map<String, dynamic>> workers = [];
-
-  bool isLoading = true;
-  bool showOnlyAvailableToday = false;
-
-  double _currentZoom = 14.0;
+  List<WorkerMarkerData> _allWorkers = [];
+  List<WorkerMarkerData> _workers = [];
+  bool _isLoading = true;
+  bool _showOnlyAvailableToday = false;
+  double _currentZoom = _MapConst.defaultZoom;
+  LatLng? _currentLocation;
+  RadiusFilter _radiusFilter = RadiusFilter.none;
   Timer? _debounceTimer;
-  bool _locationReady = false;
-LatLng? _currentLocation;
-  // 상수
-  static const double _minZoom = 7.0;
-  static const double _maxZoom = 19.0;
-  static const Duration _searchDebounce = Duration(milliseconds: 300);
-  static const Duration _networkTimeout = Duration(seconds: 10);
 
-  // 대한민국 경계
-  static final LatLngBounds KOREA_BOUNDS = LatLngBounds(
-    const LatLng(33.0, 124.5),
-    const LatLng(38.7, 132.1),
-  );
+  // ── lifecycle ──────────────────────────────
 
-  // 줌 버킷 (리빌드 최적화)
-  static const _zoomBuckets = <int, double>{
-    0: 20.0, // 7~9
-    1: 28.0, // 10~12
-    2: 36.0, // 13~15
-    3: 46.0, // 16~19
-  };
-
-  int _zoomBucket(double z) {
-    if (z < 10) return 0;
-    if (z < 13) return 1;
-    if (z < 16) return 2;
-    return 3;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _fetchWorkers();
   }
-
-  double _iconSizeForZoom(double z) => _zoomBuckets[_zoomBucket(z)]!;
-
-Future<LatLng?> _getCurrentLocation() async {
-  // 위치서비스 체크
-  if (!await Geolocator.isLocationServiceEnabled()) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('위치 서비스가 꺼져 있어요. 켜주세요!')),
-      );
-    }
-    return null;
-  }
-
-  // 권한 체크 & 요청
-  LocationPermission permission = await Geolocator.checkPermission();
-  if (permission == LocationPermission.denied) {
-    permission = await Geolocator.requestPermission();
-    if (permission == LocationPermission.denied) return null;
-  }
-  if (permission == LocationPermission.deniedForever) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('설정에서 위치 접근 허용을 해주세요.')),
-      );
-    }
-    return null;
-  }
-
-  // ✅ 1) 최근 위치(캐시된 위치)를 *즉시* 얻기 (1~50ms 수준)
-  final lastPos = await Geolocator.getLastKnownPosition();
-  if (lastPos != null) {
-    // 일단 빠르게 화면 이동
-    final quickLoc = LatLng(lastPos.latitude, lastPos.longitude);
-    // 뒤에서 정확한 위치 다시 업데이트
-    _updatePreciseLocationLater();
-    return quickLoc;
-  }
-
-  // ✅ 2) 최근 위치가 없다면 → "빠른" 위치 먼저
-  try {
-    final quickPos = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.low,
-      timeLimit: const Duration(seconds: 2), // 오래 기다리지 않음
-    );
-    // 그리고 나중에 정밀 업데이트
-    _updatePreciseLocationLater();
-    return LatLng(quickPos.latitude, quickPos.longitude);
-  } catch (_) {}
-
-  // ✅ 3) 그래도 안 되면 → 정밀 위치 한 번만 시도 (최대 4초)
-  try {
-    final precisePos = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.best,
-      timeLimit: const Duration(seconds: 4),
-    );
-    return LatLng(precisePos.latitude, precisePos.longitude);
-  } catch (_) {
-    return null;
-  }
-}
-
-Future<void> _updatePreciseLocationLater() async {
-  try {
-    final precise = await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.best,
-      timeLimit: const Duration(seconds: 6),
-    );
-
-    if (mounted) {
-      setState(() => _currentLocation = LatLng(precise.latitude, precise.longitude));
-      _mapController.move(_currentLocation!, 14); // 부드럽게 보정 이동
-    }
-  } catch (_) {}
-}
-
-@override
-void initState() {
-  super.initState();
-  WidgetsBinding.instance.addObserver(this);
-  _searchController.addListener(_onSearchChanged);
-  fetchWorkers();
-
-}
 
   @override
   void dispose() {
     _debounceTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
-    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
   }
 
-  void _onSearchChanged() {
-    setState(() {});
-  }
+  // ── 필터 ───────────────────────────────────
 
-  void _applyKoreaFilter() {
-    workers = _workersRaw.where((w) {
-      final latRaw = w['lat'];
-      final lngRaw = w['lng'];
-      if (latRaw is! num || lngRaw is! num) return false;
-      final p = LatLng(latRaw.toDouble(), lngRaw.toDouble());
-      return KOREA_BOUNDS.contains(p);
-    }).toList(growable: false);
-  }
-
-  void _centerToFirstOrDefault() {
-    if (workers.isNotEmpty) {
-      final w = workers.first;
-      _mapController.move(
-        LatLng((w['lat'] as num).toDouble(), (w['lng'] as num).toDouble()),
-        13,
-      );
-    } else {
-      _mapController.move(const LatLng(37.5665, 126.9780), 12);
+  void _applyFilters() {
+    List<WorkerMarkerData> filtered = _allWorkers;
+    if (_radiusFilter != RadiusFilter.none && _currentLocation != null) {
+      filtered = filtered
+          .where((w) => w.distanceTo(_currentLocation!) <= _radiusFilter.meters)
+          .toList();
     }
+    setState(() => _workers = filtered);
   }
 
-  Future<void> fetchWorkers() async {
-    if (!mounted) return;
-    setState(() => isLoading = true);
+  // ── 데이터 로딩 ────────────────────────────
 
-    final endpoint = showOnlyAvailableToday
+  Future<void> _fetchWorkers() async {
+    if (!mounted) return;
+    setState(() => _isLoading = true);
+
+    final endpoint = _showOnlyAvailableToday
         ? '$baseUrl/api/worker/available-today'
         : '$baseUrl/api/worker/all';
 
     try {
       final response = await http
           .get(Uri.parse(endpoint), headers: {'Accept': 'application/json'})
-          .timeout(_networkTimeout);
+          .timeout(_MapConst.networkTimeout);
 
       if (!mounted) return;
 
       if (response.statusCode == 200) {
-        final cleaned = _parseAndValidateWorkers(response.body);
-
-        setState(() {
-          _workersRaw = cleaned;
-          _applyKoreaFilter();
-          isLoading = false;
-        });
-
-        if (workers.isNotEmpty) {
-
-        } else {
-          _centerToFirstOrDefault();
-        }
+        _allWorkers = _parseWorkers(response.body);
+        _applyFilters();
+        setState(() => _isLoading = false);
       } else {
-        setState(() => isLoading = false);
-        _showErrorSnackBar('알바생 정보를 불러오지 못했습니다.');
+        _onLoadError('알바생 정보를 불러오지 못했어요.');
       }
     } on TimeoutException {
-      if (!mounted) return;
-      setState(() => isLoading = false);
-      _showErrorSnackBar('요청 시간이 초과되었습니다.');
+      _onLoadError('요청 시간이 초과됐어요. 다시 시도해 주세요.');
     } on SocketException {
-      if (!mounted) return;
-      setState(() => isLoading = false);
-      _showErrorSnackBar('네트워크 연결을 확인해주세요.');
+      _onLoadError('네트워크 연결을 확인해 주세요.');
     } catch (e) {
-      if (!mounted) return;
-      setState(() => isLoading = false);
-      debugPrint('❌ 알 수 없는 오류: $e');
-      _showErrorSnackBar('오류가 발생했습니다.');
+      debugPrint('❌ 워커 로딩 오류: $e');
+      _onLoadError('잠시 오류가 발생했어요.');
     }
   }
 
-  List<Map<String, dynamic>> _parseAndValidateWorkers(String body) {
+  void _onLoadError(String message) {
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    _showSnackBar(message);
+  }
+
+  List<WorkerMarkerData> _parseWorkers(String body) {
     try {
       final dynamic decoded = jsonDecode(body);
-      final List<Map<String, dynamic>> items = (decoded is List)
-          ? decoded.map<Map<String, dynamic>>((e) {
-              if (e is Map<String, dynamic>) return e;
-              if (e is Map) return Map<String, dynamic>.from(e);
-              return <String, dynamic>{};
-            }).toList()
-          : <Map<String, dynamic>>[];
-
-      return items.where(_isValidWorker).toList(growable: false);
+      if (decoded is! List) return [];
+      return decoded
+          .whereType<Map<String, dynamic>>()
+          .where(WorkerMarkerData.isValid)
+          .where((m) => _MapConst.koreaBounds.contains(
+                LatLng((m['lat'] as num).toDouble(), (m['lng'] as num).toDouble()),
+              ))
+          .map(WorkerMarkerData.fromMap)
+          .toList(growable: false);
     } catch (e) {
       debugPrint('❌ 파싱 오류: $e');
       return [];
     }
   }
 
-  bool _isValidWorker(Map<String, dynamic> worker) {
-    final latRaw = worker['lat'];
-    final lngRaw = worker['lng'];
-    if (latRaw is! num || lngRaw is! num) return false;
+  // ── 위치 ───────────────────────────────────
 
-    final lat = latRaw.toDouble();
-    final lng = lngRaw.toDouble();
-    if (lat.isNaN || lng.isNaN || lat.isInfinite || lng.isInfinite) return false;
-    if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return false;
-
-    return true;
-  }
-
-  void _fitCameraToBounds() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || workers.isEmpty) return;
-      
-      // 약간의 딜레이를 주고 실행 (맵이 완전히 렌더링된 후)
-      Future.delayed(const Duration(milliseconds: 100), () {
-        if (!mounted) return;
-        try {
-          final bounds = LatLngBounds.fromPoints([
-            for (final w in workers)
-              LatLng((w['lat'] as num).toDouble(), (w['lng'] as num).toDouble()),
-          ]);
-
-          final effective = _intersectBounds(bounds, KOREA_BOUNDS) ?? KOREA_BOUNDS;
-
-          _mapController.fitCamera(
-            CameraFit.bounds(bounds: effective, padding: const EdgeInsets.all(32)),
-          );
-          
-          // fitCamera 후 한 번 더 강제 렌더링
-          Future.delayed(const Duration(milliseconds: 50), () {
-            if (mounted) {
-              _mapController.move(
-                _mapController.camera.center,
-                _mapController.camera.zoom,
-              );
-            }
-          });
-        } catch (e) {
-          debugPrint('❌ 카메라 이동 실패: $e');
-          _centerToFirstOrDefault();
-        }
-      });
-    });
-  }
-
-  LatLngBounds? _intersectBounds(LatLngBounds a, LatLngBounds b) {
-    final south = a.south > b.south ? a.south : b.south;
-    final west = a.west > b.west ? a.west : b.west;
-    final north = a.north < b.north ? a.north : b.north;
-    final east = a.east < b.east ? a.east : b.east;
-    if (south <= north && west <= east) {
-      return LatLngBounds(LatLng(south, west), LatLng(north, east));
+  /// 지도 준비 후 자동 내 위치로 이동
+  Future<void> _initLocation() async {
+    final loc = await _getLocation();
+    if (loc != null && mounted) {
+      setState(() => _currentLocation = loc);
+      _mapController.move(loc, _MapConst.defaultZoom);
+      _applyFilters();
     }
-    return null;
   }
+
+  /// FAB - 내 위치로 돌아가기
+  Future<void> _goToMyLocation() async {
+    if (_currentLocation != null) {
+      _mapController.move(_currentLocation!, _MapConst.defaultZoom);
+      return;
+    }
+    final loc = await _getLocation();
+    if (loc != null && mounted) {
+      setState(() => _currentLocation = loc);
+      _mapController.move(loc, _MapConst.defaultZoom);
+      _applyFilters();
+    }
+  }
+
+  Future<LatLng?> _getLocation() async {
+    if (!await Geolocator.isLocationServiceEnabled()) {
+      _showSnackBar('위치 서비스를 켜 주세요.');
+      return null;
+    }
+    LocationPermission perm = await Geolocator.checkPermission();
+    if (perm == LocationPermission.denied) {
+      perm = await Geolocator.requestPermission();
+      if (perm == LocationPermission.denied) return null;
+    }
+    if (perm == LocationPermission.deniedForever) {
+      _showSnackBar('설정에서 위치 접근을 허용해 주세요.');
+      return null;
+    }
+    final last = await Geolocator.getLastKnownPosition();
+    if (last != null) {
+      _refinePreciseLocation();
+      return LatLng(last.latitude, last.longitude);
+    }
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.low,
+        timeLimit: const Duration(seconds: 2),
+      );
+      _refinePreciseLocation();
+      return LatLng(pos.latitude, pos.longitude);
+    } catch (_) {}
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.best,
+        timeLimit: const Duration(seconds: 4),
+      );
+      return LatLng(pos.latitude, pos.longitude);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _refinePreciseLocation() async {
+    try {
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.best,
+        timeLimit: const Duration(seconds: 6),
+      );
+      if (!mounted) return;
+      setState(() => _currentLocation = LatLng(pos.latitude, pos.longitude));
+      _applyFilters();
+    } catch (_) {}
+  }
+
+  // ── 검색 ───────────────────────────────────
 
   Future<void> _searchLocation() async {
-  final query = _searchController.text.trim();
-  if (query.isEmpty) return;
-
-  try {
-    final locations = await locationFromAddress(query);
-
-    if (!mounted) return;
-
-    if (locations.isEmpty) {
-      // ✅ '실패' 대신 부드러운 안내
-      _showErrorSnackBar(
-        '아직 검색 결과가 없어요.\n'
-        '조금 더 구체적인 위치나 지하철역, 동 이름으로 검색해 주세요.',
-      );
-      return;
+    final query = _searchController.text.trim();
+    if (query.isEmpty) return;
+    try {
+      final locations = await locationFromAddress(query);
+      if (!mounted) return;
+      if (locations.isEmpty) {
+        _showSnackBar('검색 결과가 없어요. 동 이름이나 지하철역으로 검색해 보세요.');
+        return;
+      }
+      final target = LatLng(locations.first.latitude, locations.first.longitude);
+      if (!_MapConst.koreaBounds.contains(target)) {
+        _showSnackBar('한국 외 지역은 아직 지원하지 않아요.');
+        return;
+      }
+      _mapController.move(target, 13);
+    } catch (_) {
+      if (!mounted) return;
+      _showSnackBar('잠시 연결이 불안정해요. 다시 시도해 주세요.');
     }
+  }
 
-    final first = locations.first;
-    final target = LatLng(first.latitude, first.longitude);
+  // ── 바텀시트 ────────────────────────────────
 
-    if (!KOREA_BOUNDS.contains(target)) {
-      _showErrorSnackBar('한국 외 지역은 아직 지원하지 않아요.');
-      return;
-    }
+  void _showWorkerSheet(WorkerMarkerData worker) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => _WorkerBottomSheet(worker: worker),
+    );
+  }
 
-    _mapController.move(target, 13);
-  } catch (e) {
-    debugPrint('❌ 위치 검색 오류: $e');
+  // ── 유틸 ───────────────────────────────────
+
+  void _showSnackBar(String message) {
     if (!mounted) return;
-    // ✅ '실패' 대신 재시도/네트워크 안내
-    _showErrorSnackBar(
-      '잠시 연결이 불안정해요.\n'
-      '네트워크 상태를 확인한 뒤 다시 한 번 시도해 주세요.',
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message,
+            style: const TextStyle(fontSize: 14, height: 1.45, color: Colors.white)),
+        backgroundColor: _C.textPrimary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  // ── build ──────────────────────────────────
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      top: true,
+      bottom: false,
+      child: Stack(
+        children: [
+          // 지도
+          _MapLayer(
+            mapController: _mapController,
+            workers: _workers,
+            currentLocation: _currentLocation,
+            currentZoom: _currentZoom,
+            radiusFilter: _radiusFilter,
+            onMapReady: _initLocation,
+            onZoomChanged: (z) {
+              _debounceTimer?.cancel();
+              _debounceTimer = Timer(_MapConst.searchDebounce, () {
+                final prev = _MapConst.zoomBucket(_currentZoom);
+                final next = _MapConst.zoomBucket(z);
+                if (prev != next) {
+                  setState(() => _currentZoom = z);
+                } else {
+                  _currentZoom = z;
+                }
+              });
+            },
+            onMarkerTap: _showWorkerSheet,
+          ),
+
+          // 검색창
+          Positioned(
+            top: 12, left: 16, right: 16,
+            child: _SearchBar(
+              controller: _searchController,
+              onSubmit: (_) => _searchLocation(),
+            ),
+          ),
+
+          // 오늘 가능 토글
+          Positioned(
+            top: 72, left: 16, right: 16,
+            child: _FilterToggle(
+              value: _showOnlyAvailableToday,
+              onChanged: (val) {
+                setState(() => _showOnlyAvailableToday = val);
+                _fetchWorkers();
+              },
+            ),
+          ),
+
+          // 반경 필터 칩
+          Positioned(
+            top: 126, left: 16, right: 16,
+            child: _RadiusChips(
+              selected: _radiusFilter,
+              hasLocation: _currentLocation != null,
+              onSelected: (r) {
+                if (r != RadiusFilter.none && _currentLocation == null) {
+                  _showSnackBar('위치 정보가 필요해요. 잠시 후 다시 시도해 주세요.');
+                  return;
+                }
+                setState(() => _radiusFilter = r);
+                _applyFilters();
+              },
+            ),
+          ),
+
+          // 내 위치 FAB
+          Positioned(
+            right: 16,
+            bottom: MediaQuery.of(context).padding.bottom + 80,
+            child: _MyLocationFab(onTap: _goToMyLocation),
+          ),
+
+          // 로딩
+          if (_isLoading) const Positioned.fill(child: _LoadingOverlay()),
+
+          // 공고 등록 버튼
+          Positioned(
+            left: 16, right: 16,
+            bottom: MediaQuery.of(context).padding.bottom + 16,
+            child: _PostJobButton(
+              onTap: () => Navigator.pushNamed(context, '/post_job'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-void _showErrorSnackBar(String message) {
-  if (!mounted) return;
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(
-        message,
-        style: const TextStyle(
-          fontSize: 13,
-          height: 1.4, // 줄 간격 확보
-        ),
-      ),
-      behavior: SnackBarBehavior.floating,
-      duration: const Duration(seconds: 2),
-    ),
-  );
-}
+// ──────────────────────────────────────────────
+// 지도 레이어
+// ──────────────────────────────────────────────
+class _MapLayer extends StatelessWidget {
+  const _MapLayer({
+    required this.mapController,
+    required this.workers,
+    required this.currentLocation,
+    required this.currentZoom,
+    required this.radiusFilter,
+    required this.onMapReady,
+    required this.onZoomChanged,
+    required this.onMarkerTap,
+  });
+
+  final MapController mapController;
+  final List<WorkerMarkerData> workers;
+  final LatLng? currentLocation;
+  final double currentZoom;
+  final RadiusFilter radiusFilter;
+  final VoidCallback onMapReady;
+  final ValueChanged<double> onZoomChanged;
+  final ValueChanged<WorkerMarkerData> onMarkerTap;
 
   @override
   Widget build(BuildContext context) {
-    if (isLoading) {
-      return const SizedBox(
-        height: 300,
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-   return SafeArea(
-  top: true,
-  bottom: false, // ✅ 탭바 영역은 부모가 관리
-  child: Stack(
-    children: [
-      _buildMap(),
-
-      Positioned(
-        top: 12,
-        left: 12,
-        right: 12,
-        child: _buildSearchBar(),
-      ),
-
-     // ✅ 검색창보다 약간 더 아래
-Positioned(
-  top: 78, // ← 기존보다 +10~18 정도 내려주면 적당
-  left: 12,
-  right: 12,
-  child: _SegmentToggle(
-    value: showOnlyAvailableToday,
-    onChanged: (val) async {
-      setState(() => showOnlyAvailableToday = val);
-      await fetchWorkers();
-    },
-  ),
-),
-
-
-    Positioned(
-  left: 16,
-  right: 16,
-  bottom: MediaQuery.of(context).padding.bottom + 16, // ✅ 탭바 회피
-  child: SizedBox(
-    height: 48,
-    child: ElevatedButton(
-      onPressed: () => Navigator.pushNamed(context, "/post_job"),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.indigo,
-        elevation: 2,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-   child: Row(
-  mainAxisAlignment: MainAxisAlignment.center,
-  children: const [
-    Icon(Icons.add_circle_outline, color: Colors.white, size: 22),
-    SizedBox(width: 8),
-    Text(
-      "공고 등록하기",
-      textAlign: TextAlign.center,
-      style: TextStyle(
-        color: Colors.white,
-        fontSize: 16,             // 살짝만 키움
-        fontWeight: FontWeight.w600, // 너무 두껍지 않게
-        letterSpacing: 0.4,       // 글자 간 여백 확보
-        height: 1.2,
-      ),
-    ),
-  ],
-),
-    ),
-  ),
-)
-    ],
-  ),
-);
-
-
-
-  }
-
- Widget _buildSearchBar() {
-  return Padding(
-    padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-    child: Material(
-      elevation: 4,
-      borderRadius: BorderRadius.circular(12),
-      child: TextField(
-        controller: _searchController,
-        onSubmitted: (_) => _searchLocation(),
-        decoration: InputDecoration(
-          
-          hintText: '위치, 지하철역, 동 이름 검색',
-           hintStyle: const TextStyle(
-    fontSize: 14,
-    letterSpacing: 0.2,
-  ),
-          prefixIcon: const Icon(Icons.search),
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-Widget _buildMap() {
-  return Positioned.fill(
-    child: ClipRRect(
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+    return Positioned.fill(
       child: FlutterMap(
-        mapController: _mapController,
+        mapController: mapController,
         options: MapOptions(
-          center: const LatLng(37.5665, 126.9780),
+          center: _MapConst.seoulCenter,
           zoom: 12,
-          minZoom: _minZoom,
-          maxZoom: _maxZoom,
-          cameraConstraint: CameraConstraint.contain(bounds: KOREA_BOUNDS),
-
-          onMapReady: () async {
-            // ✅ 지도 준비 완료 후 위치 가져오기
-            final loc = await _getCurrentLocation();
-            if (loc != null && mounted) {
-              setState(() => _currentLocation = loc);
-              _mapController.move(loc, 14);
-            }
-          },
-
+          minZoom: _MapConst.minZoom,
+          maxZoom: _MapConst.maxZoom,
+          cameraConstraint:
+              CameraConstraint.contain(bounds: _MapConst.koreaBounds),
+          onMapReady: onMapReady,
           interactionOptions: const InteractionOptions(
             flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
           ),
-          onMapEvent: (evt) {
-            _debounceTimer?.cancel();
-            _debounceTimer = Timer(_searchDebounce, () {
-              final z = _mapController.camera.zoom;
-              if (_zoomBucket(z) != _zoomBucket(_currentZoom)) {
-                setState(() => _currentZoom = z);
-              } else {
-                _currentZoom = z;
-              }
-            });
-          },
+          onMapEvent: (evt) => onZoomChanged(mapController.camera.zoom),
         ),
         children: [
           TileLayer(
-            urlTemplate: 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-            subdomains: const ['a', 'b', 'c'],
+           urlTemplate: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+subdomains: ['a', 'b', 'c', 'd'],
+
             userAgentPackageName: 'kr.co.iljujob',
           ),
 
-          // ✅ 내 위치 마커
-          if (_currentLocation != null)
-            MarkerLayer(
-              markers: [
-                Marker(
-                  point: _currentLocation!,
-                  width: 20,
-                  height: 20,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.blueAccent,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 3),
-                    ),
-                  ),
+          // 반경 원 오버레이
+          if (currentLocation != null && radiusFilter != RadiusFilter.none)
+            CircleLayer(
+              circles: [
+                CircleMarker(
+                  point: currentLocation!,
+                  radius: radiusFilter.meters.toDouble(),
+                  useRadiusInMeter: true,
+                  color: _C.primary.withOpacity(0.07),
+                  borderColor: _C.primary.withOpacity(0.4),
+                  borderStrokeWidth: 1.5,
                 ),
               ],
             ),
 
-          // ✅ 알바생 마커
-          _buildMarkerLayer(),
+          // 내 위치 점
+          if (currentLocation != null)
+            MarkerLayer(
+              markers: [
+                Marker(
+                  point: currentLocation!,
+                  width: 20,
+                  height: 20,
+                  child: _MyLocationDot(),
+                ),
+              ],
+            ),
+
+          // 알바생 마커
+          _WorkerMarkerCluster(
+            workers: workers,
+            currentZoom: currentZoom,
+            onMarkerTap: onMarkerTap,
+          ),
         ],
       ),
-    ),
-  );
+    );
+  }
 }
 
+// ──────────────────────────────────────────────
+// 내 위치 점
+// ──────────────────────────────────────────────
+class _MyLocationDot extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _C.primary,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 3),
+        boxShadow: [
+          BoxShadow(
+            color: _C.primary.withOpacity(0.35),
+            blurRadius: 8,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+    );
+  }
+}
 
-  Widget _buildMarkerLayer() {
+// ──────────────────────────────────────────────
+// 마커 클러스터
+// ──────────────────────────────────────────────
+class _WorkerMarkerCluster extends StatelessWidget {
+  const _WorkerMarkerCluster({
+    required this.workers,
+    required this.currentZoom,
+    required this.onMarkerTap,
+  });
+
+  final List<WorkerMarkerData> workers;
+  final double currentZoom;
+  final ValueChanged<WorkerMarkerData> onMarkerTap;
+
+  @override
+  Widget build(BuildContext context) {
     return MarkerClusterLayerWidget(
       options: MarkerClusterLayerOptions(
         maxClusterRadius: 60,
@@ -558,160 +612,524 @@ Widget _buildMap() {
         spiderfyCircleRadius: 60,
         spiderfySpiralDistanceMultiplier: 2,
         showPolygon: false,
-        builder: (context, cluster) => Container(
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: Colors.indigo.withOpacity(0.92),
-            shape: BoxShape.circle,
-          ),
-          child: Text(
-            '${cluster.length}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
+        builder: (ctx, cluster) => _ClusterBubble(count: cluster.length),
         markers: _buildMarkers(),
       ),
     );
   }
 
   List<Marker> _buildMarkers() {
-    final size = _iconSizeForZoom(_currentZoom);
-
+    final size = _MapConst.iconSize(currentZoom);
     return workers.map((w) {
-      final pos = LatLng(
-        (w['lat'] as num).toDouble(),
-        (w['lng'] as num).toDouble(),
-      );
-      final imageUrl = (w['profileUrl'] ?? '').toString();
-      final workerId = (w['id'] as num).toInt();
-
       return Marker(
-        point: pos,
+        point: w.position,
         width: size,
         height: size,
         alignment: Alignment.center,
         child: GestureDetector(
-          
-         child: _WorkerAvatar(imageUrl: imageUrl, size: size),
+          onTap: () => onMarkerTap(w),
+          child: _WorkerAvatar(imageUrl: w.profileUrl, size: size),
         ),
       );
     }).toList(growable: false);
   }
-
 }
 
+// ──────────────────────────────────────────────
+// 클러스터 버블
+// ──────────────────────────────────────────────
+class _ClusterBubble extends StatelessWidget {
+  const _ClusterBubble({required this.count});
+  final int count;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: _C.primary,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: _C.primary.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        '$count',
+        style: const TextStyle(
+            color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+// 워커 아바타
+// ──────────────────────────────────────────────
 class _WorkerAvatar extends StatelessWidget {
+  const _WorkerAvatar({required this.imageUrl, required this.size});
   final String imageUrl;
   final double size;
 
-  const _WorkerAvatar({
-    required this.imageUrl,
-    required this.size,
-  });
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipOval(
+        child: imageUrl.isEmpty
+            ? _Placeholder(size: size)
+            : CachedNetworkImage(
+                imageUrl: imageUrl,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                memCacheWidth: (size * 2).toInt(),
+                memCacheHeight: (size * 2).toInt(),
+                placeholder: (_, __) => _Placeholder(size: size),
+                errorWidget: (_, __, ___) => _Placeholder(size: size),
+              ),
+      ),
+    );
+  }
+}
+
+class _Placeholder extends StatelessWidget {
+  const _Placeholder({required this.size});
+  final double size;
 
   @override
   Widget build(BuildContext context) {
-    if (imageUrl.isEmpty) {
-      return _buildPlaceholder();
-    }
+    return Container(
+      color: _C.background,
+      child: Icon(Icons.person_rounded, size: size * 0.55, color: _C.textSecondary),
+    );
+  }
+}
 
-    return ClipOval(
-      child: CachedNetworkImage(
-        imageUrl: imageUrl,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        memCacheWidth: (size * 2).toInt(),
-        memCacheHeight: (size * 2).toInt(),
-        placeholder: (_, __) => SizedBox(
-          width: size,
-          height: size,
-          child: const Center(
-            child: SizedBox(
-              width: 22,
-              height: 22,
-              child: CircularProgressIndicator(strokeWidth: 2),
+// ──────────────────────────────────────────────
+// 내 위치 FAB
+// ──────────────────────────────────────────────
+class _MyLocationFab extends StatelessWidget {
+  const _MyLocationFab({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: _C.surface,
+          shape: BoxShape.circle,
+          border: Border.all(color: _C.border, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.10),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: const Icon(Icons.my_location_rounded, color: _C.primary, size: 22),
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+// 반경 필터 칩
+// ──────────────────────────────────────────────
+class _RadiusChips extends StatelessWidget {
+  const _RadiusChips({
+    required this.selected,
+    required this.hasLocation,
+    required this.onSelected,
+  });
+
+  final RadiusFilter selected;
+  final bool hasLocation;
+  final ValueChanged<RadiusFilter> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: RadiusFilter.values.map((r) {
+          final isSelected = selected == r;
+          return Padding(
+            padding: const EdgeInsets.only(right: 6),
+            child: GestureDetector(
+              onTap: () => onSelected(r),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: isSelected ? _C.primary : _C.surface,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isSelected ? _C.primary : _C.border,
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  r.label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.w400,
+                    color: isSelected ? Colors.white : _C.textSecondary,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+// 알바생 바텀시트
+// ──────────────────────────────────────────────
+class _WorkerBottomSheet extends StatelessWidget {
+  const _WorkerBottomSheet({required this.worker});
+  final WorkerMarkerData worker;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: _C.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: EdgeInsets.fromLTRB(
+        24, 20, 24,
+        MediaQuery.of(context).padding.bottom + 24,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 핸들
+          Container(
+            width: 36,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 20),
+            decoration: BoxDecoration(
+              color: _C.border,
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-        ),
-        errorWidget: (_, __, ___) => _buildPlaceholder(),
-      ),
-    );
-  }
 
-  Widget _buildPlaceholder() {
-    return CircleAvatar(
-      radius: size / 2,
-      backgroundColor: Colors.grey[300],
-      child: Icon(
-        Icons.person,
-        size: size * 0.55,
-        color: Colors.grey[700],
+          // 프로필
+          Row(
+            children: [
+              Container(
+                width: 64,
+                height: 64,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: _C.border, width: 1.5),
+                ),
+                child: ClipOval(
+                  child: worker.profileUrl.isEmpty
+                      ? Container(
+                          color: _C.background,
+                          child: const Icon(Icons.person_rounded,
+                              size: 34, color: _C.textSecondary),
+                        )
+                      : CachedNetworkImage(
+                          imageUrl: worker.profileUrl,
+                          fit: BoxFit.cover,
+                          placeholder: (_, __) =>
+                              Container(color: _C.background),
+                          errorWidget: (_, __, ___) => Container(
+                            color: _C.background,
+                            child: const Icon(Icons.person_rounded,
+                                size: 34, color: _C.textSecondary),
+                          ),
+                        ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      worker.name.isEmpty ? '알바생' : worker.name,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: _C.textPrimary,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    if (worker.skills.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        worker.skills,
+                        style: const TextStyle(
+                            fontSize: 13, color: _C.textSecondary, height: 1.4),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                    if (worker.rating != null) ...[
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.star_rounded,
+                              size: 15, color: Color(0xFFFFC107)),
+                          const SizedBox(width: 3),
+                          Text(
+                            worker.rating!.toStringAsFixed(1),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: _C.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 20),
+          const Divider(color: _C.border, height: 1),
+          const SizedBox(height: 20),
+
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/worker_profile',
+                    arguments: worker.id);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _C.primary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text(
+                '프로필 전체 보기',
+                style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -0.2),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
-}class _SegmentToggle extends StatelessWidget {
+}
+
+// ──────────────────────────────────────────────
+// 검색바
+// ──────────────────────────────────────────────
+class _SearchBar extends StatelessWidget {
+  const _SearchBar({required this.controller, required this.onSubmit});
+  final TextEditingController controller;
+  final ValueChanged<String> onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _C.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: _C.border, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        onSubmitted: onSubmit,
+        style: const TextStyle(
+            fontSize: 15, color: _C.textPrimary, fontWeight: FontWeight.w500),
+        decoration: const InputDecoration(
+          hintText: '위치, 지하철역, 동 이름 검색',
+          hintStyle: TextStyle(
+              fontSize: 15, color: _C.textSecondary, fontWeight: FontWeight.w400),
+          prefixIcon:
+              Icon(Icons.search_rounded, color: _C.textSecondary, size: 22),
+          contentPadding: EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+        ),
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+// 오늘 가능 토글
+// ──────────────────────────────────────────────
+class _FilterToggle extends StatelessWidget {
+  const _FilterToggle({required this.value, required this.onChanged});
   final bool value;
   final ValueChanged<bool> onChanged;
 
-  const _SegmentToggle({
-    required this.value,
-    required this.onChanged,
-  });
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: _C.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _C.border, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          _Seg(label: '전체', selected: !value, onTap: () => onChanged(false)),
+          _Seg(label: '오늘 가능', selected: value, onTap: () => onChanged(true)),
+        ],
+      ),
+    );
+  }
+}
+
+class _Seg extends StatelessWidget {
+  const _Seg({required this.label, required this.selected, required this.onTap});
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-  return Container(
-  padding: const EdgeInsets.all(4),
-  decoration: BoxDecoration(
-    color: Colors.white,
-    borderRadius: BorderRadius.circular(10),
-    border: Border.all(color: Colors.black12),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black12.withOpacity(0.06),
-        blurRadius: 5,
-        offset: const Offset(0, 3),
-      ),
-    ],
-  ),
-  child: Row(
-    children: [
-      _buildOption("전체", !value, () => onChanged(false)),
-      _buildOption("오늘 가능", value, () => onChanged(true)),
-    ],
-  ),
-);
-  }
-
-  Widget _buildOption(String label, bool selected, VoidCallback onTap) {
-  return Expanded(
-    child: GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(
-          vertical: 9,
-        ),
-        decoration: BoxDecoration(
-          color: selected ? Colors.indigo : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            letterSpacing: 0.3, // 여백 확보
-            color: selected ? Colors.white : Colors.black87,
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          decoration: BoxDecoration(
+            color: selected ? _C.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(9),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+              color: selected ? Colors.white : _C.textSecondary,
+              letterSpacing: -0.1,
+            ),
           ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
+
+// ──────────────────────────────────────────────
+// 로딩 오버레이
+// ──────────────────────────────────────────────
+class _LoadingOverlay extends StatelessWidget {
+  const _LoadingOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.white.withOpacity(0.7),
+      child: const Center(
+        child: CircularProgressIndicator(strokeWidth: 2.5, color: _C.primary),
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+// 공고 등록 버튼
+// ──────────────────────────────────────────────
+class _PostJobButton extends StatelessWidget {
+  const _PostJobButton({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 52,
+      child: ElevatedButton(
+        onPressed: onTap,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _C.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add_rounded, size: 20, color: Colors.white),
+            SizedBox(width: 6),
+            Text(
+              '공고 등록하기',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+                letterSpacing: -0.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

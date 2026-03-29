@@ -1,6 +1,6 @@
 // lib/models/job.dart
 import 'package:intl/intl.dart';
-
+import 'dart:convert'; // jsonDecode용
 // ---------- 파서들: 모두 UTC 반환 ----------
 DateTime? _parseToUtcAssumingKST(dynamic v) {
   if (v == null) return null;
@@ -151,6 +151,12 @@ class Job {
   final bool isSameDayPay;
   final bool isCertifiedCompany;
   final bool isPaid;
+  final bool isAgency;
+  final String? agencyPhone;
+  final String? agencyEmail;
+  final String? agencyNote;
+final double? matchScore;        // 매칭 점수 0~1
+final List<String> matchReasons; // ["가까움", "시간대겹침", "시급상위"]
 
   Job({
     required this.id,
@@ -182,6 +188,12 @@ class Job {
     required this.isSameDayPay,
     required this.isCertifiedCompany,
     this.isPaid = true,
+    this.isAgency = false,
+    this.agencyPhone,
+    this.agencyEmail,
+    this.agencyNote,
+    this.matchScore,
+this.matchReasons = const [],
   });
 
   String get workingHours => '$startTime ~ $endTime';
@@ -280,8 +292,79 @@ class Job {
       isPaid: json['is_paid'] == null
           ? true
           : (json['is_paid'] == 1 || json['is_paid'] == true),
-    );
+          isAgency: json['is_agency'] == 1 ||
+          json['is_agency'] == true ||
+          json['isAgency'] == 1 ||
+          json['isAgency'] == true,
+
+      agencyPhone: (json['agency_phone'] ?? json['agencyPhone'])?.toString(),
+      agencyEmail: (json['agency_email'] ?? json['agencyEmail'])?.toString(),
+      agencyNote: (json['agency_note'] ?? json['agencyNote'])?.toString(),
+    
+      matchScore: () {
+  final v = json['score'] ?? json['matchScore'];
+  if (v is num) return v.toDouble();
+  if (v is String) return double.tryParse(v);
+  return null;
+}(),
+matchReasons: () {
+  final v = json['reasons'] ?? json['matchReasons'];
+  if (v is List) return v.map((e) => e.toString()).toList();
+  if (v is String) {
+    try {
+      final parsed = jsonDecode(v);
+      if (parsed is List) return parsed.map((e) => e.toString()).toList();
+    } catch (_) {}
   }
+  return <String>[];
+}(),
+
+    );
+    
+  }
+// Job 클래스 안에 추가 (toJson 위에)
+Job copyWith({
+  double? matchScore,
+  List<String>? matchReasons,
+}) {
+  return Job(
+    id: id,
+    userNumber: userNumber,
+    title: title,
+    location: location,
+    locationCity: locationCity,
+    pay: pay,
+    payType: payType,
+    startTime: startTime,
+    endTime: endTime,
+    category: category,
+    description: description,
+    company: company,
+    createdAt: createdAt,
+    startDate: startDate,
+    endDate: endDate,
+    publishAt: publishAt,
+    pinnedUntil: pinnedUntil,
+    expiresAt: expiresAt,
+    weekdays: weekdays,
+    lat: lat,
+    lng: lng,
+    imageUrls: imageUrls,
+    status: status,
+    chatRoomId: chatRoomId,
+    clientId: clientId,
+    workerId: workerId,
+    isSameDayPay: isSameDayPay,
+    isCertifiedCompany: isCertifiedCompany,
+    isPaid: isPaid,
+    isAgency: isAgency,
+    agencyPhone: agencyPhone,
+    agencyEmail: agencyEmail,
+    agencyNote: agencyNote,
+    matchScore: matchScore ?? this.matchScore,       // ✅
+    matchReasons: matchReasons ?? this.matchReasons, // ✅
+  );
+}
 
   Map<String, dynamic> toJson() {
     return {
@@ -315,6 +398,12 @@ class Job {
       'is_same_day_pay': isSameDayPay,
       'is_certified_company': isCertifiedCompany ? 1 : 0,
       'is_paid': isPaid ? 1 : 0,
+          'is_agency': isAgency ? 1 : 0,
+      'agency_phone': agencyPhone,
+      'agency_email': agencyEmail,
+      'agency_note': agencyNote,
+'score': matchScore,
+'reasons': matchReasons,
     };
   }
 }

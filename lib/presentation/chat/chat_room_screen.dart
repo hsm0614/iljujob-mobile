@@ -25,8 +25,8 @@ import 'package:provider/provider.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async'; // TimeoutException
 import 'dart:math' as math; // ✅ Math -> math 로 사용
-
-
+import 'package:iljujob/utiles/keyboard_mode.dart'; // ✅ 추가
+import 'dart:ui';
 
 const kBrandBlue = Color(0xFF3B8AFF); // 이미 있으면 중복 정의 말고 기존 거 사용!
 
@@ -329,6 +329,7 @@ void _upsertMessage(Map incomingRaw) {
   @override
   void initState() {
     super.initState();
+    KeyboardMode.setAdjustResize(); // ✅ 채팅창 진입 시
     _connectToSocket();
     _fetchChatRoomDetail().then((_) {
       
@@ -344,6 +345,7 @@ void _upsertMessage(Map incomingRaw) {
   }
   @override
   void dispose() {
+    KeyboardMode.setAdjustPan(); // ✅ 채팅창 나갈 때 복구
     socket?.clearListeners();
 
     socket?.disconnect();
@@ -2212,24 +2214,28 @@ Widget _buildAlbailjuButton({
   required String text,
   required IconData icon,
   required Color color,
- VoidCallback? onPressed, // ✅ null 가능으로 변경
+  VoidCallback? onPressed,
 }) {
+  final bool disabled = onPressed == null;
   return ElevatedButton.icon(
     style: ElevatedButton.styleFrom(
-      backgroundColor: color,
+      backgroundColor: disabled ? const Color(0xFFE5E7EB) : color,
+      foregroundColor: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(30), // 둥글게
+        borderRadius: BorderRadius.circular(10), // ✅ 30 → 10, 더 모던하게
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      elevation: 4, // 그림자
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      elevation: 0, // ✅ 그림자 제거 → 플랫하게
+      shadowColor: Colors.transparent,
     ),
-    icon: Icon(icon, size: 20, color: Colors.white),
+    icon: Icon(icon, size: 15, color: disabled ? const Color(0xFF9CA3AF) : Colors.white),
     label: Text(
       text,
-      style: const TextStyle(
-        color: Colors.white,
-        fontWeight: FontWeight.bold,
-        fontSize: 14,
+      style: TextStyle(
+        color: disabled ? const Color(0xFF9CA3AF) : Colors.white,
+        fontWeight: FontWeight.w700,
+        fontSize: 13,
+        letterSpacing: -0.3,
       ),
     ),
     onPressed: onPressed,
@@ -2343,9 +2349,10 @@ Widget _buildJobSummary() {
   final periodText = _periodText(source);
   final timeText = _timeText(source);
 
-  return Container(
+ return Container(
     width: double.infinity,
-    padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+    // ✅ padding 줄이기
+    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
     decoration: const BoxDecoration(
       color: Colors.white,
       border: Border(bottom: BorderSide(color: Color(0xFFE5E7EB), width: 0.7)),
@@ -2353,11 +2360,18 @@ Widget _buildJobSummary() {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── top row: chip + detail button
+        // title + 상세보기 버튼
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _sectionChip('이 공고에 대한 대화'),
+            Expanded(
+              child: Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,  // ✅ 2줄 → 1줄
+              ),
+            ),
             if (canGoDetail)
               TextButton.icon(
                 onPressed: safeOpenDetail,
@@ -2366,75 +2380,39 @@ Widget _buildJobSummary() {
                   minimumSize: Size.zero,
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
-                icon: const Icon(Icons.open_in_new_rounded, size: 16, color: Color(0xFF3B8AFF)),
-                label: const Text(
-                  '공고 상세',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFF3B8AFF),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+                icon: const Icon(Icons.open_in_new_rounded, size: 14, color: Color(0xFF3B8AFF)),
+                label: const Text('상세', style: TextStyle(fontSize: 11, color: Color(0xFF3B8AFF))),
               ),
           ],
         ),
-        const SizedBox(height: 10),
 
-        // ── title
-        Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-          overflow: TextOverflow.ellipsis,
-          maxLines: 2,
-        ),
-        const SizedBox(height: 10),
-
-        // ── pills
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            _pill(
-              icon: Icons.monetization_on_rounded,
-              text: payText,
-              bg: const Color(0x143B8AFF),
-              fg: const Color(0xFF1E40AF),
-            ),
-            InkWell(
-              onTap: canGoDetail ? safeOpenDetail : null,
-              borderRadius: BorderRadius.circular(999),
-              child: _pill(
-                icon: Icons.calendar_today,
-                text: periodText,
-                bg: Colors.indigo.shade50,
-                fg: Colors.indigo.shade700,
-              ),
-            ),
-            InkWell(
-              onTap: canGoDetail ? safeOpenDetail : null,
-              borderRadius: BorderRadius.circular(999),
-              child: _pill(
-                icon: Icons.access_time_rounded,
-                text: timeText,
-                bg: Colors.indigo.shade50,
-                fg: Colors.indigo.shade700,
-              ),
-            ),
-          ],
+        // ✅ pills를 한 줄로 압축
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _pill(icon: Icons.monetization_on_rounded, text: payText,
+                bg: const Color(0x143B8AFF), fg: const Color(0xFF1E40AF)),
+              const SizedBox(width: 6),
+              _pill(icon: Icons.calendar_today, text: periodText,
+                bg: Colors.indigo.shade50, fg: Colors.indigo.shade700),
+              const SizedBox(width: 6),
+              _pill(icon: Icons.access_time_rounded, text: timeText,
+                bg: Colors.indigo.shade50, fg: Colors.indigo.shade700),
+            ],
+          ),
         ),
 
-        const SizedBox(height: 14),
+        const SizedBox(height: 6),
 
-        // ── actions
-        Align(
-          alignment: Alignment.centerRight,
-          child: userType == 'client'
-              ? _buildClientActions()
-              : _buildWorkerActions(), // ✅ 여기서 워커 조건 완전 분리
-        ),
+        // ✅ 액션 버튼 — 가로 스크롤로 한 줄에
+        userType == 'client'
+            ? _buildClientActions()
+            : _buildWorkerActions(),
       ],
     ),
   );
+
 }
 
 Map<String, dynamic> _jobSource() {
@@ -2511,17 +2489,52 @@ Widget _buildClientActions() {
     actions.add(w);
   }
 
-  // 1) 아직 확정 전이면: "채용 확정하기"만 (기존 정책 유지)
+  // ── 채용 확정 전
   if (!isConfirmed) {
-    return _buildAlbailjuButton(
-      text: '채용 확정하기',
-      icon: Icons.thumb_up_alt_rounded,
-      color: const Color(0xFF1675F4),
-      onPressed: _confirmHire,
+    addWithGap(
+      _buildAlbailjuButton(
+        text: '채용 확정하기',
+        icon: Icons.thumb_up_alt_rounded,
+        color: const Color(0xFF1675F4),
+        onPressed: _confirmHire,
+      ),
+    );
+
+    // ✅ 채용확정 안내 버블 대신 버튼 옆에 안내 텍스트 인라인 표시
+    addWithGap(
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: const Color(0xFFEFF6FF),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFDBEAFE)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.info_outline_rounded, size: 13, color: Color(0xFF2563EB)),
+            SizedBox(width: 5),
+            Text(
+              '확정 후 출근확인·노쇼환급 가능',
+              style: TextStyle(
+                fontSize: 11,
+                color: Color(0xFF1D4ED8),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(children: actions),
     );
   }
 
-  // 2) 확정 후: 기본은 "알바 완료 처리"
+  // ── 확정 후: 완료 처리 버튼
   if (!isCompleted) {
     addWithGap(
       _buildAlbailjuButton(
@@ -2532,7 +2545,6 @@ Widget _buildClientActions() {
       ),
     );
   } else {
-    // 완료 상태 뱃지 (기존 유지)
     addWithGap(
       Container(
         padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
@@ -2552,24 +2564,22 @@ Widget _buildClientActions() {
     );
   }
 
-  // 3) ✅ 노쇼 환급 신청 버튼/상태 뱃지 추가
-  // - _canRequestNoShowClaim / _hasClaim / _claimStatus / _claimLoading
-  //   (너가 4)에서 만든 것들 그대로 사용)
+  // ── ✅ 노쇼 환급 (반드시 유지)
   if (_canRequestNoShowClaim) {
     addWithGap(
       _buildAlbailjuButton(
         text: _claimLoading ? '신청 중...' : '노쇼 환급 신청',
         icon: Icons.report_gmailerrorred_rounded,
         color: const Color(0xFFDC2626),
-        onPressed: _claimLoading ? null : () { _requestNoShowClaim(); },
+        onPressed: _claimLoading ? null : _requestNoShowClaim,
       ),
     );
   } else if (_hasClaim) {
-    final text = (_claimStatus == 'approved')
-        ? '환급 완료'
-        : (_claimStatus == 'rejected')
-            ? '환급 거절'
-            : '환급 검토중';
+    final text = _claimStatus == 'approved'
+        ? '✔ 환급 완료'
+        : _claimStatus == 'rejected'
+            ? '✘ 환급 거절'
+            : '⏳ 환급 검토중';
 
     addWithGap(
       Container(
@@ -2590,11 +2600,10 @@ Widget _buildClientActions() {
     );
   }
 
-  // actions가 1개든 2개든 자연스럽게 줄바꿈되게 Wrap
-  return Wrap(
-    spacing: 8,
-    runSpacing: 8,
-    children: actions,
+  return SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    physics: const BouncingScrollPhysics(),
+    child: Row(children: actions),
   );
 }
 
@@ -3111,8 +3120,15 @@ Widget _buildCancelledBannerForClient() {
     );
 
     // 날짜 내부 메시지들
-    for (var i = 0; i < dayMessages.length; i++) {
-      final msg = dayMessages[i];
+for (var i = 0; i < dayMessages.length; i++) {
+  final msg = dayMessages[i];
+  final sender = msg['sender']?.toString() ?? '';
+
+  // ✅ 알주봇 메시지 — 별도 UI로 처리
+  if (sender == 'bot') {
+    children.add(_buildBotMessage(msg['message']?.toString() ?? ''));
+    continue;
+  }
       final isMe =
           msg['sender'] == (userType == 'worker' ? 'worker' : 'client');
       final isTarget = !isMe;
@@ -3279,7 +3295,12 @@ if (_shouldShowHireNudge()) {
     builder: (context, constraints) {
       return SingleChildScrollView(
         controller: _scrollController,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+       padding: const EdgeInsets.only(
+    left: 8,
+    right: 8,
+    top: 4,
+    bottom: 80, // ✅ 입력창 높이만큼 여백
+  ),
         child: ConstrainedBox(
           constraints: BoxConstraints(
             minHeight: constraints.maxHeight,
@@ -3300,6 +3321,55 @@ if (_shouldShowHireNudge()) {
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
   }
+
+  Widget _buildBotMessage(String message) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+    child: Center(
+      child: Container(
+        constraints: const BoxConstraints(maxWidth: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0F6FF),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFDBEAFE), width: 1),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 봇 헤더
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: const [
+                Text('🤖', style: TextStyle(fontSize: 14)),
+                SizedBox(width: 6),
+                Text(
+                  '일주봇',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF2563EB),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            // 메시지
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 13,
+                color: Color(0xFF374151),
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
 Widget _buildClientWaitingBanner() {
   final shouldShow = userType == 'client' && _status == 'pending';
   if (!shouldShow) return const SizedBox.shrink();
@@ -3409,6 +3479,7 @@ Widget build(BuildContext context) {
   String? targetName;
   String? targetThumbnailUrl;
   VoidCallback? onTap;
+ final String jobTitle = _jobTitle(_jobSource());
 
   if (userType == 'client') {
     targetName = widget.jobInfo['user_name']?.toString();
@@ -3452,146 +3523,169 @@ Widget build(BuildContext context) {
   child: GestureDetector(
     behavior: HitTestBehavior.translucent,
     onTap: () => FocusScope.of(context).unfocus(),
-    child: Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        foregroundColor: Colors.black87,
-        titleSpacing: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () {
-            Navigator.pop(context, 'updated');
-          },
-        ),
-        title: Row(
-          children: [
-            GestureDetector(
-              onTap: onTap ?? () {},
-              child: CircleAvatar(
-                radius: 18,
-                backgroundImage: (targetThumbnailUrl != null &&
-                        targetThumbnailUrl.isNotEmpty)
-                    ? NetworkImage(targetThumbnailUrl)
-                    : null,
-                child: (targetThumbnailUrl == null ||
-                        targetThumbnailUrl.isEmpty)
-                    ? const Icon(Icons.person)
-                    : null,
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _AlbailjuChatAppBarTitle(
-                name: targetName ?? '상대방',
-                userType: userType,
-                status: _status,
-              ),
-            ),
-          ],
+   child: Scaffold(
+  // ✅ adjustPan 환경에서도 입력창이 키보드 위로 올라오게
+  resizeToAvoidBottomInset: true,
+  backgroundColor: const Color(0xFFF3F4F6),
+  appBar: AppBar(
+  backgroundColor: Colors.white,
+  elevation: 0.5,
+  foregroundColor: Colors.black87,
+  titleSpacing: 0,
+  leading: IconButton(
+    icon: const Icon(Icons.arrow_back),
+    onPressed: () => Navigator.pop(context, 'updated'),
+  ),
+  title: Row(
+    mainAxisSize: MainAxisSize.min,  // ✅ 핵심
+    children: [
+      GestureDetector(
+        onTap: onTap ?? () {},
+        child: CircleAvatar(
+          radius: 18,
+          backgroundImage: (targetThumbnailUrl != null &&
+                  targetThumbnailUrl.isNotEmpty)
+              ? NetworkImage(targetThumbnailUrl)
+              : null,
+          child: (targetThumbnailUrl == null || targetThumbnailUrl.isEmpty)
+              ? const Icon(Icons.person)
+              : null,
         ),
       ),
-      body: Column(
-        children: [
-          _buildJobSummary(),
-          _buildConsentBanner(),
-          _buildClientWaitingBanner(),
-          _buildCancelledBannerForClient(),
-           Expanded(
-  child: isLoading
-      ? const Center(child: CircularProgressIndicator())
-      : messages.isEmpty
-          ? _buildEmptyChatNotice() // ✅ 메시지 없을 때 예쁜 노티스
-          : NotificationListener<ScrollStartNotification>(
-              onNotification: (_) {
-                FocusScope.of(context).unfocus();
-                return false;
-              },
-              child: _buildMessageList(
-                onTap,
-                targetThumbnailUrl,
-                targetName,
-              ),
-            ),
+      const SizedBox(width: 10),
+      Flexible(  // ✅ Expanded → Flexible
+        child: _AlbailjuChatAppBarTitle(
+          name: targetName ?? '상대방',
+          userType: userType,
+          status: _status,
+          jobTitle: jobTitle, // ✅ 추가
+        ),
+      ),
+    ],
+  ),
 ),
-            SafeArea(
-              child: Container(
-                color: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF3F4F6),
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        child: TextField(
-                          controller: _messageController,
-                           focusNode: _inputFocusNode,          // ✅ 추가
-                          enabled: _inputEnabled,
-                          onTapOutside: (_) =>
-                              FocusScope.of(context).unfocus(),
-                        decoration: InputDecoration(
-  border: InputBorder.none,
-  hintText: _inputEnabled
-      ? '메시지를 입력하세요...'
-      : (_status == 'pending'
-          ? '상대방의 수락을 기다리는 중입니다'
-          : (_status == 'cancelled' || _status == 'canceled'
-              ? (userType == 'client'
-                  ? '알바생이 지원을 취소한 채팅입니다'
-                  : '지원 취소 후에는 채팅을 보낼 수 없습니다')
-              : '지금은 채팅을 보낼 수 없습니다')),
-                            hintStyle: const TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF9CA3AF),
-                            ),
+   body: Column(
+  children: [
+    _buildJobSummary(),
+    _buildConsentBanner(),
+    _buildClientWaitingBanner(),
+    _buildCancelledBannerForClient(),
+    Expanded(
+      child: Stack(
+        children: [
+          // ── 채팅 리스트 (전체 영역)
+          Positioned.fill(
+            child: isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : messages.isEmpty
+                    ? _buildEmptyChatNotice()
+                    : NotificationListener<ScrollStartNotification>(
+                        onNotification: (_) {
+                          FocusScope.of(context).unfocus();
+                          return false;
+                        },
+                        child: _buildMessageList(onTap, targetThumbnailUrl, targetName),
+                      ),
+          ),
+
+          // ── 입력창 (하단 오버레이)
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.88),
+                    border: const Border(
+                      top: BorderSide(color: Color(0xFFE5E7EB), width: 0.5),
+                    ),
+                  ),
+                  padding: EdgeInsets.only(
+                    left: 8,
+                    right: 8,
+                    top: 6,
+                    bottom: MediaQuery.of(context).padding.bottom + 6,
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF3F4F6),
+                            borderRadius: BorderRadius.circular(24),
                           ),
-                          onSubmitted: (_) => _sendMessage(),
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: TextField(
+                            controller: _messageController,
+                            focusNode: _inputFocusNode,
+                            enabled: _inputEnabled,
+                            onTapOutside: (_) => FocusScope.of(context).unfocus(),
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              hintText: _inputEnabled
+                                  ? '메시지를 입력하세요...'
+                                  : (_status == 'pending'
+                                      ? '상대방의 수락을 기다리는 중입니다'
+                                      : (_status == 'cancelled' || _status == 'canceled'
+                                          ? (userType == 'client'
+                                              ? '알바생이 지원을 취소한 채팅입니다'
+                                              : '지원 취소 후에는 채팅을 보낼 수 없습니다')
+                                          : '지금은 채팅을 보낼 수 없습니다')),
+                              hintStyle: const TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF9CA3AF),
+                              ),
+                            ),
+                            onSubmitted: (_) => _sendMessage(),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      icon: const Icon(Icons.image),
-                      color: _inputEnabled
-                          ? const Color(0xFF4B5563)
-                          : const Color(0xFFD1D5DB),
-                      onPressed:
-                          _inputEnabled ? _pickAndSendImage : null,
-                    ),
-                    const SizedBox(width: 2),
-                    GestureDetector(
-                      onTap: _inputEnabled ? _sendMessage : null,
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: _inputEnabled
-                              ? const Color(0xFF3B82F6)
-                              : const Color(0xFFD1D5DB),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.send_rounded,
-                          size: 18,
-                          color: Colors.white,
+                      const SizedBox(width: 4),
+                      IconButton(
+                        icon: const Icon(Icons.image),
+                        color: _inputEnabled
+                            ? const Color(0xFF4B5563)
+                            : const Color(0xFFD1D5DB),
+                        onPressed: _inputEnabled ? _pickAndSendImage : null,
+                      ),
+                      const SizedBox(width: 2),
+                      GestureDetector(
+                        onTap: _inputEnabled ? _sendMessage : null,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: _inputEnabled
+                                ? const Color(0xFF3B82F6)
+                                : const Color(0xFFD1D5DB),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.send_rounded,
+                            size: 18,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
+    ),
+  ],
+),
+),
     ),
   );
 }
+// ✅ 입력창 위에 노출되는 슬림 액션 칩바
+
   Widget _buildEmptyChatNotice() {
   final bool isClient = (userType == 'client');
 
@@ -3789,13 +3883,15 @@ class _ChatImageBubble extends StatelessWidget {
 
 class _AlbailjuChatAppBarTitle extends StatelessWidget {
   final String name;
-  final String userType; // 'worker' | 'client'
-  final String status;   // 'pending' | 'active' | 'blocked' | 'cancelled' ...
+  final String userType;
+  final String status;
+  final String jobTitle; // ✅ NEW
 
   const _AlbailjuChatAppBarTitle({
     required this.name,
     required this.userType,
     required this.status,
+    required this.jobTitle, // ✅ NEW
   });
 
   @override
@@ -3803,115 +3899,87 @@ class _AlbailjuChatAppBarTitle extends StatelessWidget {
     final bool isPending   = status == 'pending';
     final bool isBlocked   = status == 'blocked';
     final bool isActive    = status == 'active';
-    final bool isCancelled =
-        status == 'cancelled' || status == 'canceled';
+    final bool isCancelled = status == 'cancelled' || status == 'canceled';
 
-    String subtitle;
     String chipText;
     Color chipBg;
     Color chipFg;
 
     if (isPending) {
-      chipText = '대기 중';
-      chipBg = const Color(0xFFFFF7E6);
-      chipFg = const Color(0xFFEA580C);
-      subtitle = userType == 'worker'
-          ? '사장님의 대화 요청을 수락하면 채팅이 시작돼요'
-          : '구직자의 수락을 기다리는 중입니다';
+      chipText = '대기중'; chipBg = const Color(0xFFFFF3E0); chipFg = const Color(0xFFE65100);
     } else if (isCancelled) {
-      chipText = '지원 취소됨';
-      chipBg = const Color(0xFFFEE2E2);
-      chipFg = const Color(0xFFB91C1C);
-      subtitle = userType == 'client'
-          ? '알바생이 이 공고에 대한 지원을 취소했어요'
-          : '내가 이 공고에 대한 지원을 취소한 채팅입니다';
+      chipText = '취소됨'; chipBg = const Color(0xFFFFEBEE); chipFg = const Color(0xFFC62828);
     } else if (isBlocked) {
-      chipText = '차단됨';
-      chipBg = const Color(0xFFFEE2E2);
-      chipFg = const Color(0xFFB91C1C);
-      subtitle = '이 채팅은 더 이상 진행되지 않습니다';
+      chipText = '차단됨'; chipBg = const Color(0xFFFFEBEE); chipFg = const Color(0xFFC62828);
     } else if (isActive) {
-      chipText = '대화 중';
-      chipBg = const Color(0xFFE0ECFF);
-      chipFg = const Color(0xFF2563EB);
-      subtitle = userType == 'worker'
-          ? '사장님과 채팅 중이에요'
-          : '알바생과 채팅 중이에요';
+      chipText = '채팅중'; chipBg = const Color(0xFFE8F5E9); chipFg = const Color(0xFF2E7D32);
     } else {
-      chipText = '알바일주';
-      chipBg = const Color(0xFFE5E7EB);
-      chipFg = const Color(0xFF4B5563);
-      subtitle = userType == 'worker'
-          ? '사장님과 채팅'
-          : '알바생과 채팅';
+      chipText = '알바일주'; chipBg = const Color(0xFFF5F5F5); chipFg = const Color(0xFF757575);
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
+        // 상태 칩
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+          decoration: BoxDecoration(
+            color: chipBg,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 5, height: 5,
+                decoration: BoxDecoration(color: chipFg, shape: BoxShape.circle),
+              ),
+              const SizedBox(width: 4),
+              Text(chipText, style: TextStyle(
+                fontSize: 10, color: chipFg, fontWeight: FontWeight.w700,
+                letterSpacing: -0.2,
+              )),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        // 이름 + 공고 제목
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
                 name,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontFamily: 'Jalnan2TTF',
-                  fontSize: 16,
-                  color: Color.fromARGB(255, 0, 0, 0),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF0D0D0D),
+                  height: 1.1,
                 ),
               ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 8,
-                vertical: 3,
-              ),
-              decoration: BoxDecoration(
-                color: chipBg,
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 5,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: chipFg,
-                      shape: BoxShape.circle,
-                    ),
+              if (jobTitle.isNotEmpty) ...[
+                const SizedBox(height: 1),
+                Text(
+                  jobTitle,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF9E9E9E),
+                    fontWeight: FontWeight.w400,
+                    height: 1.2,
                   ),
-                  const SizedBox(width: 4),
-                  Text(
-                    chipText,
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: chipFg,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 2),
-        Text(
-          subtitle,
-          overflow: TextOverflow.ellipsis,
-          style: const TextStyle(
-            fontSize: 11,
-            color: Color(0xFF9CA3AF),
+                ),
+              ],
+            ],
           ),
         ),
       ],
     );
   }
 }
-
 class CancelApplicationDialog extends StatelessWidget {
   const CancelApplicationDialog({super.key});
 

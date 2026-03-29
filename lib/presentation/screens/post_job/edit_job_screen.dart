@@ -100,7 +100,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
   // ===== Brand =====
   static const Color brandBlue = Color(0xFF3B8AFF);
   static const Color cardBg = Color(0xFFF7F9FF);
-  static const int minWagePerHour = 10030; // 2025 기준
+  static const int minWagePerHour = 10320; // 2025 기준
 
   final _formKey = GlobalKey<FormState>();
   final _scroll = ScrollController();

@@ -597,169 +597,177 @@ Navigator.pushNamedAndRemoveUntil(
     );
   }
 
-  Widget _buildPhonePage() {
-    final bypassPhones = ['01046533004', '01046533005', '01048838013'];
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 360),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              const Text(
-                '알바일주 기업 가입을 시작합니다',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+ Widget _buildPhonePage() {
+  final bypassPhones = ['01046533004', '01046533005', '01048838013'];
+  return SingleChildScrollView(
+    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+    child: ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: MediaQuery.of(context).size.height -
+            MediaQuery.of(context).padding.top -
+            kToolbarHeight,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start, // ✅ start로 변경
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            const Text(
+              '알바일주 기업 가입을 시작합니다',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '전화번호 인증만으로 바로 시작할 수 있어요.\n(기존 회원이면 자동 로그인)',
+              style: TextStyle(
+                fontSize: 13.5,
+                color: Color(0xFF6B7280),
+                height: 1.5,
               ),
-              const SizedBox(height: 8),
-              const Text(
-                '전화번호 인증만으로 바로 시작할 수 있어요.\n(기존 회원이면 자동 로그인)',
-                style: TextStyle(
-                  fontSize: 13.5,
-                  color: Color(0xFF6B7280),
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 18),
-              _card(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '📱 휴대폰 번호',
-                      style: TextStyle(fontWeight: FontWeight.w700),
+            ),
+            const SizedBox(height: 18),
+            _card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '📱 휴대폰 번호',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    decoration: _inputDecoration(
+                      hint: "'-' 없이 숫자만 입력",
+                      icon: Icons.phone_outlined,
                     ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.phone,
-                      decoration: _inputDecoration(
-                        hint: "'-' 없이 숫자만 입력",
-                        icon: Icons.phone_outlined,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  style: _primaryBtnStyle(enabled: !_isLoading),
-                  onPressed: _isLoading
-                      ? null
-                      : () {
-                          final phone = _phoneController.text.trim();
-
-                          if (phone.isEmpty) {
-                            _showSnackbar('휴대폰 번호를 입력해주세요');
-                            return;
-                          }
-
-                          // 테스트 번호 예외 처리
-                          if (bypassPhones.contains(phone)) {
-                            _loginAsClientDirectly(phone);
-                            return;
-                          }
-
-                          _startWebViewCertification();
-                        },
-                  icon: const Icon(Icons.shield_outlined),
-                  label: _isLoading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          'PASS 본인인증 하기',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: _primaryBtnStyle(enabled: !_isLoading),
+                onPressed: _isLoading
+                    ? null
+                    : () {
+                        final phone = _phoneController.text.trim();
+                        if (phone.isEmpty) {
+                          _showSnackbar('휴대폰 번호를 입력해주세요');
+                          return;
+                        }
+                        if (bypassPhones.contains(phone)) {
+                          _loginAsClientDirectly(phone);
+                          return;
+                        }
+                        _startWebViewCertification();
+                      },
+                icon: const Icon(Icons.shield_outlined),
+                label: _isLoading
+                    ? const SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
                         ),
-                ),
+                      )
+                    : const Text(
+                        'PASS 본인인증 하기',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
-  Widget _buildInfoPage() {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 360),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 8),
-              const Text(
-                '담당자 정보를 입력해주세요',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                '담당자 성함은 고객센터 및 채팅 안내에 사용돼요.',
-                style: TextStyle(fontSize: 13.5, color: Color(0xFF6B7280)),
-              ),
-              const SizedBox(height: 18),
-              _card(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '🙋 담당자 이름',
-                      style: TextStyle(fontWeight: FontWeight.w700),
+Widget _buildInfoPage() {
+  return SingleChildScrollView(
+    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+    child: ConstrainedBox(
+      constraints: BoxConstraints(
+        minHeight: MediaQuery.of(context).size.height -
+            MediaQuery.of(context).padding.top -
+            kToolbarHeight,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 40, 20, 20), // ✅ 상단 40으로 올림
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.start, // ✅ start로 변경
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 8),
+            const Text(
+              '담당자 정보를 입력해주세요',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '담당자 성함은 고객센터 및 채팅 안내에 사용돼요.',
+              style: TextStyle(fontSize: 13.5, color: Color(0xFF6B7280)),
+            ),
+            const SizedBox(height: 18),
+            _card(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '🙋 담당자 이름',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: _managerController,
+                    decoration: _inputDecoration(
+                      hint: '홍길동',
+                      icon: Icons.person_outline,
                     ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _managerController,
-                      decoration: _inputDecoration(
-                        hint: '홍길동',
-                        icon: Icons.person_outline,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  style: _primaryBtnStyle(enabled: !_isLoading),
-                  onPressed: _isLoading ? null : _showAgreementModal,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text(
-                          '가입 완료',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                style: _primaryBtnStyle(enabled: !_isLoading),
+                onPressed: _isLoading ? null : _showAgreementModal,
+                child: _isLoading
+                    ? const SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
                         ),
-                ),
+                      )
+                    : const Text(
+                        '가입 완료',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 }

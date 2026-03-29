@@ -8,11 +8,19 @@ class PortonePaymentScreen extends StatefulWidget {
   final String companyName;
   final String companyPhone;
 
+  // ✅ 추가: 할인 적용된 최종 결제 금액 (있으면 이 값으로 결제)
+  final int? amount;
+
+  // ✅ 추가: 적용된 쿠폰 코드(서버 검증/로그용)
+  final String? couponCode;
+
   const PortonePaymentScreen({
     super.key,
     required this.count,
     required this.companyName,
     required this.companyPhone,
+    this.amount,
+    this.couponCode,
   });
 
   @override
@@ -21,45 +29,53 @@ class PortonePaymentScreen extends StatefulWidget {
 
 class _PortonePaymentScreenState extends State<PortonePaymentScreen> {
   static const platform = MethodChannel('deeplink/albailju');
+
   late final String merchantUid;
   late final int price;
+
   bool _hasHandled = false;
 
   @override
-void initState() {
-  super.initState();
+  void initState() {
+    super.initState();
 
-  merchantUid = 'order_${DateTime.now().millisecondsSinceEpoch}';
-  price = getPriceForCount(widget.count);
+    merchantUid = 'order_${DateTime.now().millisecondsSinceEpoch}';
 
-  platform.setMethodCallHandler((call) async {
-    if (call.method == 'onDeepLink' && !_hasHandled) {
-      final uri = Uri.tryParse(call.arguments);
-      if (uri == null) return;
+    // ✅ 핵심: amount가 있으면 그걸로 결제 (쿠폰 할인 반영)
+    price = widget.amount ?? getPriceForCount(widget.count);
 
-      final impUid = uri.queryParameters['imp_uid'];
-      final merchantUid = uri.queryParameters['merchant_uid'];
+    platform.setMethodCallHandler((call) async {
+      if (call.method == 'onDeepLink' && !_hasHandled) {
+        final uri = Uri.tryParse(call.arguments);
+        if (uri == null) return;
 
-      if (impUid != null && merchantUid != null) {
-        _hasHandled = true;
-        debugPrint('📥 [딥링크] Android 복귀 감지 → imp_uid: $impUid');
-        Navigator.pop(context, {
-          'success': true,
-          'imp_uid': impUid,
-          'merchant_uid': merchantUid,
-        });
-      } else {
-        _hasHandled = true;
-        debugPrint('❌ [딥링크] imp_uid 없음');
-        Navigator.pop(context, {
-          'success': false,
-          'error_msg': '딥링크로부터 결제 정보 수신 실패',
-        });
+        final impUid = uri.queryParameters['imp_uid'];
+        final merchantUidFromLink = uri.queryParameters['merchant_uid'];
+
+        _hasHandled = true; // ✅ 중복 방지
+
+        if (impUid != null && merchantUidFromLink != null) {
+          debugPrint('📥 [딥링크] Android 복귀 감지 → imp_uid: $impUid');
+          Navigator.pop(context, {
+            'success': true,
+            'imp_uid': impUid,
+            'merchant_uid': merchantUidFromLink,
+            // ✅ 추가: 서버 검증용 참고값
+            'amount': price,
+            'couponCode': widget.couponCode,
+          });
+        } else {
+          debugPrint('❌ [딥링크] 결제 정보 누락');
+          Navigator.pop(context, {
+            'success': false,
+            'error_msg': '딥링크로부터 결제 정보 수신 실패',
+            'amount': price,
+            'couponCode': widget.couponCode,
+          });
+        }
       }
-    }
-  });
-}
-
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,57 +88,67 @@ void initState() {
             payMethod: 'card',
             name: '알바일주 이용권 ${widget.count}회',
             merchantUid: merchantUid,
+
+            // ✅ 핵심: 결제 금액(할인 적용 가능)
             amount: price,
+
             buyerName: widget.companyName,
             buyerTel: widget.companyPhone,
             appScheme: 'albailju',
           ),
-    callback: (Map<String, String> result) {
-  print('📦 [callback] 결제 결과 수신됨: $result');
+          callback: (Map<String, String> result) {
+            debugPrint('📦 [callback] 결제 결과 수신됨: $result');
 
-  if (_hasHandled) {
-    print('🚫 [callback] 이미 처리된 상태 → 무시');
-    return;
-  }
+            if (_hasHandled) {
+              debugPrint('🚫 [callback] 이미 처리된 상태 → 무시');
+              return;
+            }
 
-  final impUid = result['imp_uid'];
-  final merchantUid = result['merchant_uid'];
-  final success = result['imp_success'] == 'true' || result['imp_success'] == true;
+            final impUid = result['imp_uid'];
+            final merchantUidFromCb = result['merchant_uid'];
 
-  _hasHandled = true; // ✅ 중복 방지
+            final impSuccessStr = result['imp_success'];
+            final success = impSuccessStr == 'true';
 
-  if (success && impUid != null && merchantUid != null) {
-    print('✅ [callback] 결제 성공 → imp_uid: $impUid');
-    Navigator.pop(context, {
-      'success': true,
-      'imp_uid': impUid,
-      'merchant_uid': merchantUid,
-    });
-  } else {
-    print('❌ [callback] 결제 실패 → success: $success / imp_uid: $impUid / merchant_uid: $merchantUid');
-    Navigator.pop(context, {
-      'success': false,
-      'error_msg': result['error_msg'] ?? '결제 실패',
-    });
-  }
-}
+            _hasHandled = true; // ✅ 중복 방지
+
+            if (success && impUid != null && merchantUidFromCb != null) {
+              debugPrint('✅ [callback] 결제 성공 → imp_uid: $impUid');
+              Navigator.pop(context, {
+                'success': true,
+                'imp_uid': impUid,
+                'merchant_uid': merchantUidFromCb,
+                // ✅ 추가: 서버 검증용 참고값
+                'amount': price,
+                'couponCode': widget.couponCode,
+              });
+            } else {
+              debugPrint('❌ [callback] 결제 실패 → imp_uid: $impUid / merchant_uid: $merchantUidFromCb');
+              Navigator.pop(context, {
+                'success': false,
+                'error_msg': result['error_msg'] ?? '결제 실패',
+                'amount': price,
+                'couponCode': widget.couponCode,
+              });
+            }
+          },
         ),
       ),
     );
   }
 
   int getPriceForCount(int count) {
-  switch (count) {
-    case 1:
-      return 8800;
-    case 10:
-      return 77000; // 약 12.5% 할인
-    case 20:
-      return 148000; // 약 15% 할인
-    case 30:
-      return 184000; // 약 30% 할인
-    default:
-      return 0;
+    switch (count) {
+      case 1:
+        return 8800;
+      case 10:
+        return 77000;
+      case 20:
+        return 148000;
+      case 30:
+        return 184000;
+      default:
+        return 0;
+    }
   }
-}
 }
