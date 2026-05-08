@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/promo_model.dart'; // ← 파일명/경로 확인 (PromoConfig 정의 파일)
-import 'package:flutter/foundation.dart';
 
 class PromoService {
   final String baseUrl;

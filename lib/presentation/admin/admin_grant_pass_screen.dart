@@ -104,7 +104,7 @@ Future<void> _fetchClients() async {
     children: [
       DropdownButtonFormField<int>(
         isExpanded: true,
-        value: selectedClientId,
+        initialValue: selectedClientId,
         hint: const Text('기업 선택'),
         items: clients.map<DropdownMenuItem<int>>((client) {
           return DropdownMenuItem<int>(

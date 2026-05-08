@@ -33,7 +33,7 @@ class ReviewScreenRouter extends StatelessWidget {
       return const Scaffold(body: Center(child: Text('잘못된 접근입니다.')));
     }
 
-    final map = Map<String, dynamic>.from(args as Map);
+    final map = Map<String, dynamic>.from(args);
 
     int parseInt(dynamic v) => v is int ? v : int.tryParse(v?.toString() ?? '') ?? 0;
 

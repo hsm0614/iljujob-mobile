@@ -269,8 +269,8 @@ class _AiJobWizardState extends State<AiJobWizard>
 
       if (!mounted) return;
 
-      final generatedTitle = results[0] as String;
-      final generatedDesc  = results[1] as String;
+      final generatedTitle = results[0];
+      final generatedDesc  = results[1];
 
       final result = AiWizardResult(
         title:        generatedTitle,
@@ -340,34 +340,17 @@ class _AiJobWizardState extends State<AiJobWizard>
     required int hours,
     required int wage,
   }) async {
-    // Gemini로 제목 생성
+    // 기본 제목 패턴으로 생성 (서버 AI는 공고문 전체 생성용이므로 제목은 규칙 기반으로)
     try {
-      final prompt = '''
-한국 알바 공고 제목을 딱 1줄만 만들어라.
-
-조건:
-- 10~20자 이내
-- 지역: $shortCity (시/구 단위만, 상세주소 절대 포함 금지)
-- 업종: $category
-- 자연스럽고 간결하게
-- 예시 형식: "$shortCity ${category} 단기 알바", "$shortCity 일일 ${category} 구인"
-- 제목만 출력, 설명/따옴표 금지
-
-제목:''';
-
-      final desc = await AIJobDescriptionService.generateJobDescription(
-        title:      '$shortCity $category',
-        category:   category,
-        location:   shortCity,
-        payType:    '일급',
-        pay:        wage * hours,
-        isShortTerm: true,
-        tone:       'casual',
-      );
-
-      // desc 첫 줄에서 제목처럼 보이는 부분 추출 시도
-      // 실패하면 기본 제목 사용
-      return '$shortCity $category 단기 알바';
+      final patterns = [
+        '$shortCity $category 단기 알바',
+        '$shortCity $category 구인',
+        '$category 단기 알바 ($shortCity)',
+      ];
+      // 업종 길이에 따라 적절한 패턴 선택
+      if (category.length <= 4) return patterns[0];
+      if (category.length <= 6) return patterns[1];
+      return patterns[2];
     } catch (_) {
       return '$shortCity $category 단기 알바';
     }

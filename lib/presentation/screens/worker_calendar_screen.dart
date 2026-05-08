@@ -468,13 +468,13 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
 
     final isEdit   = item != null;
     final initDate = forceDate ??
-        (isEdit ? _asDate(item!['work_date']) : (_selectedDay ?? _dateOnly(DateTime.now())));
+        (isEdit ? _asDate(item['work_date']) : (_selectedDay ?? _dateOnly(DateTime.now())));
 
     String normalizedStatus = (item?['status'] ?? _kScheduled).toString();
     if (_kCancelled.contains(normalizedStatus)) normalizedStatus = _kScheduled;
 
     final init = SessionEditInitial(
-      id:       isEdit ? _idOf(item!) : null,
+      id:       isEdit ? _idOf(item) : null,
       workDate: initDate,
       title:    (item?['title']   ?? '').toString(),
       company:  (item?['company'] ?? item?['company_name'] ?? '').toString(),
@@ -496,8 +496,8 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         onSave: (payload) async {
           if (!isEdit) return await _createManualSession(payload);
 
-          final source    = _sourceOf(item!);
-          final id        = _idOf(item!);
+          final source    = _sourceOf(item);
+          final id        = _idOf(item);
           if (id == null) { _snack('id가 없어서 저장이 안돼요 🥲'); return false; }
 
           if ((payload['status'] ?? '').toString() == _kCompleted) {
@@ -510,8 +510,8 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         },
         onDelete: isEdit
             ? () async {
-                final source = _sourceOf(item!);
-                final id     = _idOf(item!);
+                final source = _sourceOf(item);
+                final id     = _idOf(item);
                 if (id == null) return false;
 
                 final sure = await _confirm(

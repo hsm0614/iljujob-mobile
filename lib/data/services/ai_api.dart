@@ -131,7 +131,7 @@ Future<List<dynamic>> fetchCandidatesForJob(int jobId, {int limit = 50}) async {
   // 🔥 여기서 서버 응답을 정규화해서 name / photoUrl / workerId를 강제로 붙여줌
   return list.map((e) {
     if (e is! Map) return e;
-    final m = Map<String, dynamic>.from(e as Map);
+    final m = Map<String, dynamic>.from(e);
 
     // workerId 추출 (worker_id / workerId / id 아무거나)
     final rawId = m['worker_id'] ?? m['workerId'] ?? m['id'];
@@ -351,11 +351,11 @@ extension SubscriptionApi on AiApi {
       if (r.statusCode == 200) {
         final m = jsonDecode(utf8.decode(r.bodyBytes));
         if (m is Map) {
-          final active = m['active'] == true;
-          final plan = m['plan']?.toString();
-          final expiresAt = _parseDateLoose(m['expiresAt']);
-          return SubscriptionStatus(active: active, plan: plan, expiresAt: expiresAt);
-        }
+final active = m['active'] == true;
+final plan = m['plan']?.toString();
+final expiresAt = _parseDateLoose(m['expiresAt']);
+final isTrial = m['isTrial'] == true;
+return SubscriptionStatus(active: active, plan: plan, expiresAt: expiresAt, isTrial: isTrial);       }
       }
     } catch (_) {
       // 무시하고 폴백
@@ -398,7 +398,13 @@ class SubscriptionStatus {
   final bool active;
   final String? plan;
   final DateTime? expiresAt;
-  const SubscriptionStatus({required this.active, this.plan, this.expiresAt});
+  final bool? isTrial;
+  const SubscriptionStatus({
+    required this.active,
+    this.plan,
+    this.expiresAt,
+    this.isTrial,
+  });
 }
 
 

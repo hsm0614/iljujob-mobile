@@ -267,7 +267,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
               const Text('문의 유형 *', style: TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
-                value: _selectedType,
+                initialValue: _selectedType,
                 items: ['선택해주세요', ..._inquiryTypes]
                     .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                     .toList(),

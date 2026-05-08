@@ -220,27 +220,28 @@ class JobInsightService {
   }
 
   // ── 1. 급여 추천 ──────────────────────────────────────
-  static Future<PayInsight?> getPayInsight({
-    required String category,
-    required String locationCity,
-    required int    hours,
-  }) async {
-    try {
-      final uri = Uri.parse('$baseUrl/api/job/pay-insight').replace(
-        queryParameters: {
-          'category':     category,
-          'locationCity': locationCity,
-          'hours':        '$hours',
-        },
-      );
-      final res = await http.get(uri, headers: await _headers())
-          .timeout(const Duration(seconds: 8));
-      if (res.statusCode != 200) return null;
-      final d = jsonDecode(res.body) as Map<String, dynamic>;
-      return PayInsight.fromJson(d);
-    } catch (_) { return null; }
-  }
-
+ static Future<PayInsight?> getPayInsight({
+  required String category,
+  required String locationCity,
+  required int    hours,
+  String payType = '일급', // ✅ 추가
+}) async {
+  try {
+    final uri = Uri.parse('$baseUrl/api/job/pay-insight').replace(
+      queryParameters: {
+        'category':     category,
+        'locationCity': locationCity,
+        'hours':        '$hours',
+        'payType':      payType, // ✅ 추가
+      },
+    );
+    final res = await http.get(uri, headers: await _headers())
+        .timeout(const Duration(seconds: 8));
+    if (res.statusCode != 200) return null;
+    final d = jsonDecode(res.body) as Map<String, dynamic>;
+    return PayInsight.fromJson(d);
+  } catch (_) { return null; }
+}
   // ── 2. 품질 점수 + 지원자 예측 ────────────────────────
   static Future<QualityScore?> getQualityScore({
     required String title,

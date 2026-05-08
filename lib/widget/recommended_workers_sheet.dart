@@ -75,7 +75,7 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
     setState(() { _loading = true; _error = null; });
     try {
       final raw = await widget.api.fetchCandidatesForJob(widget.jobId, limit: 50);
-      final items = (raw as List)
+      final items = (raw)
           .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map))
           .toList();
 
@@ -535,7 +535,7 @@ class _EmptyView extends StatelessWidget {
 class _ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
-  const _ErrorView({super.key, required this.message, required this.onRetry});
+  const _ErrorView({required this.message, required this.onRetry});
   @override
   Widget build(BuildContext context) {
     return Center(

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
+import 'signup_client_screen/signup_client_choice_screen.dart';
 const kBrand = Color(0xFF3B8AFF);
 
 class OnboardingScreen extends StatelessWidget {
@@ -8,260 +8,310 @@ class OnboardingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textScaler = MediaQuery.of(context).textScaler.clamp(minScaleFactor: 1.0, maxScaleFactor: 1.2);
+    final size = MediaQuery.of(context).size;
+    final textScaler = MediaQuery.of(context).textScaler
+        .clamp(minScaleFactor: 1.0, maxScaleFactor: 1.2);
 
     return Scaffold(
       backgroundColor: const Color(0xFFEFF3F8),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final isSmall = constraints.maxHeight < 700;
+        child: MediaQuery(
+          data: MediaQuery.of(context).copyWith(textScaler: textScaler),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // ── 상단 여백 (화면 높이에 비례)
+                SizedBox(height: size.height * 0.10),
 
-            return Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
-                child: MediaQuery(
-                  data: MediaQuery.of(context).copyWith(textScaler: textScaler),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // 브랜드 타이틀
-                      ShaderMask(
-                        shaderCallback: (rect) => const LinearGradient(
-                          colors: [kBrand, Color(0xFF6FB2FF)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ).createShader(rect),
-                        child: const Text(
-                          '알바일주',
-                          style: TextStyle(
-                            fontSize: 40,
-                            fontWeight: FontWeight.w800,
-                            color: Colors.white, // ShaderMask로 대체
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        '빠르고 믿을 수 있는 주급·일급 매칭 플랫폼',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF6B7280),
-                          height: 1.6,
-                        ),
-                      ),
-                      SizedBox(height: isSmall ? 28 : 40),
+                // ── 브랜드 블록
+                _BrandBlock(),
 
-                      const Text(
-                        '당신은 어떤 사용자이신가요?',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
+                SizedBox(height: size.height * 0.07),
 
-                      // 사용자 유형 선택 (반응형)
-                      constraints.maxWidth > 340
-                          ? Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Expanded(
-                                  child: _UserTypeCard(
-                                    label: '알바생',
-                                    subtitle: '오늘 가능한 알바 찾기',
-                                    icon: Icons.person_outline,
-                                    onTap: () {
-                                      // 번호 입력 → 본인인증 → (기존) 자동 로그인 / (신규) 회원정보 입력
-                                      HapticFeedback.lightImpact();
-                                      Navigator.pushNamed(context, '/signup-choice'); // 기존 구조 유지
-                                    },
-                                    variant: CardVariant.filled, // 브랜드 그라디언트
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: _UserTypeCard(
-                                    label: '사장님',
-                                    subtitle: '알바생 찾기',
-                                    icon: Icons.business_outlined,
-                                    onTap: () {
-                                      HapticFeedback.lightImpact();
-                                      Navigator.pushNamed(context, '/signup_client'); // 기존 구조 유지
-                                    },
-                                    variant: CardVariant.outlined, // 동등 비중 + 대비만 다르게
-                                  ),
-                                ),
-                              ],
-                            )
-                          : Column(
-                              children: [
-                                _UserTypeCard(
-                                  label: '알바생',
-                                  subtitle: '번호 인증으로 시작',
-                                  icon: Icons.person_outline,
-                                  onTap: () {
-                                    HapticFeedback.lightImpact();
-                                    Navigator.pushNamed(context, '/signup_worker');
-                                  },
-                                  variant: CardVariant.filled,
-                                ),
-                                const SizedBox(height: 12),
-                                _UserTypeCard(
-                                  label: '사장님',
-                                  subtitle: '번호 인증으로 시작',
-                                  icon: Icons.business_outlined,
-                                  onTap: () {
-                                    HapticFeedback.lightImpact();
-                                    Navigator.pushNamed(context, '/signup_client');
-                                  },
-                                  variant: CardVariant.outlined,
-                                ),
-                              ],
-                            ),
-
-                      const SizedBox(height: 16),
-
-                      // 보조 안내: 로그인 없이 진행
-                      const Text(
-                        '회원가입 없이 전화번호 인증으로 바로 시작합니다.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          color: Color(0xFF6B7280),
-                          height: 1.5,
-                        ),
-                      ),
-                    ],
+                // ── 질문
+                const Text(
+                  '어떤 분이신가요?',
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF374151),
                   ),
                 ),
-              ),
-            );
-          },
+
+                const SizedBox(height: 18),
+
+                // ── 카드 2개 (가로형, 동등 비중)
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: _TypeCard(
+                        label: '알바생',
+                        subtitle: '오늘 가능한 알바 찾기',
+                        icon: Icons.person_outline_rounded,
+                        badge: null,
+                        isHighlighted: false,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                          Navigator.pushNamed(context, '/signup-choice');
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _TypeCard(
+                        label: '사장님',
+                        subtitle: '알바생 바로 구하기',
+                        icon: Icons.storefront_outlined,
+                        badge: '7,000명 대기중',
+                        isHighlighted: true,
+                        onTap: () {
+                          HapticFeedback.lightImpact();
+                      Navigator.push(context,
+  MaterialPageRoute(builder: (_) => const SignupClientChoiceScreen()));
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+
+                const Spacer(),
+
+                // ── 하단 안내
+                const Text(
+                  '전화번호 인증으로 바로 시작합니다.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFFB0B7C3),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 }
 
-enum CardVariant { filled, outlined }
+// ─────────────────────────────────────────────
+// 브랜드 블록
+// ─────────────────────────────────────────────
+class _BrandBlock extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // ✅ Jalnan2TTF 폰트 적용
+        ShaderMask(
+          shaderCallback: (rect) => const LinearGradient(
+            colors: [kBrand, Color(0xFF6FB2FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ).createShader(rect),
+          child: const Text(
+            '알바일주',
+            style: TextStyle(
+              fontFamily: 'Jalnan2TTF',
+              fontSize: 48,
+              fontWeight: FontWeight.w800,
+              color: Colors.white, // ShaderMask가 덮어씀
+              letterSpacing: 1.0,
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        const Text(
+          '오늘 채용 · 오늘 근무',
+          style: TextStyle(
+            fontSize: 14,
+            color: Color(0xFF6B7280),
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
+    );
+  }
+}
 
-class _UserTypeCard extends StatefulWidget {
+// ─────────────────────────────────────────────
+// 선택 카드
+// ─────────────────────────────────────────────
+class _TypeCard extends StatefulWidget {
   final String label;
   final String subtitle;
   final IconData icon;
+  final String? badge;
+  final bool isHighlighted;
   final VoidCallback onTap;
-  final CardVariant variant;
 
-  const _UserTypeCard({
+  const _TypeCard({
     required this.label,
     required this.subtitle,
     required this.icon,
+    required this.badge,
+    required this.isHighlighted,
     required this.onTap,
-    required this.variant,
   });
 
   @override
-  State<_UserTypeCard> createState() => _UserTypeCardState();
+  State<_TypeCard> createState() => _TypeCardState();
 }
 
-class _UserTypeCardState extends State<_UserTypeCard> {
+class _TypeCardState extends State<_TypeCard> {
   bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
-    const baseRadius = 20.0;
-
-    final decoration = switch (widget.variant) {
-      CardVariant.filled => BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [kBrand, Color(0xFF6FB2FF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(baseRadius),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.12),
-              blurRadius: 10,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-      CardVariant.outlined => BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(baseRadius),
-          border: Border.all(color: const Color(0xFFD1D5DB), width: 1.2),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.08), // ← black08 대체
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-    };
-
-    final iconColor = widget.variant == CardVariant.filled ? Colors.white : kBrand;
-    final titleColor = widget.variant == CardVariant.filled ? Colors.white : const Color(0xFF111827);
-    final subColor = widget.variant == CardVariant.filled ? Colors.white.withOpacity(0.9) : const Color(0xFF4B5563);
-
     return Semantics(
       button: true,
-      label: '${widget.label} 시작하기',
+      label: '${widget.label}으로 시작하기',
       child: AnimatedScale(
-        duration: const Duration(milliseconds: 90),
-        scale: _pressed ? 0.98 : 1.0,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 120, minWidth: 140),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(baseRadius),
+        duration: const Duration(milliseconds: 100),
+        scale: _pressed ? 0.96 : 1.0,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            GestureDetector(
               onTapDown: (_) => setState(() => _pressed = true),
               onTapCancel: () => setState(() => _pressed = false),
               onTap: () {
                 setState(() => _pressed = false);
+                HapticFeedback.lightImpact();
                 widget.onTap();
               },
-              splashColor: widget.variant == CardVariant.filled
-                  ? Colors.white24
-                  : kBrand.withOpacity(0.08),
-              child: Ink(
-                decoration: decoration,
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: widget.isHighlighted
+                        ? kBrand.withOpacity(0.4)
+                        : const Color(0xFFE5E7EB),
+                    width: widget.isHighlighted ? 1.5 : 1.0,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: widget.isHighlighted
+                          ? kBrand.withOpacity(0.08)
+                          : Colors.black.withOpacity(0.04),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.fromLTRB(16, 22, 16, 22),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(widget.icon, size: 30, color: iconColor),
-                    const SizedBox(height: 10),
+                    // 아이콘
+                    Container(
+                      width: 46,
+                      height: 46,
+                      decoration: BoxDecoration(
+                        color: widget.isHighlighted
+                            ? const Color(0xFFEFF6FF)
+                            : const Color(0xFFF3F4F6),
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                      child: Icon(
+                        widget.icon,
+                        size: 24,
+                        color: widget.isHighlighted
+                            ? kBrand
+                            : const Color(0xFF9CA3AF),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // 라벨
                     Text(
                       widget.label,
                       style: TextStyle(
-                        color: titleColor,
-                        fontSize: 16,
+                        fontFamily: 'Jalnan2TTF',
+                        fontSize: 18,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: 0.2,
+                        color: widget.isHighlighted
+                            ? const Color(0xFF111827)
+                            : const Color(0xFF374151),
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 5),
+
+                    // 서브타이틀
                     Text(
                       widget.subtitle,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: subColor,
-                        fontSize: 12.5,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF9CA3AF),
                         height: 1.4,
                       ),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    // 화살표
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: widget.isHighlighted
+                                ? kBrand
+                                : const Color(0xFFF3F4F6),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.arrow_forward_rounded,
+                            size: 14,
+                            color: widget.isHighlighted
+                                ? Colors.white
+                                : const Color(0xFF9CA3AF),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
             ),
-          ),
+
+            // 뱃지 (사장님 카드만)
+            if (widget.badge != null)
+              Positioned(
+                top: -10,
+                right: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 9, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: kBrand,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: kBrand.withOpacity(0.3),
+                        blurRadius: 6,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    widget.badge!,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

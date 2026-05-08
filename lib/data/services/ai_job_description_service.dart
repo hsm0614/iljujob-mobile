@@ -1,9 +1,9 @@
 //services/ai_job_description_service.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
-import '../../config/ai_secrets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';  // StatefulWidget 사용을 위해 필요
+import '../../config/constants.dart';
 
 class AIJobDescriptionService {
   
@@ -18,163 +18,54 @@ class AIJobDescriptionService {
     String? companyName,
     bool isShortTerm = true,
     String tone = 'friendly', // 'friendly', 'professional', 'casual'
-     String? managerName, // 추가
-  String? managerPhone, // 추가
+    String? managerName,
+    String? managerPhone,
   }) async {
     try {
-      final prompt = _buildAdvancedPrompt(
-        title: title,
-        category: category,
-        location: location,
-        payType: payType,
-        pay: pay,
-        workingTime: workingTime,
-        weekdays: weekdays,
-        companyName: companyName,
-        isShortTerm: isShortTerm,
-        tone: tone,
-      );
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('authToken') ?? '';
 
       final response = await http.post(
-        Uri.parse('${AIConfig.geminiBaseUrl}?key=${AIConfig.geminiApiKey}'),
+        Uri.parse('$baseUrl/api/ai/job-description'),
         headers: {
           'Content-Type': 'application/json',
+          if (token.isNotEmpty) 'Authorization': 'Bearer $token',
         },
         body: jsonEncode({
-          'contents': [{
-            'parts': [{
-              'text': prompt
-            }]
-          }],
-          'generationConfig': {
-            'temperature': 0.7,
-            'topK': 40,
-            'topP': 0.95,
-            'maxOutputTokens': 1024,
-            'stopSequences': ['---END---']
-          },
-          'safetySettings': [
-            {
-              'category': 'HARM_CATEGORY_HARASSMENT',
-              'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
-            },
-            {
-              'category': 'HARM_CATEGORY_HATE_SPEECH',
-              'threshold': 'BLOCK_MEDIUM_AND_ABOVE'
-            }
-          ]
+          'title': title,
+          'category': category,
+          'location': location,
+          'payType': payType,
+          'pay': pay,
+          'workingTime': workingTime ?? '',
+          'weekdays': weekdays ?? [],
+          'companyName': companyName ?? '',
+          'isShortTerm': isShortTerm,
+          'tone': tone,
         }),
-      ).timeout(const Duration(seconds: 30));
+      ).timeout(const Duration(seconds: 35));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final content = data['candidates']?[0]?['content']?['parts']?[0]?['text'] ?? '';
-        
-        // 후처리: 불필요한 텍스트 제거 및 정리
-        return _postProcessDescription(content.trim());
+        final content = (data['text'] ?? '').toString().trim();
+        if (content.isEmpty) {
+          throw const AIGenerationException('AI 응답이 비어 있습니다.');
+        }
+        return content;
+      } else if (response.statusCode == 429) {
+        throw const AIGenerationException('AI 요청이 잠시 과부하 상태예요. 잠시 후 다시 시도해주세요.');
       } else {
-        final errorData = jsonDecode(response.body);
-        final errorMessage = errorData['error']?['message'] ?? '알 수 없는 오류';
-        throw AIGenerationException('API 호출 실패: $errorMessage');
+        String errMsg = '공고문 생성에 실패했어요. 다시 시도해주세요.';
+        try {
+          final d = jsonDecode(response.body);
+          if (d['message'] is String) errMsg = d['message'];
+        } catch (_) {}
+        throw AIGenerationException(errMsg);
       }
     } catch (e) {
       if (e is AIGenerationException) rethrow;
       throw AIGenerationException('공고문 생성 중 오류가 발생했습니다: $e');
     }
-  }
-
-  static String _buildAdvancedPrompt({
-  required String title,
-  required String category,
-  required String location,
-  required String payType,
-  required int pay,
-  String? workingTime,
-  List<String>? weekdays,
-  String? companyName,
-  required bool isShortTerm,
-  required String tone,
-}) {
-  final weekdaysText = weekdays?.isNotEmpty == true ? weekdays!.join(', ') : '';
-  final periodText = isShortTerm ? '단기' : '장기';
-  final payFormatted = NumberFormat('#,###').format(pay);
-
-  String toneInstruction = '';
-  switch (tone) {
-    case 'professional':
-      toneInstruction = '정중하고 신뢰감 있는 문장. 과장/이모티콘 최소.';
-      break;
-    case 'casual':
-      toneInstruction = '친근하고 가벼운 문장. 이모티콘 1개까지 허용. 반말 금지.';
-      break;
-    default:
-      toneInstruction = '친근하지만 깔끔한 문장. 과장 없이 따뜻하게.';
-  }
-
-  final wt = (workingTime != null && workingTime.trim().isNotEmpty) ? workingTime.trim() : '';
-  final wn = weekdaysText.isNotEmpty ? weekdaysText : '';
-  final cn = (companyName != null && companyName.trim().isNotEmpty) ? companyName.trim() : '';
-
-  return '''
-너는 한국 알바 채용 공고 전문 카피라이터다.
-알바일주 앱에 게시될 공고문을 작성한다.
-
-[절대 규칙]
-- 허위 정보 금지: 복지/간식/셔틀/교통비/식사 제공 등 언급 금지
-- 성별/연령/외모 차별 표현 금지
-- 과장 문구 금지 (압도적/최고/무조건 등)
-- 마크다운 금지 (별표/샵/목록기호). 일반 텍스트만
-- 글자수 280~380자
-- 업종명을 그대로 반복하지 말 것 (예: "슈퍼·마트 보조" 같은 표현 금지)
-- 자연스러운 사람 말투로 작성할 것
-- "알바일주" 언급은 마지막 지원 안내 줄에서만
-
-[업무 추측 금지]
-- 업종만 주어진 경우, 업무를 특정하지 말 것
-- 대신 "간단한 보조 업무", "현장 보조", "단순 반복 업무" 같은 표현 사용
-- 제목에 특정 업무 단어가 있을 때만 그 단어 1회 사용 가능
-
-[입력 정보]
-제목: $title
-업종: $category
-지역: $location
-근무형태: $periodText
-급여: $payType ${payFormatted}원
-근무시간: ${wt.isNotEmpty ? wt : '협의 가능'}
-근무요일: ${wn.isNotEmpty ? wn : '협의 가능'}
-회사명: ${cn.isNotEmpty ? cn : '미정'}
-
-[문체]
-$toneInstruction
-
-[반드시 포함]
-1) 어떤 일인지 자연스럽게 1~2문장 (업종명 반복 금지)
-2) 초보·경험무관 환영 1문장
-3) 근무 조건 (시간/요일/급여)
-4) 2026년 최저시급 10,030원 준수 문장 (숫자 정확히)
-5) 마지막 줄 고정: 지원: 알바일주 앱에서 '지원하기' 버튼
-
-[좋은 예시 느낌]
-"가볍게 시작할 수 있는 단기 알바예요. 특별한 경험 없어도 괜찮고, 하루 4시간으로 부담 없이 일할 수 있어요."
-
-공고문만 출력하라.
-''';
-  }
-  static String _postProcessDescription(String content) {
-    // 불필요한 접두사/접미사 제거
-    content = content.replaceAll(RegExp(r'^.*?공고문.*?[:：]\s*'), '');
-    content = content.replaceAll(RegExp(r'---END---.*$'), '');
-    content = content.replaceAll(RegExp(r'\*\*.*?\*\*'), ''); // 볼드 마크다운 제거
-    content = content.replaceAll(RegExp(r'#{1,6}\s*'), ''); // 헤더 마크다운 제거
-    
-    // 연속된 공백이나 줄바꿈 정리
-    content = content.replaceAll(RegExp(r'\n{3,}'), '\n\n');
-    content = content.replaceAll(RegExp(r' {2,}'), ' ');
-    
-    // 앞뒤 공백 제거
-    content = content.trim();
-    
-    return content;
   }
 
   // 공고문 품질 검증

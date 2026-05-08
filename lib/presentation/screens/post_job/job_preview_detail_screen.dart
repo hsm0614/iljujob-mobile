@@ -69,22 +69,30 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
   }
 
   // ── workingTime → 시간 수 ──
-  int _parseHours() {
-    try {
-      final parts = widget.workingTime.split('~');
-      if (parts.length == 2) {
-        final s = parts[0].trim().split(':');
-        final e = parts[1].trim().split(':');
-        if (s.length == 2 && e.length == 2) {
-          int diff = int.parse(e[0]) - int.parse(s[0]);
-          if (diff <= 0) diff += 24;
-          return diff;
-        }
-      }
-    } catch (_) {}
-    return 8;
-  }
-
+// _parseHours() 개선
+int _parseHours() {
+  try {
+    // "09:00 ~ 18:00" 또는 "오전 9:00 ~ 오후 6:00" 모두 처리
+    final raw = widget.workingTime;
+    
+    // 숫자만 추출해서 시간 파싱
+    final timeRegex = RegExp(r'(\d{1,2}):(\d{2})');
+    final matches = timeRegex.allMatches(raw).toList();
+    
+    if (matches.length >= 2) {
+      int startH = int.parse(matches[0].group(1)!);
+      int endH   = int.parse(matches[1].group(1)!);
+      
+      // 오후 포함 여부 체크
+      if (raw.contains('오후') && endH < 12) endH += 12;
+      
+      int diff = endH - startH;
+      if (diff <= 0) diff += 24;
+      return diff.clamp(1, 24);
+    }
+  } catch (_) {}
+  return 8; // 기본값
+}
   // ── location → 도시 ──
   String _parseCity() {
     try {
@@ -108,23 +116,24 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
     final city  = _parseCity();
 
     // ── 품질 점수 + 급여 인사이트 병렬 호출 ──
-    final results = await Future.wait([
-      JobInsightService.getQualityScore(
-        title:        widget.title,
-        category:     widget.category,
-        locationCity: city,
-        pay:          widget.pay,
-        hours:        hours,
-        description:  widget.description,
-        isPaid:       false,
-      ),
-      JobInsightService.getPayInsight(
-        category:     widget.category,
-        locationCity: city,
-        hours:        hours,
-      ),
-    ]);
-
+ // _loadInsights() 에서
+final results = await Future.wait([
+  JobInsightService.getQualityScore(
+    title:        widget.title,
+    category:     widget.category,
+    locationCity: city,
+    pay:          widget.pay,
+    hours:        hours,
+    description:  widget.description,
+    isPaid:       false,
+  ),
+  JobInsightService.getPayInsight(
+    category:     widget.category,
+    locationCity: city,
+    payType:      widget.payType, // ✅ 추가
+    hours:        hours,
+  ),
+]);
     if (mounted) setState(() {
       _quality    = results[0] as QualityScore?;
       _payInsight = results[1] as PayInsight?;

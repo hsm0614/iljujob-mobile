@@ -1263,7 +1263,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
     final categories = ['제조', '물류', '서비스', '건설', '사무', '청소', '기타'];
 
     return DropdownButtonFormField<String>(
-      value: category.isNotEmpty ? category : null,
+      initialValue: category.isNotEmpty ? category : null,
       isExpanded: true,
       icon: const Icon(Icons.keyboard_arrow_down_rounded),
       borderRadius: BorderRadius.circular(16),

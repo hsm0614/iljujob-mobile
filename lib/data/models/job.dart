@@ -1,5 +1,4 @@
 // lib/models/job.dart
-import 'package:intl/intl.dart';
 import 'dart:convert'; // jsonDecode용
 // ---------- 파서들: 모두 UTC 반환 ----------
 DateTime? _parseToUtcAssumingKST(dynamic v) {
@@ -157,6 +156,14 @@ class Job {
   final String? agencyNote;
 final double? matchScore;        // 매칭 점수 0~1
 final List<String> matchReasons; // ["가까움", "시간대겹침", "시급상위"]
+final bool zeroApplicantRefunded; // 지원자 0명 이용권 자동 환급 여부
+
+// 장기 공고 전용
+final String jobType;          // 'short' | 'long'
+final bool isAlwaysOpen;       // 상시모집
+final int? workDaysPerWeek;    // 주 N일
+final String? requiredCerts;   // 자격요건
+final String? welfare;         // 복리후생
 
   Job({
     required this.id,
@@ -194,6 +201,12 @@ final List<String> matchReasons; // ["가까움", "시간대겹침", "시급상�
     this.agencyNote,
     this.matchScore,
 this.matchReasons = const [],
+this.zeroApplicantRefunded = false,
+this.jobType = 'short',
+this.isAlwaysOpen = false,
+this.workDaysPerWeek,
+this.requiredCerts,
+this.welfare,
   });
 
   String get workingHours => '$startTime ~ $endTime';
@@ -318,9 +331,17 @@ matchReasons: () {
   }
   return <String>[];
 }(),
-
+zeroApplicantRefunded: json['zero_applicant_refunded'] == 1 ||
+    json['zero_applicant_refunded'] == true,
+jobType: (json['job_type'] ?? 'short').toString(),
+isAlwaysOpen: json['is_always_open'] == 1 || json['is_always_open'] == true,
+workDaysPerWeek: json['work_days_per_week'] != null
+    ? int.tryParse(json['work_days_per_week'].toString())
+    : null,
+requiredCerts: json['required_certs']?.toString(),
+welfare: json['welfare']?.toString(),
     );
-    
+
   }
 // Job 클래스 안에 추가 (toJson 위에)
 Job copyWith({
@@ -361,8 +382,9 @@ Job copyWith({
     agencyPhone: agencyPhone,
     agencyEmail: agencyEmail,
     agencyNote: agencyNote,
-    matchScore: matchScore ?? this.matchScore,       // ✅
-    matchReasons: matchReasons ?? this.matchReasons, // ✅
+    matchScore: matchScore ?? this.matchScore,
+    matchReasons: matchReasons ?? this.matchReasons,
+    zeroApplicantRefunded: zeroApplicantRefunded,
   );
 }
 
@@ -404,6 +426,7 @@ Job copyWith({
       'agency_note': agencyNote,
 'score': matchScore,
 'reasons': matchReasons,
+'zero_applicant_refunded': zeroApplicantRefunded ? 1 : 0,
     };
   }
 }

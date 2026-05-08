@@ -137,18 +137,18 @@ class _PortonePaymentScreenState extends State<PortonePaymentScreen> {
     );
   }
 
-  int getPriceForCount(int count) {
-    switch (count) {
-      case 1:
-        return 8800;
-      case 10:
-        return 77000;
-      case 20:
-        return 148000;
-      case 30:
-        return 184000;
-      default:
-        return 0;
-    }
+ int getPriceForCount(int count) {
+  switch (count) {
+    case 1:
+      return 7000;
+    case 3:
+      return 19800;
+    case 5:
+      return 30000;
+    case 10:
+      return 55000;
+    default:
+      return 0;
   }
+}
 }

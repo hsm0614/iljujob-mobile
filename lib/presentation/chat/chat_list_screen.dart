@@ -11,6 +11,8 @@ import '../../data/models/banner_ad.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 const kBrandBlue = Color(0xFF3B8AFF);
 class ChatListScreen extends StatefulWidget {
   final VoidCallback? onMessagesRead;
@@ -29,7 +31,7 @@ class _ChatListScreenState extends State<ChatListScreen>
   String userType = 'worker';
   int? myId;
   String? myType;
-
+bool _showNotificationBanner = false;
   // ✅ 배너 관련
   List<BannerAd> bannerAds = [];
   int _currentBannerIndex = 0;
@@ -42,13 +44,17 @@ bool _isBannerHidden = false;
 void initState() {
   super.initState();
   WidgetsBinding.instance.addObserver(this);
-
   _pageController = PageController(initialPage: 0);
-_loadBannerHidden();
-  _loadBannerAds(); // ✅ 배너 로드 후에만 오토슬라이드 시작하게 할 거라 여기서 _startBannerAutoSlide() 호출 X
-
+  _loadBannerHidden();
+  _loadBannerAds();
   _loadMyIdAndType().then((_) {
     _loadUserTypeAndFetchChats();
+  });
+
+  // ✅ 추가 — 채팅 목록 진입 시 알림 권한 체크
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    _checkAndRequestNotificationPermission();
+    _checkNotificationBannerNeeded();
   });
 }
 
@@ -68,9 +74,56 @@ void dispose() {
       _fetchChatRooms();
     }
   }
-
+Future<void> _checkNotificationBannerNeeded() async {
+  final settings = await FirebaseMessaging.instance.getNotificationSettings();
+  if (!mounted) return;
+  setState(() {
+    _showNotificationBanner = 
+      settings.authorizationStatus != AuthorizationStatus.authorized;
+  });
+}
   /* ---------------- 배너 트래킹 ---------------- */
+Future<void> _checkAndRequestNotificationPermission() async {
+  final settings = await FirebaseMessaging.instance.getNotificationSettings();
+  if (settings.authorizationStatus == AuthorizationStatus.authorized) return;
 
+  // ✅ 이미 한 번 봤으면 다시 안 띄움
+  final prefs = await SharedPreferences.getInstance();
+  final alreadyShown = prefs.getBool('notification_dialog_shown') ?? false;
+  if (alreadyShown) return;
+
+  if (!mounted) return;
+
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      // ... 기존 내용 ...
+      actions: [
+        TextButton(
+          onPressed: () async {
+            // ✅ 나중에 눌러도 기록
+            await prefs.setBool('notification_dialog_shown', true);
+            Navigator.pop(context);
+          },
+          child: const Text('나중에', style: TextStyle(color: Colors.grey)),
+        ),
+        ElevatedButton(
+          onPressed: () async {
+            // ✅ 허용해도 기록
+            await prefs.setBool('notification_dialog_shown', true);
+            Navigator.pop(context);
+            await FirebaseMessaging.instance.requestPermission(
+              alert: true, badge: true, sound: true,
+            );
+            await sendFcmTokenUnified();
+          },
+          // ... 기존 스타일 ...
+          child: const Text('알림 허용', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        ),
+      ],
+    ),
+  );
+}
   Future<void> _recordBannerImpression(int bannerId) async {
     try {
       await http.post(
@@ -323,8 +376,8 @@ DateTime? _parseServerTime(dynamic v) {
   try {
     // MySQL DATETIME 형식: "2025-11-23 13:15:00"
     if (s.contains(' ') && !s.contains('T')) {
-      final dt = DateTime.parse(s.replaceFirst(' ', 'T'));
-      return dt;
+final dt = DateTime.parse(s.replaceFirst(' ', 'T') + 'Z');  // UTC 명시
+return dt.toLocal();  // KST로 변환해서 화면 표시
     }
 
     // ISO 형식: "2025-11-23T04:15:00.000Z" 또는 "2025-11-23T13:15:00+09:00"
@@ -559,6 +612,59 @@ String _formatTime(dynamic timeValue) {
   }
 
   /* ---------------- 채팅 아이템 UI ---------------- */
+
+Widget _buildNotificationBanner() {
+  if (!_showNotificationBanner) return const SizedBox.shrink();
+
+  return Container(
+    margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFF3CD),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFFFFD700).withOpacity(0.5)),
+    ),
+    child: Row(
+      children: [
+        const Icon(Icons.notifications_off_outlined, 
+          color: Color(0xFF856404), size: 18),
+        const SizedBox(width: 8),
+        const Expanded(
+          child: Text(
+            '알림이 꺼져 있어요. 채팅 메시지를 놓칠 수 있어요.',
+            style: TextStyle(
+              fontSize: 12.5,
+              color: Color(0xFF856404),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        GestureDetector(
+          onTap: () async {
+            await FirebaseMessaging.instance.requestPermission(
+              alert: true, badge: true, sound: true,
+            );
+            await sendFcmTokenUnified();
+            await _checkNotificationBannerNeeded(); // 허용하면 배너 사라짐
+          },
+          child: const Text(
+            '허용',
+            style: TextStyle(
+              color: Color(0xFF3B8AFF),
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+          ),
+        ),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: () => setState(() => _showNotificationBanner = false),
+          child: const Icon(Icons.close, size: 16, color: Color(0xFF856404)),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildChatItem(Map chat) {
     final unreadCount = userType == 'worker'
@@ -1051,6 +1157,9 @@ String _formatTime(dynamic timeValue) {
                 ),
               ),
               SliverToBoxAdapter(
+  child: _buildNotificationBanner(), // ✅ 여기 추가
+),
+              SliverToBoxAdapter(
                 child: _buildBannerSlider(),
               ),
               if (isLoading)
@@ -1090,7 +1199,6 @@ String _formatTime(dynamic timeValue) {
     );
   }
 }
-
 /* ---------- Search Field ---------- */
 class _SearchField extends StatefulWidget {
   final ValueChanged<String> onChanged;

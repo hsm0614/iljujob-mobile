@@ -68,7 +68,7 @@ class _PaymentTestState extends State<PaymentTest> {
                 decoration: InputDecoration(
                   labelText: 'PG사',
                 ),
-                value: pg,
+                initialValue: pg,
                 onChanged: (String? value) {
                   setState(() {
                     pg = value!;
@@ -87,7 +87,7 @@ class _PaymentTestState extends State<PaymentTest> {
                 decoration: InputDecoration(
                   labelText: '결제수단',
                 ),
-                value: payMethod,
+                initialValue: payMethod,
                 onChanged: (String? value) {
                   setState(() {
                     payMethod = value!;
@@ -106,7 +106,7 @@ class _PaymentTestState extends State<PaymentTest> {
                       decoration: InputDecoration(
                         labelText: '할부개월수',
                       ),
-                      value: cardQuota,
+                      initialValue: cardQuota,
                       onChanged: (String? value) {
                         setState(() {
                           cardQuota = value!;

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:app_settings/app_settings.dart'; // ✅ 추가
 import '../../../data/services/notificaion_service.dart';
 
@@ -67,7 +66,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             onChanged(v);
             _saveSettings();
           },
-          activeColor: Colors.red,
+          activeThumbColor: Colors.red,
         ),
         const Divider(height: 0),
       ],
@@ -85,7 +84,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           onChanged: (_) {
             AppSettings.openAppSettings(); // ✅ 기기 설정 이동
           },
-          activeColor: Colors.red,
+          activeThumbColor: Colors.red,
         ),
         const Divider(height: 0),
       ],

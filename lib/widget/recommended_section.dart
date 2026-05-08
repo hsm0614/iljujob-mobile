@@ -53,7 +53,7 @@ class _RecommendedSectionState extends State<RecommendedSection> {
       if (!mounted) return;
 
       setState(() {
-        items = (res as List)
+        items = (res)
             .map((e) => (e as Map).cast<String, dynamic>())
             .toList();
         loading = false;

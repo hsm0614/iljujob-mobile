@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iljujob/presentation/screens/post_job/post_job_form.dart';
-import 'package:iljujob/config/constants.dart'; // kBrandBlue, 폰트 등 공통 스타일 있으면 활용
+// kBrandBlue, 폰트 등 공통 스타일 있으면 활용
 import '../../../data/models/job.dart';
 
 class PostJobScreen extends StatelessWidget {
