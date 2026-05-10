@@ -16,7 +16,7 @@ import '../../../data/services/job_service.dart';
 import '../../../data/services/ai_api.dart';
 import 'package:iljujob/widget/recommended_workers_sheet.dart';
 import 'package:iljujob/presentation/screens/worker_screen/job_insight_sheet.dart';
-
+import 'package:firebase_analytics/firebase_analytics.dart';
 const kBrandBlue = Color(0xFF3B8AFF);
 
 DateTime _nowLocal() => DateTime.now();
@@ -777,6 +777,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   }
 
   Future<void> _showPaywall() async {
+    FirebaseAnalytics.instance.logEvent(name: 'client_paywall_shown');
     if (!mounted) return;
 
     await showModalBottomSheet(
@@ -1575,6 +1576,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         Navigator.pushNamed(context, '/job-detail', arguments: job);
         break;
       case 'applicants':
+      FirebaseAnalytics.instance.logEvent(name: 'client_applicants_tap');
         Navigator.pushNamed(context, '/applicants', arguments: job.id);
         break;
       case 'recommend':
@@ -1596,6 +1598,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         }
         break;
       case 'repost':
+      FirebaseAnalytics.instance.logEvent(name: 'client_repost_tap');
         Navigator.pushNamed(
           context,
           '/post_job',
@@ -1603,6 +1606,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         );
         break;
       case 'delete':
+      FirebaseAnalytics.instance.logEvent(name: 'client_delete_tap');
         await _showDeleteConfirm(job);
         break;
     }
@@ -1962,6 +1966,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
 
   // ======= AppBar CTA =======
   Future<void> _goToPostJobFlow() async {
+    FirebaseAnalytics.instance.logEvent(name: 'client_post_job_tap');
     final prefs = await SharedPreferences.getInstance();
     final clientId = prefs.getInt('userId');
     if (clientId == null) {

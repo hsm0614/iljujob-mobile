@@ -19,7 +19,7 @@ import 'package:iljujob/core/suspension_guard.dart';
 import '../../../data/services/ai_job_description_service.dart';
 import 'package:iljujob/presentation/screens/post_job/ai_job_wizard.dart';
 import 'package:iljujob/presentation/screens/purchase_screen.dart';
-
+import 'package:firebase_analytics/firebase_analytics.dart';
 // ✅ FIX: 서버와 동일한 최저시급으로 통일 (10,030 → 10,320)
 const int minWagePerHour = 10320;
 const int _kMaxImages = 10;
@@ -180,7 +180,81 @@ class _PostJobFormState extends State<PostJobForm>
 
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fadeAnim;
+List<Map<String, dynamic>> _buildPresets() {
+  final fmt = NumberFormat('#,###');
+  final mins = _workMins();
+  final hours = mins > 0 ? mins / 60.0 : 8.0;
 
+  // ── 월급 프리셋: 고정 기본급 단위
+  if (_payType == '월급') {
+    const int minMonthly = 2096270;
+    return [
+      {
+        'pay': minMonthly,
+        'label': '최저 수준',
+        'sub': '법정 최저 (209h 기준)',
+      },
+      {
+        'pay': 2500000,
+        'label': '평균 수준',
+        'sub': '중소기업 평균',
+      },
+      {
+        'pay': 3000000,
+        'label': '높은 편',
+        'sub': '숙련·경력직 수준',
+      },
+    ];
+  }
+
+  // ── 주급 프리셋: 시급 × 하루시간 × 주당근무일
+  if (_payType == '주급') {
+    // 요일 지정된 경우 실제 근무일 수 사용, 아니면 5일 기본
+    final dpw = (!_isShortTerm && _longTermMode == '요일 지정' && _weekdays.isNotEmpty)
+        ? _weekdays.length
+        : (_isShortTerm && _startDate != null && _endDate != null)
+            ? _inclDays(_startDate!, _endDate!).clamp(1, 7)
+            : 5;
+    final subSuffix = '${hours % 1 == 0 ? hours.toInt() : hours.toStringAsFixed(1)}h × $dpw일';
+    return [
+      {
+        'pay': (minWagePerHour * hours * dpw).ceil(),
+        'label': '최저시급 기준',
+        'sub': '${fmt.format(minWagePerHour)}원 × $subSuffix',
+      },
+      {
+        'pay': (12000 * hours * dpw).ceil(),
+        'label': '평균 수준',
+        'sub': '12,000원 × $subSuffix',
+      },
+      {
+        'pay': (15000 * hours * dpw).ceil(),
+        'label': '높은 편',
+        'sub': '15,000원 × $subSuffix',
+      },
+    ];
+  }
+
+  // ── 일급 프리셋: 시급 × 하루시간
+  final subSuffix = '${hours % 1 == 0 ? hours.toInt() : hours.toStringAsFixed(1)}h';
+  return [
+    {
+      'pay': (minWagePerHour * hours).ceil(),
+      'label': '최저시급 기준',
+      'sub': '${fmt.format(minWagePerHour)}원 × $subSuffix',
+    },
+    {
+      'pay': (12000 * hours).ceil(),
+      'label': '평균 수준',
+      'sub': '12,000원 × $subSuffix',
+    },
+    {
+      'pay': (15000 * hours).ceil(),
+      'label': '높은 편',
+      'sub': '15,000원 × $subSuffix',
+    },
+  ];
+}
   bool get _canNext {
     switch (_q) {
       case 0:
@@ -235,20 +309,32 @@ class _PostJobFormState extends State<PostJobForm>
   }
 
   Future<void> _nextQ() async {
-    if (!_canNext) return;
-    FocusManager.instance.primaryFocus?.unfocus();
-    if (_q == _totalQ - 1) {
-      _onPreview();
-      return;
-    }
-    await _fadeCtrl.reverse();
-    setState(() {
-      _q++;
-      _customHours = false;
-      _customPay = false;
-    });
-    _fadeCtrl.forward();
+  if (!_canNext) return;
+  FocusManager.instance.primaryFocus?.unfocus();
+
+  // ✅ GA4 퍼널 이벤트
+  FirebaseAnalytics.instance.logEvent(
+    name: 'post_job_step_complete',
+    parameters: {
+      'step': _q,
+      'step_name': _qTitles[_q],
+      'pay_type': _payType,
+      'is_short_term': _isShortTerm ? 1 : 0,
+    },
+  );
+
+  if (_q == _totalQ - 1) {
+    _onPreview();
+    return;
   }
+  await _fadeCtrl.reverse();
+  setState(() {
+    _q++;
+    _customHours = false;
+    _customPay = false;
+  });
+  _fadeCtrl.forward();
+}
 
   Future<void> _prevQ() async {
     FocusManager.instance.primaryFocus?.unfocus();
@@ -571,44 +657,64 @@ class _PostJobFormState extends State<PostJobForm>
   }
 
   void _validatePay() {
-    // 월급은 최저임금 검증 불필요
-    if (_payType == '월급') {
-      setState(() => _payWarning = null);
-      return;
-    }
-    final mins = _workMins();
-    if (mins == 0) {
-      setState(() => _payWarning = null);
-      return;
-    }
-    final hours = mins / 60.0;
-    int req = 0;
-    if (_payType == '일급') {
-      req = (minWagePerHour * hours).ceil();
-    } else {
-      int dpw = 0;
-      if (_isShortTerm) {
-        if (_startDate != null && _endDate != null)
-          dpw = _inclDays(_startDate!, _endDate!).clamp(1, 7);
-        else
-          return;
-      } else {
-        if (_longTermMode == '요일 지정') {
-          dpw = _weekdays.length;
-          if (dpw <= 0) return;
-        } else
-          return;
-      }
-      req = (minWagePerHour * hours * dpw).ceil();
-    }
-    setState(
-      () =>
-          _payWarning =
-              (_pay >= req)
-                  ? null
-                  : '💰 최저시급 미달 · 최소 ${NumberFormat('#,###').format(req)}원 이상',
-    );
+  if (_pay <= 0) {
+    setState(() => _payWarning = null);
+    return;
   }
+
+  // ── 월급: 209시간 기준 최저 월급여 검증
+  if (_payType == '월급') {
+    const int minMonthly = 2096270; // 10,320 × 209h
+    setState(() =>
+      _payWarning = _pay >= minMonthly
+          ? null
+          : '💰 최저임금 미달 · 최소 ${NumberFormat('#,###').format(minMonthly)}원 이상',
+    );
+    return;
+  }
+
+  final mins = _workMins();
+  if (mins == 0) {
+    setState(() => _payWarning = null);
+    return;
+  }
+  final hours = mins / 60.0;
+
+  // ── 일급
+  if (_payType == '일급') {
+    final req = (minWagePerHour * hours).ceil();
+    setState(() =>
+      _payWarning = _pay >= req
+          ? null
+          : '💰 최저시급 미달 · 최소 ${NumberFormat('#,###').format(req)}원 이상',
+    );
+    return;
+  }
+
+  // ── 주급
+  if (_payType == '주급') {
+    int dpw = 0;
+    if (_isShortTerm) {
+      if (_startDate != null && _endDate != null)
+        dpw = _inclDays(_startDate!, _endDate!).clamp(1, 7);
+      else return;
+    } else {
+      if (_longTermMode == '요일 지정') {
+        dpw = _weekdays.length;
+        if (dpw <= 0) return;
+      } else return;
+    }
+    final req = (minWagePerHour * hours * dpw).ceil();
+    setState(() =>
+      _payWarning = _pay >= req
+          ? null
+          : '💰 최저시급 미달 · 최소 ${NumberFormat('#,###').format(req)}원 이상',
+    );
+    return;
+  }
+
+  setState(() => _payWarning = null);
+}
 
   Future<void> _pickImages() async {
     final picker = ImagePicker();
@@ -2167,251 +2273,277 @@ class _PostJobFormState extends State<PostJobForm>
   }
 
   // Q5: 급여
-  Widget _buildQ5() {
-    final fmt = NumberFormat('#,###');
-    final mins = _workMins();
-    final hours = mins > 0 ? mins / 60.0 : 8.0;
-    // ✅ FIX: 최저시급 10,320 기준 프리셋
-    final presets = [
-      {
-        'wage': minWagePerHour,
-        'label': '최저시급',
-        'pay': (minWagePerHour * hours).ceil(),
-      },
-      {'wage': 12000, 'label': '평균 수준', 'pay': (12000 * hours).ceil()},
-      {'wage': 15000, 'label': '높은 편', 'pay': (15000 * hours).ceil()},
-    ];
+ Widget _buildQ5() {
+  final fmt = NumberFormat('#,###');
+  final presets = _buildPresets();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: (_isShortTerm ? ['일급', '주급'] : ['월급', '일급', '주급']).map((t) {
-            final sel = _payType == t;
-            final isLast = t == (_isShortTerm ? '주급' : '주급');
-            return Expanded(
-              child: Padding(
-                padding: EdgeInsets.only(right: isLast ? 0 : 8),
-                child: GestureDetector(
-                  onTap: () {
-                    setState(() => _payType = t);
-                    _validatePay();
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 160),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: sel ? _blue : _bg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: sel ? _blue : _border),
-                    ),
-                    child: Center(
-                      child: Text(
-                        t,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: sel ? Colors.white : _sub,
-                        ),
+  // 주급인데 근무일 정보가 없으면 안내
+  final bool weeklyWarning = _payType == '주급' &&
+      !_isShortTerm &&
+      _longTermMode == '요일 지정' &&
+      _weekdays.isEmpty;
+
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      // ── 급여 유형 탭
+      Row(
+        children: (_isShortTerm ? ['일급', '주급'] : ['월급', '일급', '주급']).map((t) {
+          final sel = _payType == t;
+          final types = _isShortTerm ? ['일급', '주급'] : ['월급', '일급', '주급'];
+          final isLast = t == types.last;
+          return Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(right: isLast ? 0 : 8),
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _payType = t;
+                    _pay = 0;
+                    _payCtrl.clear();
+                    _customPay = false;
+                  });
+                  _validatePay();
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: sel ? _blue : _bg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: sel ? _blue : _border),
+                  ),
+                  child: Center(
+                    child: Text(
+                      t,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: sel ? Colors.white : _sub,
                       ),
                     ),
                   ),
                 ),
               ),
-            );
-          }).toList(),
-        ),
-        const SizedBox(height: 16),
-
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children:
-              presets.map((p) {
-                final pay = p['pay'] as int;
-                final sel = !_customPay && _pay == pay;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _pay = pay;
-                      _payCtrl.text = fmt.format(pay);
-                      _customPay = false;
-                    });
-                    _validatePay();
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 18,
-                    ),
-                    decoration: BoxDecoration(
-                      color: sel ? _blue : _bg,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: sel ? _blue : _border,
-                        width: sel ? 2 : 1,
-                      ),
-                      boxShadow:
-                          sel
-                              ? [
-                                BoxShadow(
-                                  color: _blue.withOpacity(0.2),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ]
-                              : [],
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          '${fmt.format(pay)}원',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: sel ? Colors.white : _text,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '시급 ${fmt.format(p['wage'])}원 · ${p['label']}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: sel ? Colors.white70 : _label,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-        ),
-        const SizedBox(height: 12),
-
-        _CustomToggle(
-          active: _customPay,
-          label: '직접 입력',
-          onTap: () => setState(() => _customPay = true),
-        ),
-        if (_customPay) ...[
-          const SizedBox(height: 12),
-          TextField(
-            controller: _payCtrl,
-            keyboardType: TextInputType.number,
-            autofocus: true,
-            decoration: InputDecoration(
-              hintText: '예) 100,000',
-              suffixText: '원',
-              helperText: '최저 ${fmt.format(minWagePerHour)}원/시간 이상',
-              filled: true,
-              fillColor: _bg,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
             ),
-            onChanged: (v) {
-              final n = v.replaceAll(RegExp(r'[^0-9]'), '');
-              setState(() => _pay = n.isEmpty ? 0 : int.parse(n));
+          );
+        }).toList(),
+      ),
+      const SizedBox(height: 8),
+
+      // ── 탭별 설명 문구
+      Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF0F5FF),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Text(
+          _payType == '월급'
+              ? '월 고정급을 입력하세요. 주휴수당 포함 기준 최저 2,096,270원 이상'
+              : _payType == '주급'
+                  ? '1주일치 급여를 입력하세요. 시급 × 하루시간 × 주당근무일로 계산됩니다'
+                  : '하루치 급여를 입력하세요. 시급 × 근무시간으로 계산됩니다',
+          style: const TextStyle(fontSize: 12, color: _blue, height: 1.4),
+        ),
+      ),
+      const SizedBox(height: 12),
+
+      // ── 주급 근무일 경고
+      if (weeklyWarning)
+        Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade50,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.orange.shade200),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.info_outline, size: 16, color: Colors.orange),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Q3에서 요일을 먼저 선택하면\n정확한 주급 프리셋이 계산됩니다',
+                  style: TextStyle(fontSize: 12, color: Colors.orange),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+      // ── 프리셋 버튼
+      Wrap(
+        spacing: 10,
+        runSpacing: 10,
+        children: presets.map((p) {
+          final pay = p['pay'] as int;
+          final sel = !_customPay && _pay == pay;
+          return GestureDetector(
+            onTap: () {
+              setState(() {
+                _pay = pay;
+                _payCtrl.text = fmt.format(pay);
+                _customPay = false;
+              });
               _validatePay();
             },
-          ),
-          if (_payWarning != null) ...[
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.red.shade200),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.error_outline, size: 16, color: Colors.red),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _payWarning!,
-                      style: const TextStyle(fontSize: 12, color: Colors.red),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-          if (_pay > 0 && _payWarning == null) _NextBtn(onTap: _nextQ),
-        ],
-
-        if (_pay > 0 && _payWarning == null) ...[
-          const SizedBox(height: 20),
-          const Divider(color: _border),
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: () => setState(() => _isSameDayPay = !_isSameDayPay),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              padding: const EdgeInsets.all(16),
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
               decoration: BoxDecoration(
-                color: _isSameDayPay ? const Color(0xFFEEF5FF) : _bg,
+                color: sel ? _blue : _bg,
                 borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: _isSameDayPay ? _blue : _border),
+                border: Border.all(
+                  color: sel ? _blue : _border,
+                  width: sel ? 2 : 1,
+                ),
+                boxShadow: sel
+                    ? [BoxShadow(color: _blue.withOpacity(0.2), blurRadius: 8, offset: const Offset(0, 4))]
+                    : [],
               ),
-              child: Row(
+              child: Column(
                 children: [
-                  const Text('💸', style: TextStyle(fontSize: 24)),
-                  const SizedBox(width: 12),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '당일지급',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: _text,
-                        ),
-                      ),
-                      Text(
-                        '근무 당일 현금 지급',
-                        style: TextStyle(fontSize: 12, color: _label),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 160),
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _isSameDayPay ? _blue : _border,
+                  Text(
+                    '${fmt.format(pay)}원',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: sel ? Colors.white : _text,
                     ),
-                    child:
-                        _isSameDayPay
-                            ? const Icon(
-                              Icons.check_rounded,
-                              size: 14,
-                              color: Colors.white,
-                            )
-                            : null,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${p['label']} · ${p['sub']}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: sel ? Colors.white70 : _label,
+                    ),
                   ),
                 ],
               ),
             ),
+          );
+        }).toList(),
+      ),
+      const SizedBox(height: 12),
+
+      // ── 직접 입력
+      _CustomToggle(
+        active: _customPay,
+        label: '직접 입력',
+        onTap: () => setState(() => _customPay = true),
+      ),
+      if (_customPay) ...[
+        const SizedBox(height: 12),
+        TextField(
+          controller: _payCtrl,
+          keyboardType: TextInputType.number,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: _payType == '월급'
+                ? '예) 2,500,000'
+                : _payType == '주급'
+                    ? '예) 412,800'
+                    : '예) 100,000',
+            suffixText: '원',
+            helperText: _payType == '월급'
+                ? '최저 2,096,270원 이상 (209h 기준)'
+                : '최저 ${fmt.format(minWagePerHour)}원/시간 이상',
+            filled: true,
+            fillColor: _bg,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
-          if (_pay > 0 && _payWarning == null && !_customPay) ...[
-            const SizedBox(height: 24),
-            _NextBtn(onTap: _nextQ),
-          ],
+          onChanged: (v) {
+            final n = v.replaceAll(RegExp(r'[^0-9]'), '');
+            setState(() => _pay = n.isEmpty ? 0 : int.parse(n));
+            _validatePay();
+          },
+        ),
+        if (_payWarning != null) ...[
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: Colors.red.shade200),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline, size: 16, color: Colors.red),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _payWarning!,
+                    style: const TextStyle(fontSize: 12, color: Colors.red),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
+        const SizedBox(height: 12),
+        if (_pay > 0 && _payWarning == null) _NextBtn(onTap: _nextQ),
       ],
-    );
-  }
+
+      // ── 당일지급 토글 (월급 제외)
+      if (_pay > 0 && _payWarning == null && _payType != '월급') ...[
+        const SizedBox(height: 20),
+        const Divider(color: _border),
+        const SizedBox(height: 16),
+        GestureDetector(
+          onTap: () => setState(() => _isSameDayPay = !_isSameDayPay),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: _isSameDayPay ? const Color(0xFFEEF5FF) : _bg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _isSameDayPay ? _blue : _border),
+            ),
+            child: Row(
+              children: [
+                const Text('💸', style: TextStyle(fontSize: 24)),
+                const SizedBox(width: 12),
+                const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('당일지급',
+                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _text)),
+                    Text('근무 당일 현금 지급',
+                        style: TextStyle(fontSize: 12, color: _label)),
+                  ],
+                ),
+                const Spacer(),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _isSameDayPay ? _blue : _border,
+                  ),
+                  child: _isSameDayPay
+                      ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                      : null,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+
+      if (_pay > 0 && _payWarning == null && !_customPay) ...[
+        const SizedBox(height: 24),
+        _NextBtn(onTap: _nextQ),
+      ],
+    ],
+  );
+}
 
   // Q6: 공고 내용
   Widget _buildQ6() {
@@ -2599,31 +2731,8 @@ class _PostJobFormState extends State<PostJobForm>
           ),
           const SizedBox(height: 16),
           // 주 N일 근무
-          const Text('주 근무일 (선택)',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _sub)),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8, runSpacing: 8,
-            children: [3, 4, 5, 6, 7].map((d) {
-              final sel = _workDaysPerWeek == d;
-              return GestureDetector(
-                onTap: () => setState(() => _workDaysPerWeek = sel ? null : d),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-                  decoration: BoxDecoration(
-                    color: sel ? _blue : _bg,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: sel ? _blue : _border),
-                  ),
-                  child: Text('주${d}일',
-                      style: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w700,
-                          color: sel ? Colors.white : _sub)),
-                ),
-              );
-            }).toList(),
-          ),
+        
+        
           const SizedBox(height: 16),
           // 자격요건
           const Text('자격요건 (선택)',
