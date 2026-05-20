@@ -103,7 +103,7 @@ class _EventScreenState extends State<EventScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
+      backgroundColor: const Color(0xFFF4F6FA),
       body: RefreshIndicator(
         onRefresh: _fetchEvents,
         color: const Color(0xFF3B8AFF),

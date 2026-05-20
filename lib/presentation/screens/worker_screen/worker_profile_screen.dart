@@ -341,7 +341,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                             : '이 알바생은 이력서 열람에 동의하지 않았습니다.\n기본 정보만 확인할 수 있어요.',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: const Color(0xFF6B7280),
                         ),
                       ),
 
@@ -418,7 +418,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
           Icons.check_circle,
           '알바 완료',
           '${profile!['completed_count'] ?? 0}',
-          Colors.blue,
+          const Color(0xFF3B8AFF),
         ),
         _squareStatCard(
           Icons.thumb_up,
@@ -448,7 +448,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: const Color(0xFFE5E8EB)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(.03),
@@ -591,7 +591,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                       if ((exp['description'] ?? '').toString().isNotEmpty)
                         Text(
                           exp['description'],
-                          style: const TextStyle(color: Colors.black87),
+                          style: const TextStyle(color: const Color(0xFF191F28)),
                         ),
                     ],
                   ),
@@ -620,7 +620,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
               .map(
                 (lic) => Chip(
                   label: Text('${lic['name']} (${lic['issued_at']})'),
-                  backgroundColor: Colors.indigo.shade50,
+                  backgroundColor: const Color(0xFFEEF5FF),
                 ),
               )
               .toList(),
@@ -659,7 +659,7 @@ class _SectionTitle extends StatelessWidget {
           child: Divider(
             height: 1,
             thickness: 1,
-            color: Colors.grey.shade300,
+            color: const Color(0xFFD1D5DB),
           ),
         ),
       ],

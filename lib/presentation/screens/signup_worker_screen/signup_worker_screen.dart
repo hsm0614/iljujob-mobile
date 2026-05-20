@@ -350,8 +350,6 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
       final data = jsonDecode(response.body);
 
       if (data['success']) {
-        _showNoShowBannerModal();
-
         final prefs = await SharedPreferences.getInstance();
         await _saveAuthCommon(
           prefs: prefs,
@@ -601,7 +599,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                               _submitSignupData();
                             },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
+                        backgroundColor: const Color(0xFF3B8AFF),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         textStyle: const TextStyle(
@@ -619,43 +617,6 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  // ============================================================
-  // No Show 배너 모달
-  // ============================================================
-  void _showNoShowBannerModal() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        contentPadding: const EdgeInsets.all(0),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Image.asset('assets/images/noshow_banner.png', fit: BoxFit.cover),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                onPressed: () {
-                  Navigator.pop(context);
-                  Navigator.pushReplacementNamed(context, '/home');
-                },
-                child: const Text('확인'),
-              ),
-            ),
-          ],
         ),
       ),
     );

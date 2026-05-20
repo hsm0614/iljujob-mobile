@@ -7,6 +7,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:iljujob/config/app_theme.dart';
 import 'chat_room_helpers.dart';
 import 'chat_room_components.dart';
 
@@ -33,6 +34,7 @@ class ChatMessageList extends StatelessWidget {
 
   /// "채용 확정하기" 버튼 콜백
   final VoidCallback? onConfirmHire;
+  final double inputOverlayHeight;
 
   const ChatMessageList({
     super.key,
@@ -44,6 +46,7 @@ class ChatMessageList extends StatelessWidget {
     this.targetName,
     this.showHireNudge = false,
     this.onConfirmHire,
+    this.inputOverlayHeight = 112,
   });
 
   // ── 날짜 키 계산
@@ -53,7 +56,8 @@ class ChatMessageList extends StatelessWidget {
     if (DateUtils.isSameDay(
       date,
       DateTime(now.year, now.month, now.day).subtract(const Duration(days: 1)),
-    )) return '어제';
+    ))
+      return '어제';
     return DateFormat('MM/dd').format(date);
   }
 
@@ -84,21 +88,25 @@ class ChatMessageList extends StatelessWidget {
     }
 
     // 날짜 오름차순 정렬
-    final dateKeys = grouped.keys.toList()
-      ..sort((a, b) {
-        DateTime first(String k) {
-          final list = grouped[k]!
-            ..sort((m1, m2) => _messageDate(m1).compareTo(_messageDate(m2)));
-          return _messageDate(list.first);
-        }
-        return first(a).compareTo(first(b));
-      });
+    final dateKeys =
+        grouped.keys.toList()..sort((a, b) {
+          DateTime first(String k) {
+            final list =
+                grouped[k]!..sort(
+                  (m1, m2) => _messageDate(m1).compareTo(_messageDate(m2)),
+                );
+            return _messageDate(list.first);
+          }
+
+          return first(a).compareTo(first(b));
+        });
 
     final List<Widget> children = [];
 
     for (final dateKey in dateKeys) {
-      final dayMessages = grouped[dateKey]!
-        ..sort((m1, m2) => _messageDate(m1).compareTo(_messageDate(m2)));
+      final dayMessages =
+          grouped[dateKey]!
+            ..sort((m1, m2) => _messageDate(m1).compareTo(_messageDate(m2)));
 
       // 날짜 구분선
       children.add(_DateDivider(label: dateKey));
@@ -109,9 +117,9 @@ class ChatMessageList extends StatelessWidget {
 
         // 봇 메시지
         if (sender == 'bot' || sender == 'system') {
-          children.add(_BotMessageBubble(
-            message: msg['message']?.toString() ?? '',
-          ));
+          children.add(
+            _BotMessageBubble(message: msg['message']?.toString() ?? ''),
+          );
           continue;
         }
 
@@ -148,7 +156,7 @@ class ChatMessageList extends StatelessWidget {
             left: 8,
             right: 8,
             top: 4,
-            bottom: 120 + bottomInset,
+            bottom: inputOverlayHeight + bottomInset,
           ),
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
@@ -180,14 +188,14 @@ class _DateDivider extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
-            color: const Color(0xFFE5E7EB),
+            color: AppColors.border,
             borderRadius: BorderRadius.circular(999),
           ),
           child: Text(
             label,
             style: const TextStyle(
               fontSize: 11,
-              color: Color(0xFF6B7280),
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -241,12 +249,14 @@ class _MessageBubble extends StatelessWidget {
               child: CircleAvatar(
                 radius: 16,
                 backgroundImage:
-                    (targetThumbnailUrl != null && targetThumbnailUrl!.isNotEmpty)
+                    (targetThumbnailUrl != null &&
+                            targetThumbnailUrl!.isNotEmpty)
                         ? NetworkImage(targetThumbnailUrl!)
                         : null,
-                child: (targetThumbnailUrl == null || targetThumbnailUrl!.isEmpty)
-                    ? const Icon(Icons.person, size: 16)
-                    : null,
+                child:
+                    (targetThumbnailUrl == null || targetThumbnailUrl!.isEmpty)
+                        ? const Icon(Icons.person, size: 16)
+                        : null,
               ),
             ),
             const SizedBox(width: 6),
@@ -275,50 +285,51 @@ class _MessageBubble extends StatelessWidget {
 
                 // 버블
                 Container(
-                  margin:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   constraints: BoxConstraints(
                     maxWidth: MediaQuery.of(context).size.width * 0.7,
                   ),
                   decoration: BoxDecoration(
-                    color: hasImage
-                        ? (isMe
-                            ? const Color(0xFF3B82F6)
-                            : Colors.white)
-                        : (isMe
-                            ? const Color(0xFF3B82F6)
-                            : const Color(0xFFF3F4F6)),
+                    color:
+                        hasImage
+                            ? (isMe ? AppColors.primary : Colors.white)
+                            : (isMe ? AppColors.primary : AppColors.bgMuted),
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(14),
                       topRight: const Radius.circular(14),
                       bottomLeft: Radius.circular(
-                          isMe ? 14 : (isPrevSameSender ? 4 : 14)),
+                        isMe ? 14 : (isPrevSameSender ? 4 : 14),
+                      ),
                       bottomRight: Radius.circular(
-                          isMe ? (isPrevSameSender ? 4 : 14) : 14),
+                        isMe ? (isPrevSameSender ? 4 : 14) : 14,
+                      ),
                     ),
-                    border: !isMe
-                        ? Border.all(
-                            color: const Color(0xFFE5E7EB),
-                            width: 0.8,
-                          )
-                        : null,
+                    border:
+                        !isMe
+                            ? Border.all(color: AppColors.border, width: 0.8)
+                            : null,
                   ),
-                  child: hasImage
-                      ? ChatImageBubble(
-                          imageUrl: msg['imageUrl'].toString(),
-                          heroTag: 'img_${when.millisecondsSinceEpoch}',
-                        )
-                      : Text(
-                          messageText,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: isMe
-                                ? Colors.white
-                                : const Color(0xFF111827),
+                  child:
+                      hasImage
+                          ? ChatImageBubble(
+                            imageUrl: msg['imageUrl'].toString(),
+                            heroTag: 'img_${when.millisecondsSinceEpoch}',
+                          )
+                          : Text(
+                            messageText,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color:
+                                  isMe ? Colors.white : const Color(0xFF111827),
+                            ),
                           ),
-                        ),
                 ),
 
                 // 시간 + 읽음 표시
@@ -330,9 +341,8 @@ class _MessageBubble extends StatelessWidget {
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: isMe
-                        ? MainAxisAlignment.end
-                        : MainAxisAlignment.start,
+                    mainAxisAlignment:
+                        isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
                     children: [
                       Text(
                         DateFormat('a h:mm', 'ko_KR').format(when),
@@ -351,8 +361,8 @@ class _MessageBubble extends StatelessWidget {
                             fontSize: 10,
                             color:
                                 (msg['is_read'] == 1 || msg['is_read'] == true)
-                                    ? const Color(0xFF3B82F6)
-                                    : const Color(0xFF9CA3AF),
+                                    ? AppColors.primary
+                                    : AppColors.textTertiary,
                           ),
                         ),
                       ],
@@ -383,8 +393,7 @@ class _BotMessageBubble extends StatelessWidget {
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 300),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
             color: const Color(0xFFF0F6FF),
             borderRadius: BorderRadius.circular(16),
@@ -453,8 +462,11 @@ class _HireNudgeBubble extends StatelessWidget {
               const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.info_outline_rounded,
-                      size: 18, color: Color(0xFF2563EB)),
+                  Icon(
+                    Icons.info_outline_rounded,
+                    size: 18,
+                    color: Color(0xFF2563EB),
+                  ),
                   SizedBox(width: 6),
                   Text(
                     '채용 확정이 필요해요',
@@ -489,8 +501,11 @@ class _HireNudgeBubble extends StatelessWidget {
                     ),
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                   ),
-                  icon: const Icon(Icons.thumb_up_alt_rounded,
-                      size: 16, color: Colors.white),
+                  icon: const Icon(
+                    Icons.thumb_up_alt_rounded,
+                    size: 16,
+                    color: Colors.white,
+                  ),
                   label: const Text(
                     '채용 확정하기',
                     style: TextStyle(

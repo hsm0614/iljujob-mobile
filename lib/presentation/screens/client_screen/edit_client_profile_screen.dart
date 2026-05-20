@@ -30,7 +30,7 @@ class EditClientProfileScreen extends StatefulWidget {
 class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
   // ---- 스타일
   static const kBrand = Color(0xFF3B8AFF);
-  static const kBg = Color(0xFFF6F7FB);
+  static const kBg = Color(0xFFF4F6FA);
 
   final picker = ImagePicker();
 

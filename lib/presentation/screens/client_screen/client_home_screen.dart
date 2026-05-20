@@ -15,8 +15,13 @@ import '../../../data/models/banner_ad.dart';
 import '../../../data/services/job_service.dart';
 import '../../../data/services/ai_api.dart';
 import 'package:iljujob/widget/recommended_workers_sheet.dart';
+import 'package:iljujob/presentation/screens/worker_screen/labor_consult_screen.dart';
 import 'package:iljujob/presentation/screens/worker_screen/job_insight_sheet.dart';
+import 'package:iljujob/presentation/screens/client_screen/wage_report_screen.dart';
+import 'package:iljujob/presentation/screens/post_job/SelectPreviousJobScreen.dart';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+
 const kBrandBlue = Color(0xFF3B8AFF);
 
 DateTime _nowLocal() => DateTime.now();
@@ -1576,7 +1581,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         Navigator.pushNamed(context, '/job-detail', arguments: job);
         break;
       case 'applicants':
-      FirebaseAnalytics.instance.logEvent(name: 'client_applicants_tap');
+        FirebaseAnalytics.instance.logEvent(name: 'client_applicants_tap');
         Navigator.pushNamed(context, '/applicants', arguments: job.id);
         break;
       case 'recommend':
@@ -1598,7 +1603,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         }
         break;
       case 'repost':
-      FirebaseAnalytics.instance.logEvent(name: 'client_repost_tap');
+        FirebaseAnalytics.instance.logEvent(name: 'client_repost_tap');
         Navigator.pushNamed(
           context,
           '/post_job',
@@ -1606,7 +1611,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         );
         break;
       case 'delete':
-      FirebaseAnalytics.instance.logEvent(name: 'client_delete_tap');
+        FirebaseAnalytics.instance.logEvent(name: 'client_delete_tap');
         await _showDeleteConfirm(job);
         break;
     }
@@ -1978,12 +1983,80 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     Navigator.pushNamed(context, '/post_job');
   }
 
+  Future<void> _goToQuickPostFlow() async {
+    FirebaseAnalytics.instance.logEvent(name: 'client_quick_post_tap');
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const SelectPreviousJobScreen(quickMode: true),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final jobs = _filteredJobs();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F8FA),
+      backgroundColor: const Color(0xFFF4F6FA),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          // 임금 AI 리포트 FAB
+          FloatingActionButton.small(
+            heroTag: 'wage_report_fab',
+            onPressed: () {
+              // 첫 번째 공고의 category/location으로 바로 진입
+              final job = myJobs.isNotEmpty ? myJobs.first : null;
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (_) => WageReportScreen(
+                        category: job?.category ?? '기타',
+                        locationCity: job?.locationCity,
+                        payType: job?.payType ?? '시급',
+                        currentPay:
+                            job?.pay != null
+                                ? int.tryParse(
+                                  job!.pay.replaceAll(RegExp(r'[^0-9]'), ''),
+                                )
+                                : null,
+                      ),
+                ),
+              );
+            },
+            backgroundColor: const Color(0xFF7C3AED),
+            shape: const CircleBorder(),
+            tooltip: '임금 AI 리포트',
+            child: const Icon(
+              Icons.analytics_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
+          ),
+          const SizedBox(height: 10),
+          // 노무 상담 FAB
+          FloatingActionButton(
+            heroTag: 'labor_consult_fab',
+            onPressed:
+                () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LaborConsultScreen()),
+                ),
+            backgroundColor: const Color(0xFF3B82F6),
+            shape: const CircleBorder(),
+            tooltip: 'AI 노무 상담',
+            child: const Icon(
+              Icons.balance_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ],
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -2036,6 +2109,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             SliverToBoxAdapter(child: _buildSearchBar()),
             SliverToBoxAdapter(child: _buildStatusSegment()),
             SliverToBoxAdapter(child: _buildToolbar()),
+            if (!isLoading && myJobs.isNotEmpty)
+              SliverToBoxAdapter(
+                child: _QuickPostEntryBand(onTap: _goToQuickPostFlow),
+              ),
             if (isLoading)
               const SliverFillRemaining(
                 hasScrollBody: false,
@@ -2071,37 +2148,68 @@ class _PostJobCtaButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 34,
+      height: 36,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(999),
           onTap: onPressed,
           child: Ink(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            padding: const EdgeInsets.fromLTRB(10, 0, 12, 0),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: kBrandBlue,
+              borderRadius: BorderRadius.circular(999),
+              color: kBrandBlue.withValues(alpha: 0.10),
+              border: Border.all(color: kBrandBlue.withValues(alpha: 0.26)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
-              children: const [
-                Icon(Icons.add, size: 18, color: Colors.white),
-                SizedBox(width: 8),
-                Text(
-                  '공고 등록',
-                  style: TextStyle(
+              children: [
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: const BoxDecoration(
+                    color: kBrandBlue,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.add_rounded,
+                    size: 16,
                     color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 7),
+                const Text(
+                  '공고 올리기',
+                  style: TextStyle(
+                    color: kBrandBlue,
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
                     height: 1.0,
-                    letterSpacing: -0.2,
                   ),
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _QuickPostEntryBand extends StatelessWidget {
+  final VoidCallback onTap;
+  const _QuickPostEntryBand({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+      child: AppActionBand(
+        icon: Icons.bolt_rounded,
+        title: '이전 공고로 빠른 등록',
+        subtitle: '날짜와 급여만 바꿔 바로 올릴 수 있어요',
+        actionLabel: '빠른 등록',
+        onTap: onTap,
       ),
     );
   }

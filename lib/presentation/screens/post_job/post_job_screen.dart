@@ -1,6 +1,7 @@
 //lib/presentation/screens/post_job/post_job_screen.dart
 import 'package:flutter/material.dart';
 import 'package:iljujob/data/models/job.dart';
+import 'package:iljujob/config/app_theme.dart';
 import 'post_job_form.dart';
 
 class PostJobScreen extends StatefulWidget {
@@ -30,7 +31,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('채용공고 등록'),
-        backgroundColor: const Color(0xFF4C6EF5),
+        backgroundColor: AppColors.bgCard,
+        foregroundColor: AppColors.textPrimary,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

@@ -19,7 +19,7 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
   // ===== Brand =====
   static const Color kBrandBlue = Color(0xFF3B8AFF);
   static const Color kBrandBlueLight = Color(0xFF6EB6FF);
-  static const Color kBg = Color(0xFFF6F7FB);
+  static const Color kBg = Color(0xFFF4F6FA);
 
   // ===== Profile State =====
   bool _loading = true;
@@ -594,7 +594,7 @@ class _WorkerProfileCard extends StatelessWidget {
         color: Colors.white.withOpacity(0.97),
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 6)),
+          BoxShadow(color: const Color(0x1F000000), blurRadius: 10, offset: Offset(0, 6)),
         ],
       ),
       padding: const EdgeInsets.all(12),
@@ -610,7 +610,7 @@ class _WorkerProfileCard extends StatelessWidget {
                     backgroundColor: const Color(0xFFEAF2FF),
                     backgroundImage: (!loading && hasImg) ? NetworkImage(imageUrl) : null,
                     child: (loading || !hasImg)
-                        ? const Icon(Icons.account_circle, size: 30, color: Colors.black54)
+                        ? const Icon(Icons.account_circle, size: 30, color: const Color(0xFF6B7280))
                         : null,
                   ),
                   Positioned(
@@ -627,7 +627,7 @@ class _WorkerProfileCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: brandBlue,
                             shape: BoxShape.circle,
-                            boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                            boxShadow: const [BoxShadow(color: const Color(0xFFBCC0CB), blurRadius: 4)],
                           ),
                           child: const Icon(Icons.edit_rounded, size: 16, color: Colors.white),
                         ),
@@ -647,7 +647,7 @@ class _WorkerProfileCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Colors.black87,
+                        color: const Color(0xFF191F28),
                         fontWeight: FontWeight.w900,
                         fontSize: 15,
                       ),
@@ -856,7 +856,7 @@ class _SectionCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+          BoxShadow(color: const Color(0x1F000000), blurRadius: 8, offset: Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -879,7 +879,7 @@ class _SectionCard extends StatelessWidget {
                   style: const TextStyle(
                     fontFamily: 'Jalnan2TTF',
                     fontSize: 16,
-                    color: Colors.black87,
+                    color: const Color(0xFF191F28),
                   ),
                 ),
               ],
@@ -930,7 +930,7 @@ class _ItemTile extends StatelessWidget {
             label,
             style: labelStyle ?? t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
-          trailing: trailing ?? const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black38),
+          trailing: trailing ?? const Icon(Icons.arrow_forward_ios, size: 16, color: const Color(0xFF9CA3AF)),
           contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           dense: true,
           minLeadingWidth: 0,
@@ -1007,10 +1007,10 @@ class _BizInfoItem extends StatelessWidget {
         children: [
           SizedBox(
             width: 110,
-            child: Text(k, style: const TextStyle(color: Colors.black54, fontSize: 13.5)),
+            child: Text(k, style: const TextStyle(color: const Color(0xFF6B7280), fontSize: 13.5)),
           ),
           Expanded(
-            child: Text(v, style: const TextStyle(fontSize: 13.5, color: Colors.black87)),
+            child: Text(v, style: const TextStyle(fontSize: 13.5, color: const Color(0xFF191F28))),
           ),
         ],
       ),

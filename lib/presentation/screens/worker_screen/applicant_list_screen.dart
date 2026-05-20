@@ -22,7 +22,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
   String? jobId;
 
   static const Color _brandBlue  = Color(0xFF3B8AFF);
-  static const Color _bg         = Color(0xFFF8F9FA);
+  static const Color _bg         = Color(0xFFF4F6FA);
   static const Color _border     = Color(0xFFE5E8EB);
   static const Color _text       = Color(0xFF191F28);
   static const Color _label      = Color(0xFF8B95A1);

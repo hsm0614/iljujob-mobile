@@ -9,16 +9,12 @@ import '../../../data/models/job.dart';
 import '../../../config/constants.dart';
 import 'package:intl/intl.dart';
 import '../full_image_view_screen.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import 'package:iljujob/presentation/screens/full_map_screen.dart';
 import '../client_screen/client_job_list_screen.dart';
-import 'dart:io'; // Platform 사용을 위해 필요
+// Platform 사용을 위해 필요
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart' as km;
-import 'package:kakao_map_plugin/kakao_map_plugin.dart';
 import '../../../core/suspension.dart';
 import '../../../core/suspension_guard.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'job_meta_section.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/services.dart'; // Clipboard
@@ -454,7 +450,7 @@ Future<bool> _showChatMoveNoticeDialog() async {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: const Color(0xFFD1D5DB),
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -544,7 +540,7 @@ Future<bool> _showChatMoveNoticeDialog() async {
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         minimumSize: const Size.fromHeight(46),
-                        side: BorderSide(color: Colors.grey.shade300),
+                        side: BorderSide(color: const Color(0xFFD1D5DB)),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(999),
                         ),
@@ -556,7 +552,7 @@ Future<bool> _showChatMoveNoticeDialog() async {
                         '나중에 보기',
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.black87,
+                          color: const Color(0xFF191F28),
                         ),
                       ),
                     ),
@@ -969,7 +965,7 @@ if (jobIdInt != null) {
               tags.entries.take(5).map((entry) {
                 return Chip(
                   label: Text('${entry.key} (${entry.value})'),
-                  backgroundColor: Colors.grey.shade200,
+                  backgroundColor: const Color(0xFFE5E8EB),
                   labelStyle: const TextStyle(fontSize: 13),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -1026,7 +1022,7 @@ Widget build(BuildContext context) {
   final postedLabel = widget.job.isScheduled ? '게시 예정' : '게시일';
 
   return Scaffold(
-    backgroundColor: const Color(0xFFF6F7FB),
+    backgroundColor: const Color(0xFFF4F6FA),
     appBar: AppBar(
       backgroundColor: Colors.white,
       elevation: 0.5,
@@ -1196,7 +1192,7 @@ Widget _buildHeaderCard(String postedLabel, DateTime? postedUtc) {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: const Color(0xFFE5E8EB),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
@@ -1261,7 +1257,7 @@ Widget _infoChip(String text) {
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     decoration: BoxDecoration(
-      color: const Color(0xFFF5F7FB),
+      color: const Color(0xFFF4F6FA),
       borderRadius: BorderRadius.circular(999),
     ),
     child: Text(
@@ -1288,7 +1284,7 @@ final description =
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.grey.shade200),
+      border: Border.all(color: const Color(0xFFE5E8EB)),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1340,7 +1336,7 @@ Widget _buildStatsSection() {
     decoration: BoxDecoration(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.grey.shade200),
+      border: Border.all(color: const Color(0xFFE5E8EB)),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1390,7 +1386,7 @@ Widget _buildStatsSection() {
             _verticalDivider(),
             _statItem(
               icon: Icons.group,
-              iconColor: Colors.blueAccent,
+              iconColor: const Color(0xFF3B8AFF),
               label: '지원',
               valueText: _formatCount(applicantCount),
               emphasize: true,
@@ -1420,9 +1416,9 @@ Widget _buildStatsSection() {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F7FB),
+                  color: const Color(0xFFF4F6FA),
                   borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.grey.shade200),
+                  border: Border.all(color: const Color(0xFFE5E8EB)),
                 ),
                 child: Text(
                   t,
@@ -1460,7 +1456,7 @@ Widget _statItem({
         const SizedBox(height: 2),
         Text(
           label,
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+          style: TextStyle(fontSize: 11, color: const Color(0xFF6B7280)),
         ),
       ],
     ),
@@ -1472,7 +1468,7 @@ Widget _verticalDivider() {
     width: 1,
     height: 40,
     margin: const EdgeInsets.symmetric(horizontal: 8),
-    color: Colors.grey.shade200,
+    color: const Color(0xFFE5E8EB),
   );
 }
 Widget _buildLocationSection() {
@@ -1518,7 +1514,7 @@ Widget _buildLocationSection() {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: const Color(0xFFE5E8EB)),
         ),
         child: Row(
           children: [
@@ -1568,7 +1564,7 @@ Widget _buildLocationSection() {
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(44),
-                side: BorderSide(color: Colors.grey.shade300),
+                side: BorderSide(color: const Color(0xFFD1D5DB)),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => _openKakaoDirections(lat, lng, name: widget.job.title),
@@ -1584,14 +1580,14 @@ Widget _buildLocationSection() {
             child: OutlinedButton.icon(
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(44),
-                side: BorderSide(color: Colors.grey.shade300),
+                side: BorderSide(color: const Color(0xFFD1D5DB)),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => _copyAddress(copyText),
-              icon: const Icon(Icons.copy_rounded, size: 18, color: Colors.black87),
+              icon: const Icon(Icons.copy_rounded, size: 18, color: const Color(0xFF191F28)),
               label: const Text(
                 '주소 복사',
-                style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w800),
+                style: TextStyle(color: const Color(0xFF191F28), fontWeight: FontWeight.w800),
               ),
             ),
           ),
@@ -1618,7 +1614,7 @@ Widget _buildLocationSection() {
           height: 200,
           width: double.infinity,
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: const Color(0xFFD1D5DB)),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Stack(
@@ -1664,7 +1660,7 @@ Widget _buildLocationSection() {
                       Expanded(
                         child: Text(
                           (address.isNotEmpty ?? false) ? address : '위치: $coordText',
-                          style: const TextStyle(fontSize: 13, color: Colors.black87),
+                          style: const TextStyle(fontSize: 13, color: const Color(0xFF191F28)),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1698,7 +1694,7 @@ Widget _buildClientSection() {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: const Color(0xFFE5E8EB)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -1721,7 +1717,7 @@ Widget _buildClientSection() {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Colors.grey.shade200,
+                    color: const Color(0xFFE5E8EB),
                     width: 2,
                   ),
                 ),
@@ -1818,10 +1814,10 @@ Widget _buildClientSection() {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF5F7FB),
+                    color: const Color(0xFFF4F6FA),
                     borderRadius: BorderRadius.circular(999),
                     border: Border.all(
-                      color: Colors.grey.shade300,
+                      color: const Color(0xFFD1D5DB),
                     ),
                   ),
                   child: Row(
@@ -1831,7 +1827,7 @@ Widget _buildClientSection() {
                         '사업자 정보',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.black87,
+                          color: const Color(0xFF191F28),
                         ),
                       ),
                       SizedBox(width: 6),
@@ -1861,7 +1857,7 @@ Widget _buildClientSection() {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Colors.grey.shade200,
+                      color: const Color(0xFFE5E8EB),
                     ),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 18),
@@ -1885,13 +1881,13 @@ Widget _buildClientSection() {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.indigo.shade50,
+                            color: const Color(0xFFEEF5FF),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
                             Icons.assignment_outlined,
                             size: 24,
-                            color: Colors.indigo,
+                            color: const Color(0xFF3B8AFF),
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -1907,7 +1903,7 @@ Widget _buildClientSection() {
                           '등록한 공고',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey.shade600,
+                            color: const Color(0xFF6B7280),
                           ),
                         ),
                       ],
@@ -1923,7 +1919,7 @@ Widget _buildClientSection() {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: Colors.grey.shade200,
+                      color: const Color(0xFFE5E8EB),
                     ),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 18),
@@ -1955,7 +1951,7 @@ Widget _buildClientSection() {
                         '채용 확정',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: const Color(0xFF6B7280),
                         ),
                       ),
                     ],
@@ -2017,7 +2013,7 @@ class _ImagesCarousel extends StatelessWidget {
               width: double.infinity,
               height: 200,
               decoration: BoxDecoration(
-                color: Colors.grey.shade200,
+                color: const Color(0xFFE5E8EB),
                 image: DecorationImage(
                   image: NetworkImage(fullUrl),
                   fit: BoxFit.cover,
@@ -2161,7 +2157,7 @@ Widget build(BuildContext context) {
   return Container(
     decoration: BoxDecoration(
       color: Colors.white,
-      border: Border(top: BorderSide(color: Colors.grey.shade200)),
+      border: Border(top: BorderSide(color: const Color(0xFFE5E8EB))),
     ),
     padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
     child: Column(
@@ -2205,20 +2201,20 @@ Widget build(BuildContext context) {
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(46),
-                  side: BorderSide(color: Colors.grey.shade300),
+                  side: BorderSide(color: const Color(0xFFD1D5DB)),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 onPressed: _hasPhone ? _callPhone : null,
                 icon: Icon(
                   Icons.call,
                   size: 18,
-                  color: _hasPhone ? kBrand : Colors.grey.shade400,
+                  color: _hasPhone ? kBrand : const Color(0xFFBCC0CB),
                 ),
                 label: Text(
                   _hasPhone ? '전화로 지원' : '전화 정보 없음',
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
-                    color: _hasPhone ? const Color(0xFF111827) : Colors.grey.shade500,
+                    color: _hasPhone ? const Color(0xFF111827) : const Color(0xFF9CA3AF),
                   ),
                 ),
               ),
@@ -2227,7 +2223,7 @@ Widget build(BuildContext context) {
             Expanded(
               child: ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _hasEmail ? kBrand : Colors.grey.shade300,
+                  backgroundColor: _hasEmail ? kBrand : const Color(0xFFD1D5DB),
                   minimumSize: const Size.fromHeight(46),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   elevation: 0,
@@ -2236,13 +2232,13 @@ Widget build(BuildContext context) {
                 icon: Icon(
                   Icons.email_outlined,
                   size: 18,
-                  color: _hasEmail ? Colors.white : Colors.grey.shade500,
+                  color: _hasEmail ? Colors.white : const Color(0xFF9CA3AF),
                 ),
                 label: Text(
                   _hasEmail ? '이메일 지원' : '이메일 없음',
                   style: TextStyle(
                     fontWeight: FontWeight.w900,
-                    color: _hasEmail ? Colors.white : Colors.grey.shade600,
+                    color: _hasEmail ? Colors.white : const Color(0xFF6B7280),
                   ),
                 ),
               ),
@@ -2270,7 +2266,7 @@ static Widget _miniChip(String k, String v) {
   return Container(
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     decoration: BoxDecoration(
-      color: const Color(0xFFF5F7FB),
+      color: const Color(0xFFF4F6FA),
       borderRadius: BorderRadius.circular(999),
       border: Border.all(color: const Color(0xFFE5E7EB)),
     ),

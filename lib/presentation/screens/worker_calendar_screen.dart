@@ -15,7 +15,7 @@ import '../../config/constants.dart';
 // 색상 팔레트
 // =====================
 const kBrandBlue = Color(0xFF3B8AFF);
-const kBg        = Color(0xFFF7F8FA);
+const kBg        = Color(0xFFF4F6FA);
 const kCard      = Colors.white;
 const kBorder    = Color(0xFFE5E7EB);
 const kMuted     = Color(0xFF6B7280);
@@ -905,7 +905,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
           child: Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color:        const Color(0xFFF9FAFB),
+              color:        const Color(0xFFF4F6FA),
               borderRadius: BorderRadius.circular(18),
               border:       Border.all(color: kBorder),
               boxShadow: [
@@ -1067,7 +1067,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color:        strong ? kBrandBlue.withOpacity(0.10) : const Color(0xFFF9FAFB),
+          color:        strong ? kBrandBlue.withOpacity(0.10) : const Color(0xFFF4F6FA),
           borderRadius: BorderRadius.circular(14),
           border:       strong ? Border.all(color: kBrandBlue.withOpacity(0.18)) : null,
         ),
@@ -1215,7 +1215,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                             shape:           RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            backgroundColor: const Color(0xFFF9FAFB),
+                            backgroundColor: const Color(0xFFF4F6FA),
                           ),
                           onPressed: () => Navigator.pop(sheetCtx, false), // ✅ sheetCtx
                           child: const Text('취소', style: TextStyle(fontWeight: FontWeight.w900)),
@@ -1694,7 +1694,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color:        const Color(0xFFF9FAFB),
+        color:        const Color(0xFFF4F6FA),
         borderRadius: BorderRadius.circular(18),
         border:       Border.all(color: const Color(0xFFE5E7EB)),
       ),

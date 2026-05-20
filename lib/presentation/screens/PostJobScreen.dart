@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/presentation/screens/post_job/post_job_form.dart';
 // kBrandBlue, 폰트 등 공통 스타일 있으면 활용
 import '../../../data/models/job.dart';
@@ -25,8 +26,10 @@ class PostJobScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 24,
+                  horizontal: 20,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -38,7 +41,7 @@ class PostJobScreen extends StatelessWidget {
                       ),
                       child: const Icon(
                         Icons.edit_note_rounded,
-                        color: Color(0xFF3B8AFF),
+                        color: AppColors.primary,
                         size: 40,
                       ),
                     ),
@@ -54,10 +57,10 @@ class PostJobScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 10),
                     const Text(
-                      '나가시면 지금까지 입력한 내용이\n저장되지 않을 수 있습니다.',
+                      '입력한 내용은 임시 저장되어\n다음에 이어서 작성할 수 있습니다.',
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey,
+                        color: AppColors.textSecondary,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -66,13 +69,11 @@ class PostJobScreen extends StatelessWidget {
                       children: [
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: () =>
-                                Navigator.of(context).pop(false),
+                            onPressed: () => Navigator.of(context).pop(false),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFF3B8AFF)),
-                              foregroundColor: const Color(0xFF3B8AFF),
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 12),
+                              side: const BorderSide(color: AppColors.primary),
+                              foregroundColor: AppColors.primary,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -88,10 +89,9 @@ class PostJobScreen extends StatelessWidget {
                           child: ElevatedButton(
                             onPressed: () => Navigator.of(context).pop(true),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF3B8AFF),
+                              backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 12),
+                              padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -114,18 +114,18 @@ class PostJobScreen extends StatelessWidget {
         return shouldLeave ?? false;
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF5F7FB),
+        backgroundColor: AppColors.bgPage,
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0.5,
-          foregroundColor: Colors.black87,
+          foregroundColor: AppColors.textPrimary,
           titleSpacing: 0,
           title: Text(
             isRepost ? '공고 다시 올리기' : '알바 공고 작성',
             style: const TextStyle(
               fontFamily: 'Jalnan2TTF',
               fontSize: 20,
-              color: Color(0xFF3B8AFF),
+              color: AppColors.primary,
             ),
           ),
         ),
@@ -140,15 +140,17 @@ class PostJobScreen extends StatelessWidget {
                   borderRadius: BorderRadius.circular(18),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.03),
+                      color: Colors.black.withValues(alpha: 0.03),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                   ],
                 ),
                 child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   child: PostJobForm(
                     isRepost: isRepost,
                     existingJob: existingJob,

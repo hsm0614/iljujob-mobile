@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iljujob/config/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
@@ -10,12 +11,12 @@ import 'package:iljujob/data/services/job_service.dart';
 // ════════════════════════════════════════════════════════
 //  디자인 토큰 (post_job_form.dart와 동일)
 // ════════════════════════════════════════════════════════
-const _blue = Color(0xFF3182F6);
-const _bg = Color(0xFFF8F9FA);
-const _border = Color(0xFFE5E8EB);
-const _label = Color(0xFF8B95A1);
-const _text = Color(0xFF191F28);
-const _sub = Color(0xFF4E5968);
+const _blue = AppColors.primary;
+const _bg = AppColors.bgPage;
+const _border = AppColors.border;
+const _label = AppColors.textTertiary;
+const _text = AppColors.textPrimary;
+const _sub = AppColors.textSecondary;
 const int _minWage = 10320;
 
 // ════════════════════════════════════════════════════════
@@ -216,7 +217,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                                   shape: BoxShape.circle,
                                 ),
                                 selectedDecoration: BoxDecoration(
-                                  color: Colors.black87,
+                                  color: const Color(0xFF191F28),
                                   shape: BoxShape.circle,
                                 ),
                               ),

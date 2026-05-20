@@ -19,10 +19,7 @@ class ChatRoomController extends ChangeNotifier {
   final int chatRoomId;
   final Map<String, dynamic> jobInfo;
 
-  ChatRoomController({
-    required this.chatRoomId,
-    required this.jobInfo,
-  });
+  ChatRoomController({required this.chatRoomId, required this.jobInfo});
 
   // ─────────────────────────────────────────────
   // dispose 가드
@@ -83,13 +80,6 @@ class ChatRoomController extends ChangeNotifier {
   int? checkinDistanceM;
   int? checkinRadiusM;
 
-  bool claimLoading = false;
-  bool hasClaim = false;
-  String? claimStatus;
-  String? claimError;
-  bool claimRefunded = false;
-  int? claimId;
-
   double? myLat;
   double? myLng;
   double? myAcc;
@@ -127,8 +117,11 @@ class ChatRoomController extends ChangeNotifier {
   bool get isHireConfirmed => isConfirmed || workerWorkConfirmed;
 
   bool get inputEnabled {
-    if (status == 'cancelled' || status == 'canceled' ||
-        status == 'blocked' || status == 'expired') return false;
+    if (status == 'cancelled' ||
+        status == 'canceled' ||
+        status == 'blocked' ||
+        status == 'expired')
+      return false;
     if (userType == 'client' && status == 'pending') return false;
     return true;
   }
@@ -142,28 +135,21 @@ class ChatRoomController extends ChangeNotifier {
   bool get isClient => userType == 'client';
 
   bool get isWeekdaysJob {
-    final s = (jobSource['weekdays'] ?? jobSource['weekday'] ?? jobSource['days'] ?? '')
-        .toString()
-        .trim();
+    final s =
+        (jobSource['weekdays'] ??
+                jobSource['weekday'] ??
+                jobSource['days'] ??
+                '')
+            .toString()
+            .trim();
     return s.isNotEmpty;
   }
 
   bool get isPaidJob {
     final src = jobSource;
-    return asBool(src['is_paid']) || asBool(src['isPaid']) || src['is_paid'] == 1;
-  }
-
-  bool get canRequestNoShowClaim {
-    if (!isClient) return false;
-    if (status != 'active' && status != 'confirmed') return false;
-    if (isWeekdaysJob) return false;
-    if (!isPaidJob) return false;
-    if (checkedIn) return false;
-    if (hasClaim) return false;
-    if (claimLoading) return false;
-    if (status == 'blocked' || status == 'expired' ||
-        status == 'cancelled' || status == 'canceled') return false;
-    return true;
+    return asBool(src['is_paid']) ||
+        asBool(src['isPaid']) ||
+        src['is_paid'] == 1;
   }
 
   bool shouldShowHireNudge() {
@@ -199,7 +185,6 @@ class ChatRoomController extends ChangeNotifier {
     unawaited(refreshLocationAndDistance());
     unawaited(fetchWorkState());
     unawaited(fetchCheckinStatus());
-    unawaited(fetchNoShowClaimState());
   }
 
   Future<void> _initializeChat() async {
@@ -234,13 +219,19 @@ class ChatRoomController extends ChangeNotifier {
 
   Map<String, dynamic> normalizeIncoming(Map raw) {
     final createdRaw =
-        raw['createdAt'] ?? raw['created_at'] ?? raw['timestamp'] ?? raw['sent_at'];
+        raw['createdAt'] ??
+        raw['created_at'] ??
+        raw['timestamp'] ??
+        raw['sent_at'];
     int createdAtMs = toMs(createdRaw);
     if (createdAtMs == 0) {
       createdAtMs = DateTime.now().toUtc().millisecondsSinceEpoch;
     }
     final createdIso =
-        DateTime.fromMillisecondsSinceEpoch(createdAtMs, isUtc: true).toIso8601String();
+        DateTime.fromMillisecondsSinceEpoch(
+          createdAtMs,
+          isUtc: true,
+        ).toIso8601String();
 
     return {
       ...raw,
@@ -298,7 +289,8 @@ class ChatRoomController extends ChangeNotifier {
       messages.add(incoming);
     }
     messages.sort(
-        (a, b) => (a['createdAtMs'] as int).compareTo(b['createdAtMs'] as int));
+      (a, b) => (a['createdAtMs'] as int).compareTo(b['createdAtMs'] as int),
+    );
     _notify();
   }
 
@@ -414,7 +406,8 @@ class ChatRoomController extends ChangeNotifier {
   Future<void> fetchMessages() async {
     if (_disposed) return;
     final url = Uri.parse(
-        '$baseUrl/api/chat/messages?roomId=$chatRoomId&reader=$userType');
+      '$baseUrl/api/chat/messages?roomId=$chatRoomId&reader=$userType',
+    );
     try {
       final resp = await http.get(url, headers: await _authHeaders());
       if (_disposed) return;
@@ -425,11 +418,12 @@ class ChatRoomController extends ChangeNotifier {
       }
 
       final decoded = jsonDecode(resp.body);
-      final List items = decoded is List
-          ? decoded
-          : (decoded is Map && decoded['data'] is List
-              ? decoded['data'] as List
-              : const []);
+      final List items =
+          decoded is List
+              ? decoded
+              : (decoded is Map && decoded['data'] is List
+                  ? decoded['data'] as List
+                  : const []);
 
       for (final raw in items) {
         if (_disposed) return;
@@ -482,22 +476,28 @@ class ChatRoomController extends ChangeNotifier {
     };
 
     try {
-      socket!.emitWithAck('send_message', payload, ack: (dynamic resp) {
-        if (_disposed) return;
-        if (resp is Map && (resp['ok'] == true || resp['id'] != null)) {
-          upsertMessage(<String, dynamic>{
-            ...resp,
-            if (resp['image_url'] != null) 'imageUrl': resp['image_url'],
-            if (resp['created_at'] != null && resp['createdAt'] == null)
-              'createdAt': resp['created_at'],
-            'clientTempId': resp['clientTempId'] ?? clientTempId,
-            'createdAt': resp['createdAt'] ?? nowIso,
-          });
-        } else {
-          _markFailed(
-              clientTempId, (resp is Map ? resp['error'] : null) ?? '전송 실패');
-        }
-      });
+      socket!.emitWithAck(
+        'send_message',
+        payload,
+        ack: (dynamic resp) {
+          if (_disposed) return;
+          if (resp is Map && (resp['ok'] == true || resp['id'] != null)) {
+            upsertMessage(<String, dynamic>{
+              ...resp,
+              if (resp['image_url'] != null) 'imageUrl': resp['image_url'],
+              if (resp['created_at'] != null && resp['createdAt'] == null)
+                'createdAt': resp['created_at'],
+              'clientTempId': resp['clientTempId'] ?? clientTempId,
+              'createdAt': resp['createdAt'] ?? nowIso,
+            });
+          } else {
+            _markFailed(
+              clientTempId,
+              (resp is Map ? resp['error'] : null) ?? '전송 실패',
+            );
+          }
+        },
+      );
     } catch (_) {
       if (!_disposed) socket!.emit('send_message', payload);
     }
@@ -505,7 +505,8 @@ class ChatRoomController extends ChangeNotifier {
     Future.delayed(const Duration(seconds: 7), () {
       if (_disposed) return;
       final stillPending = messages.any(
-          (m) => m['clientTempId'] == clientTempId && m['pending'] == true);
+        (m) => m['clientTempId'] == clientTempId && m['pending'] == true,
+      );
       if (stillPending) _markFailed(clientTempId, '서버 응답 없음');
     });
   }
@@ -521,7 +522,8 @@ class ChatRoomController extends ChangeNotifier {
       final resp = await http.get(
         Uri.parse('$baseUrl/api/chat/detail/$chatRoomId'),
         headers: {
-          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
         },
       );
       if (_disposed) return;
@@ -538,17 +540,21 @@ class ChatRoomController extends ChangeNotifier {
 
       final app =
           decoded['application'] is Map ? decoded['application'] as Map : null;
-      final bool confirmed = asBool(decoded['is_confirmed']) ||
+      final bool confirmed =
+          asBool(decoded['is_confirmed']) ||
           asBool(app?['isConfirmed']) ||
           asBool(app?['is_confirmed']);
-      final bool completed = asBool(decoded['is_completed']) ||
+      final bool completed =
+          asBool(decoded['is_completed']) ||
           asBool(app?['isCompleted']) ||
           asBool(app?['is_completed']);
 
       final int? wId = int.tryParse(
-          (decoded['workerId'] ?? decoded['worker_id'])?.toString() ?? '');
+        (decoded['workerId'] ?? decoded['worker_id'])?.toString() ?? '',
+      );
       final int? cId = int.tryParse(
-          (decoded['clientId'] ?? decoded['client_id'])?.toString() ?? '');
+        (decoded['clientId'] ?? decoded['client_id'])?.toString() ?? '',
+      );
 
       Map<String, dynamic> ji = {};
       if (decoded['job'] is Map) {
@@ -560,7 +566,8 @@ class ChatRoomController extends ChangeNotifier {
           if (decoded['title'] != null) 'title': decoded['title'],
           if (decoded['job_title'] != null) 'title': decoded['job_title'],
           if (decoded['pay'] != null) 'pay': decoded['pay'],
-          if (decoded['created_at'] != null) 'created_at': decoded['created_at'],
+          if (decoded['created_at'] != null)
+            'created_at': decoded['created_at'],
           if (decoded['client_company_name'] != null)
             'client_company_name': decoded['client_company_name'],
         }..removeWhere((_, v) => v == null);
@@ -760,9 +767,11 @@ class ChatRoomController extends ChangeNotifier {
 
     final src = jobSource;
     final jobId = int.tryParse(
-        (src['job_id'] ?? src['jobId'] ?? src['id'])?.toString() ?? '');
+      (src['job_id'] ?? src['jobId'] ?? src['id'])?.toString() ?? '',
+    );
     final applicationId = int.tryParse(
-        (src['application_id'] ?? src['applicationId'])?.toString() ?? '');
+      (src['application_id'] ?? src['applicationId'])?.toString() ?? '',
+    );
     final startDate = (src['start_date'] ?? src['startDate'])?.toString();
     final startTime = (src['start_time'] ?? src['startTime'])?.toString();
     String? startAt;
@@ -770,7 +779,8 @@ class ChatRoomController extends ChangeNotifier {
         startDate.length >= 10 &&
         startTime != null &&
         startTime.isNotEmpty) {
-      final t = startTime.length == 5 ? '$startTime:00' : startTime.substring(0, 8);
+      final t =
+          startTime.length == 5 ? '$startTime:00' : startTime.substring(0, 8);
       startAt = '${startDate.substring(0, 10)} $t';
     }
 
@@ -804,6 +814,20 @@ class ChatRoomController extends ChangeNotifier {
     }
   }
 
+  Future<void> addCurrentWorkToCalendar() async {
+    if (_disposed || workLoading) return;
+    workLoading = true;
+    _notify();
+    try {
+      final ok = await confirmStartWork();
+      if (ok) onShowSnackbar?.call('캘린더에 등록했어요.');
+    } finally {
+      if (_disposed) return;
+      workLoading = false;
+      _notify();
+    }
+  }
+
   Future<void> fetchWorkState() async {
     if (_disposed) return;
     final token = await _getToken();
@@ -820,14 +844,16 @@ class ChatRoomController extends ChangeNotifier {
       final data = jsonDecode(resp.body);
       if (data is! Map) return;
 
-      final confirmed = asBool(data['confirmed']) ||
+      final confirmed =
+          asBool(data['confirmed']) ||
           asBool(data['workerConfirmed']) ||
           asBool(data['worker_confirmed']) ||
           data['worker_confirmed_at'] != null ||
           data['confirmed_at'] != null ||
           data['confirmedAt'] != null;
 
-      final cancelable = asBool(data['canCancel']) ||
+      final cancelable =
+          asBool(data['canCancel']) ||
           asBool(data['can_cancel']) ||
           asBool(data['cancelable']) ||
           asBool(data['isCancelable']);
@@ -838,7 +864,8 @@ class ChatRoomController extends ChangeNotifier {
 
       workerWorkConfirmed = confirmed;
       canCancel = cancelable;
-      hasWorkSession = asBool(data['hasSession']) ||
+      hasWorkSession =
+          asBool(data['hasSession']) ||
           asBool(data['has_session']) ||
           sessionId != null;
       workSessionId = sessionId;
@@ -891,7 +918,8 @@ class ChatRoomController extends ChangeNotifier {
     if (_disposed) return;
     final src = jobSource;
     final jobId = int.tryParse(
-        (src['id'] ?? src['job_id'] ?? src['jobId'])?.toString() ?? '');
+      (src['id'] ?? src['job_id'] ?? src['jobId'])?.toString() ?? '',
+    );
     if (jobId == null) return;
 
     try {
@@ -980,7 +1008,8 @@ class ChatRoomController extends ChangeNotifier {
     }
 
     final jobId = int.tryParse(
-        (src['id'] ?? src['job_id'] ?? src['jobId'])?.toString() ?? '');
+      (src['id'] ?? src['job_id'] ?? src['jobId'])?.toString() ?? '',
+    );
     if (jobId == null) {
       onShowSnackbar?.call('공고 정보를 찾을 수 없습니다.');
       return;
@@ -1022,8 +1051,12 @@ class ChatRoomController extends ChangeNotifier {
       final resp = await http.post(
         Uri.parse('$baseUrl/api/attendance/checkin'),
         headers: await _authHeaders(json: true),
-        body: jsonEncode(
-            {'jobId': jobId, 'lat': myLat, 'lng': myLng, 'accuracy_m': myAcc}),
+        body: jsonEncode({
+          'jobId': jobId,
+          'lat': myLat,
+          'lng': myLng,
+          'accuracy_m': myAcc,
+        }),
       );
       if (_disposed) return;
 
@@ -1067,123 +1100,6 @@ class ChatRoomController extends ChangeNotifier {
   }
 
   // ─────────────────────────────────────────────
-  // 노쇼 환급
-  // ─────────────────────────────────────────────
-
-  Future<void> fetchNoShowClaimState() async {
-    if (_disposed) return;
-    final src = jobSource;
-    final jobId = int.tryParse(
-        (src['id'] ?? src['job_id'] ?? src['jobId'])?.toString() ?? '');
-    if (jobId == null) return;
-
-    try {
-      final resp = await http.get(
-        Uri.parse('$baseUrl/api/attendance/no-show-claim-status?jobId=$jobId'),
-        headers: await _authHeaders(),
-      );
-      if (_disposed) return;
-      if (resp.statusCode != 200) return;
-
-      final decoded = jsonDecode(resp.body);
-      if (decoded is! Map) return;
-
-      final msg = (decoded['message'] ?? '').toString();
-      if (msg == 'NO_CLAIM' || !asBool(decoded['exists'])) {
-        hasClaim = false;
-        claimStatus = null;
-        claimRefunded = false;
-        claimId = null;
-        claimError = null;
-        _notify();
-        return;
-      }
-
-      hasClaim = asBool(decoded['exists']);
-      claimStatus = (decoded['status'] ?? '').toString();
-      claimRefunded =
-          asBool(decoded['refunded_pass']) || decoded['refunded_pass'] == 1;
-      claimId = int.tryParse((decoded['claimId'] ?? '').toString());
-      claimError = null;
-      _notify();
-    } catch (e) {
-      if (_disposed) return;
-      claimError = '$e';
-      _notify();
-    }
-  }
-
-  Future<void> requestNoShowClaim() async {
-    if (_disposed) return;
-    if (!canRequestNoShowClaim) return;
-
-    final src = jobSource;
-    final jobId = int.tryParse(
-        (src['id'] ?? src['job_id'] ?? src['jobId'])?.toString() ?? '');
-    if (jobId == null) {
-      onShowSnackbar?.call('공고 정보를 찾을 수 없습니다.');
-      return;
-    }
-
-    claimLoading = true;
-    claimError = null;
-    _notify();
-
-    try {
-      final resp = await http.post(
-        Uri.parse('$baseUrl/api/attendance/no-show-claims'),
-        headers: await _authHeaders(json: true),
-        body: jsonEncode({
-          'jobId': jobId,
-          'workerId': roomWorkerId,
-          'note': '채팅방에서 신청',
-        }),
-      );
-      if (_disposed) return;
-
-      Map<String, dynamic> data = {};
-      try {
-        final decoded = jsonDecode(resp.body);
-        if (decoded is Map<String, dynamic>) data = decoded;
-      } catch (_) {}
-
-      if (resp.statusCode == 200 && data['message'] == 'CLAIM_CREATED') {
-        hasClaim = true;
-        claimStatus = 'pending';
-        _notify();
-        onShowSnackbar?.call('노쇼 환급 신청이 접수되었습니다.');
-        upsertMessage({
-          'sender': 'system',
-          'message': '📌 사장님이 노쇼 환급 신청을 접수했어요. (검토 후 이용권이 반환됩니다)',
-          'createdAt': DateTime.now().toUtc().toIso8601String(),
-        });
-        return;
-      }
-
-      final errMsg = (data['message'] ?? 'UNKNOWN').toString();
-      final errMap = {
-        'CLAIM_NOT_AVAILABLE_YET': '아직 신청 가능 시간이 아니에요.',
-        'ALREADY_CHECKED_IN': '출근 확인이 완료되어 환급 신청이 불가해요.',
-        'PASS_USAGE_NOT_FOUND': '이용권 사용 기록이 없어 환급이 불가해요.',
-        'FREE_JOB_NO_REFUND': '무료 공고는 환급 대상이 아니에요.',
-        'CLAIM_ALREADY_EXISTS': '이미 환급 신청이 진행 중이에요.',
-      };
-      final ui = errMap[errMsg] ?? '신청 실패: $errMsg';
-      claimError = ui;
-      onShowSnackbar?.call(ui);
-    } catch (e) {
-      if (_disposed) return;
-      claimError = '네트워크 오류: $e';
-      onShowSnackbar?.call('네트워크 오류: $e');
-    } finally {
-      if (!_disposed) {
-        claimLoading = false;
-        _notify();
-      }
-    }
-  }
-
-  // ─────────────────────────────────────────────
   // 지원 취소
   // ─────────────────────────────────────────────
 
@@ -1191,7 +1107,8 @@ class ChatRoomController extends ChangeNotifier {
     if (_disposed) return;
     final src = jobSource;
     final jobId = int.tryParse(
-        (src['id'] ?? src['job_id'] ?? src['jobId'])?.toString() ?? '');
+      (src['id'] ?? src['job_id'] ?? src['jobId'])?.toString() ?? '',
+    );
     if (jobId == null) {
       onShowSnackbar?.call('공고 정보가 없어 취소할 수 없습니다.');
       return;
@@ -1223,9 +1140,10 @@ class ChatRoomController extends ChangeNotifier {
       );
       if (_disposed) return;
 
-      String message = resp.statusCode == 200
-          ? '이 공고에 대한 지원을 취소했어요.'
-          : '지원 취소에 실패했습니다. (${resp.statusCode})';
+      String message =
+          resp.statusCode == 200
+              ? '이 공고에 대한 지원을 취소했어요.'
+              : '지원 취소에 실패했습니다. (${resp.statusCode})';
       try {
         final data = jsonDecode(resp.body);
         if (data is Map && data['message'] is String) message = data['message'];
@@ -1249,9 +1167,10 @@ class ChatRoomController extends ChangeNotifier {
     if (_disposed) return;
     final src = jobSource;
     final targetType = (userType == 'worker') ? 'client' : 'worker';
-    final targetIdRaw = targetType == 'worker'
-        ? (roomWorkerId ?? src['worker_id'] ?? src['workerId'])
-        : (roomClientId ?? src['client_id'] ?? src['clientId']);
+    final targetIdRaw =
+        targetType == 'worker'
+            ? (roomWorkerId ?? src['worker_id'] ?? src['workerId'])
+            : (roomClientId ?? src['client_id'] ?? src['clientId']);
 
     final targetId = int.tryParse(targetIdRaw?.toString() ?? '');
     if (targetId == null) {
@@ -1260,7 +1179,8 @@ class ChatRoomController extends ChangeNotifier {
     }
 
     final jobId = int.tryParse(
-        (src['job_id'] ?? src['jobId'] ?? src['id'])?.toString() ?? '');
+      (src['job_id'] ?? src['jobId'] ?? src['id'])?.toString() ?? '',
+    );
     final token = await _getToken();
     if (token == null || token.isEmpty) {
       onShowSnackbar?.call('로그인이 필요해요.');
@@ -1309,8 +1229,9 @@ class ChatRoomController extends ChangeNotifier {
     request.headers['Authorization'] = 'Bearer $token';
     request.fields['roomId'] = chatRoomId.toString();
     request.fields['sender'] = sender;
-    request.files
-        .add(await http.MultipartFile.fromPath('image', imageFile.path));
+    request.files.add(
+      await http.MultipartFile.fromPath('image', imageFile.path),
+    );
 
     final streamedResp = await request.send();
     final resp = await http.Response.fromStream(streamedResp);

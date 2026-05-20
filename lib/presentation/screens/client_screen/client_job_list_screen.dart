@@ -153,7 +153,7 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
                               '${job.pay}원',
                               style: const TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.blue),
+                                  color: const Color(0xFF3B8AFF)),
                             ),
                             Text('(${job.payType})',
                                 style: const TextStyle(fontSize: 12)),

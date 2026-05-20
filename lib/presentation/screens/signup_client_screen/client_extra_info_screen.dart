@@ -148,7 +148,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                         hintText: '홍길동',
                         isDense: true,
                         filled: true,
-                        fillColor: const Color(0xFFF9FAFB),
+                        fillColor: const Color(0xFFF4F6FA),
                         prefixIcon: const Icon(Icons.person_outline),
                         contentPadding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 14),

@@ -498,16 +498,14 @@ Future<void> _loadBookmarkedJobs() async {
   // ---------------------------
   Widget _headerSearch() {
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-      decoration: const BoxDecoration(
-        color: Color(0xFFDDEBFF),
-      ),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      color: Colors.white,
       child: Container(
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFE6ECF5)),
+          color: const Color(0xFFF4F6FA),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE5E8EB)),
         ),
         child: TextField(
           onChanged: (v) {
@@ -515,8 +513,9 @@ Future<void> _loadBookmarkedJobs() async {
             _applyFilters();
           },
           decoration: const InputDecoration(
-            prefixIcon: Icon(Icons.search, color: Color(0xFF9AA7B2)),
+            prefixIcon: Icon(Icons.search_rounded, color: Color(0xFF9CA3AF), size: 20),
             hintText: '제목 또는 지역 검색',
+            hintStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
             border: InputBorder.none,
             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             isDense: true,
@@ -549,14 +548,14 @@ Future<void> _loadBookmarkedJobs() async {
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                        color: selected ? Colors.black87 : Colors.black54,
+                        color: selected ? const Color(0xFF191F28) : const Color(0xFF6B7280),
                       ),
                     ),
                     if (sub != null) ...[
                       const SizedBox(width: 6),
                       Text(
                         sub,
-                        style: const TextStyle(fontSize: 12, color: Colors.black38, fontWeight: FontWeight.w600),
+                        style: const TextStyle(fontSize: 12, color: const Color(0xFF9CA3AF), fontWeight: FontWeight.w600),
                       ),
                     ],
                   ],
@@ -591,17 +590,33 @@ Future<void> _loadBookmarkedJobs() async {
   Widget _statusChips() {
     Widget chip(String key, String label) {
       final selected = filterStatus == key;
-      return ChoiceChip(
-        label: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-        selected: selected,
-        onSelected: (_) {
+      return GestureDetector(
+        onTap: () {
           setState(() => filterStatus = key);
           _applyFilters();
         },
-        selectedColor: const Color(0xFFE0E0E0),
-        backgroundColor: Colors.white,
-        side: BorderSide(color: selected ? Colors.transparent : const Color(0xFFD5D5D5)),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
+            color: selected ? kBrandBlue : Colors.white,
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: selected ? kBrandBlue : const Color(0xFFE5E8EB),
+            ),
+            boxShadow: selected
+                ? [BoxShadow(color: kBrandBlue.withOpacity(0.20), blurRadius: 6, offset: const Offset(0, 2))]
+                : [],
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: selected ? Colors.white : const Color(0xFF6B7280),
+            ),
+          ),
+        ),
       );
     }
 
@@ -629,10 +644,10 @@ Future<void> _loadBookmarkedJobs() async {
 }
 
 Color _statusColor(Job job) {
-  if (job.status == 'deleted') return Colors.grey;
-  if (job.status == 'active') return Colors.indigo;
-  if (job.status == 'hired' || job.status == 'confirmed') return Colors.green;
-  return Colors.grey;
+  if (job.status == 'deleted') return const Color(0xFF9CA3AF);
+  if (job.status == 'active') return const Color(0xFF3B8AFF);
+  if (job.status == 'hired' || job.status == 'confirmed') return const Color(0xFF10B981);
+  return const Color(0xFF9CA3AF);
 }
 
 
@@ -652,7 +667,7 @@ Color _statusColor(Job job) {
             Text(
               desc,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.grey.shade600, height: 1.4),
+              style: TextStyle(fontSize: 13, color: const Color(0xFF6B7280), height: 1.4),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -705,7 +720,7 @@ final isDeleted = job.status == 'deleted';
             width: 74,
             height: 74,
             color: const Color(0xFFF2F4F7),
-            child: const Icon(Icons.image_not_supported_outlined, color: Colors.black26),
+            child: const Icon(Icons.image_not_supported_outlined, color: const Color(0xFFBCC0CB)),
           ),
         ),
       );
@@ -742,7 +757,7 @@ final isDeleted = job.status == 'deleted';
                           job.location,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12.5, color: Colors.black54, fontWeight: FontWeight.w600),
+                          style: const TextStyle(fontSize: 12.5, color: const Color(0xFF6B7280), fontWeight: FontWeight.w600),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -771,14 +786,14 @@ final isDeleted = job.status == 'deleted';
 
                   Text(
                     '$start ~ $end  ·  ${job.workingHours}',
-                    style: const TextStyle(fontSize: 13, color: Colors.black54, fontWeight: FontWeight.w600),
+                    style: const TextStyle(fontSize: 13, color: const Color(0xFF6B7280), fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 6),
 
                 if (job.pay.isNotEmpty)
   Text(
     '${job.payType} ${_fmtPay(job.pay)}원${bookmarkedTab ? '' : '   ·   지원일 $appliedAt'}',
-    style: const TextStyle(fontSize: 13, color: Colors.black87, fontWeight: FontWeight.w700),
+    style: const TextStyle(fontSize: 13, color: const Color(0xFF191F28), fontWeight: FontWeight.w700),
   ),
 
                   const SizedBox(height: 10),
@@ -841,7 +856,7 @@ final isDeleted = job.status == 'deleted';
                   right: 0,
                   child: Icon(
                     bookmarkedTab ? Icons.favorite : Icons.favorite_border,
-                    color: bookmarkedTab ? kBrandBlue : Colors.black26,
+                    color: bookmarkedTab ? kBrandBlue : const Color(0xFFBCC0CB),
                     size: 22,
                   ),
                 ),
@@ -862,7 +877,7 @@ final isDeleted = job.status == 'deleted';
     ] else ...[
       IconButton(
         icon: const Icon(Icons.chat_bubble_outline, size: 20),
-        color: Colors.indigo,
+        color: const Color(0xFF3B8AFF),
         tooltip: '채팅하기',
         onPressed: () => _openChatRoom(job),
       ),
@@ -894,12 +909,12 @@ final isDeleted = job.status == 'deleted';
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFF4F6FA),
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
           centerTitle: false,
-          iconTheme: const IconThemeData(color: Colors.black),
+          iconTheme: const IconThemeData(color: Color(0xFF191F28)),
           title: const Text(
             '내 활동',
             style: TextStyle(
@@ -912,7 +927,7 @@ final isDeleted = job.status == 'deleted';
           actions: [
             IconButton(
               onPressed: _loadAll,
-              icon: const Icon(Icons.refresh, color: Colors.black54),
+              icon: const Icon(Icons.refresh_rounded, color: Color(0xFF6B7280)),
               tooltip: '새로고침',
             ),
           ],
@@ -927,10 +942,10 @@ final isDeleted = job.status == 'deleted';
                   Expanded(
                     child: list.isEmpty
                         ? _emptyView(forBookmark: _tabIndex == 1)
-                        : ListView.separated(
+                        : ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                             itemCount: list.length,
-                            separatorBuilder: (_, __) => const Divider(height: 1, thickness: 1),
-                            itemBuilder: (context, i) => _jobRow(
+                            itemBuilder: (context, i) => _jobCard(
                               list[i],
                               bookmarkedTab: _tabIndex == 1,
                             ),
@@ -938,6 +953,24 @@ final isDeleted = job.status == 'deleted';
                   ),
                 ],
               ),
+      ),
+    );
+  }
+
+  // 카드 래퍼 — 기존 _jobRow를 흰 카드로 감쌈
+  Widget _jobCard(Job job, {required bool bookmarkedTab}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(color: Color(0x0D000000), blurRadius: 12, offset: Offset(0, 2)),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: _jobRow(job, bookmarkedTab: bookmarkedTab),
       ),
     );
   }

@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:iljujob/config/app_theme.dart';
 import 'chat_room_helpers.dart';
 
 // ─────────────────────────────────────────────
@@ -94,14 +95,14 @@ class ChatRoomJobPanel extends StatelessWidget {
   }
 
   String get _periodText => formatPeriod(
-        _pick(['start_date', 'startDate']),
-        _pick(['end_date', 'endDate']),
-      );
+    _pick(['start_date', 'startDate']),
+    _pick(['end_date', 'endDate']),
+  );
 
   String get _timeText => formatTimeRange(
-        _pick(['start_time', 'startTime']),
-        _pick(['end_time', 'endTime']),
-      );
+    _pick(['start_time', 'startTime']),
+    _pick(['end_time', 'endTime']),
+  );
 
   bool get _isWeekdaysJob {
     final s = (_pick(['weekdays', 'weekday', 'days']) ?? '').toString().trim();
@@ -114,10 +115,8 @@ class ChatRoomJobPanel extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
       decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(color: Color(0xFFE5E7EB), width: 0.7),
-        ),
+        color: AppColors.bgCard,
+        border: Border(bottom: BorderSide(color: AppColors.border, width: 0.7)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -130,7 +129,9 @@ class ChatRoomJobPanel extends StatelessWidget {
                 child: Text(
                   _title,
                   style: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 15),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
                 ),
@@ -139,16 +140,22 @@ class ChatRoomJobPanel extends StatelessWidget {
                 TextButton.icon(
                   onPressed: onOpenJobDetail,
                   style: TextButton.styleFrom(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 0,
+                    ),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
-                  icon: const Icon(Icons.open_in_new_rounded,
-                      size: 14, color: Color(0xFF3B8AFF)),
-                  label: const Text('상세',
-                      style:
-                          TextStyle(fontSize: 11, color: Color(0xFF3B8AFF))),
+                  icon: const Icon(
+                    Icons.open_in_new_rounded,
+                    size: 14,
+                    color: AppColors.primary,
+                  ),
+                  label: const Text(
+                    '상세',
+                    style: TextStyle(fontSize: 11, color: AppColors.primary),
+                  ),
                 ),
             ],
           ),
@@ -161,22 +168,22 @@ class ChatRoomJobPanel extends StatelessWidget {
                 _Pill(
                   icon: Icons.monetization_on_rounded,
                   text: _payText,
-                  bg: const Color(0x143B8AFF),
+                  bg: AppColors.primary.withValues(alpha: 0.08),
                   fg: const Color(0xFF1E40AF),
                 ),
                 const SizedBox(width: 6),
                 _Pill(
                   icon: Icons.calendar_today,
                   text: _periodText,
-                  bg: Colors.indigo.shade50,
-                  fg: Colors.indigo.shade700,
+                  bg: AppColors.primaryLight,
+                  fg: AppColors.primaryDark,
                 ),
                 const SizedBox(width: 6),
                 _Pill(
                   icon: Icons.access_time_rounded,
                   text: _timeText,
-                  bg: Colors.indigo.shade50,
-                  fg: Colors.indigo.shade700,
+                  bg: AppColors.primaryLight,
+                  fg: AppColors.primaryDark,
                 ),
               ],
             ),
@@ -187,32 +194,32 @@ class ChatRoomJobPanel extends StatelessWidget {
           // 액션 버튼
           userType == 'client'
               ? _ClientActions(
-                  isConfirmed: isConfirmed,
-                  isCompleted: isCompleted,
-                  status: status,
-                  onConfirmHire: onConfirmHire,
-                  onMarkCompleted: onMarkCompleted,
-                )
+                isConfirmed: isConfirmed,
+                isCompleted: isCompleted,
+                status: status,
+                onConfirmHire: onConfirmHire,
+                onMarkCompleted: onMarkCompleted,
+              )
               : _WorkerActions(
-                  status: status,
-                  isCompleted: isCompleted,
-                  isWeekdaysJob: _isWeekdaysJob,
-                  workLoading: workLoading,
-                  hasWorkSession: hasWorkSession,
-                  canCancel: canCancel,
-                  checkedIn: checkedIn,
-                  checkinDistanceM: checkinDistanceM,
-                  checkinLoading: checkinLoading,
-                  hasReviewed: hasReviewed,
-                  isConfirmed: isConfirmed,
-                  workerWorkConfirmed: workerWorkConfirmed,
-                  onAddToCalendar: onAddToCalendar,
-                  onOpenCalendar: onOpenCalendar,
-                  onCancelWorkSession: onCancelWorkSession,
-                  onCheckin: onCheckin,
-                  onCancelApplication: onCancelApplication,
-                  onGoReview: onGoReview,
-                ),
+                status: status,
+                isCompleted: isCompleted,
+                isWeekdaysJob: _isWeekdaysJob,
+                workLoading: workLoading,
+                hasWorkSession: hasWorkSession,
+                canCancel: canCancel,
+                checkedIn: checkedIn,
+                checkinDistanceM: checkinDistanceM,
+                checkinLoading: checkinLoading,
+                hasReviewed: hasReviewed,
+                isConfirmed: isConfirmed,
+                workerWorkConfirmed: workerWorkConfirmed,
+                onAddToCalendar: onAddToCalendar,
+                onOpenCalendar: onOpenCalendar,
+                onCancelWorkSession: onCancelWorkSession,
+                onCheckin: onCheckin,
+                onCancelApplication: onCancelApplication,
+                onGoReview: onGoReview,
+              ),
         ],
       ),
     );
@@ -249,16 +256,17 @@ class _ClientActions extends StatelessWidget {
 
     // 채용 확정 전
     if (!isConfirmed) {
-      add(_ActionButton(
-        text: '채용 확정하기',
-        icon: Icons.thumb_up_alt_rounded,
-        color: const Color(0xFF1675F4),
-        onPressed: onConfirmHire,
-      ));
+      add(
+        _ActionButton(
+          text: '채용 확정하기',
+          icon: Icons.thumb_up_alt_rounded,
+          color: const Color(0xFF1675F4),
+          onPressed: onConfirmHire,
+        ),
+      );
       add(
         Container(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
             color: const Color(0xFFEFF6FF),
             borderRadius: BorderRadius.circular(20),
@@ -267,11 +275,14 @@ class _ClientActions extends StatelessWidget {
           child: const Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.info_outline_rounded,
-                  size: 13, color: Color(0xFF2563EB)),
+              Icon(
+                Icons.info_outline_rounded,
+                size: 13,
+                color: Color(0xFF2563EB),
+              ),
               SizedBox(width: 5),
               Text(
-                '확정 후 출근확인·노쇼환급 가능',
+                '확정 후 출근확인 가능',
                 style: TextStyle(
                   fontSize: 11,
                   color: Color(0xFF1D4ED8),
@@ -292,17 +303,18 @@ class _ClientActions extends StatelessWidget {
 
     // 확정 후: 완료 처리
     if (!isCompleted) {
-      add(_ActionButton(
-        text: '알바 완료 처리',
-        icon: Icons.check_circle_rounded,
-        color: Colors.green,
-        onPressed: onMarkCompleted,
-      ));
+      add(
+        _ActionButton(
+          text: '알바 완료 처리',
+          icon: Icons.check_circle_rounded,
+          color: Colors.green,
+          onPressed: onMarkCompleted,
+        ),
+      );
     } else {
       add(
         Container(
-          padding:
-              const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
           decoration: BoxDecoration(
             color: Colors.grey[100],
             borderRadius: BorderRadius.circular(20),
@@ -310,9 +322,10 @@ class _ClientActions extends StatelessWidget {
           child: const Text(
             '✔ 알바 완료됨',
             style: TextStyle(
-                color: Colors.grey,
-                fontWeight: FontWeight.bold,
-                fontSize: 12),
+              color: Colors.grey,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
           ),
         ),
       );
@@ -326,7 +339,6 @@ class _ClientActions extends StatelessWidget {
           physics: const BouncingScrollPhysics(),
           child: Row(children: actions),
         ),
-
       ],
     );
   }
@@ -383,10 +395,10 @@ class _WorkerActions extends StatelessWidget {
   bool get _hireConfirmed => isConfirmed || workerWorkConfirmed;
 
   Widget _loadingDot(Color color) => SizedBox(
-        width: 14,
-        height: 14,
-        child: CircularProgressIndicator(strokeWidth: 2, color: color),
-      );
+    width: 14,
+    height: 14,
+    child: CircularProgressIndicator(strokeWidth: 2, color: color),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -397,8 +409,7 @@ class _WorkerActions extends StatelessWidget {
       actions.add(w);
     }
 
-    final canBook =
-        !_isCancelled && !_blocked && !_expired && !isCompleted;
+    final canBook = !_isCancelled && !_blocked && !_expired && !isCompleted;
 
     // ── 캘린더 (요일 공고면 숨김)
     if (!isWeekdaysJob) {
@@ -410,20 +421,25 @@ class _WorkerActions extends StatelessWidget {
               backgroundColor: const Color(0xFF3B8AFF),
               elevation: 0,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999)),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
             ),
-            icon: workLoading
-                ? _loadingDot(Colors.white)
-                : const Icon(Icons.event_available_rounded,
-                    size: 16, color: Colors.white),
+            icon:
+                workLoading
+                    ? _loadingDot(Colors.white)
+                    : const Icon(
+                      Icons.event_available_rounded,
+                      size: 16,
+                      color: Colors.white,
+                    ),
             label: const Text(
               '캘린더에 추가하기',
               style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white),
+                fontSize: 13,
+                fontWeight: FontWeight.w800,
+                color: Colors.white,
+              ),
             ),
           ),
         );
@@ -435,14 +451,15 @@ class _WorkerActions extends StatelessWidget {
               foregroundColor: const Color(0xFF1675F4),
               side: const BorderSide(color: Color(0xFF1675F4)),
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999)),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
             ),
             icon: const Icon(Icons.calendar_month_rounded, size: 16),
-            label: const Text('캘린더',
-                style: TextStyle(
-                    fontSize: 13, fontWeight: FontWeight.w600)),
+            label: const Text(
+              '캘린더',
+              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            ),
           ),
         );
 
@@ -454,16 +471,21 @@ class _WorkerActions extends StatelessWidget {
                 foregroundColor: const Color(0xFFDC2626),
                 side: const BorderSide(color: Color(0xFFDC2626)),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999)),
+                  borderRadius: BorderRadius.circular(999),
+                ),
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 10, vertical: 8),
+                  horizontal: 10,
+                  vertical: 8,
+                ),
               ),
-              icon: workLoading
-                  ? _loadingDot(const Color(0xFFDC2626))
-                  : const Icon(Icons.event_busy_rounded, size: 16),
-              label: const Text('일정 취소',
-                  style: TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.w600)),
+              icon:
+                  workLoading
+                      ? _loadingDot(const Color(0xFFDC2626))
+                      : const Icon(Icons.event_busy_rounded, size: 16),
+              label: const Text(
+                '일정 취소',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              ),
             ),
           );
         }
@@ -471,7 +493,8 @@ class _WorkerActions extends StatelessWidget {
     }
 
     // ── 출근 확인
-    final canCheckin = !checkedIn &&
+    final canCheckin =
+        !checkedIn &&
         status == 'active' &&
         !isWeekdaysJob &&
         !_isCancelled &&
@@ -488,28 +511,36 @@ class _WorkerActions extends StatelessWidget {
             backgroundColor: const Color(0xFF10B981),
             elevation: 0,
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(999)),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+              borderRadius: BorderRadius.circular(999),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           ),
-          icon: checkinLoading
-              ? _loadingDot(Colors.white)
-              : const Icon(Icons.how_to_reg_rounded,
-                  size: 16, color: Colors.white),
-          label: const Text('출근 확인',
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white)),
+          icon:
+              checkinLoading
+                  ? _loadingDot(Colors.white)
+                  : const Icon(
+                    Icons.how_to_reg_rounded,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+          label: const Text(
+            '출근 확인',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: Colors.white,
+            ),
+          ),
         ),
       );
     } else if (checkedIn) {
       add(
         _Pill(
           icon: Icons.verified_rounded,
-          text: checkinDistanceM != null
-              ? '출근 확인됨 (${checkinDistanceM}m)'
-              : '출근 확인됨',
+          text:
+              checkinDistanceM != null
+                  ? '출근 확인됨 (${checkinDistanceM}m)'
+                  : '출근 확인됨',
           bg: const Color(0x1410B981),
           fg: const Color(0xFF047857),
         ),
@@ -524,15 +555,14 @@ class _WorkerActions extends StatelessWidget {
           foregroundColor: const Color(0xFFDC2626),
           side: const BorderSide(color: Color(0xFFDC2626)),
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(999)),
-          padding:
-              const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            borderRadius: BorderRadius.circular(999),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         ),
         icon: const Icon(Icons.cancel_outlined, size: 16),
         label: Text(
           _isCancelled ? '지원 취소됨' : '지원 취소',
-          style: const TextStyle(
-              fontSize: 13, fontWeight: FontWeight.w600),
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -544,8 +574,7 @@ class _WorkerActions extends StatelessWidget {
         icon: Icon(
           Icons.edit_note,
           size: 18,
-          color:
-              hasReviewed ? Colors.grey : const Color(0xFF1675F4),
+          color: hasReviewed ? Colors.grey : const Color(0xFF1675F4),
         ),
         label: Text(
           hasReviewed ? '후기 작성 완료' : '후기 남기기',
@@ -575,32 +604,27 @@ class _Pill extends StatelessWidget {
   final Color? bg;
   final Color? fg;
 
-  const _Pill({
-    required this.icon,
-    required this.text,
-    this.bg,
-    this.fg,
-  });
+  const _Pill({required this.icon, required this.text, this.bg, this.fg});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: bg ?? Colors.indigo.shade50,
+        color: bg ?? const Color(0xFFEEF5FF),
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: fg ?? Colors.indigo.shade700),
+          Icon(icon, size: 14, color: fg ?? const Color(0xFF1D68E5)),
           const SizedBox(width: 6),
           Text(
             text,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: fg ?? Colors.indigo.shade700,
+              color: fg ?? const Color(0xFF1D68E5),
             ),
           ),
         ],
@@ -631,27 +655,22 @@ class _ActionButton extends StatelessWidget {
     final disabled = onPressed == null;
     return ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
-        backgroundColor:
-            disabled ? const Color(0xFFE5E7EB) : color,
+        backgroundColor: disabled ? const Color(0xFFE5E7EB) : color,
         foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10)),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         elevation: 0,
         shadowColor: Colors.transparent,
       ),
-      icon: Icon(icon,
-          size: 15,
-          color: disabled
-              ? const Color(0xFF9CA3AF)
-              : Colors.white),
+      icon: Icon(
+        icon,
+        size: 15,
+        color: disabled ? const Color(0xFF9CA3AF) : Colors.white,
+      ),
       label: Text(
         text,
         style: TextStyle(
-          color: disabled
-              ? const Color(0xFF9CA3AF)
-              : Colors.white,
+          color: disabled ? const Color(0xFF9CA3AF) : Colors.white,
           fontWeight: FontWeight.w700,
           fontSize: 13,
           letterSpacing: -0.3,
@@ -689,12 +708,16 @@ class ChatRoomConsentBanner extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Color(0xFFEFF6FF),
         border: Border(
-            bottom: BorderSide(color: Color(0xFFDBEAFE), width: 0.5)),
+          bottom: BorderSide(color: Color(0xFFDBEAFE), width: 0.5),
+        ),
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline_rounded,
-              size: 18, color: Color(0xFF2563EB)),
+          const Icon(
+            Icons.info_outline_rounded,
+            size: 18,
+            color: Color(0xFF2563EB),
+          ),
           const SizedBox(width: 8),
           const Expanded(
             child: Text(
@@ -707,13 +730,11 @@ class ChatRoomConsentBanner extends StatelessWidget {
             onPressed: busy ? null : onReject,
             style: TextButton.styleFrom(
               foregroundColor: const Color(0xFFDC2626),
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: const Text('거절',
-                style: TextStyle(fontSize: 12)),
+            child: const Text('거절', style: TextStyle(fontSize: 12)),
           ),
           const SizedBox(width: 4),
           ElevatedButton(
@@ -721,22 +742,24 @@ class ChatRoomConsentBanner extends StatelessWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF3B82F6),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999)),
+                borderRadius: BorderRadius.circular(999),
+              ),
             ),
-            child: busy
-                ? const SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Colors.white),
-                  )
-                : const Text('수락',
-                    style: TextStyle(fontSize: 12)),
+            child:
+                busy
+                    ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                    : const Text('수락', style: TextStyle(fontSize: 12)),
           ),
         ],
       ),
@@ -762,12 +785,16 @@ class ChatRoomWaitingBanner extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Color(0xFFFFF7E6),
         border: Border(
-            bottom: BorderSide(color: Color(0xFFFDE68A), width: 0.5)),
+          bottom: BorderSide(color: Color(0xFFFDE68A), width: 0.5),
+        ),
       ),
       child: const Row(
         children: [
-          Icon(Icons.hourglass_bottom_rounded,
-              size: 18, color: Color(0xFFEA580C)),
+          Icon(
+            Icons.hourglass_bottom_rounded,
+            size: 18,
+            color: Color(0xFFEA580C),
+          ),
           SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -804,13 +831,17 @@ class ChatRoomCancelledBanner extends StatelessWidget {
       decoration: const BoxDecoration(
         color: Color(0xFFFEE2E2),
         border: Border(
-            bottom: BorderSide(color: Color(0xFFFCA5A5), width: 0.5)),
+          bottom: BorderSide(color: Color(0xFFFCA5A5), width: 0.5),
+        ),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Icon(Icons.info_outline_rounded,
-              size: 18, color: Color(0xFFB91C1C)),
+          const Icon(
+            Icons.info_outline_rounded,
+            size: 18,
+            color: Color(0xFFB91C1C),
+          ),
           const SizedBox(width: 8),
           const Expanded(
             child: Text(
@@ -823,17 +854,16 @@ class ChatRoomCancelledBanner extends StatelessWidget {
           TextButton(
             onPressed: onPostJob,
             style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 10, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               backgroundColor: const Color(0xFF3B8AFF),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999)),
+                borderRadius: BorderRadius.circular(999),
+              ),
             ),
-            child: const Text('공고 더 쓰기',
-                style: TextStyle(fontSize: 11)),
+            child: const Text('공고 더 쓰기', style: TextStyle(fontSize: 11)),
           ),
         ],
       ),

@@ -616,58 +616,84 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
     );
   }
 
-  Widget _buildAppBar() {
-    return SliverAppBar(
-      pinned: true,
-      expandedHeight: 180,
-      backgroundColor: _brandBlue,
-      title: const Text('구독하기'),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.restore),
-          onPressed: _isProcessing ? null : _restorePurchases,
-          tooltip: '구매 복원',
-        ),
-        IconButton(
-          icon: const Icon(Icons.refresh),
-          onPressed: _loading ? null : _loadProducts,
-          tooltip: '새로고침',
-        ),
-      ],
-      flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [_brandBlue, Color(0xFF6FB3FF)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+ Widget _buildAppBar() {
+  return SliverAppBar(
+    pinned: true,
+    expandedHeight: 190,
+    backgroundColor: _brandBlue,
+    title: const Text('구독하기'),
+    actions: [
+      IconButton(
+        icon: const Icon(Icons.restore),
+        onPressed: _isProcessing ? null : _restorePurchases,
+        tooltip: '구매 복원',
+      ),
+      IconButton(
+        icon: const Icon(Icons.refresh),
+        onPressed: _loading ? null : _loadProducts,
+        tooltip: '새로고침',
+      ),
+    ],
+    flexibleSpace: FlexibleSpaceBar(
+      background: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [_brandBlue, Color(0xFF6FB3FF)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-          child: const SafeArea(
-            bottom: false,
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(20, 64, 20, 16),
+        ),
+        child: const SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(20, 72, 20, 18),
+            child: Align(
+              alignment: Alignment.bottomLeft,
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('오늘 채용, 오늘 끝!',
-                      style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600)),
-                  SizedBox(height: 8),
-                  Text('알바일주 구독',
-                      style: TextStyle(color: Colors.white, fontSize: 28,
-                          fontWeight: FontWeight.w800, letterSpacing: -0.3)),
-                  SizedBox(height: 8),
-                  Text('매달 유료 공고 이용권 지급 · AI 기능 활성화 · 채팅 빠른연결',
-                      style: TextStyle(color: Colors.white, fontSize: 13)),
+                  Text(
+                    '오늘 채용, 오늘 끝!',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    '알바일주 구독',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    '매달 유료 공고 이용권 지급 · AI 기능 활성화 · 채팅 빠른연결',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
         ),
       ),
-    );
-  }
-
+    ),
+  );
+}
   Widget _buildBenefits() {
     return SliverToBoxAdapter(
       child: Padding(
@@ -748,7 +774,7 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
               ),
               const SizedBox(height: 8),
               Text(product.description,
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+                  style: TextStyle(color: const Color(0xFF6B7280), fontSize: 14)),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -786,13 +812,13 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.shopping_cart_outlined, size: 48, color: Colors.grey.shade400),
+            Icon(Icons.shopping_cart_outlined, size: 48, color: const Color(0xFFBCC0CB)),
             const SizedBox(height: 16),
             Text('상품을 불러올 수 없습니다',
-                style: TextStyle(fontSize: 16, color: Colors.grey.shade600)),
+                style: TextStyle(fontSize: 16, color: const Color(0xFF6B7280))),
             const SizedBox(height: 8),
             Text('네트워크 연결을 확인하고 다시 시도해주세요',
-                style: TextStyle(color: Colors.grey.shade500)),
+                style: TextStyle(color: const Color(0xFF9CA3AF))),
             const SizedBox(height: 16),
             ElevatedButton(onPressed: _loadProducts, child: const Text('다시 시도')),
           ],

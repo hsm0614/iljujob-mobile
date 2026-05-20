@@ -103,7 +103,7 @@ class _FancyTabBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(26),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 14, offset: Offset(0, 6))],
+        boxShadow: const [BoxShadow(color: const Color(0x1F000000), blurRadius: 14, offset: Offset(0, 6))],
       ),
       child: TabBar(
         tabs: tabs,
@@ -188,7 +188,7 @@ Widget build(BuildContext context) {
             // 헤더
             Row(
               children: [
-                Icon(widget.titleIcon, color: Colors.black54),
+                Icon(widget.titleIcon, color: const Color(0xFF6B7280)),
                 const SizedBox(width: 8),
                 Text('FAQ', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
                 const SizedBox(width: 8),
@@ -285,7 +285,7 @@ class _FaqCardState extends State<_FaqCard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: open ? const Color(0xFF3B8AFF) : Colors.black12, width: 1),
+        border: Border.all(color: open ? const Color(0xFF3B8AFF) : const Color(0x1F000000), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(open ? .08 : .04),
@@ -345,11 +345,11 @@ class _Empty extends StatelessWidget {
       alignment: Alignment.center,
       child: Column(
         children: [
-          const Icon(Icons.search_off_rounded, size: 44, color: Colors.black38),
+          const Icon(Icons.search_off_rounded, size: 44, color: const Color(0xFF9CA3AF)),
           const SizedBox(height: 8),
           const Text('검색 결과가 없어요', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
-          Text('‘$q’와(과) 관련된 질문을 찾지 못했어요.', style: const TextStyle(color: Colors.black54)),
+          Text('‘$q’와(과) 관련된 질문을 찾지 못했어요.', style: const TextStyle(color: const Color(0xFF6B7280))),
         ],
       ),
     );

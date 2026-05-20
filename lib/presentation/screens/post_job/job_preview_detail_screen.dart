@@ -8,7 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:iljujob/data/services/job_insight_service.dart';
 
 const _kBrand  = Color(0xFF3B8AFF);
-const _kBg     = Color(0xFFF6F7FB);
+const _kBg     = Color(0xFFF4F6FA);
 const _kBorder = Color(0xFFE5E8EB);
 const _kText   = Color(0xFF191F28);
 const _kLabel  = Color(0xFF8B95A1);
@@ -258,7 +258,7 @@ final results = await Future.wait([
                 Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: Colors.grey.shade200,
+                    decoration: BoxDecoration(color: const Color(0xFFE5E8EB),
                         borderRadius: BorderRadius.circular(6)),
                     child: Text(widget.category,
                       style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700))),
@@ -701,7 +701,7 @@ if (_tipsExpanded)
             ? Colors.red.shade50
             : tip.impact == 'high'
                 ? const Color(0xFFFFF8E1)
-                : const Color(0xFFF8F9FA),
+                : const Color(0xFFF4F6FA),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: tip.impact == 'critical'

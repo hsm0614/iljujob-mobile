@@ -105,7 +105,7 @@ String url = selectedType == 'job'
           _loadReports();
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: isSelected ? Colors.blue : Colors.grey.shade300,
+          backgroundColor: isSelected ? const Color(0xFF3B8AFF) : const Color(0xFFD1D5DB),
           foregroundColor: isSelected ? Colors.white : Colors.black,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),

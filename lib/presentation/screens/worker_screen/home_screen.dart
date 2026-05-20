@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'package:badges/badges.dart' as badges;
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'home_main_screen.dart';
@@ -17,10 +16,12 @@ import 'package:iljujob/data/models/promo_model.dart';
 import 'package:iljujob/data/services/ai_api.dart';
 import 'package:iljujob/widget/recommended_section.dart';
 import '../worker_calendar_screen.dart';
+import 'package:iljujob/config/app_theme.dart';
+import 'package:iljujob/widget/app_ui.dart';
 
-const BRAND_COLOR = Color(0xFF3182F6);
-const BRAND_DARK  = Color(0xFF3182F6);
-const AI_LABEL    = 'AI 추천';
+const BRAND_COLOR = AppColors.primary;
+const BRAND_DARK = AppColors.primaryDark;
+const AI_LABEL = 'AI 추천';
 
 class HomeScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -50,8 +51,9 @@ class _HomeScreenState extends State<HomeScreen> {
     _selectedIndex = widget.initialTabIndex;
     _initializeHomeScreen();
     _setupFirebaseMessagingListeners();
-    WidgetsBinding.instance
-        .addPostFrameCallback((_) => _maybeShowPromoIfHomeTab());
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _maybeShowPromoIfHomeTab(),
+    );
   }
 
   @override
@@ -66,7 +68,8 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_promoShownThisSession) return;
     if (!mounted) return;
     final promo = await promoService.fetchPromo(
-      platform: Theme.of(context).platform == TargetPlatform.iOS ? 'ios' : 'android',
+      platform:
+          Theme.of(context).platform == TargetPlatform.iOS ? 'ios' : 'android',
       userType: userType,
     );
     if (promo == null) return;
@@ -89,66 +92,99 @@ class _HomeScreenState extends State<HomeScreen> {
         final dialogWidth = (size.width - 48).clamp(320.0, 431.0);
         final imageHeight = dialogWidth * (p.imageH / p.imageW);
         return StatefulBuilder(
-          builder: (context, setState) => Dialog(
-            elevation: 8,
-            backgroundColor: Colors.white,
-            insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: SizedBox(
-                    width: dialogWidth,
-                    height: imageHeight,
-                    child: Image.network(p.imageUrl,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (c, child, progress) =>
-                            progress == null ? child : const Center(child: CircularProgressIndicator()),
-                        errorBuilder: (c, e, s) =>
-                            const Center(child: Icon(Icons.broken_image))),
-                  ),
+          builder:
+              (context, setState) => Dialog(
+                elevation: 8,
+                backgroundColor: Colors.white,
+                insetPadding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 24,
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(
-                    children: [
-                      Checkbox(
-                        value: dontShow,
-                        onChanged: (v) => setState(() => dontShow = v ?? false),
-                      ),
-                      Expanded(child: Text(p.checkboxLabel, style: const TextStyle(fontSize: 14))),
-                      if (p.deeplink != null)
-                        TextButton(
-                          onPressed: () async {
-                            if (dontShow) await promoService.snooze(p);
-                            if (!context.mounted) return;
-                            Navigator.pop(context);
-                            await _openDeeplink(p.deeplink!);
-                          },
-                          child: Text(p.ctaLabel),
-                        ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.indigo,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        ),
-                        onPressed: () async {
-                          if (dontShow) await promoService.snooze(p);
-                          if (!context.mounted) return;
-                          Navigator.pop(context);
-                        },
-                        child: const Text('닫기', style: TextStyle(color: Colors.white)),
-                      ),
-                    ],
-                  ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-              ],
-            ),
-          ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                      child: SizedBox(
+                        width: dialogWidth,
+                        height: imageHeight,
+                        child: Image.network(
+                          p.imageUrl,
+                          fit: BoxFit.cover,
+                          loadingBuilder:
+                              (c, child, progress) =>
+                                  progress == null
+                                      ? child
+                                      : const Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                          errorBuilder:
+                              (c, e, s) =>
+                                  const Center(child: Icon(Icons.broken_image)),
+                        ),
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: dontShow,
+                            onChanged:
+                                (v) => setState(() => dontShow = v ?? false),
+                          ),
+                          Expanded(
+                            child: Text(
+                              p.checkboxLabel,
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ),
+                          if (p.deeplink != null)
+                            TextButton(
+                              onPressed: () async {
+                                if (dontShow) await promoService.snooze(p);
+                                if (!context.mounted) return;
+                                Navigator.pop(context);
+                                await _openDeeplink(p.deeplink!);
+                              },
+                              child: Text(p.ctaLabel),
+                            ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF3B8AFF),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                            ),
+                            onPressed: () async {
+                              if (dontShow) await promoService.snooze(p);
+                              if (!context.mounted) return;
+                              Navigator.pop(context);
+                            },
+                            child: const Text(
+                              '닫기',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
         );
       },
     );
@@ -161,7 +197,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final prefs = await SharedPreferences.getInstance();
       final phone = prefs.getString('userPhone');
       final type = prefs.getString('userType');
-      if (phone != null && type != null) await _sendFcmTokenToServer(phone, type);
+      if (phone != null && type != null)
+        await _sendFcmTokenToServer(phone, type);
       _loadUserInfoAndUnreadCount();
       _startUnreadTimer();
     } catch (e) {
@@ -170,14 +207,22 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _sendFcmTokenToServer(String? phone, String? userType) async {
-    if (phone == null || phone.trim().isEmpty || userType == null || userType.trim().isEmpty) return;
+    if (phone == null ||
+        phone.trim().isEmpty ||
+        userType == null ||
+        userType.trim().isEmpty)
+      return;
     final token = await FirebaseMessaging.instance.getToken();
     if (token == null || token.trim().isEmpty) return;
     try {
       await http.post(
         Uri.parse('$baseUrl/api/user/update-token'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'userPhone': phone, 'userType': userType, 'fcmToken': token}),
+        body: jsonEncode({
+          'userPhone': phone,
+          'userType': userType,
+          'fcmToken': token,
+        }),
       );
     } catch (e) {
       debugPrint('❌ FCM 토큰 전송 오류: $e');
@@ -197,7 +242,8 @@ class _HomeScreenState extends State<HomeScreen> {
       notification.body,
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          'basic_channel', '기본 채널',
+          'basic_channel',
+          '기본 채널',
           channelDescription: '일반 알림을 위한 채널',
           importance: Importance.max,
           priority: Priority.high,
@@ -215,16 +261,26 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _startUnreadTimer() {
-    _unreadTimer = Timer.periodic(const Duration(seconds: 30), (_) => _fetchUnreadCount());
+    _unreadTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => _fetchUnreadCount(),
+    );
   }
 
   void _initSocket() {
     if (socket != null && socket!.connected) return;
-    socket = IO.io(baseUrl, <String, dynamic>{'transports': ['websocket'], 'autoConnect': true});
-    socket!.onConnect((_) => socket!.emit('register_user', {'userPhone': userPhone}));
+    socket = IO.io(baseUrl, <String, dynamic>{
+      'transports': ['websocket'],
+      'autoConnect': true,
+    });
+    socket!.onConnect(
+      (_) => socket!.emit('register_user', {'userPhone': userPhone}),
+    );
     socket!.on('unreadCountUpdated', (data) {
       if (data['userPhone'] == userPhone && data['userType'] == userType) {
-        setState(() => unreadCount = int.tryParse(data['newCount'].toString()) ?? 0);
+        setState(
+          () => unreadCount = int.tryParse(data['newCount'].toString()) ?? 0,
+        );
       }
     });
     socket!.onDisconnect((_) => debugPrint('❌ 소켓 연결 종료'));
@@ -239,12 +295,16 @@ class _HomeScreenState extends State<HomeScreen> {
     final userId = prefs.getInt('userId')?.toString() ?? '';
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl/api/chat/unread-count?userId=$userId&userType=$userType'),
+        Uri.parse(
+          '$baseUrl/api/chat/unread-count?userId=$userId&userType=$userType',
+        ),
         headers: {'Authorization': 'Bearer $token'},
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        setState(() => unreadCount = int.tryParse(data['unreadCount'].toString()) ?? 0);
+        setState(
+          () => unreadCount = int.tryParse(data['unreadCount'].toString()) ?? 0,
+        );
       }
     } catch (e) {
       debugPrint('❌ 안읽은 메시지 수 오류: $e');
@@ -282,14 +342,20 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─────────────────────────────────────────────
   Widget _buildBottomNav() {
     return Container(
-      decoration: BoxDecoration(
+      decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey.shade200, width: 0.5)),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0x0A000000),
+            blurRadius: 16,
+            offset: Offset(0, -2),
+          ),
+        ],
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 56,
+          height: 60,
           child: Row(
             children: [
               _navItem(
@@ -329,30 +395,12 @@ class _HomeScreenState extends State<HomeScreen> {
     required String label,
   }) {
     final isActive = _selectedIndex == index;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => _onItemTapped(index),
-        behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              isActive ? activeIcon : icon,
-              size: 22,
-              color: isActive ? BRAND_COLOR : Colors.grey.shade400,
-            ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
-                color: isActive ? BRAND_COLOR : Colors.grey.shade400,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return AppBottomNavItem(
+      isActive: isActive,
+      icon: icon,
+      activeIcon: activeIcon,
+      label: label,
+      onTap: () => _onItemTapped(index),
     );
   }
 
@@ -408,7 +456,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.auto_awesome_rounded, size: 9, color: Colors.white),
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 9,
+                      color: Colors.white,
+                    ),
                     SizedBox(width: 3),
                     Text(
                       'AI 추천',
@@ -432,43 +484,14 @@ class _HomeScreenState extends State<HomeScreen> {
   // 채팅 탭 (뱃지 포함)
   Widget _navItemChat() {
     final isActive = _selectedIndex == 3;
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => _onItemTapped(3),
-        behavior: HitTestBehavior.opaque,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            badges.Badge(
-              showBadge: unreadCount > 0,
-              badgeContent: Text(
-                unreadCount > 99 ? '99+' : '$unreadCount',
-                style: const TextStyle(color: Colors.white, fontSize: 9),
-              ),
-              position: badges.BadgePosition.topEnd(top: -6, end: -8),
-              badgeStyle: const badges.BadgeStyle(
-                badgeColor: Colors.red,
-                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                elevation: 0,
-              ),
-              child: Icon(
-                isActive ? Icons.chat_bubble_rounded : Icons.chat_bubble_outline_rounded,
-                size: 22,
-                color: isActive ? BRAND_COLOR : Colors.grey.shade400,
-              ),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              '채팅',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
-                color: isActive ? BRAND_COLOR : Colors.grey.shade400,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return AppBottomNavItem(
+      isActive: isActive,
+      icon: Icons.chat_bubble_outline_rounded,
+      activeIcon: Icons.chat_bubble_rounded,
+      label: '채팅',
+      onTap: () => _onItemTapped(3),
+      badgeLabel:
+          unreadCount > 0 ? (unreadCount > 99 ? '99+' : '$unreadCount') : null,
     );
   }
 
@@ -483,18 +506,25 @@ class _HomeScreenState extends State<HomeScreen> {
       useRootNavigator: false,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black54,
-      builder: (ctx) => DraggableScrollableSheet(
-        initialChildSize: 0.88,
-        minChildSize: 0.55,
-        maxChildSize: 0.96,
-        builder: (context, scrollController) => ClipRRect(
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-          child: Material(
-            color: Colors.white,
-            child: _RecommendSheet(api: _aiApi, scrollController: scrollController),
+      builder:
+          (ctx) => DraggableScrollableSheet(
+            initialChildSize: 0.88,
+            minChildSize: 0.55,
+            maxChildSize: 0.96,
+            builder:
+                (context, scrollController) => ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(18),
+                  ),
+                  child: Material(
+                    color: Colors.white,
+                    child: _RecommendSheet(
+                      api: _aiApi,
+                      scrollController: scrollController,
+                    ),
+                  ),
+                ),
           ),
-        ),
-      ),
     );
   }
 }
@@ -513,7 +543,14 @@ class _RecommendSheet extends StatefulWidget {
 
 class _RecommendSheetState extends State<_RecommendSheet> {
   int _reloadTick = 0;
-  final List<String> _chips = const ['오늘 마감', '초보 가능', '단기/하루', '주급', '당일지급', '인기 공고'];
+  final List<String> _chips = const [
+    '오늘 마감',
+    '초보 가능',
+    '단기/하루',
+    '주급',
+    '당일지급',
+    '인기 공고',
+  ];
   final Set<String> _selected = {};
 
   @override
@@ -528,8 +565,12 @@ class _RecommendSheetState extends State<_RecommendSheet> {
               padding: const EdgeInsets.only(top: 10, bottom: 6),
               child: Center(
                 child: Container(
-                  width: 44, height: 4,
-                  decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(999)),
+                  width: 44,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.black26,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
                 ),
               ),
             ),
@@ -543,10 +584,22 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('AI 맞춤 추천', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
+                        Text(
+                          'AI 맞춤 추천',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
                         SizedBox(height: 4),
-                        Text('프로필·위치 기반으로 지금 갈만한 공고만 추렸어요.',
-                            style: TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.2)),
+                        Text(
+                          '프로필·위치 기반으로 지금 갈만한 공고만 추렸어요.',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: Colors.black54,
+                            height: 1.2,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -568,45 +621,71 @@ class _RecommendSheetState extends State<_RecommendSheet> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
               child: Wrap(
-                spacing: 8, runSpacing: 8,
-                children: _chips.map((label) {
-                  final selected = _selected.contains(label);
-                  return GestureDetector(
-                    onTap: () => setState(() {
-                      selected ? _selected.remove(label) : _selected.add(label);
-                      _reloadTick++;
-                    }),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 140),
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: selected ? BRAND_COLOR : const Color(0xFFEAF2FF),
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: selected ? BRAND_COLOR : BRAND_COLOR.withOpacity(.25)),
-                      ),
-                      child: Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w800,
-                          color: selected ? Colors.white : const Color(0xFF1E2A3A),
+                spacing: 8,
+                runSpacing: 8,
+                children:
+                    _chips.map((label) {
+                      final selected = _selected.contains(label);
+                      return GestureDetector(
+                        onTap:
+                            () => setState(() {
+                              selected
+                                  ? _selected.remove(label)
+                                  : _selected.add(label);
+                              _reloadTick++;
+                            }),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 140),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color:
+                                selected
+                                    ? BRAND_COLOR
+                                    : const Color(0xFFEAF2FF),
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                              color:
+                                  selected
+                                      ? BRAND_COLOR
+                                      : BRAND_COLOR.withOpacity(.25),
+                            ),
+                          ),
+                          child: Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w800,
+                              color:
+                                  selected
+                                      ? Colors.white
+                                      : const Color(0xFF1E2A3A),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  );
-                }).toList(),
+                      );
+                    }).toList(),
               ),
             ),
           ),
           SliverToBoxAdapter(
-            child: Container(height: 1, color: Colors.black12, margin: const EdgeInsets.only(bottom: 10)),
+            child: Container(
+              height: 1,
+              color: Colors.black12,
+              margin: const EdgeInsets.only(bottom: 10),
+            ),
           ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade50,
                     borderRadius: BorderRadius.circular(12),
@@ -614,12 +693,20 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.lightbulb_outline_rounded, size: 18, color: BRAND_COLOR),
+                      Icon(
+                        Icons.lightbulb_outline_rounded,
+                        size: 18,
+                        color: BRAND_COLOR,
+                      ),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           '추천은 "거리 + 일정 + 선호 + 최근 지원 패턴"을 같이 봐요. 마음에 안 들면 새로고침!',
-                          style: TextStyle(fontSize: 12.5, color: Colors.black87, height: 1.2),
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: Colors.black87,
+                            height: 1.2,
+                          ),
                         ),
                       ),
                     ],
@@ -633,7 +720,10 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                 const SizedBox(height: 12),
                 const Opacity(
                   opacity: 0.55,
-                  child: Text('※ AI 추천은 정확도를 계속 개선 중입니다.', style: TextStyle(fontSize: 11.5)),
+                  child: Text(
+                    '※ AI 추천은 정확도를 계속 개선 중입니다.',
+                    style: TextStyle(fontSize: 11.5),
+                  ),
                 ),
               ]),
             ),

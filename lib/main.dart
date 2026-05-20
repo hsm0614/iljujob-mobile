@@ -64,6 +64,7 @@ import 'package:iljujob/presentation/screens/client_screen/worker_map_screen.dar
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:iljujob/presentation/screens/worker_calendar_screen.dart';
 import 'package:iljujob/presentation/screens/signup_client_screen/ClientWelcomeScreen.dart';
+import 'package:iljujob/config/app_theme.dart';
 // ============================================================
 // 전역 변수
 // ============================================================
@@ -247,7 +248,7 @@ Future<void> sendFcmTokenUnified() async {
         'fcmToken': fcm,
       }),
     );
-    debugPrint('✅ FCM 토큰 전송: ${resp.statusCode} ${resp.body}');
+
   } catch (e) {
     debugPrint('❌ FCM 토큰 전송 실패: $e');
   }
@@ -612,12 +613,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: ThemeData(
-        useMaterial3: true,
-        fontFamily: 'Jalnan2TTF',
-        textTheme: ThemeData.light().textTheme,
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.indigo),
-      ),
+      theme: AppTheme.theme,
       navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
       ],

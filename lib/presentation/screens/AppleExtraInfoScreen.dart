@@ -157,7 +157,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: const Color(0xFFF4F6FA),
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
@@ -262,9 +262,9 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                             });
                           },
                           selectedColor: kBrand.withOpacity(0.2),
-                          backgroundColor: Colors.grey.shade200,
+                          backgroundColor: const Color(0xFFE5E8EB),
                           labelStyle: TextStyle(
-                            color: _gender == '남성' ? kBrand : Colors.black87,
+                            color: _gender == '남성' ? kBrand : const Color(0xFF191F28),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -277,9 +277,9 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                             });
                           },
                           selectedColor: kBrand.withOpacity(0.2),
-                          backgroundColor: Colors.grey.shade200,
+                          backgroundColor: const Color(0xFFE5E8EB),
                           labelStyle: TextStyle(
-                            color: _gender == '여성' ? kBrand : Colors.black87,
+                            color: _gender == '여성' ? kBrand : const Color(0xFF191F28),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -309,9 +309,9 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                             });
                           },
                           selectedColor: kBrand.withOpacity(0.2),
-                          backgroundColor: Colors.grey.shade200,
+                          backgroundColor: const Color(0xFFE5E8EB),
                           labelStyle: TextStyle(
-                            color: isSelected ? kBrand : Colors.black87,
+                            color: isSelected ? kBrand : const Color(0xFF191F28),
                             fontWeight: FontWeight.w600,
                           ),
                         );
@@ -342,11 +342,11 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                           },
                           selectedColor:
                               const Color(0xFF10B981).withOpacity(0.25),
-                          backgroundColor: Colors.grey.shade200,
+                          backgroundColor: const Color(0xFFE5E8EB),
                           labelStyle: TextStyle(
                             color: isSelected
                                 ? const Color(0xFF047857)
-                                : Colors.black87,
+                                : const Color(0xFF191F28),
                             fontWeight: FontWeight.w600,
                           ),
                         );
@@ -383,7 +383,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                       child: Text(
                         '입력한 정보는 프로필에 반영되며,\n언제든 수정할 수 있습니다.',
                         style: TextStyle(
-                          color: Colors.grey.shade600,
+                          color: const Color(0xFF6B7280),
                           fontSize: 13,
                         ),
                         textAlign: TextAlign.center,

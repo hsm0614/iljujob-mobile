@@ -178,11 +178,11 @@ class _ReviewScreenState extends State<ReviewScreen> {
       behavior: HitTestBehavior.translucent,
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF6F7FB),
+        backgroundColor: const Color(0xFFF4F6FA),
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0.5,
-          foregroundColor: Colors.black87,
+          foregroundColor: const Color(0xFF191F28),
           title: const Text(
             '후기 보내기',
             style: TextStyle(fontWeight: FontWeight.w800),
@@ -285,7 +285,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                           side: const BorderSide(color: Color(0xFFE5E7EB)),
-                          foregroundColor: Colors.black87,
+                          foregroundColor: const Color(0xFF191F28),
                         ),
                         child: const Text('나중에', style: TextStyle(fontWeight: FontWeight.w700)),
                       ),
@@ -378,7 +378,7 @@ class _JobHeaderCard extends StatelessWidget {
                   company,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w600),
+                  style: const TextStyle(color: const Color(0xFF6B7280), fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -422,7 +422,7 @@ class _SectionCard extends StatelessWidget {
           Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
           if (subTitle != null) ...[
             const SizedBox(height: 6),
-            Text(subTitle!, style: const TextStyle(color: Colors.black54, fontWeight: FontWeight.w600)),
+            Text(subTitle!, style: const TextStyle(color: const Color(0xFF6B7280), fontWeight: FontWeight.w600)),
           ],
           const SizedBox(height: 12),
           child,
@@ -478,7 +478,7 @@ class _SatisfactionRow extends StatelessWidget {
                   e.$1,
                   style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: selected ? brand : Colors.black87,
+                    color: selected ? brand : const Color(0xFF191F28),
                   ),
                 ),
               ],
@@ -517,7 +517,7 @@ class _ChoiceWrap extends StatelessWidget {
           selectedColor: brand.withOpacity(0.14),
           labelStyle: TextStyle(
             fontWeight: FontWeight.w800,
-            color: selected ? brand : Colors.black87,
+            color: selected ? brand : const Color(0xFF191F28),
           ),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
           side: BorderSide(color: selected ? brand.withOpacity(0.35) : const Color(0xFFE5E7EB)),
@@ -559,7 +559,7 @@ class _TagGroups extends StatelessWidget {
               selectedColor: brand.withOpacity(0.14),
               labelStyle: TextStyle(
                 fontWeight: FontWeight.w800,
-                color: isOn ? brand : Colors.black87,
+                color: isOn ? brand : const Color(0xFF191F28),
               ),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
               side: BorderSide(color: isOn ? brand.withOpacity(0.35) : const Color(0xFFE5E7EB)),

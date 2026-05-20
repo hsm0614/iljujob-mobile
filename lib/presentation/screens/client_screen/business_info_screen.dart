@@ -493,7 +493,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8F9FA),
+                      color: const Color(0xFFF4F6FA),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(color: const Color(0xFFE5E8EB)),
                     ),

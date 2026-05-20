@@ -89,7 +89,7 @@ class _NoticeListScreenState extends State<NoticeListScreen> {
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F7FB),
+      backgroundColor: const Color(0xFFF4F6FA),
       body: RefreshIndicator(
         onRefresh: _loadData,
         color: brandBlue,

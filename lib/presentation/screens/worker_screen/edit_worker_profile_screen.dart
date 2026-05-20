@@ -16,7 +16,7 @@ import 'package:iljujob/presentation/screens/worker_screen/add_experience_screen
 // 알바일주 색상 팔레트 (worker_calendar_screen과 통일)
 // =====================
 const kBrandBlue = Color(0xFF3B8AFF);
-const kBg        = Color(0xFFF7F8FA);
+const kBg        = Color(0xFFF4F6FA);
 const kCard      = Colors.white;
 const kBorder    = Color(0xFFE5E7EB);
 const kMuted     = Color(0xFF6B7280);
@@ -129,11 +129,67 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
   bool _isResumeExpanded = true;
 
   // ── 카테고리/옵션
-  static const _workCategoryMap = <String, List<String>>{
-    '물류/제조': ['상하차', '물류', '포장', '제조보조', '검수/피킹', '분류/적재'],
-    '매장/서비스': ['서빙', '주방보조', '카페', '매장보조', '캐셔', '행사스태프'],
-    '사무/기타': ['사무보조', '전단/홍보', '데이터입력', '고객응대', '기타'],
-  };
+static const _workCategoryMap = <String, List<String>>{
+  '물류·배송': [
+    '상하차',
+    '물류센터',
+    '포장',
+    '검수/피킹',
+    '분류/적재',
+    '배송기사',
+    '입출고',
+  ],
+
+  '제조·공장': [
+    '제조보조',
+    '생산·조립',
+    '식품제조',
+    '기계조작',
+    '단순노무',
+    '검품·포장',
+  ],
+
+  '반도체·전자생산': [
+    '반도체 생산',
+    '전자부품 조립',
+    'PCB·SMT',
+    '품질검사',
+    '클린룸',
+    '장비오퍼레이터',
+  ],
+
+  '음식점·카페': [
+    '서빙',
+    '주방보조',
+    '카페·바리스타',
+    '패스트푸드',
+    '포장·설거지',
+  ],
+
+  '매장·서비스': [
+    '매장판매',
+    '캐셔',
+    '행사스태프',
+    '시식·홍보',
+    '안내·접수',
+  ],
+
+  '사무·행정': [
+    '사무보조',
+    '데이터입력',
+    '고객응대',
+    '텔레마케터',
+    '회계보조',
+  ],
+
+  '기타': [
+    '전단지',
+    '주차관리',
+    '청소',
+    '시설관리',
+    '기타',
+  ],
+};
   String? _selectedWorkCategory;
 
   static const _strengthOptions = [
@@ -1502,7 +1558,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
               style: TextStyle(fontWeight: FontWeight.w900, color: kText),
             ),
             subtitle: const Text(
-              '노쇼 및 지각으로 인한 패널티예요',
+              '지각 등으로 인한 패널티예요',
               style: TextStyle(fontSize: 12.5, color: kMuted),
             ),
             trailing: pointBadge(

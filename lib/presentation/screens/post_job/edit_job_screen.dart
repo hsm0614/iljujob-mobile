@@ -294,7 +294,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                               width: 44,
                               height: 5,
                               decoration: BoxDecoration(
-                                color: Colors.black12,
+                                color: const Color(0x1F000000),
                                 borderRadius: BorderRadius.circular(999),
                               ),
                             ),
@@ -337,7 +337,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                             shape: BoxShape.circle,
                           ),
                           selectedDecoration: BoxDecoration(
-                            color: Colors.black87,
+                            color: const Color(0xFF191F28),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -508,7 +508,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                               width: 44,
                               height: 5,
                               decoration: BoxDecoration(
-                                color: Colors.black12,
+                                color: const Color(0x1F000000),
                                 borderRadius: BorderRadius.circular(999),
                               ),
                             ),
@@ -549,7 +549,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                           const SizedBox(height: 6),
                           Text(
                             '총 근무시간 ${_durationLabel(duration)}',
-                            style: const TextStyle(color: Colors.black54),
+                            style: const TextStyle(color: const Color(0xFF6B7280)),
                           ),
                         ],
                       ),
@@ -891,7 +891,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                   children: [
                     Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                     const SizedBox(height: 3),
-                    Text(subtitle, style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                    Text(subtitle, style: const TextStyle(fontSize: 12, color: const Color(0xFF6B7280))),
                   ],
                 ),
               ),
@@ -910,7 +910,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
       labelText: label,
       hintText: hint,
       filled: true,
-      fillColor: const Color(0xFFF7F8FA),
+      fillColor: const Color(0xFFF4F6FA),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       suffixIcon: suffix,
       enabledBorder: OutlineInputBorder(
@@ -968,7 +968,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
             label,
             style: TextStyle(
               fontWeight: FontWeight.w800,
-              color: selected ? Colors.white : Colors.black87,
+              color: selected ? Colors.white : const Color(0xFF191F28),
             ),
           ),
         ),
@@ -978,7 +978,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
 
   Widget _deleteBadge() => Container(
         padding: const EdgeInsets.all(4),
-        decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+        decoration: const BoxDecoration(color: const Color(0xFF6B7280), shape: BoxShape.circle),
         child: const Icon(Icons.close, color: Colors.white, size: 16),
       );
 
@@ -994,7 +994,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
         ),
         child: const Text(
           '사진은 선택 사항이에요.\n현장 사진/근무복/약도 등을 올리면 지원율이 올라갑니다.',
-          style: TextStyle(fontSize: 12, color: Colors.black54, height: 1.35),
+          style: TextStyle(fontSize: 12, color: const Color(0xFF6B7280), height: 1.35),
         ),
       );
     }
@@ -1107,7 +1107,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
           ),
           child: const Text(
             '날짜는 KST(UTC+9) 자정 기준으로 저장됩니다.',
-            style: TextStyle(fontSize: 12, color: Colors.black54),
+            style: TextStyle(fontSize: 12, color: const Color(0xFF6B7280)),
           ),
         ),
       ],
@@ -1135,11 +1135,11 @@ class _EditJobScreenState extends State<EditJobScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: value == null ? Colors.black38 : Colors.black87,
+                  color: value == null ? const Color(0xFF9CA3AF) : const Color(0xFF191F28),
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right, color: Colors.black45),
+            const Icon(Icons.chevron_right, color: const Color(0xFF9CA3AF)),
           ],
         ),
       ),
@@ -1202,14 +1202,14 @@ class _EditJobScreenState extends State<EditJobScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('근무 시간', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                  const Text('근무 시간', style: TextStyle(fontSize: 12, color: const Color(0xFF6B7280))),
                   const SizedBox(height: 4),
                   Text(
                     value,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: has ? Colors.black : Colors.black38,
+                      color: has ? Colors.black : const Color(0xFF9CA3AF),
                     ),
                   ),
                 ],
@@ -1228,7 +1228,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                 ),
               ),
             const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, color: Colors.black45),
+            const Icon(Icons.chevron_right, color: const Color(0xFF9CA3AF)),
           ],
         ),
       ),
@@ -1270,7 +1270,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
       dropdownColor: Colors.white,
       menuMaxHeight: 340,
       elevation: 6,
-      style: const TextStyle(fontSize: 14, color: Colors.black87),
+      style: const TextStyle(fontSize: 14, color: const Color(0xFF191F28)),
       decoration: _inputDeco('하는 일', hint: '업종을 선택하세요'),
       validator: (_) => category.trim().isEmpty ? '업종을 선택하세요' : null,
       items: categories.map((c) {
@@ -1309,7 +1309,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
         appBar: AppBar(
           title: const Text('공고 수정'),
           backgroundColor: Colors.white,
-          foregroundColor: Colors.black87,
+          foregroundColor: const Color(0xFF191F28),
           elevation: 0,
         ),
         body: SingleChildScrollView(

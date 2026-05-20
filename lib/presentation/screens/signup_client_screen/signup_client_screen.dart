@@ -6,7 +6,7 @@ import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/main.dart';
 import 'package:iljujob/presentation/screens/TermsDetailScreen.dart';
 import 'package:iljujob/presentation/screens/webview_screen.dart';
-
+import 'package:firebase_messaging/firebase_messaging.dart';
 const kBrand = Color(0xFF3B8AFF);
 
 class SignupClientScreen extends StatefulWidget {
@@ -210,11 +210,14 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
     }
     setState(() => _isLoading = true);
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/client/check'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'phone': phone}),
-      );
+   final response = await http.post(
+  Uri.parse('$baseUrl/api/client/check'),
+  headers: {'Content-Type': 'application/json'},
+  body: jsonEncode({
+    'phone': phone,
+    'fcmToken': await FirebaseMessaging.instance.getToken(), // ✅ 추가
+  }),
+);
       final data = jsonDecode(response.body);
       if (response.statusCode == 200 && data['success'] == true) {
         if (data['exists'] == true) {
@@ -273,18 +276,19 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/api/client/signup'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'phone': phone,
-          'manager': manager,
-          'marketingConsent': _agreedMarketing,
-          'termsOfService': _agreedTerms,
-          'privacyPolicy': _agreedPrivacy,
-          'locationConsent': _agreedLocation,
-        }),
-      );
+final response = await http.post(
+  Uri.parse('$baseUrl/api/client/signup'),
+  headers: {'Content-Type': 'application/json'},
+  body: jsonEncode({
+    'phone': phone,
+    'manager': manager,
+    'marketingConsent': _agreedMarketing,
+    'termsOfService': _agreedTerms,
+    'privacyPolicy': _agreedPrivacy,
+    'locationConsent': _agreedLocation,
+    'fcmToken': await FirebaseMessaging.instance.getToken(), // ✅ 추가
+  }),
+);
       final data = jsonDecode(response.body);
       if (response.statusCode == 200 && data['success'] == true) {
         final isAdmin = data['isAdmin'] ?? false;
@@ -726,7 +730,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                       decoration: BoxDecoration(
                         color: _allAgreed
                             ? const Color(0xFFEFF6FF)
-                            : const Color(0xFFF9FAFB),
+                            : const Color(0xFFF4F6FA),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Row(

@@ -82,7 +82,7 @@ bool _showProfileSetup = false;
         context,
         MaterialPageRoute(
           builder: (_) => Scaffold(
-            backgroundColor: const Color(0xFFF8FAFC),
+            backgroundColor: const Color(0xFFF4F6FA),
             appBar: AppBar(title: const Text('프로필 설정'), centerTitle: true, elevation: 0),
             body: SingleChildScrollView(
               padding: const EdgeInsets.all(20),
@@ -247,7 +247,7 @@ bool _showProfileSetup = false;
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: const Color(0xFFF4F6FA),
         appBar: AppBar(title: const Text('가입 방법 선택'), centerTitle: true, elevation: 0),
         body: Center(
           child: SingleChildScrollView(

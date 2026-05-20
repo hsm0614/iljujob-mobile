@@ -79,7 +79,7 @@ class CancelApplicationDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF9FAFB),
+                color: const Color(0xFFF4F6FA),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Row(
