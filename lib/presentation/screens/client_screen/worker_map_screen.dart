@@ -14,7 +14,7 @@ class WorkerMapScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         foregroundColor: Colors.black87,
         elevation: 0.5,
-          centerTitle: false,   // ✅ 왼쪽 정렬
+        centerTitle: false, // 왼쪽 정렬
 
         title: const Text(
           '알바생 지도 보기',
@@ -47,12 +47,11 @@ class WorkerMapScreen extends StatelessWidget {
                 ),
               ),
               style: OutlinedButton.styleFrom(
-                side: BorderSide(
-                  color: kBrandBlue.withOpacity(0.5),
-                  width: 1,
+                side: BorderSide(color: kBrandBlue.withOpacity(0.5), width: 1),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
                 ),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(999),
                 ),
@@ -62,12 +61,8 @@ class WorkerMapScreen extends StatelessWidget {
           ),
         ],
       ),
-      // ✅ 하단 탭바 영역을 침범하지 않게 처리
-      body: const SafeArea(
-        top: true,
-        bottom: true,
-        child: WorkerMapView(),
-      ),
+      // 하단 탭바 영역을 침범하지 않게 처리
+      body: const SafeArea(top: true, bottom: true, child: WorkerMapView()),
     );
   }
 }

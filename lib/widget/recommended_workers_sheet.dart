@@ -1,21 +1,25 @@
-// lib/ui/widgets/RecommendedWorkersSheet.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:iljujob/config/app_theme.dart';
 import '../../data/services/ai_api.dart';
 
-const _brand = Color(0xFF4F46E5);
-
 enum _Sort { recommend, distance }
+
 enum InviteState { idle, pending, active }
 
 class RecommendedWorkersSheet extends StatefulWidget {
   final AiApi api;
   final int jobId;
-  const RecommendedWorkersSheet({super.key, required this.api, required this.jobId});
+  const RecommendedWorkersSheet({
+    super.key,
+    required this.api,
+    required this.jobId,
+  });
 
   @override
-  State<RecommendedWorkersSheet> createState() => _RecommendedWorkersSheetState();
+  State<RecommendedWorkersSheet> createState() =>
+      _RecommendedWorkersSheetState();
 }
 
 class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
@@ -27,7 +31,7 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
 
   final Set<int> _inviting = {};
   final Map<int, InviteState> _inviteState = {}; // workerId -> 상태
-  final Map<int, int> _roomIdByWorker = {};      // workerId -> roomId
+  final Map<int, int> _roomIdByWorker = {}; // workerId -> roomId
 
   @override
   void initState() {
@@ -35,10 +39,15 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
     _load();
   }
 
-  String _inviteKey(int jobId, int workerId) => 'inviteState_${jobId}_$workerId';
-  String _roomKey(int jobId, int workerId)   => 'chatRoom_${jobId}_$workerId';
+  String _inviteKey(int jobId, int workerId) =>
+      'inviteState_${jobId}_$workerId';
+  String _roomKey(int jobId, int workerId) => 'chatRoom_${jobId}_$workerId';
 
-  Future<void> _persistInviteState(int workerId, InviteState state, {int? roomId}) async {
+  Future<void> _persistInviteState(
+    int workerId,
+    InviteState state, {
+    int? roomId,
+  }) async {
     final sp = await SharedPreferences.getInstance();
     await sp.setString(_inviteKey(widget.jobId, workerId), state.name);
     if (roomId != null) {
@@ -49,7 +58,7 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
   Future<void> _restoreInviteStates(Iterable<int> workerIds) async {
     final sp = await SharedPreferences.getInstance();
     final nextState = <int, InviteState>{};
-    final nextRoom  = <int, int>{};
+    final nextRoom = <int, int>{};
 
     for (final wid in workerIds) {
       final s = sp.getString(_inviteKey(widget.jobId, wid));
@@ -72,16 +81,29 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
   }
 
   Future<void> _load() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
-      final raw = await widget.api.fetchCandidatesForJob(widget.jobId, limit: 50);
-      final items = (raw)
-          .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e as Map))
-          .toList();
+      final raw = await widget.api.fetchCandidatesForJob(
+        widget.jobId,
+        limit: 50,
+      );
+      final items =
+          (raw)
+              .map<Map<String, dynamic>>(
+                (e) => Map<String, dynamic>.from(e as Map),
+              )
+              .toList();
 
-      items.sort((a, b) => ((b['score'] ?? 0) as num).compareTo((a['score'] ?? 0) as num));
+      items.sort(
+        (a, b) =>
+            ((b['score'] ?? 0) as num).compareTo((a['score'] ?? 0) as num),
+      );
 
-      final ids = items.map((e) => (e['workerId'] as num).toInt()).toSet().toList();
+      final ids =
+          items.map((e) => (e['workerId'] as num).toInt()).toSet().toList();
       final brief = await widget.api.fetchWorkerBriefBatch(ids);
 
       if (!mounted) return;
@@ -95,7 +117,10 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
       await _restoreInviteStates(ids);
     } catch (e) {
       if (!mounted) return;
-      setState(() { _error = '추천 인재를 불러오지 못했어요.\n$e'; _loading = false; });
+      setState(() {
+        _error = '추천 인재를 불러오지 못했어요.\n$e';
+        _loading = false;
+      });
     }
   }
 
@@ -106,9 +131,16 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
       _sort = s;
       if (_items.isEmpty) return;
       if (s == _Sort.recommend) {
-        _items.sort((a, b) => ((b['score'] ?? 0) as num).compareTo((a['score'] ?? 0) as num));
+        _items.sort(
+          (a, b) =>
+              ((b['score'] ?? 0) as num).compareTo((a['score'] ?? 0) as num),
+        );
       } else {
-        _items.sort((a, b) => ((a['distKm'] ?? 1e9) as num).compareTo((b['distKm'] ?? 1e9) as num));
+        _items.sort(
+          (a, b) => ((a['distKm'] ?? 1e9) as num).compareTo(
+            (b['distKm'] ?? 1e9) as num,
+          ),
+        );
       }
     });
   }
@@ -125,8 +157,12 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
           children: [
             const SizedBox(height: 8),
             Container(
-              width: 40, height: 4,
-              decoration: BoxDecoration(color: Colors.black26, borderRadius: BorderRadius.circular(2)),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
             const SizedBox(height: 12),
 
@@ -134,18 +170,41 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  const Text('맞춤 인재', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+                  const Text(
+                    '맞춤 인재',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                  ),
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(color: _brand, borderRadius: BorderRadius.circular(999)),
-                    child: const Text('AI', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                      border: Border.all(color: AppColors.primaryMid),
+                    ),
+                    child: const Text(
+                      '추천',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
                   ),
                   const Spacer(),
                   SegmentedButton<_Sort>(
                     segments: const [
-                      ButtonSegment<_Sort>(value: _Sort.recommend, label: Text('추천순')),
-                      ButtonSegment<_Sort>(value: _Sort.distance,  label: Text('거리순')),
+                      ButtonSegment<_Sort>(
+                        value: _Sort.recommend,
+                        label: Text('추천순'),
+                      ),
+                      ButtonSegment<_Sort>(
+                        value: _Sort.distance,
+                        label: Text('거리순'),
+                      ),
                     ],
                     selected: {_sort},
                     onSelectionChanged: (s) => _applySort(s.first),
@@ -156,39 +215,44 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
             const SizedBox(height: 8),
 
             Expanded(
-              child: _loading
-                  ? const _WorkersSkeleton()
-                  : _error != null
+              child:
+                  _loading
+                      ? const _WorkersSkeleton()
+                      : _error != null
                       ? _ErrorView(message: _error!, onRetry: _load)
                       : _items.isEmpty
-                          ? const _EmptyView()
-                          : RefreshIndicator(
-                              onRefresh: _onRefresh,
-                              child: ListView.separated(
-                                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                                itemCount: _items.length,
-                                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                                itemBuilder: (_, i) {
-                                  final it = _items[i];
-                                  final workerId = (it['workerId'] as num).toInt();
-                                  final profile = _profiles[workerId];
-                                  final busy = _inviting.contains(workerId);
+                      ? const _EmptyView()
+                      : RefreshIndicator(
+                        onRefresh: _onRefresh,
+                        child: ListView.separated(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                          itemCount: _items.length,
+                          separatorBuilder:
+                              (_, __) => const SizedBox(height: 10),
+                          itemBuilder: (_, i) {
+                            final it = _items[i];
+                            final workerId = (it['workerId'] as num).toInt();
+                            final profile = _profiles[workerId];
+                            final busy = _inviting.contains(workerId);
 
-                                  final state = _inviteState[workerId] ?? InviteState.idle;
-                                  final roomId = _roomIdByWorker[workerId];
+                            final state =
+                                _inviteState[workerId] ?? InviteState.idle;
+                            final roomId = _roomIdByWorker[workerId];
 
-                                  return _WorkerCard(
-                                    data: it,
-                                    profile: profile,
-                                    isBusy: busy,
-                                    inviteState: state,
-                                    onOpenProfile: _openWorkerProfile,
-                                    onInvite: _inviteWorker,
-                                    onOpenChat: roomId == null ? null : () => _openChatRoom(roomId, workerId),
-                                  );
-                                },
-                              ),
-                            ),
+                            return _WorkerCard(
+                              data: it,
+                              profile: profile,
+                              isBusy: busy,
+                              inviteState: state,
+                              onInvite: _inviteWorker,
+                              onOpenChat:
+                                  roomId == null
+                                      ? null
+                                      : () => _openChatRoom(roomId, workerId),
+                            );
+                          },
+                        ),
+                      ),
             ),
           ],
         ),
@@ -196,28 +260,16 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
     );
   }
 
-  Future<void> _openWorkerProfile(int workerId) async {
-    // Navigator.pushNamed(context, '/worker-detail', arguments: workerId);
-  }
-
   void _openChatRoom(int roomId, int workerId) async {
-  if (!mounted) return;
+    if (!mounted) return;
 
-  // ✅ 라우터가 jobInfo를 Map<String,dynamic>로 "반드시" 받으니 최소한 빈 맵이라도 전달
-  final Map<String, dynamic> jobInfo = {
-    'id': widget.jobId, // 있으면 타이틀 등 더 채워도 OK
-  };
+    final Map<String, dynamic> jobInfo = {'id': widget.jobId};
 
-  Navigator.of(context, rootNavigator: true).pushNamed(
-    '/chat-room',
-    arguments: <String, dynamic>{
-      // ✅ 라우터가 args['chatRoomId']를 씀 (roomId 아님!)
-      'chatRoomId': roomId,
-      // ✅ null 금지
-      'jobInfo': jobInfo,
-    },
-  );
-}
+    Navigator.of(context, rootNavigator: true).pushNamed(
+      '/chat-room',
+      arguments: <String, dynamic>{'chatRoomId': roomId, 'jobInfo': jobInfo},
+    );
+  }
 
   Future<void> _inviteWorker(int workerId) async {
     if (!mounted) return;
@@ -225,9 +277,9 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
 
     final st = _inviteState[workerId];
     if (st == InviteState.pending) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('이미 초대가 전송되어 수락 대기 중이에요.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('이미 초대가 전송되어 수락 대기 중이에요.')));
       return;
     }
     if (st == InviteState.active) {
@@ -248,9 +300,9 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
       if (!mounted) return;
 
       if (!res.ok) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(res.message ?? '초대에 실패했어요.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(res.message ?? '초대에 실패했어요.')));
         return;
       }
 
@@ -263,27 +315,33 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
 
       if (status == 'pending') {
         setState(() => _inviteState[workerId] = InviteState.pending);
-        await _persistInviteState(workerId, InviteState.pending, roomId: roomId);
+        await _persistInviteState(
+          workerId,
+          InviteState.pending,
+          roomId: roomId,
+        );
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('초대 전송 완료! 구직자의 수락을 기다리는 중이에요.')),
+          const SnackBar(content: Text('초대가 전송되었습니다. 구직자의 수락을 기다리는 중입니다.')),
         );
       } else if (status == 'active') {
         setState(() => _inviteState[workerId] = InviteState.active);
         await _persistInviteState(workerId, InviteState.active, roomId: roomId);
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('이미 활성화된 채팅방이 있어요. 이동합니다.')),
         );
         if (roomId != null) _openChatRoom(roomId, workerId);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('요청 처리됨 (상태: $status)')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('요청 처리됨 (상태: $status)')));
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('네트워크 오류: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('네트워크 오류: $e')));
     } finally {
       if (mounted) setState(() => _inviting.remove(workerId));
     }
@@ -299,16 +357,18 @@ String maskName(String name) {
   final isKorean = RegExp(r'^[가-힣]+$').hasMatch(name);
   if (isKorean) {
     if (len == 2) {
-      return String.fromCharCode(runes.first) + '＊';
+      return '${String.fromCharCode(runes.first)}＊';
     } else {
       final first = String.fromCharCode(runes.first);
-      final last  = String.fromCharCode(runes.last);
-      return first + ('＊' * (len - 2)) + last;
+      final last = String.fromCharCode(runes.last);
+      return '$first${'＊' * (len - 2)}$last';
     }
   } else {
-    if (len <= 4) return String.fromCharCode(runes.first) + '＊' * (len - 1);
+    if (len <= 4) {
+      return '${String.fromCharCode(runes.first)}${'＊' * (len - 1)}';
+    }
     final first2 = String.fromCharCodes(runes.sublist(0, 2));
-    final last2  = String.fromCharCodes(runes.sublist(len - 2));
+    final last2 = String.fromCharCodes(runes.sublist(len - 2));
     return '$first2**$last2';
   }
 }
@@ -316,7 +376,6 @@ String maskName(String name) {
 class _WorkerCard extends StatelessWidget {
   final Map<String, dynamic> data;
   final Map<String, dynamic>? profile;
-  final Future<void> Function(int workerId) onOpenProfile;
   final Future<void> Function(int workerId) onInvite;
   final VoidCallback? onOpenChat; // active일 때 채팅 열기
   final bool isBusy;
@@ -325,32 +384,31 @@ class _WorkerCard extends StatelessWidget {
   const _WorkerCard({
     required this.data,
     required this.profile,
-    required this.onOpenProfile,
     required this.onInvite,
     this.onOpenChat,
     this.isBusy = false,
     this.inviteState = InviteState.idle,
   });
 
-   @override
+  @override
   Widget build(BuildContext context) {
     final workerId = (data['workerId'] as num).toInt();
     final score = ((data['score'] ?? 0) as num).toDouble().clamp(0, 1);
     final dist = ((data['distKm'] ?? 0) as num).toDouble();
     final reasons = (data['reasons'] as List? ?? const []).cast<String>();
 
-    // 🔥 이름 우선순위: profile.name > data.name
     final nameFromProfile = (profile?['name'] as String?)?.trim();
-    final nameFromData    = (data['name'] as String?)?.trim();
-    final rawName = (nameFromProfile != null && nameFromProfile.isNotEmpty)
-        ? nameFromProfile
-        : (nameFromData != null && nameFromData.isNotEmpty
-            ? nameFromData
-            : null);
- debugPrint('AI SHEET workerId=$workerId, profileName=${profile?['name']}, dataName=${data['name']}');
-    final displayName = rawName != null && rawName.isNotEmpty
-        ? maskName(rawName)
-        : '인재 #$workerId';
+    final nameFromData = (data['name'] as String?)?.trim();
+    final rawName =
+        (nameFromProfile != null && nameFromProfile.isNotEmpty)
+            ? nameFromProfile
+            : (nameFromData != null && nameFromData.isNotEmpty
+                ? nameFromData
+                : null);
+    final displayName =
+        rawName != null && rawName.isNotEmpty
+            ? maskName(rawName)
+            : '인재 #$workerId';
 
     Widget avatar;
     if (profile?['photoUrl'] != null &&
@@ -363,10 +421,13 @@ class _WorkerCard extends StatelessWidget {
       final initial = displayName.isNotEmpty ? displayName[0] : '?';
       avatar = CircleAvatar(
         radius: 20,
-        backgroundColor: _brand.withOpacity(.12),
+        backgroundColor: AppColors.primaryLight,
         child: Text(
           initial,
-          style: const TextStyle(color: _brand, fontWeight: FontWeight.w700),
+          style: const TextStyle(
+            color: AppColors.primary,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       );
     }
@@ -395,16 +456,16 @@ class _WorkerCard extends StatelessWidget {
       } else {
         ctaLabel = '초대 보내기';
         ctaOnPressed = () => onInvite(workerId);
-        ctaIcon = const Icon(Icons.auto_awesome);
+        ctaIcon = const Icon(Icons.mail_outline_rounded);
       }
     }
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -419,33 +480,30 @@ class _WorkerCard extends StatelessWidget {
                   children: [
                     Text(
                       displayName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       '거리 ${dist.toStringAsFixed(1)}km',
                       style: const TextStyle(
                         fontSize: 12,
-                        color: Colors.black54,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _brand.withOpacity(.08),
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Text(
-                  'AI 매칭 ${NumberFormat('0.0').format(score * 100)}%',
+                  '매칭 ${NumberFormat('0.0').format(score * 100)}%',
                   style: const TextStyle(
                     fontSize: 12,
-                    color: _brand,
+                    color: AppColors.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -457,15 +515,13 @@ class _WorkerCard extends StatelessWidget {
             Wrap(
               spacing: 6,
               runSpacing: -6,
-              children: reasons.take(3).map((r) {
-                return Chip(
-                  label: Text(
-                    r,
-                    style: const TextStyle(fontSize: 11),
-                  ),
-                  visualDensity: VisualDensity.compact,
-                );
-              }).toList(),
+              children:
+                  reasons.take(3).map((r) {
+                    return Chip(
+                      label: Text(r, style: const TextStyle(fontSize: 11)),
+                      visualDensity: VisualDensity.compact,
+                    );
+                  }).toList(),
             ),
           const SizedBox(height: 10),
           Row(
@@ -474,10 +530,10 @@ class _WorkerCard extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: () {
                     Navigator.of(context).pop();
-                    Navigator.of(context, rootNavigator: true).pushNamed(
-                      '/worker-profile',
-                      arguments: workerId,
-                    );
+                    Navigator.of(
+                      context,
+                      rootNavigator: true,
+                    ).pushNamed('/worker-profile', arguments: workerId);
                   },
                   icon: const Icon(Icons.person_search_outlined),
                   label: const Text('프로필'),
@@ -490,11 +546,12 @@ class _WorkerCard extends StatelessWidget {
                   icon: ctaIcon,
                   label: Text(ctaLabel),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: inviteState == InviteState.pending
-                        ? Colors.grey.shade400
-                        : _brand,
+                    backgroundColor:
+                        inviteState == InviteState.pending
+                            ? AppColors.textDisabled
+                            : AppColors.primary,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: Colors.grey.shade300,
+                    disabledBackgroundColor: AppColors.textDisabled,
                     disabledForegroundColor: Colors.white,
                   ),
                 ),
@@ -515,13 +572,14 @@ class _WorkersSkeleton extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       itemCount: 6,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (_, __) => Container(
-        height: 96,
-        decoration: BoxDecoration(
-          color: const Color(0xFFF3F4F6),
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
+      itemBuilder:
+          (_, __) => Container(
+            height: 96,
+            decoration: BoxDecoration(
+              color: AppColors.bgMuted,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+          ),
     );
   }
 }
@@ -529,7 +587,8 @@ class _WorkersSkeleton extends StatelessWidget {
 class _EmptyView extends StatelessWidget {
   const _EmptyView();
   @override
-  Widget build(BuildContext context) => const Center(child: Text('추천 인재가 아직 없어요. 잠시 후 다시 확인해 주세요.'));
+  Widget build(BuildContext context) =>
+      const Center(child: Text('추천 인재가 아직 없어요. 잠시 후 다시 확인해 주세요.'));
 }
 
 class _ErrorView extends StatelessWidget {
@@ -541,13 +600,20 @@ class _ErrorView extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.error_outline, color: Colors.red),
-          const SizedBox(height: 8),
-          Text(message, textAlign: TextAlign.center),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh), label: const Text('다시 시도')),
-        ]),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, color: AppColors.error),
+            const SizedBox(height: 8),
+            Text(message, textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh),
+              label: const Text('다시 시도'),
+            ),
+          ],
+        ),
       ),
     );
   }

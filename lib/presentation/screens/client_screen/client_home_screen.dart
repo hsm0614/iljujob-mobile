@@ -20,9 +20,8 @@ import 'package:iljujob/presentation/screens/worker_screen/job_insight_sheet.dar
 import 'package:iljujob/presentation/screens/client_screen/wage_report_screen.dart';
 import 'package:iljujob/presentation/screens/post_job/SelectPreviousJobScreen.dart';
 import 'package:iljujob/widget/app_ui.dart';
+import 'package:iljujob/config/app_theme.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-
-const kBrandBlue = Color(0xFF3B8AFF);
 
 DateTime _nowLocal() => DateTime.now();
 
@@ -136,7 +135,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       ..showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  // ① 삭제 다이얼로그 단일 메서드로 추출 — 중복 제거
   Future<void> _showDeleteConfirm(Job job) async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -156,12 +154,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     width: 46,
                     height: 46,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF1F1),
-                      borderRadius: BorderRadius.circular(999),
+                      color: AppColors.error.withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
                     ),
                     child: const Icon(
                       Icons.delete_rounded,
-                      color: Color(0xFFE53935),
+                      color: AppColors.error,
                       size: 24,
                     ),
                   ),
@@ -177,7 +175,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     style: TextStyle(
                       fontSize: 13.5,
                       height: 1.35,
-                      color: Color(0xFF666666),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -189,10 +187,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(AppRadius.lg),
                             ),
-                            side: const BorderSide(color: Color(0xFFE6E6E6)),
-                            foregroundColor: const Color(0xFF111111),
+                            side: const BorderSide(color: AppColors.border),
+                            foregroundColor: AppColors.textPrimary,
                           ),
                           child: const Text('취소'),
                         ),
@@ -204,9 +202,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(AppRadius.lg),
                             ),
-                            backgroundColor: const Color(0xFFE53935),
+                            backgroundColor: AppColors.error,
                             foregroundColor: Colors.white,
                             elevation: 0,
                           ),
@@ -251,7 +249,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) return;
-      // ⑦ 탭 인덱스 → payTypeFilter 동기화를 리스너 한 곳에서만 처리
       setState(() {
         payTypeFilter = ['전체', '일급', '주급'][_tabController.index];
       });
@@ -415,7 +412,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     DateTime postedAt(Job j) => _toLocal(j.publishAt ?? j.createdAt);
     int idInt(Job j) => int.tryParse(j.id.toString()) ?? 0;
 
-    // ② (j as dynamic) 제거 — Job 모델의 타입 안전 필드 사용
     bool matchesQuery(Job j, String q) {
       final qq = q.trim().toLowerCase();
       if (qq.isEmpty) return true;
@@ -564,7 +560,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           bannerAds = loaded;
           if (_currentBannerIndex >= bannerAds.length) _currentBannerIndex = 0;
         });
-        // ④ _logImageRatio 제거 — 개발용 디버그 코드
         if (!_isBannerHidden && bannerAds.length > 1) _startBannerAutoSlide();
       }
     } catch (e) {
@@ -572,16 +567,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     }
   }
 
-  // ⑧ 배너 복원 버튼 — AppBar 내 compact 버튼으로 이동했으므로 별도 섹션 제거
-  // (build의 AppBar actions에서 처리)
-
   Widget _buildBannerSlider() {
     if (_isBannerHidden || bannerAds.isEmpty) return const SizedBox.shrink();
     final canNav = bannerAds.length > 1;
 
     Widget circleBtn(IconData icon, VoidCallback onTap) => ClipOval(
       child: Material(
-        color: Colors.black.withOpacity(0.20),
+        color: Colors.black.withValues(alpha: 0.20),
         child: InkWell(
           onTap: onTap,
           child: SizedBox(
@@ -611,7 +603,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         child: Stack(
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: bannerAds.length,
@@ -637,7 +629,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       }
                     },
                     child: DecoratedBox(
-                      decoration: BoxDecoration(color: Colors.grey.shade200),
+                      decoration: const BoxDecoration(color: AppColors.bgMuted),
                       child: Image.network(
                         '$baseUrl${banner.imageUrl}',
                         fit: BoxFit.contain,
@@ -653,7 +645,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                             (_, __, ___) => const Center(
                               child: Icon(
                                 Icons.image_not_supported_outlined,
-                                color: Colors.black38,
+                                color: AppColors.textTertiary,
                               ),
                             ),
                       ),
@@ -691,7 +683,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               right: 8,
               child: ClipOval(
                 child: Material(
-                  color: Colors.black.withOpacity(0.18),
+                  color: Colors.black.withValues(alpha: 0.18),
                   child: InkWell(
                     onTap: () => _setBannerHidden(true),
                     child: const SizedBox(
@@ -717,11 +709,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     height: 6,
                     margin: const EdgeInsets.symmetric(horizontal: 3),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
                       color:
                           _currentBannerIndex == i
                               ? Colors.white
-                              : Colors.white.withOpacity(0.45),
+                              : Colors.white.withValues(alpha: 0.45),
                     ),
                   ),
                 ),
@@ -733,7 +725,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     );
   }
 
-  // ======= AI Recommended Workers + Paywall =======
+  // ======= Recommended Workers + Paywall =======
   Future<void> _openRecommendedWorkersByJobId(String jobIdStr) async {
     final jid = int.tryParse(jobIdStr);
     if (jid == null) {
@@ -766,7 +758,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   top: Radius.circular(16),
                 ),
                 child: Material(
-                  color: Colors.white,
+                  color: AppColors.bgCard,
                   child: RecommendedWorkersSheet(
                     api: AiApi(baseUrl),
                     jobId: jid,
@@ -803,7 +795,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           child: ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
             child: Material(
-              color: Colors.white,
+              color: AppColors.bgCard,
               child: SafeArea(
                 top: false,
                 child: Padding(
@@ -820,12 +812,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF4F46E5).withOpacity(0.10),
-                          borderRadius: BorderRadius.circular(14),
+                          color: AppColors.primaryLight,
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
                         ),
                         child: const Icon(
-                          Icons.auto_awesome,
-                          color: Color(0xFF4F46E5),
+                          Icons.recommend_outlined,
+                          color: AppColors.primary,
                         ),
                       ),
                       const SizedBox(height: 10),
@@ -839,9 +831,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'AI가 공고와 잘 맞는 인재를 추천해 드립니다.\n구독 후 이용해 주세요.',
+                        '공고 조건을 기준으로 적합한 인재를 추천합니다.\n구독 후 이용할 수 있습니다.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.black54, height: 1.4),
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          height: 1.4,
+                        ),
                       ),
                       const SizedBox(height: 16),
                       SizedBox(
@@ -856,7 +851,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         width: double.infinity,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4F46E5),
+                            backgroundColor: AppColors.primary,
                           ),
                           onPressed: () {
                             Navigator.pop(ctx);
@@ -886,10 +881,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            // ⑥ border만 사용 — boxShadow 제거
-            border: Border.all(color: Colors.grey.shade200),
+            color: AppColors.bgCard,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.border),
           ),
           child: Row(
             children: [
@@ -897,10 +891,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 width: 34,
                 height: 34,
                 decoration: BoxDecoration(
-                  color: kBrandBlue.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(10),
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
-                child: Icon(icon, color: kBrandBlue, size: 18),
+                child: Icon(icon, color: AppColors.primary, size: 18),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -911,7 +905,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       title,
                       style: const TextStyle(
                         fontSize: 12,
-                        color: Colors.black54,
+                        color: AppColors.textSecondary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -954,9 +948,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.amber.shade200),
+          color: AppColors.bgCard,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.warningBorder),
         ),
         child: Row(
           children: [
@@ -964,12 +958,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: Colors.amber.withOpacity(0.18),
-                borderRadius: BorderRadius.circular(10),
+                color: AppColors.warningLight,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               child: const Icon(
                 Icons.verified_user_outlined,
-                color: Colors.orange,
+                color: AppColors.warning,
                 size: 18,
               ),
             ),
@@ -985,7 +979,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   SizedBox(height: 2),
                   Text(
                     '인증을 완료하시면 지원 전환율이 올라갈 수 있습니다.',
-                    style: TextStyle(fontSize: 12, color: Colors.black54),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -993,11 +990,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             const SizedBox(width: 10),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
+                backgroundColor: AppColors.warning,
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
@@ -1021,16 +1018,19 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade200),
+          color: AppColors.bgCard,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.border),
         ),
         child: TextField(
           style: const TextStyle(fontSize: 14),
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.search, size: 20),
             hintText: '공고 제목 또는 지역을 검색해 주세요',
-            hintStyle: const TextStyle(fontSize: 14, color: Colors.black38),
+            hintStyle: const TextStyle(
+              fontSize: 14,
+              color: AppColors.textTertiary,
+            ),
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 12,
@@ -1051,7 +1051,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       final selected = filterStatus == label;
       return Expanded(
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           onTap: () {
             setState(() => filterStatus = label);
             _onFilterChanged();
@@ -1059,14 +1059,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
-              color:
-                  selected ? kBrandBlue.withOpacity(0.12) : Colors.transparent,
-              borderRadius: BorderRadius.circular(12),
+              color: selected ? AppColors.primaryLight : Colors.transparent,
+              borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(
-                color:
-                    selected
-                        ? kBrandBlue.withOpacity(0.35)
-                        : Colors.transparent,
+                color: selected ? AppColors.primaryMid : Colors.transparent,
               ),
             ),
             child: Center(
@@ -1075,7 +1071,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w900,
-                  color: selected ? kBrandBlue : Colors.black54,
+                  color: selected ? AppColors.primary : AppColors.textSecondary,
                 ),
               ),
             ),
@@ -1089,9 +1085,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       child: Container(
         padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.grey.shade200),
+          color: AppColors.bgCard,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.border),
         ),
         child: Row(
           children: [
@@ -1126,13 +1122,17 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
+                color: AppColors.bgCard,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: AppColors.border),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.sort, size: 18, color: Colors.black54),
+                  const Icon(
+                    Icons.sort,
+                    size: 18,
+                    color: AppColors.textSecondary,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     sortType,
@@ -1145,7 +1145,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   const Icon(
                     Icons.expand_more,
                     size: 18,
-                    color: Colors.black45,
+                    color: AppColors.textTertiary,
                   ),
                 ],
               ),
@@ -1154,9 +1154,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           const Spacer(),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+              color: AppColors.bgCard,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              border: Border.all(color: AppColors.border),
             ),
             child: IconButton(
               tooltip: compactView ? '상세 보기' : '목록 보기',
@@ -1192,12 +1192,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               width: 62,
               height: 62,
               decoration: BoxDecoration(
-                color: kBrandBlue.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(18),
+                color: AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
               child: const Icon(
                 Icons.post_add_rounded,
-                color: kBrandBlue,
+                color: AppColors.primary,
                 size: 32,
               ),
             ),
@@ -1208,17 +1208,17 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w900,
-                color: Color(0xFF111111),
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             const Text(
-              'AI가 공고 작성을 도와드리고, 무료 등록과 이용권 보호 혜택으로 첫 채용을 가볍게 시작할 수 있어요.',
+              '근무 조건을 입력해 공고를 등록하고 지원자를 확인할 수 있습니다.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13.5,
                 height: 1.45,
-                color: Color(0xFF666666),
+                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 18),
@@ -1228,16 +1228,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               runSpacing: 8,
               children: const [
                 _EmptyBenefitChip(
-                  icon: Icons.auto_awesome_rounded,
-                  label: 'AI 1분 작성',
+                  icon: Icons.edit_note_rounded,
+                  label: '간편한 공고 작성',
                 ),
                 _EmptyBenefitChip(
-                  icon: Icons.card_giftcard_rounded,
-                  label: '월 2건 무료',
-                ),
-                _EmptyBenefitChip(
-                  icon: Icons.card_giftcard_rounded,
-                  label: '지원자 없으면 환급',
+                  icon: Icons.people_outline_rounded,
+                  label: '지원자 관리',
                 ),
               ],
             ),
@@ -1247,14 +1243,14 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               child: ElevatedButton.icon(
                 onPressed: _goToPostJobFlow,
                 icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
-                label: const Text('첫 공고 무료로 등록하기'),
+                label: const Text('첫 공고 등록하기'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: kBrandBlue,
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                   ),
                   textStyle: const TextStyle(
                     fontSize: 16,
@@ -1280,7 +1276,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             '총 ${totalCount}개 공고 · ${currentPage}/${totalPages}페이지',
             style: const TextStyle(
               fontSize: 12,
-              color: Colors.black54,
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -1348,7 +1344,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         pageButtons.add(
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 6),
-            child: Text('...', style: TextStyle(color: Colors.black38)),
+            child: Text('...', style: TextStyle(color: AppColors.textTertiary)),
           ),
         );
     }
@@ -1358,7 +1354,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         pageButtons.add(
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 6),
-            child: Text('...', style: TextStyle(color: Colors.black38)),
+            child: Text('...', style: TextStyle(color: AppColors.textTertiary)),
           ),
         );
       pageButtons.add(_pageNumBtn(totalPages));
@@ -1378,10 +1374,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           height: 38,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: isCurrent ? kBrandBlue : Colors.white,
-            borderRadius: BorderRadius.circular(10),
+            color: isCurrent ? AppColors.primary : AppColors.bgCard,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(
-              color: isCurrent ? kBrandBlue : Colors.grey.shade200,
+              color: isCurrent ? AppColors.primary : AppColors.border,
             ),
           ),
           child: Text(
@@ -1389,7 +1385,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w900,
-              color: isCurrent ? Colors.white : Colors.black54,
+              color: isCurrent ? Colors.white : AppColors.textSecondary,
             ),
           ),
         ),
@@ -1402,9 +1398,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withOpacity(0.28)),
+        color: color.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        border: Border.all(color: color.withValues(alpha: 0.28)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1430,7 +1426,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   Widget _metaLine(IconData icon, String text) {
     return Row(
       children: [
-        Icon(icon, size: 16, color: Colors.black45),
+        Icon(icon, size: 16, color: AppColors.textTertiary),
         const SizedBox(width: 8),
         Expanded(
           child: Text(
@@ -1439,7 +1435,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
               fontSize: 13,
-              color: Colors.black87,
+              color: AppColors.textPrimary,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -1465,8 +1461,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 margin: const EdgeInsets.fromLTRB(12, 12, 12, 12),
                 padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  color: AppColors.bgCard,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child: ListView(
                   shrinkWrap: true,
@@ -1476,15 +1472,42 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         width: 36,
                         height: 4,
                         decoration: BoxDecoration(
-                          color: Colors.black12,
-                          borderRadius: BorderRadius.circular(99),
+                          color: AppColors.border,
+                          borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
                       ),
                     ),
                     const SizedBox(height: 10),
-
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '공고 관리',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            '지원자 확인, 수정, 인사이트를 이곳에서 관리합니다.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
                     ListTile(
-                      leading: const Icon(Icons.people_outline),
+                      leading: const Icon(
+                        Icons.people_outline,
+                        color: AppColors.textSecondary,
+                      ),
                       title: const Text(
                         '지원자 보기',
                         style: TextStyle(fontWeight: FontWeight.w800),
@@ -1492,7 +1515,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       onTap: () => Navigator.pop(context, 'applicants'),
                     ),
                     ListTile(
-                      leading: const Icon(Icons.info_outline),
+                      leading: const Icon(
+                        Icons.info_outline,
+                        color: AppColors.textSecondary,
+                      ),
                       title: const Text(
                         '상세 보기',
                         style: TextStyle(fontWeight: FontWeight.w800),
@@ -1501,7 +1527,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     ),
                     if (!isClosed)
                       ListTile(
-                        leading: const Icon(Icons.edit_outlined),
+                        leading: const Icon(
+                          Icons.edit_outlined,
+                          color: AppColors.textSecondary,
+                        ),
                         title: const Text(
                           '수정',
                           style: TextStyle(fontWeight: FontWeight.w800),
@@ -1511,8 +1540,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     if (!isClosed)
                       ListTile(
                         leading: const Icon(
-                          Icons.auto_awesome,
-                          color: Color(0xFF4F46E5),
+                          Icons.recommend_outlined,
+                          color: AppColors.primary,
                         ),
                         title: const Text(
                           '맞춤 인재',
@@ -1521,7 +1550,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         onTap: () => Navigator.pop(context, 'recommend'),
                       ),
                     ListTile(
-                      leading: const Icon(Icons.insights, color: kBrandBlue),
+                      leading: const Icon(
+                        Icons.insights,
+                        color: AppColors.primary,
+                      ),
                       title: const Text(
                         '인사이트',
                         style: TextStyle(fontWeight: FontWeight.w800),
@@ -1530,9 +1562,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     ),
                     if (reserved)
                       ListTile(
-                        leading: Icon(
-                          Icons.flash_on,
-                          color: Colors.orange.shade700,
+                        leading: const Icon(
+                          Icons.publish_rounded,
+                          color: AppColors.warning,
                         ),
                         title: const Text(
                           '즉시 게시',
@@ -1542,7 +1574,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       ),
                     if (isClosed)
                       ListTile(
-                        leading: const Icon(Icons.replay_circle_filled),
+                        leading: const Icon(
+                          Icons.replay_circle_filled,
+                          color: AppColors.primary,
+                        ),
                         title: const Text(
                           '재공고',
                           style: TextStyle(fontWeight: FontWeight.w800),
@@ -1553,13 +1588,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     ListTile(
                       leading: const Icon(
                         Icons.delete_outline,
-                        color: Colors.red,
+                        color: AppColors.error,
                       ),
                       title: const Text(
                         '삭제',
                         style: TextStyle(
                           fontWeight: FontWeight.w900,
-                          color: Colors.red,
+                          color: AppColors.error,
                         ),
                       ),
                       onTap: () => Navigator.pop(context, 'delete'),
@@ -1623,23 +1658,21 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     final pinned = isJobPinned(job);
     final formattedPay = NumberFormat('#,###').format(_payToInt(job.pay));
     final payTypeColor =
-        job.payType == '주급'
-            ? Colors.green.shade700
-            : Colors.deepOrange.shade700;
+        job.payType == '주급' ? AppColors.badgeWeekly : AppColors.badgeDaily;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         onTap:
             () =>
                 Navigator.pushNamed(context, '/applicants', arguments: job.id),
         child: Container(
           padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.grey.shade200),
+            color: AppColors.bgCard,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1654,7 +1687,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
-                        color: isClosed ? Colors.black38 : Colors.black,
+                        color:
+                            isClosed
+                                ? AppColors.textDisabled
+                                : AppColors.textPrimary,
                         decoration:
                             isClosed ? TextDecoration.lineThrough : null,
                       ),
@@ -1667,9 +1703,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: payTypeColor.withOpacity(0.10),
-                      borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: payTypeColor.withOpacity(0.30)),
+                      color: payTypeColor.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
+                      border: Border.all(
+                        color: payTypeColor.withValues(alpha: 0.30),
+                      ),
                     ),
                     child: Text(
                       job.payType,
@@ -1684,7 +1722,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   IconButton(
                     tooltip: '관리',
                     onPressed: () => _openJobActions(job),
-                    icon: const Icon(Icons.more_horiz, color: Colors.black54),
+                    icon: const Icon(
+                      Icons.more_horiz,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                 ],
               ),
@@ -1696,30 +1737,27 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   if (reserved)
                     _badge(
                       '예약 게시',
-                      color: Colors.orange.shade700,
+                      color: AppColors.warning,
                       icon: Icons.schedule_outlined,
                     ),
                   if (pinned)
                     _badge(
                       '상단 고정',
-                      color: Colors.deepOrange.shade700,
+                      color: AppColors.badgeUrgent,
                       icon: Icons.push_pin_outlined,
                     ),
                   if (pinned)
-                    _badge(
-                      pinnedRemainText(job),
-                      color: Colors.deepOrange.shade700,
-                    ),
+                    _badge(pinnedRemainText(job), color: AppColors.badgeUrgent),
                   if (isClosed)
                     _badge(
                       '마감',
-                      color: Colors.grey.shade700,
+                      color: AppColors.textSecondary,
                       icon: Icons.stop_circle_outlined,
                     ),
                   if (job.expiresAt != null && !isClosed)
                     _badge(
                       getExpiryText(job),
-                      color: Colors.red.shade700,
+                      color: AppColors.error,
                       icon: Icons.access_time,
                     ),
                 ],
@@ -1743,14 +1781,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     final pinned = isJobPinned(job);
     final formattedPay = NumberFormat('#,###').format(_payToInt(job.pay));
     final payTypeColor =
-        job.payType == '주급'
-            ? Colors.green.shade700
-            : Colors.deepOrange.shade700;
+        job.payType == '주급' ? AppColors.badgeWeekly : AppColors.badgeDaily;
 
     final titleStyle = TextStyle(
       fontSize: 16,
       fontWeight: FontWeight.w900,
-      color: isClosed ? Colors.black38 : Colors.black,
+      color: isClosed ? AppColors.textDisabled : AppColors.textPrimary,
       decoration: isClosed ? TextDecoration.lineThrough : null,
     );
 
@@ -1758,12 +1794,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
+          color: AppColors.bgCard,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.border),
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           onTap:
               () => Navigator.pushNamed(context, '/job-detail', arguments: job),
           child: Padding(
@@ -1787,10 +1823,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: payTypeColor.withOpacity(0.10),
-                        borderRadius: BorderRadius.circular(999),
+                        color: payTypeColor.withValues(alpha: 0.10),
+                        borderRadius: BorderRadius.circular(AppRadius.full),
                         border: Border.all(
-                          color: payTypeColor.withOpacity(0.30),
+                          color: payTypeColor.withValues(alpha: 0.30),
                         ),
                       ),
                       child: Text(
@@ -1803,11 +1839,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       ),
                     ),
                     const SizedBox(width: 6),
-                    // ③ 더보기(···) 버튼 하나로 모든 액션 통합
                     IconButton(
                       tooltip: '관리',
                       onPressed: () => _openJobActions(job),
-                      icon: const Icon(Icons.more_horiz, color: Colors.black54),
+                      icon: const Icon(
+                        Icons.more_horiz,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ],
                 ),
@@ -1823,36 +1861,36 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       if (reserved)
                         _badge(
                           '예약 게시',
-                          color: Colors.orange.shade700,
+                          color: AppColors.warning,
                           icon: Icons.schedule_outlined,
                         ),
                       if (pinned)
                         _badge(
                           '상단 고정',
-                          color: Colors.deepOrange.shade700,
+                          color: AppColors.badgeUrgent,
                           icon: Icons.push_pin_outlined,
                         ),
                       if (pinned)
                         _badge(
                           pinnedRemainText(job),
-                          color: Colors.deepOrange.shade700,
+                          color: AppColors.badgeUrgent,
                         ),
                       if (isClosed)
                         _badge(
                           '마감',
-                          color: Colors.grey.shade700,
+                          color: AppColors.textSecondary,
                           icon: Icons.stop_circle_outlined,
                         ),
                       if (isClosed && job.zeroApplicantRefunded)
                         _badge(
                           '이용권 환급',
-                          color: Colors.green.shade700,
+                          color: AppColors.success,
                           icon: Icons.card_giftcard_rounded,
                         ),
                       if (job.expiresAt != null && !isClosed)
                         _badge(
                           getExpiryText(job),
-                          color: Colors.red.shade700,
+                          color: AppColors.error,
                           icon: Icons.access_time,
                         ),
                     ],
@@ -1888,7 +1926,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Colors.black54,
+                      color: AppColors.textSecondary,
                       fontSize: 13,
                       height: 1.35,
                     ),
@@ -1913,7 +1951,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     _actionBtn(
                       icon: Icons.insights,
                       label: '인사이트',
-                      color: kBrandBlue,
+                      color: AppColors.primary,
                       onTap: () {
                         final jobId = int.tryParse(job.id.toString());
                         if (jobId != null)
@@ -1928,7 +1966,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       _actionBtn(
                         icon: Icons.replay_circle_filled,
                         label: '재공고',
-                        color: kBrandBlue,
+                        color: AppColors.primary,
                         onTap:
                             () => Navigator.pushNamed(
                               context,
@@ -1952,11 +1990,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     required VoidCallback onTap,
     Color? color,
   }) {
-    final c = color ?? Colors.black87;
+    final c = color ?? AppColors.textPrimary;
     return OutlinedButton.icon(
       style: OutlinedButton.styleFrom(
         foregroundColor: c,
-        side: BorderSide(color: Colors.grey.shade200),
+        side: const BorderSide(color: AppColors.border),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -1998,12 +2036,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     final jobs = _filteredJobs();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: AppColors.bgPage,
       floatingActionButton: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // 임금 AI 리포트 FAB
           FloatingActionButton.small(
             heroTag: 'wage_report_fab',
             onPressed: () {
@@ -2027,9 +2064,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 ),
               );
             },
-            backgroundColor: const Color(0xFF7C3AED),
+            backgroundColor: AppColors.primaryDark,
             shape: const CircleBorder(),
-            tooltip: '임금 AI 리포트',
+            tooltip: '임금 리포트',
             child: const Icon(
               Icons.analytics_rounded,
               color: Colors.white,
@@ -2037,7 +2074,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             ),
           ),
           const SizedBox(height: 10),
-          // 노무 상담 FAB
           FloatingActionButton(
             heroTag: 'labor_consult_fab',
             onPressed:
@@ -2045,9 +2081,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   context,
                   MaterialPageRoute(builder: (_) => const LaborConsultScreen()),
                 ),
-            backgroundColor: const Color(0xFF3B82F6),
+            backgroundColor: AppColors.primary,
             shape: const CircleBorder(),
-            tooltip: 'AI 노무 상담',
+            tooltip: '노무 상담',
             child: const Icon(
               Icons.balance_rounded,
               color: Colors.white,
@@ -2058,32 +2094,34 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.bgCard,
         elevation: 0,
         centerTitle: false,
-        iconTheme: const IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
         title: const Text(
           '사장님 공고 관리',
           style: TextStyle(
             fontFamily: 'Jalnan2TTF',
-            color: kBrandBlue,
+            color: AppColors.primary,
             fontSize: 20,
             fontWeight: FontWeight.w900,
           ),
         ),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: Colors.black,
-          unselectedLabelColor: Colors.black38,
-          indicatorColor: Colors.black,
+          labelColor: AppColors.textPrimary,
+          unselectedLabelColor: AppColors.textTertiary,
+          indicatorColor: AppColors.primary,
           tabs: const [Tab(text: '전체'), Tab(text: '일급'), Tab(text: '주급')],
         ),
         actions: [
-          // ⑧ 배너 숨김 상태일 때 AppBar에 복원 버튼 노출 — 눈에 잘 띄는 위치
           if (_isBannerHidden && bannerAds.isNotEmpty)
             IconButton(
               tooltip: '배너 다시 보기',
-              icon: const Icon(Icons.campaign_outlined, color: kBrandBlue),
+              icon: const Icon(
+                Icons.campaign_outlined,
+                color: AppColors.primary,
+              ),
               onPressed: () => _setBannerHidden(false),
             ),
           Center(
@@ -2139,8 +2177,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   }
 }
 
-// ⑤ _SearchHeaderDelegate dead code 제거
-
 class _PostJobCtaButton extends StatelessWidget {
   final VoidCallback onPressed;
   const _PostJobCtaButton({required this.onPressed});
@@ -2152,14 +2188,14 @@ class _PostJobCtaButton extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(AppRadius.full),
           onTap: onPressed,
           child: Ink(
             padding: const EdgeInsets.fromLTRB(10, 0, 12, 0),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(999),
-              color: kBrandBlue.withValues(alpha: 0.10),
-              border: Border.all(color: kBrandBlue.withValues(alpha: 0.26)),
+              borderRadius: BorderRadius.circular(AppRadius.full),
+              color: AppColors.primaryLight,
+              border: Border.all(color: AppColors.primaryMid),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -2168,7 +2204,7 @@ class _PostJobCtaButton extends StatelessWidget {
                   width: 22,
                   height: 22,
                   decoration: const BoxDecoration(
-                    color: kBrandBlue,
+                    color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -2181,7 +2217,7 @@ class _PostJobCtaButton extends StatelessWidget {
                 const Text(
                   '공고 올리기',
                   style: TextStyle(
-                    color: kBrandBlue,
+                    color: AppColors.primary,
                     fontSize: 13,
                     fontWeight: FontWeight.w900,
                     height: 1.0,
@@ -2226,21 +2262,21 @@ class _EmptyBenefitChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: kBrandBlue.withValues(alpha: 0.18)),
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        border: Border.all(color: AppColors.primaryMid),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 15, color: kBrandBlue),
+          Icon(icon, size: 15, color: AppColors.primary),
           const SizedBox(width: 5),
           Text(
             label,
             style: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF2D3A4A),
+              color: AppColors.textPrimary,
             ),
           ),
         ],

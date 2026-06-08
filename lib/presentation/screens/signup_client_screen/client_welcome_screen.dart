@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-const kBrand = Color(0xFF3B8AFF);
+import 'package:iljujob/config/app_theme.dart';
 
 /// 가입 완료 직후 보여주는 웰컴 화면
 /// 핵심 목적: 첫 공고 등록 유도 (가장 중요한 전환 포인트)
@@ -41,7 +40,7 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.bgCard,
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeIn,
@@ -58,11 +57,11 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEFF6FF),
+                      color: AppColors.primaryLight,
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: kBrand.withOpacity(0.15),
+                          color: AppColors.primary.withValues(alpha: 0.15),
                           blurRadius: 20,
                           offset: const Offset(0, 8),
                         ),
@@ -70,7 +69,7 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
                     ),
                     child: const Icon(
                       Icons.check_circle_outline_rounded,
-                      color: kBrand,
+                      color: AppColors.primary,
                       size: 40,
                     ),
                   ),
@@ -81,7 +80,7 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF111827),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -90,7 +89,7 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 15,
-                      color: Color(0xFF6B7280),
+                      color: AppColors.textSecondary,
                       height: 1.6,
                     ),
                   ),
@@ -102,24 +101,24 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
                     children: const [
                       Expanded(
                         child: _StatCard(
-                          number: '7,000+',
-                          label: '대기 중인\n구직자',
+                          number: '간편',
+                          label: '공고 작성\n지원',
                           icon: Icons.people_outline,
                         ),
                       ),
                       SizedBox(width: 10),
                       Expanded(
                         child: _StatCard(
-                          number: '30분',
-                          label: '평균 첫\n지원 시간',
+                          number: '채팅',
+                          label: '지원자와\n바로 연결',
                           icon: Icons.timer_outlined,
                         ),
                       ),
                       SizedBox(width: 10),
                       Expanded(
                         child: _StatCard(
-                          number: '5회',
-                          label: '무료 공고\n제공',
+                          number: '2건',
+                          label: '월 무료\n공고 제공',
                           icon: Icons.card_giftcard_outlined,
                         ),
                       ),
@@ -134,10 +133,10 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF7ED),
-                      borderRadius: BorderRadius.circular(12),
+                      color: AppColors.warningLight,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       border: Border.all(
-                          color: const Color(0xFFFED7AA), width: 1),
+                          color: AppColors.warningBorder, width: 1),
                     ),
                     child: Row(
                       children: const [
@@ -148,7 +147,7 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
                             '첫 공고는 무료예요. 지금 바로 올려보세요!',
                             style: TextStyle(
                               fontSize: 13.5,
-                              color: Color(0xFF92400E),
+                              color: AppColors.warningDark,
                               fontWeight: FontWeight.w600,
                               height: 1.4,
                             ),
@@ -165,13 +164,13 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: kBrand,
+                        backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16)),
+                            borderRadius: BorderRadius.circular(AppRadius.lg)),
                         minimumSize: const Size.fromHeight(56),
-                        shadowColor: kBrand.withOpacity(0.4),
+                        shadowColor: AppColors.primary.withValues(alpha: 0.4),
                       ),
                       onPressed: () {
                       // ✅ 웰컴 화면 제거하고 메인 위에 post_job 쌓기
@@ -207,7 +206,7 @@ WidgetsBinding.instance.addPostFrameCallback((_) {
                       );
                     },
                     style: TextButton.styleFrom(
-                      foregroundColor: const Color(0xFF9CA3AF),
+                      foregroundColor: AppColors.textTertiary,
                       minimumSize: const Size.fromHeight(44),
                     ),
                     child: const Text(
@@ -246,20 +245,20 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F6FA),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFDBEAFE), width: 1),
+        color: AppColors.bgPage,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.primaryMid, width: 1),
       ),
       child: Column(
         children: [
-          Icon(icon, color: kBrand, size: 22),
+          Icon(icon, color: AppColors.primary, size: 22),
           const SizedBox(height: 8),
           Text(
             number,
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w800,
-              color: kBrand,
+              color: AppColors.primary,
             ),
           ),
           const SizedBox(height: 4),
@@ -268,7 +267,7 @@ class _StatCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 11,
-              color: Color(0xFF6B7280),
+              color: AppColors.textSecondary,
               height: 1.4,
             ),
           ),

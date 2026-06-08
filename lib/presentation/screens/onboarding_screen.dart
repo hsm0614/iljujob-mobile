@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:iljujob/config/app_theme.dart';
 import 'signup_client_screen/signup_client_choice_screen.dart';
-const kBrand = Color(0xFF3B8AFF);
 
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
@@ -13,7 +13,7 @@ class OnboardingScreen extends StatelessWidget {
         .clamp(minScaleFactor: 1.0, maxScaleFactor: 1.2);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEFF3F8),
+      backgroundColor: AppColors.bgPage,
       body: SafeArea(
         child: MediaQuery(
           data: MediaQuery.of(context).copyWith(textScaler: textScaler),
@@ -36,7 +36,7 @@ class OnboardingScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF374151),
+                    color: AppColors.textPrimary,
                   ),
                 ),
 
@@ -65,7 +65,7 @@ class OnboardingScreen extends StatelessWidget {
                         label: '사장님',
                         subtitle: '알바생 바로 구하기',
                         icon: Icons.storefront_outlined,
-                        badge: '7,000명 대기중',
+                        badge: '빠른 채용',
                         isHighlighted: true,
                         onTap: () {
                           HapticFeedback.lightImpact();
@@ -84,7 +84,7 @@ class OnboardingScreen extends StatelessWidget {
                   '전화번호 인증으로 바로 시작합니다.',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFFB0B7C3),
+                    color: AppColors.textTertiary,
                   ),
                 ),
                 const SizedBox(height: 24),
@@ -108,7 +108,7 @@ class _BrandBlock extends StatelessWidget {
         // ✅ Jalnan2TTF 폰트 적용
         ShaderMask(
           shaderCallback: (rect) => const LinearGradient(
-            colors: [kBrand, Color(0xFF6FB2FF)],
+            colors: [AppColors.primary, AppColors.primaryMid],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ).createShader(rect),
@@ -128,7 +128,7 @@ class _BrandBlock extends StatelessWidget {
           '오늘 채용 · 오늘 근무',
           style: TextStyle(
             fontSize: 14,
-            color: Color(0xFF6B7280),
+            color: AppColors.textSecondary,
             letterSpacing: 0.5,
           ),
         ),
@@ -186,23 +186,17 @@ class _TypeCardState extends State<_TypeCard> {
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
+                  color: AppColors.bgCard,
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
                   border: Border.all(
                     color: widget.isHighlighted
-                        ? kBrand.withOpacity(0.4)
-                        : const Color(0xFFE5E7EB),
+                        ? AppColors.primaryMid
+                        : AppColors.border,
                     width: widget.isHighlighted ? 1.5 : 1.0,
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: widget.isHighlighted
-                          ? kBrand.withOpacity(0.08)
-                          : Colors.black.withOpacity(0.04),
-                      blurRadius: 14,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+                  boxShadow: widget.isHighlighted
+                      ? AppShadows.cardElevated
+                      : AppShadows.card,
                 ),
                 padding: const EdgeInsets.fromLTRB(16, 22, 16, 22),
                 child: Column(
@@ -214,16 +208,16 @@ class _TypeCardState extends State<_TypeCard> {
                       height: 46,
                       decoration: BoxDecoration(
                         color: widget.isHighlighted
-                            ? const Color(0xFFEFF6FF)
-                            : const Color(0xFFF3F4F6),
-                        borderRadius: BorderRadius.circular(13),
+                            ? AppColors.primaryLight
+                            : AppColors.bgMuted,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: Icon(
                         widget.icon,
                         size: 24,
                         color: widget.isHighlighted
-                            ? kBrand
-                            : const Color(0xFF9CA3AF),
+                            ? AppColors.primary
+                            : AppColors.textTertiary,
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -236,8 +230,8 @@ class _TypeCardState extends State<_TypeCard> {
                         fontSize: 18,
                         fontWeight: FontWeight.w700,
                         color: widget.isHighlighted
-                            ? const Color(0xFF111827)
-                            : const Color(0xFF374151),
+                            ? AppColors.textPrimary
+                            : AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 5),
@@ -247,7 +241,7 @@ class _TypeCardState extends State<_TypeCard> {
                       widget.subtitle,
                       style: const TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF9CA3AF),
+                        color: AppColors.textTertiary,
                         height: 1.4,
                       ),
                     ),
@@ -263,8 +257,8 @@ class _TypeCardState extends State<_TypeCard> {
                           height: 28,
                           decoration: BoxDecoration(
                             color: widget.isHighlighted
-                                ? kBrand
-                                : const Color(0xFFF3F4F6),
+                                ? AppColors.primary
+                                : AppColors.bgMuted,
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
@@ -272,7 +266,7 @@ class _TypeCardState extends State<_TypeCard> {
                             size: 14,
                             color: widget.isHighlighted
                                 ? Colors.white
-                                : const Color(0xFF9CA3AF),
+                                : AppColors.textTertiary,
                           ),
                         ),
                       ],
@@ -291,15 +285,9 @@ class _TypeCardState extends State<_TypeCard> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 9, vertical: 4),
                   decoration: BoxDecoration(
-                    color: kBrand,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: kBrand.withOpacity(0.3),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                    boxShadow: AppShadows.button,
                   ),
                   child: Text(
                     widget.badge!,

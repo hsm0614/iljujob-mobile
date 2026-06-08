@@ -14,17 +14,18 @@ Future<Position?> getCurrentLocation() async {
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
       permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
         return null;
       }
     }
 
-    // 🔥 핵심: 명시적으로 AndroidSettings를 전달
+    // 핵심: 명시적으로 AndroidSettings를 전달
     return await Geolocator.getCurrentPosition(
       desiredAccuracy: LocationAccuracy.high,
       locationSettings: AndroidSettings(
         accuracy: LocationAccuracy.high,
-        forceLocationManager: true, // ✅ 여기선 이름이 바뀜!
+        forceLocationManager: true, // 여기선 이름이 바뀜!
       ),
     );
   } catch (e) {

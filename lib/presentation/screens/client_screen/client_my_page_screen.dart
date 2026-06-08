@@ -37,8 +37,10 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
 
   String _formatPhone(String phone) {
     final p = phone.replaceAll(RegExp(r'\D'), '');
-    if (p.length == 11) return '${p.substring(0, 3)}-${p.substring(3, 7)}-${p.substring(7)}';
-    if (p.length == 10) return '${p.substring(0, 3)}-${p.substring(3, 6)}-${p.substring(6)}';
+    if (p.length == 11)
+      return '${p.substring(0, 3)}-${p.substring(3, 7)}-${p.substring(7)}';
+    if (p.length == 10)
+      return '${p.substring(0, 3)}-${p.substring(3, 6)}-${p.substring(6)}';
     return phone;
   }
 
@@ -46,17 +48,21 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('authToken') ?? '';
   }
-Future<String> _phoneRaw() async {
-  final prefs = await SharedPreferences.getInstance();
-  final raw = (prefs.getString('userPhone') ?? '').replaceAll(RegExp(r'\D'), '');
-  return raw;
-}
 
-Future<int?> _clientId() async {
-  final prefs = await SharedPreferences.getInstance();
-  // 기업 로그인 구조상 clientId가 있을 확률이 높음
-  return prefs.getInt('clientId') ?? prefs.getInt('userId');
-}
+  Future<String> _phoneRaw() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = (prefs.getString('userPhone') ?? '').replaceAll(
+      RegExp(r'\D'),
+      '',
+    );
+    return raw;
+  }
+
+  Future<int?> _clientId() async {
+    final prefs = await SharedPreferences.getInstance();
+    // 기업 로그인 구조상 clientId가 있을 확률이 높음
+    return prefs.getInt('clientId') ?? prefs.getInt('userId');
+  }
 
   @override
   void initState() {
@@ -81,10 +87,7 @@ Future<int?> _clientId() async {
   }
 
   Future<void> _refreshAll() async {
-    await Future.wait([
-      _loadProfileInfo(),
-      _loadSubscription(),
-    ]);
+    await Future.wait([_loadProfileInfo(), _loadSubscription()]);
   }
 
   String _subSummaryText() {
@@ -117,16 +120,17 @@ Future<int?> _clientId() async {
 
     final ok = await showModalBottomSheet<bool>(
       context: context,
-      isScrollControlled: true, // ✅ 안드로이드 하단 가드
+      isScrollControlled: true, // 안드로이드 하단 가드
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ConfirmSheet(
-        title: '로그아웃할까요?',
-        message: '로그아웃하면 다시 로그인해야 해요.',
-        confirmText: '로그아웃',
-        confirmColor: const Color(0xFFDC2626),
-        icon: Icons.logout_rounded,
-      ),
+      builder:
+          (_) => _ConfirmSheet(
+            title: '로그아웃할까요?',
+            message: '로그아웃하면 다시 로그인해야 해요.',
+            confirmText: '로그아웃',
+            confirmColor: const Color(0xFFDC2626),
+            icon: Icons.logout_rounded,
+          ),
     );
 
     if (ok != true) return;
@@ -135,8 +139,10 @@ Future<int?> _clientId() async {
     await prefs.clear();
 
     if (!mounted) return;
-    Navigator.of(context, rootNavigator: true)
-        .pushNamedAndRemoveUntil('/onboarding', (route) => false);
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).pushNamedAndRemoveUntil('/onboarding', (route) => false);
   }
 
   Future<void> _confirmWithdraw() async {
@@ -144,16 +150,17 @@ Future<int?> _clientId() async {
 
     final ok = await showModalBottomSheet<bool>(
       context: context,
-      isScrollControlled: true, // ✅ 안드로이드 하단 가드
+      isScrollControlled: true, // 안드로이드 하단 가드
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ConfirmSheet(
-        title: '정말 탈퇴할까요?',
-        message: '탈퇴하면 계정 정보가 삭제되고 복구가 어려워요.',
-        confirmText: '탈퇴하기',
-        confirmColor: const Color(0xFFDC2626),
-        icon: Icons.person_off_rounded,
-      ),
+      builder:
+          (_) => _ConfirmSheet(
+            title: '정말 탈퇴할까요?',
+            message: '탈퇴하면 계정 정보가 삭제되고 복구가 어려워요.',
+            confirmText: '탈퇴하기',
+            confirmColor: const Color(0xFFDC2626),
+            icon: Icons.person_off_rounded,
+          ),
     );
 
     if (ok != true) return;
@@ -161,82 +168,87 @@ Future<int?> _clientId() async {
   }
 
   Future<http.Response> _deleteWithJsonBody(
-  Uri uri,
-  Map<String, dynamic> body,
-  Map<String, String> headers,
-) async {
-  final req = http.Request('DELETE', uri);
-  req.headers.addAll(headers);
-  req.headers['Content-Type'] = 'application/json';
-  req.body = jsonEncode(body);
+    Uri uri,
+    Map<String, dynamic> body,
+    Map<String, String> headers,
+  ) async {
+    final req = http.Request('DELETE', uri);
+    req.headers.addAll(headers);
+    req.headers['Content-Type'] = 'application/json';
+    req.body = jsonEncode(body);
 
-  final streamed = await req.send().timeout(const Duration(seconds: 8));
-  return http.Response.fromStream(streamed);
-}
-
-Future<void> _withdrawAccount() async {
-  final uid = await _clientId(); // 만약 기업이 clientId면 여기도 clientId로 바꾸는 게 더 안전
-  final phone = await _phoneRaw();
-
-  if (uid == null || phone.isEmpty) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('유저 정보(아이디/전화번호)가 없어서 탈퇴를 진행할 수 없어요.')),
-    );
-    return;
+    final streamed = await req.send().timeout(const Duration(seconds: 8));
+    return http.Response.fromStream(streamed);
   }
 
-  final token = await _token();
-  final headers = <String, String>{};
-  if (token.isNotEmpty) headers['Authorization'] = 'Bearer $token';
+  Future<void> _withdrawAccount() async {
+    final uid = await _clientId(); // 만약 기업이 clientId면 여기도 clientId로 바꾸는 게 더 안전
+    final phone = await _phoneRaw();
 
-  // ✅ 서버가 query로 phone을 요구하는 경우 대응
-  final uriQuery = Uri.parse('$baseUrl/api/client/profile?id=$uid&phone=$phone');
-
-  // ✅ 서버가 body로 phone을 요구하는 경우 대응
-  final uriBody = Uri.parse('$baseUrl/api/client/profile');
-
-  try {
-    // 1) query 방식 먼저
-    var res = await http.delete(uriQuery, headers: headers).timeout(const Duration(seconds: 8));
-
-    // 2) 안 되면 body 방식
-    if (res.statusCode < 200 || res.statusCode >= 300) {
-      res = await _deleteWithJsonBody(
-        uriBody,
-        {'id': uid, 'phone': phone},
-        headers,
-      );
-    }
-
-    final ok = res.statusCode >= 200 && res.statusCode < 300; // ✅ 200/204 모두 성공
-    if (!ok) {
+    if (uid == null || phone.isEmpty) {
       if (!mounted) return;
-      final msg = res.body.isNotEmpty ? res.body : '(empty body)';
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('탈퇴 실패 (${res.statusCode}) $msg')),
+        const SnackBar(content: Text('유저 정보(아이디/전화번호)가 없어서 탈퇴를 진행할 수 없어요.')),
       );
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+    final token = await _token();
+    final headers = <String, String>{};
+    if (token.isNotEmpty) headers['Authorization'] = 'Bearer $token';
 
-    if (!mounted) return;
-    Navigator.of(context, rootNavigator: true)
-        .pushNamedAndRemoveUntil('/onboarding', (route) => false);
-  } on TimeoutException {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('서버 응답이 늦어요. 잠시 후 다시 시도해줘')),
+    // 서버가 query로 phone을 요구하는 경우 대응
+    final uriQuery = Uri.parse(
+      '$baseUrl/api/client/profile?id=$uid&phone=$phone',
     );
-  } catch (_) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('탈퇴 중 오류가 발생했어')),
-    );
+
+    // 서버가 body로 phone을 요구하는 경우 대응
+    final uriBody = Uri.parse('$baseUrl/api/client/profile');
+
+    try {
+      // 1) query 방식 먼저
+      var res = await http
+          .delete(uriQuery, headers: headers)
+          .timeout(const Duration(seconds: 8));
+
+      // 2) 안 되면 body 방식
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        res = await _deleteWithJsonBody(uriBody, {
+          'id': uid,
+          'phone': phone,
+        }, headers);
+      }
+
+      final ok = res.statusCode >= 200 && res.statusCode < 300; // 200/204 모두 성공
+      if (!ok) {
+        if (!mounted) return;
+        final msg = res.body.isNotEmpty ? res.body : '(empty body)';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('탈퇴 실패 (${res.statusCode}) $msg')),
+        );
+        return;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      if (!mounted) return;
+      Navigator.of(
+        context,
+        rootNavigator: true,
+      ).pushNamedAndRemoveUntil('/onboarding', (route) => false);
+    } on TimeoutException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('서버 응답이 늦어요. 잠시 후 다시 시도해줘')));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('탈퇴 중 오류가 발생했어')));
+    }
   }
-}
 
   @override
   Widget build(BuildContext context) {
@@ -287,7 +299,11 @@ Future<void> _withdrawAccount() async {
                             companyName: companyName,
                             managerName: managerName,
                             phoneNumber: _formatPhone(phoneNumber),
-                            onEdit: () => Navigator.pushNamed(context, '/edit_profile'),
+                            onEdit:
+                                () => Navigator.pushNamed(
+                                  context,
+                                  '/edit_profile',
+                                ),
                           ),
                         ],
                       ),
@@ -309,7 +325,10 @@ Future<void> _withdrawAccount() async {
                       label: '구독 관리',
                       trailing: _StatusPill(text: _subSummaryText()),
                       onTap: () async {
-                        await Navigator.pushNamed(context, '/subscription/manage');
+                        await Navigator.pushNamed(
+                          context,
+                          '/subscription/manage',
+                        );
                         if (mounted) _loadSubscription();
                       },
                     ),
@@ -318,29 +337,36 @@ Future<void> _withdrawAccount() async {
                         icon: Icons.credit_card,
                         label: '구독하기',
                         onTap: () async {
-                          final ok = await Navigator.pushNamed(context, '/subscribe');
+                          final ok = await Navigator.pushNamed(
+                            context,
+                            '/subscribe',
+                          );
                           if (ok == true && mounted) _loadSubscription();
                         },
                       ),
                     _ItemTile(
                       icon: Icons.credit_card,
                       label: '이용권 구매',
-                      onTap: () => Navigator.pushNamed(context, '/purchase-pass'),
+                      onTap:
+                          () => Navigator.pushNamed(context, '/purchase-pass'),
                     ),
                     _ItemTile(
                       icon: Icons.notifications_active,
                       label: '알림 설정',
-                      onTap: () => Navigator.pushNamed(context, '/notifications'),
+                      onTap:
+                          () => Navigator.pushNamed(context, '/notifications'),
                     ),
                     _ItemTile(
                       icon: Icons.report,
                       label: '신고 내역',
-                      onTap: () => Navigator.pushNamed(context, '/report-history'),
+                      onTap:
+                          () => Navigator.pushNamed(context, '/report-history'),
                     ),
                     _ItemTile(
                       icon: Icons.block,
                       label: '차단한 사용자',
-                      onTap: () => Navigator.pushNamed(context, '/blocked-users'),
+                      onTap:
+                          () => Navigator.pushNamed(context, '/blocked-users'),
                     ),
                   ],
                 ),
@@ -349,7 +375,10 @@ Future<void> _withdrawAccount() async {
 
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: _SectionCard(
                   title: '고객센터',
                   children: [
@@ -375,7 +404,10 @@ Future<void> _withdrawAccount() async {
 
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: _SectionCard(
                   title: '서비스',
                   children: [
@@ -399,15 +431,29 @@ Future<void> _withdrawAccount() async {
                     _ItemTile(
                       icon: Icons.logout,
                       label: '로그아웃',
-                      labelStyle: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFDC2626)),
-                      trailing: const Icon(Icons.logout, size: 18, color: Color(0xFFDC2626)),
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFDC2626),
+                      ),
+                      trailing: const Icon(
+                        Icons.logout,
+                        size: 18,
+                        color: Color(0xFFDC2626),
+                      ),
                       onTap: _confirmLogout,
                     ),
                     _ItemTile(
                       icon: Icons.person_off_rounded,
                       label: '회원 탈퇴',
-                      labelStyle: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFFDC2626)),
-                      trailing: const Icon(Icons.delete_forever, size: 18, color: Color(0xFFDC2626)),
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFDC2626),
+                      ),
+                      trailing: const Icon(
+                        Icons.delete_forever,
+                        size: 18,
+                        color: Color(0xFFDC2626),
+                      ),
                       onTap: _confirmWithdraw,
                     ),
                   ],
@@ -451,7 +497,11 @@ class _ProfileCard extends StatelessWidget {
         color: Colors.white.withOpacity(0.95),
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
-          BoxShadow(color: const Color(0x1F000000), blurRadius: 10, offset: Offset(0, 6)),
+          BoxShadow(
+            color: const Color(0x1F000000),
+            blurRadius: 10,
+            offset: Offset(0, 6),
+          ),
         ],
       ),
       padding: const EdgeInsets.all(12),
@@ -463,7 +513,14 @@ class _ProfileCard extends StatelessWidget {
                 radius: 30,
                 backgroundColor: const Color(0xFFEAF2FF),
                 backgroundImage: hasLogo ? NetworkImage(logoUrl) : null,
-                child: hasLogo ? null : const Icon(Icons.business, size: 30, color: const Color(0xFF6B7280)),
+                child:
+                    hasLogo
+                        ? null
+                        : const Icon(
+                          Icons.business,
+                          size: 30,
+                          color: const Color(0xFF6B7280),
+                        ),
               ),
               Positioned(
                 bottom: -2,
@@ -479,9 +536,18 @@ class _ProfileCard extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: brandBlue,
                         shape: BoxShape.circle,
-                        boxShadow: const [BoxShadow(color: const Color(0xFFBCC0CB), blurRadius: 4)],
+                        boxShadow: const [
+                          BoxShadow(
+                            color: const Color(0xFFBCC0CB),
+                            blurRadius: 4,
+                          ),
+                        ],
                       ),
-                      child: const Icon(Icons.edit, size: 16, color: Colors.white),
+                      child: const Icon(
+                        Icons.edit,
+                        size: 16,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -540,9 +606,14 @@ class _ProfileCard extends StatelessWidget {
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFFEAF2FF),
                         foregroundColor: brandBlue,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 10,
+                        ),
                         textStyle: const TextStyle(fontWeight: FontWeight.w600),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                         minimumSize: const Size(0, 40),
                       ),
                     ),
@@ -571,7 +642,10 @@ class _TwoLine extends StatelessWidget {
         children: [
           TextSpan(
             text: '$subtitle: ',
-            style: const TextStyle(color: const Color(0xFF6B7280), fontSize: 13),
+            style: const TextStyle(
+              color: const Color(0xFF6B7280),
+              fontSize: 13,
+            ),
           ),
           TextSpan(
             text: title,
@@ -623,7 +697,10 @@ class _ChipText extends StatelessWidget {
                   child: Text(
                     text,
                     maxLines: 1,
-                    style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               )
@@ -633,7 +710,10 @@ class _ChipText extends StatelessWidget {
                   text,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
           ],
@@ -654,7 +734,13 @@ class _SectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: const [BoxShadow(color: const Color(0x1F000000), blurRadius: 8, offset: Offset(0, 4))],
+        boxShadow: const [
+          BoxShadow(
+            color: const Color(0x1F000000),
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
@@ -725,10 +811,21 @@ class _ItemTile extends StatelessWidget {
           leading: Icon(icon, size: 22, color: const Color(0xFF3B8AFF)),
           title: Text(
             label,
-            style: labelStyle ?? t.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            style:
+                labelStyle ??
+                t.titleMedium?.copyWith(fontWeight: FontWeight.w600),
           ),
-          trailing: trailing ?? const Icon(Icons.arrow_forward_ios, size: 16, color: const Color(0xFF9CA3AF)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          trailing:
+              trailing ??
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: const Color(0xFF9CA3AF),
+              ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 6,
+            vertical: 2,
+          ),
           dense: true,
           minLeadingWidth: 0,
         ),
@@ -747,8 +844,13 @@ class _ExpandableBizInfo extends StatelessWidget {
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
         leading: Icon(Icons.info_outline, color: brandBlue),
-        title: const Text('사업자 정보', style: TextStyle(fontWeight: FontWeight.w700)),
-        shape: const RoundedRectangleBorder(side: BorderSide(color: Colors.transparent)),
+        title: const Text(
+          '사업자 정보',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        shape: const RoundedRectangleBorder(
+          side: BorderSide(color: Colors.transparent),
+        ),
         childrenPadding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
         children: const [
           _BizInfoItem('법인명', '주식회사 찾다'),
@@ -782,10 +884,22 @@ class _BizInfoItem extends StatelessWidget {
         children: [
           SizedBox(
             width: 110,
-            child: Text(k, style: const TextStyle(color: const Color(0xFF6B7280), fontSize: 13.5)),
+            child: Text(
+              k,
+              style: const TextStyle(
+                color: const Color(0xFF6B7280),
+                fontSize: 13.5,
+              ),
+            ),
           ),
           Expanded(
-            child: Text(v, style: const TextStyle(fontSize: 13.5, color: const Color(0xFF191F28))),
+            child: Text(
+              v,
+              style: const TextStyle(
+                fontSize: 13.5,
+                color: const Color(0xFF191F28),
+              ),
+            ),
           ),
         ],
       ),
@@ -842,7 +956,12 @@ class _ConfirmSheet extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
       ),
-      padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomSafe), // ✅ 안드로이드 가림 방지 핵심
+      padding: EdgeInsets.fromLTRB(
+        16,
+        12,
+        16,
+        16 + bottomSafe,
+      ), // 안드로이드 가림 방지 핵심
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -865,12 +984,19 @@ class _ConfirmSheet extends StatelessWidget {
             child: Icon(icon, color: confirmColor),
           ),
           const SizedBox(height: 12),
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 6),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12.5, color: Color(0xFF6B7280), height: 1.35),
+            style: const TextStyle(
+              fontSize: 12.5,
+              color: Color(0xFF6B7280),
+              height: 1.35,
+            ),
           ),
           const SizedBox(height: 14),
           Row(
@@ -882,9 +1008,14 @@ class _ConfirmSheet extends StatelessWidget {
                     foregroundColor: const Color(0xFF111827),
                     side: const BorderSide(color: Color(0xFFE5E7EB)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                  child: const Text('취소', style: TextStyle(fontWeight: FontWeight.w900)),
+                  child: const Text(
+                    '취소',
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -895,10 +1026,15 @@ class _ConfirmSheet extends StatelessWidget {
                     backgroundColor: confirmColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                     elevation: 0,
                   ),
-                  child: Text(confirmText, style: const TextStyle(fontWeight: FontWeight.w900)),
+                  child: Text(
+                    confirmText,
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
                 ),
               ),
             ],

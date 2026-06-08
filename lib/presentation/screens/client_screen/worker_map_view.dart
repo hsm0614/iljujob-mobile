@@ -25,8 +25,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class _MapConst {
   const _MapConst._();
 
-  static const double minZoom    = 7.0;
-  static const double maxZoom    = 19.0;
+  static const double minZoom = 7.0;
+  static const double maxZoom = 19.0;
   static const double defaultZoom = 14.0;
   static const LatLng seoulCenter = LatLng(37.5665, 126.9780);
 
@@ -60,15 +60,15 @@ class _MapConst {
 // ──────────────────────────────────────────────
 class _C {
   const _C._();
-  static const primary       = Color(0xFF3B8AFF);
-  static const primaryLight  = Color(0xFFEEF5FF);
-  static const surface       = Color(0xFFFFFFFF);
-  static const background    = Color(0xFFF4F6FA);
-  static const textPrimary   = Color(0xFF191F28);
+  static const primary = Color(0xFF3B8AFF);
+  static const primaryLight = Color(0xFFEEF5FF);
+  static const surface = Color(0xFFFFFFFF);
+  static const background = Color(0xFFF4F6FA);
+  static const textPrimary = Color(0xFF191F28);
   static const textSecondary = Color(0xFF6B7280);
-  static const border        = Color(0xFFE5E8EB);
-  static const gold          = Color(0xFFFFB300);
-  static const goldLight     = Color(0xFFFFF8E1);
+  static const border = Color(0xFFE5E8EB);
+  static const gold = Color(0xFFFFB300);
+  static const goldLight = Color(0xFFFFF8E1);
 }
 
 // ──────────────────────────────────────────────
@@ -94,32 +94,30 @@ class WorkerMarkerData {
     required this.lat,
     required this.lng,
     required this.profileUrl,
-    this.name    = '',
-    this.skills  = '',
+    this.name = '',
+    this.skills = '',
     this.rating,
   });
 
-  final int     id;
-  final double  lat;
-  final double  lng;
-  final String  profileUrl;
-  final String  name;
-  final String  skills;
+  final int id;
+  final double lat;
+  final double lng;
+  final String profileUrl;
+  final String name;
+  final String skills;
   final double? rating;
 
   LatLng get position => LatLng(lat, lng);
 
   factory WorkerMarkerData.fromMap(Map<String, dynamic> map) {
     return WorkerMarkerData(
-      id:         (map['id'] as num).toInt(),
-      lat:        (map['lat'] as num).toDouble(),
-      lng:        (map['lng'] as num).toDouble(),
+      id: (map['id'] as num).toInt(),
+      lat: (map['lat'] as num).toDouble(),
+      lng: (map['lng'] as num).toDouble(),
       profileUrl: (map['profileUrl'] ?? '').toString(),
-      name:       (map['name']       ?? '').toString(),
-      skills:     (map['skills']     ?? '').toString(),
-      rating: map['rating'] != null
-          ? (map['rating'] as num).toDouble()
-          : null,
+      name: (map['name'] ?? '').toString(),
+      skills: (map['skills'] ?? '').toString(),
+      rating: map['rating'] != null ? (map['rating'] as num).toDouble() : null,
     );
   }
 
@@ -138,7 +136,8 @@ class WorkerMarkerData {
     const r = 6371000.0;
     final dLat = _rad(other.latitude - lat);
     final dLng = _rad(other.longitude - lng);
-    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+    final a =
+        math.sin(dLat / 2) * math.sin(dLat / 2) +
         math.cos(_rad(lat)) *
             math.cos(_rad(other.latitude)) *
             math.sin(dLng / 2) *
@@ -153,7 +152,7 @@ class WorkerMarkerData {
 // 공고 모델 (내 공고 선택용)
 // ──────────────────────────────────────────────
 class _ClientJob {
-  final int    id;
+  final int id;
   final String title;
   final String location;
   final String startDate;
@@ -166,9 +165,9 @@ class _ClientJob {
   });
 
   factory _ClientJob.fromJson(Map<String, dynamic> j) => _ClientJob(
-    id:        (j['id'] ?? j['job_id'] ?? 0) as int,
-    title:     (j['title'] ?? j['job_title'] ?? '공고').toString(),
-    location:  (j['location_city'] ?? j['location'] ?? '위치 미상').toString(),
+    id: (j['id'] ?? j['job_id'] ?? 0) as int,
+    title: (j['title'] ?? j['job_title'] ?? '공고').toString(),
+    location: (j['location_city'] ?? j['location'] ?? '위치 미상').toString(),
     startDate: (j['start_date'] ?? '').toString(),
   );
 }
@@ -185,24 +184,24 @@ class WorkerMapView extends StatefulWidget {
 
 class _WorkerMapViewState extends State<WorkerMapView>
     with WidgetsBindingObserver {
-  final MapController         _mapController    = MapController();
+  final MapController _mapController = MapController();
   final TextEditingController _searchController = TextEditingController();
 
   List<WorkerMarkerData> _allWorkers = [];
-  List<WorkerMarkerData> _workers    = [];
-  bool   _isLoading              = true;
-  bool   _showOnlyAvailableToday = false;
-  double _currentZoom            = _MapConst.defaultZoom;
+  List<WorkerMarkerData> _workers = [];
+  bool _isLoading = true;
+  bool _showOnlyAvailableToday = false;
+  double _currentZoom = _MapConst.defaultZoom;
   LatLng? _currentLocation;
-  RadiusFilter _radiusFilter     = RadiusFilter.none;
+  RadiusFilter _radiusFilter = RadiusFilter.none;
   Timer? _debounceTimer;
 
   // ── 구독 / 클라이언트 정보
-  bool   _isSubscribed    = false;
-  int?   _myClientId;
-  String _myCompanyName   = '';
-  String _myThumbnailUrl  = '';
-  bool   _subChecked      = false;
+  bool _isSubscribed = false;
+  int? _myClientId;
+  String _myCompanyName = '';
+  String _myThumbnailUrl = '';
+  bool _subChecked = false;
 
   // ── lifecycle ──────────────────────────────
 
@@ -228,8 +227,8 @@ class _WorkerMapViewState extends State<WorkerMapView>
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     setState(() {
-      _myClientId     = prefs.getInt('userId');
-      _myCompanyName  = prefs.getString('companyName') ?? '';
+      _myClientId = prefs.getInt('userId');
+      _myCompanyName = prefs.getString('companyName') ?? '';
       _myThumbnailUrl = prefs.getString('profileImageUrl') ?? '';
     });
     await _checkSubscription(prefs);
@@ -241,17 +240,20 @@ class _WorkerMapViewState extends State<WorkerMapView>
     final token = prefs.getString('authToken') ?? '';
     if (token.isEmpty) return;
     try {
-      final res = await http.get(
-        Uri.parse('$baseUrl/api/subscription/status'),
-        headers: {'Authorization': 'Bearer $token'},
-      ).timeout(_MapConst.networkTimeout);
+      final res = await http
+          .get(
+            Uri.parse('$baseUrl/api/subscription/status'),
+            headers: {'Authorization': 'Bearer $token'},
+          )
+          .timeout(_MapConst.networkTimeout);
 
       if (res.statusCode == 200 && mounted) {
-        final d    = jsonDecode(res.body) as Map<String, dynamic>;
+        final d = jsonDecode(res.body) as Map<String, dynamic>;
         final plan = (d['plan']?.toString() ?? '').toLowerCase();
         final active = d['active'] == true;
-        setState(() =>
-            _isSubscribed = active && (plan == 'pro' || plan == 'premium'));
+        setState(
+          () => _isSubscribed = active && (plan == 'pro' || plan == 'premium'),
+        );
       }
     } catch (_) {}
   }
@@ -261,10 +263,12 @@ class _WorkerMapViewState extends State<WorkerMapView>
   void _applyFilters() {
     List<WorkerMarkerData> filtered = _allWorkers;
     if (_radiusFilter != RadiusFilter.none && _currentLocation != null) {
-      filtered = filtered
-          .where((w) =>
-              w.distanceTo(_currentLocation!) <= _radiusFilter.meters)
-          .toList();
+      filtered =
+          filtered
+              .where(
+                (w) => w.distanceTo(_currentLocation!) <= _radiusFilter.meters,
+              )
+              .toList();
     }
     setState(() => _workers = filtered);
   }
@@ -275,9 +279,10 @@ class _WorkerMapViewState extends State<WorkerMapView>
     if (!mounted) return;
     setState(() => _isLoading = true);
 
-    final endpoint = _showOnlyAvailableToday
-        ? '$baseUrl/api/worker/available-today'
-        : '$baseUrl/api/worker/all';
+    final endpoint =
+        _showOnlyAvailableToday
+            ? '$baseUrl/api/worker/available-today'
+            : '$baseUrl/api/worker/all';
 
     try {
       final response = await http
@@ -298,7 +303,7 @@ class _WorkerMapViewState extends State<WorkerMapView>
     } on SocketException {
       _onLoadError('네트워크 연결을 확인해 주세요.');
     } catch (e) {
-      debugPrint('❌ 워커 로딩 오류: $e');
+      debugPrint('worker loading error: $e');
       _onLoadError('잠시 오류가 발생했어요.');
     }
   }
@@ -316,14 +321,18 @@ class _WorkerMapViewState extends State<WorkerMapView>
       return decoded
           .whereType<Map<String, dynamic>>()
           .where(WorkerMarkerData.isValid)
-          .where((m) => _MapConst.koreaBounds.contains(
-                LatLng((m['lat'] as num).toDouble(),
-                    (m['lng'] as num).toDouble()),
-              ))
+          .where(
+            (m) => _MapConst.koreaBounds.contains(
+              LatLng(
+                (m['lat'] as num).toDouble(),
+                (m['lng'] as num).toDouble(),
+              ),
+            ),
+          )
           .map(WorkerMarkerData.fromMap)
           .toList(growable: false);
     } catch (e) {
-      debugPrint('❌ 파싱 오류: $e');
+      debugPrint('worker parse error: $e');
       return [];
     }
   }
@@ -414,8 +423,10 @@ class _WorkerMapViewState extends State<WorkerMapView>
         _showSnackBar('검색 결과가 없어요. 동 이름이나 지하철역으로 검색해 보세요.');
         return;
       }
-      final target =
-          LatLng(locations.first.latitude, locations.first.longitude);
+      final target = LatLng(
+        locations.first.latitude,
+        locations.first.longitude,
+      );
       if (!_MapConst.koreaBounds.contains(target)) {
         _showSnackBar('한국 외 지역은 아직 지원하지 않아요.');
         return;
@@ -434,13 +445,14 @@ class _WorkerMapViewState extends State<WorkerMapView>
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => _WorkerBottomSheet(
-        worker:            worker,
-        isSubscribed:      _isSubscribed,
-        onViewProfile:     () => _openProfile(worker),
-        onStartChat:       () => _pickJobForChat(worker),
-        onSubscribePrompt: _showSubscribePrompt,
-      ),
+      builder:
+          (_) => _WorkerBottomSheet(
+            worker: worker,
+            isSubscribed: _isSubscribed,
+            onViewProfile: () => _openProfile(worker),
+            onStartChat: () => _pickJobForChat(worker),
+            onSubscribePrompt: _showSubscribePrompt,
+          ),
     );
   }
 
@@ -467,13 +479,15 @@ class _WorkerMapViewState extends State<WorkerMapView>
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => _JobPickSheet(
-        title:       '어떤 공고로 채팅을 시작할까요?',
-        subtitle:    '${worker.name.isEmpty ? '알바생' : worker.name}님에게 공고를 소개해요.',
-        jobs:        jobs,
-        actionLabel: '채팅 시작',
-        onSelect:    (job) => _openChatRoom(worker: worker, job: job),
-      ),
+      builder:
+          (_) => _JobPickSheet(
+            title: '어떤 공고로 채팅을 시작할까요?',
+            subtitle:
+                '${worker.name.isEmpty ? '알바생' : worker.name}님에게 공고를 소개해요.',
+            jobs: jobs,
+            actionLabel: '채팅 시작',
+            onSelect: (job) => _openChatRoom(worker: worker, job: job),
+          ),
     );
   }
 
@@ -486,16 +500,18 @@ class _WorkerMapViewState extends State<WorkerMapView>
 
     try {
       // requestChatFromClient: 채팅방 생성 + 알바생에게 수락 요청
-      final res = await http.post(
-        Uri.parse('$baseUrl/api/chat/request'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'jobId':          job.id,
-          'workerId':       worker.id,
-          'clientId':       _myClientId,
-          'openerMessage':  '안녕하세요! ${job.title} 공고를 보고 연락드려요.',
-        }),
-      ).timeout(_MapConst.networkTimeout);
+      final res = await http
+          .post(
+            Uri.parse('$baseUrl/api/chat/request'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'jobId': job.id,
+              'workerId': worker.id,
+              'clientId': _myClientId,
+              'openerMessage': '안녕하세요! ${job.title} 공고를 보고 연락드려요.',
+            }),
+          )
+          .timeout(_MapConst.networkTimeout);
 
       if (!mounted) return;
 
@@ -513,21 +529,23 @@ class _WorkerMapViewState extends State<WorkerMapView>
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ChatRoomScreen(
-              chatRoomId: roomId is int ? roomId : int.parse(roomId.toString()),
-              jobInfo: {
-                'id':                   job.id,
-                'job_id':               job.id,
-                'title':                job.title,
-                'location_city':        job.location,
-                'worker_id':            worker.id,
-                'user_name':            worker.name,
-                'user_thumbnail_url':   worker.profileUrl,
-                'client_id':            _myClientId,
-                'client_company_name':  _myCompanyName,
-                'client_thumbnail_url': _myThumbnailUrl,
-              },
-            ),
+            builder:
+                (_) => ChatRoomScreen(
+                  chatRoomId:
+                      roomId is int ? roomId : int.parse(roomId.toString()),
+                  jobInfo: {
+                    'id': job.id,
+                    'job_id': job.id,
+                    'title': job.title,
+                    'location_city': job.location,
+                    'worker_id': worker.id,
+                    'user_name': worker.name,
+                    'user_thumbnail_url': worker.profileUrl,
+                    'client_id': _myClientId,
+                    'client_company_name': _myCompanyName,
+                    'client_thumbnail_url': _myThumbnailUrl,
+                  },
+                ),
           ),
         );
       } else {
@@ -543,8 +561,7 @@ class _WorkerMapViewState extends State<WorkerMapView>
 
   Future<void> _onNearbyAlertTap() async {
     if (!_isSubscribed) {
-      _showSubscribePrompt(
-          reason: '내 공고 주변 알림 보내기는\n구독 멤버십 전용 기능이에요.');
+      _showSubscribePrompt(reason: '내 공고 주변 알림 보내기는\n구독 멤버십 전용 기능이에요.');
       return;
     }
     final jobs = await _fetchMyActiveJobs();
@@ -559,34 +576,37 @@ class _WorkerMapViewState extends State<WorkerMapView>
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => _JobPickSheet(
-        title:        '내 공고 주변 알바생에게 알림 보내기',
-        subtitle:     '선택한 공고 주변 3km 이내 알바생에게\n공고 알림을 전송해요.',
-        jobs:         jobs,
-        actionLabel:  '알림 보내기',
-        onSelect:     _sendNearbyAlert,
-        showInfoBadge: true,
-      ),
+      builder:
+          (_) => _JobPickSheet(
+            title: '내 공고 주변 알바생에게 알림 보내기',
+            subtitle: '선택한 공고 주변 3km 이내 알바생에게\n공고 알림을 전송해요.',
+            jobs: jobs,
+            actionLabel: '알림 보내기',
+            onSelect: _sendNearbyAlert,
+            showInfoBadge: true,
+          ),
     );
   }
 
   Future<void> _sendNearbyAlert(_ClientJob job) async {
     Navigator.pop(context);
     try {
-      final res = await http.post(
-        Uri.parse('$baseUrl/api/notification/send-nearby'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'jobId':        job.id,
-          'clientId':     _myClientId,
-          'radiusMeters': 3000,
-        }),
-      ).timeout(_MapConst.networkTimeout);
+      final res = await http
+          .post(
+            Uri.parse('$baseUrl/api/notification/send-nearby'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'jobId': job.id,
+              'clientId': _myClientId,
+              'radiusMeters': 3000,
+            }),
+          )
+          .timeout(_MapConst.networkTimeout);
 
       if (!mounted) return;
 
       if (res.statusCode == 200) {
-        final data  = jsonDecode(res.body) as Map<String, dynamic>;
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
         final count = data['sentCount'] ?? data['count'] ?? 0;
         _showSnackBar('주변 알바생 $count명에게 알림을 보냈어요!');
       } else {
@@ -603,18 +623,22 @@ class _WorkerMapViewState extends State<WorkerMapView>
   Future<List<_ClientJob>> _fetchMyActiveJobs() async {
     if (_myClientId == null) return [];
     try {
-      final res = await http.get(
-        Uri.parse(
-            '$baseUrl/api/job/my-jobs?clientId=$_myClientId&status=active'),
-      ).timeout(_MapConst.networkTimeout);
+      final res = await http
+          .get(
+            Uri.parse(
+              '$baseUrl/api/job/my-jobs?clientId=$_myClientId&status=active',
+            ),
+          )
+          .timeout(_MapConst.networkTimeout);
 
       if (res.statusCode == 200) {
         final dynamic raw = jsonDecode(res.body);
-        final List<dynamic> list = raw is List
-            ? raw
-            : (raw is Map
-                ? ((raw['jobs'] ?? raw['data'] ?? []) as List)
-                : []);
+        final List<dynamic> list =
+            raw is List
+                ? raw
+                : (raw is Map
+                    ? ((raw['jobs'] ?? raw['data'] ?? []) as List)
+                    : []);
         return list
             .whereType<Map<String, dynamic>>()
             .map(_ClientJob.fromJson)
@@ -641,13 +665,18 @@ class _WorkerMapViewState extends State<WorkerMapView>
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message,
-            style: const TextStyle(
-                fontSize: 14, height: 1.45, color: Colors.white)),
+        content: Text(
+          message,
+          style: const TextStyle(
+            fontSize: 14,
+            height: 1.45,
+            color: Colors.white,
+          ),
+        ),
         backgroundColor: _C.textPrimary,
-        behavior:        SnackBarBehavior.floating,
+        behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        margin:   const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         duration: const Duration(seconds: 2),
       ),
     );
@@ -666,13 +695,13 @@ class _WorkerMapViewState extends State<WorkerMapView>
         children: [
           // 지도
           _MapLayer(
-            mapController:   _mapController,
-            workers:         _workers,
+            mapController: _mapController,
+            workers: _workers,
             currentLocation: _currentLocation,
-            currentZoom:     _currentZoom,
-            radiusFilter:    _radiusFilter,
-            onMapReady:      _initLocation,
-            onZoomChanged:   (z) {
+            currentZoom: _currentZoom,
+            radiusFilter: _radiusFilter,
+            onMapReady: _initLocation,
+            onZoomChanged: (z) {
               _debounceTimer?.cancel();
               _debounceTimer = Timer(_MapConst.searchDebounce, () {
                 final prev = _MapConst.zoomBucket(_currentZoom);
@@ -689,7 +718,9 @@ class _WorkerMapViewState extends State<WorkerMapView>
 
           // 검색창
           Positioned(
-            top: 12, left: 16, right: 16,
+            top: 12,
+            left: 16,
+            right: 16,
             child: _SearchBar(
               controller: _searchController,
               onSubmit: (_) => _searchLocation(),
@@ -698,7 +729,9 @@ class _WorkerMapViewState extends State<WorkerMapView>
 
           // 오늘 가능 토글
           Positioned(
-            top: 72, left: 16, right: 16,
+            top: 72,
+            left: 16,
+            right: 16,
             child: _FilterToggle(
               value: _showOnlyAvailableToday,
               onChanged: (val) {
@@ -710,11 +743,13 @@ class _WorkerMapViewState extends State<WorkerMapView>
 
           // 반경 필터 칩
           Positioned(
-            top: 126, left: 16, right: 16,
+            top: 126,
+            left: 16,
+            right: 16,
             child: _RadiusChips(
-              selected:    _radiusFilter,
+              selected: _radiusFilter,
               hasLocation: _currentLocation != null,
-              onSelected:  (r) {
+              onSelected: (r) {
                 if (r != RadiusFilter.none && _currentLocation == null) {
                   _showSnackBar('위치 정보가 필요해요. 잠시 후 다시 시도해 주세요.');
                   return;
@@ -731,7 +766,7 @@ class _WorkerMapViewState extends State<WorkerMapView>
             bottom: bottomPad + 136,
             child: _NearbyAlertFab(
               isSubscribed: _isSubscribed,
-              onTap:        _onNearbyAlertTap,
+              onTap: _onNearbyAlertTap,
             ),
           ),
 
@@ -747,7 +782,8 @@ class _WorkerMapViewState extends State<WorkerMapView>
 
           // 공고 등록 버튼
           Positioned(
-            left: 16, right: 16,
+            left: 16,
+            right: 16,
             bottom: bottomPad + 16,
             child: _PostJobButton(
               onTap: () => Navigator.pushNamed(context, '/post_job'),
@@ -774,13 +810,13 @@ class _MapLayer extends StatelessWidget {
     required this.onMarkerTap,
   });
 
-  final MapController              mapController;
-  final List<WorkerMarkerData>     workers;
-  final LatLng?                    currentLocation;
-  final double                     currentZoom;
-  final RadiusFilter               radiusFilter;
-  final VoidCallback               onMapReady;
-  final ValueChanged<double>       onZoomChanged;
+  final MapController mapController;
+  final List<WorkerMarkerData> workers;
+  final LatLng? currentLocation;
+  final double currentZoom;
+  final RadiusFilter radiusFilter;
+  final VoidCallback onMapReady;
+  final ValueChanged<double> onZoomChanged;
   final ValueChanged<WorkerMarkerData> onMarkerTap;
 
   @override
@@ -790,11 +826,12 @@ class _MapLayer extends StatelessWidget {
         mapController: mapController,
         options: MapOptions(
           center: _MapConst.seoulCenter,
-          zoom:   12,
+          zoom: 12,
           minZoom: _MapConst.minZoom,
           maxZoom: _MapConst.maxZoom,
-          cameraConstraint:
-              CameraConstraint.contain(bounds: _MapConst.koreaBounds),
+          cameraConstraint: CameraConstraint.contain(
+            bounds: _MapConst.koreaBounds,
+          ),
           onMapReady: onMapReady,
           interactionOptions: const InteractionOptions(
             flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
@@ -813,11 +850,11 @@ class _MapLayer extends StatelessWidget {
             CircleLayer(
               circles: [
                 CircleMarker(
-                  point:             currentLocation!,
-                  radius:            radiusFilter.meters.toDouble(),
-                  useRadiusInMeter:  true,
-                  color:             _C.primary.withOpacity(0.07),
-                  borderColor:       _C.primary.withOpacity(0.4),
+                  point: currentLocation!,
+                  radius: radiusFilter.meters.toDouble(),
+                  useRadiusInMeter: true,
+                  color: _C.primary.withOpacity(0.07),
+                  borderColor: _C.primary.withOpacity(0.4),
                   borderStrokeWidth: 1.5,
                 ),
               ],
@@ -828,14 +865,15 @@ class _MapLayer extends StatelessWidget {
               markers: [
                 Marker(
                   point: currentLocation!,
-                  width: 20, height: 20,
+                  width: 20,
+                  height: 20,
                   child: _MyLocationDot(),
                 ),
               ],
             ),
 
           _WorkerMarkerCluster(
-            workers:     workers,
+            workers: workers,
             currentZoom: currentZoom,
             onMarkerTap: onMarkerTap,
           ),
@@ -853,13 +891,14 @@ class _MyLocationDot extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color:  _C.primary,
-        shape:  BoxShape.circle,
+        color: _C.primary,
+        shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 3),
         boxShadow: [
           BoxShadow(
             color: _C.primary.withOpacity(0.35),
-            blurRadius: 8, spreadRadius: 2,
+            blurRadius: 8,
+            spreadRadius: 2,
           ),
         ],
       ),
@@ -877,20 +916,20 @@ class _WorkerMarkerCluster extends StatelessWidget {
     required this.onMarkerTap,
   });
 
-  final List<WorkerMarkerData>         workers;
-  final double                         currentZoom;
+  final List<WorkerMarkerData> workers;
+  final double currentZoom;
   final ValueChanged<WorkerMarkerData> onMarkerTap;
 
   @override
   Widget build(BuildContext context) {
     return MarkerClusterLayerWidget(
       options: MarkerClusterLayerOptions(
-        maxClusterRadius:                 60,
-        size:                             const Size(44, 44),
-        alignment:                        Alignment.center,
-        spiderfyCircleRadius:             60,
+        maxClusterRadius: 60,
+        size: const Size(44, 44),
+        alignment: Alignment.center,
+        spiderfyCircleRadius: 60,
         spiderfySpiralDistanceMultiplier: 2,
-        showPolygon:                      false,
+        showPolygon: false,
         builder: (ctx, cluster) => _ClusterBubble(count: cluster.length),
         markers: _buildMarkers(),
       ),
@@ -899,18 +938,20 @@ class _WorkerMarkerCluster extends StatelessWidget {
 
   List<Marker> _buildMarkers() {
     final size = _MapConst.iconSize(currentZoom);
-    return workers.map((w) {
-      return Marker(
-        point:     w.position,
-        width:     size,
-        height:    size,
-        alignment: Alignment.center,
-        child: GestureDetector(
-          onTap:  () => onMarkerTap(w),
-          child: _WorkerAvatar(imageUrl: w.profileUrl, size: size),
-        ),
-      );
-    }).toList(growable: false);
+    return workers
+        .map((w) {
+          return Marker(
+            point: w.position,
+            width: size,
+            height: size,
+            alignment: Alignment.center,
+            child: GestureDetector(
+              onTap: () => onMarkerTap(w),
+              child: _WorkerAvatar(imageUrl: w.profileUrl, size: size),
+            ),
+          );
+        })
+        .toList(growable: false);
   }
 }
 
@@ -931,14 +972,18 @@ class _ClusterBubble extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: _C.primary.withOpacity(0.3),
-            blurRadius: 8, offset: const Offset(0, 2),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Text(
         '$count',
         style: const TextStyle(
-            color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontSize: 13,
+        ),
       ),
     );
   }
@@ -955,30 +1000,33 @@ class _WorkerAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: size, height: size,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        shape:  BoxShape.circle,
+        shape: BoxShape.circle,
         border: Border.all(color: Colors.white, width: 2.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.12),
-            blurRadius: 6, offset: const Offset(0, 2),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: ClipOval(
-        child: imageUrl.isEmpty
-            ? _Placeholder(size: size)
-            : CachedNetworkImage(
-                imageUrl:       imageUrl,
-                width:          size,
-                height:         size,
-                fit:            BoxFit.cover,
-                memCacheWidth:  (size * 2).toInt(),
-                memCacheHeight: (size * 2).toInt(),
-                placeholder:    (_, __) => _Placeholder(size: size),
-                errorWidget:    (_, __, ___) => _Placeholder(size: size),
-              ),
+        child:
+            imageUrl.isEmpty
+                ? _Placeholder(size: size)
+                : CachedNetworkImage(
+                  imageUrl: imageUrl,
+                  width: size,
+                  height: size,
+                  fit: BoxFit.cover,
+                  memCacheWidth: (size * 2).toInt(),
+                  memCacheHeight: (size * 2).toInt(),
+                  placeholder: (_, __) => _Placeholder(size: size),
+                  errorWidget: (_, __, ___) => _Placeholder(size: size),
+                ),
       ),
     );
   }
@@ -992,8 +1040,11 @@ class _Placeholder extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: _C.background,
-      child: Icon(Icons.person_rounded,
-          size: size * 0.55, color: _C.textSecondary),
+      child: Icon(
+        Icons.person_rounded,
+        size: size * 0.55,
+        color: _C.textSecondary,
+      ),
     );
   }
 }
@@ -1010,19 +1061,25 @@ class _MyLocationFab extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 44, height: 44,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
-          color:  _C.surface,
-          shape:  BoxShape.circle,
+          color: _C.surface,
+          shape: BoxShape.circle,
           border: Border.all(color: _C.border, width: 1),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.10),
-              blurRadius: 10, offset: const Offset(0, 3),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
-        child: const Icon(Icons.my_location_rounded, color: _C.primary, size: 22),
+        child: const Icon(
+          Icons.my_location_rounded,
+          color: _C.primary,
+          size: 22,
+        ),
       ),
     );
   }
@@ -1033,7 +1090,7 @@ class _MyLocationFab extends StatelessWidget {
 // ──────────────────────────────────────────────
 class _NearbyAlertFab extends StatelessWidget {
   const _NearbyAlertFab({required this.isSubscribed, required this.onTap});
-  final bool         isSubscribed;
+  final bool isSubscribed;
   final VoidCallback onTap;
 
   @override
@@ -1041,10 +1098,11 @@ class _NearbyAlertFab extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 44, height: 44,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
-          color:  isSubscribed ? _C.gold : _C.surface,
-          shape:  BoxShape.circle,
+          color: isSubscribed ? _C.gold : _C.surface,
+          shape: BoxShape.circle,
           border: Border.all(
             color: isSubscribed ? _C.gold : _C.border,
             width: 1,
@@ -1052,7 +1110,8 @@ class _NearbyAlertFab extends StatelessWidget {
           boxShadow: [
             BoxShadow(
               color: (isSubscribed ? _C.gold : Colors.black).withOpacity(0.15),
-              blurRadius: 10, offset: const Offset(0, 3),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -1062,18 +1121,24 @@ class _NearbyAlertFab extends StatelessWidget {
             Icon(
               Icons.campaign_rounded,
               color: isSubscribed ? Colors.white : _C.textSecondary,
-              size:  22,
+              size: 22,
             ),
             if (!isSubscribed)
               Positioned(
-                right: 0, bottom: 0,
+                right: 0,
+                bottom: 0,
                 child: Container(
-                  width: 16, height: 16,
+                  width: 16,
+                  height: 16,
                   decoration: const BoxDecoration(
-                    color: _C.gold, shape: BoxShape.circle,
+                    color: _C.gold,
+                    shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                      Icons.lock_rounded, size: 9, color: Colors.white),
+                    Icons.lock_rounded,
+                    size: 9,
+                    color: Colors.white,
+                  ),
                 ),
               ),
           ],
@@ -1093,8 +1158,8 @@ class _RadiusChips extends StatelessWidget {
     required this.onSelected,
   });
 
-  final RadiusFilter               selected;
-  final bool                       hasLocation;
+  final RadiusFilter selected;
+  final bool hasLocation;
   final ValueChanged<RadiusFilter> onSelected;
 
   @override
@@ -1102,43 +1167,48 @@ class _RadiusChips extends StatelessWidget {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: RadiusFilter.values.map((r) {
-          final isSelected = selected == r;
-          return Padding(
-            padding: const EdgeInsets.only(right: 6),
-            child: GestureDetector(
-              onTap: () => onSelected(r),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                decoration: BoxDecoration(
-                  color:        isSelected ? _C.primary : _C.surface,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSelected ? _C.primary : _C.border,
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 6, offset: const Offset(0, 2),
+        children:
+            RadiusFilter.values.map((r) {
+              final isSelected = selected == r;
+              return Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: GestureDetector(
+                  onTap: () => onSelected(r),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 150),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 7,
                     ),
-                  ],
-                ),
-                child: Text(
-                  r.label,
-                  style: TextStyle(
-                    fontSize:   13,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                    color:      isSelected ? Colors.white : _C.textSecondary,
-                    letterSpacing: -0.1,
+                    decoration: BoxDecoration(
+                      color: isSelected ? _C.primary : _C.surface,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isSelected ? _C.primary : _C.border,
+                        width: 1,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      r.label,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w400,
+                        color: isSelected ? Colors.white : _C.textSecondary,
+                        letterSpacing: -0.1,
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ),
-          );
-        }).toList(),
+              );
+            }).toList(),
       ),
     );
   }
@@ -1157,17 +1227,17 @@ class _WorkerBottomSheet extends StatelessWidget {
   });
 
   final WorkerMarkerData worker;
-  final bool             isSubscribed;
-  final VoidCallback     onViewProfile;
-  final VoidCallback     onStartChat;
-  final VoidCallback     onSubscribePrompt;
+  final bool isSubscribed;
+  final VoidCallback onViewProfile;
+  final VoidCallback onStartChat;
+  final VoidCallback onSubscribePrompt;
 
   @override
   Widget build(BuildContext context) {
     final bottomPad = MediaQuery.of(context).padding.bottom;
     return Container(
       decoration: const BoxDecoration(
-        color:        _C.surface,
+        color: _C.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.fromLTRB(24, 20, 24, bottomPad + 24),
@@ -1176,10 +1246,12 @@ class _WorkerBottomSheet extends StatelessWidget {
         children: [
           // 핸들
           Container(
-            width: 36, height: 4,
+            width: 36,
+            height: 4,
             margin: const EdgeInsets.only(bottom: 20),
             decoration: BoxDecoration(
-              color: _C.border, borderRadius: BorderRadius.circular(2),
+              color: _C.border,
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
 
@@ -1195,8 +1267,10 @@ class _WorkerBottomSheet extends StatelessWidget {
                     Text(
                       worker.name.isEmpty ? '알바생' : worker.name,
                       style: const TextStyle(
-                        fontSize: 17, fontWeight: FontWeight.w700,
-                        color: _C.textPrimary, letterSpacing: -0.3,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: _C.textPrimary,
+                        letterSpacing: -0.3,
                       ),
                     ),
                     if (worker.skills.isNotEmpty) ...[
@@ -1204,22 +1278,29 @@ class _WorkerBottomSheet extends StatelessWidget {
                       Text(
                         worker.skills,
                         style: const TextStyle(
-                          fontSize: 13, color: _C.textSecondary, height: 1.4,
+                          fontSize: 13,
+                          color: _C.textSecondary,
+                          height: 1.4,
                         ),
-                        maxLines: 2, overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                     if (worker.rating != null) ...[
                       const SizedBox(height: 6),
                       Row(
                         children: [
-                          const Icon(Icons.star_rounded,
-                              size: 15, color: Color(0xFFFFC107)),
+                          const Icon(
+                            Icons.star_rounded,
+                            size: 15,
+                            color: Color(0xFFFFC107),
+                          ),
                           const SizedBox(width: 3),
                           Text(
                             worker.rating!.toStringAsFixed(1),
                             style: const TextStyle(
-                              fontSize: 13, fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
                               color: _C.textPrimary,
                             ),
                           ),
@@ -1238,7 +1319,7 @@ class _WorkerBottomSheet extends StatelessWidget {
           if (isSubscribed)
             _SubscriberActions(
               onViewProfile: onViewProfile,
-              onStartChat:   onStartChat,
+              onStartChat: onStartChat,
             )
           else
             _NonSubscriberBanner(onSubscribe: onSubscribePrompt),
@@ -1268,16 +1349,19 @@ class _SubscriberActions extends StatelessWidget {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: onViewProfile,
-                icon:  const Icon(Icons.person_search_rounded, size: 18),
+                icon: const Icon(Icons.person_search_rounded, size: 18),
                 label: const Text('프로필 보기'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: _C.primary,
-                  side:   const BorderSide(color: _C.primary),
-                  shape:  RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                  side: const BorderSide(color: _C.primary),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   textStyle: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -1285,17 +1369,20 @@ class _SubscriberActions extends StatelessWidget {
             Expanded(
               child: ElevatedButton.icon(
                 onPressed: onStartChat,
-                icon:  const Icon(Icons.chat_bubble_rounded, size: 18),
+                icon: const Icon(Icons.chat_bubble_rounded, size: 18),
                 label: const Text('채팅 시작'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _C.primary,
                   foregroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   textStyle: const TextStyle(
-                      fontSize: 14, fontWeight: FontWeight.w600),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ),
@@ -1320,7 +1407,7 @@ class _NonSubscriberBanner extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color:  _C.goldLight,
+            color: _C.goldLight,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: _C.gold.withOpacity(0.35)),
           ),
@@ -1329,7 +1416,7 @@ class _NonSubscriberBanner extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color:        _C.gold.withOpacity(0.15),
+                  color: _C.gold.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(Icons.lock_rounded, color: _C.gold, size: 20),
@@ -1342,7 +1429,8 @@ class _NonSubscriberBanner extends StatelessWidget {
                     Text(
                       '구독 전용 기능',
                       style: TextStyle(
-                        fontSize: 13, fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
                         color: Color(0xFF856404),
                       ),
                     ),
@@ -1350,7 +1438,9 @@ class _NonSubscriberBanner extends StatelessWidget {
                     Text(
                       '구독하면 프로필 열람과 채팅을 시작할 수 있어요.',
                       style: TextStyle(
-                        fontSize: 12, color: Color(0xFF856404), height: 1.4,
+                        fontSize: 12,
+                        color: Color(0xFF856404),
+                        height: 1.4,
                       ),
                     ),
                   ],
@@ -1361,7 +1451,8 @@ class _NonSubscriberBanner extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         SizedBox(
-          width: double.infinity, height: 50,
+          width: double.infinity,
+          height: 50,
           child: ElevatedButton(
             onPressed: onSubscribe,
             style: ElevatedButton.styleFrom(
@@ -1369,7 +1460,8 @@ class _NonSubscriberBanner extends StatelessWidget {
               foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -1397,28 +1489,37 @@ class _SheetAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 64, height: 64,
+      width: 64,
+      height: 64,
       decoration: BoxDecoration(
-        shape:  BoxShape.circle,
+        shape: BoxShape.circle,
         border: Border.all(color: _C.border, width: 1.5),
       ),
       child: ClipOval(
-        child: url.isEmpty
-            ? Container(
-                color: _C.background,
-                child: const Icon(Icons.person_rounded,
-                    size: 34, color: _C.textSecondary),
-              )
-            : CachedNetworkImage(
-                imageUrl:    url,
-                fit:         BoxFit.cover,
-                placeholder: (_, __) => Container(color: _C.background),
-                errorWidget: (_, __, ___) => Container(
+        child:
+            url.isEmpty
+                ? Container(
                   color: _C.background,
-                  child: const Icon(Icons.person_rounded,
-                      size: 34, color: _C.textSecondary),
+                  child: const Icon(
+                    Icons.person_rounded,
+                    size: 34,
+                    color: _C.textSecondary,
+                  ),
+                )
+                : CachedNetworkImage(
+                  imageUrl: url,
+                  fit: BoxFit.cover,
+                  placeholder: (_, __) => Container(color: _C.background),
+                  errorWidget:
+                      (_, __, ___) => Container(
+                        color: _C.background,
+                        child: const Icon(
+                          Icons.person_rounded,
+                          size: 34,
+                          color: _C.textSecondary,
+                        ),
+                      ),
                 ),
-              ),
       ),
     );
   }
@@ -1437,12 +1538,12 @@ class _JobPickSheet extends StatelessWidget {
     this.showInfoBadge = false,
   });
 
-  final String               title;
-  final String               subtitle;
-  final List<_ClientJob>     jobs;
-  final String               actionLabel;
+  final String title;
+  final String subtitle;
+  final List<_ClientJob> jobs;
+  final String actionLabel;
   final ValueChanged<_ClientJob> onSelect;
-  final bool                 showInfoBadge;
+  final bool showInfoBadge;
 
   @override
   Widget build(BuildContext context) {
@@ -1452,7 +1553,7 @@ class _JobPickSheet extends StatelessWidget {
         maxHeight: MediaQuery.of(context).size.height * 0.72,
       ),
       decoration: const BoxDecoration(
-        color:        _C.surface,
+        color: _C.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
@@ -1460,10 +1561,12 @@ class _JobPickSheet extends StatelessWidget {
         children: [
           // 핸들
           Container(
-            width: 36, height: 4,
+            width: 36,
+            height: 4,
             margin: const EdgeInsets.only(top: 12, bottom: 16),
             decoration: BoxDecoration(
-              color: _C.border, borderRadius: BorderRadius.circular(2),
+              color: _C.border,
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
 
@@ -1476,36 +1579,46 @@ class _JobPickSheet extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 17, fontWeight: FontWeight.w700,
-                    color: _C.textPrimary, letterSpacing: -0.3,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: _C.textPrimary,
+                    letterSpacing: -0.3,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
                   style: const TextStyle(
-                    fontSize: 13, color: _C.textSecondary, height: 1.4,
+                    fontSize: 13,
+                    color: _C.textSecondary,
+                    height: 1.4,
                   ),
                 ),
                 if (showInfoBadge) ...[
                   const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 6),
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
-                      color:        _C.primaryLight,
+                      color: _C.primaryLight,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.info_outline_rounded,
-                            size: 14, color: _C.primary),
+                        Icon(
+                          Icons.info_outline_rounded,
+                          size: 14,
+                          color: _C.primary,
+                        ),
                         SizedBox(width: 5),
                         Text(
                           '하루 최대 3회 발송 · 구독자 전용',
                           style: TextStyle(
-                            fontSize: 12, color: _C.primary,
+                            fontSize: 12,
+                            color: _C.primary,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -1526,11 +1639,12 @@ class _JobPickSheet extends StatelessWidget {
               shrinkWrap: true,
               itemCount: jobs.length,
               separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (_, i) => _JobPickTile(
-                job:         jobs[i],
-                actionLabel: actionLabel,
-                onTap:       () => onSelect(jobs[i]),
-              ),
+              itemBuilder:
+                  (_, i) => _JobPickTile(
+                    job: jobs[i],
+                    actionLabel: actionLabel,
+                    onTap: () => onSelect(jobs[i]),
+                  ),
             ),
           ),
         ],
@@ -1546,20 +1660,20 @@ class _JobPickTile extends StatelessWidget {
     required this.onTap,
   });
 
-  final _ClientJob   job;
-  final String       actionLabel;
+  final _ClientJob job;
+  final String actionLabel;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color:        _C.background,
+        color: _C.background,
         borderRadius: BorderRadius.circular(14),
-        border:       Border.all(color: _C.border),
+        border: Border.all(color: _C.border),
       ),
       child: InkWell(
-        onTap:        onTap,
+        onTap: onTap,
         borderRadius: BorderRadius.circular(14),
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -1567,13 +1681,17 @@ class _JobPickTile extends StatelessWidget {
             children: [
               // 아이콘
               Container(
-                width: 40, height: 40,
+                width: 40,
+                height: 40,
                 decoration: BoxDecoration(
-                  color:        _C.primaryLight,
+                  color: _C.primaryLight,
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: const Icon(Icons.work_rounded,
-                    color: _C.primary, size: 20),
+                child: const Icon(
+                  Icons.work_rounded,
+                  color: _C.primary,
+                  size: 20,
+                ),
               ),
               const SizedBox(width: 12),
               // 공고 정보
@@ -1584,19 +1702,23 @@ class _JobPickTile extends StatelessWidget {
                     Text(
                       job.title,
                       style: const TextStyle(
-                        fontSize: 14, fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
                         color: _C.textPrimary,
                       ),
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                     const SizedBox(height: 3),
                     Text(
                       '${job.location}'
                       '${job.startDate.isNotEmpty ? '  ·  ${job.startDate}' : ''}',
                       style: const TextStyle(
-                        fontSize: 12, color: _C.textSecondary,
+                        fontSize: 12,
+                        color: _C.textSecondary,
                       ),
-                      maxLines: 1, overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -1608,15 +1730,20 @@ class _JobPickTile extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _C.primary,
                   foregroundColor: Colors.white,
-                  elevation:       0,
+                  elevation: 0,
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8),
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   textStyle: const TextStyle(
-                      fontSize: 12, fontWeight: FontWeight.w600),
-                  minimumSize:    Size.zero,
-                  tapTargetSize:  MaterialTapTargetSize.shrinkWrap,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text(actionLabel),
               ),
@@ -1640,7 +1767,7 @@ class _SubscribePromptSheet extends StatelessWidget {
     final bottomPad = MediaQuery.of(context).padding.bottom;
     return Container(
       decoration: const BoxDecoration(
-        color:        _C.surface,
+        color: _C.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       padding: EdgeInsets.fromLTRB(24, 20, 24, bottomPad + 24),
@@ -1649,56 +1776,65 @@ class _SubscribePromptSheet extends StatelessWidget {
         children: [
           // 핸들
           Container(
-            width: 36, height: 4,
+            width: 36,
+            height: 4,
             margin: const EdgeInsets.only(bottom: 24),
             decoration: BoxDecoration(
-              color: _C.border, borderRadius: BorderRadius.circular(2),
+              color: _C.border,
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
 
           // 골드 아이콘
           Container(
-            width: 64, height: 64,
+            width: 64,
+            height: 64,
             decoration: BoxDecoration(
-              color:        _C.goldLight,
+              color: _C.goldLight,
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Icon(
-                Icons.workspace_premium_rounded, color: _C.gold, size: 34),
+              Icons.workspace_premium_rounded,
+              color: _C.gold,
+              size: 34,
+            ),
           ),
           const SizedBox(height: 16),
 
           const Text(
             '구독 멤버십 전용',
             style: TextStyle(
-              fontSize: 20, fontWeight: FontWeight.w800,
-              color: _C.textPrimary, letterSpacing: -0.4,
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: _C.textPrimary,
+              letterSpacing: -0.4,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            reason ??
-                '구독하면 알바생 프로필 열람,\n채팅 시작, 공고 주변 알림 보내기를 사용할 수 있어요.',
+            reason ?? '구독하면 알바생 프로필 열람,\n채팅 시작, 공고 주변 알림 보내기를 사용할 수 있어요.',
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 14, color: _C.textSecondary, height: 1.55,
+              fontSize: 14,
+              color: _C.textSecondary,
+              height: 1.55,
             ),
           ),
 
           const SizedBox(height: 24),
 
           _BenefitRow(
-            icon:  Icons.person_search_rounded,
+            icon: Icons.person_search_rounded,
             color: _C.primary,
             label: '알바생 프로필 전체 열람',
           ),
           _BenefitRow(
-            icon:  Icons.chat_bubble_rounded,
+            icon: Icons.chat_bubble_rounded,
             color: Color(0xFF10B981),
             label: '알바생에게 직접 채팅 시작',
           ),
           _BenefitRow(
-            icon:  Icons.campaign_rounded,
+            icon: Icons.campaign_rounded,
             color: _C.gold,
             label: '내 공고 주변 알바생 알림 보내기',
           ),
@@ -1706,7 +1842,8 @@ class _SubscribePromptSheet extends StatelessWidget {
           const SizedBox(height: 24),
 
           SizedBox(
-            width: double.infinity, height: 52,
+            width: double.infinity,
+            height: 52,
             child: ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
@@ -1717,12 +1854,14 @@ class _SubscribePromptSheet extends StatelessWidget {
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14)),
+                  borderRadius: BorderRadius.circular(14),
+                ),
               ),
               child: const Text(
                 '지금 구독하기',
                 style: TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w700,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
                   letterSpacing: -0.2,
                 ),
               ),
@@ -1735,7 +1874,8 @@ class _SubscribePromptSheet extends StatelessWidget {
               '나중에',
               style: TextStyle(
                 color: _C.textSecondary,
-                fontSize: 14, fontWeight: FontWeight.w500,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -1752,8 +1892,8 @@ class _BenefitRow extends StatelessWidget {
     required this.label,
   });
   final IconData icon;
-  final Color    color;
-  final String   label;
+  final Color color;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -1762,9 +1902,10 @@ class _BenefitRow extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 32, height: 32,
+            width: 32,
+            height: 32,
             decoration: BoxDecoration(
-              color:        color.withOpacity(0.12),
+              color: color.withOpacity(0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 17),
@@ -1773,7 +1914,9 @@ class _BenefitRow extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontSize: 14, color: _C.textPrimary, fontWeight: FontWeight.w500,
+              fontSize: 14,
+              color: _C.textPrimary,
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(width: 6),
@@ -1790,38 +1933,45 @@ class _BenefitRow extends StatelessWidget {
 class _SearchBar extends StatelessWidget {
   const _SearchBar({required this.controller, required this.onSubmit});
   final TextEditingController controller;
-  final ValueChanged<String>  onSubmit;
+  final ValueChanged<String> onSubmit;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color:        _C.surface,
+        color: _C.surface,
         borderRadius: BorderRadius.circular(14),
-        border:       Border.all(color: _C.border, width: 1),
+        border: Border.all(color: _C.border, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),
-            blurRadius: 12, offset: const Offset(0, 4),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: TextField(
-        controller:  controller,
+        controller: controller,
         onSubmitted: onSubmit,
         style: const TextStyle(
-            fontSize: 15, color: _C.textPrimary, fontWeight: FontWeight.w500),
+          fontSize: 15,
+          color: _C.textPrimary,
+          fontWeight: FontWeight.w500,
+        ),
         decoration: const InputDecoration(
-          hintText:  '위치, 지하철역, 동 이름 검색',
+          hintText: '위치, 지하철역, 동 이름 검색',
           hintStyle: TextStyle(
-              fontSize: 15,
-              color: _C.textSecondary,
-              fontWeight: FontWeight.w400),
+            fontSize: 15,
+            color: _C.textSecondary,
+            fontWeight: FontWeight.w400,
+          ),
           prefixIcon: Icon(
-              Icons.search_rounded, color: _C.textSecondary, size: 22),
-          contentPadding:
-              EdgeInsets.symmetric(vertical: 14, horizontal: 4),
-          border:        InputBorder.none,
+            Icons.search_rounded,
+            color: _C.textSecondary,
+            size: 22,
+          ),
+          contentPadding: EdgeInsets.symmetric(vertical: 14, horizontal: 4),
+          border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
         ),
@@ -1835,7 +1985,7 @@ class _SearchBar extends StatelessWidget {
 // ──────────────────────────────────────────────
 class _FilterToggle extends StatelessWidget {
   const _FilterToggle({required this.value, required this.onChanged});
-  final bool               value;
+  final bool value;
   final ValueChanged<bool> onChanged;
 
   @override
@@ -1843,20 +1993,21 @@ class _FilterToggle extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
-        color:        _C.surface,
+        color: _C.surface,
         borderRadius: BorderRadius.circular(12),
-        border:       Border.all(color: _C.border, width: 1),
+        border: Border.all(color: _C.border, width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.05),
-            blurRadius: 8, offset: const Offset(0, 3),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
           ),
         ],
       ),
       child: Row(
         children: [
-          _Seg(label: '전체',     selected: !value, onTap: () => onChanged(false)),
-          _Seg(label: '오늘 가능', selected: value,  onTap: () => onChanged(true)),
+          _Seg(label: '전체', selected: !value, onTap: () => onChanged(false)),
+          _Seg(label: '오늘 가능', selected: value, onTap: () => onChanged(true)),
         ],
       ),
     );
@@ -1869,31 +2020,31 @@ class _Seg extends StatelessWidget {
     required this.selected,
     required this.onTap,
   });
-  final String       label;
-  final bool         selected;
+  final String label;
+  final bool selected;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
       child: GestureDetector(
-        onTap:    onTap,
+        onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          curve:    Curves.easeInOut,
-          padding:  const EdgeInsets.symmetric(vertical: 9),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.symmetric(vertical: 9),
           decoration: BoxDecoration(
-            color:        selected ? _C.primary : Colors.transparent,
+            color: selected ? _C.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(9),
           ),
           child: Text(
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize:   14,
+              fontSize: 14,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-              color:      selected ? Colors.white : _C.textSecondary,
+              color: selected ? Colors.white : _C.textSecondary,
               letterSpacing: -0.1,
             ),
           ),
@@ -1936,10 +2087,11 @@ class _PostJobButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: _C.primary,
           foregroundColor: Colors.white,
-          elevation:       0,
-          shadowColor:     Colors.transparent,
+          elevation: 0,
+          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14)),
+            borderRadius: BorderRadius.circular(14),
+          ),
         ),
         child: const Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1949,8 +2101,10 @@ class _PostJobButton extends StatelessWidget {
             Text(
               '공고 등록하기',
               style: TextStyle(
-                fontSize: 16, fontWeight: FontWeight.w600,
-                color: Colors.white, letterSpacing: -0.2,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+                letterSpacing: -0.2,
               ),
             ),
           ],

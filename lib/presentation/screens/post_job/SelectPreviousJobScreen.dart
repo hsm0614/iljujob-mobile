@@ -3,10 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../../../config/constants.dart';
-import 'quick_post_sheet.dart'; // ✅ 추가
+import 'quick_post_sheet.dart'; // 추가
 
 class SelectPreviousJobScreen extends StatefulWidget {
-  // ✅ quickMode 파라미터 추가
+  // quickMode 파라미터 추가
   // true  → 공고 선택 시 QuickPostSheet 바로 오픈
   // false → 기존처럼 Navigator.pop(context, job) 으로 폼에 데이터 전달
   final bool quickMode;
@@ -17,7 +17,8 @@ class SelectPreviousJobScreen extends StatefulWidget {
   });
 
   @override
-  State<SelectPreviousJobScreen> createState() => _SelectPreviousJobScreenState();
+  State<SelectPreviousJobScreen> createState() =>
+      _SelectPreviousJobScreenState();
 }
 
 class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
@@ -61,9 +62,9 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
       if (clientId == null) {
         if (mounted) {
           setState(() => isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('로그인 정보를 불러올 수 없습니다.')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('로그인 정보를 불러올 수 없습니다.')));
         }
         return;
       }
@@ -96,34 +97,34 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
         String msg = '공고 조회 실패';
         try {
           final body = jsonDecode(res.body);
-          msg = (body is Map && body['message'] != null) ? body['message'].toString() : msg;
+          msg =
+              (body is Map && body['message'] != null)
+                  ? body['message'].toString()
+                  : msg;
         } catch (_) {}
         if (mounted) {
           setState(() => isLoading = false);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('❌ $msg')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text(msg)));
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('오류 발생: ${e.toString()}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('오류 발생: ${e.toString()}')));
       }
     }
   }
 
-  // ✅ 공고 선택 시 분기 처리
+  // 공고 선택 시 분기 처리
   void _onJobSelected(dynamic job) {
     if (widget.quickMode) {
       // 빠른 등록: 이 화면을 닫고 QuickPostSheet 오픈
       Navigator.pop(context); // SelectPreviousJobScreen 닫기
-      QuickPostSheet.show(
-        context,
-        job: Map<String, dynamic>.from(job as Map),
-      );
+      QuickPostSheet.show(context, job: Map<String, dynamic>.from(job as Map));
     } else {
       // 기존 동작: 폼에 데이터 전달
       Navigator.pop(context, job);
@@ -172,25 +173,46 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 64, height: 64,
+              width: 64,
+              height: 64,
               decoration: BoxDecoration(
                 color: const Color(0xFFEFF5FF),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: const Color(0xFFDCEAFF)),
               ),
-              child: const Icon(Icons.work_outline, color: brandBlueDark, size: 32),
+              child: const Icon(
+                Icons.work_outline,
+                color: brandBlueDark,
+                size: 32,
+              ),
             ),
             const SizedBox(height: 14),
-            const Text('작성한 공고가 없습니다', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: textDark)),
+            const Text(
+              '작성한 공고가 없습니다',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: textDark,
+              ),
+            ),
             const SizedBox(height: 6),
-            const Text('공고를 작성하면 여기에서\n이전 공고를 바로 불러올 수 있어요.', textAlign: TextAlign.center, style: TextStyle(fontSize: 13, height: 1.4, color: textMute)),
+            const Text(
+              '공고를 작성하면 여기에서\n이전 공고를 바로 불러올 수 있어요.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, height: 1.4, color: textMute),
+            ),
             const SizedBox(height: 16),
             OutlinedButton(
               style: OutlinedButton.styleFrom(
                 foregroundColor: brandBlueDark,
                 side: const BorderSide(color: Color(0xFFDCEAFF)),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
               ),
               onPressed: () => Navigator.pop(context),
               child: const Text('닫기'),
@@ -211,22 +233,35 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
     final endTime = _hm(job['end_time']);
     final payType = _payTypeKo(job['pay_type']);
     final pay = _s(job['pay'], fallback: '');
-    final isSameDayPay = (job['is_same_day_pay'] == 1 || job['is_same_day_pay'] == true);
-    final dateText = (startDate.isEmpty && endDate.isEmpty) ? '날짜 정보 없음' : '$startDate ~ $endDate';
-    final timeText = (startTime.isEmpty && endTime.isEmpty) ? '시간 정보 없음' : '$startTime ~ $endTime';
+    final isSameDayPay =
+        (job['is_same_day_pay'] == 1 || job['is_same_day_pay'] == true);
+    final dateText =
+        (startDate.isEmpty && endDate.isEmpty)
+            ? '날짜 정보 없음'
+            : '$startDate ~ $endDate';
+    final timeText =
+        (startTime.isEmpty && endTime.isEmpty)
+            ? '시간 정보 없음'
+            : '$startTime ~ $endTime';
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(18),
-        onTap: () => _onJobSelected(job), // ✅ 변경된 부분 (기존: Navigator.pop(context, job))
+        onTap:
+            () =>
+                _onJobSelected(job), // 변경된 부분 (기존: Navigator.pop(context, job))
         child: Ink(
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(color: border),
             boxShadow: const [
-              BoxShadow(color: Color(0x0F0C1F35), blurRadius: 18, offset: Offset(0, 10)),
+              BoxShadow(
+                color: Color(0x0F0C1F35),
+                blurRadius: 18,
+                offset: Offset(0, 10),
+              ),
             ],
           ),
           child: Padding(
@@ -235,74 +270,167 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 상단: 타이틀 + 아이콘
-                Row(children: [
-                  Expanded(
-                    child: Text(title, maxLines: 2, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: textDark, height: 1.15)),
-                  ),
-                  const SizedBox(width: 10),
-                  // ✅ quickMode일 때 아이콘 다르게
-                  Container(
-                    width: 34, height: 34,
-                    decoration: BoxDecoration(
-                      color: widget.quickMode ? const Color(0xFFEEF5FF) : const Color(0xFFEFF5FF),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFFDCEAFF)),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w900,
+                          color: textDark,
+                          height: 1.15,
+                        ),
+                      ),
                     ),
-                    child: Icon(
-                      widget.quickMode ? Icons.flash_on_rounded : Icons.arrow_forward_ios_rounded,
-                      size: 16, color: brandBlueDark,
+                    const SizedBox(width: 10),
+                    // quickMode일 때 아이콘 다르게
+                    Container(
+                      width: 34,
+                      height: 34,
+                      decoration: BoxDecoration(
+                        color:
+                            widget.quickMode
+                                ? const Color(0xFFEEF5FF)
+                                : const Color(0xFFEFF5FF),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFDCEAFF)),
+                      ),
+                      child: Icon(
+                        widget.quickMode
+                            ? Icons.flash_on_rounded
+                            : Icons.arrow_forward_ios_rounded,
+                        size: 16,
+                        color: brandBlueDark,
+                      ),
                     ),
-                  ),
-                ]),
+                  ],
+                ),
                 const SizedBox(height: 10),
 
                 // 칩들
-                Wrap(spacing: 8, runSpacing: 8, children: [
-                  _chip(text: location, icon: Icons.place_outlined),
-                  _chip(text: category, icon: Icons.category_outlined),
-                  if (isSameDayPay) _chip(text: '당일지급', bgColor: const Color(0xFFFFF4E5), fgColor: const Color(0xFFB25E00), icon: Icons.flash_on_outlined),
-                ]),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _chip(text: location, icon: Icons.place_outlined),
+                    _chip(text: category, icon: Icons.category_outlined),
+                    if (isSameDayPay)
+                      _chip(
+                        text: '당일지급',
+                        bgColor: const Color(0xFFFFF4E5),
+                        fgColor: const Color(0xFFB25E00),
+                        icon: Icons.flash_on_outlined,
+                      ),
+                  ],
+                ),
 
                 const SizedBox(height: 12),
                 Container(height: 1, color: border),
                 const SizedBox(height: 12),
 
                 // 날짜/시간
-                Row(children: [
-                  const Icon(Icons.calendar_today_outlined, size: 16, color: textMute),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(dateText, style: const TextStyle(fontSize: 13, color: textMute, fontWeight: FontWeight.w600))),
-                ]),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.calendar_today_outlined,
+                      size: 16,
+                      color: textMute,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        dateText,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: textMute,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 6),
-                Row(children: [
-                  const Icon(Icons.schedule_outlined, size: 16, color: textMute),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(timeText, style: const TextStyle(fontSize: 13, color: textMute, fontWeight: FontWeight.w600))),
-                ]),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.schedule_outlined,
+                      size: 16,
+                      color: textMute,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        timeText,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: textMute,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 12),
 
                 // 급여
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(begin: Alignment.centerLeft, end: Alignment.centerRight, colors: [Color(0xFFEFF5FF), Color(0xFFFFFFFF)]),
+                    gradient: const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [Color(0xFFEFF5FF), Color(0xFFFFFFFF)],
+                    ),
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: const Color(0xFFDCEAFF)),
                   ),
-                  child: Row(children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(color: brandBlue, borderRadius: BorderRadius.circular(999)),
-                      child: Text(payType, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800, height: 1.0)),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(pay.isEmpty ? '급여 정보 없음' : '$pay원', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: textDark))),
-                    Icon(
-                      widget.quickMode ? Icons.bolt_rounded : Icons.touch_app_outlined,
-                      size: 18, color: brandBlueDark,
-                    ),
-                  ]),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: brandBlue,
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Text(
+                          payType,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            height: 1.0,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          pay.isEmpty ? '급여 정보 없음' : '$pay원',
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w900,
+                            color: textDark,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        widget.quickMode
+                            ? Icons.bolt_rounded
+                            : Icons.touch_app_outlined,
+                        size: 18,
+                        color: brandBlueDark,
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -321,9 +449,9 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
         elevation: 0,
         surfaceTintColor: Colors.white,
         centerTitle: false,
-        // ✅ quickMode일 때 타이틀 다르게
+        // quickMode일 때 타이틀 다르게
         title: Text(
-          widget.quickMode ? '⚡ 빠른 등록 · 공고 선택' : '기존 공고 선택',
+          widget.quickMode ? '빠른 등록 · 공고 선택' : '기존 공고 선택',
           style: const TextStyle(color: textDark, fontWeight: FontWeight.w900),
         ),
         leading: IconButton(
@@ -331,7 +459,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      // ✅ quickMode일 때 안내 배너 추가
+      // quickMode일 때 안내 배너 추가
       body: Column(
         children: [
           if (widget.quickMode)
@@ -339,24 +467,33 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               color: const Color(0xFFEEF5FF),
-              child: const Row(children: [
-                Icon(Icons.info_outline, size: 14, color: Color(0xFF3182F6)),
-                SizedBox(width: 6),
-                Text('공고를 선택하면 날짜·급여만 바꿔서 바로 등록할 수 있어요',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF3182F6))),
-              ]),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, size: 14, color: Color(0xFF3182F6)),
+                  SizedBox(width: 6),
+                  Text(
+                    '공고를 선택하면 날짜·급여만 바꿔서 바로 등록할 수 있어요',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF3182F6),
+                    ),
+                  ),
+                ],
+              ),
             ),
           Expanded(
-            child: isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : myJobs.isEmpty
+            child:
+                isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : myJobs.isEmpty
                     ? _emptyState()
                     : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-                        itemCount: myJobs.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
-                        itemBuilder: (_, index) => _jobCard(myJobs[index]),
-                      ),
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                      itemCount: myJobs.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (_, index) => _jobCard(myJobs[index]),
+                    ),
           ),
         ],
       ),

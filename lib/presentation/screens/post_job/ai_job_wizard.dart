@@ -1,4 +1,3 @@
-// 📁 presentation/screens/post_job/ai_job_wizard.dart
 // AI 위자드 — 완전 자동화 버전
 // Q1:업종(대→소) → Q2:근무지 → Q3:날짜 → Q4:시간 → Q5:시급
 // 완료 시 Gemini로 제목+공고문 동시 생성 → 미리보기 바로 연결
@@ -22,66 +21,60 @@ const _sub = AppColors.textSecondary;
 //  업종 데이터 (post_job_form과 동일)
 // ════════════════════════════════════════════════════════
 class _CatData {
-  final String emoji, name;
+  final IconData icon;
+  final String name;
   final List<String> sub;
-  const _CatData({required this.emoji, required this.name, required this.sub});
+  const _CatData({required this.icon, required this.name, required this.sub});
 }
 
 const _allCats = [
   _CatData(
-    emoji: '🍽',
+    icon: Icons.restaurant_outlined,
     name: '음식점·카페',
     sub: ['홀서빙', '주방보조', '배달', '카페·바리스타', '패스트푸드', '포장·설거지'],
   ),
   _CatData(
-    emoji: '🏪',
+    icon: Icons.storefront_outlined,
     name: '편의점·마트',
     sub: ['편의점', '슈퍼·마트', '창고정리', '재고관리', '계산원'],
   ),
   _CatData(
-    emoji: '📦',
+    icon: Icons.inventory_2_outlined,
     name: '물류·배송',
     sub: ['배송기사', '상하차', '물류센터', '포장', '택배분류', '입출고'],
   ),
   _CatData(
-    emoji: '🏭',
+    icon: Icons.factory_outlined,
     name: '제조·공장',
     sub: ['생산·조립', '검품·포장', '식품제조', '기계조작', '단순노무'],
   ),
   _CatData(
-  emoji: '💻',
-  name: '반도체·전자생산',
-  sub: [
-    '반도체 생산',
-    '전자부품 조립',
-    'PCB·SMT',
-    '품질검사',
-    '클린룸',
-    '장비오퍼레이터',
-  ],
-),
+    icon: Icons.memory_outlined,
+    name: '반도체·전자생산',
+    sub: ['반도체 생산', '전자부품 조립', 'PCB·SMT', '품질검사', '클린룸', '장비오퍼레이터'],
+  ),
   _CatData(
-    emoji: '🏗',
+    icon: Icons.construction_outlined,
     name: '건설·현장',
     sub: ['건설일용', '인테리어', '청소·마감', '자재운반', '도장·도배'],
   ),
   _CatData(
-    emoji: '🖥',
+    icon: Icons.desktop_windows_outlined,
     name: '사무·행정',
     sub: ['사무보조', '데이터입력', '고객응대', '텔레마케터', '회계보조'],
   ),
   _CatData(
-    emoji: '🧹',
+    icon: Icons.cleaning_services_outlined,
     name: '청소·시설관리',
     sub: ['건물청소', '시설관리', '환경미화', '방역·소독', '세탁·세차'],
   ),
   _CatData(
-    emoji: '🛍',
+    icon: Icons.shopping_bag_outlined,
     name: '서비스·판매',
     sub: ['매장판매', '시식·홍보', '전단지', '주차관리', '안내·접수'],
   ),
   _CatData(
-    emoji: '🎪',
+    icon: Icons.event_outlined,
     name: '이벤트·행사',
     sub: ['행사스태프', '진행보조', '설치·철거', '모델·도우미', '공연스태프'],
   ),
@@ -352,7 +345,7 @@ class _AiJobWizardState extends State<AiJobWizard>
         description: generatedDesc,
       );
 
-      // ✅ 미리보기 화면 바로 연결
+      // 미리보기 화면 바로 연결
       if (!mounted) return;
       Navigator.push(
         context,
@@ -376,7 +369,7 @@ class _AiJobWizardState extends State<AiJobWizard>
                 description: result.description,
                 images: const [],
                 onSubmit: () {
-                  // ✅ 데이터를 post_job_form에 채우고
+                  // 데이터를 post_job_form에 채우고
                   int count = 0;
                   Navigator.popUntil(context, (_) => count++ >= 2);
                   widget.onComplete(result); // post_job_form의 onComplete 호출
@@ -446,7 +439,6 @@ class _AiJobWizardState extends State<AiJobWizard>
                     ),
                   ),
                   const Spacer(),
-                  // AI 위자드 배지
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 10,
@@ -463,10 +455,10 @@ class _AiJobWizardState extends State<AiJobWizard>
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('✨', style: TextStyle(fontSize: 11)),
+                        Icon(Icons.edit_note_rounded, size: 14, color: _blue),
                         SizedBox(width: 4),
                         Text(
-                          'AI 공고 자동 완성',
+                          '공고 작성 지원',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
@@ -639,9 +631,10 @@ class _AiJobWizardState extends State<AiJobWizard>
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Center(
-                            child: Text(
-                              cat.emoji,
-                              style: const TextStyle(fontSize: 16),
+                            child: Icon(
+                              cat.icon,
+                              size: 18,
+                              color: isSel ? Colors.white : _blue,
                             ),
                           ),
                         ),
@@ -723,10 +716,7 @@ class _AiJobWizardState extends State<AiJobWizard>
                           children: [
                             Row(
                               children: [
-                                Text(
-                                  cat.emoji,
-                                  style: const TextStyle(fontSize: 13),
-                                ),
+                                Icon(cat.icon, size: 14, color: _blue),
                                 const SizedBox(width: 5),
                                 Text(
                                   cat.name,
@@ -873,12 +863,10 @@ class _AiJobWizardState extends State<AiJobWizard>
             ),
             child: Row(
               children: [
-                Text(
-                  '📍',
-                  style: TextStyle(
-                    fontSize: 22,
-                    color: _location != null ? _blue : _label,
-                  ),
+                Icon(
+                  Icons.place_outlined,
+                  size: 22,
+                  color: _location != null ? _blue : _label,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1152,7 +1140,7 @@ class _AiJobWizardState extends State<AiJobWizard>
           ),
           child: Row(
             children: [
-              const Text('💡', style: TextStyle(fontSize: 14)),
+              const Icon(Icons.info_outline_rounded, size: 15, color: _blue),
               const SizedBox(width: 8),
               Text(
                 '$hours시간 기준 일급으로 계산돼요',
@@ -1283,7 +1271,7 @@ class _AiJobWizardState extends State<AiJobWizard>
               ),
             ),
           if (_hourlyWage != null && _hourlyWage! >= minWage)
-            _NextBtn(label: '완료 — AI 공고 자동 완성', onTap: _onComplete),
+            _NextBtn(label: '완료 후 공고문 적용', onTap: _onComplete),
         ],
       ],
     );
@@ -1305,7 +1293,7 @@ class _AiJobWizardState extends State<AiJobWizard>
             color: _text,
           ),
           onPressed: () {
-            setState(() => _isGenerating = false); // ✅ 로딩 상태 해제
+            setState(() => _isGenerating = false); // 로딩 상태 해제
           },
         ),
       ),
@@ -1333,7 +1321,11 @@ class _AiJobWizardState extends State<AiJobWizard>
                   ],
                 ),
                 child: const Center(
-                  child: Text('✨', style: TextStyle(fontSize: 36)),
+                  child: Icon(
+                    Icons.edit_note_rounded,
+                    size: 36,
+                    color: Colors.white,
+                  ),
                 ),
               ),
               const SizedBox(height: 28),

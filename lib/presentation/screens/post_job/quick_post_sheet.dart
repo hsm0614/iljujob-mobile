@@ -302,7 +302,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
           _payWarning =
               pay >= required
                   ? null
-                  : '💰 최저시급 미달 · 최소 ${_fmt.format(required)}원 이상',
+                  : '최저시급 미달 · 최소 ${_fmt.format(required)}원 이상',
     );
   }
 
@@ -357,7 +357,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
       Navigator.pop(context); // 시트 닫기
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('공고 등록 완료 🎉'),
+          content: Text('공고 등록이 완료되었습니다.'),
           backgroundColor: Colors.green,
         ),
       );
@@ -409,17 +409,16 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
               ),
               const SizedBox(height: 20),
 
-              // 무료
               _OptionCard(
-                emoji: '💸',
-                title: '무료 등록',
+                icon: Icons.assignment_outlined,
+                title: '기본 등록',
                 desc: '24시간 노출',
                 badge: '$_freeRemaining/$_freeLimit',
                 badgeOk: _freeRemaining > 0,
                 onTap: () {
                   Navigator.pop(ctx);
                   if (_freeRemaining <= 0) {
-                    _showSnack('이번 달 무료 한도를 모두 사용했어요');
+                    _showSnack('이번 달 기본 등록 한도를 모두 사용했어요');
                     return;
                   }
                   _submit(isPaid: false);
@@ -427,9 +426,8 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
               ),
               const SizedBox(height: 12),
 
-              // 부스터
               _OptionCard(
-                emoji: '🚀',
+                icon: Icons.vertical_align_top_rounded,
                 title: '부스터 모드',
                 desc: '72시간 · 푸시 · 상단 고정',
                 badge: _passLoading ? '조회중…' : '보유 $_paidPassCount개',
@@ -502,7 +500,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Text(
-                          '⚡ 빠른 등록',
+                          '빠른 등록',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
@@ -734,9 +732,10 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                             ),
                             child: Row(
                               children: [
-                                const Text(
-                                  '⚠️',
-                                  style: TextStyle(fontSize: 13),
+                                const Icon(
+                                  Icons.info_outline_rounded,
+                                  size: 15,
+                                  color: Colors.red,
                                 ),
                                 const SizedBox(width: 6),
                                 Expanded(
@@ -1039,11 +1038,12 @@ class _DateTile extends StatelessWidget {
 }
 
 class _OptionCard extends StatelessWidget {
-  final String emoji, title, desc, badge;
+  final IconData icon;
+  final String title, desc, badge;
   final bool badgeOk;
   final VoidCallback onTap;
   const _OptionCard({
-    required this.emoji,
+    required this.icon,
     required this.title,
     required this.desc,
     required this.badge,
@@ -1070,7 +1070,7 @@ class _OptionCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Text(emoji, style: const TextStyle(fontSize: 24)),
+          Icon(icon, size: 24, color: _blue),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

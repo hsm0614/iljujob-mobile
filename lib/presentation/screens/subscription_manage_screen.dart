@@ -5,11 +5,11 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/constants.dart';
+import '../../config/app_theme.dart';
 import '../../data/services/ai_api.dart';
 
 const _kProductId       = 'subscribe';
 const _kAndroidPackage  = 'kr.co.iljujob';
-const _brandBlue        = Color(0xFF3B8AFF);
 
 class SubscriptionManageScreen extends StatefulWidget {
   const SubscriptionManageScreen({super.key});
@@ -137,7 +137,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: _active
-                        ? [_brandBlue, const Color(0xFF6FB3FF)]
+                        ? [AppColors.primary, AppColors.primaryDark]
                         : [Colors.grey.shade600, Colors.grey.shade400],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -228,7 +228,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
                         width: double.infinity,
                         child: FilledButton.icon(
                           style: FilledButton.styleFrom(
-                            backgroundColor: _brandBlue,
+                            backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
@@ -288,9 +288,9 @@ class _HeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color:  Colors.white.withOpacity(.07),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(.14)),
+        color:  Colors.white.withValues(alpha: .07),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        border: Border.all(color: Colors.white.withValues(alpha: .14)),
       ),
       padding: const EdgeInsets.all(16),
       child: DefaultTextStyle(
@@ -311,8 +311,8 @@ class _HeaderCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(.16),
-                      borderRadius: BorderRadius.circular(999),
+                      color: Colors.white.withValues(alpha: .16),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
                     ),
                     child: Text(plan!.toUpperCase(),
                         style: const TextStyle(fontWeight: FontWeight.w700)),
@@ -323,8 +323,8 @@ class _HeaderCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(.25),
-                      borderRadius: BorderRadius.circular(999),
+                      color: Colors.orange.withValues(alpha: .25),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
                     ),
                     child: const Text('체험 중',
                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
@@ -393,7 +393,7 @@ class _ActionCard extends StatelessWidget {
       String btnLabel, IconData btnIcon, VoidCallback onTap) {
     return Row(
       children: [
-        Icon(leadIcon, color: _brandBlue),
+        Icon(leadIcon, color: AppColors.primary),
         const SizedBox(width: 8),
         Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
         const Spacer(),
@@ -442,7 +442,7 @@ class _BenefitRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const Icon(Icons.check_circle_outline, size: 18, color: _brandBlue),
+        const Icon(Icons.check_circle_outline, size: 18, color: AppColors.primary),
         const SizedBox(width: 8),
         Expanded(
             child: Text(text,
@@ -606,7 +606,7 @@ class _SectionTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Icon(icon, color: _brandBlue),
+        Icon(icon, color: AppColors.primary),
         const SizedBox(width: 8),
         Text(title,
             style: const TextStyle(fontWeight: FontWeight.w800)),

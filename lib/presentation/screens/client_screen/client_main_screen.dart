@@ -92,9 +92,9 @@ class _ClientMainScreenState extends State<ClientMainScreen>
 
     // 2) 서버 호출 (ETag 조건부요청)
     final savedEtag = prefs.getString(_promoEtagKey);
-    final appVer = '1.4.0'; // TODO: 실제 앱 버전 주입
+    final appVer = '1.4.0';
     final platform = Platform.isIOS ? 'ios' : 'android';
-    final city = ''; // TODO: 있으면 적용
+    final city = '';
     final uri = Uri.parse(
       '$baseUrl/api/app/promo?userType=client&appVer=$appVer&platform=$platform&city=$city',
     );
@@ -111,7 +111,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
           .get(uri, headers: headers)
           .timeout(const Duration(seconds: 8));
     } catch (e) {
-      debugPrint('⚠️ promo fetch 실패: $e');
+      debugPrint('promo fetch failed: $e');
       return;
     }
 
@@ -131,7 +131,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
     try {
       body = json.decode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
     } catch (e) {
-      debugPrint('⚠️ promo json 파싱 실패: $e');
+      debugPrint('promo json parse failed: $e');
       return;
     }
 
@@ -237,7 +237,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
                 const Padding(
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
-                    '🎉 한정 이벤트 진행 중!',
+                    '한정 이벤트 진행 중',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
                     textAlign: TextAlign.center,
                   ),
@@ -320,13 +320,13 @@ class _ClientMainScreenState extends State<ClientMainScreen>
   void _requestNotificationPermission() async {
     final settings = await FirebaseMessaging.instance.requestPermission();
     if (settings.authorizationStatus != AuthorizationStatus.authorized) {
-      debugPrint('🔕 알림 권한 거부됨');
+      debugPrint('notification permission denied');
     }
   }
 
   void _listenFirebaseNotifications() {
     FirebaseMessaging.instance.getToken().then((token) {
-      debugPrint('📡 FCM 토큰: $token');
+      debugPrint('FCM token: $token');
     });
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
@@ -366,16 +366,14 @@ class _ClientMainScreenState extends State<ClientMainScreen>
           return;
         }
 
-        // ✅ 연결이 끊긴 상태일 경우 재연결 시도
         socket!.connect();
         return;
       }
 
-      // ✅ 새 인스턴스 생성
       socket = IO.io(baseUrl, <String, dynamic>{
         'transports': ['websocket'],
         'autoConnect': false,
-        'reconnection': true, // 💡 추가해도 좋음
+        'reconnection': true,
       });
 
       socket!.onConnect((_) {
@@ -383,18 +381,18 @@ class _ClientMainScreenState extends State<ClientMainScreen>
       });
 
       socket!.onConnectError((error) {
-        debugPrint('❌ 소켓 연결 에러: $error');
+        debugPrint('socket connect error: $error');
       });
 
       socket!.onError((error) {
-        debugPrint('❌ 소켓 에러: $error');
+        debugPrint('socket error: $error');
       });
 
       socket!.onDisconnect((_) {});
 
-      socket!.connect(); // 최초 연결 시
+      socket!.connect();
     } catch (e) {
-      debugPrint('🔥 소켓 초기화 실패: $e');
+      debugPrint('socket init failed: $e');
     }
   }
 
@@ -422,10 +420,10 @@ class _ClientMainScreenState extends State<ClientMainScreen>
           unreadCount = newCount;
         });
       } else {
-        debugPrint('❌ 서버 오류: ${response.statusCode}');
+        debugPrint('unread count server error: ${response.statusCode}');
       }
     } catch (e) {
-      debugPrint('❌ 네트워크 오류: $e');
+      debugPrint('unread count network error: $e');
     }
   }
 

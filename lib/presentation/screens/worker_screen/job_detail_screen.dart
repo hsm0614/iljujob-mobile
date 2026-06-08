@@ -117,10 +117,8 @@ bool _locContextLoading = false;
 
   bool get isClosed =>
       widget.job.status == 'closed' || widget.job.status == 'deleted';
-  @override
   Map<String, dynamic>? reviewSummary;
 
-  km.KakaoMapController? _kakao; // state에 컨트롤러 보관(필요시)
   @override
   void initState() {
     super.initState();

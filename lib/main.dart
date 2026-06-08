@@ -63,7 +63,7 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 import 'package:iljujob/presentation/screens/client_screen/worker_map_screen.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:iljujob/presentation/screens/worker_calendar_screen.dart';
-import 'package:iljujob/presentation/screens/signup_client_screen/ClientWelcomeScreen.dart';
+import 'package:iljujob/presentation/screens/signup_client_screen/client_welcome_screen.dart';
 import 'package:iljujob/config/app_theme.dart';
 // ============================================================
 // 전역 변수
@@ -723,8 +723,8 @@ class UpgraderMessagesKo extends UpgraderMessages {
   @override String get title => '업데이트 안내';
   @override String get body  => '새 버전이 공개되었습니다. 지금 업데이트하시겠어요?';
   @override String get prompt => '스토어로 이동';
-  @override String get ignore => '나중에';
-  @override String get later  => '다음에';
+  @override String get buttonTitleIgnore => '나중에';
+  @override String get buttonTitleLater  => '다음에';
   @override String get releaseNotes => '변경사항';
 }
 

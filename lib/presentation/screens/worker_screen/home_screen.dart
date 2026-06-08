@@ -19,10 +19,6 @@ import '../worker_calendar_screen.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/widget/app_ui.dart';
 
-const BRAND_COLOR = AppColors.primary;
-const BRAND_DARK = AppColors.primaryDark;
-const AI_LABEL = 'AI 추천';
-
 class HomeScreen extends StatefulWidget {
   final int initialTabIndex;
   const HomeScreen({super.key, this.initialTabIndex = 2});
@@ -95,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
           builder:
               (context, setState) => Dialog(
                 elevation: 8,
-                backgroundColor: Colors.white,
+                backgroundColor: AppColors.bgCard,
                 insetPadding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 24,
@@ -160,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           const SizedBox(width: 8),
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF3B8AFF),
+                              backgroundColor: AppColors.primary,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
@@ -202,7 +198,7 @@ class _HomeScreenState extends State<HomeScreen> {
       _loadUserInfoAndUnreadCount();
       _startUnreadTimer();
     } catch (e) {
-      debugPrint('❌ 초기화 오류: $e');
+      debugPrint('초기화 오류: $e');
     }
   }
 
@@ -225,7 +221,7 @@ class _HomeScreenState extends State<HomeScreen> {
         }),
       );
     } catch (e) {
-      debugPrint('❌ FCM 토큰 전송 오류: $e');
+      debugPrint('FCM 토큰 전송 오류: $e');
     }
   }
 
@@ -283,7 +279,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     });
-    socket!.onDisconnect((_) => debugPrint('❌ 소켓 연결 종료'));
+    socket!.onDisconnect((_) => debugPrint('소켓 연결 종료'));
   }
 
   Future<void> _fetchUnreadCount() async {
@@ -307,7 +303,7 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       }
     } catch (e) {
-      debugPrint('❌ 안읽은 메시지 수 오류: $e');
+      debugPrint('안읽은 메시지 수 오류: $e');
     }
   }
 
@@ -338,19 +334,13 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ─────────────────────────────────────────────
-  // 탭바 — 5탭, 홈(index 2) 위에 AI 뱃지 얹기
+  // 탭바 — 각 항목은 화면 이동만 담당
   // ─────────────────────────────────────────────
   Widget _buildBottomNav() {
     return Container(
       decoration: const BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 16,
-            offset: Offset(0, -2),
-          ),
-        ],
+        color: AppColors.bgCard,
+        boxShadow: AppShadows.bottomNav,
       ),
       child: SafeArea(
         top: false,
@@ -370,9 +360,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 activeIcon: Icons.format_list_bulleted_rounded,
                 label: '내 활동',
               ),
-              // ── 홈 탭 (AI 뱃지 포함) ──────────
-              _navItemHome(),
-              // ────────────────────────────────────
+              _navItem(
+                index: 2,
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home_rounded,
+                label: '홈',
+              ),
               _navItemChat(),
               _navItem(
                 index: 4,
@@ -401,83 +394,6 @@ class _HomeScreenState extends State<HomeScreen> {
       activeIcon: activeIcon,
       label: label,
       onTap: () => _onItemTapped(index),
-    );
-  }
-
-  // 홈 탭 + AI 뱃지
-  Widget _navItemHome() {
-    final isActive = _selectedIndex == 2;
-    return Expanded(
-      child: Stack(
-        clipBehavior: Clip.none,
-        alignment: Alignment.center,
-        children: [
-          // 홈 탭 본체
-          GestureDetector(
-            onTap: () => _onItemTapped(2),
-            behavior: HitTestBehavior.opaque,
-            child: SizedBox(
-              height: 56,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const SizedBox(height: 10), // 뱃지 공간 확보
-                  Icon(
-                    isActive ? Icons.home_rounded : Icons.home_outlined,
-                    size: 22,
-                    color: isActive ? BRAND_COLOR : Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '홈',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
-                      color: isActive ? BRAND_COLOR : Colors.grey.shade400,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // AI 뱃지 — 홈 아이콘 위에 얹힘
-          Positioned(
-            top: 2,
-            child: GestureDetector(
-              onTap: _openRecommendSheet,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: BRAND_COLOR,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(color: Colors.white, width: 1.5),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 9,
-                      color: Colors.white,
-                    ),
-                    SizedBox(width: 3),
-                    Text(
-                      'AI 추천',
-                      style: TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        height: 1.0,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -514,10 +430,10 @@ class _HomeScreenState extends State<HomeScreen> {
             builder:
                 (context, scrollController) => ClipRRect(
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(18),
+                    top: Radius.circular(AppRadius.xl),
                   ),
                   child: Material(
-                    color: Colors.white,
+                    color: AppColors.bgCard,
                     child: _RecommendSheet(
                       api: _aiApi,
                       scrollController: scrollController,
@@ -568,8 +484,8 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                   width: 44,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.black26,
-                    borderRadius: BorderRadius.circular(999),
+                    color: AppColors.border,
+                    borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                 ),
               ),
@@ -593,10 +509,10 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          '프로필·위치 기반으로 지금 갈만한 공고만 추렸어요.',
+                          '프로필과 위치를 기준으로 공고를 추천합니다.',
                           style: TextStyle(
                             fontSize: 12.5,
-                            color: Colors.black54,
+                            color: AppColors.textSecondary,
                             height: 1.2,
                           ),
                         ),
@@ -643,14 +559,14 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                           decoration: BoxDecoration(
                             color:
                                 selected
-                                    ? BRAND_COLOR
-                                    : const Color(0xFFEAF2FF),
-                            borderRadius: BorderRadius.circular(999),
+                                    ? AppColors.primary
+                                    : AppColors.primaryLight,
+                            borderRadius: BorderRadius.circular(AppRadius.full),
                             border: Border.all(
                               color:
                                   selected
-                                      ? BRAND_COLOR
-                                      : BRAND_COLOR.withOpacity(.25),
+                                      ? AppColors.primary
+                                      : AppColors.primaryMid,
                             ),
                           ),
                           child: Text(
@@ -661,7 +577,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                               color:
                                   selected
                                       ? Colors.white
-                                      : const Color(0xFF1E2A3A),
+                                      : AppColors.textPrimary,
                             ),
                           ),
                         ),
@@ -673,7 +589,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
           SliverToBoxAdapter(
             child: Container(
               height: 1,
-              color: Colors.black12,
+              color: AppColors.borderSub,
               margin: const EdgeInsets.only(bottom: 10),
             ),
           ),
@@ -687,24 +603,24 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.black12),
+                    color: AppColors.bgMuted,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: const Row(
                     children: [
                       Icon(
                         Icons.lightbulb_outline_rounded,
                         size: 18,
-                        color: BRAND_COLOR,
+                        color: AppColors.primary,
                       ),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          '추천은 "거리 + 일정 + 선호 + 최근 지원 패턴"을 같이 봐요. 마음에 안 들면 새로고침!',
+                          '거리, 일정, 선호 조건, 최근 지원 이력을 반영합니다.',
                           style: TextStyle(
                             fontSize: 12.5,
-                            color: Colors.black87,
+                            color: AppColors.textPrimary,
                             height: 1.2,
                           ),
                         ),
@@ -721,7 +637,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                 const Opacity(
                   opacity: 0.55,
                   child: Text(
-                    '※ AI 추천은 정확도를 계속 개선 중입니다.',
+                    '추천 결과는 조건에 따라 달라질 수 있습니다.',
                     style: TextStyle(fontSize: 11.5),
                   ),
                 ),

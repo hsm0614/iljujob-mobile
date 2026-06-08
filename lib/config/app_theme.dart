@@ -37,6 +37,9 @@ class AppColors {
   static const error   = Color(0xFFDC2626);
   static const success = Color(0xFF10B981);
   static const warning = Color(0xFFF59E0B);
+  static const warningDark = Color(0xFF92400E);
+  static const warningLight = Color(0xFFFFF7ED);
+  static const warningBorder = Color(0xFFFED7AA);
   static const info    = Color(0xFF3B8AFF);
 
   // ── Badge 색상 ─────────────────────────────────────────
@@ -236,7 +239,6 @@ class AppTheme {
           primary: AppColors.primary,
           secondary: AppColors.primaryDark,
           surface: AppColors.bgCard,
-          background: AppColors.bgPage,
           error: AppColors.error,
           onPrimary: Colors.white,
           onSurface: AppColors.textPrimary,

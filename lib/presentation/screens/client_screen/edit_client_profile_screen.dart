@@ -24,7 +24,8 @@ class EditClientProfileScreen extends StatefulWidget {
   const EditClientProfileScreen({super.key});
 
   @override
-  State<EditClientProfileScreen> createState() => _EditClientProfileScreenState();
+  State<EditClientProfileScreen> createState() =>
+      _EditClientProfileScreenState();
 }
 
 class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
@@ -131,22 +132,23 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body) as Map<String, dynamic>;
 
-        final fetchedLogoUrl = pickFirstNonNull<String>(
-              data,
-              ['logo_url', 'logoUrl', 'company_logo_url', 'logo'],
-            ) ??
+        final fetchedLogoUrl =
+            pickFirstNonNull<String>(data, [
+              'logo_url',
+              'logoUrl',
+              'company_logo_url',
+              'logo',
+            ]) ??
             '';
 
-        final fetchedCertUrl = pickFirstNonNull<String>(
-              data,
-              [
-                'certificate_url',
-                'certificateUrl',
-                'business_certificate_url',
-                'biz_cert_url',
-                'certificate',
-              ],
-            ) ??
+        final fetchedCertUrl =
+            pickFirstNonNull<String>(data, [
+              'certificate_url',
+              'certificateUrl',
+              'business_certificate_url',
+              'biz_cert_url',
+              'certificate',
+            ]) ??
             '';
 
         if (!mounted) return;
@@ -175,7 +177,10 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
   }
 
   Future<void> _pickLogoImage() async {
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+    );
     if (picked != null) {
       setState(() {
         selectedLogoImage = File(picked.path);
@@ -184,7 +189,10 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
   }
 
   Future<void> _pickCertificateFromCamera() async {
-    final picked = await picker.pickImage(source: ImageSource.camera, imageQuality: 90);
+    final picked = await picker.pickImage(
+      source: ImageSource.camera,
+      imageQuality: 90,
+    );
     if (picked != null) {
       setState(() {
         selectedCertificateFile = PlatformFile(
@@ -198,7 +206,10 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
   }
 
   Future<void> _pickCertificateFromGallery() async {
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 90);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 90,
+    );
     if (picked != null) {
       setState(() {
         selectedCertificateFile = PlatformFile(
@@ -229,40 +240,41 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       context: context,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _BottomSheetCard(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _SheetHeader(title: '사업자등록증 업로드'),
-            const SizedBox(height: 6),
-            _SheetTile(
-              icon: Icons.camera_alt,
-              label: '카메라로 촬영',
-              onTap: () {
-                Navigator.pop(context);
-                _pickCertificateFromCamera();
-              },
+      builder:
+          (_) => _BottomSheetCard(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _SheetHeader(title: '사업자등록증 업로드'),
+                const SizedBox(height: 6),
+                _SheetTile(
+                  icon: Icons.camera_alt,
+                  label: '카메라로 촬영',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickCertificateFromCamera();
+                  },
+                ),
+                _SheetTile(
+                  icon: Icons.photo,
+                  label: '갤러리에서 선택',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickCertificateFromGallery();
+                  },
+                ),
+                _SheetTile(
+                  icon: Icons.insert_drive_file,
+                  label: '파일에서 선택 (PDF 가능)',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _pickCertificateFromFile();
+                  },
+                ),
+                const SizedBox(height: 10),
+              ],
             ),
-            _SheetTile(
-              icon: Icons.photo,
-              label: '갤러리에서 선택',
-              onTap: () {
-                Navigator.pop(context);
-                _pickCertificateFromGallery();
-              },
-            ),
-            _SheetTile(
-              icon: Icons.insert_drive_file,
-              label: '파일에서 선택 (PDF 가능)',
-              onTap: () {
-                Navigator.pop(context);
-                _pickCertificateFromFile();
-              },
-            ),
-            const SizedBox(height: 10),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -308,24 +320,30 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       request.fields['description'] = description;
 
       if (selectedLogoImage != null) {
-        request.files.add(await http.MultipartFile.fromPath(
-          'logo',
-          selectedLogoImage!.path,
-          contentType: MediaType('image', 'jpeg'),
-        ));
+        request.files.add(
+          await http.MultipartFile.fromPath(
+            'logo',
+            selectedLogoImage!.path,
+            contentType: MediaType('image', 'jpeg'),
+          ),
+        );
       }
 
-      if (selectedCertificateFile != null && selectedCertificateFile!.path != null) {
+      if (selectedCertificateFile != null &&
+          selectedCertificateFile!.path != null) {
         final ext = (selectedCertificateFile!.extension ?? '').toLowerCase();
         final isPdf = ext == 'pdf';
-        final mime = isPdf ? 'application/pdf' : 'image/${ext.isEmpty ? 'jpeg' : ext}';
+        final mime =
+            isPdf ? 'application/pdf' : 'image/${ext.isEmpty ? 'jpeg' : ext}';
 
-        request.files.add(http.MultipartFile.fromBytes(
-          'certificate',
-          File(selectedCertificateFile!.path!).readAsBytesSync(),
-          filename: selectedCertificateFile!.name,
-          contentType: MediaType.parse(mime),
-        ));
+        request.files.add(
+          http.MultipartFile.fromBytes(
+            'certificate',
+            File(selectedCertificateFile!.path!).readAsBytesSync(),
+            filename: selectedCertificateFile!.name,
+            contentType: MediaType.parse(mime),
+          ),
+        );
       }
 
       final streamed = await request.send();
@@ -364,144 +382,164 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ConfirmSheet(
-        title: '저장하지 않고 나갈까요?',
-        message: '변경 사항이 저장되지 않습니다.',
-        confirmText: '나가기',
-        confirmColor: const Color(0xFFDC2626),
-        icon: Icons.warning_amber_rounded,
-      ),
+      builder:
+          (_) => _ConfirmSheet(
+            title: '저장하지 않고 나갈까요?',
+            message: '변경 사항이 저장되지 않습니다.',
+            confirmText: '나가기',
+            confirmColor: const Color(0xFFDC2626),
+            icon: Icons.warning_amber_rounded,
+          ),
     );
 
     if (ok == true && mounted) Navigator.pop(context);
   }
 
   @override
-Widget build(BuildContext context) {
-  final bottomSafe = MediaQuery.of(context).viewPadding.bottom;
+  Widget build(BuildContext context) {
+    final bottomSafe = MediaQuery.of(context).viewPadding.bottom;
 
-  return Scaffold(
-    backgroundColor: kBg,
-    resizeToAvoidBottomInset: true,
-    appBar: AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      centerTitle: false,
-      iconTheme: const IconThemeData(color: Colors.black),
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back),
-        onPressed: _confirmLeaveIfDirty,
-      ),
-      title: const Text(
-        '계정 관리',
-        style: TextStyle(
-          fontFamily: 'Jalnan2TTF',
-          color: kBrand,
-          fontSize: 20,
+    return Scaffold(
+      backgroundColor: kBg,
+      resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        centerTitle: false,
+        iconTheme: const IconThemeData(color: Colors.black),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: _confirmLeaveIfDirty,
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _canSave ? _saveProfile : null,
-          child: Text(
-            _saving ? '저장 중…' : '저장',
-            style: TextStyle(
-              color: _canSave ? kBrand : Colors.black26,
-              fontWeight: FontWeight.w800,
-            ),
+        title: const Text(
+          '계정 관리',
+          style: TextStyle(
+            fontFamily: 'Jalnan2TTF',
+            color: kBrand,
+            fontSize: 20,
           ),
         ),
-        const SizedBox(width: 6),
-      ],
-    ),
+        actions: [
+          TextButton(
+            onPressed: _canSave ? _saveProfile : null,
+            child: Text(
+              _saving ? '저장 중…' : '저장',
+              style: TextStyle(
+                color: _canSave ? kBrand : Colors.black26,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+        ],
+      ),
 
-    // ✅ 저장 버튼을 하단 고정 + SafeArea로 올림 (안드 뒤로가기 영역 회피)
-    bottomNavigationBar: SafeArea(
-      top: false,
-      child: Container(
-        color: kBg,
-        padding: EdgeInsets.fromLTRB(16, 10, 16, 12 + (bottomSafe > 0 ? 0 : 0)),
-        child: _SaveButton(
-          busy: _saving,
-          onPressed: _canSave ? _saveProfile : null,
+      // 저장 버튼을 하단 고정 + SafeArea로 올림 (안드 뒤로가기 영역 회피)
+      bottomNavigationBar: SafeArea(
+        top: false,
+        child: Container(
+          color: kBg,
+          padding: EdgeInsets.fromLTRB(
+            16,
+            10,
+            16,
+            12 + (bottomSafe > 0 ? 0 : 0),
+          ),
+          child: _SaveButton(
+            busy: _saving,
+            onPressed: _canSave ? _saveProfile : null,
+          ),
         ),
       ),
-    ),
 
-    body: isLoading
-        ? const Center(child: CircularProgressIndicator())
-        : RefreshIndicator(
-            color: kBrand,
-            onRefresh: _loadProfile,
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-              children: [
-                _profileHeaderCard(),
-                const SizedBox(height: 14),
-                _SectionCard(
-                  title: '기본 정보',
+      body:
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : RefreshIndicator(
+                color: kBrand,
+                onRefresh: _loadProfile,
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                   children: [
-                    _LabeledField(
-                      label: '담당자명',
-                      child: TextField(
-                        controller: managerController,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: const InputDecoration(hintText: '예) 홍길동'),
-                      ),
+                    _profileHeaderCard(),
+                    const SizedBox(height: 14),
+                    _SectionCard(
+                      title: '기본 정보',
+                      children: [
+                        _LabeledField(
+                          label: '담당자명',
+                          child: TextField(
+                            controller: managerController,
+                            textCapitalization: TextCapitalization.words,
+                            decoration: const InputDecoration(
+                              hintText: '예) 홍길동',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _LabeledField(
+                          label: '회사명',
+                          child: TextField(
+                            controller: companyController,
+                            textCapitalization: TextCapitalization.words,
+                            decoration: const InputDecoration(
+                              hintText: '예) 알바일주',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _LabeledField(
+                          label: '이메일',
+                          child: TextField(
+                            controller: emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            autofillHints: const [AutofillHints.email],
+                            decoration: const InputDecoration(
+                              hintText: '예) hello@company.com',
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        _LabeledField(
+                          label: '회사 소개',
+                          child: TextField(
+                            controller: descriptionController,
+                            maxLines: 3,
+                            decoration: const InputDecoration(
+                              hintText: '간단한 소개를 입력해주세요.',
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 10),
-                    _LabeledField(
-                      label: '회사명',
-                      child: TextField(
-                        controller: companyController,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: const InputDecoration(hintText: '예) 알바일주'),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    _LabeledField(
-                      label: '이메일',
-                      child: TextField(
-                        controller: emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        autofillHints: const [AutofillHints.email],
-                        decoration: const InputDecoration(hintText: '예) hello@company.com'),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    _LabeledField(
-                      label: '회사 소개',
-                      child: TextField(
-                        controller: descriptionController,
-                        maxLines: 3,
-                        decoration: const InputDecoration(hintText: '간단한 소개를 입력해주세요.'),
-                      ),
-                    ),
+                    const SizedBox(height: 14),
+                    _certificateSection(),
+
+                    // 여기 있던 _SaveButton 제거 (bottomNavigationBar로 이동)
+                    const SizedBox(height: 8),
                   ],
                 ),
-                const SizedBox(height: 14),
-                _certificateSection(),
-
-                // ❌ 여기 있던 _SaveButton 제거 (bottomNavigationBar로 이동)
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-  );
-}
+              ),
+    );
+  }
 
   Widget _profileHeaderCard() {
     final hasRemoteLogo = logoUrl.trim().isNotEmpty;
-    final imgProvider = selectedLogoImage != null
-        ? FileImage(selectedLogoImage!)
-        : (hasRemoteLogo ? NetworkImage(_getFullImageUrl(logoUrl)) : null);
+    final imgProvider =
+        selectedLogoImage != null
+            ? FileImage(selectedLogoImage!)
+            : (hasRemoteLogo ? NetworkImage(_getFullImageUrl(logoUrl)) : null);
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, 6)),
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, 6),
+          ),
         ],
       ),
       padding: const EdgeInsets.all(14),
@@ -513,9 +551,14 @@ Widget build(BuildContext context) {
                 radius: 34,
                 backgroundColor: const Color(0xFFEAF2FF),
                 backgroundImage: imgProvider as ImageProvider?,
-                child: (imgProvider == null)
-                    ? const Icon(Icons.business, size: 32, color: Colors.black54)
-                    : null,
+                child:
+                    (imgProvider == null)
+                        ? const Icon(
+                          Icons.business,
+                          size: 32,
+                          color: Colors.black54,
+                        )
+                        : null,
               ),
               Positioned(
                 bottom: -2,
@@ -531,9 +574,15 @@ Widget build(BuildContext context) {
                       decoration: BoxDecoration(
                         color: kBrand,
                         shape: BoxShape.circle,
-                        boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 4)],
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black26, blurRadius: 4),
+                        ],
                       ),
-                      child: const Icon(Icons.edit, size: 16, color: Colors.white),
+                      child: const Icon(
+                        Icons.edit,
+                        size: 16,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -546,10 +595,15 @@ Widget build(BuildContext context) {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  companyController.text.trim().isEmpty ? '회사명' : companyController.text.trim(),
+                  companyController.text.trim().isEmpty
+                      ? '회사명'
+                      : companyController.text.trim(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -585,17 +639,18 @@ Widget build(BuildContext context) {
     Widget preview;
 
     if (hasLocal) {
-      preview = isPdfLocal
-          ? _pdfRow(selectedCertificateFile!.name)
-          : ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.file(
-                File(selectedCertificateFile!.path!),
-                height: 120,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
-            );
+      preview =
+          isPdfLocal
+              ? _pdfRow(selectedCertificateFile!.name)
+              : ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.file(
+                  File(selectedCertificateFile!.path!),
+                  height: 120,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                ),
+              );
     } else if (hasRemote) {
       if (isPdfRemote) {
         preview = _pdfRow('업로드된 사업자등록증 (PDF)');
@@ -609,18 +664,23 @@ Widget build(BuildContext context) {
             image: NetworkImage(
               _getFullImageUrl(certificateUrl),
               headers: {
-                if ((_authHeaderToken ?? '').isNotEmpty) 'Authorization': 'Bearer ${_authHeaderToken!}',
+                if ((_authHeaderToken ?? '').isNotEmpty)
+                  'Authorization': 'Bearer ${_authHeaderToken!}',
               },
             ),
-            errorBuilder: (_, __, ___) => Container(
-              height: 120,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: const Color(0xFFF3F4F6),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Text('파일을 불러오지 못했습니다.', style: TextStyle(color: Colors.black45)),
-            ),
+            errorBuilder:
+                (_, __, ___) => Container(
+                  height: 120,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF3F4F6),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    '파일을 불러오지 못했습니다.',
+                    style: TextStyle(color: Colors.black45),
+                  ),
+                ),
           ),
         );
       }
@@ -633,7 +693,10 @@ Widget build(BuildContext context) {
           border: Border.all(color: const Color(0xFFE5E7EB)),
         ),
         alignment: Alignment.center,
-        child: const Text('아직 업로드된 파일이 없습니다.', style: TextStyle(color: Colors.black45)),
+        child: const Text(
+          '아직 업로드된 파일이 없습니다.',
+          style: TextStyle(color: Colors.black45),
+        ),
       );
     }
 
@@ -647,7 +710,11 @@ Widget build(BuildContext context) {
       children: [
         Text(
           '업로드 후 관리자 검토가 진행됩니다. 검토 완료 시 “안심기업” 표시가 적용됩니다.',
-          style: TextStyle(fontSize: 12.5, color: Colors.grey.shade600, height: 1.35),
+          style: TextStyle(
+            fontSize: 12.5,
+            color: Colors.grey.shade600,
+            height: 1.35,
+          ),
         ),
         const SizedBox(height: 10),
         preview,
@@ -663,7 +730,9 @@ Widget build(BuildContext context) {
                   foregroundColor: kBrand,
                   side: const BorderSide(color: Color(0xFFD1E3FF)),
                   backgroundColor: const Color(0xFFEAF2FF),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -671,15 +740,18 @@ Widget build(BuildContext context) {
             const SizedBox(width: 10),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: hasLocal
-                    ? () => setState(() => selectedCertificateFile = null)
-                    : null,
+                onPressed:
+                    hasLocal
+                        ? () => setState(() => selectedCertificateFile = null)
+                        : null,
                 icon: const Icon(Icons.close),
                 label: const Text('선택 해제'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.black54,
                   side: BorderSide(color: Colors.grey.shade300),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
@@ -691,20 +763,20 @@ Widget build(BuildContext context) {
   }
 
   Widget _pdfRow(String name) => Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF1F2),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFFECACA)),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.picture_as_pdf, color: Colors.red),
-            const SizedBox(width: 8),
-            Expanded(child: Text(name, overflow: TextOverflow.ellipsis)),
-          ],
-        ),
-      );
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFF1F2),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: const Color(0xFFFECACA)),
+    ),
+    child: Row(
+      children: [
+        const Icon(Icons.picture_as_pdf, color: Colors.red),
+        const SizedBox(width: 8),
+        Expanded(child: Text(name, overflow: TextOverflow.ellipsis)),
+      ],
+    ),
+  );
 }
 
 /* --------------------------- UI pieces --------------------------- */
@@ -726,7 +798,9 @@ class _SectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+        ],
       ),
       padding: const EdgeInsets.all(14),
       child: Column(
@@ -776,21 +850,34 @@ class _LabeledField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800)),
+        Text(
+          label,
+          style: theme.textTheme.labelLarge?.copyWith(
+            fontWeight: FontWeight.w800,
+          ),
+        ),
         const SizedBox(height: 6),
         Theme(
           data: theme.copyWith(
             inputDecorationTheme: InputDecorationTheme(
               isDense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 12,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: Colors.grey.shade300),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: _EditClientProfileScreenState.kBrand, width: 1.3),
+                borderSide: const BorderSide(
+                  color: _EditClientProfileScreenState.kBrand,
+                  width: 1.3,
+                ),
               ),
             ),
           ),
@@ -813,19 +900,25 @@ class _SaveButton extends StatelessWidget {
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: onPressed,
-        icon: busy
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-              )
-            : const Icon(Icons.save_outlined),
+        icon:
+            busy
+                ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+                : const Icon(Icons.save_outlined),
         label: Text(busy ? '저장 중…' : '저장하기'),
         style: ElevatedButton.styleFrom(
           backgroundColor: _EditClientProfileScreenState.kBrand,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
           elevation: 0,
         ),
       ),
@@ -872,7 +965,10 @@ class _SheetHeader extends StatelessWidget {
         const SizedBox(height: 10),
         Align(
           alignment: Alignment.centerLeft,
-          child: Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+          child: Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+          ),
         ),
       ],
     );
@@ -884,7 +980,11 @@ class _SheetTile extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
 
-  const _SheetTile({required this.icon, required this.label, required this.onTap});
+  const _SheetTile({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -945,12 +1045,19 @@ class _ConfirmSheet extends StatelessWidget {
             child: Icon(icon, color: confirmColor),
           ),
           const SizedBox(height: 12),
-          Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+          ),
           const SizedBox(height: 6),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 12.5, color: Color(0xFF6B7280), height: 1.35),
+            style: const TextStyle(
+              fontSize: 12.5,
+              color: Color(0xFF6B7280),
+              height: 1.35,
+            ),
           ),
           const SizedBox(height: 14),
           Row(
@@ -962,9 +1069,14 @@ class _ConfirmSheet extends StatelessWidget {
                     foregroundColor: const Color(0xFF111827),
                     side: const BorderSide(color: Color(0xFFE5E7EB)),
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                  child: const Text('취소', style: TextStyle(fontWeight: FontWeight.w900)),
+                  child: const Text(
+                    '취소',
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -975,10 +1087,15 @@ class _ConfirmSheet extends StatelessWidget {
                     backgroundColor: confirmColor,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                     elevation: 0,
                   ),
-                  child: Text(confirmText, style: const TextStyle(fontWeight: FontWeight.w900)),
+                  child: Text(
+                    confirmText,
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
                 ),
               ),
             ],

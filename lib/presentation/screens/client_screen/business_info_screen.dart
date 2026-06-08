@@ -64,226 +64,245 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setSheet) => Padding(
-          padding: EdgeInsets.fromLTRB(
-            20, 24, 20,
-            MediaQuery.of(ctx).viewInsets.bottom + 36,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 핸들
-              Center(
-                child: Container(
-                  width: 36,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE5E7EB),
-                    borderRadius: BorderRadius.circular(2),
+      builder:
+          (ctx) => StatefulBuilder(
+            builder:
+                (ctx, setSheet) => Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    24,
+                    20,
+                    MediaQuery.of(ctx).viewInsets.bottom + 36,
                   ),
-                ),
-              ),
-
-              // ── 추천인 코드 ──────────────────────────────────
-              const Text(
-                '추천인 코드가 있으신가요?',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                '없으시면 비워두셔도 돼요 😊',
-                style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: referralCodeController,
-                textCapitalization: TextCapitalization.characters,
-                decoration: _sheetInputDecoration('추천인 번호 입력 (선택)'),
-              ),
-
-              const SizedBox(height: 28),
-
-              // ── 유입경로 ─────────────────────────────────────
-              const Text(
-                '어떻게 알바일주를 알게 되셨나요?',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                '선택 안 하셔도 괜찮아요.',
-                style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: _kSourceOptions.map((option) {
-                  final selected = selectedSource == option;
-                  return GestureDetector(
-                    onTap: () => setSheet(() {
-                      selectedSource = selected ? null : option;
-                    }),
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? kBrandBlue
-                            : const Color(0xFFF3F4F6),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: selected
-                              ? kBrandBlue
-                              : const Color(0xFFE5E7EB),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 핸들
+                      Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 20),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE5E7EB),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
                         ),
                       ),
-                      child: Text(
-                        option,
+
+                      // ── 추천인 코드 ──────────────────────────────────
+                      const Text(
+                        '추천인 코드가 있으신가요?',
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        '없으시면 비워두셔도 돼요.',
                         style: TextStyle(
                           fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: selected
-                              ? Colors.white
-                              : const Color(0xFF374151),
+                          color: Color(0xFF9CA3AF),
                         ),
                       ),
-                    ),
-                  );
-                }).toList(),
-              ),
+                      const SizedBox(height: 12),
+                      TextField(
+                        controller: referralCodeController,
+                        textCapitalization: TextCapitalization.characters,
+                        decoration: _sheetInputDecoration('추천인 번호 입력 (선택)'),
+                      ),
 
-              const SizedBox(height: 28),
+                      const SizedBox(height: 28),
 
-              // ── 확인 버튼 ────────────────────────────────────
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                onPressed: () async {
-  await _submitOnboarding(
-    referralCode: referralCodeController.text.trim(),
-    source: selectedSource,
-  );
+                      // ── 유입경로 ─────────────────────────────────────
+                      const Text(
+                        '어떻게 알바일주를 알게 되셨나요?',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        '선택 안 하셔도 괜찮아요.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF9CA3AF),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children:
+                            _kSourceOptions.map((option) {
+                              final selected = selectedSource == option;
+                              return GestureDetector(
+                                onTap:
+                                    () => setSheet(() {
+                                      selectedSource = selected ? null : option;
+                                    }),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        selected
+                                            ? kBrandBlue
+                                            : const Color(0xFFF3F4F6),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                      color:
+                                          selected
+                                              ? kBrandBlue
+                                              : const Color(0xFFE5E7EB),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    option,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w500,
+                                      color:
+                                          selected
+                                              ? Colors.white
+                                              : const Color(0xFF374151),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                      ),
 
-  if (!ctx.mounted) return;
-  Navigator.pop(ctx);
-},
-                  style: _primaryButtonStyle(),
-                  child: const Text(
-                    '확인',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                      const SizedBox(height: 28),
+
+                      // ── 확인 버튼 ────────────────────────────────────
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            await _submitOnboarding(
+                              referralCode: referralCodeController.text.trim(),
+                              source: selectedSource,
+                            );
+
+                            if (!ctx.mounted) return;
+                            Navigator.pop(ctx);
+                          },
+                          style: _primaryButtonStyle(),
+                          child: const Text(
+                            '확인',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Center(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          child: const Text(
+                            '건너뛰기',
+                            style: TextStyle(
+                              color: Color(0xFF9CA3AF),
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Center(
-                child: TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text(
-                    '건너뛰기',
-                    style: TextStyle(
-                      color: Color(0xFF9CA3AF),
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ),
-            ],
           ),
-        ),
-      ),
     );
   }
 
   // ── 온보딩 제출 ───────────────────────────────────────────────
   Future<void> _submitOnboarding({
-  required String referralCode,
-  required String? source,
-}) async {
-  final prefs = await SharedPreferences.getInstance();
+    required String referralCode,
+    required String? source,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
 
-  final clientId = prefs.getInt('userId') ?? prefs.getInt('clientId');
-  final authToken = prefs.getString('authToken');
+    final clientId = prefs.getInt('userId') ?? prefs.getInt('clientId');
+    final authToken = prefs.getString('authToken');
 
-  debugPrint('=== onboarding submit start ===');
-  debugPrint('clientId=$clientId');
-  debugPrint('source=$source');
-  debugPrint('referralCode=$referralCode');
-  debugPrint('authToken exists=${authToken != null && authToken.isNotEmpty}');
+    debugPrint('=== onboarding submit start ===');
+    debugPrint('clientId=$clientId');
+    debugPrint('source=$source');
+    debugPrint('referralCode=$referralCode');
+    debugPrint('authToken exists=${authToken != null && authToken.isNotEmpty}');
 
-  if (clientId == null) {
-    _showSnackbar('회원 정보가 없어 저장할 수 없어요.');
-    debugPrint('clientId is null -> stop');
-    return;
-  }
-
-  // 유입경로 저장
-  if (source != null) {
-    try {
-      final res = await http.post(
-        Uri.parse('$baseUrl/api/client/referral'),
-        headers: {
-          'Content-Type': 'application/json',
-          if (authToken != null && authToken.isNotEmpty)
-            'Authorization': 'Bearer $authToken',
-        },
-        body: jsonEncode({
-          'clientId': clientId,
-          'source': source,
-        }),
-      );
-
-      debugPrint('referral source status=${res.statusCode}');
-      debugPrint('referral source body=${res.body}');
-    } catch (e) {
-      debugPrint('referral source error=$e');
-      _showSnackbar('유입경로 저장 중 오류가 발생했어요.');
+    if (clientId == null) {
+      _showSnackbar('회원 정보가 없어 저장할 수 없어요.');
+      debugPrint('clientId is null -> stop');
+      return;
     }
-  }
 
-  // 추천인 코드 적용
-  if (referralCode.isNotEmpty) {
-    try {
-      final res = await http.post(
-        Uri.parse('$baseUrl/api/client/apply-referral'),
-        headers: {
-          'Content-Type': 'application/json',
-          if (authToken != null && authToken.isNotEmpty)
-            'Authorization': 'Bearer $authToken',
-        },
-        body: jsonEncode({
-          'clientId': clientId,
-          'referralCode': referralCode,
-        }),
-      );
+    // 유입경로 저장
+    if (source != null) {
+      try {
+        final res = await http.post(
+          Uri.parse('$baseUrl/api/client/referral'),
+          headers: {
+            'Content-Type': 'application/json',
+            if (authToken != null && authToken.isNotEmpty)
+              'Authorization': 'Bearer $authToken',
+          },
+          body: jsonEncode({'clientId': clientId, 'source': source}),
+        );
 
-      debugPrint('apply-referral status=${res.statusCode}');
-      debugPrint('apply-referral body=${res.body}');
-
-      final data = jsonDecode(res.body);
-
-      if (res.statusCode == 200 && data['success'] == true) {
-        _showSnackbar('추천인 코드가 적용되었어요 🎉');
-      } else {
-        _showSnackbar(data['message'] ?? '유효하지 않은 추천인 코드예요.');
+        debugPrint('referral source status=${res.statusCode}');
+        debugPrint('referral source body=${res.body}');
+      } catch (e) {
+        debugPrint('referral source error=$e');
+        _showSnackbar('유입경로 저장 중 오류가 발생했어요.');
       }
-    } catch (e) {
-      debugPrint('apply-referral error=$e');
-      _showSnackbar('추천인 등록 중 오류가 발생했어요.');
     }
+
+    // 추천인 코드 적용
+    if (referralCode.isNotEmpty) {
+      try {
+        final res = await http.post(
+          Uri.parse('$baseUrl/api/client/apply-referral'),
+          headers: {
+            'Content-Type': 'application/json',
+            if (authToken != null && authToken.isNotEmpty)
+              'Authorization': 'Bearer $authToken',
+          },
+          body: jsonEncode({
+            'clientId': clientId,
+            'referralCode': referralCode,
+          }),
+        );
+
+        debugPrint('apply-referral status=${res.statusCode}');
+        debugPrint('apply-referral body=${res.body}');
+
+        final data = jsonDecode(res.body);
+
+        if (res.statusCode == 200 && data['success'] == true) {
+          _showSnackbar('추천인 코드가 적용되었습니다.');
+        } else {
+          _showSnackbar(data['message'] ?? '유효하지 않은 추천인 코드예요.');
+        }
+      } catch (e) {
+        debugPrint('apply-referral error=$e');
+        _showSnackbar('추천인 등록 중 오류가 발생했어요.');
+      }
+    }
+
+    debugPrint('=== onboarding submit end ===');
   }
 
-  debugPrint('=== onboarding submit end ===');
-}
   // ── 건너뛰기 ──────────────────────────────────────────────────
   Future<void> _skip() async {
     _analytics.logEvent(name: 'biz_verify_skipped');
@@ -305,10 +324,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
       return;
     }
 
-    _analytics.logEvent(
-      name: 'biz_verify_attempt',
-      parameters: {'biz': biz},
-    );
+    _analytics.logEvent(name: 'biz_verify_attempt', parameters: {'biz': biz});
 
     setState(() {
       _loading = true;
@@ -325,7 +341,9 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
       final res = await http.post(
         uri,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'b_no': [biz]}),
+        body: jsonEncode({
+          'b_no': [biz],
+        }),
       );
 
       if (res.statusCode != 200) {
@@ -377,9 +395,10 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
     final prefs = await SharedPreferences.getInstance();
     final clientId = prefs.getInt('userId');
     final biz = _bizNumberController.text.replaceAll(RegExp(r'[^0-9]'), '');
-    final storeName = _storeNameController.text.trim().isEmpty
-        ? null
-        : _storeNameController.text.trim();
+    final storeName =
+        _storeNameController.text.trim().isEmpty
+            ? null
+            : _storeNameController.text.trim();
 
     setState(() {
       _loading = true;
@@ -434,12 +453,13 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
           elevation: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            onPressed: () => Navigator.pushNamedAndRemoveUntil(
-              context,
-              '/client_main',
-              (route) => false,
-              arguments: {'initialTabIndex': 1},
-            ),
+            onPressed:
+                () => Navigator.pushNamedAndRemoveUntil(
+                  context,
+                  '/client_main',
+                  (route) => false,
+                  arguments: {'initialTabIndex': 1},
+                ),
           ),
           actions: [
             TextButton(
@@ -458,7 +478,9 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
         body: SafeArea(
           child: SingleChildScrollView(
             padding: EdgeInsets.fromLTRB(
-              20, 8, 20,
+              20,
+              8,
+              20,
               20 + MediaQuery.of(context).padding.bottom,
             ),
             child: Column(
@@ -467,10 +489,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                 const SizedBox(height: 14),
                 const Text(
                   '사장님, 공고 등록 전에\n사업자번호만 확인할게요.',
-                  style: TextStyle(
-                    fontSize: 21,
-                    fontWeight: FontWeight.w700,
-                  ),
+                  style: TextStyle(fontSize: 21, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
                 const Text(
@@ -479,7 +498,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  '사업자등록번호가 없으시면\nhsm@outfind.co.kr 로 문의해주세요 😊',
+                  '사업자등록번호가 없으시면\nhsm@outfind.co.kr 로 문의해주세요.',
                   style: TextStyle(fontSize: 13, color: Colors.grey),
                 ),
                 const SizedBox(height: 12),
@@ -556,10 +575,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                   const SizedBox(height: 14),
                   Text(
                     _errorMessage!,
-                    style: const TextStyle(
-                      color: Colors.red,
-                      fontSize: 13,
-                    ),
+                    style: const TextStyle(color: Colors.red, fontSize: 13),
                   ),
                 ],
 
@@ -572,9 +588,22 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                       color: const Color(0xFFE9F3FF),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Text(
-                      '✅ 계속사업자로 확인되었습니다.\n바로 공고 등록하실 수 있어요.',
-                      style: TextStyle(fontSize: 15, color: kBrandBlue),
+                    child: const Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.check_circle_outline,
+                          size: 18,
+                          color: kBrandBlue,
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '계속사업자로 확인되었습니다.\n바로 공고 등록하실 수 있어요.',
+                            style: TextStyle(fontSize: 15, color: kBrandBlue),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
@@ -586,12 +615,11 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                   width: double.infinity,
                   height: 52,
                   child: ElevatedButton(
-                    onPressed: _loading
-                        ? null
-                        : (_verified ? _saveAndGo : _lookup),
+                    onPressed:
+                        _loading ? null : (_verified ? _saveAndGo : _lookup),
                     style: _primaryButtonStyle(),
                     child: Text(
-                      _verified ? '공고 등록하기 🚀' : '사업자 확인하기',
+                      _verified ? '공고 등록하기' : '사업자 확인하기',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -643,10 +671,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
       hintStyle: const TextStyle(color: Color(0xFFD1D5DB)),
       filled: true,
       fillColor: const Color(0xFFF6F8FA),
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 14,
-        vertical: 14,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(10),
         borderSide: BorderSide.none,
@@ -664,25 +689,17 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
       disabledBackgroundColor: kBrandBlue.withOpacity(0.4),
       foregroundColor: Colors.white,
       elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 
   void _showSnackbar(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
 // ── 상수 ──────────────────────────────────────────────────────
-const _kSourceOptions = [
-  '인스타그램',
-  '구글 검색',
-  '네이버 검색',
-  '지인 추천',
-  '기타',
-];
+const _kSourceOptions = ['인스타그램', '구글 검색', '네이버 검색', '지인 추천', '기타'];

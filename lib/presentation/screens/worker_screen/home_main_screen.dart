@@ -1,12 +1,3 @@
-// =====================================================================
-// A안 적용: 카드에서 자세히 + 지원하기 버튼 분리
-// 변경 포인트:
-//   1. _buildJobCard → job_actions row: 북마크 | 자세히 | 지원하기
-//   2. _showQuickApplySheet → 바텀시트 없이 바로 지원 API 호출 + 확인 다이얼로그
-//   3. 자세히 버튼 → _openJobDetail 직접 호출
-//   4. 카드 하단 액션 레이아웃 정리
-// =====================================================================
-
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -179,7 +170,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         body: jsonEncode({"bannerId": bannerId}),
       );
     } catch (e) {
-      debugPrint('❌ 배너 클릭 기록 실패: $e');
+      debugPrint('배너 클릭 기록 실패: $e');
     }
   }
 
@@ -195,7 +186,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         if (bannerAds.length > 1) _startBannerAutoSlide();
       }
     } catch (e) {
-      debugPrint('❌ 배너 로드 예외: $e');
+      debugPrint('배너 로드 예외: $e');
     }
   }
 
@@ -233,7 +224,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         });
       }
     } catch (e) {
-      debugPrint('❌ _loadWorkerProfileBrief 오류: $e');
+      debugPrint('_loadWorkerProfileBrief 오류: $e');
     }
   }
 
@@ -249,7 +240,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     if (!Platform.isAndroid) return;
     final settings = await FirebaseMessaging.instance.requestPermission();
     if (settings.authorizationStatus == AuthorizationStatus.denied) {
-      debugPrint('❌ 알림 권한 거부됨');
+      debugPrint('알림 권한 거부됨');
     }
   }
 
@@ -270,7 +261,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         }),
       );
     } catch (e) {
-      debugPrint('❌ 토큰 전송 실패: $e');
+      debugPrint('토큰 전송 실패: $e');
     }
   }
 
@@ -331,7 +322,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         await prefs.setDouble('currentLongitude', finalLng);
       }
     } catch (e) {
-      debugPrint('❌ 위치 오류: $e');
+      debugPrint('위치 오류: $e');
       if (mounted)
         setState(() {
           currentLatitude = 0.0;
@@ -394,7 +385,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         setState(() => bookmarkedJobIds = ids.toSet().toList());
       }
     } catch (e, st) {
-      debugPrint('❌ loadBookmarks exception: $e\n$st');
+      debugPrint('loadBookmarks exception: $e\n$st');
     }
   }
 
@@ -440,7 +431,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         });
       }
     } catch (e) {
-      debugPrint('❌ 네트워크 오류: $e');
+      debugPrint('네트워크 오류: $e');
     }
   }
 
@@ -455,7 +446,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         body: jsonEncode({'userId': userId, 'lat': lat, 'lng': lng}),
       );
     } catch (e) {
-      debugPrint('❌ 위치 저장 예외: $e');
+      debugPrint('위치 저장 예외: $e');
     }
   }
 
@@ -515,7 +506,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
       await _loadBookmarks();
     } catch (e, st) {
-      debugPrint('❌ toggle exception: $e\n$st');
+      debugPrint('toggle exception: $e\n$st');
       await _loadBookmarks();
     }
   }
@@ -542,7 +533,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         });
       }
     } catch (e) {
-      debugPrint('❌ 네트워크 오류: $e');
+      debugPrint('네트워크 오류: $e');
     }
   }
 
@@ -588,7 +579,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             }
           }
         } catch (e) {
-          debugPrint('⚠️ AI 매칭 로드 실패 (무시): $e');
+          debugPrint('AI 매칭 로드 실패 (무시): $e');
         }
       }
 
@@ -669,7 +660,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         _itemsToShow = 10;
       });
     } catch (e) {
-      debugPrint('❌ _loadJobs 오류: $e');
+      debugPrint('_loadJobs 오류: $e');
     } finally {
       if (req == _jobsReqSeq) _isLoadingJobs = false;
     }
@@ -822,8 +813,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           child: Container(
             margin: const EdgeInsets.only(top: 40),
             decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              color: AppColors.bgCard,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(AppRadius.xxl),
+              ),
             ),
             child: StatefulBuilder(
               builder: (context, setModalState) {
@@ -838,8 +831,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                         height: 4,
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          borderRadius: BorderRadius.circular(999),
+                          color: AppColors.border,
+                          borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
                       ),
                       Row(
@@ -859,8 +852,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFE7F0FF),
-                                borderRadius: BorderRadius.circular(999),
+                                color: AppColors.primaryLight,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.full,
+                                ),
                               ),
                               child: Text(
                                 '${tempCategory == "전체" ? "모든 업종" : tempCategory} · '
@@ -869,7 +864,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 11,
-                                  color: Color(0xFF3B8AFF),
+                                  color: AppColors.primary,
                                 ),
                               ),
                             ),
@@ -885,7 +880,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                               '초기화',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Colors.grey,
+                                color: AppColors.textTertiary,
                               ),
                             ),
                           ),
@@ -911,11 +906,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                   vertical: 4,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: Colors.grey[50],
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: Colors.grey.shade200,
+                                  color: AppColors.bgMuted,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.md,
                                   ),
+                                  border: Border.all(color: AppColors.border),
                                 ),
                                 child: DropdownButton<String>(
                                   value: tempSortType,
@@ -1023,8 +1018,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                     tempCategory = '전체';
                                   }),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.grey[800],
-                                side: BorderSide(color: Colors.grey.shade300),
+                                foregroundColor: AppColors.textSecondary,
+                                side: const BorderSide(color: AppColors.border),
                               ),
                               child: const Text('초기화'),
                             ),
@@ -1033,7 +1028,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                           Expanded(
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF3B8AFF),
+                                backgroundColor: AppColors.primary,
                                 minimumSize: const Size.fromHeight(44),
                               ),
                               onPressed: () {
@@ -1080,36 +1075,38 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           width: 4,
           height: 4,
           decoration: BoxDecoration(
-            color: const Color(0xFF3B8AFF),
-            borderRadius: BorderRadius.circular(999),
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(AppRadius.full),
           ),
         ),
       ],
     );
   }
 
-  // 카테고리 이모지 맵
-static const _categoryEmoji = {
-  '전체': '🔍',
-
-  '음식점·카페': '🍽',
-  '편의점·마트': '🏪',
-  '물류·배송': '📦',
-  '제조·공장': '🏭',
-  '반도체·전자생산': '💻',
-  '건설·현장': '🏗',
-  '사무·행정': '🖥',
-  '청소·시설관리': '🧹',
-  '서비스·판매': '🛍',
-  '이벤트·행사': '🎪',
-
-  'IT·개발': '👨‍💻',
-  '교육·강의': '📚',
-  '의료·복지': '🏥',
-  '농·축산': '🌾',
-
-  '기타': '💡',
-};
+  static const _categoryIcons = {
+    '전체': Icons.search_rounded,
+    '음식점·카페': Icons.restaurant_outlined,
+    '편의점·마트': Icons.storefront_outlined,
+    '물류·배송': Icons.local_shipping_outlined,
+    '제조·공장': Icons.factory_outlined,
+    '반도체·전자생산': Icons.memory_outlined,
+    '건설·현장': Icons.construction_outlined,
+    '사무·행정': Icons.business_center_outlined,
+    '청소·시설관리': Icons.cleaning_services_outlined,
+    '서비스·판매': Icons.shopping_bag_outlined,
+    '이벤트·행사': Icons.event_outlined,
+    'IT·개발': Icons.code_rounded,
+    '교육·강의': Icons.school_outlined,
+    '의료·복지': Icons.medical_services_outlined,
+    '농·축산': Icons.agriculture_outlined,
+    '기타': Icons.more_horiz_rounded,
+    '제조': Icons.factory_outlined,
+    '물류': Icons.local_shipping_outlined,
+    '서비스': Icons.storefront_outlined,
+    '건설': Icons.construction_outlined,
+    '사무': Icons.business_center_outlined,
+    '청소': Icons.cleaning_services_outlined,
+  };
 
   Widget _buildCategoryChipInSheet({
     required String label,
@@ -1118,40 +1115,34 @@ static const _categoryEmoji = {
     required ValueChanged<String> onChanged,
   }) {
     final selected = groupValue == value;
-    final emoji = _categoryEmoji[label] ?? '📌';
+    final icon = _categoryIcons[label] ?? Icons.push_pin_outlined;
     return GestureDetector(
       onTap: () => onChanged(value),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF3B8AFF) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: selected ? AppColors.primary : AppColors.bgCard,
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: selected ? const Color(0xFF3B8AFF) : const Color(0xFFE5E8EB),
+            color: selected ? AppColors.primary : AppColors.border,
           ),
-          boxShadow:
-              selected
-                  ? const [
-                    BoxShadow(
-                      color: Color(0x333B8AFF),
-                      blurRadius: 8,
-                      offset: Offset(0, 3),
-                    ),
-                  ]
-                  : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 14)),
+            Icon(
+              icon,
+              size: 15,
+              color: selected ? Colors.white : AppColors.textSecondary,
+            ),
             const SizedBox(width: 5),
             Text(
               label,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : const Color(0xFF374151),
+                color: selected ? Colors.white : AppColors.textSecondary,
               ),
             ),
           ],
@@ -1173,28 +1164,18 @@ static const _categoryEmoji = {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF3B8AFF) : Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          color: selected ? AppColors.primary : AppColors.bgCard,
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
-            color: selected ? const Color(0xFF3B8AFF) : const Color(0xFFE5E8EB),
+            color: selected ? AppColors.primary : AppColors.border,
           ),
-          boxShadow:
-              selected
-                  ? const [
-                    BoxShadow(
-                      color: Color(0x333B8AFF),
-                      blurRadius: 8,
-                      offset: Offset(0, 3),
-                    ),
-                  ]
-                  : null,
         ),
         child: Text(
           label,
           style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : const Color(0xFF374151),
+            color: selected ? Colors.white : AppColors.textSecondary,
           ),
         ),
       ),
@@ -1260,10 +1241,7 @@ static const _categoryEmoji = {
     return 'AI$pct · $reasonText';
   }
 
-  // ─────────────────────────────────────────────
-  // [A안] 지원하기 직접 API 호출 + 채팅방 생성 플로우
-  // job_detail_screen의 _applyToJob과 동일한 플로우
-  // ─────────────────────────────────────────────
+  // 공고 상세와 동일한 지원 및 채팅방 생성 흐름
   Future<void> _applyDirectly(Job job) async {
     final jobIdInt = int.tryParse(job.id.toString());
     if (jobIdInt == null) return;
@@ -1350,13 +1328,13 @@ static const _categoryEmoji = {
                   children: [
                     Icon(Icons.check_circle, color: Colors.white, size: 20),
                     SizedBox(width: 8),
-                    Text('지원 완료! 채팅탭에서 대화를 이어가세요.'),
+                    Text('지원이 완료되었습니다. 채팅 탭에서 대화를 이어가세요.'),
                   ],
                 ),
-                backgroundColor: const Color(0xFF3B8AFF),
+                backgroundColor: AppColors.primary,
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
             );
@@ -1370,13 +1348,13 @@ static const _categoryEmoji = {
                 children: [
                   Icon(Icons.check_circle, color: Colors.white, size: 20),
                   SizedBox(width: 8),
-                  Text('지원 완료! 사장님 연락을 기다려주세요.'),
+                  Text('지원이 완료되었습니다. 담당자 연락을 기다려주세요.'),
                 ],
               ),
-              backgroundColor: const Color(0xFF3B8AFF),
+              backgroundColor: AppColors.primary,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
             ),
           );
@@ -1425,8 +1403,8 @@ static const _categoryEmoji = {
             margin: const EdgeInsets.all(12),
             padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              color: AppColors.bgCard,
+              borderRadius: BorderRadius.circular(AppRadius.xl),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -1437,8 +1415,8 @@ static const _categoryEmoji = {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(999),
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(AppRadius.full),
                     ),
                   ),
                 ),
@@ -1448,19 +1426,19 @@ static const _categoryEmoji = {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF3B8AFF).withOpacity(0.08),
+                        color: AppColors.primaryLight,
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.chat_bubble_outline_rounded,
-                        color: Color(0xFF3B8AFF),
+                        color: AppColors.primary,
                         size: 24,
                       ),
                     ),
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Text(
-                        '지원이 완료되었어요!',
+                        '지원이 완료되었습니다',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -1472,11 +1450,11 @@ static const _categoryEmoji = {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  '이 공고에 대한 채팅방이 열렸어요.\n사장님과 바로 대화하면서 급여, 근무 조건,\n위치 등을 한 번 더 확인해보는 걸 추천해요 🙂',
+                  '이 공고에 대한 채팅방이 열렸어요.\n사장님과 바로 대화하면서 급여, 근무 조건,\n위치 등을 한 번 더 확인해보는 걸 추천해요.',
                   style: TextStyle(
                     fontSize: 14,
                     height: 1.5,
-                    color: Color(0xFF444444),
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -1486,24 +1464,24 @@ static const _categoryEmoji = {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE7F0FF),
-                    borderRadius: BorderRadius.circular(999),
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.flash_on_rounded,
+                        Icons.schedule_rounded,
                         size: 16,
-                        color: Color(0xFF3B8AFF),
+                        color: AppColors.primary,
                       ),
                       SizedBox(width: 6),
                       Text(
-                        '빠른 응답일수록 채용 가능성이 커져요',
+                        '지원 후 채팅에서 근무 조건을 확인할 수 있습니다',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF3B8AFF),
+                          color: AppColors.primary,
                         ),
                       ),
                     ],
@@ -1516,15 +1494,18 @@ static const _categoryEmoji = {
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size.fromHeight(46),
-                          side: BorderSide(color: Colors.grey.shade300),
+                          side: const BorderSide(color: AppColors.border),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(AppRadius.full),
                           ),
                         ),
                         onPressed: () => Navigator.of(context).pop(false),
                         child: const Text(
                           '나중에 보기',
-                          style: TextStyle(fontSize: 14, color: Colors.black87),
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
                       ),
                     ),
@@ -1532,10 +1513,10 @@ static const _categoryEmoji = {
                     Expanded(
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF3B8AFF),
+                          backgroundColor: AppColors.primary,
                           minimumSize: const Size.fromHeight(46),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
+                            borderRadius: BorderRadius.circular(AppRadius.full),
                           ),
                           elevation: 0,
                         ),
@@ -1569,19 +1550,13 @@ static const _categoryEmoji = {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF4F6FA),
+        backgroundColor: AppColors.bgPage,
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(72),
           child: Container(
             decoration: const BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Color(0x06000000),
-                  blurRadius: 8,
-                  offset: Offset(0, 2),
-                ),
-              ],
+              color: AppColors.bgCard,
+              boxShadow: AppShadows.card,
             ),
             child: SafeArea(
               bottom: false,
@@ -1597,22 +1572,13 @@ static const _categoryEmoji = {
                         children: [
                           Row(
                             children: [
-                              ShaderMask(
-                                shaderCallback:
-                                    (r) => const LinearGradient(
-                                      colors: [
-                                        Color(0xFF3B8AFF),
-                                        Color(0xFF6EB6FF),
-                                      ],
-                                    ).createShader(r),
-                                child: const Text(
-                                  '알바일주',
-                                  style: TextStyle(
-                                    fontFamily: 'Jalnan2TTF',
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                  ),
+                              const Text(
+                                '알바일주',
+                                style: TextStyle(
+                                  fontFamily: 'Jalnan2TTF',
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.primary,
                                 ),
                               ),
                               const SizedBox(width: 6),
@@ -1622,15 +1588,17 @@ static const _categoryEmoji = {
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFEEF5FF),
-                                  borderRadius: BorderRadius.circular(6),
+                                  color: AppColors.primaryLight,
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.xs,
+                                  ),
                                 ),
                                 child: const Text(
                                   '알바생',
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF3B8AFF),
+                                    color: AppColors.primary,
                                   ),
                                 ),
                               ),
@@ -1643,7 +1611,7 @@ static const _categoryEmoji = {
                                 : '내 근처 단기 알바 $nearbyCount개',
                             style: const TextStyle(
                               fontSize: 11.5,
-                              color: Color(0xFF9CA3AF),
+                              color: AppColors.textTertiary,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -1665,14 +1633,14 @@ static const _categoryEmoji = {
                         decoration: BoxDecoration(
                           color:
                               isAvailableToday
-                                  ? const Color(0xFFECFDF5)
-                                  : const Color(0xFFF2F4F8),
-                          borderRadius: BorderRadius.circular(20),
+                                  ? AppColors.success.withValues(alpha: 0.10)
+                                  : AppColors.bgMuted,
+                          borderRadius: BorderRadius.circular(AppRadius.full),
                           border: Border.all(
                             color:
                                 isAvailableToday
-                                    ? const Color(0xFF10B981)
-                                    : const Color(0xFFE5E8EB),
+                                    ? AppColors.success
+                                    : AppColors.border,
                           ),
                         ),
                         child: Row(
@@ -1686,8 +1654,8 @@ static const _categoryEmoji = {
                                 shape: BoxShape.circle,
                                 color:
                                     isAvailableToday
-                                        ? const Color(0xFF10B981)
-                                        : const Color(0xFFD1D5DB),
+                                        ? AppColors.success
+                                        : AppColors.textDisabled,
                               ),
                             ),
                             const SizedBox(width: 5),
@@ -1698,8 +1666,8 @@ static const _categoryEmoji = {
                                 fontWeight: FontWeight.w700,
                                 color:
                                     isAvailableToday
-                                        ? const Color(0xFF059669)
-                                        : const Color(0xFF9CA3AF),
+                                        ? AppColors.success
+                                        : AppColors.textTertiary,
                               ),
                             ),
                           ],
@@ -1773,7 +1741,7 @@ static const _categoryEmoji = {
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF191F28),
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -1783,8 +1751,8 @@ static const _categoryEmoji = {
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF3B8AFF),
-                            borderRadius: BorderRadius.circular(20),
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(AppRadius.full),
                           ),
                           child: Text(
                             '${filteredJobs.length}',
@@ -1805,7 +1773,7 @@ static const _categoryEmoji = {
                                 ? Icons.view_agenda_outlined
                                 : Icons.view_list_rounded,
                             size: 20,
-                            color: const Color(0xFF9CA3AF),
+                            color: AppColors.textTertiary,
                           ),
                         ),
                       ],
@@ -1854,21 +1822,21 @@ static const _categoryEmoji = {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF4E5),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFFFCC80)),
+        color: AppColors.warningLight,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border.all(color: AppColors.warningBorder),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Icon(Icons.info_outline, size: 16, color: Color(0xFFFB8C00)),
+          const Icon(Icons.info_outline, size: 16, color: AppColors.warning),
           const SizedBox(width: 8),
           const Expanded(
             child: Text(
               '프로필에서 성별을 설정하면 더 잘 맞는 공고를 추천해 드려요.',
               style: TextStyle(
                 fontSize: 12,
-                color: Color(0xFF6D4C41),
+                color: AppColors.warningDark,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -1877,7 +1845,7 @@ static const _categoryEmoji = {
             onTap: _dismissGenderHint,
             child: const Padding(
               padding: EdgeInsets.only(left: 8),
-              child: Icon(Icons.close, size: 16, color: Color(0xFF9E9E9E)),
+              child: Icon(Icons.close, size: 16, color: AppColors.textTertiary),
             ),
           ),
         ],
@@ -1895,15 +1863,9 @@ static const _categoryEmoji = {
               margin: const EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x08000000),
-                    blurRadius: 12,
-                    offset: Offset(0, 2),
-                  ),
-                ],
+                color: AppColors.bgCard,
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                boxShadow: AppShadows.card,
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1990,20 +1952,19 @@ static const _categoryEmoji = {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // 일러스트 대체 — 큰 이모지 + 그라디언트 원
             Container(
               width: 90,
               height: 90,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [Color(0xFFEEF5FF), Color(0xFFDBEAFE)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
+              decoration: const BoxDecoration(
+                color: AppColors.primaryLight,
                 shape: BoxShape.circle,
               ),
               child: const Center(
-                child: Text('🔍', style: TextStyle(fontSize: 36)),
+                child: Icon(
+                  Icons.search_off_rounded,
+                  size: 38,
+                  color: AppColors.primary,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -2013,7 +1974,7 @@ static const _categoryEmoji = {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF191F28),
+                color: AppColors.textPrimary,
                 height: 1.2,
               ),
             ),
@@ -2023,7 +1984,7 @@ static const _categoryEmoji = {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey.shade700,
+                color: AppColors.textSecondary,
                 height: 1.35,
                 fontWeight: FontWeight.w500,
               ),
@@ -2044,10 +2005,10 @@ static const _categoryEmoji = {
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B8AFF),
+                  backgroundColor: AppColors.primary,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                 ),
               ),
@@ -2061,20 +2022,20 @@ static const _categoryEmoji = {
                 icon: const Icon(
                   Icons.settings_rounded,
                   size: 18,
-                  color: Color(0xFF3B8AFF),
+                  color: AppColors.primary,
                 ),
                 label: const Text(
                   '위치 권한 설정',
                   style: TextStyle(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF3B8AFF),
+                    color: AppColors.primary,
                   ),
                 ),
                 style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Color(0xFF3B8AFF), width: 1.2),
+                  side: const BorderSide(color: AppColors.primary, width: 1.2),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                 ),
               ),
@@ -2089,16 +2050,10 @@ static const _categoryEmoji = {
     return Container(
       height: 46,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 10,
-            offset: Offset(0, 2),
-          ),
-        ],
-        border: Border.all(color: const Color(0xFFEEF1F5)),
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.card,
+        border: Border.all(color: AppColors.borderSub),
       ),
       child: TextField(
         onChanged: (value) {
@@ -2109,7 +2064,7 @@ static const _categoryEmoji = {
           hintText: '공고 제목, 업종, 지역으로 검색',
           hintStyle: const TextStyle(
             fontSize: 14,
-            color: Color(0xFFB0B7C3),
+            color: AppColors.textTertiary,
             fontWeight: FontWeight.w400,
           ),
           prefixIcon: const Padding(
@@ -2117,7 +2072,7 @@ static const _categoryEmoji = {
             child: Icon(
               Icons.search_rounded,
               size: 20,
-              color: Color(0xFFB0B7C3),
+              color: AppColors.textTertiary,
             ),
           ),
           prefixIconConstraints: const BoxConstraints(
@@ -2133,7 +2088,7 @@ static const _categoryEmoji = {
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
         ),
-        style: const TextStyle(fontSize: 14, color: Color(0xFF191F28)),
+        style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
       ),
     );
   }
@@ -2159,9 +2114,9 @@ static const _categoryEmoji = {
                   builder:
                       (_, scrollCtrl) => Container(
                         decoration: const BoxDecoration(
-                          color: Colors.white,
+                          color: AppColors.bgCard,
                           borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(20),
+                            top: Radius.circular(AppRadius.xl),
                           ),
                         ),
                         child: Column(
@@ -2172,8 +2127,10 @@ static const _categoryEmoji = {
                               width: 40,
                               height: 4,
                               decoration: BoxDecoration(
-                                color: Colors.grey.shade300,
-                                borderRadius: BorderRadius.circular(2),
+                                color: AppColors.border,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.full,
+                                ),
                               ),
                             ),
                             Padding(
@@ -2184,8 +2141,8 @@ static const _categoryEmoji = {
                                   Row(
                                     children: [
                                       const Icon(
-                                        Icons.auto_awesome,
-                                        color: Color(0xFF6366F1),
+                                        Icons.search_rounded,
+                                        color: AppColors.primary,
                                         size: 18,
                                       ),
                                       const SizedBox(width: 6),
@@ -2207,7 +2164,7 @@ static const _categoryEmoji = {
                                     '말하듯이 검색하세요',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Color(0xFF8B95A1),
+                                      color: AppColors.textSecondary,
                                     ),
                                   ),
                                   const SizedBox(height: 12),
@@ -2234,24 +2191,22 @@ static const _categoryEmoji = {
                                                         vertical: 5,
                                                       ),
                                                   decoration: BoxDecoration(
-                                                    color: const Color(
-                                                      0xFFF5F3FF,
-                                                    ),
+                                                    color:
+                                                        AppColors.primaryLight,
                                                     borderRadius:
                                                         BorderRadius.circular(
-                                                          20,
+                                                          AppRadius.full,
                                                         ),
                                                     border: Border.all(
-                                                      color: const Color(
-                                                        0xFF6366F1,
-                                                      ).withOpacity(0.3),
+                                                      color:
+                                                          AppColors.primaryMid,
                                                     ),
                                                   ),
                                                   child: Text(
                                                     ex,
                                                     style: const TextStyle(
                                                       fontSize: 12,
-                                                      color: Color(0xFF6366F1),
+                                                      color: AppColors.primary,
                                                       fontWeight:
                                                           FontWeight.w600,
                                                     ),
@@ -2273,20 +2228,24 @@ static const _categoryEmoji = {
                                             hintText: '예) 내일 오전 강남 카페 알바',
                                             hintStyle: const TextStyle(
                                               fontSize: 14,
-                                              color: Color(0xFFBCC0C8),
+                                              color: AppColors.textTertiary,
                                             ),
                                             border: OutlineInputBorder(
                                               borderRadius:
-                                                  BorderRadius.circular(12),
+                                                  BorderRadius.circular(
+                                                    AppRadius.md,
+                                                  ),
                                               borderSide: const BorderSide(
-                                                color: Color(0xFFE5E8EB),
+                                                color: AppColors.border,
                                               ),
                                             ),
                                             focusedBorder: OutlineInputBorder(
                                               borderRadius:
-                                                  BorderRadius.circular(12),
+                                                  BorderRadius.circular(
+                                                    AppRadius.md,
+                                                  ),
                                               borderSide: const BorderSide(
-                                                color: Color(0xFF6366F1),
+                                                color: AppColors.primary,
                                               ),
                                             ),
                                             contentPadding:
@@ -2366,9 +2325,7 @@ static const _categoryEmoji = {
                                                   }
                                                 },
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(
-                                            0xFF6366F1,
-                                          ),
+                                          backgroundColor: AppColors.primary,
                                           foregroundColor: Colors.white,
                                           shape: RoundedRectangleBorder(
                                             borderRadius: BorderRadius.circular(
@@ -2419,9 +2376,9 @@ static const _categoryEmoji = {
                                       : results.isEmpty
                                       ? const Center(
                                         child: Text(
-                                          '위에서 자연어로 검색해보세요 🔍',
+                                          '위에서 자연어로 검색해보세요.',
                                           style: TextStyle(
-                                            color: Color(0xFF8B95A1),
+                                            color: AppColors.textSecondary,
                                             fontSize: 14,
                                           ),
                                         ),
@@ -2503,19 +2460,19 @@ static const _categoryEmoji = {
     if (km <= 5.0) return '동네 생활권 거리 (도보 30분 / 차로 10분)';
     if (km <= 10.0) return '퇴근 후도 무난한 거리 (차로 15~20분)';
     if (km <= 20.0) return '주말 알바 당일치기 거리 (차로 30분대)';
-    return '마음먹으면 충분히 가는 거리 (차로 1시간 내외)';
+    return '원거리 이동이 필요한 범위 (차로 1시간 내외)';
   }
 
   Widget _buildDistanceSlider() {
     if (!_distanceExpanded) {
       return InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         onTap: () => setState(() => _distanceExpanded = true),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
             color: AppColors.bgCard,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(color: AppColors.border),
           ),
           child: Row(
@@ -2575,7 +2532,7 @@ static const _categoryEmoji = {
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF3B8AFF),
+                color: AppColors.primary,
               ),
             ),
           ],
@@ -2597,15 +2554,15 @@ static const _categoryEmoji = {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            color: const Color(0xFFE7F0FF),
-            borderRadius: BorderRadius.circular(10),
+            color: AppColors.primaryLight,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: Row(
             children: [
               const Icon(
                 Icons.place_rounded,
                 size: 18,
-                color: Color(0xFF3B8AFF),
+                color: AppColors.primary,
               ),
               const SizedBox(width: 6),
               Expanded(
@@ -2614,7 +2571,7 @@ static const _categoryEmoji = {
                   style: const TextStyle(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1E2A3A),
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -2639,10 +2596,6 @@ static const _categoryEmoji = {
     );
   }
 
-  // ─────────────────────────────────────────────
-  // [A안] 핵심 변경: 카드 하단 액션 버튼
-  // 북마크 | 자세히(아웃라인) | 지원하기(채워진)
-  // ─────────────────────────────────────────────
   Widget _buildJobCard(Job job) {
     final payInt = int.tryParse(job.pay.replaceAll(_reNonDigit, '')) ?? 0;
     final formattedPay = NumberFormat('#,###').format(payInt);
@@ -2678,20 +2631,20 @@ static const _categoryEmoji = {
 
     final List<Widget> opBadges = [];
     if (job.jobType == 'long')
-      opBadges.add(_buildBadge('장기', color: const Color(0xFF7C3AED)));
-    if (isNew) opBadges.add(_buildBadge('신규', color: const Color(0xFFEF4444)));
+      opBadges.add(_buildBadge('장기', color: AppColors.badgeLong));
+    if (isNew) opBadges.add(_buildBadge('신규', color: AppColors.badgeNew));
     if (isUrgent)
-      opBadges.add(_buildBadge('마감임박', color: const Color(0xFFF97316)));
+      opBadges.add(_buildBadge('마감임박', color: AppColors.badgeUrgent));
     if (job.payType == '월급')
-      opBadges.add(_buildBadge('월급', color: const Color(0xFF0369A1)));
+      opBadges.add(_buildBadge('월급', color: AppColors.badgeMonthly));
     else if (job.payType == '일급')
-      opBadges.add(_buildBadge('일급', color: const Color(0xFF185FA5)));
+      opBadges.add(_buildBadge('일급', color: AppColors.badgeDaily));
     else if (job.payType == '주급')
-      opBadges.add(_buildBadge('주급', color: const Color(0xFF534AB7)));
+      opBadges.add(_buildBadge('주급', color: AppColors.badgeWeekly));
     if (job.isSameDayPay == true)
-      opBadges.add(_buildBadge('당일지급', color: const Color(0xFF0F6E56)));
+      opBadges.add(_buildBadge('당일지급', color: AppColors.badgeSameDay));
     else if (job.isCertifiedCompany == true)
-      opBadges.add(_buildBadge('안심기업', color: const Color(0xFF3B6D11)));
+      opBadges.add(_buildBadge('안심기업', color: AppColors.badgeSafe));
 
     final displayBadges = opBadges.take(2).toList();
     final aiSummary = _buildAiSummary(job);
@@ -2699,20 +2652,9 @@ static const _categoryEmoji = {
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x08000000),
-            blurRadius: 12,
-            offset: Offset(0, 2),
-          ),
-          BoxShadow(
-            color: Color(0x05000000),
-            blurRadius: 4,
-            offset: Offset(0, 1),
-          ),
-        ],
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.card,
       ),
       child: Stack(
         children: [
@@ -2725,10 +2667,10 @@ static const _categoryEmoji = {
               child: Container(
                 height: 3,
                 decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Color(0xFF3B8AFF), Color(0xFF6EB6FF)],
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(AppRadius.lg),
                   ),
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
                 ),
               ),
             ),
@@ -2749,7 +2691,7 @@ static const _categoryEmoji = {
                             const Icon(
                               Icons.location_on_outlined,
                               size: 12,
-                              color: Color(0xFF9CA3AF),
+                              color: AppColors.textTertiary,
                             ),
                             const SizedBox(width: 3),
                             Expanded(
@@ -2759,7 +2701,7 @@ static const _categoryEmoji = {
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
                                   fontSize: 12,
-                                  color: Color(0xFF9CA3AF),
+                                  color: AppColors.textTertiary,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -2796,7 +2738,7 @@ static const _categoryEmoji = {
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF191F28),
+                                color: AppColors.textPrimary,
                                 height: 1.3,
                               ),
                               maxLines: 2,
@@ -2826,7 +2768,7 @@ static const _categoryEmoji = {
                       if (job.imageUrls.isNotEmpty) ...[
                         const SizedBox(width: 12),
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                           child: Builder(
                             builder: (context) {
                               final raw = job.imageUrls.first;
@@ -2858,7 +2800,7 @@ static const _categoryEmoji = {
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,
-                          color: Color(0xFF191F28),
+                          color: AppColors.textPrimary,
                           letterSpacing: -0.5,
                           height: 1.1,
                         ),
@@ -2871,15 +2813,15 @@ static const _categoryEmoji = {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEEF5FF),
-                            borderRadius: BorderRadius.circular(5),
+                            color: AppColors.primaryLight,
+                            borderRadius: BorderRadius.circular(AppRadius.xs),
                           ),
                           child: Text(
                             job.payType,
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF3B8AFF),
+                              color: AppColors.primary,
                             ),
                           ),
                         ),
@@ -2887,7 +2829,7 @@ static const _categoryEmoji = {
                     ],
                   ),
 
-                  // ── AI 매칭 요약 ─────────────────────────────────
+                  // ── 매칭 요약 ────────────────────────────────────
                   if (aiSummary != null) ...[
                     const SizedBox(height: 6),
                     Container(
@@ -2896,16 +2838,16 @@ static const _categoryEmoji = {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEEF5FF),
-                        borderRadius: BorderRadius.circular(6),
+                        color: AppColors.primaryLight,
+                        borderRadius: BorderRadius.circular(AppRadius.xs),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(
-                            Icons.auto_awesome_rounded,
+                            Icons.recommend_outlined,
                             size: 11,
-                            color: Color(0xFF3B8AFF),
+                            color: AppColors.primary,
                           ),
                           const SizedBox(width: 4),
                           Flexible(
@@ -2913,7 +2855,7 @@ static const _categoryEmoji = {
                               aiSummary,
                               style: const TextStyle(
                                 fontSize: 11.5,
-                                color: Color(0xFF3B8AFF),
+                                color: AppColors.primary,
                                 fontWeight: FontWeight.w600,
                               ),
                               maxLines: 1,
@@ -2945,11 +2887,13 @@ static const _categoryEmoji = {
                           child: OutlinedButton(
                             onPressed: () => _openJobDetail(job),
                             style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: Color(0xFFE5E8EB)),
-                              foregroundColor: const Color(0xFF6B7280),
+                              side: const BorderSide(color: AppColors.border),
+                              foregroundColor: AppColors.textSecondary,
                               padding: EdgeInsets.zero,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.sm,
+                                ),
                               ),
                             ),
                             child: const Text(
@@ -2976,13 +2920,15 @@ static const _categoryEmoji = {
                             style: ElevatedButton.styleFrom(
                               backgroundColor:
                                   isApplied
-                                      ? const Color(0xFFF2F4F8)
-                                      : const Color(0xFF3B8AFF),
-                              disabledBackgroundColor: const Color(0xFFF2F4F8),
+                                      ? AppColors.bgMuted
+                                      : AppColors.primary,
+                              disabledBackgroundColor: AppColors.bgMuted,
                               elevation: 0,
                               padding: EdgeInsets.zero,
                               shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.sm,
+                                ),
                               ),
                             ),
                             child:
@@ -3006,7 +2952,7 @@ static const _categoryEmoji = {
                                           size: 15,
                                           color:
                                               isApplied
-                                                  ? const Color(0xFF9CA3AF)
+                                                  ? AppColors.textTertiary
                                                   : Colors.white,
                                         ),
                                         const SizedBox(width: 4),
@@ -3017,7 +2963,7 @@ static const _categoryEmoji = {
                                             fontWeight: FontWeight.w700,
                                             color:
                                                 isApplied
-                                                    ? const Color(0xFF9CA3AF)
+                                                    ? AppColors.textTertiary
                                                     : Colors.white,
                                           ),
                                         ),
@@ -3042,13 +2988,13 @@ static const _categoryEmoji = {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 11, color: const Color(0xFFB0B7C3)),
+        Icon(icon, size: 11, color: AppColors.textTertiary),
         const SizedBox(width: 3),
         Text(
           text,
           style: const TextStyle(
             fontSize: 12,
-            color: Color(0xFFB0B7C3),
+            color: AppColors.textTertiary,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -3072,28 +3018,13 @@ static const _categoryEmoji = {
                 height: 36,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF5B5BF5), Color(0xFF3B8AFF)],
-                    begin: Alignment.centerLeft,
-                    end: Alignment.centerRight,
-                  ),
-                  borderRadius: BorderRadius.circular(10),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color(0x333B8AFF),
-                      blurRadius: 8,
-                      offset: Offset(0, 3),
-                    ),
-                  ],
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.auto_awesome_rounded,
-                      color: Colors.white,
-                      size: 14,
-                    ),
+                    Icon(Icons.search_rounded, color: Colors.white, size: 14),
                     SizedBox(width: 5),
                     Text(
                       'AI 검색',
@@ -3127,12 +3058,12 @@ static const _categoryEmoji = {
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFE5E8EB)),
-                    foregroundColor: const Color(0xFF6B7280),
-                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: AppColors.border),
+                    foregroundColor: AppColors.textSecondary,
+                    backgroundColor: AppColors.bgCard,
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                   ),
                 ),
@@ -3154,12 +3085,12 @@ static const _categoryEmoji = {
                     ),
                   ),
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: Color(0xFFE5E8EB)),
-                    foregroundColor: const Color(0xFF6B7280),
-                    backgroundColor: Colors.white,
+                    side: const BorderSide(color: AppColors.border),
+                    foregroundColor: AppColors.textSecondary,
+                    backgroundColor: AppColors.bgCard,
                     padding: const EdgeInsets.symmetric(horizontal: 10),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                   ),
                 ),
@@ -3171,12 +3102,12 @@ static const _categoryEmoji = {
     );
   }
 
-  Widget _buildBadge(String label, {Color color = const Color(0xFF185FA5)}) {
+  Widget _buildBadge(String label, {Color color = AppColors.badgeDaily}) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: Text(
         label,
@@ -3198,15 +3129,9 @@ static const _categoryEmoji = {
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x07000000),
-            blurRadius: 8,
-            offset: Offset(0, 2),
-          ),
-        ],
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        boxShadow: AppShadows.card,
       ),
       child: Row(
         children: [
@@ -3216,25 +3141,57 @@ static const _categoryEmoji = {
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 14.5,
-                color: Color(0xFF191F28),
+                color: AppColors.textPrimary,
               ),
               overflow: TextOverflow.ellipsis,
             ),
           ),
           const SizedBox(width: 6),
           Flexible(
-            child: Text(
-              '📍 ${job.location}',
-              style: const TextStyle(fontSize: 13),
-              overflow: TextOverflow.ellipsis,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.location_on_outlined,
+                  size: 13,
+                  color: AppColors.textTertiary,
+                ),
+                const SizedBox(width: 2),
+                Flexible(
+                  child: Text(
+                    job.location,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 6),
           Flexible(
-            child: Text(
-              '💰 $formattedPay원',
-              style: const TextStyle(fontSize: 13),
-              overflow: TextOverflow.ellipsis,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.payments_outlined,
+                  size: 13,
+                  color: AppColors.textTertiary,
+                ),
+                const SizedBox(width: 2),
+                Flexible(
+                  child: Text(
+                    '$formattedPay원',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           ),
           IconButton(
@@ -3246,8 +3203,8 @@ static const _categoryEmoji = {
                   : Icons.bookmark_border,
               color:
                   bookmarkedJobIds.contains(job.id)
-                      ? Colors.orange
-                      : Colors.grey,
+                      ? AppColors.warning
+                      : AppColors.textTertiary,
             ),
             onPressed: () => _toggleBookmark(job.id),
           ),
@@ -3280,7 +3237,7 @@ static const _categoryEmoji = {
 
     Widget circleBtn(IconData icon, VoidCallback onTap) => ClipOval(
       child: Material(
-        color: Colors.black.withOpacity(0.22),
+        color: Colors.black.withValues(alpha: 0.22),
         child: InkWell(
           onTap: onTap,
           child: SizedBox(
@@ -3299,7 +3256,7 @@ static const _categoryEmoji = {
         child: Stack(
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: bannerAds.length,
@@ -3312,7 +3269,7 @@ static const _categoryEmoji = {
                   return GestureDetector(
                     onTap: () => _onBannerTap(banner),
                     child: DecoratedBox(
-                      decoration: BoxDecoration(color: Colors.grey.shade200),
+                      decoration: const BoxDecoration(color: AppColors.bgMuted),
                       child: Image.network(
                         '$baseUrl${banner.imageUrl}',
                         fit: BoxFit.contain,
@@ -3328,7 +3285,7 @@ static const _categoryEmoji = {
                             (context, error, stackTrace) => const Center(
                               child: Icon(
                                 Icons.error_outline,
-                                color: Colors.grey,
+                                color: AppColors.textTertiary,
                               ),
                             ),
                       ),
@@ -3369,7 +3326,7 @@ static const _categoryEmoji = {
                 child: Container(
                   padding: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.22),
+                    color: Colors.black.withValues(alpha: 0.22),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.close, size: 14, color: Colors.white),
@@ -3390,11 +3347,11 @@ static const _categoryEmoji = {
                     height: 6,
                     margin: const EdgeInsets.symmetric(horizontal: 3),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
                       color:
                           _currentBannerIndex == i
                               ? Colors.white
-                              : Colors.white.withOpacity(0.45),
+                              : Colors.white.withValues(alpha: 0.45),
                     ),
                   ),
                 ),
@@ -3414,7 +3371,7 @@ static const _categoryEmoji = {
     try {
       await launchUrl(url, mode: LaunchMode.platformDefault);
     } catch (e) {
-      debugPrint('❌ 링크 열기 오류: $e');
+      debugPrint('링크 열기 오류: $e');
       if (mounted)
         ScaffoldMessenger.of(
           context,
@@ -3423,9 +3380,6 @@ static const _categoryEmoji = {
   }
 }
 
-// ─────────────────────────────────────────────
-// [A안] 북마크 버튼 - 별도 위젯으로 분리
-// ─────────────────────────────────────────────
 class _BookmarkButton extends StatelessWidget {
   final bool isBookmarked;
   final VoidCallback onTap;
@@ -3441,15 +3395,18 @@ class _BookmarkButton extends StatelessWidget {
         height: 36,
         decoration: BoxDecoration(
           border: Border.all(
-            color: isBookmarked ? Colors.red.shade200 : Colors.grey.shade300,
+            color:
+                isBookmarked
+                    ? AppColors.badgeNew.withValues(alpha: 0.35)
+                    : AppColors.border,
             width: 1,
           ),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Icon(
           isBookmarked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
           size: 18,
-          color: isBookmarked ? const Color(0xFFEF4444) : Colors.grey.shade400,
+          color: isBookmarked ? AppColors.badgeNew : AppColors.textTertiary,
         ),
       ),
     );
@@ -3528,21 +3485,24 @@ class _AiRecommendStripState extends State<_AiRecommendStrip> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF3B8AFF), Color(0xFF6C63FF)],
-                  ),
-                  borderRadius: BorderRadius.circular(20),
+                  color: AppColors.primaryLight,
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                  border: Border.all(color: AppColors.primaryMid),
                 ),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.auto_awesome, size: 12, color: Colors.white),
+                    Icon(
+                      Icons.recommend_outlined,
+                      size: 12,
+                      color: AppColors.primary,
+                    ),
                     SizedBox(width: 4),
                     Text(
                       'AI 맞춤 추천',
                       style: TextStyle(
                         fontSize: 11,
-                        color: Colors.white,
+                        color: AppColors.primary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -3551,8 +3511,8 @@ class _AiRecommendStripState extends State<_AiRecommendStrip> {
               ),
               const SizedBox(width: 8),
               Text(
-                '나에게 딱 맞는 공고',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                '조건을 반영한 추천 공고',
+                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -3601,19 +3561,10 @@ class _AiRecommendStripState extends State<_AiRecommendStrip> {
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: const Color(0xFFE8EDFF),
-                      width: 1.5,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF3B8AFF).withOpacity(0.06),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    color: AppColors.bgCard,
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    border: Border.all(color: AppColors.border),
+                    boxShadow: AppShadows.card,
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -3635,7 +3586,7 @@ class _AiRecommendStripState extends State<_AiRecommendStrip> {
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF3B8AFF),
+                            color: AppColors.primary,
                           ),
                         ),
                       if (city.isNotEmpty)
@@ -3643,19 +3594,19 @@ class _AiRecommendStripState extends State<_AiRecommendStrip> {
                           city,
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.grey.shade500,
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       if (reasons.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
-                            '✦ ${reasons.first}',
+                            reasons.first,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 10,
-                              color: Colors.grey.shade400,
+                              color: AppColors.textTertiary,
                             ),
                           ),
                         ),

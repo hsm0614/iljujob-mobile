@@ -3,7 +3,6 @@ import 'package:iljujob/data/services/job_service.dart';
 import 'package:iljujob/data/models/job.dart';
 import '../worker_screen/job_detail_screen.dart';
 
-
 class ClientJobListScreen extends StatefulWidget {
   final int clientId;
   const ClientJobListScreen({super.key, required this.clientId});
@@ -35,17 +34,20 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
   void _applyFilterAndSort() {
     final query = _searchController.text.toLowerCase();
 
-    List<Job> filtered = _allJobs
-        .where((job) => job.title.toLowerCase().contains(query))
-        .toList();
+    List<Job> filtered =
+        _allJobs
+            .where((job) => job.title.toLowerCase().contains(query))
+            .toList();
 
-   if (_sortOption == '최신순') {
-  filtered.sort((a, b) =>
-    (b.createdAt ?? DateTime(2000))
-        .compareTo(a.createdAt ?? DateTime(2000)));
-} else if (_sortOption == '급여높은순') {
-  filtered.sort((a, b) => int.parse(b.pay).compareTo(int.parse(a.pay)));
-}
+    if (_sortOption == '최신순') {
+      filtered.sort(
+        (a, b) => (b.createdAt ?? DateTime(2000)).compareTo(
+          a.createdAt ?? DateTime(2000),
+        ),
+      );
+    } else if (_sortOption == '급여높은순') {
+      filtered.sort((a, b) => int.parse(b.pay).compareTo(int.parse(a.pay)));
+    }
 
     setState(() {
       _filteredJobs = filtered;
@@ -130,8 +132,15 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
                     itemBuilder: (context, index) {
                       final job = _filteredJobs[index];
                       return ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        leading: const Icon(Icons.work_outline, size: 32, color: Colors.grey),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        leading: const Icon(
+                          Icons.work_outline,
+                          size: 32,
+                          color: Colors.grey,
+                        ),
                         title: Text(
                           job.title,
                           style: const TextStyle(fontWeight: FontWeight.bold),
@@ -140,9 +149,9 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const SizedBox(height: 4),
-                            Text('📍 ${job.location}'),
-                            Text('🕒 ${job.workingHours}'),
-                            Text('💼 업종: ${job.category}'),
+                            _jobMeta(Icons.place_outlined, job.location),
+                            _jobMeta(Icons.schedule_outlined, job.workingHours),
+                            _jobMeta(Icons.work_outline, '업종: ${job.category}'),
                           ],
                         ),
                         trailing: Column(
@@ -152,11 +161,14 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
                             Text(
                               '${job.pay}원',
                               style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: const Color(0xFF3B8AFF)),
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF3B8AFF),
+                              ),
                             ),
-                            Text('(${job.payType})',
-                                style: const TextStyle(fontSize: 12)),
+                            Text(
+                              '(${job.payType})',
+                              style: const TextStyle(fontSize: 12),
+                            ),
                           ],
                         ),
                         onTap: () {
@@ -175,6 +187,19 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _jobMeta(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(
+        children: [
+          Icon(icon, size: 13, color: Colors.grey),
+          const SizedBox(width: 4),
+          Expanded(child: Text(text)),
+        ],
       ),
     );
   }

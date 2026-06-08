@@ -24,7 +24,7 @@ import 'package:iljujob/presentation/screens/purchase_screen.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:iljujob/config/app_theme.dart';
 
-// ✅ FIX: 서버와 동일한 최저시급으로 통일 (10,030 → 10,320)
+// 2026년 적용 최저시급
 const int minWagePerHour = 10320;
 const int _kMaxImages = 10;
 const int _kNegotiationMinLength = 5;
@@ -42,66 +42,60 @@ const _sub = AppColors.textSecondary;
 //  업종 데이터
 // ════════════════════════════════════════════════════════
 class _CatData {
-  final String emoji, name;
+  final IconData icon;
+  final String name;
   final List<String> sub;
-  const _CatData({required this.emoji, required this.name, required this.sub});
+  const _CatData({required this.icon, required this.name, required this.sub});
 }
 
 const _allCats = [
   _CatData(
-    emoji: '🍽',
+    icon: Icons.restaurant_outlined,
     name: '음식점·카페',
     sub: ['홀서빙', '주방보조', '배달', '카페·바리스타', '패스트푸드', '포장·설거지'],
   ),
   _CatData(
-    emoji: '🏪',
+    icon: Icons.storefront_outlined,
     name: '편의점·마트',
     sub: ['편의점', '슈퍼·마트', '창고정리', '재고관리', '계산원'],
   ),
   _CatData(
-    emoji: '📦',
+    icon: Icons.inventory_2_outlined,
     name: '물류·배송',
     sub: ['배송기사', '상하차', '물류센터', '포장', '택배분류', '입출고'],
   ),
   _CatData(
-    emoji: '🏭',
+    icon: Icons.factory_outlined,
     name: '제조·공장',
     sub: ['생산·조립', '검품·포장', '식품제조', '기계조작', '단순노무'],
   ),
   _CatData(
-  emoji: '💻',
-  name: '반도체·전자생산',
-  sub: [
-    '반도체 생산',
-    '전자부품 조립',
-    'PCB·SMT',
-    '품질검사',
-    '클린룸',
-    '장비오퍼레이터',
-  ],
-),
+    icon: Icons.memory_outlined,
+    name: '반도체·전자생산',
+    sub: ['반도체 생산', '전자부품 조립', 'PCB·SMT', '품질검사', '클린룸', '장비오퍼레이터'],
+  ),
   _CatData(
-    emoji: '🏗',
+    icon: Icons.construction_outlined,
     name: '건설·현장',
     sub: ['건설일용', '인테리어', '청소·마감', '자재운반', '도장·도배'],
   ),
   _CatData(
-    emoji: '🖥',
+    icon: Icons.desktop_windows_outlined,
     name: '사무·행정',
     sub: ['사무보조', '데이터입력', '고객응대', '텔레마케터', '회계보조'],
   ),
   _CatData(
-    emoji: '🧹',
+    icon: Icons.cleaning_services_outlined,
     name: '청소·시설관리',
     sub: ['건물청소', '시설관리', '환경미화', '방역·소독', '세탁·세차'],
   ),
   _CatData(
-    emoji: '🛍',
+    icon: Icons.shopping_bag_outlined,
     name: '서비스·판매',
     sub: ['매장판매', '시식·홍보', '전단지', '주차관리', '안내·접수'],
   ),
   _CatData(
-    emoji: '🎪',
+    icon: Icons.event_outlined,
     name: '이벤트·행사',
     sub: ['행사스태프', '진행보조', '설치·철거', '모델·도우미', '공연스태프'],
   ),
@@ -324,7 +318,7 @@ class _PostJobFormState extends State<PostJobForm>
     if (!_canNext) return;
     FocusManager.instance.primaryFocus?.unfocus();
 
-    // ✅ GA4 퍼널 이벤트
+    // GA4 퍼널 이벤트
     FirebaseAnalytics.instance.logEvent(
       name: 'post_job_step_complete',
       parameters: {
@@ -421,7 +415,7 @@ class _PostJobFormState extends State<PostJobForm>
     return DateTime(n.year, n.month + 1, 1);
   }
 
-  // ✅ FIX: 날짜를 "YYYY-MM-DD" 문자열로 변환 (로컬 날짜 기준)
+  // 날짜를 "YYYY-MM-DD" 문자열로 변환 (로컬 날짜 기준)
   String _dateToYmd(DateTime d) {
     return '${d.year.toString().padLeft(4, '0')}-'
         '${d.month.toString().padLeft(2, '0')}-'
@@ -601,7 +595,7 @@ class _PostJobFormState extends State<PostJobForm>
         _descCtrl.text = _description;
         _isShortTerm = job.weekdays == null;
         _weekdays = job.weekdays?.split(',') ?? [];
-        // ✅ FIX: startDate는 UTC → 로컬로 변환해서 날짜 표기 기준 맞춤
+        // startDate는 UTC → 로컬로 변환해서 날짜 표기 기준 맞춤
         _startDate = job.startDate?.toLocal();
         _endDate = job.endDate?.toLocal() ?? job.startDate?.toLocal();
         _startTime = _parseTime(job.startTime);
@@ -681,13 +675,13 @@ class _PostJobFormState extends State<PostJobForm>
 
     // ── 월급: 209시간 기준 최저 월급여 검증
     if (_payType == '월급') {
-      const int minMonthly = 2096270; // 10,320 × 209h
+      const int minMonthly = 2156880; // 10,320 × 209h
       setState(
         () =>
             _payWarning =
                 _pay >= minMonthly
                     ? null
-                    : '💰 최저임금 미달 · 최소 ${NumberFormat('#,###').format(minMonthly)}원 이상',
+                    : '최저임금 미달 · 최소 ${NumberFormat('#,###').format(minMonthly)}원 이상',
       );
       return;
     }
@@ -707,7 +701,7 @@ class _PostJobFormState extends State<PostJobForm>
             _payWarning =
                 _pay >= req
                     ? null
-                    : '💰 최저시급 미달 · 최소 ${NumberFormat('#,###').format(req)}원 이상',
+                    : '최저시급 미달 · 최소 ${NumberFormat('#,###').format(req)}원 이상',
       );
       return;
     }
@@ -733,7 +727,7 @@ class _PostJobFormState extends State<PostJobForm>
             _payWarning =
                 _pay >= req
                     ? null
-                    : '💰 최저시급 미달 · 최소 ${NumberFormat('#,###').format(req)}원 이상',
+                    : '최저시급 미달 · 최소 ${NumberFormat('#,###').format(req)}원 이상',
       );
       return;
     }
@@ -787,7 +781,7 @@ class _PostJobFormState extends State<PostJobForm>
       return;
     }
 
-    // ✅ FIX: 단기 공고인데 날짜가 없으면 등록 막기
+    // 단기 공고인데 날짜가 없으면 등록 막기
     if (_isShortTerm && _startDate == null) {
       _showError('근무 날짜를 선택해주세요.');
       return;
@@ -802,7 +796,7 @@ class _PostJobFormState extends State<PostJobForm>
               ? (_weekdays.isNotEmpty ? _weekdays.join(',') : null)
               : (isNeg ? '협의: ${_negotiationText.trim()}' : null);
 
-      // ✅ FIX: 날짜를 로컬 기준 YYYY-MM-DD 문자열로 명시적 변환
+      // 날짜를 로컬 기준 YYYY-MM-DD 문자열로 명시적 변환
       //         toIso8601String().split('T')[0] 는 UTC 변환 후 날짜를 잘라
       //         자정 근처에 KST와 UTC 날짜가 달라지는 버그 있음
       final startDateStr =
@@ -812,7 +806,7 @@ class _PostJobFormState extends State<PostJobForm>
       final endDateStr =
           _endDate != null ? _dateToYmd(_endDate!) : startDateStr;
 
-      // ✅ FIX: 예약 공개 시각 — 로컬 시간 기준으로 생성한 뒤 UTC로 변환
+      // 예약 공개 시각 — 로컬 시간 기준으로 생성한 뒤 UTC로 변환
       //         DateTime()은 로컬 기준이므로 toUtc()로 명시 변환
       final publishAtUtcStr =
           publishAt != null ? publishAt!.toUtc().toIso8601String() : null;
@@ -837,7 +831,7 @@ class _PostJobFormState extends State<PostJobForm>
         lat: _lat,
         lng: _lng,
         isScheduled: publishAt != null,
-        publishAt: publishAtUtcStr, // ✅ UTC ISO 문자열
+        publishAt: publishAtUtcStr, // UTC ISO 문자열
         isSameDayPay: _isSameDayPay,
         isPaid: isPaid,
         isAgency: clientId == 1,
@@ -966,9 +960,9 @@ class _PostJobFormState extends State<PostJobForm>
                 context: context,
                 builder:
                     (_) => AlertDialog(
-                      title: const Text('무료 한도 초과'),
+                      title: const Text('기본 등록 한도 초과'),
                       content: Text(
-                        '이번 달 무료 등록은 $_freeLimit개까지예요.\n부스터로 진행할까요?',
+                        '이번 달 기본 등록은 $_freeLimit개까지예요.\n부스터로 진행할까요?',
                       ),
                       actions: [
                         TextButton(
@@ -1003,7 +997,7 @@ class _PostJobFormState extends State<PostJobForm>
       _payCtrl.text = _pay > 0 ? NumberFormat('#,###').format(_pay) : '';
       _description = job['description'] ?? '';
       _descCtrl.text = _description;
-      // ✅ FIX: 날짜 파싱 시 toLocal() 명시
+      // 날짜 파싱 시 toLocal() 명시
       _startDate =
           job['start_date'] != null
               ? DateTime.tryParse(job['start_date'])?.toLocal()
@@ -1195,14 +1189,10 @@ class _PostJobFormState extends State<PostJobForm>
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.auto_awesome_rounded,
-                            size: 14,
-                            color: _blue,
-                          ),
+                          Icon(Icons.edit_note_rounded, size: 14, color: _blue),
                           SizedBox(width: 4),
                           Text(
-                            'AI로 1분 작성',
+                            '작성 도움',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
@@ -1322,14 +1312,14 @@ class _PostJobFormState extends State<PostJobForm>
           ),
           child: const Row(
             children: [
-              Icon(Icons.auto_awesome_rounded, size: 24, color: _blue),
+              Icon(Icons.edit_note_rounded, size: 24, color: _blue),
               SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '처음이면 AI로 빠르게 시작하세요',
+                      '처음이면 작성 도움으로 시작하세요',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
@@ -1338,7 +1328,7 @@ class _PostJobFormState extends State<PostJobForm>
                     ),
                     SizedBox(height: 3),
                     Text(
-                      '질문 몇 개로 제목부터 공고문까지 자동 완성',
+                      '질문 몇 개로 제목부터 공고문까지 빠르게 정리',
                       style: TextStyle(
                         fontSize: 12,
                         color: _label,
@@ -1495,9 +1485,10 @@ class _PostJobFormState extends State<PostJobForm>
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Center(
-                            child: Text(
-                              cat.emoji,
-                              style: const TextStyle(fontSize: 16),
+                            child: Icon(
+                              cat.icon,
+                              size: 18,
+                              color: isSel ? Colors.white : _blue,
                             ),
                           ),
                         ),
@@ -1577,10 +1568,7 @@ class _PostJobFormState extends State<PostJobForm>
                           children: [
                             Row(
                               children: [
-                                Text(
-                                  cat.emoji,
-                                  style: const TextStyle(fontSize: 13),
-                                ),
+                                Icon(cat.icon, size: 14, color: _blue),
                                 const SizedBox(width: 5),
                                 Text(
                                   cat.name,
@@ -1721,12 +1709,10 @@ class _PostJobFormState extends State<PostJobForm>
           ),
           child: Row(
             children: [
-              Text(
-                '📍',
-                style: TextStyle(
-                  fontSize: 22,
-                  color: _location.isNotEmpty ? _blue : _label,
-                ),
+              Icon(
+                Icons.place_outlined,
+                size: 22,
+                color: _location.isNotEmpty ? _blue : _label,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1782,7 +1768,7 @@ class _PostJobFormState extends State<PostJobForm>
         Row(
           children: [
             _ToggleBtn(
-              '⚡ 단기',
+              '단기',
               _isShortTerm,
               () => setState(() {
                 _isShortTerm = true;
@@ -1791,7 +1777,7 @@ class _PostJobFormState extends State<PostJobForm>
             ),
             const SizedBox(width: 10),
             _ToggleBtn(
-              '📋 장기 (1개월+)',
+              '장기 (1개월+)',
               !_isShortTerm,
               () => setState(() {
                 _isShortTerm = false;
@@ -2462,7 +2448,7 @@ class _PostJobFormState extends State<PostJobForm>
           ),
           child: Text(
             _payType == '월급'
-                ? '월 고정급을 입력하세요. 주휴수당 포함 기준 최저 2,096,270원 이상'
+                ? '월 고정급을 입력하세요. 주휴수당 포함 기준 최저 2,156,880원 이상'
                 : _payType == '주급'
                 ? '1주일치 급여를 입력하세요. 시급 × 하루시간 × 주당근무일로 계산됩니다'
                 : '하루치 급여를 입력하세요. 시급 × 근무시간으로 계산됩니다',
@@ -2584,7 +2570,7 @@ class _PostJobFormState extends State<PostJobForm>
               suffixText: '원',
               helperText:
                   _payType == '월급'
-                      ? '최저 2,096,270원 이상 (209h 기준)'
+                      ? '최저 2,156,880원 이상 (209h 기준)'
                       : '최저 ${fmt.format(minWagePerHour)}원/시간 이상',
               filled: true,
               fillColor: _bg,
@@ -2776,7 +2762,7 @@ class _PostJobFormState extends State<PostJobForm>
                         context: context,
                         builder:
                             (_) => AlertDialog(
-                              title: const Text('이번 주 무료 AI 사용 완료'),
+                              title: const Text('이번 주 작성 도움 사용 완료'),
                               content: Text('다음 충전: $_weeklyFreeAiResetText'),
                               actions: [
                                 TextButton(
@@ -2827,7 +2813,7 @@ class _PostJobFormState extends State<PostJobForm>
                         ),
                         SizedBox(width: 10),
                         Text(
-                          'AI가 작성 중이에요…',
+                          '공고문을 정리하고 있어요…',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
@@ -2839,14 +2825,14 @@ class _PostJobFormState extends State<PostJobForm>
                     : Row(
                       children: [
                         const Icon(
-                          Icons.auto_awesome_rounded,
+                          Icons.description_outlined,
                           size: 18,
                           color: Colors.white,
                         ),
                         const SizedBox(width: 10),
                         const Expanded(
                           child: Text(
-                            'AI로 공고문 자동 완성',
+                            '공고문 작성 도움',
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
@@ -3180,7 +3166,7 @@ class _PostJobFormState extends State<PostJobForm>
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      isWeeklyFree ? '무료 AI 1회 사용 완료!' : 'AI 공고문이 적용되었습니다!',
+                      isWeeklyFree ? '이번 주 작성 도움 기능을 사용했습니다.' : '공고문이 적용되었습니다.',
                     ),
                     backgroundColor: Colors.green,
                   ),
@@ -3238,11 +3224,11 @@ class _PostJobTrustStrip extends StatelessWidget {
 
     return Row(
       children: [
-        item(Icons.card_giftcard_rounded, '월 2건 무료'),
+        item(Icons.assignment_outlined, '기본 등록'),
         const SizedBox(width: 7),
-        item(Icons.auto_awesome_rounded, 'AI 작성'),
+        item(Icons.edit_note_rounded, '작성 도움'),
         const SizedBox(width: 7),
-        item(Icons.card_giftcard_rounded, '지원자 없으면 환급'),
+        item(Icons.verified_user_outlined, '이용권 보호'),
       ],
     );
   }
@@ -3452,9 +3438,8 @@ class _LaborNoticeState extends State<_LaborNotice> {
             dense: true,
             leading: const Icon(Icons.gavel_rounded, size: 16, color: _blue),
             title: const Text('최저임금법 준수', style: TextStyle(fontSize: 12)),
-            // ✅ FIX: 최저시급 10,320원으로 업데이트
             subtitle: const Text(
-              '2025년 기준 시급 10,320원 이상',
+              '2026년 기준 시급 10,320원 이상',
               style: TextStyle(fontSize: 11),
             ),
             trailing: const Icon(Icons.chevron_right, size: 14),
@@ -3566,7 +3551,7 @@ class _PublishSheetState extends State<_PublishSheet> {
   bool get _canConfirm =>
       !_isScheduled || (_scheduledDate != null && _scheduledTime != null);
 
-  // ✅ FIX: 예약 시각을 로컬 DateTime으로 명시적 생성
+  // 예약 시각을 로컬 DateTime으로 명시적 생성
   //         → _submit()에서 .toUtc()로 변환되므로 여기선 로컬로 넘겨야 함
   void _exec() {
     DateTime? at;
@@ -3579,7 +3564,7 @@ class _PublishSheetState extends State<_PublishSheet> {
         _scheduledTime!.hour,
         _scheduledTime!.minute,
       );
-      // ✅ 로컬 DateTime임을 명시 — Dart의 DateTime()은 기본 로컬이지만
+      // 로컬 DateTime임을 명시 — Dart의 DateTime()은 기본 로컬이지만
       //    isUtc == false를 확인해서 toUtc() 변환이 올바르게 동작하도록 보장
       assert(!at.isUtc, '예약 시각은 로컬 DateTime이어야 합니다');
     }
@@ -3616,7 +3601,7 @@ class _PublishSheetState extends State<_PublishSheet> {
             ),
             const SizedBox(height: 4),
             const Text(
-              '무료로 먼저 시작하거나, 부스터로 더 빠르게 지원자를 모을 수 있어요',
+              '기본 등록으로 시작하거나, 부스터로 노출 옵션을 추가할 수 있어요',
               style: TextStyle(fontSize: 13, color: _label),
             ),
             const SizedBox(height: 20),
@@ -3899,11 +3884,11 @@ class _PublishSheetState extends State<_PublishSheet> {
 class _CompareConfig {
   static const rows = [
     ['노출 시간', '24시간', '72시간', '1'],
-    ['상단 고정', '❌', '✅ 6시간 상단 노출', '1'],
-    ['AI 매칭 푸시', '❌', '✅ 조건 맞는 알바생\n즉시 알림', '1'],
-    ['이용권 보호', '❌', '✅ 지원자 없으면 자동 환급', '1'],
-    ['지원자 수', '평균 10명', '평균 24명 (2.4배)', '1'],
-    ['지원자 필터', '❌ 직접 확인', '✅ 조건 맞는 분만\n자동 추천', '1'],
+    ['상단 고정', '미포함', '6시간 상단 노출', '1'],
+    ['조건 알림', '미포함', '조건 맞는 알바생\n즉시 알림', '1'],
+    ['이용권 보호', '미포함', '보호 정책 적용', '1'],
+    ['노출 범위', '기본 노출', '확장 노출', '1'],
+    ['지원자 필터', '직접 확인', '조건 맞는 분\n우선 확인', '1'],
   ];
 }
 
@@ -3938,7 +3923,7 @@ class _CompareCard extends StatelessWidget {
             border: Border.all(color: _blue.withOpacity(0.25)),
           ),
           child: const Text(
-            '부스터 공고는 무료 대비 평균 2.4배 더 많은 지원자가 모여요',
+            '부스터 공고는 노출 시간이 길고 상단 고정 옵션이 포함됩니다.',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -3964,7 +3949,7 @@ class _CompareCard extends StatelessWidget {
                       flex: 2,
                       child: Center(
                         child: Text(
-                          '무료',
+                          '기본',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -3986,7 +3971,7 @@ class _CompareCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(99),
                           ),
                           child: const Text(
-                            '부스터 🚀',
+                            '부스터',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -4029,7 +4014,7 @@ class _CompareCard extends StatelessWidget {
                   child: Column(
                     children: [
                       Text(
-                        freeOk ? '무료로 등록' : '무료 한도 소진',
+                        freeOk ? '기본 등록' : '기본 한도 소진',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -4077,7 +4062,7 @@ class _CompareCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       const Text(
-                        '지원자 없으면 자동 환급',
+                        '보호 정책 적용',
                         style: TextStyle(fontSize: 10, color: Colors.white70),
                       ),
                       const SizedBox(height: 2),

@@ -47,7 +47,7 @@ Row(
           // 선택한 공고로 빠른 등록 시트 오픈
           QuickPostSheet.show(context, job: job);
         },
-        icon: const Text('⚡', style: TextStyle(fontSize: 16)),
+        icon: const Icon(Icons.flash_on_rounded, size: 16),
         label: const Text('빠른 등록'),
       ),
     ),
