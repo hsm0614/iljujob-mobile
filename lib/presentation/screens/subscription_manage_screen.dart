@@ -1,7 +1,10 @@
 // lib/screens/payment/subscription_manage_screen.dart
+import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/constants.dart';
@@ -18,11 +21,14 @@ class SubscriptionManageScreen extends StatefulWidget {
 }
 
 class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
-  bool      _loading   = true;
-  bool      _active    = false;
+  bool      _loading          = true;
+  bool      _active           = false;
   String?   _plan;
   DateTime? _expiresAt;
   bool?     _isTrial;
+  int       _instantCredits   = 0;
+  int       _urgentCredits    = 0;
+  bool      _attendanceCare   = false;
 
   @override
   void initState() {
@@ -42,15 +48,39 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
   Future<void> _refreshStatus() async {
     setState(() => _loading = true);
     try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('authToken') ?? '';
+
+      // 기존 구독 상태
       final api = AiApi(baseUrl);
       final s   = await api.fetchMySubscription();
+
+      // Phase 2-4: 크레딧 조회
+      int instant = 0, urgent = 0;
+      bool care = false;
+      try {
+        final resp = await http.get(
+          Uri.parse('$baseUrl/api/subscription/status'),
+          headers: {'Authorization': 'Bearer $token'},
+        );
+        if (resp.statusCode == 200) {
+          final body = jsonDecode(resp.body);
+          instant = (body['credits']?['instant'] as num?)?.toInt() ?? 0;
+          urgent  = (body['credits']?['urgent']  as num?)?.toInt() ?? 0;
+          care    = body['attendanceCare'] == true;
+        }
+      } catch (_) {}
+
       if (!mounted) return;
       setState(() {
-        _active    = s.active;
-        _plan      = s.plan;
-        _expiresAt = s.expiresAt;
-        _isTrial   = s.isTrial; // fetchMySubscription이 isTrial을 내려주는 경우
-        _loading   = false;
+        _active          = s.active;
+        _plan            = s.plan;
+        _expiresAt       = s.expiresAt;
+        _isTrial         = s.isTrial;
+        _instantCredits  = instant;
+        _urgentCredits   = urgent;
+        _attendanceCare  = care;
+        _loading         = false;
       });
     } catch (_) {
       if (!mounted) return;
@@ -190,6 +220,19 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
                       onRestore:   _restore,
                     ),
                   ),
+
+                  // Phase 2-4: 크레딧 잔여
+                  if (_active) ...[
+                    const SizedBox(height: 4),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: _CreditCard(
+                        instantCredits: _instantCredits,
+                        urgentCredits:  _urgentCredits,
+                        attendanceCare: _attendanceCare,
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: 16),
 
@@ -593,6 +636,93 @@ class _SkeletonColumn extends StatelessWidget {
         bar(160), const SizedBox(height: 12),
         bar(120),
       ],
+    );
+  }
+}
+
+// ── Phase 2-4: 잔여 크레딧 카드 ─────────────────────────────
+class _CreditCard extends StatelessWidget {
+  final int  instantCredits;
+  final int  urgentCredits;
+  final bool attendanceCare;
+  const _CreditCard({
+    required this.instantCredits,
+    required this.urgentCredits,
+    required this.attendanceCare,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Icon(Icons.toll_rounded, color: AppColors.primary, size: 18),
+                SizedBox(width: 6),
+                Text('잔여 크레딧', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                _CreditChip(icon: Icons.flash_on_rounded,   label: '즉시 게시', count: instantCredits, color: AppColors.primary),
+                const SizedBox(width: 10),
+                _CreditChip(icon: Icons.emergency_rounded,  label: '긴급 호출', count: urgentCredits,  color: const Color(0xFFEF4444)),
+                const SizedBox(width: 10),
+                _CreditChip(
+                  icon: Icons.verified_user_rounded,
+                  label: '출근 안심',
+                  count: attendanceCare ? 1 : 0,
+                  color: const Color(0xFF22C55E),
+                  showBool: true,
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            const Text('미사용 크레딧은 1개월 이월됩니다.',
+              style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CreditChip extends StatelessWidget {
+  final IconData icon;
+  final String   label;
+  final int      count;
+  final Color    color;
+  final bool     showBool;
+  const _CreditChip({required this.icon, required this.label, required this.count, required this.color, this.showBool = false});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
+        ),
+        child: Column(
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(height: 4),
+            Text(
+              showBool ? (count > 0 ? '포함' : '미포함') : '$count회',
+              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: color),
+            ),
+            Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280))),
+          ],
+        ),
+      ),
     );
   }
 }

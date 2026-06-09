@@ -471,6 +471,25 @@ class JobService {
     }
   }
 
+  // ─── Phase 2: 결제 전 가능 구직자 수 ─────────────────────
+  static Future<int> fetchAvailableWorkersCount({
+    required double lat,
+    required double lng,
+    int radiusM = 3000,
+  }) async {
+    final uri = Uri.parse('$baseUrl/api/job/available-workers-count')
+        .replace(queryParameters: {
+      'lat': lat.toString(),
+      'lng': lng.toString(),
+      'radius': radiusM.toString(),
+    });
+    final resp = await http.get(uri).timeout(const Duration(seconds: 5));
+    if (resp.statusCode == 200) {
+      return (jsonDecode(resp.body)['count'] as num).toInt();
+    }
+    return 0;
+  }
+
   // ─── 내부 헬퍼 (공통 fetch) ───────────────────────────
   static Future<List<Job>> _fetchJobsFromUri(Uri uri) async {
     try {

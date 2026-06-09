@@ -742,6 +742,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     }
 
     int cmpPinned(Job a, Job b) {
+      // 긴급 공고 최상단 (pinnedUntil보다 우선)
+      if (a.isUrgent != b.isUrgent) return a.isUrgent ? -1 : 1;
       final ap = isPinned(a), bp = isPinned(b);
       if (ap != bp) return bp ? 1 : -1;
       if (ap && bp) return b.pinnedUntil!.compareTo(a.pinnedUntil!);
@@ -2630,6 +2632,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         job.endDate!.difference(nowUtc).inDays <= 2;
 
     final List<Widget> opBadges = [];
+    // 긴급 호출 배지 (최우선 표시)
+    if (job.isUrgent)
+      opBadges.add(_buildBadge('⚡ 긴급', color: const Color(0xFFEF4444)));
     if (job.jobType == 'long')
       opBadges.add(_buildBadge('장기', color: AppColors.badgeLong));
     if (isNew) opBadges.add(_buildBadge('신규', color: AppColors.badgeNew));

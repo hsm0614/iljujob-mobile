@@ -150,6 +150,7 @@ class Job {
   final bool isSameDayPay;
   final bool isCertifiedCompany;
   final bool isPaid;
+  final bool isUrgent;
   final bool isAgency;
   final String? agencyPhone;
   final String? agencyEmail;
@@ -195,6 +196,7 @@ final String? welfare;         // 복리후생
     required this.isSameDayPay,
     required this.isCertifiedCompany,
     this.isPaid = true,
+    this.isUrgent = false,
     this.isAgency = false,
     this.agencyPhone,
     this.agencyEmail,
@@ -305,7 +307,8 @@ this.welfare,
       isPaid: json['is_paid'] == null
           ? true
           : (json['is_paid'] == 1 || json['is_paid'] == true),
-          isAgency: json['is_agency'] == 1 ||
+      isUrgent: json['is_urgent'] == 1 || json['is_urgent'] == true,
+      isAgency: json['is_agency'] == 1 ||
           json['is_agency'] == true ||
           json['isAgency'] == 1 ||
           json['isAgency'] == true,
@@ -378,6 +381,7 @@ Job copyWith({
     isSameDayPay: isSameDayPay,
     isCertifiedCompany: isCertifiedCompany,
     isPaid: isPaid,
+    isUrgent: isUrgent,
     isAgency: isAgency,
     agencyPhone: agencyPhone,
     agencyEmail: agencyEmail,

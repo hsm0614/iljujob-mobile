@@ -970,6 +970,16 @@ class _PostJobFormState extends State<PostJobForm>
 
   Future<void> _showPublishSheet() async {
     await _refreshPaidPassCount();
+
+    // 근무지 위치 기반 오늘 가능 구직자 수
+    int availableCount = 0;
+    if (_lat != 0 && _lng != 0) {
+      availableCount = await JobService.fetchAvailableWorkersCount(
+        lat: _lat, lng: _lng,
+      ).catchError((_) => 0);
+    }
+
+    if (!mounted) return;
     showModalBottomSheet(
       context: context,
       useSafeArea: true,
@@ -981,6 +991,7 @@ class _PostJobFormState extends State<PostJobForm>
       builder: (ctx) => _PublishSheet(
         paidPassCount: _paidPassCount,
         passCountLoading: _passCountLoading,
+        availableWorkersCount: availableCount,
         onFreeSubmit: () {
           Navigator.pop(ctx);
           _submit(isPaid: false);
@@ -3538,6 +3549,7 @@ class _LaborNoticeState extends State<_LaborNotice> {
 class _PublishSheet extends StatefulWidget {
   final int paidPassCount;
   final bool passCountLoading;
+  final int availableWorkersCount;
   final VoidCallback onFreeSubmit;
   final void Function(DateTime?) onPaidSubmit;
   final VoidCallback onBuyPass;
@@ -3547,6 +3559,7 @@ class _PublishSheet extends StatefulWidget {
     required this.onFreeSubmit,
     required this.onPaidSubmit,
     required this.onBuyPass,
+    this.availableWorkersCount = 0,
   });
   @override
   State<_PublishSheet> createState() => _PublishSheetState();
@@ -3624,6 +3637,31 @@ class _PublishSheetState extends State<_PublishSheet> {
               '기본 등록으로 시작하거나, 부스터로 노출 옵션을 추가할 수 있어요',
               style: TextStyle(fontSize: 13, color: _label),
             ),
+            if (widget.availableWorkersCount > 0) ...[
+              const SizedBox(height: 14),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFF3E0),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.people_alt_rounded, size: 16, color: Color(0xFFFF9500)),
+                    const SizedBox(width: 6),
+                    Text(
+                      '근무지 반경 3km 내 오늘 가능한 알바생 ${widget.availableWorkersCount}명',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFFF9500),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
             if (!_confirming) ...[
               _CompareCard(
