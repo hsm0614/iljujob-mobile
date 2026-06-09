@@ -847,21 +847,101 @@ class _PostJobFormState extends State<PostJobForm>
       if (!isPaid) await _fetchFreeUsage();
       await _clearDraft();
       final isDelayed = !isPaid && result['status'] == 'reserved';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(isDelayed ? '12시간 후 공고가 노출됩니다.' : '공고 등록이 완료되었습니다.'),
+      final eta = DateTime.now().add(const Duration(hours: 12));
+      final etaStr =
+          '${eta.hour.toString().padLeft(2, '0')}:${eta.minute.toString().padLeft(2, '0')}';
+      await showModalBottomSheet(
+        context: context,
+        isDismissible: false,
+        enableDrag: false,
+        useSafeArea: true,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        backgroundColor: Colors.white,
+        builder: (sheetCtx) => Padding(
+          padding: EdgeInsets.fromLTRB(
+            28, 32, 28,
+            MediaQuery.of(sheetCtx).padding.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 68,
+                height: 68,
+                decoration: BoxDecoration(
+                  color: isDelayed
+                      ? const Color(0xFFFFF3E0)
+                      : const Color(0xFFEEF5FF),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Icon(
+                  isDelayed
+                      ? Icons.schedule_rounded
+                      : Icons.check_circle_rounded,
+                  size: 38,
+                  color: isDelayed ? const Color(0xFFFF9500) : _blue,
+                ),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                '공고 등록 완료!',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  color: _text,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                isDelayed
+                    ? '오늘 $etaStr 이후 구직자에게 노출됩니다.\n그 전까지 언제든 수정할 수 있어요.'
+                    : '지금 바로 구직자에게 노출됩니다.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: _sub,
+                  height: 1.55,
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(sheetCtx);
+                    if (userType == 'client')
+                      Navigator.pushNamedAndRemoveUntil(
+                        context, '/client_main', (_) => false,
+                      );
+                    else
+                      Navigator.pushNamedAndRemoveUntil(
+                        context, '/home', (_) => false,
+                      );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _blue,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: const Text(
+                    '내 공고 보러가기',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       );
-      if (userType == 'client')
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/client_main',
-          (_) => false,
-        );
-      else if (userType == 'worker')
-        Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
-      else
-        _showError('로그인 정보를 확인해주세요.');
     } catch (e) {
       _showError('서버 오류: $e');
     } finally {
@@ -962,18 +1042,18 @@ class _PostJobFormState extends State<PostJobForm>
               final go = await showDialog<bool>(
                 context: context,
                 builder:
-                    (_) => AlertDialog(
+                    (dialogCtx) => AlertDialog(
                       title: const Text('기본 등록 한도 초과'),
                       content: Text(
                         '이번 달 기본 등록은 $_freeLimit개까지예요.\n부스터로 진행할까요?',
                       ),
                       actions: [
                         TextButton(
-                          onPressed: () => Navigator.pop(context, false),
+                          onPressed: () => Navigator.pop(dialogCtx, false),
                           child: const Text('취소'),
                         ),
                         TextButton(
-                          onPressed: () => Navigator.pop(context, true),
+                          onPressed: () => Navigator.pop(dialogCtx, true),
                           child: const Text('부스터로 진행'),
                         ),
                       ],
@@ -3227,9 +3307,9 @@ class _PostJobTrustStrip extends StatelessWidget {
 
     return Row(
       children: [
-        item(Icons.assignment_outlined, '기본 등록'),
+        item(Icons.schedule_outlined, '무료·12h 후 노출'),
         const SizedBox(width: 7),
-        item(Icons.edit_note_rounded, '작성 도움'),
+        item(Icons.flash_on_rounded, '부스터·즉시 노출'),
         const SizedBox(width: 7),
         item(Icons.verified_user_outlined, '이용권 보호'),
       ],
@@ -3886,12 +3966,12 @@ class _PublishSheetState extends State<_PublishSheet> {
 // ════════════════════════════════════════════════════════
 class _CompareConfig {
   static const rows = [
+    ['노출 시점', '12시간 후', '즉시 노출', '1'],
     ['노출 시간', '24시간', '72시간', '1'],
     ['상단 고정', '미포함', '6시간 상단 노출', '1'],
     ['조건 알림', '미포함', '조건 맞는 알바생\n즉시 알림', '1'],
     ['이용권 보호', '미포함', '보호 정책 적용', '1'],
     ['노출 범위', '기본 노출', '확장 노출', '1'],
-    ['지원자 필터', '직접 확인', '조건 맞는 분\n우선 확인', '1'],
   ];
 }
 
@@ -3926,7 +4006,7 @@ class _CompareCard extends StatelessWidget {
             border: Border.all(color: _blue.withOpacity(0.25)),
           ),
           child: const Text(
-            '부스터 공고는 노출 시간이 길고 상단 고정 옵션이 포함됩니다.',
+            '기본 등록은 12시간 후 노출 · 부스터는 즉시 노출 + 상단 고정 포함',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -4034,6 +4114,24 @@ class _CompareCard extends StatelessWidget {
                           color: freeOk ? _label : Colors.red,
                         ),
                       ),
+                      if (freeOk) ...[
+                        const SizedBox(height: 5),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF3E0),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: const Text(
+                            '⏰ 12시간 후 노출',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFFFF9500),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
