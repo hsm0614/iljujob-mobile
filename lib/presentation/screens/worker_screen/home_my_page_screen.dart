@@ -32,6 +32,11 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
   int _settledAmount = 0; // 정산 완료
   int _pendingAmount = 0; // 정산 예정
 
+  // ===== Activity Score =====
+  bool _loadingScore = true;
+  int _totalScore = 0;
+  String _grade = 'NEW';
+
   final _moneyFmt = NumberFormat('#,###');
 
   @override
@@ -44,10 +49,11 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
     // 1) 캐시 먼저 보여주고
     await _loadCachedProfile();
 
-    // 2) 서버로 최신 갱신(프로필 + 정산)
+    // 2) 서버로 최신 갱신(프로필 + 정산 + 활동지수)
     await Future.wait([
       _refreshProfileFromServer(),
       _refreshSettlementSummary(),
+      _refreshActivityScore(),
     ]);
   }
 
@@ -264,6 +270,32 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
 }
 
   // =========================
+  // Activity Score
+  // =========================
+
+  Future<void> _refreshActivityScore() async {
+    if (!mounted) return;
+    setState(() => _loadingScore = true);
+    try {
+      final uid = await _userId();
+      if (uid == null) return;
+      final res = await http
+          .get(Uri.parse('$baseUrl/api/worker/activity-score?workerId=$uid'))
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode == 200 && mounted) {
+        final data = jsonDecode(res.body) as Map<String, dynamic>;
+        setState(() {
+          _totalScore = (data['total_score'] as num?)?.toInt() ?? 0;
+          _grade      = data['grade']?.toString() ?? 'NEW';
+        });
+      }
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _loadingScore = false);
+    }
+  }
+
+  // =========================
   // Navigation
   // =========================
 
@@ -451,6 +483,18 @@ Future<void> _withdrawAccount() async {
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                child: _TrustScoreCard(
+                  loading: _loadingScore,
+                  score: _totalScore,
+                  grade: _grade,
+                  brandBlue: kBrandBlue,
+                ),
+              ),
+            ),
+
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: _SectionCard(
                   title: '내 알바일주 관리',
                   children: [
@@ -1107,4 +1151,107 @@ Widget build(BuildContext context) {
     ),
   );
 }
+}
+
+/* --------------------------- Trust Score Card --------------------------- */
+
+class _TrustScoreCard extends StatelessWidget {
+  final bool loading;
+  final int score;
+  final String grade;
+  final Color brandBlue;
+
+  const _TrustScoreCard({
+    required this.loading,
+    required this.score,
+    required this.grade,
+    required this.brandBlue,
+  });
+
+  Color get _gradeColor {
+    switch (grade) {
+      case 'S': return const Color(0xFFFF6B00);
+      case 'A': return const Color(0xFF3B8AFF);
+      case 'B': return const Color(0xFF10B981);
+      case 'C': return const Color(0xFF6B7280);
+      default:  return const Color(0xFF9CA3AF);
+    }
+  }
+
+  String get _gradeLabel {
+    switch (grade) {
+      case 'S': return '최고 신뢰';
+      case 'A': return '높은 신뢰';
+      case 'B': return '보통';
+      case 'C': return '낮음';
+      default:  return '새로운 알바생';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: const [
+          BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 2)),
+        ],
+      ),
+      child: loading
+          ? const SizedBox(height: 48, child: Center(child: CircularProgressIndicator(strokeWidth: 2)))
+          : Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: _gradeColor.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Center(
+                    child: Text(
+                      grade,
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: _gradeColor,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '내 신뢰도',
+                        style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            '$score점',
+                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF111827)),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '· $_gradeLabel',
+                            style: TextStyle(fontSize: 13, color: _gradeColor, fontWeight: FontWeight.w700),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded, color: Color(0xFFD1D5DB)),
+              ],
+            ),
+    );
+  }
 }

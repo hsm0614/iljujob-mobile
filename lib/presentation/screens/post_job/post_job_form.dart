@@ -811,7 +811,7 @@ class _PostJobFormState extends State<PostJobForm>
       final publishAtUtcStr =
           publishAt != null ? publishAt!.toUtc().toIso8601String() : null;
 
-      await JobService.postJobWithImages(
+      final result = await JobService.postJobWithImages(
         title: _title.trim(),
         category: _category,
         categoryMajor: _majorOf(_category),
@@ -846,9 +846,12 @@ class _PostJobFormState extends State<PostJobForm>
       if (!mounted) return;
       if (!isPaid) await _fetchFreeUsage();
       await _clearDraft();
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('공고 등록이 완료되었습니다.')));
+      final isDelayed = !isPaid && result['status'] == 'reserved';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isDelayed ? '12시간 후 공고가 노출됩니다.' : '공고 등록이 완료되었습니다.'),
+        ),
+      );
       if (userType == 'client')
         Navigator.pushNamedAndRemoveUntil(
           context,

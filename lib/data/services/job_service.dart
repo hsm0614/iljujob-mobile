@@ -165,7 +165,7 @@ class JobService {
   }
 
   // ─── 2. 공고 등록 (이미지 + 요일 + 위치 위경도 포함) ──
-  static Future<void> postJobWithImages({
+  static Future<Map<String, dynamic>> postJobWithImages({
     required String title,
     required String category,
     String? categoryMajor,
@@ -269,6 +269,11 @@ class JobService {
     }
 
     if (kDebugMode) debugPrint('[JobService] 공고 등록 성공: $body');
+    try {
+      return jsonDecode(body) as Map<String, dynamic>;
+    } catch (_) {
+      return {};
+    }
   }
 
   // ─── 3. 공고 상세 조회 (ID로) ─────────────────────────
