@@ -65,6 +65,8 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:iljujob/presentation/screens/worker_calendar_screen.dart';
 import 'package:iljujob/presentation/screens/signup_client_screen/client_welcome_screen.dart';
 import 'package:iljujob/config/app_theme.dart';
+import 'package:iljujob/presentation/screens/subscription_plans_screen.dart';
+import 'package:iljujob/presentation/screens/client_screen/nearby_workers_screen.dart';
 // ============================================================
 // 전역 변수
 // ============================================================
@@ -666,7 +668,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             companyPhone: args['companyPhone'],
           );
         },
-        '/subscribe':            (_) => const SubscribeScreen(),
+        '/subscribe':            (_) => const SubscriptionPlansScreen(),
+        '/nearby-workers': (context) {
+          final args = ModalRoute.of(context)?.settings.arguments;
+          if (args == null || args is! Map<String, dynamic>) {
+            return const Scaffold(body: Center(child: Text('잘못된 접근입니다.')));
+          }
+          return NearbyWorkersScreen(
+            jobId:    args['jobId']    as int,
+            clientId: args['clientId'] as int,
+            jobTitle: args['jobTitle'] as String,
+          );
+        },
         '/subscription/manage':  (_) => const SubscriptionManageScreen(),
         '/job-detail': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;

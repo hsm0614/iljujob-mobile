@@ -1549,6 +1549,18 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         ),
                         onTap: () => Navigator.pop(context, 'recommend'),
                       ),
+                    if (!isClosed && job.isUrgent)
+                      ListTile(
+                        leading: const Icon(
+                          Icons.emergency_rounded,
+                          color: Color(0xFFEF4444),
+                        ),
+                        title: const Text(
+                          '⚡ 긴급 호출 발송',
+                          style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFFEF4444)),
+                        ),
+                        onTap: () => Navigator.pop(context, 'urgent-call'),
+                      ),
                     ListTile(
                       leading: const Icon(
                         Icons.insights,
@@ -1644,6 +1656,21 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           '/post_job',
           arguments: {'isRepost': true, 'existingJob': job},
         );
+        break;
+      case 'urgent-call':
+        final prefs = await SharedPreferences.getInstance();
+        final clientId = prefs.getInt('userId');
+        if (clientId != null) {
+          Navigator.pushNamed(
+            context,
+            '/nearby-workers',
+            arguments: {
+              'jobId':    job.id,
+              'clientId': clientId,
+              'jobTitle': job.title,
+            },
+          );
+        }
         break;
       case 'delete':
         FirebaseAnalytics.instance.logEvent(name: 'client_delete_tap');

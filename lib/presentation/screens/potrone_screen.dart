@@ -8,11 +8,9 @@ class PortonePaymentScreen extends StatefulWidget {
   final String companyName;
   final String companyPhone;
 
-  // ✅ 추가: 할인 적용된 최종 결제 금액 (있으면 이 값으로 결제)
   final int? amount;
-
-  // ✅ 추가: 적용된 쿠폰 코드(서버 검증/로그용)
   final String? couponCode;
+  final String? productName; // 상품명 오버라이드
 
   const PortonePaymentScreen({
     super.key,
@@ -21,6 +19,7 @@ class PortonePaymentScreen extends StatefulWidget {
     required this.companyPhone,
     this.amount,
     this.couponCode,
+    this.productName,
   });
 
   @override
@@ -86,7 +85,7 @@ class _PortonePaymentScreenState extends State<PortonePaymentScreen> {
           data: PaymentData(
             pg: 'nice',
             payMethod: 'card',
-            name: '알바일주 이용권 ${widget.count}회',
+            name: widget.productName ?? '알바일주 이용권 ${widget.count}회',
             merchantUid: merchantUid,
 
             // ✅ 핵심: 결제 금액(할인 적용 가능)
