@@ -180,7 +180,7 @@ class _PostJobFormState extends State<PostJobForm>
   DateTime? publishAt;
   bool _isProUser = false, _isAIGenerating = false, _isSubmitting = false;
   bool _passCountLoading = false, _suspLoaded = false;
-  int _paidPassCount = 0, _freeLimit = 2, _freeRemaining = 2;
+  int _paidPassCount = 0;
   int _weeklyFreeAiRemaining = 0;
   String _weeklyFreeAiResetText = '';
   String? _payWarning;
@@ -295,7 +295,6 @@ class _PostJobFormState extends State<PostJobForm>
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _refreshPaidPassCount(),
     );
-    _fetchFreeUsage();
     _loadSuspension();
     _checkProStatus();
     _loadWeeklyFreeAiQuota();
@@ -410,11 +409,6 @@ class _PostJobFormState extends State<PostJobForm>
       DateFormat('yyyy-MM-dd').format(_weekStart(DateTime.now()));
   DateTime _nextWeekStart() =>
       _weekStart(DateTime.now()).add(const Duration(days: 7));
-  DateTime _nextMonthFirstDay() {
-    final n = DateTime.now();
-    return DateTime(n.year, n.month + 1, 1);
-  }
-
   // 날짜를 "YYYY-MM-DD" 문자열로 변환 (로컬 날짜 기준)
   String _dateToYmd(DateTime d) {
     return '${d.year.toString().padLeft(4, '0')}-'
@@ -484,27 +478,6 @@ class _PostJobFormState extends State<PostJobForm>
     } catch (_) {
       setState(() => _isProUser = false);
     }
-  }
-
-  Future<void> _fetchFreeUsage() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final clientId = prefs.getInt('userId');
-      if (clientId == null) return;
-      final r = await http.get(
-        Uri.parse(
-          '$baseUrl/api/job/free-post-usage?clientId=$clientId&t=${DateTime.now().millisecondsSinceEpoch}',
-        ),
-        headers: {'Cache-Control': 'no-cache'},
-      );
-      if (r.statusCode == 200 && mounted) {
-        final d = jsonDecode(r.body);
-        setState(() {
-          _freeLimit = (d['limit'] ?? 3) as int;
-          _freeRemaining = (d['remaining'] ?? _freeLimit) as int;
-        });
-      }
-    } catch (_) {}
   }
 
   Future<void> _refreshPaidPassCount() async {
@@ -844,7 +817,6 @@ class _PostJobFormState extends State<PostJobForm>
       );
 
       if (!mounted) return;
-      if (!isPaid) await _fetchFreeUsage();
       await _clearDraft();
       final isDelayed = !isPaid && result['status'] == 'reserved';
       final eta = DateTime.now().add(const Duration(hours: 12));
@@ -997,9 +969,7 @@ class _PostJobFormState extends State<PostJobForm>
   }
 
   Future<void> _showPublishSheet() async {
-    await _fetchFreeUsage();
     await _refreshPaidPassCount();
-    final nextReset = DateFormat('M월 d일', 'ko_KR').format(_nextMonthFirstDay());
     showModalBottomSheet(
       context: context,
       useSafeArea: true,
@@ -1008,60 +978,32 @@ class _PostJobFormState extends State<PostJobForm>
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       backgroundColor: Colors.white,
-      builder:
-          (ctx) => _PublishSheet(
-            freeRemaining: _freeRemaining,
-            freeLimit: _freeLimit,
-            nextReset: nextReset,
-            paidPassCount: _paidPassCount,
-            passCountLoading: _passCountLoading,
-            onFreeSubmit: () {
-              Navigator.pop(ctx);
-              _submit(isPaid: false);
-            },
-            onPaidSubmit: (dt) {
-              Navigator.pop(ctx);
-              publishAt = dt;
-              _submit(isPaid: true);
-            },
-            onBuyPass: () async {
-              Navigator.pop(ctx);
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const PurchasePassScreen(fromPostJob: true),
-                ),
-              );
-              await _refreshPaidPassCount();
-              if (result is Map && result['success'] == true && mounted) {
-                _showPublishSheet();
-              }
-            },
-            onExceedFree: () async {
-              Navigator.pop(ctx);
-              final go = await showDialog<bool>(
-                context: context,
-                builder:
-                    (dialogCtx) => AlertDialog(
-                      title: const Text('기본 등록 한도 초과'),
-                      content: Text(
-                        '이번 달 기본 등록은 $_freeLimit개까지예요.\n부스터로 진행할까요?',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogCtx, false),
-                          child: const Text('취소'),
-                        ),
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogCtx, true),
-                          child: const Text('부스터로 진행'),
-                        ),
-                      ],
-                    ),
-              );
-              if (go == true) _showPublishSheet();
-            },
-          ),
+      builder: (ctx) => _PublishSheet(
+        paidPassCount: _paidPassCount,
+        passCountLoading: _passCountLoading,
+        onFreeSubmit: () {
+          Navigator.pop(ctx);
+          _submit(isPaid: false);
+        },
+        onPaidSubmit: (dt) {
+          Navigator.pop(ctx);
+          publishAt = dt;
+          _submit(isPaid: true);
+        },
+        onBuyPass: () async {
+          Navigator.pop(ctx);
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const PurchasePassScreen(fromPostJob: true),
+            ),
+          );
+          await _refreshPaidPassCount();
+          if (result is Map && result['success'] == true && mounted) {
+            _showPublishSheet();
+          }
+        },
+      ),
     );
   }
 
@@ -3594,22 +3536,17 @@ class _LaborNoticeState extends State<_LaborNotice> {
 //  등록 방식 바텀시트
 // ════════════════════════════════════════════════════════
 class _PublishSheet extends StatefulWidget {
-  final int freeRemaining, freeLimit, paidPassCount;
-  final String nextReset;
+  final int paidPassCount;
   final bool passCountLoading;
   final VoidCallback onFreeSubmit;
   final void Function(DateTime?) onPaidSubmit;
-  final VoidCallback onBuyPass, onExceedFree;
+  final VoidCallback onBuyPass;
   const _PublishSheet({
-    required this.freeRemaining,
-    required this.freeLimit,
-    required this.nextReset,
     required this.paidPassCount,
     required this.passCountLoading,
     required this.onFreeSubmit,
     required this.onPaidSubmit,
     required this.onBuyPass,
-    required this.onExceedFree,
   });
   @override
   State<_PublishSheet> createState() => _PublishSheetState();
@@ -3622,7 +3559,7 @@ class _PublishSheetState extends State<_PublishSheet> {
   TimeOfDay? _scheduledTime;
   bool _confirming = false;
 
-  bool get _freeOk => widget.freeRemaining > 0;
+  bool get _freeOk => true;
   bool get _paidOk => widget.paidPassCount > 0;
 
   String get _scheduledLabel {
@@ -3690,18 +3627,9 @@ class _PublishSheetState extends State<_PublishSheet> {
             const SizedBox(height: 20),
             if (!_confirming) ...[
               _CompareCard(
-                freeRemaining: widget.freeRemaining,
-                freeLimit: widget.freeLimit,
-                nextReset: widget.nextReset,
                 paidPassCount: widget.paidPassCount,
                 passCountLoading: widget.passCountLoading,
-                onFreeTap: () {
-                  if (!_freeOk) {
-                    widget.onExceedFree();
-                    return;
-                  }
-                  widget.onFreeSubmit();
-                },
+                onFreeTap: widget.onFreeSubmit,
                 onPaidTap: () {
                   if (!_paidOk) {
                     widget.onBuyPass();
@@ -3976,14 +3904,10 @@ class _CompareConfig {
 }
 
 class _CompareCard extends StatelessWidget {
-  final int freeRemaining, freeLimit, paidPassCount;
-  final String nextReset;
+  final int paidPassCount;
   final bool passCountLoading;
   final VoidCallback onFreeTap, onPaidTap;
   const _CompareCard({
-    required this.freeRemaining,
-    required this.freeLimit,
-    required this.nextReset,
     required this.paidPassCount,
     required this.passCountLoading,
     required this.onFreeTap,
@@ -3992,7 +3916,7 @@ class _CompareCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final freeOk = freeRemaining > 0;
+    const freeOk = true;
     final paidOk = paidPassCount > 0;
     return Column(
       children: [
@@ -4090,48 +4014,34 @@ class _CompareCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: freeOk ? _border : Colors.red.shade200,
-                    ),
+                    border: Border.all(color: _border),
                   ),
-                  child: Column(
+                  child: const Column(
                     children: [
                       Text(
-                        freeOk ? '기본 등록' : '기본 한도 소진',
+                        '무료 등록',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
-                          color: freeOk ? _text : Colors.red,
+                          color: _text,
                         ),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        freeOk
-                            ? '$freeRemaining/$freeLimit 남음'
-                            : '$nextReset 충전',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: freeOk ? _label : Colors.red,
-                        ),
-                      ),
-                      if (freeOk) ...[
-                        const SizedBox(height: 5),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFFFF3E0),
-                            borderRadius: BorderRadius.circular(99),
-                          ),
-                          child: const Text(
-                            '⏰ 12시간 후 노출',
+                      SizedBox(height: 5),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.schedule_rounded, size: 11, color: Color(0xFFFF9500)),
+                          SizedBox(width: 3),
+                          Text(
+                            '12시간 후 노출',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: Color(0xFFFF9500),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ],
                   ),
                 ),
