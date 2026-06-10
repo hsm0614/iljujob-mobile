@@ -213,7 +213,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, i) {
         final w = _workers[i];
-        final id = w['id'] as int;
+        final id = w['id'] is int ? w['id'] as int : int.parse('${w['id']}');
         final score = (w['activity_score'] as num?)?.toInt() ?? 0;
         final distance = w['distance_m'] as num?;
         final grade = _gradeLabel(score);
