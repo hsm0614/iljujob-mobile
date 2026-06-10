@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
+import '../worker_screen/worker_profile_screen.dart';
 
 class NearbyWorkersScreen extends StatefulWidget {
   final int jobId;
@@ -134,6 +135,21 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
     return '${(meters / 1000).toStringAsFixed(1)}km';
   }
 
+  String _maskName(String? name) {
+    if (name == null || name.isEmpty) return '알바생';
+    if (name.length == 1) return name;
+    if (name.length == 2) return '${name[0]}*';
+    final mid = name.length ~/ 2;
+    return name.replaceRange(mid, mid + 1, '*');
+  }
+
+  void _openProfile(int workerId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => WorkerProfileScreen(workerId: workerId)),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -189,7 +205,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                 const Icon(Icons.people_alt_rounded, size: 14, color: Color(0xFFFF9500)),
                 const SizedBox(width: 4),
                 Text(
-                  '반경 3km 내 ${_workers.length}명',
+                  '반경 5km 내 ${_workers.length}명',
                   style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFF9500)),
                 ),
               ],
@@ -226,6 +242,9 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
         final gradeColor = _gradeColor(score);
         final isSelected = _selected.contains(id);
         final canSelect = _selected.length < _maxSelect || isSelected;
+
+        final rawName = w['name']?.toString();
+        final maskedName = _maskName(rawName);
 
         return GestureDetector(
           onTap: () {
@@ -292,7 +311,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '알바생 #$id',
+                        maskedName,
                         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827)),
                       ),
                       const SizedBox(height: 2),
@@ -321,24 +340,37 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                   ),
                 ),
 
-                // 신뢰도 배지
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: BoxDecoration(
-                    color: gradeColor.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: gradeColor.withValues(alpha: 0.3)),
-                  ),
-                  child: Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(grade, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: gradeColor)),
-                        Text('$score', style: TextStyle(fontSize: 9, color: gradeColor)),
-                      ],
+                // 신뢰도 배지 + 프로필 버튼
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: gradeColor.withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: gradeColor.withValues(alpha: 0.3)),
+                      ),
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(grade, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: gradeColor)),
+                            Text('$score', style: TextStyle(fontSize: 9, color: gradeColor)),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+                    const SizedBox(height: 4),
+                    GestureDetector(
+                      onTap: () => _openProfile(id),
+                      child: const Text(
+                        '프로필',
+                        style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

@@ -135,8 +135,9 @@ class ChatRoomController extends ChangeNotifier {
     if (status == 'cancelled' ||
         status == 'canceled' ||
         status == 'blocked' ||
-        status == 'expired')
+        status == 'expired') {
       return false;
+    }
     if (userType == 'client' && status == 'pending') return false;
     return true;
   }
@@ -706,7 +707,8 @@ class ChatRoomController extends ChangeNotifier {
       final items = await WorkConfirmationService.getByRoom(chatRoomId);
       if (_disposed) return;
       workConfirmations = items;
-      if (items.any((c) => c.status != 'proposed' && c.status != 'cancelled')) {
+      // completed 상태일 때만 채팅을 "완료" 처리 — accepted/scheduled는 여전히 진행 중
+      if (items.any((c) => c.status == 'completed')) {
         isConfirmed = true;
       }
       _notify();
@@ -731,8 +733,7 @@ class ChatRoomController extends ChangeNotifier {
       await fetchWorkConfirmations();
       await fetchWorkState();
       if (nextStatus == 'accepted') {
-        isConfirmed = true;
-        onShowSnackbar?.call('출근 확정 제안을 수락했어요.');
+        onShowSnackbar?.call('출근 확정 제안을 수락했어요. 근무일에 꼭 출근해주세요!');
       } else if (nextStatus == 'cancelled') {
         onShowSnackbar?.call('출근 확정 제안을 거절했어요.');
       }
