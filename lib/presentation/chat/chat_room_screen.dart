@@ -22,7 +22,6 @@ import 'chat_room_job_panel.dart';
 import 'message_list.dart';
 import 'chat_room_helpers.dart';
 import 'work_confirmation_card.dart';
-import '../../data/services/work_confirmation_service.dart';
 
 class ChatRoomScreen extends StatelessWidget {
   final int chatRoomId;
@@ -169,9 +168,11 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
 
   Future<void> _showProposeSheet(ChatRoomController ctrl) async {
     final jobSource = ctrl.jobSource;
-    final jobId     = int.tryParse(jobSource['id']?.toString() ?? jobSource['job_id']?.toString() ?? '');
-    final workerId  = ctrl.roomWorkerId;
-    final clientId  = ctrl.roomClientId;
+    final jobId = int.tryParse(
+      jobSource['id']?.toString() ?? jobSource['job_id']?.toString() ?? '',
+    );
+    final workerId = ctrl.roomWorkerId;
+    final clientId = ctrl.roomClientId;
     if (jobId == null || workerId == null || clientId == null) {
       ctrl.onShowSnackbar?.call('채팅방 정보를 불러오는 중입니다.');
       return;
@@ -184,16 +185,17 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       backgroundColor: Colors.white,
-      builder: (_) => ProposeWorkConfirmationSheet(
-        chatRoomId: ctrl.chatRoomId,
-        jobId: jobId,
-        workerId: workerId,
-        clientId: clientId,
-        jobLocation: jobSource['location']?.toString(),
-        onPropose: (_) {
-          ctrl.onShowSnackbar?.call('출근 확정 제안을 보냈어요!');
-        },
-      ),
+      builder:
+          (_) => ProposeWorkConfirmationSheet(
+            chatRoomId: ctrl.chatRoomId,
+            jobId: jobId,
+            workerId: workerId,
+            clientId: clientId,
+            jobLocation: jobSource['location']?.toString(),
+            onPropose: (_) {
+              ctrl.onShowSnackbar?.call('출근 확정 제안을 보냈어요!');
+            },
+          ),
     );
   }
 
@@ -899,6 +901,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     isCompleted: ctrl.isCompleted,
                     status: ctrl.status,
                     onConfirmHire: ctrl.confirmHire,
+                    onProposeWorkConfirmation: () => _showProposeSheet(ctrl),
                     onMarkCompleted: ctrl.markJobAsCompleted,
                     workLoading: ctrl.workLoading,
                     hasWorkSession: ctrl.hasWorkSession,
@@ -956,7 +959,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                   onProfileTap: onProfileTap,
                                   targetThumbnailUrl: targetThumbnailUrl,
                                   targetName: targetName,
-                                  showHireNudge: ctrl.shouldShowHireNudge(),
+                                  showHireNudge: false,
                                   onConfirmHire: ctrl.confirmHire,
                                   inputOverlayHeight: 112,
                                 ),
@@ -1031,14 +1034,6 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                   ),
                                 ),
                                 const SizedBox(width: 4),
-                                // 출근 확정 제안 (사장님 전용)
-                                if (ctrl.isClient && ctrl.inputEnabled)
-                                  IconButton(
-                                    icon: const Icon(Icons.calendar_month_rounded),
-                                    color: AppColors.primary,
-                                    tooltip: '출근 확정 제안',
-                                    onPressed: () => _showProposeSheet(ctrl),
-                                  ),
                                 IconButton(
                                   icon: const Icon(Icons.image),
                                   color:
