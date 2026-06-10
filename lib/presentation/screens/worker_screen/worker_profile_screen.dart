@@ -23,6 +23,9 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
   /// 이력서 열람 동의 여부 (워커가 프로필에서 체크한 값)
   bool canViewResume = false;
 
+  int _activityScore = 0;
+  String _activityGrade = 'NEW';
+
   @override
   void initState() {
     super.initState();
@@ -73,13 +76,21 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
 
       if (profileRes.statusCode == 200) {
         final profileData = jsonDecode(profileRes.body);
-
-        // 워커가 이력서 열람에 동의했는지
         final resumeAllowed = _parseResumeFlag(profileData['resume_consent']);
-
         setState(() {
           profile = profileData;
           canViewResume = resumeAllowed;
+        });
+      }
+
+      final scoreRes = await http.get(
+        Uri.parse('$baseUrl/api/worker/activity-score?workerId=$workerId'),
+      );
+      if (scoreRes.statusCode == 200) {
+        final scoreData = jsonDecode(scoreRes.body);
+        setState(() {
+          _activityScore = (scoreData['total_score'] ?? 0) as int;
+          _activityGrade = (scoreData['grade'] ?? 'NEW').toString();
         });
       }
 
@@ -420,16 +431,16 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
           const Color(0xFF3B8AFF),
         ),
         _squareStatCard(
-          Icons.thumb_up_alt_rounded,
-          '매너점수',
-          '${profile!['manner_point'] ?? 80}',
-          const Color(0xFF059669),
+          Icons.thermostat_rounded,
+          '알바온도',
+          '$_activityScore점',
+          const Color(0xFFFF6B35),
         ),
         _squareStatCard(
-          Icons.warning_amber_rounded,
-          '패널티',
-          '${profile!['penalty_point'] ?? 0}',
-          const Color(0xFFE55353),
+          Icons.military_tech_rounded,
+          '활동등급',
+          _activityGrade,
+          const Color(0xFF7C3AED),
         ),
       ],
     );
@@ -450,7 +461,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
         border: Border.all(color: const Color(0xFFE5E8EB)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.03),
+            color: Colors.black.withValues(alpha:.03),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -464,7 +475,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: const Color(0xFF1675F4).withOpacity(.12),
+              color: const Color(0xFF1675F4).withValues(alpha:.12),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: const Color(0xFF1675F4)),
@@ -510,9 +521,9 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
       height: boxSize,
       child: Container(
         decoration: BoxDecoration(
-          color: color.withOpacity(0.06),
+          color: color.withValues(alpha: 0.06),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         padding: const EdgeInsets.all(6),
         child: Column(

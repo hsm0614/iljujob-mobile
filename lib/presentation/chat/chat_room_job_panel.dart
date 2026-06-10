@@ -164,30 +164,33 @@ class ChatRoomJobPanel extends StatelessWidget {
             ],
           ),
 
-          // 정보 pills
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
+          // 공고 정보 바
+          Container(
+            margin: const EdgeInsets.only(top: 6, bottom: 2),
+            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFF),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFFE8EEFF)),
+            ),
             child: Row(
               children: [
-                _Pill(
+                _InfoBit(
                   icon: Icons.monetization_on_rounded,
                   text: _payText,
-                  bg: AppColors.primary.withValues(alpha: 0.08),
-                  fg: const Color(0xFF1E40AF),
+                  color: AppColors.primary,
                 ),
-                const SizedBox(width: 6),
-                _Pill(
-                  icon: Icons.calendar_today,
+                _InfoDivider(),
+                _InfoBit(
+                  icon: Icons.calendar_today_outlined,
                   text: _periodText,
-                  bg: AppColors.primaryLight,
-                  fg: AppColors.primaryDark,
+                  color: const Color(0xFF374151),
                 ),
-                const SizedBox(width: 6),
-                _Pill(
-                  icon: Icons.access_time_rounded,
+                _InfoDivider(),
+                _InfoBit(
+                  icon: Icons.access_time_outlined,
                   text: _timeText,
-                  bg: AppColors.primaryLight,
-                  fg: AppColors.primaryDark,
+                  color: const Color(0xFF374151),
                 ),
               ],
             ),
@@ -621,6 +624,47 @@ class _WorkerActions extends StatelessWidget {
       child: Row(children: actions),
     );
   }
+}
+
+// ─────────────────────────────────────────────
+// 공고 정보 바 위젯
+// ─────────────────────────────────────────────
+
+class _InfoBit extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  final Color color;
+  const _InfoBit({required this.icon, required this.text, required this.color});
+
+  @override
+  Widget build(BuildContext context) => Expanded(
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 12, color: color),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                text,
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+          ],
+        ),
+      );
+}
+
+class _InfoDivider extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) => Container(
+        width: 1,
+        height: 14,
+        color: const Color(0xFFD1D5DB),
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+      );
 }
 
 // ─────────────────────────────────────────────
