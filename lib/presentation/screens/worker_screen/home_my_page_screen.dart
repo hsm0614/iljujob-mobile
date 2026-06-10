@@ -36,6 +36,10 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
   bool _loadingScore = true;
   int _totalScore = 0;
   String _grade = 'NEW';
+  int _loginScore = 0;
+  int _attendanceScore = 0;
+  int _responseScore = 0;
+  int _cancelPenalty = 0;
 
   final _moneyFmt = NumberFormat('#,###');
 
@@ -285,8 +289,12 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
       if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         setState(() {
-          _totalScore = (data['total_score'] as num?)?.toInt() ?? 0;
-          _grade      = data['grade']?.toString() ?? 'NEW';
+          _totalScore      = (data['total_score']         as num?)?.toInt() ?? 0;
+          _grade           = data['grade']?.toString() ?? 'NEW';
+          _loginScore      = (data['login_score']         as num?)?.toInt() ?? 0;
+          _attendanceScore = (data['attendance_score']    as num?)?.toInt() ?? 0;
+          _responseScore   = (data['response_rate_score'] as num?)?.toInt() ?? 0;
+          _cancelPenalty   = (data['cancel_penalty']      as num?)?.toInt() ?? 0;
         });
       }
     } catch (_) {
@@ -488,6 +496,10 @@ Future<void> _withdrawAccount() async {
                   score: _totalScore,
                   grade: _grade,
                   brandBlue: kBrandBlue,
+                  loginScore: _loginScore,
+                  attendanceScore: _attendanceScore,
+                  responseScore: _responseScore,
+                  cancelPenalty: _cancelPenalty,
                 ),
               ),
             ),
@@ -638,7 +650,7 @@ class _WorkerProfileCard extends StatelessWidget {
         color: Colors.white.withOpacity(0.97),
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
-          BoxShadow(color: const Color(0x1F000000), blurRadius: 10, offset: Offset(0, 6)),
+          BoxShadow(color: Color(0x1F000000), blurRadius: 10, offset: Offset(0, 6)),
         ],
       ),
       padding: const EdgeInsets.all(12),
@@ -654,7 +666,7 @@ class _WorkerProfileCard extends StatelessWidget {
                     backgroundColor: const Color(0xFFEAF2FF),
                     backgroundImage: (!loading && hasImg) ? NetworkImage(imageUrl) : null,
                     child: (loading || !hasImg)
-                        ? const Icon(Icons.account_circle, size: 30, color: const Color(0xFF6B7280))
+                        ? const Icon(Icons.account_circle, size: 30, color: Color(0xFF6B7280))
                         : null,
                   ),
                   Positioned(
@@ -671,7 +683,7 @@ class _WorkerProfileCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: brandBlue,
                             shape: BoxShape.circle,
-                            boxShadow: const [BoxShadow(color: const Color(0xFFBCC0CB), blurRadius: 4)],
+                            boxShadow: const [BoxShadow(color: Color(0xFFBCC0CB), blurRadius: 4)],
                           ),
                           child: const Icon(Icons.edit_rounded, size: 16, color: Colors.white),
                         ),
@@ -691,7 +703,7 @@ class _WorkerProfileCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: const Color(0xFF191F28),
+                        color: Color(0xFF191F28),
                         fontWeight: FontWeight.w900,
                         fontSize: 15,
                       ),
@@ -900,7 +912,7 @@ class _SectionCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
-          BoxShadow(color: const Color(0x1F000000), blurRadius: 8, offset: Offset(0, 4)),
+          BoxShadow(color: Color(0x1F000000), blurRadius: 8, offset: Offset(0, 4)),
         ],
       ),
       child: Column(
@@ -923,7 +935,7 @@ class _SectionCard extends StatelessWidget {
                   style: const TextStyle(
                     fontFamily: 'Jalnan2TTF',
                     fontSize: 16,
-                    color: const Color(0xFF191F28),
+                    color: Color(0xFF191F28),
                   ),
                 ),
               ],
@@ -974,7 +986,7 @@ class _ItemTile extends StatelessWidget {
             label,
             style: labelStyle ?? t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
-          trailing: trailing ?? const Icon(Icons.arrow_forward_ios, size: 16, color: const Color(0xFF9CA3AF)),
+          trailing: trailing ?? const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF9CA3AF)),
           contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           dense: true,
           minLeadingWidth: 0,
@@ -1051,10 +1063,10 @@ class _BizInfoItem extends StatelessWidget {
         children: [
           SizedBox(
             width: 110,
-            child: Text(k, style: const TextStyle(color: const Color(0xFF6B7280), fontSize: 13.5)),
+            child: Text(k, style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13.5)),
           ),
           Expanded(
-            child: Text(v, style: const TextStyle(fontSize: 13.5, color: const Color(0xFF191F28))),
+            child: Text(v, style: const TextStyle(fontSize: 13.5, color: Color(0xFF191F28))),
           ),
         ],
       ),
@@ -1160,12 +1172,20 @@ class _TrustScoreCard extends StatelessWidget {
   final int score;
   final String grade;
   final Color brandBlue;
+  final int loginScore;
+  final int attendanceScore;
+  final int responseScore;
+  final int cancelPenalty;
 
   const _TrustScoreCard({
     required this.loading,
     required this.score,
     required this.grade,
     required this.brandBlue,
+    this.loginScore = 0,
+    this.attendanceScore = 0,
+    this.responseScore = 0,
+    this.cancelPenalty = 0,
   });
 
   Color get _gradeColor {
@@ -1188,10 +1208,28 @@ class _TrustScoreCard extends StatelessWidget {
     }
   }
 
+  // Returns (nextGrade, minScore, maxScore) for progress bar
+  (String, int, int) get _nextGradeInfo {
+    switch (grade) {
+      case 'NEW': return ('C', 0, 30);
+      case 'C':   return ('B', 30, 60);
+      case 'B':   return ('A', 60, 100);
+      case 'A':   return ('S', 100, 150);
+      default:    return ('S', 150, 150); // already S
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final (nextGrade, minScore, maxScore) = _nextGradeInfo;
+    final isMax = grade == 'S';
+    final progress = isMax
+        ? 1.0
+        : ((score - minScore) / (maxScore - minScore)).clamp(0.0, 1.0);
+    final remaining = isMax ? 0 : (maxScore - score).clamp(0, 999);
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+      padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
@@ -1200,58 +1238,183 @@ class _TrustScoreCard extends StatelessWidget {
         ],
       ),
       child: loading
-          ? const SizedBox(height: 48, child: Center(child: CircularProgressIndicator(strokeWidth: 2)))
-          : Row(
+          ? const SizedBox(height: 72, child: Center(child: CircularProgressIndicator(strokeWidth: 2)))
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: _gradeColor.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Center(
-                    child: Text(
-                      grade,
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        color: _gradeColor,
+                // ─── 헤더: 등급 아이콘 + 점수 ───────────────────────────
+                Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: _gradeColor.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Center(
+                        child: Text(
+                          grade,
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: _gradeColor),
+                        ),
                       ),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '내 신뢰도',
+                            style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.baseline,
+                            textBaseline: TextBaseline.alphabetic,
+                            children: [
+                              Text(
+                                '$score점',
+                                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF111827)),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                '· $_gradeLabel',
+                                style: TextStyle(fontSize: 13, color: _gradeColor, fontWeight: FontWeight.w700),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 14),
-                Expanded(
+                const SizedBox(height: 14),
+
+                // ─── 진행 바 ─────────────────────────────────────────────
+                Row(
+                  children: [
+                    Text(
+                      grade,
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _gradeColor),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          minHeight: 6,
+                          backgroundColor: const Color(0xFFE5E7EB),
+                          valueColor: AlwaysStoppedAnimation<Color>(_gradeColor),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      nextGrade,
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF9CA3AF)),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  isMax
+                      ? '최고 등급이에요! 계속 유지해주세요 🎉'
+                      : '$nextGrade 등급까지 $remaining점 남았어요',
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+                ),
+                const SizedBox(height: 14),
+
+                // ─── 세부 점수 칩 ────────────────────────────────────────
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    _ScoreChip(label: '접속', score: loginScore, icon: Icons.wifi_rounded, color: const Color(0xFF3B8AFF)),
+                    _ScoreChip(label: '출근', score: attendanceScore, icon: Icons.check_circle_outline_rounded, color: const Color(0xFF10B981)),
+                    _ScoreChip(label: '수락', score: responseScore, icon: Icons.thumb_up_alt_outlined, color: const Color(0xFF8B5CF6)),
+                    if (cancelPenalty > 0)
+                      _ScoreChip(label: '페널티', score: -cancelPenalty, icon: Icons.warning_amber_rounded, color: const Color(0xFFE55353)),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // ─── 점수 올리는 방법 ────────────────────────────────────
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF4F6FA),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        '내 신뢰도',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w600),
+                        '이렇게 올릴 수 있어요',
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF374151)),
                       ),
-                      const SizedBox(height: 2),
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          Text(
-                            '$score점',
-                            style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF111827)),
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            '· $_gradeLabel',
-                            style: TextStyle(fontSize: 13, color: _gradeColor, fontWeight: FontWeight.w700),
-                          ),
-                        ],
-                      ),
+                      const SizedBox(height: 6),
+                      _TipRow(icon: Icons.phone_iphone_rounded, text: '앱에 자주 접속하기 (+3점/일)'),
+                      _TipRow(icon: Icons.event_available_rounded, text: '제안 수락 후 출근 완료하기 (+10점)'),
+                      _TipRow(icon: Icons.reply_rounded, text: '제안 카드에 빠르게 응답하기 (+5점)'),
                     ],
                   ),
                 ),
-                const Icon(Icons.chevron_right_rounded, color: Color(0xFFD1D5DB)),
               ],
             ),
+    );
+  }
+}
+
+class _ScoreChip extends StatelessWidget {
+  final String label;
+  final int score;
+  final IconData icon;
+  final Color color;
+
+  const _ScoreChip({required this.label, required this.score, required this.icon, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final isNeg = score < 0;
+    final bg = isNeg ? const Color(0xFFE55353).withValues(alpha: 0.08) : color.withValues(alpha: 0.08);
+    final fg = isNeg ? const Color(0xFFE55353) : color;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: fg),
+          const SizedBox(width: 4),
+          Text(
+            '$label ${isNeg ? score : '+$score'}',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: fg),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TipRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _TipRow({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Row(
+        children: [
+          Icon(icon, size: 13, color: const Color(0xFF3B8AFF)),
+          const SizedBox(width: 6),
+          Text(text, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+        ],
+      ),
     );
   }
 }

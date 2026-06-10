@@ -37,10 +37,12 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
 
   String _formatPhone(String phone) {
     final p = phone.replaceAll(RegExp(r'\D'), '');
-    if (p.length == 11)
+    if (p.length == 11) {
       return '${p.substring(0, 3)}-${p.substring(3, 7)}-${p.substring(7)}';
-    if (p.length == 10)
+    }
+    if (p.length == 10) {
       return '${p.substring(0, 3)}-${p.substring(3, 6)}-${p.substring(6)}';
+    }
     return phone;
   }
 
@@ -299,6 +301,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
                             companyName: companyName,
                             managerName: managerName,
                             phoneNumber: _formatPhone(phoneNumber),
+                            subscriptionPlan: _sub?.active == true ? (_sub!.plan ?? '') : null,
                             onEdit:
                                 () => Navigator.pushNamed(
                                   context,
@@ -476,6 +479,7 @@ class _ProfileCard extends StatelessWidget {
   final String companyName;
   final String managerName;
   final String phoneNumber;
+  final String? subscriptionPlan;
   final VoidCallback onEdit;
 
   const _ProfileCard({
@@ -486,6 +490,7 @@ class _ProfileCard extends StatelessWidget {
     required this.managerName,
     required this.phoneNumber,
     required this.onEdit,
+    this.subscriptionPlan,
   });
 
   @override
@@ -494,11 +499,11 @@ class _ProfileCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.95),
+        color: Colors.white.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
           BoxShadow(
-            color: const Color(0x1F000000),
+            color: Color(0x1F000000),
             blurRadius: 10,
             offset: Offset(0, 6),
           ),
@@ -519,7 +524,7 @@ class _ProfileCard extends StatelessWidget {
                         : const Icon(
                           Icons.business,
                           size: 30,
-                          color: const Color(0xFF6B7280),
+                          color: Color(0xFF6B7280),
                         ),
               ),
               Positioned(
@@ -538,7 +543,7 @@ class _ProfileCard extends StatelessWidget {
                         shape: BoxShape.circle,
                         boxShadow: const [
                           BoxShadow(
-                            color: const Color(0xFFBCC0CB),
+                            color: Color(0xFFBCC0CB),
                             blurRadius: 4,
                           ),
                         ],
@@ -559,7 +564,31 @@ class _ProfileCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _TwoLine(title: companyName, subtitle: '회사명'),
+                Row(
+                  children: [
+                    Expanded(child: _TwoLine(title: companyName, subtitle: '회사명')),
+                    if (subscriptionPlan != null && subscriptionPlan!.isNotEmpty)
+                      Container(
+                        margin: const EdgeInsets.only(left: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFF9500),
+                          borderRadius: BorderRadius.circular(99),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.workspace_premium_rounded, size: 11, color: Colors.white),
+                            const SizedBox(width: 3),
+                            Text(
+                              subscriptionPlan!.toUpperCase(),
+                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
                 const SizedBox(height: 6),
                 Wrap(
                   spacing: 8,
@@ -643,14 +672,14 @@ class _TwoLine extends StatelessWidget {
           TextSpan(
             text: '$subtitle: ',
             style: const TextStyle(
-              color: const Color(0xFF6B7280),
+              color: Color(0xFF6B7280),
               fontSize: 13,
             ),
           ),
           TextSpan(
             text: title,
             style: const TextStyle(
-              color: const Color(0xFF191F28),
+              color: Color(0xFF191F28),
               fontWeight: FontWeight.w700,
               fontSize: 15,
             ),
@@ -736,7 +765,7 @@ class _SectionCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
           BoxShadow(
-            color: const Color(0x1F000000),
+            color: Color(0x1F000000),
             blurRadius: 8,
             offset: Offset(0, 4),
           ),
@@ -762,7 +791,7 @@ class _SectionCard extends StatelessWidget {
                   style: const TextStyle(
                     fontFamily: 'Jalnan2TTF',
                     fontSize: 16,
-                    color: const Color(0xFF191F28),
+                    color: Color(0xFF191F28),
                   ),
                 ),
               ],
@@ -820,7 +849,7 @@ class _ItemTile extends StatelessWidget {
               const Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
-                color: const Color(0xFF9CA3AF),
+                color: Color(0xFF9CA3AF),
               ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 6,
@@ -887,7 +916,7 @@ class _BizInfoItem extends StatelessWidget {
             child: Text(
               k,
               style: const TextStyle(
-                color: const Color(0xFF6B7280),
+                color: Color(0xFF6B7280),
                 fontSize: 13.5,
               ),
             ),
@@ -897,7 +926,7 @@ class _BizInfoItem extends StatelessWidget {
               v,
               style: const TextStyle(
                 fontSize: 13.5,
-                color: const Color(0xFF191F28),
+                color: Color(0xFF191F28),
               ),
             ),
           ),
@@ -978,7 +1007,7 @@ class _ConfirmSheet extends StatelessWidget {
             width: 52,
             height: 52,
             decoration: BoxDecoration(
-              color: confirmColor.withOpacity(0.10),
+              color: confirmColor.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(icon, color: confirmColor),

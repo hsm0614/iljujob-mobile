@@ -106,6 +106,8 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
       _purchaseCompleter == null || _purchaseCompleter!.isCompleted;
 
   // ─── 잔여 조회 ───────────────────────────────────────
+  int _nearbyCount = 0;
+
   Future<void> _refreshPassCount() async {
     final prefs    = await SharedPreferences.getInstance();
     final clientId = prefs.getInt('userId') ?? 0;
@@ -117,6 +119,22 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
         remainingUrgent  = int.tryParse('${data['urgent']  ?? 0}') ?? 0;
       });
     }
+    _fetchNearbyCount();
+  }
+
+  Future<void> _fetchNearbyCount() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('authToken') ?? '';
+      final res = await http.get(
+        Uri.parse('$baseUrl/api/direct-message/nearby-count'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (res.statusCode == 200 && mounted) {
+        final data = jsonDecode(res.body);
+        setState(() => _nearbyCount = (data['count'] as num?)?.toInt() ?? 0);
+      }
+    } catch (_) {}
   }
 
   Future<void> _loadUserInfo() async {
@@ -509,7 +527,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('즉시 게시 이용권 ${count}회',
+                        Text('즉시 게시 이용권 $count회',
                             style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: _text)),
                         const SizedBox(height: 3),
                         Text('회당 ${formatPrice((price / count).floor())}',
@@ -626,15 +644,28 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     child: const Center(child: Text('⚡', style: TextStyle(fontSize: 26))),
                   ),
                   const SizedBox(width: 14),
-                  const Expanded(
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('긴급 호출 이용권 1회',
+                        const Text('긴급 호출 이용권 1회',
                             style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: _text)),
-                        SizedBox(height: 3),
-                        Text('반경 3km 알바생 최대 10명 발송',
+                        const SizedBox(height: 3),
+                        const Text('반경 5km 알바생 최대 10명 발송',
                             style: TextStyle(fontSize: 13, color: _label)),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.people_alt_rounded, size: 13, color: _green),
+                            const SizedBox(width: 4),
+                            Text(
+                              _nearbyCount > 0
+                                  ? '현재 호출 가능한 알바생 $_nearbyCount명'
+                                  : '근처 알바생 수 조회 중...',
+                              style: const TextStyle(fontSize: 12, color: _green, fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
