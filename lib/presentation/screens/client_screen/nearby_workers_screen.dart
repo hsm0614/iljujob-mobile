@@ -4,7 +4,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../config/app_theme.dart';
@@ -217,6 +216,9 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
         final score = (w['activity_score'] is num)
             ? (w['activity_score'] as num).toInt()
             : int.tryParse('${w['activity_score'] ?? 0}') ?? 0;
+        final mannerPoint = (w['manner_point'] is num)
+            ? (w['manner_point'] as num).toInt()
+            : int.tryParse('${w['manner_point'] ?? 0}') ?? 0;
         final distance = (w['distance_m'] is num)
             ? w['distance_m'] as num
             : double.tryParse('${w['distance_m'] ?? ''}');
@@ -284,7 +286,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                 ),
                 const SizedBox(width: 12),
 
-                // 이름 + 거리
+                // 이름 + 거리 + 매너점수
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -293,11 +295,28 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                         '알바생 #$id',
                         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827)),
                       ),
-                      if (distance != null)
-                        Text(
-                          _distanceLabel(distance),
-                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                        ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          if (distance != null) ...[
+                            const Icon(Icons.location_on_rounded, size: 11, color: AppColors.textTertiary),
+                            const SizedBox(width: 2),
+                            Text(
+                              _distanceLabel(distance),
+                              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          if (mannerPoint > 0) ...[
+                            const Icon(Icons.thumb_up_rounded, size: 11, color: Color(0xFF059669)),
+                            const SizedBox(width: 2),
+                            Text(
+                              '매너 $mannerPoint',
+                              style: const TextStyle(fontSize: 11, color: Color(0xFF059669)),
+                            ),
+                          ],
+                        ],
+                      ),
                     ],
                   ),
                 ),

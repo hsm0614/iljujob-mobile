@@ -20,6 +20,7 @@ class AppColors {
 
   // ── Neutral ────────────────────────────────────────────
   static const bgPage    = Color(0xFFF4F6FA); // 페이지 배경 (카드 그림자 살리는 연회색)
+  static const bgBase    = Color(0xFFF4F6FA); // bgPage 별칭
   static const bgCard    = Color(0xFFFFFFFF); // 카드/시트 배경
   static const bgMuted   = Color(0xFFF2F4F8); // 비활성 배경 (칩, 인풋)
 
@@ -43,14 +44,14 @@ class AppColors {
   static const info    = Color(0xFF3B8AFF);
 
   // ── Badge 색상 ─────────────────────────────────────────
-  static const badgeNew     = Color(0xFFEF4444); // 신규
-  static const badgeUrgent  = Color(0xFFF97316); // 마감임박
-  static const badgeLong    = Color(0xFF7C3AED); // 장기
-  static const badgeMonthly = Color(0xFF0369A1); // 월급
-  static const badgeDaily   = Color(0xFF185FA5); // 일급
-  static const badgeWeekly  = Color(0xFF534AB7); // 주급
-  static const badgeSameDay = Color(0xFF0F6E56); // 당일지급
-  static const badgeSafe    = Color(0xFF3B6D11); // 안심기업
+  static const badgeNew     = Color(0xFFE55353); // 신규
+  static const badgeUrgent  = Color(0xFFEA8035); // 마감임박
+  static const badgeLong    = Color(0xFF8B5CF6); // 장기
+  static const badgeMonthly = Color(0xFF0284C7); // 월급
+  static const badgeDaily   = Color(0xFF2563EB); // 일급
+  static const badgeWeekly  = Color(0xFF6366F1); // 주급
+  static const badgeSameDay = Color(0xFF059669); // 당일지급
+  static const badgeSafe    = Color(0xFF4D7C0F); // 안심기업
 }
 
 // ─────────────────────────────────────────────────────────

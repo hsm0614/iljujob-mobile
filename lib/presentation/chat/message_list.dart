@@ -64,8 +64,9 @@ class ChatMessageList extends StatelessWidget {
     if (DateUtils.isSameDay(
       date,
       DateTime(now.year, now.month, now.day).subtract(const Duration(days: 1)),
-    ))
+    )) {
       return '어제';
+    }
     return DateFormat('MM/dd').format(date);
   }
 
@@ -150,7 +151,11 @@ class ChatMessageList extends StatelessWidget {
       }
     }
 
-    for (final confirm in workConfirmations) {
+    // 취소된 카드는 숨기고, 활성 카드만 표시
+    final visibleConfirms = workConfirmations
+        .where((c) => c.status != 'cancelled')
+        .toList();
+    for (final confirm in visibleConfirms) {
       children.add(
         WorkConfirmationCard(
           confirm: confirm,
@@ -461,7 +466,7 @@ class _BotMessageBubble extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────
-// 채용 확정 유도 버블
+// 출근 확정 제안 유도 버블
 // ─────────────────────────────────────────────
 
 class _HireNudgeBubble extends StatelessWidget {
@@ -471,15 +476,15 @@ class _HireNudgeBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
       child: Center(
         child: Container(
           constraints: const BoxConstraints(maxWidth: 320),
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
           decoration: BoxDecoration(
-            color: const Color(0xFFEFF6FF),
+            color: const Color(0xFFF0F9FF),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFDBEAFE), width: 1),
+            border: Border.all(color: const Color(0xFFBAE6FD), width: 1),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -488,28 +493,28 @@ class _HireNudgeBubble extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    Icons.info_outline_rounded,
+                    Icons.event_available_rounded,
                     size: 18,
-                    color: Color(0xFF2563EB),
+                    color: Color(0xFF0284C7),
                   ),
                   SizedBox(width: 6),
                   Text(
-                    '채용 확정이 필요해요',
+                    '출근 확정을 제안해보세요',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF1D4ED8),
+                      color: Color(0xFF0369A1),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               const Text(
-                '채용 확정을 해야\n출근 확인 절차가 진행됩니다.',
+                '일정을 확정하면 D-1 알림과\n출근 자동 확인이 진행돼요.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12.5,
-                  height: 1.35,
+                  height: 1.4,
                   color: Color(0xFF374151),
                 ),
               ),
@@ -519,7 +524,7 @@ class _HireNudgeBubble extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: onConfirmHire,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1675F4),
+                    backgroundColor: const Color(0xFF3B8AFF),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(999),
@@ -527,12 +532,12 @@ class _HireNudgeBubble extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                   ),
                   icon: const Icon(
-                    Icons.thumb_up_alt_rounded,
+                    Icons.event_available_rounded,
                     size: 16,
                     color: Colors.white,
                   ),
                   label: const Text(
-                    '채용 확정하기',
+                    '출근 확정 제안하기',
                     style: TextStyle(
                       fontSize: 12.5,
                       fontWeight: FontWeight.w800,

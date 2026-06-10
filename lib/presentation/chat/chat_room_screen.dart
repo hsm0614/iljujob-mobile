@@ -962,8 +962,12 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                   onProfileTap: onProfileTap,
                                   targetThumbnailUrl: targetThumbnailUrl,
                                   targetName: targetName,
-                                  showHireNudge: false,
-                                  onConfirmHire: ctrl.confirmHire,
+                                  showHireNudge: ctrl.userType == 'client' &&
+                                      !ctrl.isConfirmed &&
+                                      !ctrl.hasPendingWorkConfirmation &&
+                                      ctrl.status == 'active' &&
+                                      ctrl.messages.length >= 2,
+                                  onConfirmHire: () => _showProposeSheet(ctrl),
                                   workConfirmations: ctrl.workConfirmations,
                                   onAcceptWorkConfirmation:
                                       (confirm) =>

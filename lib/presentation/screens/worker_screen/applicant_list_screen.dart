@@ -245,6 +245,8 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
                         distKm:      distKm,
                         completedCount: int.tryParse(
                             (a['completed_count'] ?? '0').toString()) ?? 0,
+                        mannerPoint: int.tryParse(
+                            (a['manner_point'] ?? '0').toString()) ?? 0,
                       );
                     },
                   ),
@@ -281,6 +283,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
     List<String> reasons = const [],
     double? distKm,
     int completedCount = 0,
+    int mannerPoint = 0,
   }) {
     final hasAi     = aiScore != null;
     final scoreInt  = hasAi ? (aiScore * 100).round() : null;
@@ -435,7 +438,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
                   ),
                   const SizedBox(width: 16),
 
-                  // 거리 + 완료이력
+                  // 거리 + 완료이력 + 매너점수
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -446,7 +449,11 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
                               : '${distKm.toStringAsFixed(1)}km'),
                       if (completedCount > 0) ...[
                         const SizedBox(height: 4),
-                        _infoChip('⭐', '완료 $completedCount회'),
+                        _infoChip('✅', '완료 $completedCount회'),
+                      ],
+                      if (mannerPoint > 0) ...[
+                        const SizedBox(height: 4),
+                        _infoChip('👍', '매너 $mannerPoint'),
                       ],
                     ],
                   ),
