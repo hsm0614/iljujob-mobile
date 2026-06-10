@@ -595,7 +595,21 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       syncNotificationStatus();
+      _recordAppOpen();
     }
+  }
+
+  Future<void> _recordAppOpen() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('authToken') ?? '';
+      final userType = prefs.getString('userType') ?? '';
+      if (token.isEmpty || userType != 'worker') return;
+      await http.post(
+        Uri.parse('$baseUrl/api/worker/app-open'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+    } catch (_) {}
   }
 
   @override

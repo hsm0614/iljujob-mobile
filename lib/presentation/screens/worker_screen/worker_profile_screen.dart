@@ -7,8 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class WorkerProfileScreen extends StatefulWidget {
   final int workerId;
 
-  const WorkerProfileScreen({Key? key, required this.workerId})
-      : super(key: key);
+  const WorkerProfileScreen({super.key, required this.workerId});
 
   @override
   State<WorkerProfileScreen> createState() => _WorkerProfileScreenState();
@@ -46,7 +45,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
   String maskName(String name) {
     if (name.isEmpty) return name;
     if (name.length == 2) {
-      return name[0] + '*';
+      return '${name[0]}*';
     } else if (name.length > 2) {
       return name[0] + '*' * (name.length - 2) + name[name.length - 1];
     } else {
@@ -421,16 +420,16 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
           const Color(0xFF3B8AFF),
         ),
         _squareStatCard(
-          Icons.thumb_up,
-          '매너 칭찬',
-          '${profile!['manner_point'] ?? 0}',
-          Colors.purple,
+          Icons.thumb_up_alt_rounded,
+          '매너점수',
+          '${profile!['manner_point'] ?? 80}',
+          const Color(0xFF059669),
         ),
         _squareStatCard(
-          Icons.warning,
+          Icons.warning_amber_rounded,
           '패널티',
           '${profile!['penalty_point'] ?? 0}',
-          Colors.red,
+          const Color(0xFFE55353),
         ),
       ],
     );
@@ -591,7 +590,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                       if ((exp['description'] ?? '').toString().isNotEmpty)
                         Text(
                           exp['description'],
-                          style: const TextStyle(color: const Color(0xFF191F28)),
+                          style: const TextStyle(color: Color(0xFF191F28)),
                         ),
                     ],
                   ),
