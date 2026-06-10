@@ -213,9 +213,13 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, i) {
         final w = _workers[i];
-        final id = w['id'] is int ? w['id'] as int : int.parse('${w['id']}');
-        final score = (w['activity_score'] as num?)?.toInt() ?? 0;
-        final distance = w['distance_m'] as num?;
+        final id = w['id'] is int ? w['id'] as int : int.tryParse('${w['id']}') ?? 0;
+        final score = (w['activity_score'] is num)
+            ? (w['activity_score'] as num).toInt()
+            : int.tryParse('${w['activity_score'] ?? 0}') ?? 0;
+        final distance = (w['distance_m'] is num)
+            ? w['distance_m'] as num
+            : double.tryParse('${w['distance_m'] ?? ''}');
         final grade = _gradeLabel(score);
         final gradeColor = _gradeColor(score);
         final isSelected = _selected.contains(id);
@@ -228,8 +232,11 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
               return;
             }
             setState(() {
-              if (isSelected) _selected.remove(id);
-              else _selected.add(id);
+              if (isSelected) {
+                _selected.remove(id);
+              } else {
+                _selected.add(id);
+              }
             });
           },
           child: AnimatedContainer(
