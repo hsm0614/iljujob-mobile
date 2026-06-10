@@ -55,6 +55,15 @@ String pinnedRemainText(Job j) {
   return h > 0 ? '$h시간 $m분 남음' : '$m분 남음';
 }
 
+String publishRemainText(Job j) {
+  if (!isJobReserved(j) || j.publishAt == null) return '';
+  final diff = _toLocal(j.publishAt!).difference(_nowLocal());
+  final h = diff.inHours;
+  final m = diff.inMinutes % 60;
+  if (h > 0) return '$h시간 $m분 후 노출';
+  return m > 0 ? '$m분 후 노출' : '곧 노출';
+}
+
 class ClientHomeScreen extends StatefulWidget {
   final AiApi api;
 
@@ -1761,9 +1770,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 spacing: 6,
                 runSpacing: 6,
                 children: [
+                  if (job.isUrgent && !isClosed)
+                    _badge('⚡ 긴급', color: const Color(0xFFEF4444), icon: Icons.emergency_rounded),
                   if (reserved)
                     _badge(
-                      '예약 게시',
+                      publishRemainText(job),
                       color: AppColors.warning,
                       icon: Icons.schedule_outlined,
                     ),
@@ -1789,6 +1800,37 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     ),
                 ],
               ),
+              if (job.isUrgent && !isClosed) ...[
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () async {
+                    final prefs = await SharedPreferences.getInstance();
+                    final cid = prefs.getInt('userId');
+                    if (cid != null && mounted) {
+                      Navigator.pushNamed(context, '/nearby-workers', arguments: {
+                        'jobId': job.id, 'clientId': cid, 'jobTitle': job.title,
+                      });
+                    }
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 9),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEF4444).withValues(alpha: 0.07),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.25)),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.emergency_rounded, size: 14, color: Color(0xFFEF4444)),
+                        SizedBox(width: 5),
+                        Text('긴급 호출 발송', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFFEF4444))),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 10),
               _metaLine(Icons.place_outlined, job.location),
               const SizedBox(height: 6),
@@ -1876,7 +1918,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     ),
                   ],
                 ),
-                if (reserved ||
+                if (job.isUrgent && !isClosed ||
+                    reserved ||
                     pinned ||
                     isClosed ||
                     job.zeroApplicantRefunded ||
@@ -1885,9 +1928,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     spacing: 6,
                     runSpacing: 6,
                     children: [
+                      if (job.isUrgent && !isClosed)
+                        _badge('⚡ 긴급', color: const Color(0xFFEF4444), icon: Icons.emergency_rounded),
                       if (reserved)
                         _badge(
-                          '예약 게시',
+                          publishRemainText(job),
                           color: AppColors.warning,
                           icon: Icons.schedule_outlined,
                         ),
@@ -2000,6 +2045,28 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                               '/post_job',
                               arguments: {'isRepost': true, 'existingJob': job},
                             ),
+                      ),
+                    if (job.isUrgent && !isClosed)
+                      _actionBtn(
+                        icon: Icons.emergency_rounded,
+                        label: '긴급 호출',
+                        color: const Color(0xFFEF4444),
+                        onTap: () {
+                          SharedPreferences.getInstance().then((prefs) {
+                            final cid = prefs.getInt('userId');
+                            if (cid != null && mounted) {
+                              Navigator.pushNamed(
+                                context,
+                                '/nearby-workers',
+                                arguments: {
+                                  'jobId': job.id,
+                                  'clientId': cid,
+                                  'jobTitle': job.title,
+                                },
+                              );
+                            }
+                          });
+                        },
                       ),
                   ],
                 ),

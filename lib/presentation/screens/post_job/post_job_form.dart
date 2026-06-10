@@ -192,6 +192,7 @@ class _PostJobFormState extends State<PostJobForm>
 
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fadeAnim;
+  final ScrollController _contentScrollCtrl = ScrollController();
   List<Map<String, dynamic>> _buildPresets() {
     final fmt = NumberFormat('#,###');
     final mins = _workMins();
@@ -305,6 +306,7 @@ class _PostJobFormState extends State<PostJobForm>
     _draftSaveTimer?.cancel();
     _saveDraft();
     _fadeCtrl.dispose();
+    _contentScrollCtrl.dispose();
     _titleCtrl.dispose();
     _descCtrl.dispose();
     _negoCtrl.dispose();
@@ -1297,6 +1299,7 @@ class _PostJobFormState extends State<PostJobForm>
               child: FadeTransition(
                 opacity: _fadeAnim,
                 child: SingleChildScrollView(
+                  controller: _contentScrollCtrl,
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
@@ -1483,8 +1486,21 @@ class _PostJobFormState extends State<PostJobForm>
                 final isSel = selectedMajor == cat.name;
                 final isOpen = _majorCat == cat.name;
                 return GestureDetector(
-                  onTap:
-                      () => setState(() => _majorCat = isOpen ? '' : cat.name),
+                  onTap: () {
+                    final opening = !isOpen;
+                    setState(() => _majorCat = isOpen ? '' : cat.name);
+                    if (opening) {
+                      Future.delayed(const Duration(milliseconds: 280), () {
+                        if (_contentScrollCtrl.hasClients) {
+                          _contentScrollCtrl.animateTo(
+                            _contentScrollCtrl.position.maxScrollExtent,
+                            duration: const Duration(milliseconds: 320),
+                            curve: Curves.easeOutCubic,
+                          );
+                        }
+                      });
+                    }
+                  },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 180),
                     decoration: BoxDecoration(
@@ -3260,9 +3276,9 @@ class _PostJobTrustStrip extends StatelessWidget {
 
     return Row(
       children: [
-        item(Icons.schedule_outlined, '무료·12h 후 노출'),
+        item(Icons.schedule_outlined, '12h 후 노출'),
         const SizedBox(width: 7),
-        item(Icons.flash_on_rounded, '부스터·즉시 노출'),
+        item(Icons.flash_on_rounded, '즉시 부스터'),
         const SizedBox(width: 7),
         item(Icons.verified_user_outlined, '이용권 보호'),
       ],
