@@ -20,9 +20,9 @@ import 'potrone_screen.dart';
 const _kIosLite     = 'kr.co.iljujob.sub.lite';
 const _kIosStandard = 'kr.co.iljujob.sub.standard';
 const _kIosPro      = 'kr.co.iljujob.sub.pro';
-const _kAndLite     = 'sub_lite';
-const _kAndStandard = 'sub_standard';
-const _kAndPro      = 'sub_pro';
+const _kAndLite     = 'sub-lite';
+const _kAndStandard = 'sub-standard';
+const _kAndPro      = 'sub-pro';
 
 // ── 플랜 정의 ─────────────────────────────────────────
 class _Plan {
