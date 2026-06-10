@@ -56,7 +56,6 @@ import 'package:iljujob/data/services/dio_client.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:iljujob/presentation/screens/subscription_payment_webview.dart';
 import 'package:iljujob/presentation/screens/subscription_manage_screen.dart';
 import 'package:iljujob/presentation/screens/signup_worker_screen/signup_choice_screen.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
@@ -674,10 +673,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           if (args == null || args is! Map<String, dynamic>) {
             return const Scaffold(body: Center(child: Text('잘못된 접근입니다.')));
           }
+          int toInt(dynamic v) => v is int ? v : int.tryParse('$v') ?? 0;
           return NearbyWorkersScreen(
-            jobId:    args['jobId']    as int,
-            clientId: args['clientId'] as int,
-            jobTitle: args['jobTitle'] as String,
+            jobId:    toInt(args['jobId']),
+            clientId: toInt(args['clientId']),
+            jobTitle: args['jobTitle']?.toString() ?? '',
           );
         },
         '/subscription/manage':  (_) => const SubscriptionManageScreen(),
