@@ -181,6 +181,7 @@ class _PostJobFormState extends State<PostJobForm>
   bool _isProUser = false, _isAIGenerating = false, _isSubmitting = false;
   bool _passCountLoading = false, _suspLoaded = false;
   int _paidPassCount = 0;
+  int _urgentPassCount = 0;
   int _weeklyFreeAiRemaining = 0;
   String _weeklyFreeAiResetText = '';
   String? _payWarning;
@@ -506,14 +507,10 @@ class _PostJobFormState extends State<PostJobForm>
       if (!mounted) return;
       if (res.statusCode == 200) {
         final d = jsonDecode(utf8.decode(res.bodyBytes));
-        setState(
-          () =>
-              _paidPassCount =
-                  int.tryParse(
-                    '${d['remaining'] ?? d['remain'] ?? d['balance'] ?? 0}',
-                  ) ??
-                  0,
-        );
+        setState(() {
+          _paidPassCount   = int.tryParse('${d['instant'] ?? d['remaining'] ?? d['remain'] ?? 0}') ?? 0;
+          _urgentPassCount = int.tryParse('${d['urgent'] ?? 0}') ?? 0;
+        });
       }
     } catch (_) {
     } finally {
@@ -746,7 +743,7 @@ class _PostJobFormState extends State<PostJobForm>
         ),
   );
 
-  Future<void> _submit({required bool isPaid}) async {
+  Future<void> _submit({required bool isPaid, String? passType}) async {
     if (_isSubmitting) return;
     final prefs = await SharedPreferences.getInstance();
     final clientId = prefs.getInt('userId');
@@ -809,6 +806,7 @@ class _PostJobFormState extends State<PostJobForm>
         publishAt: publishAtUtcStr, // UTC ISO 문자열
         isSameDayPay: _isSameDayPay,
         isPaid: isPaid,
+        passType: passType,
         isAgency: clientId == 1,
         // 장기 공고 전용
         jobType: _isShortTerm ? 'short' : 'long',
@@ -820,6 +818,8 @@ class _PostJobFormState extends State<PostJobForm>
 
       if (!mounted) return;
       await _clearDraft();
+      final jobId = result['jobId'] as int?;
+      final isUrgent = passType == 'urgent';
       final isDelayed = !isPaid && result['status'] == 'reserved';
       final eta = DateTime.now().add(const Duration(hours: 12));
       final etaStr =
@@ -845,23 +845,31 @@ class _PostJobFormState extends State<PostJobForm>
                 width: 68,
                 height: 68,
                 decoration: BoxDecoration(
-                  color: isDelayed
-                      ? const Color(0xFFFFF3E0)
-                      : const Color(0xFFEEF5FF),
+                  color: isUrgent
+                      ? const Color(0xFFFFEBEB)
+                      : isDelayed
+                          ? const Color(0xFFFFF3E0)
+                          : const Color(0xFFEEF5FF),
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Icon(
-                  isDelayed
-                      ? Icons.schedule_rounded
-                      : Icons.check_circle_rounded,
+                  isUrgent
+                      ? Icons.emergency_rounded
+                      : isDelayed
+                          ? Icons.schedule_rounded
+                          : Icons.check_circle_rounded,
                   size: 38,
-                  color: isDelayed ? const Color(0xFFFF9500) : _blue,
+                  color: isUrgent
+                      ? const Color(0xFFEF4444)
+                      : isDelayed
+                          ? const Color(0xFFFF9500)
+                          : _blue,
                 ),
               ),
               const SizedBox(height: 20),
-              const Text(
-                '공고 등록 완료!',
-                style: TextStyle(
+              Text(
+                isUrgent ? '긴급 공고 등록 완료!' : '공고 등록 완료!',
+                style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w900,
                   color: _text,
@@ -869,9 +877,11 @@ class _PostJobFormState extends State<PostJobForm>
               ),
               const SizedBox(height: 10),
               Text(
-                isDelayed
-                    ? '오늘 $etaStr 이후 구직자에게 노출됩니다.\n그 전까지 언제든 수정할 수 있어요.'
-                    : '지금 바로 구직자에게 노출됩니다.',
+                isUrgent
+                    ? '공고가 즉시 노출됩니다.\n지금 바로 긴급 호출을 발송해보세요!'
+                    : isDelayed
+                        ? '오늘 $etaStr 이후 구직자에게 노출됩니다.\n그 전까지 언제든 수정할 수 있어요.'
+                        : '지금 바로 구직자에게 노출됩니다.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,
@@ -885,17 +895,31 @@ class _PostJobFormState extends State<PostJobForm>
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(sheetCtx);
-                    if (userType == 'client')
+                    if (isUrgent && jobId != null) {
                       Navigator.pushNamedAndRemoveUntil(
                         context, '/client_main', (_) => false,
                       );
-                    else
+                      Navigator.pushNamed(
+                        context,
+                        '/nearby-workers',
+                        arguments: {
+                          'jobId':    jobId,
+                          'clientId': clientId,
+                          'jobTitle': _title.trim(),
+                        },
+                      );
+                    } else if (userType == 'client') {
+                      Navigator.pushNamedAndRemoveUntil(
+                        context, '/client_main', (_) => false,
+                      );
+                    } else {
                       Navigator.pushNamedAndRemoveUntil(
                         context, '/home', (_) => false,
                       );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _blue,
+                    backgroundColor: isUrgent ? const Color(0xFFEF4444) : _blue,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     shape: RoundedRectangleBorder(
@@ -903,9 +927,9 @@ class _PostJobFormState extends State<PostJobForm>
                     ),
                     elevation: 0,
                   ),
-                  child: const Text(
-                    '내 공고 보러가기',
-                    style: TextStyle(
+                  child: Text(
+                    isUrgent ? '⚡ 긴급 호출 발송하기' : '내 공고 보러가기',
+                    style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
                     ),
@@ -992,6 +1016,7 @@ class _PostJobFormState extends State<PostJobForm>
       backgroundColor: Colors.white,
       builder: (ctx) => _PublishSheet(
         paidPassCount: _paidPassCount,
+        urgentPassCount: _urgentPassCount,
         passCountLoading: _passCountLoading,
         availableWorkersCount: availableCount,
         onFreeSubmit: () {
@@ -1001,7 +1026,11 @@ class _PostJobFormState extends State<PostJobForm>
         onPaidSubmit: (dt) {
           Navigator.pop(ctx);
           publishAt = dt;
-          _submit(isPaid: true);
+          _submit(isPaid: true, passType: 'instant');
+        },
+        onUrgentSubmit: () {
+          Navigator.pop(ctx);
+          _submit(isPaid: true, passType: 'urgent');
         },
         onBuyPass: () async {
           Navigator.pop(ctx);
@@ -3564,17 +3593,21 @@ class _LaborNoticeState extends State<_LaborNotice> {
 // ════════════════════════════════════════════════════════
 class _PublishSheet extends StatefulWidget {
   final int paidPassCount;
+  final int urgentPassCount;
   final bool passCountLoading;
   final int availableWorkersCount;
   final VoidCallback onFreeSubmit;
   final void Function(DateTime?) onPaidSubmit;
+  final VoidCallback onUrgentSubmit;
   final VoidCallback onBuyPass;
   const _PublishSheet({
     required this.paidPassCount,
     required this.passCountLoading,
     required this.onFreeSubmit,
     required this.onPaidSubmit,
+    required this.onUrgentSubmit,
     required this.onBuyPass,
+    this.urgentPassCount = 0,
     this.availableWorkersCount = 0,
   });
   @override
@@ -3692,6 +3725,75 @@ class _PublishSheetState extends State<_PublishSheet> {
                   setState(() => _boosterSelected = true);
                 },
               ),
+              if (widget.urgentPassCount > 0) ...[
+                const SizedBox(height: 12),
+                GestureDetector(
+                  onTap: widget.onUrgentSubmit,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFF0F0),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: const Color(0xFFEF4444), width: 1.5),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEF4444),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.bolt_rounded, size: 20, color: Colors.white),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Text(
+                                    '⚡ 긴급 호출',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w800,
+                                      color: Color(0xFFEF4444),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFEF4444),
+                                      borderRadius: BorderRadius.circular(99),
+                                    ),
+                                    child: Text(
+                                      '${widget.urgentPassCount}회 보유',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 2),
+                              const Text(
+                                '즉시 노출 + 반경 3km 알바생에게 직접 호출 발송',
+                                style: TextStyle(fontSize: 12, color: Color(0xFF991B1B)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.chevron_right_rounded, color: Color(0xFFEF4444)),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
               if (_boosterSelected == true) ...[
                 const SizedBox(height: 20),
                 const Divider(height: 1),

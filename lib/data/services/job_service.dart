@@ -198,6 +198,7 @@ class JobService {
     int? workDaysPerWeek,
     String? requiredCerts,
     String? welfare,
+    String? passType, // 'instant' | 'urgent'
   }) async {
     final uri = Uri.parse('$baseUrl/api/job/post_job');
 
@@ -255,6 +256,9 @@ class JobService {
     }
 
     request.fields['is_paid'] = isPaid ? '1' : '0';
+    if (passType != null && passType.isNotEmpty) {
+      request.fields['pass_type'] = passType;
+    }
 
     for (final f in images) {
       request.files.add(await http.MultipartFile.fromPath('images[]', f.path));
