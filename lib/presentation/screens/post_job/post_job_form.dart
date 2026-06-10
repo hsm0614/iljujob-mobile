@@ -3305,11 +3305,11 @@ class _PostJobTrustStrip extends StatelessWidget {
 
     return Row(
       children: [
-        item(Icons.schedule_outlined, '12h 후 노출'),
+        item(Icons.schedule_outlined,     '무료 · 12h 후'),
         const SizedBox(width: 7),
-        item(Icons.flash_on_rounded, '즉시 부스터'),
+        item(Icons.flash_on_rounded,      '즉시 · ₩4,900'),
         const SizedBox(width: 7),
-        item(Icons.verified_user_outlined, '이용권 보호'),
+        item(Icons.bolt_rounded,          '긴급 · ₩7,900'),
       ],
     );
   }
@@ -3782,7 +3782,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                               ),
                               const SizedBox(height: 2),
                               const Text(
-                                '즉시 노출 + 반경 3km 알바생에게 직접 호출 발송',
+                                '즉시 노출 + 반경 3km 알바생 최대 10명 직접 호출',
                                 style: TextStyle(fontSize: 12, color: Color(0xFF991B1B)),
                               ),
                             ],
@@ -4086,7 +4086,7 @@ class _CompareCard extends StatelessWidget {
             border: Border.all(color: _blue.withOpacity(0.25)),
           ),
           child: const Text(
-            '기본 등록은 12시간 후 노출 · 부스터는 즉시 노출 + 상단 고정 포함',
+            '무료 등록 12h 후 노출 · 즉시 부스터 ₩4,900 · 긴급 호출 ₩7,900',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -4220,7 +4220,7 @@ class _CompareCard extends StatelessWidget {
                   child: Column(
                     children: [
                       const Text(
-                        '부스터 등록',
+                        '즉시 부스터 · ₩4,900',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -4229,7 +4229,7 @@ class _CompareCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       const Text(
-                        '보호 정책 적용',
+                        '즉시 노출 + 상단 고정',
                         style: TextStyle(fontSize: 10, color: Colors.white70),
                       ),
                       const SizedBox(height: 2),

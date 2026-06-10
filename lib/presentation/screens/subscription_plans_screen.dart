@@ -31,6 +31,7 @@ class _Plan {
   final int    price;
   final int    instantCredits;
   final int    urgentCredits;
+  final int    maxRecipients;
   final bool   attendanceCare;
   final bool   priorityCs;
   final bool   recommended;
@@ -39,6 +40,7 @@ class _Plan {
   const _Plan({
     required this.key, required this.name, required this.price,
     required this.instantCredits, required this.urgentCredits,
+    required this.maxRecipients,
     required this.attendanceCare, required this.priorityCs,
     required this.iosId, required this.androidId,
     this.recommended = false,
@@ -46,9 +48,9 @@ class _Plan {
 }
 
 const _plans = [
-  _Plan(key: 'lite',     name: '라이트',    price: 9900,  instantCredits: 3, urgentCredits: 0, attendanceCare: false, priorityCs: false, iosId: _kIosLite,     androidId: _kAndLite),
-  _Plan(key: 'standard', name: '스탠다드',  price: 19900, instantCredits: 3, urgentCredits: 1, attendanceCare: true,  priorityCs: false, iosId: _kIosStandard, androidId: _kAndStandard, recommended: true),
-  _Plan(key: 'pro',      name: '프로',      price: 39900, instantCredits: 5, urgentCredits: 3, attendanceCare: true,  priorityCs: true,  iosId: _kIosPro,      androidId: _kAndPro),
+  _Plan(key: 'lite',     name: '라이트',   price: 9900,  instantCredits: 3, urgentCredits: 1, maxRecipients: 10, attendanceCare: false, priorityCs: false, iosId: _kIosLite,     androidId: _kAndLite),
+  _Plan(key: 'standard', name: '스탠다드', price: 19900, instantCredits: 3, urgentCredits: 3, maxRecipients: 15, attendanceCare: true,  priorityCs: false, iosId: _kIosStandard, androidId: _kAndStandard, recommended: true),
+  _Plan(key: 'pro',      name: '프로',     price: 39900, instantCredits: 5, urgentCredits: 5, maxRecipients: 20, attendanceCare: true,  priorityCs: true,  iosId: _kIosPro,      androidId: _kAndPro),
 ];
 
 class SubscriptionPlansScreen extends StatefulWidget {
@@ -408,12 +410,12 @@ class _PlanCard extends StatelessWidget {
               runSpacing: 6,
               children: [
                 _Chip(icon: Icons.flash_on_rounded, label: '즉시 게시 ${plan.instantCredits}회', color: AppColors.primary),
-                if (plan.urgentCredits > 0)
-                  _Chip(icon: Icons.emergency_rounded, label: '긴급 호출 ${plan.urgentCredits}회', color: const Color(0xFFEF4444)),
+                _Chip(icon: Icons.bolt_rounded, label: '긴급 호출 ${plan.urgentCredits}회 (${plan.maxRecipients}명)', color: const Color(0xFFEF4444)),
+                _Chip(icon: Icons.workspace_premium_rounded, label: '구독 배지', color: const Color(0xFFFF9500)),
                 if (plan.attendanceCare)
                   _Chip(icon: Icons.verified_user_rounded, label: '출근 안심', color: const Color(0xFF22C55E)),
                 if (plan.priorityCs)
-                  _Chip(icon: Icons.headset_mic_rounded, label: '우선 CS', color: const Color(0xFFFF9500)),
+                  _Chip(icon: Icons.headset_mic_rounded, label: '우선 CS', color: const Color(0xFF6366F1)),
               ],
             ),
           ],
