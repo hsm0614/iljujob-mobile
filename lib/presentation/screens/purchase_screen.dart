@@ -193,10 +193,24 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
 
     try {
       final available = await _iap.isAvailable();
-      if (!available) throw Exception('IAP Unavailable');
+      if (!available) throw Exception('IAP 서비스를 사용할 수 없습니다 (isAvailable=false)');
 
       final resp = await _iap.queryProductDetails({productId});
-      if (resp.productDetails.isEmpty) throw Exception('상품을 찾을 수 없습니다: $productId');
+
+      // 디버그: 콘솔에서 확인
+      print('🛒 IAP query [$productId]');
+      print('  found: ${resp.productDetails.map((p) => p.id).toList()}');
+      print('  notFound: ${resp.notFoundIDs}');
+      print('  error: ${resp.error}');
+
+      if (resp.productDetails.isEmpty) {
+        final detail = resp.notFoundIDs.isNotEmpty
+            ? 'App Store에 상품 ID가 없음: ${resp.notFoundIDs}'
+            : resp.error != null
+                ? 'StoreKit 오류: ${resp.error?.message}'
+                : '알 수 없는 오류';
+        throw Exception('상품 조회 실패\n$detail');
+      }
 
       final isConsumable = passType == 'instant';
       if (isConsumable) {
