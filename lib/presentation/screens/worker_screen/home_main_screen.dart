@@ -273,24 +273,27 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        if (mounted)
+        if (mounted) {
           setState(() {
             currentLatitude = 0.0;
             currentLongitude = 0.0;
           });
+        }
         return;
       }
 
       LocationPermission perm = await Geolocator.checkPermission();
-      if (perm == LocationPermission.denied)
+      if (perm == LocationPermission.denied) {
         perm = await Geolocator.requestPermission();
+      }
       if (perm == LocationPermission.denied ||
           perm == LocationPermission.deniedForever) {
-        if (mounted)
+        if (mounted) {
           setState(() {
             currentLatitude = 0.0;
             currentLongitude = 0.0;
           });
+        }
         return;
       }
 
@@ -310,11 +313,12 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       final finalLat = pos?.latitude ?? lat;
       final finalLng = pos?.longitude ?? lng;
 
-      if (mounted)
+      if (mounted) {
         setState(() {
           currentLatitude = finalLat;
           currentLongitude = finalLng;
         });
+      }
 
       if (finalLat != 0.0 && finalLng != 0.0) {
         sendLocationToServer(finalLat, finalLng);
@@ -323,11 +327,12 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       }
     } catch (e) {
       debugPrint('위치 오류: $e');
-      if (mounted)
+      if (mounted) {
         setState(() {
           currentLatitude = 0.0;
           currentLongitude = 0.0;
         });
+      }
     }
   }
 
@@ -469,10 +474,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       if (resp.statusCode == 200) {
         if (!mounted) return;
         setState(() {
-          if (wasBookmarked)
+          if (wasBookmarked) {
             bookmarkedJobIds.remove(jobId);
-          else
+          } else {
             bookmarkedJobIds.add(jobId);
+          }
         });
         if (!wasBookmarked) {
           final jobIdInt = int.tryParse(jobId);
@@ -932,8 +938,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                           )
                                           .toList(),
                                   onChanged: (v) {
-                                    if (v != null)
+                                    if (v != null) {
                                       setModalState(() => tempSortType = v);
+                                    }
                                   },
                                   underline: const SizedBox(),
                                   icon: const Icon(Icons.expand_more),
@@ -2259,8 +2266,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                           style: const TextStyle(fontSize: 14),
                                           onSubmitted: (_) async {
                                             if (ctrl.text.trim().isEmpty ||
-                                                searching)
+                                                searching) {
                                               return;
+                                            }
                                             setS(() {
                                               searching = true;
                                               errorMsg = null;
@@ -2297,8 +2305,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                             searching
                                                 ? null
                                                 : () async {
-                                                  if (ctrl.text.trim().isEmpty)
+                                                  if (ctrl.text.trim().isEmpty) {
                                                     return;
+                                                  }
                                                   setS(() {
                                                     searching = true;
                                                     errorMsg = null;
@@ -2546,8 +2555,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           value: selectedDistance,
           onChanged: (value) => setState(() => selectedDistance = value),
           onChangeEnd: (value) async {
-            if (currentLatitude == 0.0 || currentLongitude == 0.0)
+            if (currentLatitude == 0.0 || currentLongitude == 0.0) {
               await _init();
+            }
             _applyFiltersThrottled();
           },
         ),
@@ -2633,22 +2643,25 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
     final List<Widget> opBadges = [];
     // 긴급 호출 배지 (최우선 표시)
-    if (job.isUrgent)
-      opBadges.add(_buildBadge('⚡ 긴급', color: const Color(0xFFEF4444)));
-    if (job.jobType == 'long')
+    if (job.isUrgent) {
+      opBadges.add(_buildBadge('⚡ 긴급', color: AppColors.badgeNew));
+    }
+    if (job.jobType == 'long') {
       opBadges.add(_buildBadge('장기', color: AppColors.badgeLong));
+    }
     if (isNew) opBadges.add(_buildBadge('신규', color: AppColors.badgeNew));
-    if (isUrgent)
+    if (isUrgent) {
       opBadges.add(_buildBadge('마감임박', color: AppColors.badgeUrgent));
-    if (job.payType == '월급')
+    }
+    if (job.payType == '월급') {
       opBadges.add(_buildBadge('월급', color: AppColors.badgeMonthly));
-    else if (job.payType == '일급')
+    } else if (job.payType == '일급')
       opBadges.add(_buildBadge('일급', color: AppColors.badgeDaily));
     else if (job.payType == '주급')
       opBadges.add(_buildBadge('주급', color: AppColors.badgeWeekly));
-    if (job.isSameDayPay == true)
+    if (job.isSameDayPay == true) {
       opBadges.add(_buildBadge('당일지급', color: AppColors.badgeSameDay));
-    else if (job.isCertifiedCompany == true)
+    } else if (job.isCertifiedCompany == true)
       opBadges.add(_buildBadge('안심기업', color: AppColors.badgeSafe));
 
     final displayBadges = opBadges.take(2).toList();
@@ -3229,8 +3242,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     final canNav = bannerAds.length > 1;
 
     void goTo(int index) {
-      if (!mounted || _pageController == null || !_pageController!.hasClients)
+      if (!mounted || _pageController == null || !_pageController!.hasClients) {
         return;
+      }
       final len = bannerAds.length;
       final safe = ((index % len) + len) % len;
       _pageController!.animateToPage(
@@ -3377,10 +3391,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       await launchUrl(url, mode: LaunchMode.platformDefault);
     } catch (e) {
       debugPrint('링크 열기 오류: $e');
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('링크 열기 실패: $e')));
+      }
     }
   }
 }

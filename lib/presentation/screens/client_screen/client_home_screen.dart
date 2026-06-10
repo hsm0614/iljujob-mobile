@@ -1282,7 +1282,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       child: Column(
         children: [
           Text(
-            '총 ${totalCount}개 공고 · ${currentPage}/${totalPages}페이지',
+            '총 $totalCount개 공고 · $currentPage/$totalPages페이지',
             style: const TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary,
@@ -1349,23 +1349,27 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
 
     if (startPage > 1) {
       pageButtons.add(_pageNumBtn(1));
-      if (startPage > 2)
+      if (startPage > 2) {
         pageButtons.add(
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 6),
             child: Text('...', style: TextStyle(color: AppColors.textTertiary)),
           ),
         );
+      }
     }
-    for (int i = startPage; i <= endPage; i++) pageButtons.add(_pageNumBtn(i));
+    for (int i = startPage; i <= endPage; i++) {
+      pageButtons.add(_pageNumBtn(i));
+    }
     if (endPage < totalPages) {
-      if (endPage < totalPages - 1)
+      if (endPage < totalPages - 1) {
         pageButtons.add(
           const Padding(
             padding: EdgeInsets.symmetric(horizontal: 6),
             child: Text('...', style: TextStyle(color: AppColors.textTertiary)),
           ),
         );
+      }
       pageButtons.add(_pageNumBtn(totalPages));
     }
     return pageButtons;
@@ -1771,7 +1775,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 runSpacing: 6,
                 children: [
                   if (job.isUrgent && !isClosed)
-                    _badge('⚡ 긴급', color: const Color(0xFFEF4444), icon: Icons.emergency_rounded),
+                    _badge('⚡ 긴급', color: AppColors.badgeNew, icon: Icons.emergency_rounded),
                   if (reserved)
                     _badge(
                       publishRemainText(job),
@@ -1834,7 +1838,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               const SizedBox(height: 10),
               _metaLine(Icons.place_outlined, job.location),
               const SizedBox(height: 6),
-              _metaLine(Icons.payments_outlined, '${formattedPay}원'),
+              _metaLine(Icons.payments_outlined, '$formattedPay원'),
               const SizedBox(height: 6),
               _metaLine(Icons.schedule_outlined, job.workingHours),
             ],
@@ -1929,7 +1933,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     runSpacing: 6,
                     children: [
                       if (job.isUrgent && !isClosed)
-                        _badge('⚡ 긴급', color: const Color(0xFFEF4444), icon: Icons.emergency_rounded),
+                        _badge('⚡ 긴급', color: AppColors.badgeNew, icon: Icons.emergency_rounded),
                       if (reserved)
                         _badge(
                           publishRemainText(job),
@@ -1979,7 +1983,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     Expanded(
                       child: _metaLine(
                         Icons.payments_outlined,
-                        '${formattedPay}원',
+                        '$formattedPay원',
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -2026,12 +2030,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       color: AppColors.primary,
                       onTap: () {
                         final jobId = int.tryParse(job.id.toString());
-                        if (jobId != null)
+                        if (jobId != null) {
                           JobInsightSheet.show(
                             context,
                             jobId: jobId,
                             jobTitle: job.title,
                           );
+                        }
                       },
                     ),
                     if (isClosed)
