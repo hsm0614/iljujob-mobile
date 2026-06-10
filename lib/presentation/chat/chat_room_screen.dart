@@ -193,6 +193,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
             clientId: clientId,
             jobLocation: jobSource['location']?.toString(),
             onPropose: (_) {
+              ctrl.fetchWorkConfirmations();
               ctrl.onShowSnackbar?.call('출근 확정 제안을 보냈어요!');
             },
           ),
@@ -899,6 +900,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     userType: ctrl.userType,
                     isConfirmed: ctrl.isConfirmed,
                     isCompleted: ctrl.isCompleted,
+                    hasPendingWorkConfirmation: ctrl.hasPendingWorkConfirmation,
                     status: ctrl.status,
                     onConfirmHire: ctrl.confirmHire,
                     onProposeWorkConfirmation: () => _showProposeSheet(ctrl),
@@ -945,7 +947,8 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                       child:
                           ctrl.isLoading
                               ? const Center(child: CircularProgressIndicator())
-                              : ctrl.messages.isEmpty
+                              : ctrl.messages.isEmpty &&
+                                  ctrl.workConfirmations.isEmpty
                               ? _buildEmptyChatNotice(ctrl.isClient)
                               : NotificationListener<ScrollStartNotification>(
                                 onNotification: (_) {
@@ -961,6 +964,19 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                   targetName: targetName,
                                   showHireNudge: false,
                                   onConfirmHire: ctrl.confirmHire,
+                                  workConfirmations: ctrl.workConfirmations,
+                                  onAcceptWorkConfirmation:
+                                      (confirm) =>
+                                          ctrl.respondToWorkConfirmation(
+                                            confirm,
+                                            'accepted',
+                                          ),
+                                  onRejectWorkConfirmation:
+                                      (confirm) =>
+                                          ctrl.respondToWorkConfirmation(
+                                            confirm,
+                                            'cancelled',
+                                          ),
                                   inputOverlayHeight: 112,
                                 ),
                               ),

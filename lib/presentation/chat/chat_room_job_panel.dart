@@ -22,6 +22,7 @@ class ChatRoomJobPanel extends StatelessWidget {
   // 공통 상태
   final bool isConfirmed;
   final bool isCompleted;
+  final bool hasPendingWorkConfirmation;
   final String status;
 
   // 클라이언트 액션 콜백
@@ -54,6 +55,7 @@ class ChatRoomJobPanel extends StatelessWidget {
     required this.userType,
     required this.isConfirmed,
     required this.isCompleted,
+    this.hasPendingWorkConfirmation = false,
     required this.status,
     // 클라이언트
     this.onConfirmHire,
@@ -198,6 +200,7 @@ class ChatRoomJobPanel extends StatelessWidget {
               ? _ClientActions(
                 isConfirmed: isConfirmed,
                 isCompleted: isCompleted,
+                hasPendingWorkConfirmation: hasPendingWorkConfirmation,
                 status: status,
                 onConfirmHire: onConfirmHire,
                 onMarkCompleted: onMarkCompleted,
@@ -236,6 +239,7 @@ class ChatRoomJobPanel extends StatelessWidget {
 class _ClientActions extends StatelessWidget {
   final bool isConfirmed;
   final bool isCompleted;
+  final bool hasPendingWorkConfirmation;
   final String status;
   final VoidCallback? onConfirmHire;
   final VoidCallback? onMarkCompleted;
@@ -244,6 +248,7 @@ class _ClientActions extends StatelessWidget {
   const _ClientActions({
     required this.isConfirmed,
     required this.isCompleted,
+    required this.hasPendingWorkConfirmation,
     required this.status,
     this.onConfirmHire,
     this.onMarkCompleted,
@@ -265,14 +270,23 @@ class _ClientActions extends StatelessWidget {
     if (!isConfirmed) {
       add(
         _ActionButton(
-          text: onProposeWorkConfirmation != null ? '출근 확정 제안하기' : '채용 확정하기',
+          text:
+              hasPendingWorkConfirmation
+                  ? '알바생 응답 대기중'
+                  : onProposeWorkConfirmation != null
+                  ? '출근 확정 제안하기'
+                  : '채용 확정하기',
           icon:
-              onProposeWorkConfirmation != null
+              hasPendingWorkConfirmation
+                  ? Icons.hourglass_top_rounded
+                  : onProposeWorkConfirmation != null
                   ? Icons.event_available_rounded
                   : Icons.thumb_up_alt_rounded,
           color: const Color(0xFF1675F4),
           onPressed:
-              isActive ? (onProposeWorkConfirmation ?? onConfirmHire) : null,
+              isActive && !hasPendingWorkConfirmation
+                  ? (onProposeWorkConfirmation ?? onConfirmHire)
+                  : null,
         ),
       );
       add(
@@ -294,7 +308,9 @@ class _ClientActions extends StatelessWidget {
               const SizedBox(width: 5),
               Text(
                 onProposeWorkConfirmation != null
-                    ? '알바생 수락 후 출근확인 가능'
+                    ? hasPendingWorkConfirmation
+                        ? '알바생이 제안을 확인하면 확정돼요'
+                        : '알바생 수락 후 출근확인 가능'
                     : '확정 후 출근확인 가능',
                 style: const TextStyle(
                   fontSize: 11,

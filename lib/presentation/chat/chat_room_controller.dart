@@ -13,6 +13,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../config/constants.dart';
 import '../../data/services/ai_api.dart';
+import '../../data/services/work_confirmation_service.dart';
 import 'chat_room_helpers.dart';
 
 class ChatRoomController extends ChangeNotifier {
@@ -61,6 +62,7 @@ class ChatRoomController extends ChangeNotifier {
   bool isConfirmed = false;
   bool isCompleted = false;
   bool hasReviewed = false;
+  List<WorkConfirmation> workConfirmations = [];
 
   Map<String, dynamic>? jobInfoDetail;
   bool isLoadingJobInfo = true;
@@ -115,6 +117,19 @@ class ChatRoomController extends ChangeNotifier {
   }
 
   bool get isHireConfirmed => isConfirmed || workerWorkConfirmed;
+
+  bool get hasOpenWorkConfirmation {
+    return workConfirmations.any(
+      (c) =>
+          c.status == 'proposed' ||
+          c.status == 'accepted' ||
+          c.status == 'scheduled',
+    );
+  }
+
+  bool get hasPendingWorkConfirmation {
+    return workConfirmations.any((c) => c.status == 'proposed');
+  }
 
   bool get inputEnabled {
     if (status == 'cancelled' ||
@@ -184,6 +199,7 @@ class ChatRoomController extends ChangeNotifier {
     unawaited(loadJobInfo());
     unawaited(refreshLocationAndDistance());
     unawaited(fetchWorkState());
+    unawaited(fetchWorkConfirmations());
     unawaited(fetchCheckinStatus());
   }
 
@@ -677,6 +693,55 @@ class ChatRoomController extends ChangeNotifier {
       }
     } catch (e) {
       if (!_disposed) onShowSnackbar?.call('❌ 오류 발생: $e');
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // 출근 확정 카드
+  // ─────────────────────────────────────────────
+
+  Future<void> fetchWorkConfirmations() async {
+    if (_disposed) return;
+    try {
+      final items = await WorkConfirmationService.getByRoom(chatRoomId);
+      if (_disposed) return;
+      workConfirmations = items;
+      if (items.any((c) => c.status != 'proposed' && c.status != 'cancelled')) {
+        isConfirmed = true;
+      }
+      _notify();
+    } catch (e) {
+      debugPrint('❌ fetchWorkConfirmations error: $e');
+    }
+  }
+
+  Future<void> respondToWorkConfirmation(
+    WorkConfirmation confirm,
+    String nextStatus,
+  ) async {
+    if (_disposed || workLoading) return;
+    workLoading = true;
+    _notify();
+    try {
+      await WorkConfirmationService.updateStatus(
+        confirm.id,
+        nextStatus,
+        actorType: userType,
+      );
+      await fetchWorkConfirmations();
+      await fetchWorkState();
+      if (nextStatus == 'accepted') {
+        isConfirmed = true;
+        onShowSnackbar?.call('출근 확정 제안을 수락했어요.');
+      } else if (nextStatus == 'cancelled') {
+        onShowSnackbar?.call('출근 확정 제안을 거절했어요.');
+      }
+    } catch (e) {
+      if (!_disposed) onShowSnackbar?.call('처리에 실패했어요: $e');
+    } finally {
+      if (_disposed) return;
+      workLoading = false;
+      _notify();
     }
   }
 

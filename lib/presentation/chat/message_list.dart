@@ -8,8 +8,10 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:iljujob/config/app_theme.dart';
+import '../../data/services/work_confirmation_service.dart';
 import 'chat_room_helpers.dart';
 import 'chat_room_components.dart';
+import 'work_confirmation_card.dart';
 
 // ─────────────────────────────────────────────
 // 메시지 목록 메인 위젯
@@ -34,6 +36,9 @@ class ChatMessageList extends StatelessWidget {
 
   /// "채용 확정하기" 버튼 콜백
   final VoidCallback? onConfirmHire;
+  final List<WorkConfirmation> workConfirmations;
+  final void Function(WorkConfirmation confirm)? onAcceptWorkConfirmation;
+  final void Function(WorkConfirmation confirm)? onRejectWorkConfirmation;
   final double inputOverlayHeight;
 
   const ChatMessageList({
@@ -46,6 +51,9 @@ class ChatMessageList extends StatelessWidget {
     this.targetName,
     this.showHireNudge = false,
     this.onConfirmHire,
+    this.workConfirmations = const [],
+    this.onAcceptWorkConfirmation,
+    this.onRejectWorkConfirmation,
     this.inputOverlayHeight = 112,
   });
 
@@ -140,6 +148,23 @@ class ChatMessageList extends StatelessWidget {
           ),
         );
       }
+    }
+
+    for (final confirm in workConfirmations) {
+      children.add(
+        WorkConfirmationCard(
+          confirm: confirm,
+          userType: userType,
+          onAccept:
+              userType == 'worker' && confirm.status == 'proposed'
+                  ? () => onAcceptWorkConfirmation?.call(confirm)
+                  : null,
+          onReject:
+              userType == 'worker' && confirm.status == 'proposed'
+                  ? () => onRejectWorkConfirmation?.call(confirm)
+                  : null,
+        ),
+      );
     }
 
     // 채용 확정 유도 버블
