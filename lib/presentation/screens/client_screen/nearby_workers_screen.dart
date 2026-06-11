@@ -144,13 +144,13 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
   }
 
   String _lastActiveLabel(dynamic raw) {
-    if (raw == null) return '접속 정보 없음';
+    if (raw == null) return '1개월+ 전 접속';
     DateTime? dt;
     if (raw is String) {
       dt = DateTime.tryParse(raw) ?? DateTime.tryParse('${raw}Z');
       if (dt != null && !raw.endsWith('Z') && !raw.contains('+')) dt = dt.toLocal();
     }
-    if (dt == null) return '접속 정보 없음';
+    if (dt == null) return '1개월+ 전 접속';
     final diff = DateTime.now().difference(dt.toLocal());
     if (diff.inMinutes < 60) return '방금 접속';
     if (diff.inHours < 24) return '오늘 접속';
@@ -260,6 +260,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
         final rawName = w['name']?.toString();
         final maskedName = _maskName(rawName);
         final alreadySent = w['already_sent'] == 1 || w['already_sent'] == true;
+        final availableToday = w['available_today'] == 1 || w['available_today'] == true;
 
         return GestureDetector(
           onTap: () {
@@ -347,6 +348,20 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                               color: alreadySent ? const Color(0xFF9CA3AF) : const Color(0xFF111827),
                             ),
                           ),
+                          if (availableToday && !alreadySent) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(99),
+                              ),
+                              child: const Text(
+                                '오늘 가능',
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+                              ),
+                            ),
+                          ],
                           if (alreadySent) ...[
                             const SizedBox(width: 6),
                             Container(
