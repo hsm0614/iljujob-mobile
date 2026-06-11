@@ -106,7 +106,7 @@ class ChatRoomController extends ChangeNotifier {
   void Function()? onShowEvaluationDialog;
   void Function()? onPopScreen;
   void Function()? onShowCalendarBlockedDialog;
-
+  void Function(WorkConfirmation)? onWorkConfirmationAccepted;
   // ─────────────────────────────────────────────
   // 계산 프로퍼티
   // ─────────────────────────────────────────────
