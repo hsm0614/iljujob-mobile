@@ -19,7 +19,7 @@ class ApplicantModel {
   final String? profileImageUrl;
   final int? birthYear;
   final String? gender;
-  final int? mannerPoint;
+  final int activityScore;
 
   ApplicantModel({
     required this.applicationId,
@@ -31,7 +31,7 @@ class ApplicantModel {
     this.profileImageUrl,
     this.birthYear,
     this.gender,
-    this.mannerPoint,
+    this.activityScore = 0,
   });
 
   factory ApplicantModel.fromJson(Map<String, dynamic> j) {
@@ -45,8 +45,36 @@ class ApplicantModel {
       profileImageUrl: j['profile_image_url'],
       birthYear: j['birth_year'] != null ? int.tryParse('${j['birth_year']}') : null,
       gender: j['gender'],
-      mannerPoint: j['manner_point'] != null ? int.tryParse('${j['manner_point']}') : null,
+      activityScore: j['activity_score'] != null ? int.tryParse('${j['activity_score']}') ?? 0 : 0,
     );
+  }
+
+  String get activityGrade {
+    if (activityScore >= 100) return 'S';
+    if (activityScore >= 70)  return 'A';
+    if (activityScore >= 40)  return 'B';
+    if (activityScore >= 20)  return 'C';
+    return 'NEW';
+  }
+
+  Color get activityGradeColor {
+    switch (activityGrade) {
+      case 'S':   return const Color(0xFFFF6B00);
+      case 'A':   return const Color(0xFF3B8AFF);
+      case 'B':   return const Color(0xFF0F766E);
+      case 'C':   return const Color(0xFF6B7280);
+      default:    return const Color(0xFF9CA3AF);
+    }
+  }
+
+  Color get activityGradeBg {
+    switch (activityGrade) {
+      case 'S':   return const Color(0xFFFFF0E6);
+      case 'A':   return const Color(0xFFE8F0FF);
+      case 'B':   return const Color(0xFFE8F7EF);
+      case 'C':   return const Color(0xFFF1F3F5);
+      default:    return const Color(0xFFF4F6FA);
+    }
   }
 
   bool get isNew => !isConfirmed;
@@ -503,6 +531,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                             style: const TextStyle(
                                 fontSize: 14, fontWeight: FontWeight.w600)),
                         const SizedBox(width: 6),
+                        _activityGradeBadge(applicant),
+                        const SizedBox(width: 4),
                         _statusChip(applicant),
                       ],
                     ),
@@ -646,6 +676,24 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       child: Text(
         applicant.workerName.isNotEmpty ? applicant.workerName[0] : '?',
         style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: c[1]),
+      ),
+    );
+  }
+
+  Widget _activityGradeBadge(ApplicantModel applicant) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: applicant.activityGradeBg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        applicant.activityGrade,
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: applicant.activityGradeColor,
+        ),
       ),
     );
   }
