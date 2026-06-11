@@ -96,7 +96,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
     final rawPhone = _phoneCtrl.text.trim();
     String cleanPhone = rawPhone.replaceAll(RegExp(r'\D'), '');
     if (cleanPhone.startsWith('82')) {
-      cleanPhone = '0' + cleanPhone.substring(2);
+      cleanPhone = '0${cleanPhone.substring(2)}';
     }
 
     try {

@@ -84,7 +84,6 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
   bool _isSubmitting = false;
   String? _payWarning;
   int _freeRemaining = 0;
-  int _freeLimit = 2;
   int _paidPassCount = 0;
   bool _passLoading = false;
 
@@ -136,11 +135,11 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
       );
       if (freeRes.statusCode == 200) {
         final d = jsonDecode(freeRes.body);
-        if (mounted)
+        if (mounted) {
           setState(() {
-            _freeLimit = (d['limit'] ?? 5) as int;
             _freeRemaining = (d['remaining'] ?? 0) as int;
           });
+        }
       }
 
       // 이용권 잔여
@@ -217,7 +216,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                                   shape: BoxShape.circle,
                                 ),
                                 selectedDecoration: BoxDecoration(
-                                  color: const Color(0xFF191F28),
+                                  color: Color(0xFF191F28),
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -240,8 +239,9 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                               if (isStart) {
                                 startDate = selected;
                                 if (endDate != null &&
-                                    endDate!.isBefore(selected))
+                                    endDate!.isBefore(selected)) {
                                   endDate = selected;
+                                }
                               } else {
                                 endDate = selected;
                               }
@@ -307,7 +307,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
   }
 
   // ─── 등록 실행 ───
-  Future<void> _submit({required bool isPaid}) async {
+  Future<void> _submit({required bool isPaid, String? passType}) async {
     if (startDate == null || endDate == null) {
       _showSnack('날짜를 선택해주세요');
       return;
@@ -329,7 +329,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
       final userType = prefs.getString('userType') ?? '';
       final j = widget.job;
 
-      await JobService.postJobWithImages(
+      final result = await JobService.postJobWithImages(
         title: j['title'] ?? '',
         category: j['category'] ?? '',
         location: j['location'] ?? '',
@@ -341,7 +341,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
         payType: payType,
         pay: pay,
         description: j['description'] ?? '',
-        images: [], // 재등록이므로 이미지는 기존 URL만 (서버측에서 복사 처리 필요 시 별도 대응)
+        images: [],
         clientId: clientId,
         weekdays: j['weekdays'],
         lat: (j['lat'] ?? 0.0).toDouble(),
@@ -350,27 +350,28 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
         publishAt: null,
         isSameDayPay: j['is_same_day_pay'] == 1,
         isPaid: isPaid,
+        passType: passType,
         isAgency: clientId == 1,
       );
 
       if (!mounted) return;
-      Navigator.pop(context); // 시트 닫기
+      Navigator.pop(context);
+
+      final isDelayed = !isPaid && result['status'] == 'reserved';
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('공고 등록이 완료되었습니다.'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: Text(isDelayed
+              ? '공고가 등록되었어요. 12시간 후 노출됩니다.'
+              : '공고가 즉시 노출됩니다!'),
+          backgroundColor: isDelayed ? const Color(0xFF6B7280) : const Color(0xFF22C55E),
         ),
       );
 
-      // 화면 이동
-      if (userType == 'client')
-        Navigator.pushNamedAndRemoveUntil(
-          context,
-          '/client_main',
-          (_) => false,
-        );
-      else
+      if (userType == 'client') {
+        Navigator.pushNamedAndRemoveUntil(context, '/client_main', (_) => false);
+      } else {
         Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+      }
     } catch (e) {
       if (mounted) _showSnack('오류: $e');
     } finally {
@@ -401,24 +402,25 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
             children: [
               const Text(
                 '등록 방식 선택',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: _blue,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: _blue),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                '동일한 공고를 새 날짜·급여로 재등록해요',
+                style: TextStyle(fontSize: 13, color: _sub),
               ),
               const SizedBox(height: 20),
 
               _OptionCard(
-                icon: Icons.assignment_outlined,
-                title: '기본 등록',
-                desc: '24시간 노출',
-                badge: '$_freeRemaining/$_freeLimit',
+                icon: Icons.access_time_rounded,
+                title: '일반 등록',
+                desc: '등록 후 12시간 후 노출',
+                badge: _freeRemaining > 0 ? '월 $_freeRemaining회 남음' : '한도 소진',
                 badgeOk: _freeRemaining > 0,
                 onTap: () {
                   Navigator.pop(ctx);
                   if (_freeRemaining <= 0) {
-                    _showSnack('이번 달 기본 등록 한도를 모두 사용했어요');
+                    _showSnack('이번 달 일반 등록 한도를 모두 사용했어요');
                     return;
                   }
                   _submit(isPaid: false);
@@ -427,18 +429,18 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
               const SizedBox(height: 12),
 
               _OptionCard(
-                icon: Icons.vertical_align_top_rounded,
-                title: '부스터 모드',
-                desc: '72시간 · 푸시 · 상단 고정',
-                badge: _passLoading ? '조회중…' : '보유 $_paidPassCount개',
+                icon: Icons.bolt_rounded,
+                title: '즉시 게시',
+                desc: '즉시 노출 + 상단 고정',
+                badge: _passLoading
+                    ? '조회중…'
+                    : _paidPassCount > 0
+                        ? '이용권 $_paidPassCount개'
+                        : '₩4,900',
                 badgeOk: _paidPassCount > 0,
                 onTap: () {
                   Navigator.pop(ctx);
-                  if (_paidPassCount <= 0) {
-                    _showSnack('이용권이 없습니다');
-                    return;
-                  }
-                  _submit(isPaid: true);
+                  _submit(isPaid: true, passType: 'instant');
                 },
               ),
               const SizedBox(height: 8),

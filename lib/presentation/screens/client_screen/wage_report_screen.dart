@@ -50,17 +50,19 @@ class _WageReportScreenState extends State<WageReportScreen> {
         pay: widget.currentPay,
         hours: widget.hours,
       );
-      if (mounted)
+      if (mounted) {
         setState(() {
           _report = r;
           _loading = false;
         });
+      }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _error = e.toString();
           _loading = false;
         });
+      }
     }
   }
 

@@ -103,7 +103,7 @@ class _FancyTabBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(26),
-        boxShadow: const [BoxShadow(color: const Color(0x1F000000), blurRadius: 14, offset: Offset(0, 6))],
+        boxShadow: const [BoxShadow(color: Color(0x1F000000), blurRadius: 14, offset: Offset(0, 6))],
       ),
       child: TabBar(
         tabs: tabs,
@@ -345,11 +345,11 @@ class _Empty extends StatelessWidget {
       alignment: Alignment.center,
       child: Column(
         children: [
-          const Icon(Icons.search_off_rounded, size: 44, color: const Color(0xFF9CA3AF)),
+          const Icon(Icons.search_off_rounded, size: 44, color: Color(0xFF9CA3AF)),
           const SizedBox(height: 8),
           const Text('검색 결과가 없어요', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
-          Text('‘$q’와(과) 관련된 질문을 찾지 못했어요.', style: const TextStyle(color: const Color(0xFF6B7280))),
+          Text('‘$q’와(과) 관련된 질문을 찾지 못했어요.', style: const TextStyle(color: Color(0xFF6B7280))),
         ],
       ),
     );

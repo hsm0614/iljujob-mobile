@@ -5,10 +5,10 @@ class FullImageGalleryScreen extends StatefulWidget {
   final int initialIndex;
 
   const FullImageGalleryScreen({
-    Key? key,
+    super.key,
     required this.urls,
     this.initialIndex = 0,
-  }) : super(key: key);
+  });
 
   @override
   State<FullImageGalleryScreen> createState() => _FullImageGalleryScreenState();

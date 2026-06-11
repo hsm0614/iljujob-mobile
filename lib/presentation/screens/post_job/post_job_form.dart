@@ -3827,13 +3827,12 @@ class _PublishSheetState extends State<_PublishSheet> {
 //  비교 카드
 // ════════════════════════════════════════════════════════
 class _CompareConfig {
+  // [항목, 기본, 즉시게시, 긴급호출, 강조여부]
   static const rows = [
-    ['노출 시점', '12시간 후', '즉시 노출', '1'],
-    ['노출 시간', '24시간', '72시간', '1'],
-    ['상단 고정', '미포함', '일시 상단 고정', '1'],
-    ['조건 알림', '미포함', '조건 맞는 알바생\n즉시 알림', '1'],
-    ['이용권 보호', '미포함', '보호 정책 적용', '1'],
-    ['긴급 호출', '불가', '별도 구매 시 가능', '0'],
+    ['노출 시점', '12시간 후', '즉시 노출', '즉시 노출', '1'],
+    ['상단 고정', '없음', '일시 고정', '만료까지\n고정', '1'],
+    ['긴급 호출', '불가', '불가', '포함\n(최대 10명)', '1'],
+    ['조건 알림', '없음', '알바생 알림', '알바생 알림', '0'],
   ];
 }
 
@@ -3850,29 +3849,9 @@ class _CompareCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const freeOk = true;
     final paidOk = paidPassCount > 0;
     return Column(
       children: [
-        Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: const Color(0xFFEEF5FF),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: _blue.withOpacity(0.25)),
-          ),
-          child: const Text(
-            '무료(12h 후 노출) · 즉시게시 ₩4,900(임시 고정) · 긴급 공고 ₩7,900(상단 고정+호출)',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: _blue,
-            ),
-          ),
-        ),
-
         Container(
           decoration: BoxDecoration(
             color: _bg,
@@ -3881,21 +3860,27 @@ class _CompareCard extends StatelessWidget {
           ),
           child: Column(
             children: [
+              // 헤더: 기본 / 즉시게시 / 긴급호출
               Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
                 child: Row(
                   children: [
                     const Expanded(flex: 3, child: SizedBox()),
                     Expanded(
                       flex: 2,
                       child: Center(
-                        child: Text(
-                          '기본',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: _sub,
-                          ),
+                        child: Text('기본',
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _sub)),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 2,
+                      child: Center(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(color: _blue, borderRadius: BorderRadius.circular(99)),
+                          child: const Text('즉시게시',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
                         ),
                       ),
                     ),
@@ -3903,22 +3888,10 @@ class _CompareCard extends StatelessWidget {
                       flex: 2,
                       child: Center(
                         child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _blue,
-                            borderRadius: BorderRadius.circular(99),
-                          ),
-                          child: const Text(
-                            '즉시게시',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white,
-                            ),
-                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(color: const Color(0xFFEF4444), borderRadius: BorderRadius.circular(99)),
+                          child: const Text('긴급호출',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
                         ),
                       ),
                     ),
@@ -3931,7 +3904,8 @@ class _CompareCard extends StatelessWidget {
                   label: r[0],
                   free: r[1],
                   paid: r[2],
-                  highlight: r[3] == '1',
+                  urgent: r[3],
+                  highlight: r[4] == '1',
                 ),
               ),
             ],
@@ -4035,54 +4009,59 @@ class _CompareCard extends StatelessWidget {
 }
 
 class _CompareRow extends StatelessWidget {
-  final String label, free, paid;
+  final String label, free, paid, urgent;
   final bool highlight;
   const _CompareRow({
     required this.label,
     required this.free,
     required this.paid,
+    required this.urgent,
     required this.highlight,
   });
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
     decoration: BoxDecoration(
-      color: highlight ? const Color(0xFFF2F7FF) : Colors.white,
+      color: highlight ? const Color(0xFFF8FAFF) : Colors.white,
       border: const Border(top: BorderSide(color: _border, width: 0.5)),
     ),
     child: Row(
       children: [
         Expanded(
           flex: 3,
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: _sub,
-            ),
+          child: Text(label,
+            style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: _sub)),
+        ),
+        Expanded(
+          flex: 2,
+          child: Center(
+            child: Text(free,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 11, color: _label)),
           ),
         ),
         Expanded(
           flex: 2,
           child: Center(
-            child: Text(
-              free,
-              style: const TextStyle(fontSize: 11, color: _label),
-            ),
-          ),
-        ),
-        Expanded(
-          flex: 2,
-          child: Center(
-            child: Text(
-              paid,
-              style: const TextStyle(
+            child: Text(paid,
+              textAlign: TextAlign.center,
+              style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: _blue,
-              ),
-            ),
+                color: highlight ? _blue : _label,
+              )),
+          ),
+        ),
+        Expanded(
+          flex: 2,
+          child: Center(
+            child: Text(urgent,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: highlight ? const Color(0xFFEF4444) : _label,
+              )),
           ),
         ),
       ],

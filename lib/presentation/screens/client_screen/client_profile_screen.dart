@@ -99,8 +99,8 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
   }
 
   void _showReportDialog(String targetType, int targetId) {
-    final TextEditingController _memoController = TextEditingController();
-    String? _selectedReason;
+    final TextEditingController memoController = TextEditingController();
+    String? selectedReason;
 
     final List<String> reasonOptions = [
       '음란하거나 부적절한 콘텐츠',
@@ -120,7 +120,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 DropdownButtonFormField<String>(
-                  initialValue: _selectedReason,
+                  initialValue: selectedReason,
                   items:
                       reasonOptions
                           .map(
@@ -131,7 +131,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                           )
                           .toList(),
                   onChanged: (val) {
-                    _selectedReason = val;
+                    selectedReason = val;
                   },
                   decoration: const InputDecoration(
                     labelText: '신고 사유 선택',
@@ -140,7 +140,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                 ),
                 const SizedBox(height: 8),
                 TextField(
-                  controller: _memoController,
+                  controller: memoController,
                   maxLines: 3,
                   decoration: const InputDecoration(
                     hintText: '상세 내용을 입력해주세요 (선택)',
@@ -163,7 +163,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
 
               ElevatedButton(
                 onPressed: () async {
-                  if (_selectedReason == null || _selectedReason!.isEmpty) {
+                  if (selectedReason == null || selectedReason!.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('신고 사유를 선택해주세요')),
                     );
@@ -182,8 +182,8 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                       'reporterId': reporterId,
                       'targetId': targetId,
                       'targetType': targetType,
-                      'reasonCategory': _selectedReason,
-                      'reasonDetail': _memoController.text.trim(),
+                      'reasonCategory': selectedReason,
+                      'reasonDetail': memoController.text.trim(),
                     }),
                   );
 

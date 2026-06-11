@@ -43,7 +43,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   String? userType;
   int? myUserId;
   bool isBlocked = false;
-  int _currentImage = 0;
+  final int _currentImage = 0;
   final PageController _pageController = PageController();
 double? _distanceMeters;
 String? _nearStationName;
@@ -192,6 +192,7 @@ List<String> _jobKeywords(Job job) {
     setState(() => isLoading = false);
   }
 
+  @override
   void didChangeDependencies() {
     super.didChangeDependencies();
   }
@@ -550,7 +551,7 @@ Future<bool> _showChatMoveNoticeDialog() async {
                         '나중에 보기',
                         style: TextStyle(
                           fontSize: 14,
-                          color: const Color(0xFF191F28),
+                          color: Color(0xFF191F28),
                         ),
                       ),
                     ),
@@ -860,9 +861,9 @@ if (jobIdInt != null) {
 }
 
   void _showReportDialog() {
-    final TextEditingController _reasonDetailController =
+    final TextEditingController reasonDetailController =
         TextEditingController();
-    String? _selectedCategory;
+    String? selectedCategory;
 
     final List<String> reasonCategories = [
       '사기 또는 허위 공고',
@@ -883,8 +884,8 @@ if (jobIdInt != null) {
                 const Text('문제가 되는 내용을 선택해주세요.\n운영팀이 확인 후 24시간 이내 조치합니다.'),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  initialValue: _selectedCategory,
-                  onChanged: (val) => _selectedCategory = val,
+                  initialValue: selectedCategory,
+                  onChanged: (val) => selectedCategory = val,
                   items:
                       reasonCategories
                           .map(
@@ -898,7 +899,7 @@ if (jobIdInt != null) {
                 ),
                 const SizedBox(height: 8),
                 TextField(
-                  controller: _reasonDetailController,
+                  controller: reasonDetailController,
                   maxLines: 3,
                   decoration: const InputDecoration(
                     hintText: '상세한 내용을 작성해주세요 (선택)',
@@ -914,8 +915,8 @@ if (jobIdInt != null) {
               ),
               ElevatedButton(
                 onPressed: () async {
-                  final category = _selectedCategory;
-                  final detail = _reasonDetailController.text.trim();
+                  final category = selectedCategory;
+                  final detail = reasonDetailController.text.trim();
 
                   if (category == null || category.isEmpty) {
                     _showSnack('신고 사유를 선택해주세요.');
@@ -1485,7 +1486,7 @@ Widget _buildLocationSection() {
     if (_nearStationName == null || _nearStationName!.isEmpty) return '';
     final w = _nearStationWalkMin;
     if (w == null) return '가까운 ${_nearStationName!}';
-    return '가까운 ${_nearStationName!}역 도보 ${w}분';
+    return '가까운 ${_nearStationName!}역 도보 $w분';
   }
 
   final coordText = '${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}';
@@ -1582,10 +1583,10 @@ Widget _buildLocationSection() {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: () => _copyAddress(copyText),
-              icon: const Icon(Icons.copy_rounded, size: 18, color: const Color(0xFF191F28)),
+              icon: const Icon(Icons.copy_rounded, size: 18, color: Color(0xFF191F28)),
               label: const Text(
                 '주소 복사',
-                style: TextStyle(color: const Color(0xFF191F28), fontWeight: FontWeight.w800),
+                style: TextStyle(color: Color(0xFF191F28), fontWeight: FontWeight.w800),
               ),
             ),
           ),
@@ -1658,7 +1659,7 @@ Widget _buildLocationSection() {
                       Expanded(
                         child: Text(
                           (address.isNotEmpty ?? false) ? address : '위치: $coordText',
-                          style: const TextStyle(fontSize: 13, color: const Color(0xFF191F28)),
+                          style: const TextStyle(fontSize: 13, color: Color(0xFF191F28)),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1825,7 +1826,7 @@ Widget _buildClientSection() {
                         '사업자 정보',
                         style: TextStyle(
                           fontSize: 12,
-                          color: const Color(0xFF191F28),
+                          color: Color(0xFF191F28),
                         ),
                       ),
                       SizedBox(width: 6),
@@ -1885,7 +1886,7 @@ Widget _buildClientSection() {
                           child: const Icon(
                             Icons.assignment_outlined,
                             size: 24,
-                            color: const Color(0xFF3B8AFF),
+                            color: Color(0xFF3B8AFF),
                           ),
                         ),
                         const SizedBox(height: 10),
@@ -1978,10 +1979,10 @@ class _ImagesCarousel extends StatelessWidget {
   final String baseUrl;
 
   const _ImagesCarousel({
-    Key? key,
+    super.key,
     required this.imageUrls,
     required this.baseUrl,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

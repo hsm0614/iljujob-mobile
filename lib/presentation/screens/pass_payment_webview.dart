@@ -199,7 +199,7 @@ bool _isExternalScheme(String url) {
     return WebViewController();
   }
 
-  bool _hasHandledIntent = false;
+  final bool _hasHandledIntent = false;
   bool _hasHandledResult = false;
   bool _isInternalRedirect = false; // ✅ 내부에서 보낸 success.html → 딥링크 구분용
 
@@ -425,7 +425,7 @@ Future.delayed(const Duration(seconds: 2), () async {
     // ✅ 최대 3회까지 재시도 (점점 늘어나는 간격)
     else if (status == 'ready' && retryCount < 3) {
       final delay = 3 * (retryCount + 1);
-      debugPrint('🕐 아직 결제 미완료 상태 (ready) → ${delay}초 후 재시도 (${retryCount + 1}/3)');
+      debugPrint('🕐 아직 결제 미완료 상태 (ready) → $delay초 후 재시도 (${retryCount + 1}/3)');
       await Future.delayed(Duration(seconds: delay));
       return _verifyWithServerByMerchantUid(merchantUid, retryCount: retryCount + 1);
     }

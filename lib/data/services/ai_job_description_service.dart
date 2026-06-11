@@ -110,8 +110,9 @@ class AIJobDescriptionService {
     int score = 100;
     
     // 글자 수 기준 점수
-    if (description.length < 200) score -= 20;
-    else if (description.length > 600) score -= 10;
+    if (description.length < 200) {
+      score -= 20;
+    } else if (description.length > 600) score -= 10;
     
     // 이슈 개수별 점수 차감
     score -= (issueCount * 15);

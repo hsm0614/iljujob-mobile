@@ -25,7 +25,7 @@ class IamportPayment extends StatelessWidget {
   final _appLinks = AppLinks();
 
   IamportPayment({
-    Key? key,
+    super.key,
     this.appBar,
     this.initialChild,
     required this.userCode,
@@ -33,37 +33,37 @@ class IamportPayment extends StatelessWidget {
     required this.data,
     required this.callback,
     this.gestureRecognizers,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     IamportValidation validation = IamportValidation(
-      this.userCode,
-      this.data,
-      this.callback,
+      userCode,
+      data,
+      callback,
     );
 
     if (validation.getIsValid()) {
       var redirectUrl = UrlData.redirectUrl;
-      if (this.data.mRedirectUrl != null &&
-          this.data.mRedirectUrl!.isNotEmpty) {
-        redirectUrl = this.data.mRedirectUrl!;
+      if (data.mRedirectUrl != null &&
+          data.mRedirectUrl!.isNotEmpty) {
+        redirectUrl = data.mRedirectUrl!;
       }
 
       var init =
-          this.tierCode == null
-              ? 'IMP.init("${this.userCode}");'
-              : 'IMP.agency("${this.userCode}", "${this.tierCode}");';
+          tierCode == null
+              ? 'IMP.init("${userCode}");'
+              : 'IMP.agency("${userCode}", "${tierCode}");';
 
       return IamportWebView(
         type: ActionType.payment,
-        appBar: this.appBar,
-        initialChild: this.initialChild,
-        gestureRecognizers: this.gestureRecognizers,
+        appBar: appBar,
+        initialChild: initialChild,
+        gestureRecognizers: gestureRecognizers,
         executeJS: (WebViewController controller) {
           controller.evaluateJavascript('''
             $init
-            IMP.request_pay(${jsonEncode(this.data.toJson())}, function(response) {
+            IMP.request_pay(${jsonEncode(data.toJson())}, function(response) {
               const query = [];
               Object.keys(response).forEach(function(key) {
                 query.push(key + "=" + response[key]);
@@ -73,14 +73,14 @@ class IamportPayment extends StatelessWidget {
           ''');
         },
         customPGAction: (WebViewController controller) {
-          if (this.data.pg == 'smilepay') {
+          if (data.pg == 'smilepay') {
             // webview_flutter에서 iOS는 쿠키가 기본적으로 허용되어있는 것으로 추정
             if (Platform.isAndroid) {
               controller.setAcceptThirdPartyCookies(true);
             }
           }
           /* [v0.9.6] niceMobileV2: true 대비 코드 작성 */
-          if (this.data.pg == 'nice' && this.data.payMethod == 'trans') {
+          if (data.pg == 'nice' && data.payMethod == 'trans') {
             try {
               StreamSubscription sub = _appLinks.uriLinkStream.listen((
                 Uri? link,
@@ -109,22 +109,22 @@ class IamportPayment extends StatelessWidget {
           return null;
         },
         useQueryData: (Map<String, String> data) {
-          this.callback(data);
+          callback(data);
         },
         isPaymentOver: (String url) {
           if (url.startsWith(redirectUrl)) {
             return true;
           }
 
-          if (this.data.payMethod == 'trans') {
+          if (data.payMethod == 'trans') {
             /* [IOS] imp_uid와 merchant_uid값만 전달되기 때문에 결제 성공 또는 실패 구분할 수 없음 */
             String decodedUrl = Uri.decodeComponent(url);
             Uri parsedUrl = Uri.parse(decodedUrl);
             String scheme = parsedUrl.scheme;
-            if (this.data.pg == 'html5_inicis') {
+            if (data.pg == 'html5_inicis') {
               Map<String, String> query = parsedUrl.queryParameters;
               if (query['m_redirect_url'] != null &&
-                  scheme == this.data.appScheme.toLowerCase()) {
+                  scheme == data.appScheme.toLowerCase()) {
                 if (query['m_redirect_url']!.contains(redirectUrl)) {
                   return true;
                 }

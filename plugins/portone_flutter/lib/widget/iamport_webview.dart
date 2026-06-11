@@ -33,7 +33,7 @@ class IamportWebView extends StatefulWidget {
   final Set<Factory<OneSequenceGestureRecognizer>>? gestureRecognizers;
   final String? customUserAgent;
 
-  IamportWebView({
+  const IamportWebView({super.key, 
     required this.type,
     this.appBar,
     this.initialChild,
@@ -90,10 +90,10 @@ class _IamportWebViewState extends State<IamportWebView> {
               gestureRecognizers: widget.gestureRecognizers,
               userAgent: widget.customUserAgent,
               onWebViewCreated: (controller) {
-                this._webViewController = controller;
+                _webViewController = controller;
                 if (widget.type == ActionType.payment) {
                   // 스마일페이, 나이스 실시간 계좌이체
-                  _sub = widget.customPGAction(this._webViewController);
+                  _sub = widget.customPGAction(_webViewController);
                 }
               },
               onPageFinished: (String url) {
@@ -105,7 +105,7 @@ class _IamportWebViewState extends State<IamportWebView> {
                 }
                 // 페이지 로딩 완료시 IMP 코드 실행
                 if (_isImpLoaded == 0) {
-                  widget.executeJS(this._webViewController);
+                  widget.executeJS(_webViewController);
                   _isImpLoaded++;
                 }
               },

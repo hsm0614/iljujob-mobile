@@ -348,7 +348,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                             shape: BoxShape.circle,
                           ),
                           selectedDecoration: BoxDecoration(
-                            color: const Color(0xFF191F28),
+                            color: Color(0xFF191F28),
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -453,7 +453,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
   }
 
   void _showTimeRangePickerBottomSheet() {
-    TimeOfDay _align10(TimeOfDay t) {
+    TimeOfDay align10(TimeOfDay t) {
       int m = ((t.minute + 5) ~/ 10) * 10;
       int h = t.hour;
       if (m == 60) {
@@ -463,35 +463,35 @@ class _EditJobScreenState extends State<EditJobScreen> {
       return TimeOfDay(hour: h, minute: m);
     }
 
-    int _toMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
-    bool _isOvernight(TimeOfDay s, TimeOfDay e) =>
-        _toMinutes(e) <= _toMinutes(s);
+    int toMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
+    bool isOvernight(TimeOfDay s, TimeOfDay e) =>
+        toMinutes(e) <= toMinutes(s);
 
-    int _durationMinutes(TimeOfDay s, TimeOfDay e) {
-      final sm = _toMinutes(s), em = _toMinutes(e);
+    int durationMinutes(TimeOfDay s, TimeOfDay e) {
+      final sm = toMinutes(s), em = toMinutes(e);
       int d = em - sm;
       if (d <= 0) d += 24 * 60;
       return d;
     }
 
-    String _durationLabel(int mins) {
+    String durationLabel(int mins) {
       final h = mins ~/ 60, m = mins % 60;
-      if (h == 0) return '${m}분';
-      if (m == 0) return '${h}시간';
-      return '${h}시간 ${m}분';
+      if (h == 0) return '$m분';
+      if (m == 0) return '$h시간';
+      return '$h시간 $m분';
     }
 
-    String _fmt12(TimeOfDay t) {
+    String fmt12(TimeOfDay t) {
       final period = t.period == DayPeriod.am ? '오전' : '오후';
       int h = t.hourOfPeriod == 0 ? 12 : t.hourOfPeriod;
       final mm = t.minute.toString().padLeft(2, '0');
       return '$period $h:$mm';
     }
 
-    TimeOfDay selectedStart = _align10(
+    TimeOfDay selectedStart = align10(
       startTime ?? const TimeOfDay(hour: 9, minute: 0),
     );
-    TimeOfDay selectedEnd = _align10(
+    TimeOfDay selectedEnd = align10(
       endTime ?? selectedStart.replacing(hour: (selectedStart.hour + 1) % 24),
     );
 
@@ -509,13 +509,13 @@ class _EditJobScreenState extends State<EditJobScreen> {
             final bottomInset = MediaQuery.of(context).viewInsets.bottom;
             final safePad = MediaQuery.of(context).viewPadding.bottom;
 
-            void _applyStart(TimeOfDay t) =>
-                setModalState(() => selectedStart = _align10(t));
-            void _applyEnd(TimeOfDay t) =>
-                setModalState(() => selectedEnd = _align10(t));
+            void applyStart(TimeOfDay t) =>
+                setModalState(() => selectedStart = align10(t));
+            void applyEnd(TimeOfDay t) =>
+                setModalState(() => selectedEnd = align10(t));
 
-            final overnight = _isOvernight(selectedStart, selectedEnd);
-            final duration = _durationMinutes(selectedStart, selectedEnd);
+            final overnight = isOvernight(selectedStart, selectedEnd);
+            final duration = durationMinutes(selectedStart, selectedEnd);
 
             return FractionallySizedBox(
               heightFactor: 0.85,
@@ -568,7 +568,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '${_fmt12(selectedStart)} ~ ${overnight ? '익일 ' : ''}${_fmt12(selectedEnd)}',
+                            '${fmt12(selectedStart)} ~ ${overnight ? '익일 ' : ''}${fmt12(selectedEnd)}',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
@@ -576,9 +576,9 @@ class _EditJobScreenState extends State<EditJobScreen> {
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            '총 근무시간 ${_durationLabel(duration)}',
+                            '총 근무시간 ${durationLabel(duration)}',
                             style: const TextStyle(
-                              color: const Color(0xFF6B7280),
+                              color: Color(0xFF6B7280),
                             ),
                           ),
                         ],
@@ -631,7 +631,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                     selectedStart.minute,
                                   ),
                                   onTimeChange:
-                                      (dt) => _applyStart(
+                                      (dt) => applyStart(
                                         TimeOfDay.fromDateTime(dt),
                                       ),
                                 ),
@@ -669,7 +669,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                   ),
                                   onTimeChange:
                                       (dt) =>
-                                          _applyEnd(TimeOfDay.fromDateTime(dt)),
+                                          applyEnd(TimeOfDay.fromDateTime(dt)),
                                 ),
                               ),
                             ],
@@ -700,8 +700,8 @@ class _EditJobScreenState extends State<EditJobScreen> {
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: () {
-                          if (_toMinutes(selectedStart) ==
-                              _toMinutes(selectedEnd)) {
+                          if (toMinutes(selectedStart) ==
+                              toMinutes(selectedEnd)) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('시작과 종료 시간이 같습니다')),
                             );
@@ -861,9 +861,9 @@ class _EditJobScreenState extends State<EditJobScreen> {
     final ok = _formKey.currentState?.validate() ?? false;
     if (!ok) {
       // 간단 우선순위 스크롤
-      if (_title.text.trim().isEmpty)
+      if (_title.text.trim().isEmpty) {
         _scrollToKey(_titleKey);
-      else if (_location.text.trim().isEmpty)
+      } else if (_location.text.trim().isEmpty)
         _scrollToKey(_locationKey);
       else if (_pay.text.trim().isEmpty)
         _scrollToKey(_payKey);
@@ -976,7 +976,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                       subtitle,
                       style: const TextStyle(
                         fontSize: 12,
-                        color: const Color(0xFF6B7280),
+                        color: Color(0xFF6B7280),
                       ),
                     ),
                   ],
@@ -1076,7 +1076,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
   Widget _deleteBadge() => Container(
     padding: const EdgeInsets.all(4),
     decoration: const BoxDecoration(
-      color: const Color(0xFF6B7280),
+      color: Color(0xFF6B7280),
       shape: BoxShape.circle,
     ),
     child: const Icon(Icons.close, color: Colors.white, size: 16),
@@ -1096,7 +1096,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
           '사진은 선택 사항이에요.\n현장 사진/근무복/약도 등을 올리면 지원율이 올라갑니다.',
           style: TextStyle(
             fontSize: 12,
-            color: const Color(0xFF6B7280),
+            color: Color(0xFF6B7280),
             height: 1.35,
           ),
         ),
@@ -1109,7 +1109,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
         Row(
           children: [
             Chip(
-              label: Text('총 ${total}장'),
+              label: Text('총 $total장'),
               visualDensity: VisualDensity.compact,
             ),
             const SizedBox(width: 8),
@@ -1212,7 +1212,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
           ),
           child: const Text(
             '날짜는 KST(UTC+9) 자정 기준으로 저장됩니다.',
-            style: TextStyle(fontSize: 12, color: const Color(0xFF6B7280)),
+            style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
           ),
         ),
       ],
@@ -1251,7 +1251,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right, color: const Color(0xFF9CA3AF)),
+            const Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
           ],
         ),
       ),
@@ -1273,8 +1273,9 @@ class _EditJobScreenState extends State<EditJobScreen> {
               onSelected: (v) {
                 setState(() {
                   if (v) {
-                    if (!selectedWeekdays.contains(day))
+                    if (!selectedWeekdays.contains(day)) {
                       selectedWeekdays.add(day);
+                    }
                   } else {
                     selectedWeekdays.remove(day);
                   }
@@ -1321,7 +1322,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                     '근무 시간',
                     style: TextStyle(
                       fontSize: 12,
-                      color: const Color(0xFF6B7280),
+                      color: Color(0xFF6B7280),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -1352,7 +1353,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                 ),
               ),
             const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, color: const Color(0xFF9CA3AF)),
+            const Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
           ],
         ),
       ),
@@ -1394,7 +1395,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
       dropdownColor: Colors.white,
       menuMaxHeight: 340,
       elevation: 6,
-      style: const TextStyle(fontSize: 14, color: const Color(0xFF191F28)),
+      style: const TextStyle(fontSize: 14, color: Color(0xFF191F28)),
       decoration: _inputDeco('하는 일', hint: '업종을 선택하세요'),
       validator: (_) => category.trim().isEmpty ? '업종을 선택하세요' : null,
       items:

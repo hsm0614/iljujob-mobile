@@ -125,6 +125,8 @@
 		<key>NSAllowsArbitraryLoadsInWebContent</key>
 		<true/>
 	</dict>
+	<key>NSCalendarsUsageDescription</key>
+	<string>근무 일정을 캘린더에 저장하기 위해 접근 권한이 필요합니다.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>채팅에서 사진을 보내거나, 공고 등록 시 사진을 촬영하여 첨부하는 데 카메라가 필요합니다.</string>
 	<key>NSLocalNetworkUsageDescription</key>

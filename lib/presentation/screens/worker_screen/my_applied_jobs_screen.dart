@@ -555,7 +555,7 @@ Future<void> _loadBookmarkedJobs() async {
                       const SizedBox(width: 6),
                       Text(
                         sub,
-                        style: const TextStyle(fontSize: 12, color: const Color(0xFF9CA3AF), fontWeight: FontWeight.w600),
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w600),
                       ),
                     ],
                   ],
@@ -579,7 +579,7 @@ Future<void> _loadBookmarkedJobs() async {
         Row(
           children: [
             tabItem(idx: 0, title: '지원 현황', sub: null),
-            tabItem(idx: 1, title: '찜한 공고', sub: '(${bookmarkedCount}건)'),
+            tabItem(idx: 1, title: '찜한 공고', sub: '($bookmarkedCount건)'),
           ],
         ),
         Container(height: 1, color: const Color(0xFFE7E7E7)),
@@ -720,7 +720,7 @@ final isDeleted = job.status == 'deleted';
             width: 74,
             height: 74,
             color: const Color(0xFFF2F4F7),
-            child: const Icon(Icons.image_not_supported_outlined, color: const Color(0xFFBCC0CB)),
+            child: const Icon(Icons.image_not_supported_outlined, color: Color(0xFFBCC0CB)),
           ),
         ),
       );
@@ -757,7 +757,7 @@ final isDeleted = job.status == 'deleted';
                           job.location,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 12.5, color: const Color(0xFF6B7280), fontWeight: FontWeight.w600),
+                          style: const TextStyle(fontSize: 12.5, color: Color(0xFF6B7280), fontWeight: FontWeight.w600),
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -786,14 +786,14 @@ final isDeleted = job.status == 'deleted';
 
                   Text(
                     '$start ~ $end  ·  ${job.workingHours}',
-                    style: const TextStyle(fontSize: 13, color: const Color(0xFF6B7280), fontWeight: FontWeight.w600),
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280), fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 6),
 
                 if (job.pay.isNotEmpty)
   Text(
     '${job.payType} ${_fmtPay(job.pay)}원${bookmarkedTab ? '' : '   ·   지원일 $appliedAt'}',
-    style: const TextStyle(fontSize: 13, color: const Color(0xFF191F28), fontWeight: FontWeight.w700),
+    style: const TextStyle(fontSize: 13, color: Color(0xFF191F28), fontWeight: FontWeight.w700),
   ),
 
                   const SizedBox(height: 10),

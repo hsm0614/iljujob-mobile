@@ -45,6 +45,7 @@ class ChatRoomController extends ChangeNotifier {
     onScrollToBottom = null;
     onSystemMessage = null;
     onShowEvaluationDialog = null;
+    onWorkConfirmationAccepted = null;
     onPopScreen = null;
     onShowCalendarBlockedDialog = null;
     super.dispose();
@@ -107,6 +108,7 @@ class ChatRoomController extends ChangeNotifier {
   void Function()? onPopScreen;
   void Function()? onShowCalendarBlockedDialog;
   void Function(WorkConfirmation)? onWorkConfirmationAccepted;
+
   // ─────────────────────────────────────────────
   // 계산 프로퍼티
   // ─────────────────────────────────────────────
@@ -734,8 +736,11 @@ class ChatRoomController extends ChangeNotifier {
       await fetchWorkState();
       if (nextStatus == 'accepted') {
         onShowSnackbar?.call('출근 확정 제안을 수락했어요. 근무일에 꼭 출근해주세요!');
+        onWorkConfirmationAccepted?.call(confirm);
       } else if (nextStatus == 'cancelled') {
         onShowSnackbar?.call('출근 확정 제안을 거절했어요.');
+      } else if (nextStatus == 'completed') {
+        onShowEvaluationDialog?.call();
       }
     } catch (e) {
       if (!_disposed) onShowSnackbar?.call('처리에 실패했어요: $e');
@@ -1259,8 +1264,7 @@ class ChatRoomController extends ChangeNotifier {
       body: jsonEncode({
         'targetId': targetId,
         'targetType': targetType,
-        'mannerDelta': isGood ? 1 : -1,
-        'penaltyDelta': isGood ? 0 : 1,
+        'isGood': isGood,
         'chatRoomId': chatRoomId,
         'jobId': jobId,
       }),

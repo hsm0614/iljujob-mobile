@@ -77,7 +77,7 @@ DateTime? _parseWithReferenceUtc(dynamic raw, {DateTime? refUtc}) {
 
   final base = s0.contains('T') ? s0 : s0.replaceFirst(' ', 'T');
   final utcVer = DateTime.tryParse('${base}Z')?.toUtc();
-  final kstVer = DateTime.tryParse('${base}+09:00')?.toUtc();
+  final kstVer = DateTime.tryParse('$base+09:00')?.toUtc();
 
   if (utcVer != null && kstVer != null && refUtc != null) {
     final diffUtc = (utcVer.difference(refUtc)).abs();
@@ -219,7 +219,7 @@ this.welfare,
       publishAt != null && publishAt!.isAfter(DateTime.now().toUtc());
 
   factory Job.fromJson(Map<String, dynamic> json) {
-    T? _pick<T>(List<String> keys) {
+    T? pick<T>(List<String> keys) {
       for (final k in keys) {
         final v = json[k];
         if (v != null) return v as T;
@@ -243,11 +243,11 @@ this.welfare,
           json['userNumber']?.toString() ?? json['user_number']?.toString(),
       title: json['title'] ?? '',
       location: json['location'] ?? '',
-      locationCity: _pick<String>(['location_city', 'locationCity']) ?? '',
+      locationCity: pick<String>(['location_city', 'locationCity']) ?? '',
       pay: json['pay']?.toString() ?? '',
-      payType: _pick<String>(['pay_type', 'payType']) ?? '일급',
-      startTime: _pick<String>(['start_time', 'startTime'])?.toString() ?? '',
-      endTime: _pick<String>(['end_time', 'endTime'])?.toString() ?? '',
+      payType: pick<String>(['pay_type', 'payType']) ?? '일급',
+      startTime: pick<String>(['start_time', 'startTime'])?.toString() ?? '',
+      endTime: pick<String>(['end_time', 'endTime'])?.toString() ?? '',
       category: json['category'] ?? '기타',
       description: json['description'],
       company: json['company'],
@@ -259,8 +259,8 @@ this.welfare,
       pinnedUntil: pinnedUntilUtc,
 
       // 날짜만: KST 자정 의미 → UTC 보관
-      startDate: _parseDateOnlyUtcFromKST(_pick(['start_date', 'startDate'])),
-      endDate: _parseDateOnlyUtcFromKST(_pick(['end_date', 'endDate'])),
+      startDate: _parseDateOnlyUtcFromKST(pick(['start_date', 'startDate'])),
+      endDate: _parseDateOnlyUtcFromKST(pick(['end_date', 'endDate'])),
 
       weekdays: json['weekdays'],
       lat: (() {

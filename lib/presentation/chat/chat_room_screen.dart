@@ -3,10 +3,13 @@
 // 채팅방 화면 — build() 전담.
 // 모든 상태/로직은 ChatRoomController에 있음.
 
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:iljujob/config/constants.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -65,9 +68,15 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   final _inputFocusNode = FocusNode();
   bool _jobPanelExpanded = true;
 
+  // 긴급호출 수락/거절 상태 (worker 전용)
+  String? _urgentCallStatus;
+  bool _urgentCallBusy = false;
+
   @override
   void initState() {
     super.initState();
+    _urgentCallStatus =
+        widget.jobInfo['direct_message_status']?.toString();
     KeyboardMode.setAdjustResize();
 
     // 컨트롤러에 UI 콜백 주입
@@ -855,6 +864,143 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
     }
   }
 
+  // ─────────────────────────────────────────────
+  // 긴급호출 수락/거절 (알바생 전용)
+  // ─────────────────────────────────────────────
+
+  Future<void> _respondToUrgentCall(String status) async {
+    final logId = widget.jobInfo['direct_message_log_id'];
+    if (logId == null || _urgentCallBusy) return;
+    setState(() => _urgentCallBusy = true);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('authToken') ?? prefs.getString('accessToken') ?? '';
+      final resp = await http.patch(
+        Uri.parse('$baseUrl/api/direct-message/$logId/respond'),
+        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+        body: jsonEncode({'status': status}),
+      );
+      if (resp.statusCode == 200) {
+        setState(() => _urgentCallStatus = status);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(
+            content: Text(status == 'accepted' ? '긴급호출을 수락했어요!' : '긴급호출을 거절했어요.'),
+            backgroundColor: status == 'accepted'
+                ? const Color(0xFF22C55E)
+                : const Color(0xFF6B7280),
+          ));
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _urgentCallBusy = false);
+  }
+
+  Widget _buildUrgentCallBanner(ChatRoomController ctrl) {
+    final isUrgent = widget.jobInfo['is_urgent_call'] == 1 ||
+        widget.jobInfo['is_urgent_call'] == true;
+    if (!isUrgent || ctrl.userType != 'worker') return const SizedBox.shrink();
+    if (_urgentCallStatus == 'accepted') {
+      return Container(
+        margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFDCFCE7),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFF86EFAC)),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E), size: 18),
+            SizedBox(width: 8),
+            Text('긴급호출 수락 완료', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF15803D))),
+          ],
+        ),
+      );
+    }
+    if (_urgentCallStatus == 'rejected') {
+      return Container(
+        margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF3F4F6),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.block_rounded, color: Color(0xFF9CA3AF), size: 18),
+            SizedBox(width: 8),
+            Text('긴급호출을 거절했어요.', style: TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+          ],
+        ),
+      );
+    }
+    if (_urgentCallStatus != 'sent') return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFF6B1A), Color(0xFFFF9500)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: const Color(0xFFFF9500).withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 3))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Text('⚡', style: TextStyle(fontSize: 15)),
+              SizedBox(width: 6),
+              Text('긴급 호출이 왔어요!', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          const Text('사장님이 지금 바로 일할 분을 찾고 있어요.\n수락하면 바로 연결됩니다.',
+              style: TextStyle(fontSize: 12, color: Colors.white70, height: 1.4)),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _urgentCallBusy ? null : () => _respondToUrgentCall('rejected'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white54),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  child: const Text('거절', style: TextStyle(fontWeight: FontWeight.w700)),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                flex: 2,
+                child: ElevatedButton(
+                  onPressed: _urgentCallBusy ? null : () => _respondToUrgentCall('accepted'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: const Color(0xFFFF6B1A),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                  child: _urgentCallBusy
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF6B1A)))
+                      : const Text('수락하기', style: TextStyle(fontWeight: FontWeight.w900)),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _confirmCancelApplication(ChatRoomController ctrl) async {
     if (ctrl.userType != 'worker') {
       ctrl.onShowSnackbar?.call('지원 취소는 구직자만 가능합니다.');
@@ -1139,6 +1285,9 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     (ctrl.status == 'cancelled' || ctrl.status == 'canceled'),
                 onPostJob: () => Navigator.pushNamed(context, '/post_job'),
               ),
+
+              // 긴급호출 수락/거절 배너 (알바생 전용)
+              _buildUrgentCallBanner(ctrl),
 
               // 메시지 영역
               Expanded(

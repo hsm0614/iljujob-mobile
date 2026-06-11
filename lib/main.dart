@@ -581,6 +581,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // 앱 첫 실행(콜드 스타트) 시 접속 점수 기록
+    WidgetsBinding.instance.addPostFrameCallback((_) => _recordAppOpen());
   }
 
   @override

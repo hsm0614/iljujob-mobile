@@ -378,7 +378,7 @@ class _JobHeaderCard extends StatelessWidget {
                   company,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: const Color(0xFF6B7280), fontWeight: FontWeight.w600),
+                  style: const TextStyle(color: Color(0xFF6B7280), fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -422,7 +422,7 @@ class _SectionCard extends StatelessWidget {
           Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
           if (subTitle != null) ...[
             const SizedBox(height: 6),
-            Text(subTitle!, style: const TextStyle(color: const Color(0xFF6B7280), fontWeight: FontWeight.w600)),
+            Text(subTitle!, style: const TextStyle(color: Color(0xFF6B7280), fontWeight: FontWeight.w600)),
           ],
           const SizedBox(height: 12),
           child,

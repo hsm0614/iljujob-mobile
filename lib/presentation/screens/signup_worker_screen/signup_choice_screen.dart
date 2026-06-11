@@ -24,7 +24,7 @@ class SignupChoiceScreen extends StatefulWidget {
 
 class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
   bool _loading = false;
-bool _showProfileSetup = false;
+final bool _showProfileSetup = false;
   // final _google = GoogleSignIn(scopes: ['email', 'profile']); // ❌ 구글 비활성화
 
   ButtonStyle _primaryBtnStyle({Color? bg, Color? fg}) {
@@ -360,9 +360,9 @@ bool _showProfileSetup = false;
     );
   }
  Widget _buildProfileSetupWidget() {
-  final List<String> _strengths = [];
-  final List<String> _traits = [];
-  String? _gender; // ⬅️ 성별 저장용
+  final List<String> strengths = [];
+  final List<String> traits = [];
+  String? gender; // ⬅️ 성별 저장용
 
   final strengthOptions = ['포장', '상하차', '물류', 'F&B', '사무보조', '기타'];
   final traitOptions = ['꼼꼼해요', '책임감 있어요', '상냥해요', '빠릿해요', '체력이 좋아요', '성실해요'];
@@ -401,28 +401,28 @@ bool _showProfileSetup = false;
               children: [
             ChoiceChip(
   label: const Text('남자'),
-  selected: _gender == '남성',
+  selected: gender == '남성',
   onSelected: (selected) {
     setState(() {
-      _gender = selected ? '남성' : null;
+      gender = selected ? '남성' : null;
     });
   },
 ),
 ChoiceChip(
   label: const Text('여자'),
-  selected: _gender == '여성',
+  selected: gender == '여성',
   onSelected: (selected) {
     setState(() {
-      _gender = selected ? '여성' : null;
+      gender = selected ? '여성' : null;
     });
   },
 ),
 ChoiceChip(
   label: const Text('선택 안 함'),
-  selected: _gender == '선택안함',
+  selected: gender == '선택안함',
   onSelected: (selected) {
     setState(() {
-      _gender = selected ? '선택안함' : null;
+      gender = selected ? '선택안함' : null;
     });
   },
 ),
@@ -443,16 +443,16 @@ ChoiceChip(
               spacing: 10,
               runSpacing: 8,
               children: strengthOptions.map((item) {
-                final isSelected = _strengths.contains(item);
+                final isSelected = strengths.contains(item);
                 return FilterChip(
                   label: Text(item),
                   selected: isSelected,
                   onSelected: (selected) {
                     setState(() {
-                      if (selected && _strengths.length < 2) {
-                        _strengths.add(item);
+                      if (selected && strengths.length < 2) {
+                        strengths.add(item);
                       } else {
-                        _strengths.remove(item);
+                        strengths.remove(item);
                       }
                     });
                   },
@@ -475,16 +475,16 @@ ChoiceChip(
               spacing: 10,
               runSpacing: 8,
               children: traitOptions.map((item) {
-                final isSelected = _traits.contains(item);
+                final isSelected = traits.contains(item);
                 return FilterChip(
                   label: Text(item),
                   selected: isSelected,
                   onSelected: (selected) {
                     setState(() {
                       if (selected) {
-                        _traits.add(item);
+                        traits.add(item);
                       } else {
-                        _traits.remove(item);
+                        traits.remove(item);
                       }
                     });
                   },
@@ -502,7 +502,7 @@ ChoiceChip(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
-                  if (_gender == null) {
+                  if (gender == null) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('성별을 선택해주세요.')),
                     );
@@ -522,9 +522,9 @@ ChoiceChip(
                       },
                       body: jsonEncode({
                         'workerId': workerId,
-                        'strengths': _strengths,
-                        'traits': _traits,
-                        'gender': _gender, // ⬅️ 서버로 같이 전송
+                        'strengths': strengths,
+                        'traits': traits,
+                        'gender': gender, // ⬅️ 서버로 같이 전송
                       }),
                     );
 

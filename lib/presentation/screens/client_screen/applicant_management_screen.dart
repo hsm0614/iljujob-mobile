@@ -261,7 +261,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         const SizedBox(width: 10),
         _summaryCard('미확인', '$_unreadCount명', _blue, _blueBg),
         const SizedBox(width: 10),
-        _summaryCard('채팅 중', '${chattingCount}명', _green, _greenBg),
+        _summaryCard('채팅 중', '$chattingCount명', _green, _greenBg),
       ],
     );
   }
@@ -280,7 +280,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
             Text(value,
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
             const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 12, color: const Color(0xFF6B7280))),
+            Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
           ],
         ),
       ),
@@ -410,7 +410,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 Text(
                   group.jobTitle,
                   style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w700, color: const Color(0xFF191F28)),
+                      fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF191F28)),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -513,7 +513,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                         if (applicant.genderLabel.isNotEmpty) applicant.genderLabel,
                         _timeAgo(applicant.appliedAt),
                       ].join(' · '),
-                      style: const TextStyle(fontSize: 12, color: const Color(0xFF9CA3AF)),
+                      style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
                     ),
                   ],
                 ),
@@ -671,13 +671,13 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.people_alt_outlined, size: 56, color: const Color(0xFFBCC0CB)),
+          const Icon(Icons.people_alt_outlined, size: 56, color: Color(0xFFBCC0CB)),
           const SizedBox(height: 16),
           const Text('아직 지원자가 없어요',
-              style: TextStyle(fontSize: 16, color: const Color(0xFF9CA3AF))),
+              style: TextStyle(fontSize: 16, color: Color(0xFF9CA3AF))),
           const SizedBox(height: 8),
           const Text('공고를 올리면 알바생들이 지원할 거예요!',
-              style: TextStyle(fontSize: 13, color: const Color(0xFF9CA3AF))),
+              style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
           const SizedBox(height: 24),
           TextButton(onPressed: _fetch, child: const Text('새로고침')),
         ],
@@ -693,7 +693,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
           const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
           const SizedBox(height: 12),
           Text(_error ?? '알 수 없는 오류',
-              style: const TextStyle(color: const Color(0xFF6B7280))),
+              style: const TextStyle(color: Color(0xFF6B7280))),
           const SizedBox(height: 16),
           ElevatedButton(onPressed: _fetch, child: const Text('다시 시도')),
         ],

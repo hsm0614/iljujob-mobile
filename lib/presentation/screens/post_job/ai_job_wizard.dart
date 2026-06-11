@@ -842,11 +842,12 @@ class _AiJobWizardState extends State<AiJobWizard>
                           final locs = await locationFromAddress(
                             result.address,
                           );
-                          if (locs.isNotEmpty)
+                          if (locs.isNotEmpty) {
                             setState(() {
                               _lat = locs.first.latitude;
                               _lng = locs.first.longitude;
                             });
+                          }
                         } catch (_) {}
                       },
                     ),

@@ -7,7 +7,7 @@ class IamportError extends StatelessWidget {
   final ActionType actionType;
   final String? errorMessage;
 
-  IamportError(this.actionType, this.errorMessage);
+  const IamportError(this.actionType, this.errorMessage, {super.key});
 
   @override
   Widget build(BuildContext context) {

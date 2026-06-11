@@ -193,8 +193,9 @@ class _HomeScreenState extends State<HomeScreen> {
       final prefs = await SharedPreferences.getInstance();
       final phone = prefs.getString('userPhone');
       final type = prefs.getString('userType');
-      if (phone != null && type != null)
+      if (phone != null && type != null) {
         await _sendFcmTokenToServer(phone, type);
+      }
       _loadUserInfoAndUnreadCount();
       _startUnreadTimer();
     } catch (e) {
@@ -206,8 +207,9 @@ class _HomeScreenState extends State<HomeScreen> {
     if (phone == null ||
         phone.trim().isEmpty ||
         userType == null ||
-        userType.trim().isEmpty)
+        userType.trim().isEmpty) {
       return;
+    }
     final token = await FirebaseMessaging.instance.getToken();
     if (token == null || token.trim().isEmpty) return;
     try {

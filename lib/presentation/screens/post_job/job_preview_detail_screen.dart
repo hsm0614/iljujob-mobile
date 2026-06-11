@@ -132,12 +132,13 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
         hours: hours,
       ),
     ]);
-    if (mounted)
+    if (mounted) {
       setState(() {
         _quality = results[0] as QualityScore?;
         _payInsight = results[1] as PayInsight?;
         _loading = false;
       });
+    }
   }
 
   String _periodText() {
@@ -787,7 +788,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
     final fmt = NumberFormat('#,###');
 
     // ── 로딩 ──
-    if (widget.loading)
+    if (widget.loading) {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -813,6 +814,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
           ],
         ),
       );
+    }
 
     if (widget.quality == null) return const SizedBox.shrink();
 

@@ -125,8 +125,9 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
           p == LocationPermission.deniedForever) {
         p = await Geolocator.requestPermission();
         if (p != LocationPermission.always &&
-            p != LocationPermission.whileInUse)
+            p != LocationPermission.whileInUse) {
           return;
+        }
       }
 
       final last = await Geolocator.getLastKnownPosition();
@@ -503,7 +504,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
               spacing: 8,
               runSpacing: 6,
               children: [
-                _pill('${formattedPay}원'),
+                _pill('$formattedPay원'),
                 if ((job.payType ?? '').isNotEmpty) _pill(job.payType),
               ],
             ),
@@ -545,7 +546,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          _pill('${formattedPay}원'),
+          _pill('$formattedPay원'),
         ],
       ),
     );

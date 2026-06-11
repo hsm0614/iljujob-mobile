@@ -22,8 +22,8 @@ class IamportCertification extends StatelessWidget {
   final Set<Factory<OneSequenceGestureRecognizer>>? gestureRecognizers;
   final String? customUserAgent;
 
-  IamportCertification({
-    Key? key,
+  const IamportCertification({
+    super.key,
     this.appBar,
     this.initialChild,
     required this.userCode,
@@ -32,13 +32,13 @@ class IamportCertification extends StatelessWidget {
     required this.callback,
     this.gestureRecognizers,
     this.customUserAgent,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     var redirectUrl = UrlData.redirectUrl;
-    if (this.data.mRedirectUrl != null && this.data.mRedirectUrl!.isNotEmpty) {
-      redirectUrl = this.data.mRedirectUrl!;
+    if (data.mRedirectUrl != null && data.mRedirectUrl!.isNotEmpty) {
+      redirectUrl = data.mRedirectUrl!;
     }
 
     IamportValidation validation = IamportValidation.fromCertificationData(
@@ -48,21 +48,21 @@ class IamportCertification extends StatelessWidget {
     );
 
     var init =
-        this.tierCode == null
-            ? 'IMP.init("${this.userCode}");'
-            : 'IMP.agency("${this.userCode}", "${this.tierCode}");';
+        tierCode == null
+            ? 'IMP.init("${userCode}");'
+            : 'IMP.agency("${userCode}", "${tierCode}");';
 
     if (validation.getIsValid()) {
       return IamportWebView(
         type: ActionType.auth,
-        appBar: this.appBar,
-        initialChild: this.initialChild,
-        gestureRecognizers: this.gestureRecognizers,
-        customUserAgent: this.customUserAgent,
+        appBar: appBar,
+        initialChild: initialChild,
+        gestureRecognizers: gestureRecognizers,
+        customUserAgent: customUserAgent,
         executeJS: (WebViewController controller) {
           controller.evaluateJavascript('''
             $init
-            IMP.certification(${jsonEncode(this.data.toJson())}, function(response) {
+            IMP.certification(${jsonEncode(data.toJson())}, function(response) {
               const query = [];
               Object.keys(response).forEach(function(key) {
                 query.push(key + "=" + response[key]);
@@ -72,7 +72,7 @@ class IamportCertification extends StatelessWidget {
           ''');
         },
         useQueryData: (Map<String, String> data) {
-          this.callback(data);
+          callback(data);
         },
         isPaymentOver: (String url) {
           return url.startsWith(redirectUrl);

@@ -426,16 +426,16 @@ class RequestChatResult {
   });
 
   factory RequestChatResult.fromJson(Map<String, dynamic> json) {
-    int? _readRoomId(dynamic v) {
+    int? readRoomId(dynamic v) {
       if (v is num) return v.toInt();
       if (v is String) return int.tryParse(v);
       return null;
     }
 
     // 서버가 여러 형태로 줄 수 있으니 모두 대비
-    final fromTopLevel     = _readRoomId(json['roomId']);
-    final fromChatRoomId   = _readRoomId(json['chatRoomId']);
-    final fromRoomObject   = (json['room'] is Map) ? _readRoomId((json['room'] as Map)['id']) : null;
+    final fromTopLevel     = readRoomId(json['roomId']);
+    final fromChatRoomId   = readRoomId(json['chatRoomId']);
+    final fromRoomObject   = (json['room'] is Map) ? readRoomId((json['room'] as Map)['id']) : null;
 
     return RequestChatResult(
       ok: json['ok'] == true,

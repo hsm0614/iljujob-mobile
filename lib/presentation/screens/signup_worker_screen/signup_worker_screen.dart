@@ -11,7 +11,7 @@ import 'package:iljujob/presentation/screens/TermsDetailScreen.dart';
 const kBrand = Color(0xFF3B8AFF);
 
 class SignupWorkerScreen extends StatefulWidget {
-  const SignupWorkerScreen({Key? key}) : super(key: key);
+  const SignupWorkerScreen({super.key});
 
   @override
   State<SignupWorkerScreen> createState() => _SignupWorkerScreenState();
@@ -25,8 +25,8 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
 
   String _gender = '남성';
   String _birthYear = '';
-  List<String> _strengths = [];
-  List<String> _traits = [];
+  final List<String> _strengths = [];
+  final List<String> _traits = [];
   int _currentPage = 0;
   bool _isLoading = false;
   bool _agreedTerms = false;

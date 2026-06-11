@@ -233,7 +233,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                       style: TextStyle(fontSize: 13, color: _label),
                     ),
                     Text(
-                      '${applyRate}%',
+                      '$applyRate%',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w800,
@@ -371,7 +371,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    '${peakHour}시에 알바생들이 가장 많이 공고를 봐요',
+                    '$peakHour시에 알바생들이 가장 많이 공고를 봐요',
                     style: const TextStyle(
                       fontSize: 13,
                       color: _text,
