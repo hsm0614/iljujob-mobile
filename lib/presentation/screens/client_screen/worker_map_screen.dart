@@ -17,7 +17,7 @@ class WorkerMapScreen extends StatelessWidget {
         centerTitle: false, // 왼쪽 정렬
 
         title: const Text(
-          '알바생 지도 보기',
+          '공고 지도',
           style: TextStyle(
             fontFamily: 'jalnan2ttf',
             color: kBrandBlue,
