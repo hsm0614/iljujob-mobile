@@ -181,8 +181,8 @@ DateTime? parseTimeLoose(dynamic v) {
 // 포맷 출력
 // ─────────────────────────────────────────────
 
-/// "오전 9:00" 형태 (ko_KR)
-String formatHm(DateTime d) => DateFormat('a h:mm', 'ko_KR').format(d);
+/// "09:00" 형태 (24시간)
+String formatHm(DateTime d) => DateFormat('HH:mm').format(d);
 
 /// "yyyy-MM-dd" 형태
 String formatDate(DateTime d) => DateFormat('yyyy-MM-dd').format(d);

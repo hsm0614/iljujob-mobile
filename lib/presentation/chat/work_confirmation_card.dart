@@ -189,6 +189,10 @@ class ProposeWorkConfirmationSheet extends StatefulWidget {
   final int workerId;
   final int clientId;
   final String? jobLocation;
+  final int? defaultWage;       // 공고 시급 자동 채움
+  final String? defaultStartTime; // "09:00"
+  final String? defaultEndTime;   // "18:00"
+  final String? weekdays;         // 장기 공고 여부 ("월화수" 등, 있으면 장기)
   final Function(Map<String, dynamic>) onPropose;
 
   const ProposeWorkConfirmationSheet({
@@ -198,6 +202,10 @@ class ProposeWorkConfirmationSheet extends StatefulWidget {
     required this.workerId,
     required this.clientId,
     this.jobLocation,
+    this.defaultWage,
+    this.defaultStartTime,
+    this.defaultEndTime,
+    this.weekdays,
     required this.onPropose,
   });
 
@@ -213,10 +221,33 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
   bool _loading = false;
 
   @override
+  void initState() {
+    super.initState();
+    // 공고 데이터 자동 채움
+    if (widget.defaultWage != null && widget.defaultWage! > 0) {
+      _wageCtrl.text = widget.defaultWage.toString();
+    }
+    if (widget.defaultStartTime != null) {
+      final parts = widget.defaultStartTime!.split(':');
+      if (parts.length >= 2) {
+        _startTime = TimeOfDay(hour: int.tryParse(parts[0]) ?? 9, minute: int.tryParse(parts[1]) ?? 0);
+      }
+    }
+    if (widget.defaultEndTime != null) {
+      final parts = widget.defaultEndTime!.split(':');
+      if (parts.length >= 2) {
+        _endTime = TimeOfDay(hour: int.tryParse(parts[0]) ?? 18, minute: int.tryParse(parts[1]) ?? 0);
+      }
+    }
+  }
+
+  @override
   void dispose() {
     _wageCtrl.dispose();
     super.dispose();
   }
+
+  bool get _isWeekdaysJob => widget.weekdays != null && widget.weekdays!.trim().isNotEmpty;
 
   bool get _canSubmit => _date != null && _startTime != null && _endTime != null && _wageCtrl.text.trim().isNotEmpty;
 
@@ -345,6 +376,31 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 장기 공고 안내
+                  if (_isWeekdaysJob) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF7ED),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFFED7AA)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFFEA580C)),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              '장기 공고 (${widget.weekdays})입니다.\n출근 첫날 날짜를 선택해주세요.',
+                              style: const TextStyle(fontSize: 12, color: Color(0xFFEA580C)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+
                   // 근무 날짜
                   _FieldLabel('근무 날짜'),
                   const SizedBox(height: 6),

@@ -1228,7 +1228,9 @@ class _TrustScoreCard extends StatelessWidget {
         : ((score - minScore) / (maxScore - minScore)).clamp(0.0, 1.0);
     final remaining = isMax ? 0 : (maxScore - score).clamp(0, 999);
 
-    return Container(
+    return GestureDetector(
+      onTap: loading ? null : () => _showDetailSheet(context),
+      child: Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
         color: Colors.white,
@@ -1356,13 +1358,181 @@ class _TrustScoreCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       _TipRow(icon: Icons.phone_iphone_rounded, text: '앱에 자주 접속하기 (+3점/일)'),
-                      _TipRow(icon: Icons.event_available_rounded, text: '제안 수락 후 출근 완료하기 (+10점)'),
-                      _TipRow(icon: Icons.reply_rounded, text: '제안 카드에 빠르게 응답하기 (+5점)'),
+                      _TipRow(icon: Icons.search_rounded, text: '공고 조회 · 북마크 · 채팅하기 (활동 점수 적립)'),
+                      _TipRow(icon: Icons.event_available_rounded, text: '출근 확정 후 실제 출근하기 (+10점)'),
                     ],
                   ),
                 ),
               ],
             ),
+      ),
+    );
+  }
+
+  void _showDetailSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ScoreDetailSheet(
+        score: score,
+        grade: grade,
+        gradeColor: _gradeColor,
+        loginScore: loginScore,
+        attendanceScore: attendanceScore,
+        responseScore: responseScore,
+        cancelPenalty: cancelPenalty,
+      ),
+    );
+  }
+}
+
+class _ScoreDetailSheet extends StatelessWidget {
+  final int score;
+  final String grade;
+  final Color gradeColor;
+  final int loginScore;
+  final int attendanceScore;
+  final int responseScore;
+  final int cancelPenalty;
+
+  const _ScoreDetailSheet({
+    required this.score,
+    required this.grade,
+    required this.gradeColor,
+    required this.loginScore,
+    required this.attendanceScore,
+    required this.responseScore,
+    required this.cancelPenalty,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(99))),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Container(
+                width: 44, height: 44,
+                decoration: BoxDecoration(color: gradeColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+                child: Center(child: Text(grade, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: gradeColor))),
+              ),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('내 신뢰도 상세', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
+                  Text('현재 $score점', style: TextStyle(fontSize: 13, color: gradeColor, fontWeight: FontWeight.w700)),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          _DetailRow(icon: Icons.wifi_rounded, color: const Color(0xFF3B8AFF), label: '앱 접속', score: loginScore, desc: '하루 1회 접속 시 +3점'),
+          _DetailRow(icon: Icons.bookmark_rounded, color: const Color(0xFF8B5CF6), label: '활동 점수', score: responseScore, desc: '공고 조회·북마크·채팅 시 점수 적립'),
+          _DetailRow(icon: Icons.check_circle_outline_rounded, color: const Color(0xFF10B981), label: '출근 완료', score: attendanceScore, desc: '출근 확정 후 실제 출근 시 +10점'),
+          if (cancelPenalty > 0)
+            _DetailRow(icon: Icons.warning_amber_rounded, color: const Color(0xFFE55353), label: '페널티', score: -cancelPenalty, desc: '수락 후 취소 또는 노쇼 시 감점'),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(color: const Color(0xFFF4F6FA), borderRadius: BorderRadius.circular(12)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('등급 기준', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+                const SizedBox(height: 8),
+                _GradeRow('NEW', '0 ~ 19점', const Color(0xFF9CA3AF), grade),
+                _GradeRow('C', '20 ~ 39점', const Color(0xFF6B7280), grade),
+                _GradeRow('B', '40 ~ 69점', const Color(0xFF10B981), grade),
+                _GradeRow('A', '70 ~ 99점', const Color(0xFF3B8AFF), grade),
+                _GradeRow('S', '100점 이상', const Color(0xFFFF6B00), grade),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DetailRow extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String label;
+  final int score;
+  final String desc;
+  const _DetailRow({required this.icon, required this.color, required this.label, required this.score, required this.desc});
+
+  @override
+  Widget build(BuildContext context) {
+    final isNeg = score < 0;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Container(width: 36, height: 36, decoration: BoxDecoration(color: color.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, size: 18, color: color)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
+                Text(desc, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+              ],
+            ),
+          ),
+          Text(
+            isNeg ? '$score점' : '+$score점',
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: isNeg ? const Color(0xFFE55353) : color),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _GradeRow extends StatelessWidget {
+  final String gradeLabel;
+  final String range;
+  final Color color;
+  final String currentGrade;
+  const _GradeRow(this.gradeLabel, this.range, this.color, this.currentGrade);
+
+  @override
+  Widget build(BuildContext context) {
+    final isCurrent = gradeLabel == currentGrade;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Row(
+        children: [
+          Container(
+            width: 32, padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: BoxDecoration(color: color.withValues(alpha: isCurrent ? 0.2 : 0.08), borderRadius: BorderRadius.circular(6)),
+            child: Center(child: Text(gradeLabel, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: color))),
+          ),
+          const SizedBox(width: 8),
+          Text(range, style: TextStyle(fontSize: 12, color: isCurrent ? color : const Color(0xFF6B7280), fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w400)),
+          if (isCurrent) ...[
+            const SizedBox(width: 6),
+            Text('← 현재', style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w700)),
+          ],
+        ],
+      ),
     );
   }
 }

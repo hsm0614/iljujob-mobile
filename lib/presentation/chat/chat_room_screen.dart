@@ -6,8 +6,11 @@
 import 'dart:io';
 import 'dart:ui';
 
+import 'package:add_2_calendar/add_2_calendar.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,6 +25,7 @@ import 'chat_room_job_panel.dart';
 import 'message_list.dart';
 import 'chat_room_helpers.dart';
 import 'work_confirmation_card.dart';
+import '../../data/services/work_confirmation_service.dart';
 
 class ChatRoomScreen extends StatelessWidget {
   final int chatRoomId;
@@ -87,6 +91,9 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
 
       ctrl.onShowCalendarBlockedDialog =
           () => _showCancelBlockedByCalendarDialog(ctrl);
+
+      ctrl.onWorkConfirmationAccepted =
+          (conf) => _showAddToCalendarDialog(conf);
 
       ctrl.init();
     });
@@ -192,6 +199,12 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
             workerId: workerId,
             clientId: clientId,
             jobLocation: jobSource['location']?.toString(),
+            defaultWage: int.tryParse(
+              (jobSource['pay'] ?? jobSource['hourly_wage'] ?? jobSource['wage'] ?? '').toString().replaceAll(RegExp(r'[^0-9]'), ''),
+            ),
+            defaultStartTime: jobSource['start_time']?.toString(),
+            defaultEndTime: jobSource['end_time']?.toString(),
+            weekdays: jobSource['weekdays']?.toString(),
             onPropose: (_) {
               ctrl.fetchWorkConfirmations();
               ctrl.onShowSnackbar?.call('출근 확정 제안을 보냈어요!');
@@ -418,123 +431,155 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   }
 
   // ─────────────────────────────────────────────
-  // 평가 다이얼로그
+  // 평가 다이얼로그 (별점 + 태그)
   // ─────────────────────────────────────────────
 
   Future<void> _showEvaluationDialog(ChatRoomController ctrl) async {
     if (!mounted) return;
 
-    await showDialog<bool>(
+    final isClient = ctrl.userType == 'client';
+    final title    = isClient ? '이번 알바생은 어땠나요?' : '이번 사장님은 어땠나요?';
+    final goodTags = isClient
+        ? ['시간 약속 잘 지킴', '일 잘함', '매너 좋음', '소통 원활']
+        : ['급여 제때 지급', '친절한 안내', '근무 환경 좋음', '약속 잘 지킴'];
+    final badTags  = isClient
+        ? ['지각/무단결근', '불성실한 태도', '연락 불가', '업무 미숙']
+        : ['급여 지연', '불친절', '과도한 업무', '약속 불이행'];
+
+    await showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (ctx) {
+        double rating = 5.0;
+        final Set<String> selectedTags = {};
         bool sending = false;
+
         return StatefulBuilder(
           builder: (ctx, setState) {
-            Future<void> press(bool isGood) async {
+            final isGood  = rating >= 4.0;
+            final tags    = isGood ? goodTags : badTags;
+
+            Future<void> submit() async {
               if (sending) return;
               setState(() => sending = true);
               try {
                 await ctrl.submitEvaluation(isGood: isGood);
-                if (Navigator.of(ctx).canPop()) Navigator.of(ctx).pop(true);
+                if (ctx.mounted) Navigator.of(ctx).pop();
               } catch (_) {
-                if (mounted) setState(() => sending = false);
+                if (ctx.mounted) setState(() => sending = false);
               }
             }
 
             return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(
-                      Icons.rate_review_rounded,
-                      size: 48,
-                      color: Color(0xFF1675F4),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      '이번 알바생은 어땠나요?',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+                    Container(
+                      width: 56, height: 56,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3B8AFF).withValues(alpha: 0.1),
+                        shape: BoxShape.circle,
                       ),
+                      child: const Icon(Icons.rate_review_rounded, size: 28, color: Color(0xFF3B8AFF)),
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      title,
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 6),
                     const Text(
-                      '매너 좋은 알바였나요, 아니면 문제가 있었나요?',
-                      style: TextStyle(fontSize: 14, color: Colors.grey),
-                      textAlign: TextAlign.center,
+                      '솔직한 평가가 더 나은 매칭을 만들어요',
+                      style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
                     ),
                     const SizedBox(height: 20),
-                    if (sending) ...[
-                      const CircularProgressIndicator(),
-                      const SizedBox(height: 14),
-                      const Text(
-                        '전송 중...',
-                        style: TextStyle(color: Colors.grey),
+
+                    // ── 별점 ──
+                    RatingBar.builder(
+                      initialRating: rating,
+                      minRating: 1,
+                      direction: Axis.horizontal,
+                      allowHalfRating: false,
+                      itemCount: 5,
+                      itemSize: 36,
+                      itemPadding: const EdgeInsets.symmetric(horizontal: 4),
+                      itemBuilder: (_, __) => const Icon(Icons.star_rounded, color: Color(0xFFFFC107)),
+                      onRatingUpdate: (r) => setState(() {
+                        rating = r;
+                        selectedTags.clear();
+                      }),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _ratingLabel(rating),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: isGood ? const Color(0xFF10B981) : const Color(0xFFEF4444),
                       ),
-                    ] else ...[
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                              ),
-                              onPressed: () => press(true),
-                              icon: const Icon(
-                                Icons.thumb_up,
-                                color: Colors.white,
-                              ),
-                              label: const Text(
-                                '좋았어요',
-                                style: TextStyle(color: Colors.white),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // ── 태그 ──
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: tags.map((tag) {
+                        final active = selectedTags.contains(tag);
+                        return GestureDetector(
+                          onTap: () => setState(() {
+                            active ? selectedTags.remove(tag) : selectedTags.add(tag);
+                          }),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 120),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: active
+                                  ? (isGood ? const Color(0xFF3B8AFF) : const Color(0xFFEF4444))
+                                  : const Color(0xFFF3F4F6),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: Text(
+                              tag,
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: active ? Colors.white : const Color(0xFF6B7280),
                               ),
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.red,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 12,
-                                ),
-                              ),
-                              onPressed: () => press(false),
-                              icon: const Icon(
-                                Icons.thumb_down,
-                                color: Colors.white,
-                              ),
-                              label: const Text(
-                                '별로였어요',
-                                style: TextStyle(color: Colors.white),
-                              ),
-                            ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // ── 버튼 ──
+                    if (sending)
+                      const SizedBox(height: 44, child: Center(child: CircularProgressIndicator(strokeWidth: 2)))
+                    else
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: submit,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF3B8AFF),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                        ],
+                          child: const Text('평가 제출', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                        ),
                       ),
-                      const SizedBox(height: 10),
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(false),
-                        child: const Text('나중에 할게요'),
-                      ),
-                    ],
+                    const SizedBox(height: 4),
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      child: const Text('나중에 할게요', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13)),
+                    ),
                   ],
                 ),
               ),
@@ -543,6 +588,146 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         );
       },
     );
+  }
+
+  String _ratingLabel(double r) {
+    if (r >= 5) return '최고예요!';
+    if (r >= 4) return '좋았어요';
+    if (r >= 3) return '보통이에요';
+    if (r >= 2) return '아쉬웠어요';
+    return '별로였어요';
+  }
+
+  // ─────────────────────────────────────────────
+  // 캘린더 추가 다이얼로그
+  // ─────────────────────────────────────────────
+
+  Future<void> _showAddToCalendarDialog(WorkConfirmation conf) async {
+    if (!mounted) return;
+    final fmt = NumberFormat('#,###');
+
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44, height: 44,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3B8AFF).withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.calendar_today_rounded, color: Color(0xFF3B8AFF), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('캘린더에 저장할까요?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                        SizedBox(height: 2),
+                        Text('근무 일정을 캘린더에 추가해요', style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF4F6FA),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    _CalRow(icon: Icons.business_rounded, text: conf.companyName ?? '사장님'),
+                    const SizedBox(height: 6),
+                    _CalRow(icon: Icons.event_rounded, text: conf.workDate.split('T').first),
+                    const SizedBox(height: 6),
+                    _CalRow(icon: Icons.access_time_rounded,
+                        text: '${conf.startTime.substring(0, 5)} ~ ${conf.endTime.substring(0, 5)}'),
+                    if (conf.location != null) ...[
+                      const SizedBox(height: 6),
+                      _CalRow(icon: Icons.location_on_rounded, text: conf.location!),
+                    ],
+                    const SizedBox(height: 6),
+                    _CalRow(icon: Icons.payments_rounded, text: '시급 ${fmt.format(conf.hourlyWage)}원'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF6B7280),
+                        side: const BorderSide(color: Color(0xFFE5E7EB)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text('나중에', style: TextStyle(fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        _addToCalendar(conf);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF3B8AFF),
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text('추가하기', style: TextStyle(fontWeight: FontWeight.w800)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _addToCalendar(WorkConfirmation conf) {
+    try {
+      final datePart = conf.workDate.split('T').first;
+      final startParts = conf.startTime.split(':');
+      final endParts   = conf.endTime.split(':');
+      final startDt = DateTime.parse(datePart).copyWith(
+        hour:   int.tryParse(startParts.isNotEmpty ? startParts[0] : '0') ?? 0,
+        minute: int.tryParse(startParts.length > 1  ? startParts[1] : '0') ?? 0,
+      );
+      final endDt = DateTime.parse(datePart).copyWith(
+        hour:   int.tryParse(endParts.isNotEmpty ? endParts[0] : '0') ?? 0,
+        minute: int.tryParse(endParts.length > 1  ? endParts[1] : '0') ?? 0,
+      );
+
+      final event = Event(
+        title:       '알바일주 근무 - ${conf.companyName ?? ''}',
+        description: '시급 ${NumberFormat('#,###').format(conf.hourlyWage)}원\n알바일주 앱에서 확인하세요.',
+        location:    conf.location ?? '',
+        startDate:   startDt,
+        endDate:     endDt,
+        iosParams:   const IOSParams(reminder: Duration(hours: 2)),
+      );
+      Add2Calendar.addEvent2Cal(event);
+    } catch (_) {}
   }
 
   // ─────────────────────────────────────────────
@@ -1102,4 +1287,29 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
       ),
     );
   }
+}
+
+// ─────────────────────────────────────────────
+// 캘린더 다이얼로그용 행 위젯
+// ─────────────────────────────────────────────
+
+class _CalRow extends StatelessWidget {
+  final IconData icon;
+  final String text;
+  const _CalRow({required this.icon, required this.text});
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          Icon(icon, size: 14, color: const Color(0xFF3B8AFF)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(fontSize: 13, color: Color(0xFF374151), fontWeight: FontWeight.w500),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      );
 }

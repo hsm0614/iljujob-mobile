@@ -166,7 +166,7 @@ class _PostJobFormState extends State<PostJobForm>
   final _requiredCertsCtrl = TextEditingController();
   final _welfareCtrl = TextEditingController();
   String _description = '';
-  List<File> _images = [];
+  final List<File> _images = [];
   List<String> _imageUrls = [], _deleteImageUrls = [];
 
   bool _customHours = false;
@@ -542,8 +542,9 @@ class _PostJobFormState extends State<PostJobForm>
     final parts = addr.split(' ');
     if (parts.isEmpty) return '';
     final first = parts[0];
-    if (first.contains('광역시') || first.contains('특별시'))
+    if (first.contains('광역시') || first.contains('특별시')) {
       return first.replaceAll(RegExp(r'(광역시|특별시)'), '');
+    }
     if (first.contains('도') && parts.length > 1) return parts[1];
     return first;
   }
@@ -614,16 +615,18 @@ class _PostJobFormState extends State<PostJobForm>
     if (_payType == '주급') {
       int dpw = 0;
       if (_isShortTerm) {
-        if (_startDate != null && _endDate != null)
+        if (_startDate != null && _endDate != null) {
           dpw = _inclDays(_startDate!, _endDate!).clamp(1, 7);
-        else
+        } else {
           return;
+        }
       } else {
         if (_longTermMode == '요일 지정') {
           dpw = _weekdays.length;
           if (dpw <= 0) return;
-        } else
+        } else {
           return;
+        }
       }
       final req = (minWagePerHour * hours * dpw).ceil();
       setState(
@@ -649,10 +652,11 @@ class _PostJobFormState extends State<PostJobForm>
     if (picked.isEmpty) return;
     final available = _kMaxImages - _images.length - _imageUrls.length;
     if (available <= 0) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('사진은 최대 10장까지 등록할 수 있어요')));
+      }
       return;
     }
     setState(
@@ -713,7 +717,7 @@ class _PostJobFormState extends State<PostJobForm>
       // 예약 공개 시각 — 로컬 시간 기준으로 생성한 뒤 UTC로 변환
       //         DateTime()은 로컬 기준이므로 toUtc()로 명시 변환
       final publishAtUtcStr =
-          publishAt != null ? publishAt!.toUtc().toIso8601String() : null;
+          publishAt?.toUtc().toIso8601String();
 
       final result = await JobService.postJobWithImages(
         title: _title.trim(),
@@ -1701,11 +1705,12 @@ class _PostJobFormState extends State<PostJobForm>
                       });
                       try {
                         final locs = await locationFromAddress(result.address);
-                        if (locs.isNotEmpty)
+                        if (locs.isNotEmpty) {
                           setState(() {
                             _lat = locs.first.latitude;
                             _lng = locs.first.longitude;
                           });
+                        }
                       } catch (_) {}
                     },
                   ),
@@ -1875,11 +1880,12 @@ class _PostJobFormState extends State<PostJobForm>
                 firstDate: today,
                 lastDate: today.add(const Duration(days: 365)),
               );
-              if (picked != null)
+              if (picked != null) {
                 setState(() {
                   _startDate = picked;
                   _endDate = picked;
                 });
+              }
             },
             child: Container(
               padding: const EdgeInsets.all(14),
@@ -2142,7 +2148,7 @@ class _PostJobFormState extends State<PostJobForm>
   }
 
   void _showTimeSheet() {
-    TimeOfDay _align10(TimeOfDay t) {
+    TimeOfDay align10(TimeOfDay t) {
       int m = ((t.minute + 5) ~/ 10) * 10;
       int h = t.hour;
       if (m == 60) {
@@ -2165,8 +2171,8 @@ class _PostJobFormState extends State<PostJobForm>
       return '$p $h:${t.minute.toString().padLeft(2, '0')}';
     }
 
-    TimeOfDay s = _align10(_startTime ?? TimeOfDay.now());
-    TimeOfDay e = _align10(_endTime ?? s.replacing(hour: (s.hour + 1) % 24));
+    TimeOfDay s = align10(_startTime ?? TimeOfDay.now());
+    TimeOfDay e = align10(_endTime ?? s.replacing(hour: (s.hour + 1) % 24));
 
     showModalBottomSheet(
       context: context,
@@ -2209,10 +2215,10 @@ class _PostJobFormState extends State<PostJobForm>
                                 final h = d ~/ 60;
                                 final m = d % 60;
                                 return h == 0
-                                    ? '${m}분'
+                                    ? '$m분'
                                     : m == 0
-                                    ? '${h}시간'
-                                    : '${h}시간 ${m}분';
+                                    ? '$h시간'
+                                    : '$h시간 $m분';
                               })()})',
                               style: const TextStyle(
                                 fontSize: 15,
@@ -2274,7 +2280,7 @@ class _PostJobFormState extends State<PostJobForm>
                                     onTimeChange:
                                         (dt) => set(
                                           () =>
-                                              s = _align10(
+                                              s = align10(
                                                 TimeOfDay.fromDateTime(dt),
                                               ),
                                         ),
@@ -2319,7 +2325,7 @@ class _PostJobFormState extends State<PostJobForm>
                                     onTimeChange:
                                         (dt) => set(
                                           () =>
-                                              e = _align10(
+                                              e = align10(
                                                 TimeOfDay.fromDateTime(dt),
                                               ),
                                         ),
@@ -3824,10 +3830,10 @@ class _CompareConfig {
   static const rows = [
     ['노출 시점', '12시간 후', '즉시 노출', '1'],
     ['노출 시간', '24시간', '72시간', '1'],
-    ['상단 고정', '미포함', '6시간 상단 노출', '1'],
+    ['상단 고정', '미포함', '일시 상단 고정', '1'],
     ['조건 알림', '미포함', '조건 맞는 알바생\n즉시 알림', '1'],
     ['이용권 보호', '미포함', '보호 정책 적용', '1'],
-    ['노출 범위', '기본 노출', '확장 노출', '1'],
+    ['긴급 호출', '불가', '별도 구매 시 가능', '0'],
   ];
 }
 
@@ -3858,7 +3864,7 @@ class _CompareCard extends StatelessWidget {
             border: Border.all(color: _blue.withOpacity(0.25)),
           ),
           child: const Text(
-            '무료 등록 12h 후 노출 · 즉시 부스터 ₩4,900 · 긴급 호출 ₩7,900',
+            '무료(12h 후 노출) · 즉시게시 ₩4,900(임시 고정) · 긴급 공고 ₩7,900(상단 고정+호출)',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
@@ -3906,7 +3912,7 @@ class _CompareCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(99),
                           ),
                           child: const Text(
-                            '부스터',
+                            '즉시게시',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -3992,7 +3998,7 @@ class _CompareCard extends StatelessWidget {
                   child: Column(
                     children: [
                       const Text(
-                        '즉시 부스터 · ₩4,900',
+                        '즉시게시 · ₩4,900',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,

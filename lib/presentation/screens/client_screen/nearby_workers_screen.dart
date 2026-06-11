@@ -143,6 +143,23 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
     return name.replaceRange(mid, mid + 1, '*');
   }
 
+  String _lastActiveLabel(dynamic raw) {
+    if (raw == null) return '접속 정보 없음';
+    DateTime? dt;
+    if (raw is String) {
+      dt = DateTime.tryParse(raw) ?? DateTime.tryParse('${raw}Z');
+      if (dt != null && !raw.endsWith('Z') && !raw.contains('+')) dt = dt.toLocal();
+    }
+    if (dt == null) return '접속 정보 없음';
+    final diff = DateTime.now().difference(dt.toLocal());
+    if (diff.inMinutes < 60) return '방금 접속';
+    if (diff.inHours < 24) return '오늘 접속';
+    if (diff.inDays == 1) return '어제 접속';
+    if (diff.inDays < 7) return '${diff.inDays}일 전 접속';
+    if (diff.inDays < 30) return '${(diff.inDays / 7).floor()}주 전 접속';
+    return '${(diff.inDays / 30).floor()}개월 전 접속';
+  }
+
   void _openProfile(int workerId) {
     Navigator.push(
       context,
@@ -232,9 +249,6 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
         final score = (w['activity_score'] is num)
             ? (w['activity_score'] as num).toInt()
             : int.tryParse('${w['activity_score'] ?? 0}') ?? 0;
-        final mannerPoint = (w['manner_point'] is num)
-            ? (w['manner_point'] as num).toInt()
-            : int.tryParse('${w['manner_point'] ?? 0}') ?? 0;
         final distance = (w['distance_m'] is num)
             ? w['distance_m'] as num
             : double.tryParse('${w['distance_m'] ?? ''}');
@@ -305,7 +319,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                 ),
                 const SizedBox(width: 12),
 
-                // 이름 + 거리 + 매너점수
+                // 이름 + 거리 + 최근접속
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,14 +340,12 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                             ),
                             const SizedBox(width: 8),
                           ],
-                          if (mannerPoint > 0) ...[
-                            const Icon(Icons.thumb_up_rounded, size: 11, color: Color(0xFF059669)),
-                            const SizedBox(width: 2),
-                            Text(
-                              '매너 $mannerPoint',
-                              style: const TextStyle(fontSize: 11, color: Color(0xFF059669)),
-                            ),
-                          ],
+                          const Icon(Icons.access_time_rounded, size: 11, color: Color(0xFF6B7280)),
+                          const SizedBox(width: 2),
+                          Text(
+                            _lastActiveLabel(w['last_active_at']),
+                            style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+                          ),
                         ],
                       ),
                     ],
