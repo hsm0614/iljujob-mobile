@@ -10,6 +10,7 @@ class WorkConfirmationCard extends StatelessWidget {
   final String userType; // 'worker' | 'client'
   final VoidCallback? onAccept;
   final VoidCallback? onReject;
+  final VoidCallback? onNoShow;
 
   const WorkConfirmationCard({
     super.key,
@@ -17,6 +18,7 @@ class WorkConfirmationCard extends StatelessWidget {
     required this.userType,
     this.onAccept,
     this.onReject,
+    this.onNoShow,
   });
 
   @override
@@ -125,6 +127,28 @@ class WorkConfirmationCard extends StatelessWidget {
                     ),
                   ),
                 ],
+              ),
+            ],
+
+            // 노쇼 신고 버튼 (사장님 전용, 수락 이후 ~ 출근 완료 전)
+            if (userType == 'client' &&
+                ['accepted', 'scheduled', 'day_before_confirmed', 'day_of_confirmed', 'checked_in']
+                    .contains(confirm.status) &&
+                onNoShow != null) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: onNoShow,
+                  icon: const Icon(Icons.person_off_rounded, size: 15),
+                  label: const Text('노쇼 신고', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFEF4444),
+                    side: const BorderSide(color: Color(0xFFEF4444)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                ),
               ),
             ],
           ],

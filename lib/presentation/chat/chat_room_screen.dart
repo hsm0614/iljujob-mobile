@@ -824,6 +824,37 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   // 지원 취소 확인 다이얼로그
   // ─────────────────────────────────────────────
 
+  Future<void> _confirmNoShow(
+    BuildContext context,
+    ChatRoomController ctrl,
+    WorkConfirmation confirm,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('노쇼 신고', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+        content: const Text(
+          '해당 알바생이 출근하지 않았나요?\n노쇼 처리 시 알바생 신뢰도 점수가 크게 감소합니다.',
+          style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소', style: TextStyle(color: Color(0xFF6B7280))),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('노쇼 확정', style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await ctrl.respondToWorkConfirmation(confirm, 'no_show');
+    }
+  }
+
   Future<void> _confirmCancelApplication(ChatRoomController ctrl) async {
     if (ctrl.userType != 'worker') {
       ctrl.onShowSnackbar?.call('지원 취소는 구직자만 가능합니다.');
@@ -1151,6 +1182,12 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                           ctrl.respondToWorkConfirmation(
                                             confirm,
                                             'cancelled',
+                                          ),
+                                  onNoShowWorkConfirmation:
+                                      (confirm) => _confirmNoShow(
+                                            context,
+                                            ctrl,
+                                            confirm,
                                           ),
                                   inputOverlayHeight: 112,
                                 ),

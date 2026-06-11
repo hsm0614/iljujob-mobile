@@ -330,7 +330,7 @@ class _ChatListScreenState extends State<ChatListScreen>
     try {
       // MySQL DATETIME 형식: "2025-11-23 13:15:00"
       if (s.contains(' ') && !s.contains('T')) {
-        final dt = DateTime.parse(s.replaceFirst(' ', 'T') + 'Z'); // UTC 명시
+        final dt = DateTime.parse('${s.replaceFirst(' ', 'T')}Z'); // UTC 명시
         return dt.toLocal(); // KST로 변환해서 화면 표시
       }
 
@@ -719,7 +719,7 @@ class _ChatListScreenState extends State<ChatListScreen>
             ? (chat['unread_count_worker'] ?? 0)
             : (chat['unread_count_client'] ?? 0);
 
-    String _resolveProfileImageUrl(String? url) {
+    String resolveProfileImageUrl(String? url) {
       if (url == null || url.trim().isEmpty) return '';
       if (url.startsWith('http')) return url;
       return '$baseUrl/${url.replaceFirst(RegExp(r'^/+'), '')}';
@@ -729,7 +729,7 @@ class _ChatListScreenState extends State<ChatListScreen>
         userType == 'worker'
             ? (chat['client_thumbnail_url'] ?? '')
             : (chat['user_thumbnail_url'] ?? '');
-    final profileImageUrl = _resolveProfileImageUrl(rawUrl);
+    final profileImageUrl = resolveProfileImageUrl(rawUrl);
 
     final lastTime = _formatTime(chat['last_sent_at']);
     final jobTitle = chat['job_title'] ?? '공고 제목 없음';
@@ -1080,8 +1080,12 @@ class _ChatListScreenState extends State<ChatListScreen>
           return (unread) > 0;
         }).toList();
 
+    final urgentOnly = filtered
+        .where((c) => c['is_urgent_call'] == 1 || c['is_urgent_call'] == true)
+        .toList();
+
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         backgroundColor: AppColors.bgPage,
         body: RefreshIndicator(
@@ -1172,7 +1176,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                     labelColor: AppColors.textPrimary,
                     unselectedLabelColor: AppColors.textTertiary,
                     labelStyle: const TextStyle(fontWeight: FontWeight.w700),
-                    tabs: const [Tab(text: '전체'), Tab(text: '안읽음')],
+                    tabs: const [Tab(text: '전체'), Tab(text: '안읽음'), Tab(text: '⚡ 긴급호출')],
                   ),
                 ),
               ),
@@ -1210,6 +1214,11 @@ class _ChatListScreenState extends State<ChatListScreen>
                             q.isEmpty
                                 ? const _EmptyState.unread()
                                 : _EmptyState.unreadSearch(query: _query),
+                      ),
+                      _PrettyListView(
+                        items: urgentOnly,
+                        itemBuilder: (c) => _buildChatItem(c),
+                        emptyState: const _EmptyState.urgent(),
                       ),
                     ],
                   ),
@@ -1352,6 +1361,11 @@ class _EmptyState extends StatelessWidget {
     : icon = Icons.mark_chat_read_outlined,
       title = '안읽은 채팅이 없어요',
       message = '확인하지 않은 새 메시지가 생기면 여기에 모입니다.';
+
+  const _EmptyState.urgent()
+    : icon = Icons.flash_on_rounded,
+      title = '긴급호출 채팅이 없어요',
+      message = '사장님이 긴급 호출을 보내면 여기에 모입니다.';
 
   const _EmptyState.unreadSearch({required String query})
     : icon = Icons.search_off_rounded,

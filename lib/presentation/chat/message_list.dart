@@ -39,6 +39,7 @@ class ChatMessageList extends StatelessWidget {
   final List<WorkConfirmation> workConfirmations;
   final void Function(WorkConfirmation confirm)? onAcceptWorkConfirmation;
   final void Function(WorkConfirmation confirm)? onRejectWorkConfirmation;
+  final void Function(WorkConfirmation confirm)? onNoShowWorkConfirmation;
   final double inputOverlayHeight;
 
   const ChatMessageList({
@@ -54,6 +55,7 @@ class ChatMessageList extends StatelessWidget {
     this.workConfirmations = const [],
     this.onAcceptWorkConfirmation,
     this.onRejectWorkConfirmation,
+    this.onNoShowWorkConfirmation,
     this.inputOverlayHeight = 112,
   });
 
@@ -167,6 +169,10 @@ class ChatMessageList extends StatelessWidget {
           onReject:
               userType == 'worker' && confirm.status == 'proposed'
                   ? () => onRejectWorkConfirmation?.call(confirm)
+                  : null,
+          onNoShow:
+              userType == 'client'
+                  ? () => onNoShowWorkConfirmation?.call(confirm)
                   : null,
         ),
       );

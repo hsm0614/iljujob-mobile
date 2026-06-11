@@ -259,9 +259,14 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
 
         final rawName = w['name']?.toString();
         final maskedName = _maskName(rawName);
+        final alreadySent = w['already_sent'] == 1 || w['already_sent'] == true;
 
         return GestureDetector(
           onTap: () {
+            if (alreadySent) {
+              _showError('이미 긴급 호출을 발송한 알바생입니다.');
+              return;
+            }
             if (!canSelect) {
               _showError('최대 $_maxSelect명까지 선택 가능합니다.');
               return;
@@ -278,11 +283,19 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
             duration: const Duration(milliseconds: 150),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: isSelected ? AppColors.primary.withValues(alpha: 0.06) : Colors.white,
+              color: alreadySent
+                  ? const Color(0xFFF9FAFB)
+                  : isSelected
+                      ? AppColors.primary.withValues(alpha: 0.06)
+                      : Colors.white,
               borderRadius: BorderRadius.circular(AppRadius.lg),
               border: Border.all(
-                color: isSelected ? AppColors.primary : AppColors.border,
-                width: isSelected ? 1.5 : 1,
+                color: alreadySent
+                    ? const Color(0xFFE5E7EB)
+                    : isSelected
+                        ? AppColors.primary
+                        : AppColors.border,
+                width: isSelected && !alreadySent ? 1.5 : 1,
               ),
             ),
             child: Row(
@@ -324,9 +337,31 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        maskedName,
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827)),
+                      Row(
+                        children: [
+                          Text(
+                            maskedName,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                              color: alreadySent ? const Color(0xFF9CA3AF) : const Color(0xFF111827),
+                            ),
+                          ),
+                          if (alreadySent) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF3F4F6),
+                                borderRadius: BorderRadius.circular(99),
+                              ),
+                              child: const Text(
+                                '발송됨',
+                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF9CA3AF)),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                       const SizedBox(height: 2),
                       Row(
@@ -353,36 +388,39 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                 ),
 
                 // 신뢰도 배지 + 프로필 버튼
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 38,
-                      height: 38,
-                      decoration: BoxDecoration(
-                        color: gradeColor.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                        border: Border.all(color: gradeColor.withValues(alpha: 0.3)),
-                      ),
-                      child: Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(grade, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: gradeColor)),
-                            Text('$score', style: TextStyle(fontSize: 9, color: gradeColor)),
-                          ],
+                Opacity(
+                  opacity: alreadySent ? 0.4 : 1.0,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: gradeColor.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: gradeColor.withValues(alpha: 0.3)),
+                        ),
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(grade, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: gradeColor)),
+                              Text('$score', style: TextStyle(fontSize: 9, color: gradeColor)),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    GestureDetector(
-                      onTap: () => _openProfile(id),
-                      child: const Text(
-                        '프로필',
-                        style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.w600),
+                      const SizedBox(height: 4),
+                      GestureDetector(
+                        onTap: () => _openProfile(id),
+                        child: const Text(
+                          '프로필',
+                          style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.w600),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ],
             ),
