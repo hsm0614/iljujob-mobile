@@ -114,8 +114,6 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
   String? _birthYear; // yyyymmdd
   String? _gender;
   bool    _resumeConsent = true;
-  int     _mannerPoint   = 0;
-  int     _penaltyPoint  = 0;
 
   // ── SharedPreferences 캐시 (매번 재호출 방지)
   SharedPreferences? _prefs;
@@ -319,8 +317,6 @@ static const _workCategoryMap = <String, List<String>>{
         _birthYear             = data['birth_year']?.toString();
         _gender                = data['gender']?.toString();
         _resumeConsent         = _parseResumeConsent(data['resume_consent']);
-        _mannerPoint           = int.tryParse('${data['manner_point']  ?? 0}') ?? 0;
-        _penaltyPoint          = int.tryParse('${data['penalty_point'] ?? 0}') ?? 0;
         // 카테고리 초기값 한 번만 세팅
         _selectedWorkCategory ??= _workCategoryMap.keys.first;
       });
@@ -1495,83 +1491,6 @@ static const _workCategoryMap = <String, List<String>>{
     );
   }
 
-  Widget _buildPointCard() {
-    Widget pointBadge(int v, {required Color bg, required Color fg}) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-        decoration: BoxDecoration(
-          color:        bg,
-          borderRadius: BorderRadius.circular(999),
-          border:       Border.all(color: kBorder),
-        ),
-        child: Text(
-          '$v점',
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            color:      fg,
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      decoration: _cardDeco(),
-      child: Column(
-        children: [
-          ListTile(
-            leading: Container(
-              width:  40,
-              height: 40,
-              decoration: BoxDecoration(
-                color:        const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.thumb_up_rounded, color: kBrandBlue, size: 20),
-            ),
-            title: const Text(
-              '매너포인트',
-              style: TextStyle(fontWeight: FontWeight.w900, color: kText),
-            ),
-            subtitle: const Text(
-              '사장님이 평가한 근무태도 점수예요',
-              style: TextStyle(fontSize: 12.5, color: kMuted),
-            ),
-            trailing: pointBadge(
-              _mannerPoint,
-              bg: const Color(0xFFEFF6FF),
-              fg: kBrandBlue,
-            ),
-          ),
-          Divider(height: 1, color: kBorder),
-          ListTile(
-            leading: Container(
-              width:  40,
-              height: 40,
-              decoration: BoxDecoration(
-                color:        const Color(0xFFFFF1F2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.warning_amber_rounded, color: Color(0xFFDC2626), size: 20),
-            ),
-            title: const Text(
-              '패널티포인트',
-              style: TextStyle(fontWeight: FontWeight.w900, color: kText),
-            ),
-            subtitle: const Text(
-              '지각 등으로 인한 패널티예요',
-              style: TextStyle(fontSize: 12.5, color: kMuted),
-            ),
-            trailing: pointBadge(
-              _penaltyPoint,
-              bg: const Color(0xFFFFF1F2),
-              fg: const Color(0xFFDC2626),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildResumeCard() {
     return Container(
       decoration: _cardDeco(),
@@ -2119,8 +2038,6 @@ static const _workCategoryMap = <String, List<String>>{
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                 children: [
                   _buildProfileCard(),
-                  const SizedBox(height: 14),
-                  _buildPointCard(),
                   const SizedBox(height: 14),
                   _buildResumeCard(),
                   _buildAccountSection(),

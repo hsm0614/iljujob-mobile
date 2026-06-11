@@ -1084,6 +1084,16 @@ class _ChatListScreenState extends State<ChatListScreen>
         .where((c) => c['is_urgent_call'] == 1 || c['is_urgent_call'] == true)
         .toList();
 
+    // 탭별 안읽음 총합
+    final totalUnread = filtered.fold<int>(0, (sum, c) {
+      final n = userType == 'worker' ? (c['unread_count_worker'] ?? 0) : (c['unread_count_client'] ?? 0);
+      return sum + (n as int);
+    });
+    final urgentUnread = urgentOnly.fold<int>(0, (sum, c) {
+      final n = userType == 'worker' ? (c['unread_count_worker'] ?? 0) : (c['unread_count_client'] ?? 0);
+      return sum + (n as int);
+    });
+
     return DefaultTabController(
       length: 3,
       child: Scaffold(
@@ -1176,7 +1186,11 @@ class _ChatListScreenState extends State<ChatListScreen>
                     labelColor: AppColors.textPrimary,
                     unselectedLabelColor: AppColors.textTertiary,
                     labelStyle: const TextStyle(fontWeight: FontWeight.w700),
-                    tabs: const [Tab(text: '전체'), Tab(text: '안읽음'), Tab(text: '⚡ 긴급호출')],
+                    tabs: [
+                      _BadgeTab(label: '전체',     count: totalUnread),
+                      _BadgeTab(label: '안읽음',   count: unreadOnly.length),
+                      _BadgeTab(label: '⚡ 긴급호출', count: urgentUnread),
+                    ],
                   ),
                 ),
               ),
@@ -1282,6 +1296,39 @@ class _SearchFieldState extends State<_SearchField> {
                 color: AppColors.textTertiary,
               ),
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/* ---------- Badge Tab ---------- */
+class _BadgeTab extends StatelessWidget {
+  final String label;
+  final int count;
+  const _BadgeTab({required this.label, required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tab(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(label),
+          if (count > 0) ...[
+            const SizedBox(width: 5),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(99),
+              ),
+              child: Text(
+                count > 99 ? '99+' : '$count',
+                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white),
+              ),
+            ),
+          ],
         ],
       ),
     );
