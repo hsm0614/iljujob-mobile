@@ -2,8 +2,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart' as km;
@@ -21,7 +19,6 @@ const _textMain = Color(0xFF191F28);
 const _textSub  = Color(0xFF6B7280);
 const _red      = Color(0xFFFF3B30);
 const _green    = Color(0xFF22C55E);
-const _orange   = Color(0xFFFF6B00);
 const _purple   = Color(0xFF8B5CF6);
 
 // ── 공고 모델 ─────────────────────────────────────────────────────
@@ -107,7 +104,6 @@ class _Worker {
     if (activityScore >= 40)  return 'B';
     return 'C';
   }
-  String get styleId => 'grade_$grade';
 }
 
 // ── Kakao 마커 레이어 ID ──────────────────────────────────────────
@@ -233,10 +229,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     for (var i = 0; i < 8; i++) {
       try {
         await _ctrl!.setPoiVisible(isVisible: true);
-        // 구직자 레이어 생성
         await _ctrl!.addMarkerLayer(layerId: _kWorkerLayer, clickable: false, zOrder: 1);
-        // 커스텀 스타일 등록
-        await _registerStyles();
         _mapReady = true;
         // 공고 이미 로드됐으면 핀 표시
         if (_jobs.isNotEmpty) {
@@ -252,39 +245,6 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     debugPrint('[MAP] setup failed: $last');
   }
 
-  // ── 커스텀 마커 스타일 등록 ───────────────────────────────────
-  Future<void> _registerStyles() async {
-    final styles = await Future.wait([
-      _circleBytes(_orange,  22), // grade_S
-      _circleBytes(_primary, 18), // grade_A
-      _circleBytes(_green,   16), // grade_B
-      _circleBytes(_textSub, 14), // grade_C
-      _circleBytes(_red,     24), // job_urgent
-      _circleBytes(_primary, 20), // job_active
-    ]);
-    await _ctrl!.registerMarkerStyles(styles: [
-      km.MarkerStyle(styleId: 'grade_S', perLevels: [km.MarkerPerLevelStyle.fromBytes(bytes: styles[0])]),
-      km.MarkerStyle(styleId: 'grade_A', perLevels: [km.MarkerPerLevelStyle.fromBytes(bytes: styles[1])]),
-      km.MarkerStyle(styleId: 'grade_B', perLevels: [km.MarkerPerLevelStyle.fromBytes(bytes: styles[2])]),
-      km.MarkerStyle(styleId: 'grade_C', perLevels: [km.MarkerPerLevelStyle.fromBytes(bytes: styles[3])]),
-      km.MarkerStyle(styleId: 'job_urgent', perLevels: [km.MarkerPerLevelStyle.fromBytes(bytes: styles[4])]),
-      km.MarkerStyle(styleId: 'job_active', perLevels: [km.MarkerPerLevelStyle.fromBytes(bytes: styles[5])]),
-    ]);
-  }
-
-  static Future<Uint8List> _circleBytes(Color color, int size) async {
-    final r  = ui.PictureRecorder();
-    final c  = Canvas(r);
-    final cx = size / 2.0;
-    c.drawCircle(Offset(cx, cx), cx,
-        Paint()..color = Colors.white.withValues(alpha: 0.9));
-    c.drawCircle(Offset(cx, cx), cx - 2,
-        Paint()..color = color);
-    final img = await r.endRecording().toImage(size, size);
-    final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
-    return bytes!.buffer.asUint8List();
-  }
-
   // ── 공고 핀 표시 ─────────────────────────────────────────────
   Future<void> _placeJobMarkers() async {
     if (_ctrl == null) return;
@@ -296,8 +256,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
         markerOptions: mapped.map((j) => km.MarkerOption(
           id: 'job_${j.id}',
           latLng: j.pos,
-          styleId: j.isPinnedNow ? 'job_urgent' : 'job_active',
-          text: j.title.length > 8 ? '${j.title.substring(0, 8)}…' : j.title,
+          text: '${j.isPinnedNow ? "[긴급] " : ""}${j.title.length > 9 ? '${j.title.substring(0, 9)}…' : j.title}',
         )).toList(),
       );
       // 첫 공고로 카메라 이동
@@ -322,7 +281,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
         markerOptions: dots.map((w) => km.MarkerOption(
           id: 'w_${w.id}',
           latLng: w.pos,
-          styleId: w.styleId,
+          text: w.grade,
         )).toList(),
         layerId: _kWorkerLayer,
       );
