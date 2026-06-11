@@ -1,11 +1,12 @@
-// worker_map_view.dart — 공고 지도 (깔끔 리디자인)
+// worker_map_view.dart — 카카오맵 기반 공고 지도
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
+import 'package:kakao_maps_flutter/kakao_maps_flutter.dart' as km;
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,34 +25,35 @@ const _orange   = Color(0xFFFF6B00);
 const _purple   = Color(0xFF8B5CF6);
 
 // ── 공고 모델 ─────────────────────────────────────────────────────
-class _JobPin {
-  final int    id;
-  final String title;
-  final String location;
-  final String status;
-  final double lat;
-  final double lng;
-  final int    hourlyWage;
-  final String startDate;
-  final int    applicantCount;
-  final bool   isPinnedNow;
+class _Job {
+  final int id;
+  final String title, location, status, startDate, startTime, endTime, description, category;
+  final double lat, lng;
+  final int hourlyWage, applicantCount;
+  final bool isPinnedNow;
 
-  const _JobPin({
-    required this.id,    required this.title,
-    required this.location, required this.status,
-    required this.lat,   required this.lng,
-    required this.hourlyWage, required this.startDate,
-    required this.applicantCount, required this.isPinnedNow,
+  const _Job({
+    required this.id, required this.title, required this.location,
+    required this.status, required this.startDate,
+    required this.startTime, required this.endTime,
+    required this.description, required this.category,
+    required this.lat, required this.lng,
+    required this.hourlyWage, required this.applicantCount,
+    required this.isPinnedNow,
   });
 
-  factory _JobPin.fromJson(Map<String, dynamic> j) => _JobPin(
+  factory _Job.fromJson(Map<String, dynamic> j) => _Job(
     id: _i(j['id'] ?? j['job_id']),
     title: (j['title'] ?? j['job_title'] ?? '').toString(),
     location: (j['location_city'] ?? j['location'] ?? '').toString(),
     status: (j['status'] ?? 'active').toString(),
+    startDate: _ds(j['start_date']),
+    startTime: _ts(j['start_time']),
+    endTime: _ts(j['end_time']),
+    description: (j['description'] ?? '').toString().trim(),
+    category: (j['category'] ?? j['job_category'] ?? '').toString(),
     lat: _d(j['lat']), lng: _d(j['lng']),
     hourlyWage: _i(j['hourly_wage'] ?? j['wage']),
-    startDate: _ds(j['start_date']),
     applicantCount: _i(j['applicant_count'] ?? j['applicants']),
     isPinnedNow: j['is_pinned_now'] == true || j['is_pinned_now'] == 1,
   );
@@ -59,42 +61,36 @@ class _JobPin {
   static double _d(dynamic v) { if (v is num) return v.toDouble(); if (v is String) return double.tryParse(v) ?? 0.0; return 0.0; }
   static int    _i(dynamic v) { if (v is int) return v; if (v is num) return v.toInt(); if (v is String) return int.tryParse(v) ?? 0; return 0; }
   static String _ds(dynamic v) { if (v == null) return ''; final s = v.toString(); return s.length >= 10 ? s.substring(0, 10) : s; }
+  static String _ts(dynamic v) { if (v == null) return ''; final s = v.toString(); return s.length >= 5 ? s.substring(0, 5) : s; }
 
   bool   get hasLocation => lat != 0.0 && lng != 0.0;
-  LatLng get position    => LatLng(lat, lng);
+  km.LatLng get pos => km.LatLng(latitude: lat, longitude: lng);
+
+  String get timeRange => (startTime.isNotEmpty && endTime.isNotEmpty) ? '$startTime~$endTime' : '';
 
   Color get pinColor {
     if (isPinnedNow) return _red;
     if (status == 'active') return _primary;
     return _textSub;
   }
-
   String get statusLabel {
-    if (isPinnedNow)          return '긴급';
-    if (status == 'active')   return '진행중';
+    if (isPinnedNow) return '긴급';
+    if (status == 'active') return '진행중';
     if (status == 'reserved') return '예약';
-    if (status == 'closed')   return '마감';
-    return status;
+    return '마감';
   }
 }
 
-// ── 구직자 핀 모델 ────────────────────────────────────────────────
-class _WorkerDot {
-  final int    id;
-  final String name;
-  final double lat;
-  final double lng;
-  final int    activityScore;
+// ── 구직자 모델 ───────────────────────────────────────────────────
+class _Worker {
+  final int id; final String name;
+  final double lat, lng;
+  final int activityScore;
 
-  const _WorkerDot({
-    required this.id, required this.name,
-    required this.lat, required this.lng,
-    required this.activityScore,
-  });
+  const _Worker({ required this.id, required this.name, required this.lat, required this.lng, required this.activityScore });
 
-  factory _WorkerDot.fromJson(Map<String, dynamic> j) => _WorkerDot(
-    id: _i(j['id']),
-    name: (j['name'] ?? '').toString(),
+  factory _Worker.fromJson(Map<String, dynamic> j) => _Worker(
+    id: _i(j['id']), name: (j['name'] ?? '').toString(),
     lat: _d(j['lat']), lng: _d(j['lng']),
     activityScore: _i(j['activity_score']),
   );
@@ -103,25 +99,19 @@ class _WorkerDot {
   static int    _i(dynamic v) { if (v is int) return v; if (v is num) return v.toInt(); if (v is String) return int.tryParse(v) ?? 0; return 0; }
 
   bool   get hasLocation => lat != 0.0 && lng != 0.0;
-  LatLng get position    => LatLng(lat, lng);
+  km.LatLng get pos => km.LatLng(latitude: lat, longitude: lng);
 
   String get grade {
     if (activityScore >= 100) return 'S';
     if (activityScore >= 70)  return 'A';
     if (activityScore >= 40)  return 'B';
-    if (activityScore >= 20)  return 'C';
-    return 'N';
+    return 'C';
   }
-
-  Color get gradeColor {
-    switch (grade) {
-      case 'S': return _orange;
-      case 'A': return _primary;
-      case 'B': return _green;
-      default:  return _textSub;
-    }
-  }
+  String get styleId => 'grade_$grade';
 }
+
+// ── Kakao 마커 레이어 ID ──────────────────────────────────────────
+const _kWorkerLayer = 'worker_dots_layer';
 
 // ── 메인 위젯 ─────────────────────────────────────────────────────
 class WorkerMapView extends StatefulWidget {
@@ -132,24 +122,25 @@ class WorkerMapView extends StatefulWidget {
 }
 
 class _WorkerMapViewState extends State<WorkerMapView> {
-  final _mapCtrl  = MapController();
-  final _scrollCtrl = ScrollController();
+  km.KakaoMapController? _ctrl;
+  StreamSubscription<km.LabelClickEvent>? _clickSub;
+  bool _mapReady = false;
 
-  List<_JobPin>    _jobs        = [];
-  List<_WorkerDot> _workerDots  = [];
-  int?             _selectedIdx;       // 선택된 job index
-  bool             _loading     = true;
-  bool             _workersLoading = false;
-  bool             _isSubscribed    = false;
-  bool             _broadcastSending = false;
-  int              _selectedWorkerCount = 0;
+  final _scrollCtrl = ScrollController();
+  List<_Job> _jobs       = [];
+  int?       _selectedIdx;
+  int           _workerCount = 0;
+  bool          _loading     = true;
+  bool          _workersLoading = false;
+  bool          _isSubscribed   = false;
+  int           _urgentCredits  = 0;
+  bool          _broadcastSending = false;
 
   int?    _clientId;
   String? _authToken;
-  LatLng? _myLocation;
 
-  final Map<int, int>          _countCache   = {};
-  final Map<int, List<_WorkerDot>> _dotCache = {};
+  final Map<int, int>       _countCache = {};
+  final Map<int, List<_Worker>> _dotCache = {};
 
   @override
   void initState() {
@@ -159,6 +150,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
 
   @override
   void dispose() {
+    _clickSub?.cancel();
     _scrollCtrl.dispose();
     super.dispose();
   }
@@ -167,15 +159,13 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     final prefs = await SharedPreferences.getInstance();
     _clientId  = prefs.getInt('userId');
     _authToken = prefs.getString('authToken') ?? '';
-    await Future.wait([_fetchJobs(), _fetchSubscription(), _initLocation()]);
+    await Future.wait([_fetchJobs(), _fetchSubscription()]);
   }
 
   Map<String, String> get _auth =>
-      _authToken != null && _authToken!.isNotEmpty
-          ? {'Authorization': 'Bearer $_authToken'}
-          : {};
+      (_authToken?.isNotEmpty ?? false) ? {'Authorization': 'Bearer $_authToken'} : {};
 
-  // ── 구독 상태 ─────────────────────────────────────────────────
+  // ── 구독 + 이용권 상태 ────────────────────────────────────────
   Future<void> _fetchSubscription() async {
     try {
       final res = await http.get(
@@ -183,11 +173,16 @@ class _WorkerMapViewState extends State<WorkerMapView> {
         headers: _auth,
       ).timeout(const Duration(seconds: 6));
       if (res.statusCode == 200 && mounted) {
-        setState(() => _isSubscribed =
-            (jsonDecode(res.body) as Map<String, dynamic>)['active'] == true);
+        final d = jsonDecode(res.body) as Map<String, dynamic>;
+        setState(() {
+          _isSubscribed  = d['active'] == true;
+          _urgentCredits = (d['credits'] as Map?)?['urgent'] as int? ?? 0;
+        });
       }
     } catch (_) {}
   }
+
+  bool get _canUrgentCall => _isSubscribed || _urgentCredits > 0;
 
   // ── 내 공고 ───────────────────────────────────────────────────
   Future<void> _fetchJobs() async {
@@ -200,311 +195,291 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       if (!mounted) return;
       if (res.statusCode == 200) {
         final raw = jsonDecode(res.body);
-        final list = raw is List
-            ? raw
-            : (raw is Map ? ((raw['jobs'] ?? raw['data'] ?? []) as List) : []);
+        final list = raw is List ? raw : (raw is Map ? (raw['jobs'] ?? raw['data'] ?? []) as List : []);
         final jobs = list
             .whereType<Map<String, dynamic>>()
-            .map(_JobPin.fromJson)
+            .map(_Job.fromJson)
             .where((j) => j.status != 'deleted' && j.status != 'closed')
-            .toList();
+            .toList()
+          ..sort((a, b) => (b.isPinnedNow ? 1 : 0) - (a.isPinnedNow ? 1 : 0));
 
-        // 핀된 공고 우선 정렬
-        jobs.sort((a, b) {
-          if (a.isPinnedNow && !b.isPinnedNow) return -1;
-          if (!a.isPinnedNow && b.isPinnedNow) return 1;
-          return 0;
-        });
-
-        setState(() {
-          _jobs    = jobs;
-          _loading = false;
-        });
-
-        // 첫 공고 자동 선택
-        if (jobs.isNotEmpty) {
-          WidgetsBinding.instance.addPostFrameCallback((_) => _selectJob(0));
+        setState(() { _jobs = jobs; _loading = false; });
+        // 지도 준비됐으면 바로 핀 표시
+        if (_mapReady && jobs.isNotEmpty) {
+          await _placeJobMarkers();
+          _selectJob(0);
         }
       } else {
         if (mounted) setState(() => _loading = false);
       }
-    } on TimeoutException {
-      if (mounted) setState(() => _loading = false);
-    } on SocketException {
-      if (mounted) setState(() => _loading = false);
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
+    } on TimeoutException { if (mounted) setState(() => _loading = false); }
+      on SocketException  { if (mounted) setState(() => _loading = false); }
+      catch (_)           { if (mounted) setState(() => _loading = false); }
+  }
+
+  // ── 카카오맵 준비 ──────────────────────────────────────────────
+  void _onMapCreated(km.KakaoMapController ctrl) {
+    _ctrl = ctrl;
+    _clickSub = ctrl.onLabelClickedStream.listen(_onLabelClick);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future.delayed(const Duration(milliseconds: 100));
+      await _setupMap();
+    });
+  }
+
+  Future<void> _setupMap() async {
+    if (_ctrl == null) return;
+    Exception? last;
+    for (var i = 0; i < 8; i++) {
+      try {
+        await _ctrl!.setPoiVisible(isVisible: true);
+        // 구직자 레이어 생성
+        await _ctrl!.addMarkerLayer(layerId: _kWorkerLayer, clickable: false, zOrder: 1);
+        // 커스텀 스타일 등록
+        await _registerStyles();
+        _mapReady = true;
+        // 공고 이미 로드됐으면 핀 표시
+        if (_jobs.isNotEmpty) {
+          await _placeJobMarkers();
+          _selectJob(0);
+        }
+        return;
+      } catch (e) {
+        last = e is Exception ? e : Exception(e.toString());
+        await Future.delayed(const Duration(milliseconds: 120));
+      }
+    }
+    debugPrint('[MAP] setup failed: $last');
+  }
+
+  // ── 커스텀 마커 스타일 등록 ───────────────────────────────────
+  Future<void> _registerStyles() async {
+    final styles = await Future.wait([
+      _circleBytes(_orange,  22), // grade_S
+      _circleBytes(_primary, 18), // grade_A
+      _circleBytes(_green,   16), // grade_B
+      _circleBytes(_textSub, 14), // grade_C
+      _circleBytes(_red,     24), // job_urgent
+      _circleBytes(_primary, 20), // job_active
+    ]);
+    await _ctrl!.registerMarkerStyles(styles: [
+      km.MarkerStyle(styleId: 'grade_S', perLevels: [km.MarkerPerLevelStyle.fromBytes(bytes: styles[0])]),
+      km.MarkerStyle(styleId: 'grade_A', perLevels: [km.MarkerPerLevelStyle.fromBytes(bytes: styles[1])]),
+      km.MarkerStyle(styleId: 'grade_B', perLevels: [km.MarkerPerLevelStyle.fromBytes(bytes: styles[2])]),
+      km.MarkerStyle(styleId: 'grade_C', perLevels: [km.MarkerPerLevelStyle.fromBytes(bytes: styles[3])]),
+      km.MarkerStyle(styleId: 'job_urgent', perLevels: [km.MarkerPerLevelStyle.fromBytes(bytes: styles[4])]),
+      km.MarkerStyle(styleId: 'job_active', perLevels: [km.MarkerPerLevelStyle.fromBytes(bytes: styles[5])]),
+    ]);
+  }
+
+  static Future<Uint8List> _circleBytes(Color color, int size) async {
+    final r  = ui.PictureRecorder();
+    final c  = Canvas(r);
+    final cx = size / 2.0;
+    c.drawCircle(Offset(cx, cx), cx,
+        Paint()..color = Colors.white.withValues(alpha: 0.9));
+    c.drawCircle(Offset(cx, cx), cx - 2,
+        Paint()..color = color);
+    final img = await r.endRecording().toImage(size, size);
+    final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
+    return bytes!.buffer.asUint8List();
+  }
+
+  // ── 공고 핀 표시 ─────────────────────────────────────────────
+  Future<void> _placeJobMarkers() async {
+    if (_ctrl == null) return;
+    try {
+      await _ctrl!.clearMarkers();
+      final mapped = _jobs.where((j) => j.hasLocation).toList();
+      if (mapped.isEmpty) return;
+      await _ctrl!.addMarkers(
+        markerOptions: mapped.map((j) => km.MarkerOption(
+          id: 'job_${j.id}',
+          latLng: j.pos,
+          styleId: j.isPinnedNow ? 'job_urgent' : 'job_active',
+          text: j.title.length > 8 ? '${j.title.substring(0, 8)}…' : j.title,
+        )).toList(),
+      );
+      // 첫 공고로 카메라 이동
+      final first = mapped.first;
+      await _ctrl!.moveCamera(
+        cameraUpdate: km.CameraUpdate.fromLatLng(first.pos),
+        animation: const km.CameraAnimation(duration: 300, autoElevation: true, isConsecutive: false),
+      );
+    } catch (e) {
+      debugPrint('[MAP] placeJobMarkers: $e');
     }
   }
 
-  // ── 위치 ──────────────────────────────────────────────────────
-  Future<void> _initLocation() async {
-    final loc = await _getLocation();
-    if (loc != null && mounted) setState(() => _myLocation = loc);
+  // ── 구직자 핀 표시 ────────────────────────────────────────────
+  Future<void> _placeWorkerMarkers(List<_Worker> workers) async {
+    if (_ctrl == null) return;
+    try {
+      await _ctrl!.clearMarkers(layerId: _kWorkerLayer);
+      final dots = workers.where((w) => w.hasLocation).toList();
+      if (dots.isEmpty) return;
+      await _ctrl!.addMarkers(
+        markerOptions: dots.map((w) => km.MarkerOption(
+          id: 'w_${w.id}',
+          latLng: w.pos,
+          styleId: w.styleId,
+        )).toList(),
+        layerId: _kWorkerLayer,
+      );
+    } catch (e) {
+      debugPrint('[MAP] placeWorkerMarkers: $e');
+    }
   }
 
-  Future<LatLng?> _getLocation() async {
-    if (!await Geolocator.isLocationServiceEnabled()) return null;
-    var perm = await Geolocator.checkPermission();
-    if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
-    if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) return null;
-    try {
-      final p = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.low),
-      ).timeout(const Duration(seconds: 4));
-      return LatLng(p.latitude, p.longitude);
-    } catch (_) { return null; }
+  // ── 라벨 클릭 ─────────────────────────────────────────────────
+  void _onLabelClick(km.LabelClickEvent e) {
+    if (!e.labelId.startsWith('job_')) return;
+    final id = int.tryParse(e.labelId.substring(4));
+    if (id == null) return;
+    final idx = _jobs.indexWhere((j) => j.id == id);
+    if (idx >= 0) _selectJob(idx);
   }
 
   // ── 공고 선택 ─────────────────────────────────────────────────
-  Future<void> _selectJob(int idx) async {
+  void _selectJob(int idx) {
     if (idx < 0 || idx >= _jobs.length) return;
-    final job = _jobs[idx];
-
     setState(() {
-      _selectedIdx         = idx;
-      _workerDots          = [];
-      _selectedWorkerCount = 0;
+      _selectedIdx = idx;
+      _workerCount = 0;
     });
-
+    final job = _jobs[idx];
     // 카메라 이동
-    if (job.hasLocation) {
-      _mapCtrl.move(job.position, 13.5);
+    if (job.hasLocation && _ctrl != null) {
+      _ctrl!.moveCamera(
+        cameraUpdate: km.CameraUpdate.fromLatLng(job.pos),
+        animation: const km.CameraAnimation(duration: 350, autoElevation: true, isConsecutive: false),
+      );
     }
-
-    // 구직자 핀 + 인원수 병렬 로드
-    if (job.hasLocation) {
-      setState(() => _workersLoading = true);
-      final results = await Future.wait([
-        _dotCache.containsKey(job.id)
-            ? Future.value(_dotCache[job.id]!)
-            : _fetchWorkers(job.id),
-        _nearbyCount(job.id),
-      ]);
-      if (mounted) {
-        setState(() {
-          _workerDots          = results[0] as List<_WorkerDot>;
-          _selectedWorkerCount = results[1] as int;
-          _workersLoading      = false;
-        });
-      }
-    }
+    // 구직자 로드 (위치 있는 공고만)
+    if (job.hasLocation) _loadWorkers(job);
   }
 
-  Future<List<_WorkerDot>> _fetchWorkers(int jobId) async {
+  Future<void> _loadWorkers(_Job job) async {
+    if (mounted) setState(() => _workersLoading = true);
+    final results = await Future.wait([
+      _dotCache.containsKey(job.id)
+          ? Future.value(_dotCache[job.id]!)
+          : _fetchWorkers(job.id),
+      _fetchCount(job.id),
+    ]);
+    if (!mounted) return;
+    final workers = results[0] as List<_Worker>;
+    final count   = results[1] as int;
+    _dotCache[job.id] = workers;
+    setState(() {
+      _workerCount    = count;
+      _workersLoading = false;
+    });
+    if (_mapReady) await _placeWorkerMarkers(workers);
+  }
+
+  Future<List<_Worker>> _fetchWorkers(int jobId) async {
     try {
       final res = await http.get(
-        Uri.parse('$baseUrl/api/direct-messages/nearby-workers?jobId=$jobId&radius=10000'),
+        Uri.parse('$baseUrl/api/direct-messages/nearby-workers?jobId=$jobId&radius=5000'),
         headers: _auth,
       ).timeout(const Duration(seconds: 8));
       if (res.statusCode == 200) {
-        final dots = (jsonDecode(res.body)['workers'] as List? ?? [])
+        return (jsonDecode(res.body)['workers'] as List? ?? [])
             .whereType<Map<String, dynamic>>()
-            .map(_WorkerDot.fromJson)
-            .where((d) => d.hasLocation)
+            .map(_Worker.fromJson)
+            .where((w) => w.hasLocation)
             .toList();
-        _dotCache[jobId] = dots;
-        return dots;
       }
     } catch (_) {}
     return [];
   }
 
-  Future<int> _nearbyCount(int jobId) async {
+  Future<int> _fetchCount(int jobId) async {
     if (_countCache.containsKey(jobId)) return _countCache[jobId]!;
     try {
       final res = await http.get(
-        Uri.parse('$baseUrl/api/direct-messages/nearby-count?jobId=$jobId&radius=10000'),
+        Uri.parse('$baseUrl/api/direct-messages/nearby-count?jobId=$jobId&radius=5000'),
         headers: _auth,
       ).timeout(const Duration(seconds: 6));
       if (res.statusCode == 200) {
-        final count = (jsonDecode(res.body)['count'] as num?)?.toInt() ?? 0;
-        _countCache[jobId] = count;
-        return count;
+        final n = (jsonDecode(res.body)['count'] as num?)?.toInt() ?? 0;
+        _countCache[jobId] = n;
+        return n;
       }
     } catch (_) {}
     return 0;
   }
 
-  // ── 공고 알림 발송 (구독자 전용) ─────────────────────────────
-  Future<void> _sendBroadcast(int jobId) async {
-    if (_broadcastSending) return;
+  // ── 공고 알림 발송 ────────────────────────────────────────────
+  Future<void> _sendBroadcast() async {
+    final job = _selectedJob;
+    if (job == null || _broadcastSending) return;
     setState(() => _broadcastSending = true);
     try {
       final res = await http.post(
         Uri.parse('$baseUrl/api/notification-settings/send-nearby'),
         headers: {..._auth, 'Content-Type': 'application/json'},
-        body: jsonEncode({'jobId': jobId, 'clientId': _clientId, 'radiusMeters': 10000}),
+        body: jsonEncode({'jobId': job.id, 'clientId': _clientId, 'radiusMeters': 5000}),
       ).timeout(const Duration(seconds: 10));
-
       if (!mounted) return;
       final body = jsonDecode(res.body) as Map<String, dynamic>;
-      if (res.statusCode == 200) {
-        final cnt = body['sentCount'] ?? 0;
-        _showSnack('$cnt명에게 알림을 발송했어요!', isError: false);
-      } else {
-        _showSnack(body['message']?.toString() ?? '발송 실패', isError: true);
-      }
-    } catch (_) {
-      if (mounted) _showSnack('네트워크 오류', isError: true);
-    } finally {
-      if (mounted) setState(() => _broadcastSending = false);
-    }
+      _showSnack(
+        res.statusCode == 200
+            ? '${body['sentCount'] ?? 0}명에게 알림을 발송했어요!'
+            : (body['message']?.toString() ?? '발송 실패'),
+        isError: res.statusCode != 200,
+      );
+    } catch (_) { if (mounted) _showSnack('네트워크 오류', isError: true); }
+    finally { if (mounted) setState(() => _broadcastSending = false); }
   }
 
-  void _showSnack(String msg, {required bool isError}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg),
-      backgroundColor: isError ? _red : _green,
-      duration: const Duration(seconds: 3),
-    ));
-  }
+  void _showSnack(String msg, {required bool isError}) =>
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(msg),
+        backgroundColor: isError ? _red : _green,
+        duration: const Duration(seconds: 3),
+      ));
 
-  // ── 선택된 공고 ───────────────────────────────────────────────
-  _JobPin? get _selectedJob =>
-      _selectedIdx != null && _selectedIdx! < _jobs.length
-          ? _jobs[_selectedIdx!]
-          : null;
+  _Job? get _selectedJob =>
+      _selectedIdx != null && _selectedIdx! < _jobs.length ? _jobs[_selectedIdx!] : null;
 
   // ── build ──────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final bottom  = MediaQuery.of(context).padding.bottom;
-    final cardH   = _selectedJob != null ? 148.0 : 0.0;
-    final chipH   = 52.0;
-    final mapBottomPad = bottom + cardH + (cardH > 0 ? 4 : 0);
+    final bottomPad = MediaQuery.of(context).padding.bottom;
+    final topPad    = MediaQuery.of(context).padding.top;
 
     return Stack(
       children: [
-        // ── 지도 ─────────────────────────────────────────────────
+        // ── 카카오맵 (항상 풀스크린) ────────────────────────────────
         Positioned.fill(
-          bottom: mapBottomPad,
-          child: FlutterMap(
-            mapController: _mapCtrl,
-            options: MapOptions(
-              initialCenter: _myLocation ?? const LatLng(37.5665, 126.9780),
-              initialZoom: 13,
-              minZoom: 7,
-              maxZoom: 19,
-              interactionOptions: const InteractionOptions(
-                flags: InteractiveFlag.all & ~InteractiveFlag.rotate,
-              ),
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                userAgentPackageName: 'kr.co.albailju',
-                errorTileCallback: (_, __, ___) {},
-              ),
-              // 내 위치 핀
-              if (_myLocation != null)
-                MarkerLayer(markers: [
-                  Marker(
-                    point: _myLocation!,
-                    width: 18, height: 18,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: _primary, shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2.5),
-                        boxShadow: [BoxShadow(color: _primary.withValues(alpha: 0.4), blurRadius: 8, spreadRadius: 2)],
-                      ),
-                    ),
-                  ),
-                ]),
-              // 구직자 점 (선택된 공고 기준)
-              if (_workerDots.isNotEmpty)
-                MarkerLayer(
-                  markers: _workerDots.map((d) => Marker(
-                    point: d.position,
-                    width: 20, height: 20,
-                    child: GestureDetector(
-                      onTap: () => _showWorkerTooltip(d),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: d.gradeColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 1.5),
-                          boxShadow: [BoxShadow(color: d.gradeColor.withValues(alpha: 0.35), blurRadius: 5)],
-                        ),
-                        child: Center(
-                          child: Text(
-                            d.grade == 'N' ? '' : d.grade,
-                            style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.w800),
-                          ),
-                        ),
-                      ),
-                    ),
-                  )).toList(),
-                ),
-              // 공고 핀 (위치 있는 공고만)
-              MarkerLayer(
-                markers: _jobs.asMap().entries
-                    .where((e) => e.value.hasLocation)
-                    .map((e) {
-                  final selected = e.key == _selectedIdx;
-                  final job = e.value;
-                  return Marker(
-                    point: job.position,
-                    width: selected ? 100 : 80,
-                    height: selected ? 44 : 36,
-                    alignment: Alignment.bottomCenter,
-                    child: GestureDetector(
-                      onTap: () => _selectJob(e.key),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: selected ? job.pinColor : Colors.white,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: job.pinColor,
-                            width: selected ? 0 : 1.5,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: job.pinColor.withValues(alpha: selected ? 0.4 : 0.15),
-                              blurRadius: selected ? 10 : 5,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          job.title.length > 8 ? '${job.title.substring(0, 8)}…' : job.title,
-                          style: TextStyle(
-                            color: selected ? Colors.white : job.pinColor,
-                            fontSize: selected ? 12 : 10,
-                            fontWeight: FontWeight.w700,
-                          ),
-                          maxLines: 1,
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-            ],
+          child: km.KakaoMap(
+            initialPosition: const km.LatLng(latitude: 37.5665, longitude: 126.9780),
+            initialLevel: 5,
+            onMapCreated: _onMapCreated,
           ),
         ),
 
-        // ── 상단 공고 칩 셀렉터 ─────────────────────────────────
+        // ── 상단 공고 칩 ──────────────────────────────────────────
         Positioned(
-          top: 12, left: 0, right: 0,
+          top: topPad + 12, left: 0, right: 0,
           child: SizedBox(
-            height: chipH,
+            height: 40,
             child: _loading
-                ? const Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: _primary)))
+                ? Center(child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8)],
+                    ),
+                    child: const SizedBox(width: 16, height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: _primary)),
+                  ))
                 : _jobs.isEmpty
-                    ? Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8)],
-                          ),
-                          child: const Text('등록된 공고가 없어요', style: TextStyle(color: _textSub, fontSize: 13)),
-                        ),
-                      )
+                    ? Center(child: _chipContainer(child: const Text('등록된 공고 없음',
+                        style: TextStyle(fontSize: 12, color: _textSub))))
                     : ListView.separated(
                         controller: _scrollCtrl,
                         scrollDirection: Axis.horizontal,
@@ -512,62 +487,52 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                         itemCount: _jobs.length,
                         separatorBuilder: (_, __) => const SizedBox(width: 8),
                         itemBuilder: (_, i) {
-                          final job   = _jobs[i];
-                          final sel   = i == _selectedIdx;
+                          final job = _jobs[i];
+                          final sel = i == _selectedIdx;
                           return GestureDetector(
                             onTap: () => _selectJob(i),
                             child: AnimatedContainer(
                               duration: const Duration(milliseconds: 150),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+                              padding: const EdgeInsets.symmetric(horizontal: 14),
                               decoration: BoxDecoration(
                                 color: sel ? job.pinColor : Colors.white,
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(color: sel ? Colors.transparent : _border),
                                 boxShadow: [BoxShadow(
-                                  color: Colors.black.withValues(alpha: sel ? 0.12 : 0.06),
-                                  blurRadius: sel ? 12 : 6,
+                                  color: Colors.black.withValues(alpha: sel ? 0.14 : 0.07),
+                                  blurRadius: sel ? 14 : 7,
                                   offset: const Offset(0, 2),
                                 )],
                               ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
+                              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                                Container(width: 6, height: 6,
+                                  decoration: BoxDecoration(
+                                    color: sel ? Colors.white.withValues(alpha: 0.75) : job.pinColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  job.title.length > 11 ? '${job.title.substring(0, 11)}…' : job.title,
+                                  style: TextStyle(
+                                    fontSize: 13, fontWeight: FontWeight.w600,
+                                    color: sel ? Colors.white : _textMain,
+                                  ),
+                                ),
+                                if (job.applicantCount > 0) ...[
+                                  const SizedBox(width: 5),
                                   Container(
-                                    width: 7, height: 7,
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                                     decoration: BoxDecoration(
-                                      color: sel ? Colors.white.withValues(alpha: 0.8) : job.pinColor,
-                                      shape: BoxShape.circle,
+                                      color: sel ? Colors.white.withValues(alpha: 0.25) : _primary.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(999),
                                     ),
+                                    child: Text('${job.applicantCount}',
+                                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700,
+                                            color: sel ? Colors.white : _primary)),
                                   ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    job.title.length > 10 ? '${job.title.substring(0, 10)}…' : job.title,
-                                    style: TextStyle(
-                                      color: sel ? Colors.white : _textMain,
-                                      fontSize: 13, fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  if (job.applicantCount > 0) ...[
-                                    const SizedBox(width: 5),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-                                      decoration: BoxDecoration(
-                                        color: sel
-                                            ? Colors.white.withValues(alpha: 0.25)
-                                            : _primary.withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(999),
-                                      ),
-                                      child: Text(
-                                        '${job.applicantCount}',
-                                        style: TextStyle(
-                                          fontSize: 10, fontWeight: FontWeight.w700,
-                                          color: sel ? Colors.white : _primary,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
                                 ],
-                              ),
+                              ]),
                             ),
                           );
                         },
@@ -575,10 +540,24 @@ class _WorkerMapViewState extends State<WorkerMapView> {
           ),
         ),
 
-        // ── 로딩 스피너 (구직자) ─────────────────────────────────
+        // ── 우측 FAB (collapsed 카드 높이 165 + safe area 위에 고정) ──
+        Positioned(
+          right: 14,
+          bottom: 175 + bottomPad,
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            _Fab(icon: Icons.my_location_rounded, onTap: _goToMyLocation),
+            const SizedBox(height: 8),
+            _Fab(
+              icon: Icons.refresh_rounded,
+              onTap: () { _dotCache.clear(); _countCache.clear(); _fetchJobs(); },
+            ),
+          ]),
+        ),
+
+        // ── 구직자 로딩 표시 ──────────────────────────────────────
         if (_workersLoading)
           Positioned(
-            right: 60, bottom: mapBottomPad + 12,
+            right: 66, bottom: 179 + bottomPad,
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -586,131 +565,75 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8)],
               ),
-              child: const SizedBox(width: 16, height: 16,
+              child: const SizedBox(width: 14, height: 14,
                   child: CircularProgressIndicator(strokeWidth: 2, color: _primary)),
             ),
           ),
 
-        // ── 오른쪽 FAB ───────────────────────────────────────────
-        Positioned(
-          right: 16,
-          bottom: mapBottomPad + 16,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _Fab(icon: Icons.my_location_rounded, onTap: _goToMyLocation),
-              const SizedBox(height: 8),
-              _Fab(
-                icon: Icons.fit_screen_rounded,
-                onTap: _selectedJob?.hasLocation == true ? _fitToJob : null,
-              ),
-              const SizedBox(height: 8),
-              _Fab(
-                icon: Icons.refresh_rounded,
-                onTap: () { _dotCache.clear(); _countCache.clear(); _fetchJobs(); },
-              ),
-            ],
-          ),
-        ),
-
-        // ── 선택된 공고 카드 (하단 고정) ─────────────────────────
+        // ── 공고 카드 (확장형) ────────────────────────────────────
         if (_selectedJob != null)
           Positioned(
-            left: 0, right: 0,
-            bottom: 0,
-            child: _JobCard(
-              job:          _selectedJob!,
-              workerCount:  _selectedWorkerCount,
-              isSubscribed: _isSubscribed,
-              broadcasting: _broadcastSending,
-              bottomPad:    bottom,
+            left: 0, right: 0, bottom: 0,
+            child: _ExpandableJobCard(
+              key: ValueKey(_selectedJob!.id),
+              job:           _selectedJob!,
+              workerCount:   _workerCount,
+              canUrgentCall: _canUrgentCall,
+              isSubscribed:  _isSubscribed,
+              broadcasting:  _broadcastSending,
+              bottomPad:     bottomPad,
               onUrgentCall: () => Navigator.push(context, MaterialPageRoute(
                 builder: (_) => NearbyWorkersScreen(
-                  jobId:    _selectedJob!.id,
+                  jobId: _selectedJob!.id,
                   clientId: _clientId ?? 0,
                   jobTitle: _selectedJob!.title,
                 ),
-              )).then((_) { _dotCache.remove(_selectedJob!.id); _countCache.remove(_selectedJob!.id); _selectJob(_selectedIdx!); }),
-              onBroadcast: () => _sendBroadcast(_selectedJob!.id),
+              )).then((_) {
+                _dotCache.remove(_selectedJob?.id);
+                _countCache.remove(_selectedJob?.id);
+                final idx = _selectedIdx;
+                if (idx != null) _loadWorkers(_jobs[idx]);
+              }),
+              onBroadcast: _sendBroadcast,
+              onBuyPass: () => Navigator.pushNamed(context, '/pass_store'),
             ),
           ),
       ],
     );
   }
 
-  // ── 구직자 툴팁 ──────────────────────────────────────────────
-  void _showWorkerTooltip(_WorkerDot d) {
-    showDialog(
-      context: context,
-      barrierColor: Colors.transparent,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        contentPadding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-        content: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 32, height: 32,
-              decoration: BoxDecoration(
-                color: d.gradeColor.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: Center(
-                child: Text(d.grade, style: TextStyle(
-                  fontSize: 13, fontWeight: FontWeight.w800, color: d.gradeColor,
-                )),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('구직자', style: TextStyle(fontSize: 10, color: _textSub)),
-                Text('활동등급 ${d.grade}',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: d.gradeColor)),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  static Widget _chipContainer({required Widget child}) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 8)],
+    ),
+    child: child,
+  );
 
   Future<void> _goToMyLocation() async {
-    if (_myLocation != null) { _mapCtrl.move(_myLocation!, 14); return; }
-    final loc = await _getLocation();
-    if (loc != null && mounted) {
-      setState(() => _myLocation = loc);
-      _mapCtrl.move(loc, 14);
-    }
-  }
-
-  void _fitToJob() {
-    final job = _selectedJob;
-    if (job == null || !job.hasLocation) return;
-    if (_workerDots.isEmpty) {
-      _mapCtrl.move(job.position, 13.5);
-      return;
-    }
-    final lats = [job.lat, ..._workerDots.map((d) => d.lat)];
-    final lngs = [job.lng, ..._workerDots.map((d) => d.lng)];
-    _mapCtrl.fitCamera(CameraFit.bounds(
-      bounds: LatLngBounds(
-        LatLng(lats.reduce((a, b) => a < b ? a : b) - 0.005,
-               lngs.reduce((a, b) => a < b ? a : b) - 0.005),
-        LatLng(lats.reduce((a, b) => a > b ? a : b) + 0.005,
-               lngs.reduce((a, b) => a > b ? a : b) + 0.005),
-      ),
-      padding: const EdgeInsets.all(56),
-    ));
+    if (!await Geolocator.isLocationServiceEnabled()) return;
+    var perm = await Geolocator.checkPermission();
+    if (perm == LocationPermission.denied) perm = await Geolocator.requestPermission();
+    if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) return;
+    try {
+      final p = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.low),
+      ).timeout(const Duration(seconds: 5));
+      if (_ctrl != null) {
+        await _ctrl!.moveCamera(
+          cameraUpdate: km.CameraUpdate.fromLatLng(km.LatLng(latitude: p.latitude, longitude: p.longitude)),
+          animation: const km.CameraAnimation(duration: 400, autoElevation: true, isConsecutive: false),
+        );
+      }
+    } catch (_) {}
   }
 }
 
 // ── FAB ──────────────────────────────────────────────────────────
 class _Fab extends StatelessWidget {
-  final IconData      icon;
-  final VoidCallback? onTap;
+  final IconData icon; final VoidCallback? onTap;
   const _Fab({required this.icon, this.onTap});
 
   @override
@@ -729,40 +652,70 @@ class _Fab extends StatelessWidget {
   );
 }
 
-// ── 공고 카드 (하단 고정) ─────────────────────────────────────────
-class _JobCard extends StatelessWidget {
-  final _JobPin       job;
-  final int           workerCount;
-  final bool          isSubscribed;
-  final bool          broadcasting;
-  final double        bottomPad;
-  final VoidCallback  onUrgentCall;
-  final VoidCallback  onBroadcast;
+// ── 확장형 공고 카드 ──────────────────────────────────────────────
+class _ExpandableJobCard extends StatefulWidget {
+  final _Job job;
+  final int workerCount;
+  final bool canUrgentCall, isSubscribed, broadcasting;
+  final double bottomPad;
+  final VoidCallback onUrgentCall, onBroadcast, onBuyPass;
 
-  const _JobCard({
+  const _ExpandableJobCard({
+    super.key,
     required this.job, required this.workerCount,
-    required this.isSubscribed, required this.broadcasting,
-    required this.bottomPad,
-    required this.onUrgentCall, required this.onBroadcast,
+    required this.canUrgentCall, required this.isSubscribed,
+    required this.broadcasting, required this.bottomPad,
+    required this.onUrgentCall, required this.onBroadcast, required this.onBuyPass,
   });
 
   @override
+  State<_ExpandableJobCard> createState() => _ExpandableJobCardState();
+}
+
+class _ExpandableJobCardState extends State<_ExpandableJobCard> {
+  bool _expanded = false;
+
+  void _toggle() => setState(() => _expanded = !_expanded);
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 16, offset: const Offset(0, -3))],
-      ),
-      padding: EdgeInsets.fromLTRB(20, 16, 20, bottomPad + 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 상단 줄: 상태 + 타이틀
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
+    final job = widget.job;
+    return GestureDetector(
+      onVerticalDragEnd: (d) {
+        if ((d.primaryVelocity ?? 0) < -250 && !_expanded) _toggle();
+        if ((d.primaryVelocity ?? 0) >  250 && _expanded)  _toggle();
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.10), blurRadius: 18, offset: const Offset(0, -3))],
+        ),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          // 드래그 핸들
+          GestureDetector(
+            onTap: _toggle,
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Center(
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  width: _expanded ? 44 : 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: _expanded ? _primary.withValues(alpha: 0.5) : _border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // 헤더: 상태 뱃지 + 제목 + 구직자 수
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
+            child: Row(children: [
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -773,141 +726,237 @@ class _JobCard extends StatelessWidget {
                     style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: job.pinColor)),
               ),
               const SizedBox(width: 8),
-              Expanded(
-                child: Text(job.title,
-                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: _textMain),
-                    maxLines: 1, overflow: TextOverflow.ellipsis),
-              ),
-              // 반경 내 구직자 수
-              Row(
-                children: [
-                  const Icon(Icons.people_rounded, size: 14, color: _primary),
-                  const SizedBox(width: 3),
-                  Text('$workerCount명', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _primary)),
-                  const SizedBox(width: 2),
-                  const Text('10km 내', style: TextStyle(fontSize: 10, color: _textSub)),
-                ],
-              ),
-            ],
+              Expanded(child: Text(job.title,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: _textMain),
+                  maxLines: 1, overflow: TextOverflow.ellipsis)),
+              const SizedBox(width: 8),
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.people_alt_rounded, size: 14, color: _primary),
+                const SizedBox(width: 3),
+                Text('${widget.workerCount}명',
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _primary)),
+                const SizedBox(width: 2),
+                const Text('5km', style: TextStyle(fontSize: 10, color: _textSub)),
+              ]),
+            ]),
           ),
 
-          // 메타 정보
-          if (job.location.isNotEmpty || job.startDate.isNotEmpty || job.hourlyWage > 0)
-            Padding(
-              padding: const EdgeInsets.only(top: 6, bottom: 10),
-              child: Wrap(
-                spacing: 10, runSpacing: 2,
-                children: [
-                  if (job.location.isNotEmpty)   _meta(Icons.location_on_rounded,   job.location),
-                  if (job.startDate.isNotEmpty)   _meta(Icons.calendar_today_rounded, job.startDate),
-                  if (job.hourlyWage > 0)         _meta(Icons.payments_rounded,       '시급 ${_comma(job.hourlyWage)}원'),
-                ],
-              ),
-            )
-          else
-            const SizedBox(height: 10),
-
-          // 버튼
-          Row(
-            children: [
-              Expanded(
-                child: _CardBtn(
-                  label: '긴급 호출',
-                  icon: Icons.emergency_rounded,
-                  color: _red,
-                  filled: true,
-                  onTap: onUrgentCall,
-                ),
-              ),
-              const SizedBox(width: 10),
-              if (isSubscribed)
-                Expanded(
-                  child: _CardBtn(
-                    label: broadcasting ? '발송 중…' : '공고 알림 발송',
-                    icon: broadcasting ? Icons.hourglass_top_rounded : Icons.campaign_rounded,
-                    color: _purple,
-                    filled: false,
-                    onTap: broadcasting ? null : onBroadcast,
-                  ),
-                )
-              else
-                Expanded(
-                  child: _CardBtn(
-                    label: '구독 시 알림 발송',
-                    icon: Icons.lock_rounded,
-                    color: _textSub,
-                    filled: false,
-                    onTap: () => Navigator.pushNamed(context, '/subscription'),
-                  ),
-                ),
-            ],
+          // 확장 컨텐츠
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 220),
+            sizeCurve: Curves.easeOut,
+            crossFadeState: _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            firstChild: _CollapsedMeta(job: job, bottomPad: widget.bottomPad,
+                canUrgentCall: widget.canUrgentCall, isSubscribed: widget.isSubscribed,
+                broadcasting: widget.broadcasting,
+                onUrgentCall: widget.onUrgentCall, onBroadcast: widget.onBroadcast,
+                onBuyPass: widget.onBuyPass),
+            secondChild: _ExpandedDetail(job: job, bottomPad: widget.bottomPad,
+                canUrgentCall: widget.canUrgentCall, isSubscribed: widget.isSubscribed,
+                broadcasting: widget.broadcasting,
+                onUrgentCall: widget.onUrgentCall, onBroadcast: widget.onBroadcast,
+                onBuyPass: widget.onBuyPass),
           ),
-        ],
+        ]),
       ),
     );
   }
-
-  static Widget _meta(IconData icon, String text) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      Icon(icon, size: 12, color: _textSub),
-      const SizedBox(width: 3),
-      Text(text, style: const TextStyle(fontSize: 12, color: _textSub)),
-    ],
-  );
-
-  static String _comma(int n) {
-    final s = n.toString();
-    final buf = StringBuffer();
-    for (var i = 0; i < s.length; i++) {
-      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
-      buf.write(s[i]);
-    }
-    return buf.toString();
-  }
 }
 
-class _CardBtn extends StatelessWidget {
-  final String        label;
-  final IconData      icon;
-  final Color         color;
-  final bool          filled;
-  final VoidCallback? onTap;
+// ── 축소 상태: 한 줄 메타 + 버튼 ────────────────────────────────
+class _CollapsedMeta extends StatelessWidget {
+  final _Job job;
+  final double bottomPad;
+  final bool canUrgentCall, isSubscribed, broadcasting;
+  final VoidCallback onUrgentCall, onBroadcast, onBuyPass;
 
-  const _CardBtn({
-    required this.label, required this.icon,
-    required this.color, required this.filled,
-    this.onTap,
+  const _CollapsedMeta({
+    required this.job, required this.bottomPad,
+    required this.canUrgentCall, required this.isSubscribed, required this.broadcasting,
+    required this.onUrgentCall, required this.onBroadcast, required this.onBuyPass,
   });
 
   @override
   Widget build(BuildContext context) {
-    final disabled = onTap == null;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(18, 0, 18, bottomPad + 14),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        // 한 줄 메타
+        if (job.location.isNotEmpty || job.hourlyWage > 0 || job.timeRange.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(children: [
+              if (job.startDate.isNotEmpty) ...[
+                const Icon(Icons.calendar_today_rounded, size: 11, color: _textSub),
+                const SizedBox(width: 3),
+                Text(job.startDate, style: const TextStyle(fontSize: 12, color: _textSub)),
+                const SizedBox(width: 8),
+              ],
+              if (job.timeRange.isNotEmpty) ...[
+                const Icon(Icons.access_time_rounded, size: 11, color: _textSub),
+                const SizedBox(width: 3),
+                Text(job.timeRange, style: const TextStyle(fontSize: 12, color: _textSub)),
+                const SizedBox(width: 8),
+              ],
+              if (job.hourlyWage > 0) ...[
+                const Icon(Icons.payments_rounded, size: 11, color: _textSub),
+                const SizedBox(width: 3),
+                Text(_comma(job.hourlyWage), style: const TextStyle(fontSize: 12, color: _textSub)),
+              ],
+            ]),
+          )
+        else
+          const SizedBox(height: 12),
+        _ActionRow(canUrgentCall: canUrgentCall, isSubscribed: isSubscribed,
+            broadcasting: broadcasting, onUrgentCall: onUrgentCall,
+            onBroadcast: onBroadcast, onBuyPass: onBuyPass),
+      ]),
+    );
+  }
+}
+
+// ── 확장 상태: 상세 정보 + 설명 + 버튼 ──────────────────────────
+class _ExpandedDetail extends StatelessWidget {
+  final _Job job;
+  final double bottomPad;
+  final bool canUrgentCall, isSubscribed, broadcasting;
+  final VoidCallback onUrgentCall, onBroadcast, onBuyPass;
+
+  const _ExpandedDetail({
+    required this.job, required this.bottomPad,
+    required this.canUrgentCall, required this.isSubscribed, required this.broadcasting,
+    required this.onUrgentCall, required this.onBroadcast, required this.onBuyPass,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final chips = <_InfoChip>[
+      if (job.startDate.isNotEmpty)   _InfoChip(Icons.calendar_today_rounded, job.startDate),
+      if (job.timeRange.isNotEmpty)   _InfoChip(Icons.access_time_rounded,    job.timeRange),
+      if (job.location.isNotEmpty)    _InfoChip(Icons.place_rounded,           job.location),
+      if (job.hourlyWage > 0)         _InfoChip(Icons.payments_rounded,        '시급 ${_comma(job.hourlyWage)}원'),
+      if (job.category.isNotEmpty)    _InfoChip(Icons.work_outline_rounded,     job.category),
+      if (job.applicantCount > 0)     _InfoChip(Icons.how_to_reg_rounded,       '지원 ${job.applicantCount}명'),
+    ];
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(18, 0, 18, bottomPad + 14),
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // 정보 칩 Wrap
+        if (chips.isNotEmpty) ...[
+          Wrap(
+            spacing: 6, runSpacing: 6,
+            children: chips.map((c) => Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF4F6FA),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(c.icon, size: 12, color: _textSub),
+                const SizedBox(width: 4),
+                Text(c.label, style: const TextStyle(fontSize: 12, color: _textSub)),
+              ]),
+            )).toList(),
+          ),
+          const SizedBox(height: 14),
+        ],
+
+        // 공고 설명
+        if (job.description.isNotEmpty) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8F9FB),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: _border),
+            ),
+            child: Text(
+              job.description,
+              style: const TextStyle(fontSize: 13, color: _textMain, height: 1.6),
+              maxLines: 5, overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(height: 14),
+        ],
+
+        _ActionRow(canUrgentCall: canUrgentCall, isSubscribed: isSubscribed,
+            broadcasting: broadcasting, onUrgentCall: onUrgentCall,
+            onBroadcast: onBroadcast, onBuyPass: onBuyPass),
+      ]),
+    );
+  }
+}
+
+class _InfoChip { final IconData icon; final String label; const _InfoChip(this.icon, this.label); }
+
+// ── 공통 액션 버튼 행 ─────────────────────────────────────────────
+class _ActionRow extends StatelessWidget {
+  final bool canUrgentCall, isSubscribed, broadcasting;
+  final VoidCallback onUrgentCall, onBroadcast, onBuyPass;
+
+  const _ActionRow({
+    required this.canUrgentCall, required this.isSubscribed, required this.broadcasting,
+    required this.onUrgentCall, required this.onBroadcast, required this.onBuyPass,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(children: [
+      Expanded(child: canUrgentCall
+          ? _Btn(label: '긴급 호출', icon: Icons.emergency_rounded, color: _red, filled: true, onTap: onUrgentCall)
+          : _Btn(label: '이용권 구매', icon: Icons.add_shopping_cart_rounded, color: _textSub, filled: false, onTap: onBuyPass)),
+      const SizedBox(width: 10),
+      Expanded(child: isSubscribed
+          ? _Btn(
+              label: broadcasting ? '발송 중…' : '알림 발송',
+              icon: broadcasting ? Icons.hourglass_top_rounded : Icons.campaign_rounded,
+              color: _purple, filled: false,
+              onTap: broadcasting ? null : onBroadcast,
+            )
+          : _Btn(label: '구독 시 발송', icon: Icons.lock_rounded, color: _textSub, filled: false,
+              onTap: () => Navigator.pushNamed(context, '/subscription'))),
+    ]);
+  }
+}
+
+String _comma(int n) {
+  final s = n.toString();
+  final b = StringBuffer();
+  for (var i = 0; i < s.length; i++) {
+    if (i > 0 && (s.length - i) % 3 == 0) b.write(',');
+    b.write(s[i]);
+  }
+  return b.toString();
+}
+
+class _Btn extends StatelessWidget {
+  final String label; final IconData icon;
+  final Color color; final bool filled;
+  final VoidCallback? onTap;
+
+  const _Btn({required this.label, required this.icon, required this.color, required this.filled, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final dis = onTap == null;
+    final bg  = filled ? (dis ? const Color(0xFFD1D5DB) : color) : Colors.transparent;
+    final fg  = filled ? Colors.white : (dis ? _textSub : color);
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        padding: const EdgeInsets.symmetric(vertical: 11),
         decoration: BoxDecoration(
-          color: filled
-              ? (disabled ? const Color(0xFFD1D5DB) : color)
-              : Colors.transparent,
+          color: bg,
           borderRadius: BorderRadius.circular(12),
-          border: filled ? null : Border.all(color: disabled ? _border : color),
+          border: filled ? null : Border.all(color: dis ? _border : color),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 15,
-                color: filled ? Colors.white : (disabled ? _textSub : color)),
-            const SizedBox(width: 5),
-            Text(label,
-              style: TextStyle(
-                fontSize: 13, fontWeight: FontWeight.w600,
-                color: filled ? Colors.white : (disabled ? _textSub : color),
-              ),
-            ),
-          ],
-        ),
+        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Icon(icon, size: 15, color: fg),
+          const SizedBox(width: 5),
+          Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: fg)),
+        ]),
       ),
     );
   }
