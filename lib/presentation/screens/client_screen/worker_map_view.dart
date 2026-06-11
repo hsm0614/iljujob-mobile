@@ -106,9 +106,6 @@ class _Worker {
   }
 }
 
-// ── Kakao 마커 레이어 ID ──────────────────────────────────────────
-const _kWorkerLayer = 'worker_dots_layer';
-
 // ── 메인 위젯 ─────────────────────────────────────────────────────
 class WorkerMapView extends StatefulWidget {
   const WorkerMapView({super.key});
@@ -123,8 +120,9 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   bool _mapReady = false;
 
   final _scrollCtrl = ScrollController();
-  List<_Job> _jobs       = [];
-  int?       _selectedIdx;
+  List<_Job>    _jobs           = [];
+  List<_Worker> _currentWorkers = [];
+  int?          _selectedIdx;
   int           _workerCount = 0;
   bool          _loading     = true;
   bool          _workersLoading = false;
@@ -202,7 +200,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
         setState(() { _jobs = jobs; _loading = false; });
         // 지도 준비됐으면 바로 핀 표시
         if (_mapReady && jobs.isNotEmpty) {
-          await _placeJobMarkers();
+          await _refreshMarkers();
           _selectJob(0);
         }
       } else {
@@ -229,11 +227,9 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     for (var i = 0; i < 8; i++) {
       try {
         await _ctrl!.setPoiVisible(isVisible: true);
-        await _ctrl!.addMarkerLayer(layerId: _kWorkerLayer, clickable: false, zOrder: 1);
         _mapReady = true;
-        // 공고 이미 로드됐으면 핀 표시
         if (_jobs.isNotEmpty) {
-          await _placeJobMarkers();
+          await _refreshMarkers();
           _selectJob(0);
         }
         return;
@@ -245,48 +241,36 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     debugPrint('[MAP] setup failed: $last');
   }
 
-  // ── 공고 핀 표시 ─────────────────────────────────────────────
-  Future<void> _placeJobMarkers() async {
+  // ── 마커 전체 재그리기 (공고 + 구직자 단일 레이어) ───────────
+  Future<void> _refreshMarkers({List<_Worker>? workers}) async {
     if (_ctrl == null) return;
+    final w = workers ?? _currentWorkers;
     try {
       await _ctrl!.clearMarkers();
-      final mapped = _jobs.where((j) => j.hasLocation).toList();
-      if (mapped.isEmpty) return;
-      await _ctrl!.addMarkers(
-        markerOptions: mapped.map((j) => km.MarkerOption(
-          id: 'job_${j.id}',
-          latLng: j.pos,
-          text: '${j.isPinnedNow ? "[긴급] " : ""}${j.title.length > 9 ? '${j.title.substring(0, 9)}…' : j.title}',
-        )).toList(),
-      );
-      // 첫 공고로 카메라 이동
-      final first = mapped.first;
-      await _ctrl!.moveCamera(
-        cameraUpdate: km.CameraUpdate.fromLatLng(first.pos),
-        animation: const km.CameraAnimation(duration: 300, autoElevation: true, isConsecutive: false),
-      );
+      final jobOpts = _jobs.where((j) => j.hasLocation).map((j) => km.MarkerOption(
+        id: 'job_${j.id}',
+        latLng: j.pos,
+        text: '${j.isPinnedNow ? "[긴급] " : ""}${j.title.length > 9 ? '${j.title.substring(0, 9)}…' : j.title}',
+      )).toList();
+      final workerOpts = w.where((wk) => wk.hasLocation).map((wk) => km.MarkerOption(
+        id: 'w_${wk.id}',
+        latLng: wk.pos,
+        text: wk.grade,
+      )).toList();
+      final all = [...jobOpts, ...workerOpts];
+      if (all.isNotEmpty) await _ctrl!.addMarkers(markerOptions: all);
+      // 카메라: 선택된 공고 or 첫 공고
+      final target = (_selectedIdx != null && _jobs[_selectedIdx!].hasLocation)
+          ? _jobs[_selectedIdx!]
+          : _jobs.where((j) => j.hasLocation).firstOrNull;
+      if (target != null) {
+        await _ctrl!.moveCamera(
+          cameraUpdate: km.CameraUpdate.fromLatLng(target.pos),
+          animation: const km.CameraAnimation(duration: 300, autoElevation: true, isConsecutive: false),
+        );
+      }
     } catch (e) {
-      debugPrint('[MAP] placeJobMarkers: $e');
-    }
-  }
-
-  // ── 구직자 핀 표시 ────────────────────────────────────────────
-  Future<void> _placeWorkerMarkers(List<_Worker> workers) async {
-    if (_ctrl == null) return;
-    try {
-      await _ctrl!.clearMarkers(layerId: _kWorkerLayer);
-      final dots = workers.where((w) => w.hasLocation).toList();
-      if (dots.isEmpty) return;
-      await _ctrl!.addMarkers(
-        markerOptions: dots.map((w) => km.MarkerOption(
-          id: 'w_${w.id}',
-          latLng: w.pos,
-          text: w.grade,
-        )).toList(),
-        layerId: _kWorkerLayer,
-      );
-    } catch (e) {
-      debugPrint('[MAP] placeWorkerMarkers: $e');
+      debugPrint('[MAP] refreshMarkers: $e');
     }
   }
 
@@ -331,10 +315,11 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     final count   = results[1] as int;
     _dotCache[job.id] = workers;
     setState(() {
+      _currentWorkers = workers;
       _workerCount    = count;
       _workersLoading = false;
     });
-    if (_mapReady) await _placeWorkerMarkers(workers);
+    if (_mapReady) await _refreshMarkers(workers: workers);
   }
 
   Future<List<_Worker>> _fetchWorkers(int jobId) async {
