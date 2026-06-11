@@ -301,12 +301,20 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     }
   }
 
+  Map<String, String> get _authHeader =>
+      _authToken != null && _authToken!.isNotEmpty
+          ? {'Authorization': 'Bearer $_authToken'}
+          : {};
+
   // ── 반경 내 가능 인원 ──────────────────────────────────────────
   Future<int> _nearbyCount(int jobId) async {
     if (_nearbyCountCache.containsKey(jobId)) return _nearbyCountCache[jobId]!;
     try {
       final res = await http
-          .get(Uri.parse('$baseUrl/api/direct-messages/nearby-count?jobId=$jobId'))
+          .get(
+            Uri.parse('$baseUrl/api/direct-messages/nearby-count?jobId=$jobId'),
+            headers: _authHeader,
+          )
           .timeout(const Duration(seconds: 6));
       if (res.statusCode == 200) {
         final count = (jsonDecode(res.body)['count'] as num?)?.toInt() ?? 0;
@@ -322,8 +330,11 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     if (_sentCache.containsKey(jobId)) return _sentCache[jobId]!;
     try {
       final res = await http
-          .get(Uri.parse(
-              '$baseUrl/api/direct-messages/sent-history?clientId=$_clientId&jobId=$jobId'))
+          .get(
+            Uri.parse(
+                '$baseUrl/api/direct-messages/sent-history?clientId=$_clientId&jobId=$jobId'),
+            headers: _authHeader,
+          )
           .timeout(const Duration(seconds: 6));
       if (res.statusCode == 200) {
         final logs = (jsonDecode(res.body)['logs'] as List? ?? [])
@@ -889,13 +900,14 @@ class _JobSheetState extends State<_JobSheet> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton.icon(
-                          onPressed: widget.nearbyCount > 0 ? widget.onUrgentCall : null,
+                          onPressed: widget.onUrgentCall,
                           icon: const Icon(Icons.emergency_rounded, size: 17),
-                          label: const Text('긴급 호출'),
+                          label: Text(widget.nearbyCount > 0
+                              ? '긴급 호출 ${widget.nearbyCount}명'
+                              : '긴급 호출'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _red,
                             foregroundColor: Colors.white,
-                            disabledBackgroundColor: const Color(0xFFD1D5DB),
                             elevation: 0,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             padding: const EdgeInsets.symmetric(vertical: 13),

@@ -29,7 +29,7 @@ class ClientMainScreen extends StatefulWidget {
 
 class _ClientMainScreenState extends State<ClientMainScreen>
     with WidgetsBindingObserver {
-  int _selectedIndex = 1;
+  int _selectedIndex = 2;
   int unreadCount = 0;
   String userPhone = '';
   String userType = 'client';
@@ -484,7 +484,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
                 index: 1,
                 icon: Icons.location_on_outlined,
                 activeIcon: Icons.location_on_rounded,
-                label: '알바생 지도',
+                label: '공고 지도',
               ),
               _navItem(
                 index: 2,
