@@ -1,95 +1,109 @@
 // lib/screens/payment/subscription_manage_screen.dart
-import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/constants.dart';
-import '../../config/app_theme.dart';
 import '../../data/services/ai_api.dart';
 
-const _kProductId       = 'subscribe';
-const _kAndroidPackage  = 'kr.co.iljujob';
+const _kProductId      = 'subscribe';
+const _kAndroidPackage = 'kr.co.iljujob';
 
+// ─── 플랜별 혜택 정의 ────────────────────────────────────────────
+const _planBenefits = {
+  'lite': [
+    _Benefit(Icons.flash_on_rounded,        '즉시 게시 3회/월',    Color(0xFF3B8AFF)),
+    _Benefit(Icons.emergency_rounded,       '긴급 호출 1회/월',    Color(0xFFEF4444)),
+    _Benefit(Icons.verified_rounded,        '구독 배지 표시',       Color(0xFF3B8AFF)),
+  ],
+  'standard': [
+    _Benefit(Icons.flash_on_rounded,        '즉시 게시 3회/월',    Color(0xFF3B8AFF)),
+    _Benefit(Icons.emergency_rounded,       '긴급 호출 3회/월',    Color(0xFFEF4444)),
+    _Benefit(Icons.verified_user_rounded,   '출근 안심 포함',       Color(0xFF10B981)),
+    _Benefit(Icons.verified_rounded,        '구독 배지 표시',       Color(0xFF3B8AFF)),
+  ],
+  'pro': [
+    _Benefit(Icons.flash_on_rounded,        '즉시 게시 5회/월',    Color(0xFF3B8AFF)),
+    _Benefit(Icons.emergency_rounded,       '긴급 호출 5회/월 (최대 20명)', Color(0xFFEF4444)),
+    _Benefit(Icons.verified_user_rounded,   '출근 안심 포함',       Color(0xFF10B981)),
+    _Benefit(Icons.headset_mic_rounded,     '우선 CS 지원',         Color(0xFFFFB300)),
+    _Benefit(Icons.verified_rounded,        '구독 배지 표시',       Color(0xFF3B8AFF)),
+  ],
+};
+
+const _defaultBenefits = [
+  _Benefit(Icons.flash_on_rounded,    '즉시 게시 크레딧 매월 지급',   Color(0xFF3B8AFF)),
+  _Benefit(Icons.emergency_rounded,   '긴급 호출 크레딧 매월 지급',   Color(0xFFEF4444)),
+  _Benefit(Icons.verified_rounded,    '구독 배지 표시',               Color(0xFF3B8AFF)),
+];
+
+class _Benefit {
+  final IconData icon;
+  final String   label;
+  final Color    color;
+  const _Benefit(this.icon, this.label, this.color);
+}
+
+// ─── 플랜 레이블 ─────────────────────────────────────────────────
+String _planLabel(String? plan) {
+  switch (plan?.toLowerCase()) {
+    case 'lite':     return '라이트';
+    case 'standard': return '스탠다드';
+    case 'pro':      return '프로';
+    default:         return plan?.toUpperCase() ?? '';
+  }
+}
+
+// ─── 화면 ────────────────────────────────────────────────────────
 class SubscriptionManageScreen extends StatefulWidget {
   const SubscriptionManageScreen({super.key});
   @override
-  State<SubscriptionManageScreen> createState() => _SubscriptionManageScreenState();
+  State<SubscriptionManageScreen> createState() =>
+      _SubscriptionManageScreenState();
 }
 
 class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
-  bool      _loading          = true;
-  bool      _active           = false;
+  bool      _loading  = true;
+  bool      _active   = false;
   String?   _plan;
   DateTime? _expiresAt;
   bool?     _isTrial;
-  int       _instantCredits   = 0;
-  int       _urgentCredits    = 0;
-  bool      _attendanceCare   = false;
 
   @override
   void initState() {
     super.initState();
-    _refreshStatus();
+    _refresh();
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // 결제 화면에서 돌아온 뒤 지연 새로고침 (스토어/서버 전파 지연 대비)
     Future.delayed(const Duration(milliseconds: 400), () {
-      if (mounted) _refreshStatus();
+      if (mounted) _refresh();
     });
   }
 
-  Future<void> _refreshStatus() async {
+  Future<void> _refresh() async {
     setState(() => _loading = true);
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken') ?? '';
-
-      // 기존 구독 상태
       final api = AiApi(baseUrl);
       final s   = await api.fetchMySubscription();
-
-      // Phase 2-4: 크레딧 조회
-      int instant = 0, urgent = 0;
-      bool care = false;
-      try {
-        final resp = await http.get(
-          Uri.parse('$baseUrl/api/subscription/status'),
-          headers: {'Authorization': 'Bearer $token'},
-        );
-        if (resp.statusCode == 200) {
-          final body = jsonDecode(resp.body);
-          instant = (body['credits']?['instant'] as num?)?.toInt() ?? 0;
-          urgent  = (body['credits']?['urgent']  as num?)?.toInt() ?? 0;
-          care    = body['attendanceCare'] == true;
-        }
-      } catch (_) {}
-
       if (!mounted) return;
       setState(() {
-        _active          = s.active;
-        _plan            = s.plan;
-        _expiresAt       = s.expiresAt;
-        _isTrial         = s.isTrial;
-        _instantCredits  = instant;
-        _urgentCredits   = urgent;
-        _attendanceCare  = care;
-        _loading         = false;
+        _active    = s.active;
+        _plan      = s.plan;
+        _expiresAt = s.expiresAt;
+        _isTrial   = s.isTrial;
+        _loading   = false;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
-      _toast('구독 상태를 불러오지 못했어요.');
     }
   }
 
-  Future<void> _openStoreManage() async {
+  Future<void> _openStore() async {
     final Uri url;
     if (Platform.isAndroid) {
       url = Uri.parse(
@@ -99,29 +113,25 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
     } else if (Platform.isIOS) {
       url = Uri.parse('itms-apps://apps.apple.com/account/subscriptions');
     } else {
-      _toast('이 플랫폼에서는 구독 관리 페이지를 열 수 없어요.');
+      _toast('이 플랫폼에서는 지원하지 않아요.');
       return;
     }
-
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } else {
-      _toast('구독 관리 페이지를 열 수 없어요.');
+      _toast('스토어를 열 수 없어요.');
     }
   }
 
   Future<void> _restore() async {
     try {
       await InAppPurchase.instance.restorePurchases();
-      _toast('구매 복원을 요청했어요. 잠시 후 새로고침해 주세요.');
+      _toast('복원을 요청했어요. 잠시 후 새로고침해 주세요.');
     } catch (e) {
       _toast('복원 실패: $e');
     }
   }
 
-  // ─────────────────────────────────────────────
-  // 헬퍼
-  // ─────────────────────────────────────────────
   String _remainText() {
     final ex = _expiresAt;
     if (ex == null) return '-';
@@ -129,11 +139,19 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
     if (diff.isNegative) return '만료됨';
     final d = diff.inDays;
     final h = diff.inHours % 24;
-    final m = diff.inMinutes % 60;
-    if (d > 0) return '$d일 $h시간 남음';
-    if (h > 0) return '$h시간 $m분 남음';
-    return '$m분 남음';
+    if (d > 0) return 'D-$d';
+    if (h > 0) return '$h시간 남음';
+    return '${diff.inMinutes % 60}분 남음';
   }
+
+  String _expiresText() {
+    final ex = _expiresAt;
+    if (ex == null) return '-';
+    final d = ex.toLocal();
+    return '${d.year}.${_p(d.month)}.${_p(d.day)}';
+  }
+
+  static String _p(int n) => n.toString().padLeft(2, '0');
 
   void _toast(String msg) {
     if (!mounted) return;
@@ -141,606 +159,485 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
         .showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  // ─────────────────────────────────────────────
-  // Build
-  // ─────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    final surface = Theme.of(context).colorScheme.surface;
-    final isDark  = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F6FA),
       appBar: AppBar(
-        title: const Text('구독 관리'),
+        title: const Text(
+          '구독 관리',
+          style: TextStyle(
+            fontFamily: 'Jalnan2TTF',
+            color: Color(0xFF3B8AFF),
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 0.5,
         actions: [
-          IconButton(onPressed: _refreshStatus, icon: const Icon(Icons.refresh)),
+          IconButton(
+            onPressed: _refresh,
+            icon: const Icon(Icons.refresh_rounded),
+          ),
         ],
       ),
-      backgroundColor: surface,
-      body: RefreshIndicator(
-        onRefresh: _refreshStatus,
-        child: CustomScrollView(
-          slivers: [
-            // ── 상단 히어로 ─────────────────────
-            SliverToBoxAdapter(
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: _active
-                        ? [AppColors.primary, AppColors.primaryDark]
-                        : [Colors.grey.shade600, Colors.grey.shade400],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: SafeArea(
-                  bottom: false,
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 22, 16, 16),
-                    child: _HeaderCard(
-                      active:     _active,
-                      plan:       _plan,
-                      expiresAt:  _expiresAt,
-                      remainText: _remainText(),
-                      isTrial:    _isTrial,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // ── 본문 ─────────────────────────────
-            if (_loading)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: _SkeletonColumn(isDark: isDark),
-                ),
-              )
-            else
-              SliverList(
-                delegate: SliverChildListDelegate.fixed([
-                  // 플랫폼 메타
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                    child: _SubscriptionMeta(
-                      platformLabel: Platform.isAndroid
-                          ? 'Google Play'
-                          : (Platform.isIOS ? 'App Store' : null),
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  // 구독 관리 / 복원
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _ActionCard(
-                      onOpenStore: _openStoreManage,
-                      onRestore:   _restore,
-                    ),
-                  ),
-
-                  // Phase 2-4: 크레딧 잔여
-                  if (_active) ...[
-                    const SizedBox(height: 4),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _CreditCard(
-                        instantCredits: _instantCredits,
-                        urgentCredits:  _urgentCredits,
-                        attendanceCare: _attendanceCare,
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 16),
-
-                  // 혜택
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: _BenefitCard(),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF3B8AFF)))
+          : RefreshIndicator(
+              onRefresh: _refresh,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+                children: [
+                  // ── 상태 카드
+                  _StatusCard(
+                    active:      _active,
+                    plan:        _plan,
+                    isTrial:     _isTrial,
+                    expiresText: _expiresText(),
+                    remainText:  _remainText(),
                   ),
 
                   const SizedBox(height: 16),
 
-                  // 정책/영수증
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: _PolicyTile(),
+                  // ── 혜택
+                  _BenefitSection(plan: _plan, active: _active),
+
+                  const SizedBox(height: 16),
+
+                  // ── 구독 관리 / 복원
+                  _ManageSection(
+                    onOpenStore: _openStore,
+                    onRestore:   _restore,
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
 
-                  // 문제 해결
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _TroubleshootTile(
-                      onOpenStore: _openStoreManage,
-                      onRestore:   _restore,
-                    ),
-                  ),
+                  // ── 정책
+                  _PolicySection(onOpenStore: _openStore),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
 
-                  // 미구독 CTA
+                  // ── 미구독 CTA
                   if (!_active)
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14)),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF3B8AFF),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                        ),
+                        onPressed: () async {
+                          final result =
+                              await Navigator.pushNamed(context, '/subscribe');
+                          if (!mounted) return;
+                          if (result == true) {
+                            await _refresh();
+                            _toast('구독이 활성화되었어요!');
+                          }
+                        },
+                        icon: const Icon(Icons.workspace_premium_rounded),
+                        label: const Text(
+                          '구독 시작하기',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
                           ),
-                          onPressed: () async {
-                            final result =
-                                await Navigator.pushNamed(context, '/subscribe');
-                            if (!mounted) return;
-                            if (result == true) {
-                              await _refreshStatus();
-                              _toast('구독이 활성화되었어요.');
-                            }
-                          },
-                          icon: const Icon(Icons.workspace_premium),
-                          label: const Text('구독하기',
-                              style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
                       ),
                     ),
-                ]),
+                ],
               ),
-          ],
-        ),
-      ),
+            ),
     );
   }
 }
 
-// ─────────────────────────────────────────────
-// 서브 위젯
-// ─────────────────────────────────────────────
+// ─── 상태 카드 ───────────────────────────────────────────────────
+class _StatusCard extends StatelessWidget {
+  final bool    active;
+  final String? plan;
+  final bool?   isTrial;
+  final String  expiresText;
+  final String  remainText;
 
-class _HeaderCard extends StatelessWidget {
-  final bool      active;
-  final String?   plan;
-  final DateTime? expiresAt;
-  final String    remainText;
-  final bool?     isTrial;
-
-  const _HeaderCard({
+  const _StatusCard({
     required this.active,
     required this.plan,
-    required this.expiresAt,
+    required this.isTrial,
+    required this.expiresText,
     required this.remainText,
-    this.isTrial,
   });
-
-  static String _fmt(DateTime? dt) {
-    if (dt == null) return '-';
-    final d = dt.toLocal();
-    return '${d.year}.${_p(d.month)}.${_p(d.day)} ${_p(d.hour)}:${_p(d.minute)}';
-  }
-  static String _p(int n) => n.toString().padLeft(2, '0');
 
   @override
   Widget build(BuildContext context) {
+    final label = _planLabel(plan);
+
     return Container(
       decoration: BoxDecoration(
-        color:  Colors.white.withValues(alpha: .07),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: Colors.white.withValues(alpha: .14)),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: DefaultTextStyle(
-        style: const TextStyle(color: Colors.white),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(active ? Icons.verified : Icons.hourglass_bottom,
-                    color: Colors.white),
-                const SizedBox(width: 8),
-                Text(active ? '구독 활성' : '구독 없음',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-                const Spacer(),
-                // 플랜 뱃지
-                if (plan != null && plan!.trim().isNotEmpty)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: .16),
-                      borderRadius: BorderRadius.circular(AppRadius.full),
-                    ),
-                    child: Text(plan!.toUpperCase(),
-                        style: const TextStyle(fontWeight: FontWeight.w700)),
-                  ),
-                // 트라이얼 뱃지
-                if (isTrial == true) ...[
-                  const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.withValues(alpha: .25),
-                      borderRadius: BorderRadius.circular(AppRadius.full),
-                    ),
-                    child: const Text('체험 중',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
-                            color: Colors.orange)),
-                  ),
-                ],
-              ],
-            ),
-            const SizedBox(height: 12),
-            _row('만료일',    _fmt(expiresAt)),
-            _row('남은 기간', remainText),
-            if (!active) ...[
-              const SizedBox(height: 8),
-              const Text('AI 맞춤 인재 보기는 구독자 전용 기능입니다.',
-                  style: TextStyle(color: Colors.white70)),
-            ],
-          ],
+        gradient: LinearGradient(
+          colors: active
+              ? [const Color(0xFF3B8AFF), const Color(0xFF1A6FFF)]
+              : [const Color(0xFF9CA3AF), const Color(0xFF6B7280)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: (active
+                    ? const Color(0xFF3B8AFF)
+                    : const Color(0xFF9CA3AF))
+                .withValues(alpha:0.3),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
+          ),
+        ],
       ),
-    );
-  }
-
-  static Widget _row(String k, String v) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Row(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-              width: 74,
-              child: Text(k, style: const TextStyle(color: Colors.white70))),
-          Expanded(
-              child: Text(v,
-                  style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.w700))),
+          Row(
+            children: [
+              Icon(
+                active ? Icons.verified_rounded : Icons.workspace_premium_outlined,
+                color: Colors.white,
+                size: 22,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                active ? '구독 활성' : '구독 없음',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const Spacer(),
+              if (active && label.isNotEmpty)
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha:0.2),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              if (isTrial == true) ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha:0.3),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Text(
+                    '체험 중',
+                    style: TextStyle(
+                      color: Colors.orange,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (active) ...[
+            _infoRow('만료일', expiresText),
+            const SizedBox(height: 6),
+            _infoRow('남은 기간', remainText),
+          ] else
+            const Text(
+              '구독하면 즉시 게시·긴급 호출 크레딧을 매월 받을 수 있어요.',
+              style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
+            ),
         ],
       ),
     );
   }
+
+  static Widget _infoRow(String k, String v) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 70,
+              child: Text(k,
+                  style: const TextStyle(
+                      color: Colors.white70, fontSize: 13)),
+            ),
+            Text(v,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700)),
+          ],
+        ),
+      );
 }
 
-class _ActionCard extends StatelessWidget {
-  final VoidCallback onOpenStore;
-  final VoidCallback onRestore;
-  const _ActionCard({required this.onOpenStore, required this.onRestore});
+// ─── 혜택 섹션 ───────────────────────────────────────────────────
+class _BenefitSection extends StatelessWidget {
+  final String? plan;
+  final bool    active;
+  const _BenefitSection({required this.plan, required this.active});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          children: [
-            _row(Icons.manage_accounts, '구독 관리', '스토어로 이동',
-                Icons.open_in_new, onOpenStore),
-            const Divider(),
-            _row(Icons.history, '구매 복원', '복원 실행',
-                Icons.restore, onRestore),
-          ],
-        ),
+    final benefits =
+        _planBenefits[plan?.toLowerCase()] ?? _defaultBenefits;
+    final label = _planLabel(plan);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE5E8EB)),
       ),
-    );
-  }
-
-  static Widget _row(IconData leadIcon, String title,
-      String btnLabel, IconData btnIcon, VoidCallback onTap) {
-    return Row(
-      children: [
-        Icon(leadIcon, color: AppColors.primary),
-        const SizedBox(width: 8),
-        Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-        const Spacer(),
-        TextButton.icon(
-          onPressed: onTap,
-          icon: Icon(btnIcon, size: 18),
-          label: Text(btnLabel),
-        ),
-      ],
-    );
-  }
-}
-
-class _BenefitCard extends StatelessWidget {
-  const _BenefitCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: const Padding(
-        padding: EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _SectionTitle(icon: Icons.workspace_premium, title: '구독 혜택'),
-            SizedBox(height: 10),
-            _BenefitRow(icon: Icons.flash_on,             text: '매달 유료 이용권 5개 지급'),
-            SizedBox(height: 8),
-            _BenefitRow(icon: Icons.chat_bubble_outline,  text: '지원 즉시 채팅 연결'),
-            SizedBox(height: 8),
-            _BenefitRow(icon: Icons.verified_user_outlined, text: 'AI 맞춤 인재 보기'),
-          ],
-        ),
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.workspace_premium_rounded,
+                  color: Color(0xFF3B8AFF), size: 18),
+              const SizedBox(width: 8),
+              Text(
+                active && label.isNotEmpty
+                    ? '$label 플랜 혜택'
+                    : '구독 혜택',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF191F28),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...benefits.map((b) => _BenefitRow(benefit: b)),
+        ],
       ),
     );
   }
 }
 
 class _BenefitRow extends StatelessWidget {
-  final IconData icon;
-  final String   text;
-  const _BenefitRow({required this.icon, required this.text});
+  final _Benefit benefit;
+  const _BenefitRow({required this.benefit});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const Icon(Icons.check_circle_outline, size: 18, color: AppColors.primary),
-        const SizedBox(width: 8),
-        Expanded(
-            child: Text(text,
-                style: const TextStyle(fontWeight: FontWeight.w600))),
-      ],
-    );
-  }
-}
-
-class _PolicyTile extends StatelessWidget {
-  const _PolicyTile();
-
-  @override
-  Widget build(BuildContext context) {
-    final ts = Theme.of(context).textTheme.bodyMedium;
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: ExpansionTile(
-        leading: const Icon(Icons.description_outlined),
-        title: const Text('해지·환불·영수증 안내',
-            style: TextStyle(fontWeight: FontWeight.w700)),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
         children: [
-          Text('• 구독 해지는 스토어에서 직접 관리합니다(계정 귀속).', style: ts),
-          const SizedBox(height: 6),
-          Text('• 환불 규정은 각 스토어 정책을 따릅니다.', style: ts),
-          const SizedBox(height: 6),
-          Text('• 영수증/구매내역은 스토어 결제 내역에서 확인할 수 있습니다.', style: ts),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            children: [
-              OutlinedButton.icon(
-                icon: const Icon(Icons.open_in_new, size: 18),
-                label: const Text('구독 관리 열기'),
-                onPressed: () {
-                  final url = Platform.isAndroid
-                      ? Uri.parse(
-                          'https://play.google.com/store/account/subscriptions'
-                          '?sku=$_kProductId&package=$_kAndroidPackage')
-                      : Uri.parse(
-                          'itms-apps://apps.apple.com/account/subscriptions');
-                  launchUrl(url, mode: LaunchMode.externalApplication);
-                },
-              ),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.mail_outline, size: 18),
-                label: const Text('문의하기'),
-                onPressed: () {
-                  // Uri 생성자가 자동 인코딩 — encodeQueryComponent 중복 적용 제거
-                  final uri = Uri(
-                    scheme: 'mailto',
-                    path:   'support@iljujob.kr',
-                    queryParameters: {
-                      'subject': '[알바일주] 구독 문의',
-                      'body':    '문의 내용을 적어주세요.',
-                    },
-                  );
-                  launchUrl(uri);
-                },
-              ),
-            ],
+          Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: benefit.color.withValues(alpha:0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(benefit.icon, color: benefit.color, size: 17),
           ),
+          const SizedBox(width: 12),
+          Text(
+            benefit.label,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Color(0xFF374151),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const Spacer(),
+          const Icon(Icons.check_rounded, size: 16, color: Color(0xFF10B981)),
         ],
       ),
     );
   }
 }
 
-class _TroubleshootTile extends StatelessWidget {
+// ─── 관리 버튼 섹션 ──────────────────────────────────────────────
+class _ManageSection extends StatelessWidget {
   final VoidCallback onOpenStore;
   final VoidCallback onRestore;
-  const _TroubleshootTile({required this.onOpenStore, required this.onRestore});
+  const _ManageSection({required this.onOpenStore, required this.onRestore});
 
   @override
   Widget build(BuildContext context) {
-    final ts = Theme.of(context).textTheme.bodyMedium;
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: ExpansionTile(
-        leading: const Icon(Icons.help_outline),
-        title: const Text('문제 해결 가이드',
-            style: TextStyle(fontWeight: FontWeight.w700)),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE5E8EB)),
+      ),
+      child: Column(
         children: [
-          Text('• 구매했는데 활성화가 안 되면 "구매 복원"을 눌러주세요.', style: ts),
-          const SizedBox(height: 6),
-          Text('• 스토어 계정이 바뀐 경우, 스토어의 구독 관리에서 상태를 확인하세요.', style: ts),
-          const SizedBox(height: 6),
-          Text('• 네트워크 불안정 시 앱을 재실행 후 다시 시도하세요.', style: ts),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              OutlinedButton.icon(
-                icon: const Icon(Icons.restore),
-                label: const Text('구매 복원'),
-                onPressed: onRestore,
-              ),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.open_in_new),
-                label: const Text('구독 관리'),
-                onPressed: onOpenStore,
-              ),
-            ],
+          _tile(
+            icon: Icons.manage_accounts_rounded,
+            title: '구독 관리',
+            subtitle: '스토어에서 변경 · 해지',
+            onTap: onOpenStore,
+            showDivider: true,
+          ),
+          _tile(
+            icon: Icons.history_rounded,
+            title: '구매 복원',
+            subtitle: '이전 결제 내역 복원',
+            onTap: onRestore,
+            showDivider: false,
           ),
         ],
       ),
     );
   }
-}
 
-class _SubscriptionMeta extends StatelessWidget {
-  final String? platformLabel;
-  const _SubscriptionMeta({this.platformLabel});
-
-  @override
-  Widget build(BuildContext context) {
-    if (platformLabel == null) return const SizedBox.shrink();
-    return Row(
-      children: [
-        Icon(Icons.store_mall_directory, size: 18, color: Theme.of(context).hintColor),
-        const SizedBox(width: 6),
-        Text(platformLabel!, style: Theme.of(context).textTheme.bodySmall),
-      ],
-    );
-  }
-}
-
-class _SkeletonColumn extends StatelessWidget {
-  final bool isDark;
-  const _SkeletonColumn({required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    final base = isDark ? Colors.white12 : Colors.black12;
-    Widget bar([double h = 16]) => Container(
-          height: h,
-          decoration:
-              BoxDecoration(color: base, borderRadius: BorderRadius.circular(8)),
-        );
+  static Widget _tile({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    required bool showDivider,
+  }) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        bar(64), const SizedBox(height: 12),
-        bar(120), const SizedBox(height: 12),
-        bar(160), const SizedBox(height: 12),
-        bar(120),
+        ListTile(
+          leading: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE8F0FF),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: const Color(0xFF3B8AFF), size: 20),
+          ),
+          title: Text(title,
+              style: const TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w700)),
+          subtitle: Text(subtitle,
+              style: const TextStyle(
+                  fontSize: 12, color: Color(0xFF9CA3AF))),
+          trailing: const Icon(Icons.chevron_right_rounded,
+              color: Color(0xFF9CA3AF)),
+          onTap: onTap,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        ),
+        if (showDivider)
+          const Divider(height: 1, indent: 64, color: Color(0xFFF4F6FA)),
       ],
     );
   }
 }
 
-// ── Phase 2-4: 잔여 크레딧 카드 ─────────────────────────────
-class _CreditCard extends StatelessWidget {
-  final int  instantCredits;
-  final int  urgentCredits;
-  final bool attendanceCare;
-  const _CreditCard({
-    required this.instantCredits,
-    required this.urgentCredits,
-    required this.attendanceCare,
-  });
+// ─── 정책 섹션 ───────────────────────────────────────────────────
+class _PolicySection extends StatelessWidget {
+  final VoidCallback onOpenStore;
+  const _PolicySection({required this.onOpenStore});
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.toll_rounded, color: AppColors.primary, size: 18),
-                SizedBox(width: 6),
-                Text('잔여 크레딧', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800)),
-              ],
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFE5E8EB)),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          leading: Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F6FA),
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(height: 14),
-            Row(
+            child: const Icon(Icons.description_outlined,
+                color: Color(0xFF6B7280), size: 20),
+          ),
+          title: const Text('해지 · 환불 · 문의',
+              style: TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w700)),
+          childrenPadding:
+              const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          children: [
+            const Text(
+              '• 구독 해지는 각 스토어 구독 관리 페이지에서 직접 처리됩니다.\n'
+              '• 환불 규정은 Apple App Store / Google Play 정책을 따릅니다.\n'
+              '• 결제 영수증은 스토어 구매 내역에서 확인하세요.',
+              style: TextStyle(
+                  fontSize: 13, color: Color(0xFF6B7280), height: 1.6),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
-                _CreditChip(icon: Icons.flash_on_rounded,   label: '즉시 게시', count: instantCredits, color: AppColors.primary),
-                const SizedBox(width: 10),
-                _CreditChip(icon: Icons.emergency_rounded,  label: '긴급 호출', count: urgentCredits,  color: const Color(0xFFEF4444)),
-                const SizedBox(width: 10),
-                _CreditChip(
-                  icon: Icons.verified_user_rounded,
-                  label: '출근 안심',
-                  count: attendanceCare ? 1 : 0,
-                  color: const Color(0xFF22C55E),
-                  showBool: true,
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.open_in_new_rounded, size: 16),
+                  label: const Text('구독 관리 열기'),
+                  onPressed: onOpenStore,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF3B8AFF),
+                    side: const BorderSide(color: Color(0xFF3B8AFF)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    textStyle: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.mail_outline_rounded, size: 16),
+                  label: const Text('문의하기'),
+                  onPressed: () {
+                    final uri = Uri(
+                      scheme: 'mailto',
+                      path: 'support@albailju.co.kr',
+                      queryParameters: {
+                        'subject': '[알바일주] 구독 문의',
+                        'body': '문의 내용을 입력해주세요.',
+                      },
+                    );
+                    launchUrl(uri);
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF6B7280),
+                    side: const BorderSide(color: Color(0xFFD1D5DB)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 8),
+                    textStyle: const TextStyle(
+                        fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            const Text('미사용 크레딧은 1개월 이월됩니다.',
-              style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF))),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _CreditChip extends StatelessWidget {
-  final IconData icon;
-  final String   label;
-  final int      count;
-  final Color    color;
-  final bool     showBool;
-  const _CreditChip({required this.icon, required this.label, required this.count, required this.color, this.showBool = false});
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-        ),
-        child: Column(
-          children: [
-            Icon(icon, size: 18, color: color),
-            const SizedBox(height: 4),
-            Text(
-              showBool ? (count > 0 ? '포함' : '미포함') : '$count회',
-              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: color),
-            ),
-            Text(label, style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280))),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  final IconData icon;
-  final String   title;
-  const _SectionTitle({required this.icon, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, color: AppColors.primary),
-        const SizedBox(width: 8),
-        Text(title,
-            style: const TextStyle(fontWeight: FontWeight.w800)),
-      ],
     );
   }
 }
