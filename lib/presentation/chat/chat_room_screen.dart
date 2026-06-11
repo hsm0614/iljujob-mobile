@@ -6,7 +6,6 @@
 import 'dart:io';
 import 'dart:ui';
 
-import 'package:add_2_calendar/add_2_calendar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:image_picker/image_picker.dart';
@@ -26,6 +25,7 @@ import 'message_list.dart';
 import 'chat_room_helpers.dart';
 import 'work_confirmation_card.dart';
 import '../../data/services/work_confirmation_service.dart';
+import '../screens/worker_calendar_screen.dart';
 
 class ChatRoomScreen extends StatelessWidget {
   final int chatRoomId;
@@ -631,9 +631,9 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('캘린더에 저장할까요?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
+                        Text('캘린더에서 확인할까요?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
                         SizedBox(height: 2),
-                        Text('근무 일정을 캘린더에 추가해요', style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
+                        Text('앱 내 캘린더에서 근무 일정을 확인해요', style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
                       ],
                     ),
                   ),
@@ -692,7 +692,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                       ),
-                      child: const Text('추가하기', style: TextStyle(fontWeight: FontWeight.w800)),
+                      child: const Text('캘린더 보기', style: TextStyle(fontWeight: FontWeight.w800)),
                     ),
                   ),
                 ],
@@ -705,29 +705,15 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   }
 
   void _addToCalendar(WorkConfirmation conf) {
-    try {
-      final datePart = conf.workDate.split('T').first;
-      final startParts = conf.startTime.split(':');
-      final endParts   = conf.endTime.split(':');
-      final startDt = DateTime.parse(datePart).copyWith(
-        hour:   int.tryParse(startParts.isNotEmpty ? startParts[0] : '0') ?? 0,
-        minute: int.tryParse(startParts.length > 1  ? startParts[1] : '0') ?? 0,
-      );
-      final endDt = DateTime.parse(datePart).copyWith(
-        hour:   int.tryParse(endParts.isNotEmpty ? endParts[0] : '0') ?? 0,
-        minute: int.tryParse(endParts.length > 1  ? endParts[1] : '0') ?? 0,
-      );
-
-      final event = Event(
-        title:       '알바일주 근무 - ${conf.companyName ?? ''}',
-        description: '시급 ${NumberFormat('#,###').format(conf.hourlyWage)}원\n알바일주 앱에서 확인하세요.',
-        location:    conf.location ?? '',
-        startDate:   startDt,
-        endDate:     endDt,
-        iosParams:   const IOSParams(reminder: Duration(hours: 2)),
-      );
-      Add2Calendar.addEvent2Cal(event);
-    } catch (_) {}
+    // 앱 내 캘린더로 이동 — work_confirmations는 이미 DB에 저장되어 있음
+    final datePart = conf.workDate.split('T').first;
+    final focusDay = DateTime.tryParse(datePart);
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => WorkerCalendarScreen(initialFocusDay: focusDay),
+      ),
+    );
   }
 
   // ─────────────────────────────────────────────
