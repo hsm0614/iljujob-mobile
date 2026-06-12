@@ -47,7 +47,10 @@ class WorkerMapScreen extends StatelessWidget {
                 ),
               ),
               style: OutlinedButton.styleFrom(
-                side: BorderSide(color: kBrandBlue.withOpacity(0.5), width: 1),
+                side: BorderSide(
+                  color: kBrandBlue.withValues(alpha: 0.5),
+                  width: 1,
+                ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 6,
