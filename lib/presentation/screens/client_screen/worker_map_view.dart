@@ -2,8 +2,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
-import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart' as km;
@@ -24,6 +22,8 @@ const _green = Color(0xFF22C55E);
 const _purple = Color(0xFF8B5CF6);
 const _jobMarkerLayerId = 'iljujob_job_markers';
 const _workerMarkerLayerId = 'iljujob_worker_markers';
+const _safeMarkerPngBase64 =
+    'iVBORw0KGgoAAAANSUhEUgAAADgAAAA/CAYAAAC1gwumAAAACXBIWXMAABYlAAAWJQFJUiTwAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAUJSURBVHgB3Zs9U+NGGMcf5CpDEdJQGwoYZmDwVVA6UKAkJbmji/AkU9w8AkCPcxxDZSxoUl3TgfVOQMFQ4GdliakYCYNkOfvrDTy+ll7tbvi5PvNCMvSatk/z8u+aBmjHNjY2Kg+PT1VoihafHl5qfClCT7KWrHO2NhYhz8fnp+f/yiVSq16vd6kwIxRICCKxbzlY4P+F+TCA4uus+DG+fl5nQLgJZBFTXBj3vPpDrmLMtHhY5+9oMGW7ZAjTgJzFqbT4eP47OxsjxzILBCuyOI+Un9M5U2HrfljVmtGWQrXarUPLO4zvb44UObf3UYbsjxkZUG4JCeP3/ioUgFAIuJji635MLTssAIsrvwVrTYIK5cdKLDA4mKGijQKVJnyCxVXXExLiRTd1ZhkON5+peKLAxXVVpGSdFFlqh0aHSozMzP/3N7eXug3+lxUxV2bRhB21Tfsqq2ea3ohlVRGEslVewSura29o9GIOxH000pDQo9A7jwzjRKKiK4hiUEo55sfyZOTkxMaHx9PvvMgmY6OjsSy29vbtLq6mnx/fHykzc1N8oUtucXTrWOcJxYMYb35+fkecSAtQGdhYaHnO55FHb5wsnmbnOMHZ07MusvkydLSUt81U6NxbXJy0qqOrCAWMevBeaQuvKcA6BaJkRptEmKqIyvcG2BlIRFYJU9gjampKfHe8vKy1TWAOnQ3d2QdPyJ07BTAPQfFji4e55J7xoRwU6YMbRFWvygAwxqVvj8skYRyU9ZWjTh7VikA09PTA++nG21yz5hAFkTPUIHARfLElBH1MogtlBtmwVDdBVOOOMF4r4pJjbm+vu67trKyIpZtt9tWdTqwCAuWyRMpZk5PT/uuwTWljv/w8NCqTgcmvC0ouROGXLCgbhlkT70syqAsnkkjjYocmMi0bCghudLV1VXPZ4zUYFNZECLZeAuUGhHH3+Xl5bDHkzJSzIZwU8Tg0LXFQUiNiF0Tn7rrDSqrE8CCD4hBZ4HSiCSOv/hcanhMOvakOIRLm4Z/NuD1HCzYIkdsUv7FxYXxef1eDt1F14J/kSPSiERPFlJsme7d3d1Z/Q5bWNufEOhkQdNoQ2+0KQ7v7+/7LCYlJZ/ZBU98WxFeHZMDJteR3ExyU8la0rOecdiKsI7okkmlDGeyluSmkrVMScklmyLBQFs84f1EGZG6B6mzBpIYU2xKdTjGYRM/uqtq6q3tyC74SqgXMs1k2XB9ff3vEDOLIgD3bDQa3cBNhmos7oC+EVhgsmEhEcgm3fcdthUBtbmoGX9PXp/d3Nz8Ozs7+x2fVmmEYU/c49X03+PvPbMJZcUOjShoOy/Z76ev9QjEa2DsXqARRWp73xtedtUOu+oPfOo+CPw67HHmPNYvGjchcLfxRe0ULDyYEbG4N9K9aMBDP49CPKKNaKvx/qCHsfTNVvzMR5kKiBLntk8mpqgibcR1y5EFRRNpKw5YraqhIq4QQZx51pEDn9AW222VLvtF37ElP7y2NTGM5BnPnt6RD6NEGeF+sjU3N9dggegrX6UbYXFNPn5KD8GsnyUP2Jo7ypq5TLNcrdZTB3mSVwJSVtvy2ZDerYcCUavVdvkjyEYi/mP94mO1NMEEAl9rxqMSfUOdD0EFxjha84Cna7s2+7CzkItAYGtNZbWtPP6tB3i/PjORGhwMWus5UJ12k3IiNwum0QcHeVstzasIBGon8S4L+972fx5C8B/4bogVP/glegAAAABJRU5ErkJggg==';
 
 // ── 공고 모델 ─────────────────────────────────────────────────────
 class _Job {
@@ -166,149 +166,6 @@ class _Worker {
     if (activityScore >= 40) return 'B';
     return 'C';
   }
-}
-
-Future<Uint8List> _pngFromPainter({
-  required Size size,
-  required void Function(Canvas canvas) paint,
-}) async {
-  final recorder = ui.PictureRecorder();
-  final canvas = Canvas(recorder);
-  paint(canvas);
-  final picture = recorder.endRecording();
-  final image = await picture.toImage(size.width.ceil(), size.height.ceil());
-  final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
-  image.dispose();
-  picture.dispose();
-  return bytes!.buffer.asUint8List();
-}
-
-void _drawText(
-  Canvas canvas,
-  String text,
-  Offset offset, {
-  required TextStyle style,
-  double maxWidth = double.infinity,
-  TextAlign align = TextAlign.left,
-}) {
-  final painter = TextPainter(
-    text: TextSpan(text: text, style: style),
-    textAlign: align,
-    textDirection: TextDirection.ltr,
-    maxLines: 1,
-    ellipsis: '…',
-  )..layout(maxWidth: maxWidth);
-  painter.paint(canvas, offset);
-}
-
-Future<Uint8List> _jobMarkerBytes(_Job job, {required bool selected}) {
-  final label = job.hourlyWage > 0 ? '₩${_comma(job.hourlyWage)}' : job.title;
-  final subLabel = job.isUrgent ? '긴급' : job.statusLabel;
-  final bg = selected ? job.pinColor : Colors.white;
-  final fg = selected ? Colors.white : _textMain;
-  final border = selected ? job.pinColor : _border;
-  final width = selected ? 104.0 : 88.0;
-  const height = 58.0;
-
-  return _pngFromPainter(
-    size: const Size(116, 72),
-    paint: (canvas) {
-      final shadow =
-          Paint()
-            ..color = Colors.black.withValues(alpha: selected ? 0.20 : 0.12)
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-      final rect = RRect.fromRectAndRadius(
-        Rect.fromLTWH((116 - width) / 2, 5, width, height - 12),
-        const Radius.circular(12),
-      );
-      canvas.drawRRect(rect.shift(const Offset(0, 3)), shadow);
-      canvas.drawRRect(rect, Paint()..color = bg);
-      canvas.drawRRect(
-        rect,
-        Paint()
-          ..color = border
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = selected ? 2 : 1,
-      );
-
-      _drawText(
-        canvas,
-        subLabel,
-        Offset((116 - width) / 2, 10),
-        maxWidth: width,
-        align: TextAlign.center,
-        style: TextStyle(
-          color: selected ? Colors.white.withValues(alpha: 0.9) : job.pinColor,
-          fontSize: 12,
-          fontWeight: FontWeight.w900,
-        ),
-      );
-      _drawText(
-        canvas,
-        label,
-        Offset((116 - width) / 2 + 6, 27),
-        maxWidth: width - 12,
-        align: TextAlign.center,
-        style: TextStyle(color: fg, fontSize: 15, fontWeight: FontWeight.w900),
-      );
-
-      final pointer =
-          Path()
-            ..moveTo(52, height - 7)
-            ..lineTo(64, height - 7)
-            ..lineTo(58, height + 1)
-            ..close();
-      canvas.drawPath(pointer, Paint()..color = bg);
-      canvas.drawPath(
-        pointer,
-        Paint()
-          ..color = border
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 1,
-      );
-    },
-  );
-}
-
-Future<Uint8List> _workerMarkerBytes(String grade, Color color) {
-  return _pngFromPainter(
-    size: const Size(42, 42),
-    paint: (canvas) {
-      canvas.drawCircle(
-        const Offset(21, 21),
-        17,
-        Paint()..color = Colors.black.withValues(alpha: 0.18),
-      );
-      canvas.drawCircle(const Offset(21, 19), 15, Paint()..color = color);
-      canvas.drawCircle(
-        const Offset(21, 19),
-        15,
-        Paint()
-          ..color = Colors.white
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 3,
-      );
-      _drawText(
-        canvas,
-        grade,
-        const Offset(0, 10),
-        maxWidth: 42,
-        align: TextAlign.center,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 13,
-          fontWeight: FontWeight.w900,
-        ),
-      );
-    },
-  );
-}
-
-Color _workerGradeColor(String grade) {
-  if (grade == 'S') return const Color(0xFFFF6B00);
-  if (grade == 'A') return _primary;
-  if (grade == 'B') return _green;
-  return const Color(0xFF9CA3AF);
 }
 
 // ── 메인 위젯 ─────────────────────────────────────────────────────
@@ -535,6 +392,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     final selectedJobId = _selectedJob?.id;
     final jobsWithLoc = _jobs.where((j) => j.hasLocation).toList();
     final workersWithLoc = _currentWorkers.where((w) => w.hasLocation).toList();
+    final markerBytes = base64Decode(_safeMarkerPngBase64);
     debugPrint(
       '[MAP][MARKER] refresh jobs=${jobsWithLoc.length}, workers=${workersWithLoc.length}, selected=$selectedJobId',
     );
@@ -546,49 +404,67 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       debugPrint('[MAP][MARKER] clear fail: $e');
     }
 
-    final styles = <km.MarkerStyle>[];
+    final styles = <String, km.MarkerStyle>{};
     final jobMarkers = <km.MarkerOption>[];
     for (final entry in jobsWithLoc.asMap().entries) {
       final job = entry.value;
       final selected = job.id == selectedJobId;
       final styleId =
-          'job_${job.id}_${selected ? 'selected' : 'normal'}_${job.isUrgent ? 'urgent' : 'active'}';
-      styles.add(
-        km.MarkerStyle(
-          styleId: styleId,
-          perLevels: [
-            km.MarkerPerLevelStyle.fromBytes(
-              bytes: await _jobMarkerBytes(job, selected: selected),
+          'job_${selected ? 'selected' : 'normal'}_${job.isUrgent ? 'urgent' : 'active'}';
+      styles[styleId] = km.MarkerStyle(
+        styleId: styleId,
+        perLevels: [
+          km.MarkerPerLevelStyle.fromBytes(
+            bytes: markerBytes,
+            textStyle: km.MarkerTextStyle(
+              fontSize: selected ? 22 : 19,
+              fontColorArgb:
+                  job.isUrgent
+                      ? 0xFFFF3B30
+                      : (selected ? 0xFF3B8AFF : 0xFF191F28),
+              strokeThickness: 5,
+              strokeColorArgb: 0xFFFFFFFF,
             ),
-          ],
-        ),
+          ),
+        ],
       );
+      final price = job.hourlyWage > 0 ? _comma(job.hourlyWage) : job.title;
       jobMarkers.add(
         km.MarkerOption(
           id: 'job:${job.id}',
           latLng: job.pos,
           styleId: styleId,
           rank: selected ? 10000 : 9000 - entry.key,
+          text: job.isUrgent ? '긴급 $price' : price,
         ),
       );
     }
 
     for (final grade in const ['S', 'A', 'B', 'C']) {
-      styles.add(
-        km.MarkerStyle(
-          styleId: 'worker_$grade',
-          perLevels: [
-            km.MarkerPerLevelStyle.fromBytes(
-              bytes: await _workerMarkerBytes(grade, _workerGradeColor(grade)),
+      styles['worker_$grade'] = km.MarkerStyle(
+        styleId: 'worker_$grade',
+        perLevels: [
+          km.MarkerPerLevelStyle.fromBytes(
+            bytes: markerBytes,
+            textStyle: km.MarkerTextStyle(
+              fontSize: 18,
+              fontColorArgb: switch (grade) {
+                'S' => 0xFFFF6B00,
+                'A' => 0xFF3B8AFF,
+                'B' => 0xFF22C55E,
+                _ => 0xFF9CA3AF,
+              },
+              strokeThickness: 4,
+              strokeColorArgb: 0xFFFFFFFF,
             ),
-          ],
-        ),
+          ),
+        ],
       );
     }
 
     try {
       if (styles.isNotEmpty) {
-        await _ctrl!.registerMarkerStyles(styles: styles);
+        await _ctrl!.registerMarkerStyles(styles: styles.values.toList());
       }
       if (jobMarkers.isNotEmpty) {
         await _ctrl!.addMarkers(
@@ -606,6 +482,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                       latLng: w.pos,
                       styleId: 'worker_${w.grade}',
                       rank: 1000 + w.activityScore,
+                      text: w.grade,
                     ),
                   )
                   .toList(),
