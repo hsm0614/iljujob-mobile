@@ -116,7 +116,7 @@ class WorkerMapView extends StatefulWidget {
 
 class _WorkerMapViewState extends State<WorkerMapView> {
   km.KakaoMapController? _ctrl;
-  StreamSubscription<km.LabelClickEvent>? _clickSub;
+  StreamSubscription<km.CameraMoveEndEvent>? _cameraSub;
   bool _mapReady = false;
 
   final _scrollCtrl = ScrollController();
@@ -133,8 +133,11 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   int?    _clientId;
   String? _authToken;
 
-  final Map<int, int>       _countCache = {};
-  final Map<int, List<_Worker>> _dotCache = {};
+  final Map<int, int>           _countCache  = {};
+  final Map<int, List<_Worker>> _dotCache    = {};
+  // 직방 스타일 오버레이: LatLng → 화면 좌표
+  final Map<int, Offset?> _jobScreenPos    = {};
+  final Map<int, Offset?> _workerScreenPos = {};
 
   @override
   void initState() {
@@ -144,7 +147,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
 
   @override
   void dispose() {
-    _clickSub?.cancel();
+    _cameraSub?.cancel();
     _scrollCtrl.dispose();
     super.dispose();
   }
@@ -198,10 +201,10 @@ class _WorkerMapViewState extends State<WorkerMapView> {
           ..sort((a, b) => (b.isPinnedNow ? 1 : 0) - (a.isPinnedNow ? 1 : 0));
 
         setState(() { _jobs = jobs; _loading = false; });
-        // 지도 준비됐으면 바로 핀 표시
+        // 지도 준비됐으면 바로 카드 오버레이 표시
         if (_mapReady && jobs.isNotEmpty) {
-          await _refreshMarkers();
           _selectJob(0);
+          await _updateCardPositions();
         }
       } else {
         if (mounted) setState(() => _loading = false);
@@ -214,7 +217,8 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   // ── 카카오맵 준비 ──────────────────────────────────────────────
   void _onMapCreated(km.KakaoMapController ctrl) {
     _ctrl = ctrl;
-    _clickSub = ctrl.onLabelClickedStream.listen(_onLabelClick);
+    // 카메라 이동이 끝나면 Flutter 오버레이 카드 위치 업데이트
+    _cameraSub = ctrl.onCameraMoveEndStream.listen((_) => _updateCardPositions());
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.delayed(const Duration(milliseconds: 100));
       await _setupMap();
@@ -224,95 +228,38 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   Future<void> _setupMap() async {
     if (_ctrl == null) return;
     try { await _ctrl!.setPoiVisible(isVisible: true); } catch (_) {}
-
-    // 기본 레이어 생성 — addMarkers 호출 전 반드시 필요
-    // (SDK가 자동으로 만들지 않음, E002 원인)
-    try {
-      await _ctrl!.addMarkerLayer(
-        layerId: km.KakaoMapController.defaultLabelLayerId,
-      );
-      debugPrint('[MAP] 기본 레이어 생성 완료');
-    } catch (e) {
-      debugPrint('[MAP] 기본 레이어 생성 실패: $e');
-    }
-
     if (!mounted) return;
     _mapReady = true;
-    debugPrint('[MAP] _setupMap 완료 — jobs=${_jobs.length}');
     if (_jobs.isNotEmpty) {
-      await _refreshMarkers(workers: []);
       _selectJob(0);
+      await _updateCardPositions();
     }
   }
 
-  // ── 마커 전체 재그리기 (공고 + 구직자 단일 레이어) ───────────
-  Future<void> _refreshMarkers({List<_Worker>? workers}) async {
-    if (_ctrl == null) return;
-    final w = workers ?? _currentWorkers;
+  // ── 직방 스타일: LatLng → 화면 좌표 변환 후 setState ───────────
+  Future<void> _updateCardPositions() async {
+    if (_ctrl == null || !mounted) return;
 
-    // clearMarkers: E002(레이어 없음)는 정상 — 기존 마커 없으면 아무 것도 안 지워도 됨
-    try { await _ctrl!.clearMarkers(); } catch (_) {}
-
-    final jobOpts = _jobs.where((j) => j.hasLocation).map((j) {
-      final short  = j.title.length > 7 ? '${j.title.substring(0, 7)}…' : j.title;
-      final wage   = j.hourlyWage > 0
-          ? ' · ${(j.hourlyWage / 10000).toStringAsFixed(j.hourlyWage % 10000 == 0 ? 0 : 1)}만원'
-          : '';
-      final prefix = j.isPinnedNow ? '⚡긴급 ' : '📍 ';
-      return km.MarkerOption(
-        id: 'job_${j.id}',
-        latLng: j.pos,
-        rank: j.isPinnedNow ? 100 : 50,
-        text: '$prefix$short$wage',
-      );
+    // 공고 + 구직자 전부 병렬로 변환
+    final jobFutures = _jobs.where((j) => j.hasLocation).map((j) async {
+      try { return (j.id, await _ctrl!.toScreenPoint(position: j.pos)); }
+      catch (_) { return (j.id, null); }
     }).toList();
-    final workerOpts = w.where((wk) => wk.hasLocation).map((wk) => km.MarkerOption(
-      id: 'w_${wk.id}',
-      latLng: wk.pos,
-      rank: 10,
-      text: wk.grade,
-    )).toList();
-    final all = [...jobOpts, ...workerOpts];
-    debugPrint('[MAP] 마커 배치 시도: jobs=${jobOpts.length}, workers=${workerOpts.length}');
+    final workerFutures = _currentWorkers.where((w) => w.hasLocation).map((w) async {
+      try { return (w.id, await _ctrl!.toScreenPoint(position: w.pos)); }
+      catch (_) { return (w.id, null); }
+    }).toList();
 
-    // addMarkers: E002 발생 시 레이어 초기화 대기 후 재시도 (최대 6회)
-    for (int attempt = 0; attempt < 6; attempt++) {
-      try {
-        if (all.isNotEmpty) await _ctrl!.addMarkers(markerOptions: all);
-        debugPrint('[MAP] 마커 배치 성공 (attempt=${attempt + 1})');
+    final jobResults    = await Future.wait(jobFutures);
+    final workerResults = await Future.wait(workerFutures);
+    if (!mounted) return;
 
-        // 카메라: 선택된 공고 or 첫 공고 (zoom은 현재값 유지 — fromLatLng 쓰면 zoomLevel:17로 강제 변경됨)
-        final target = (_selectedIdx != null && _jobs[_selectedIdx!].hasLocation)
-            ? _jobs[_selectedIdx!]
-            : _jobs.where((j) => j.hasLocation).firstOrNull;
-        if (target != null) {
-          await _ctrl!.moveCamera(
-            cameraUpdate: km.CameraUpdate(position: target.pos, type: 0),
-            animation: const km.CameraAnimation(duration: 300, autoElevation: true, isConsecutive: false),
-          );
-        }
-        return; // 성공
-      } catch (e) {
-        final isLayerMissing = e.toString().contains('LabelLayer not found');
-        debugPrint('[MAP] addMarkers attempt=${attempt + 1}: $e');
-        if (isLayerMissing && attempt < 5) {
-          await Future.delayed(Duration(milliseconds: 300 * (attempt + 1)));
-          if (!mounted) return;
-          try { await _ctrl!.clearMarkers(); } catch (_) {}
-          continue;
-        }
-        return;
-      }
-    }
-  }
-
-  // ── 라벨 클릭 ─────────────────────────────────────────────────
-  void _onLabelClick(km.LabelClickEvent e) {
-    if (!e.labelId.startsWith('job_')) return;
-    final id = int.tryParse(e.labelId.substring(4));
-    if (id == null) return;
-    final idx = _jobs.indexWhere((j) => j.id == id);
-    if (idx >= 0) _selectJob(idx);
+    setState(() {
+      _jobScreenPos.clear();
+      for (final (id, pos) in jobResults)    { _jobScreenPos[id]    = pos; }
+      _workerScreenPos.clear();
+      for (final (id, pos) in workerResults) { _workerScreenPos[id] = pos; }
+    });
   }
 
   // ── 공고 선택 ─────────────────────────────────────────────────
@@ -323,14 +270,13 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       _workerCount = 0;
     });
     final job = _jobs[idx];
-    // 카메라 이동 (zoom 유지 — fromLatLng는 zoomLevel:17 강제 변경하므로 사용 안 함)
     if (job.hasLocation && _ctrl != null) {
       _ctrl!.moveCamera(
         cameraUpdate: km.CameraUpdate(position: job.pos, type: 0),
         animation: const km.CameraAnimation(duration: 350, autoElevation: true, isConsecutive: false),
       );
+      // onCameraMoveEndStream → _updateCardPositions 자동 호출됨
     }
-    // 구직자 로드 (위치 있는 공고만)
     if (job.hasLocation) _loadWorkers(job);
   }
 
@@ -351,7 +297,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       _workerCount    = count;
       _workersLoading = false;
     });
-    if (_mapReady) await _refreshMarkers(workers: workers);
+    if (_mapReady) await _updateCardPositions();
   }
 
   Future<List<_Worker>> _fetchWorkers(int jobId) async {
@@ -436,6 +382,37 @@ class _WorkerMapViewState extends State<WorkerMapView> {
             onMapCreated: _onMapCreated,
           ),
         ),
+
+        // ── 구직자 도트 오버레이 ──────────────────────────────────
+        ..._currentWorkers.where((w) => w.hasLocation).map((w) {
+          final p = _workerScreenPos[w.id];
+          if (p == null || p.dx < 0 || p.dy < 0) return const SizedBox.shrink();
+          return Positioned(
+            left: p.dx - 7,
+            top: p.dy - 7,
+            child: _WorkerDot(worker: w),
+          );
+        }),
+
+        // ── 공고 카드 오버레이 (직방 스타일) ─────────────────────
+        ..._jobs.asMap().entries.where((e) => e.value.hasLocation).map((e) {
+          final i = e.key;
+          final job = e.value;
+          final p = _jobScreenPos[job.id];
+          if (p == null || p.dx < 0 || p.dy < 0) return const SizedBox.shrink();
+          final isSelected = i == _selectedIdx;
+          return Positioned(
+            left: p.dx,
+            top: p.dy,
+            child: FractionalTranslation(
+              translation: const Offset(-0.5, -1.0),
+              child: GestureDetector(
+                onTap: () => _selectJob(i),
+                child: _JobMapCard(job: job, isSelected: isSelected),
+              ),
+            ),
+          );
+        }),
 
         // ── 상단 공고 칩 ──────────────────────────────────────────
         Positioned(
@@ -973,6 +950,120 @@ class _Btn extends StatelessWidget {
           const SizedBox(width: 5),
           Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: fg)),
         ]),
+      ),
+    );
+  }
+}
+
+// ── 직방 스타일 공고 카드 마커 ────────────────────────────────────
+class _JobMapCard extends StatelessWidget {
+  final _Job job;
+  final bool isSelected;
+  const _JobMapCard({required this.job, required this.isSelected});
+
+  @override
+  Widget build(BuildContext context) {
+    final bg     = isSelected ? job.pinColor : Colors.white;
+    final fg     = isSelected ? Colors.white : _textMain;
+    final border = isSelected ? job.pinColor : _border;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+          decoration: BoxDecoration(
+            color: bg,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: border, width: isSelected ? 1.5 : 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isSelected ? 0.18 : 0.10),
+                blurRadius: isSelected ? 14 : 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (job.isPinnedNow)
+                Text(
+                  '⚡ 긴급',
+                  style: TextStyle(
+                    fontSize: 9, fontWeight: FontWeight.w800,
+                    color: isSelected ? Colors.white.withValues(alpha: 0.9) : _red,
+                  ),
+                ),
+              if (job.isPinnedNow) const SizedBox(height: 2),
+              Text(
+                job.hourlyWage > 0 ? '₩${_comma(job.hourlyWage)}' : job.title,
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: fg),
+              ),
+              if (isSelected && job.title.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  job.title.length > 9 ? '${job.title.substring(0, 9)}…' : job.title,
+                  style: TextStyle(fontSize: 10, color: fg.withValues(alpha: 0.8)),
+                ),
+              ],
+            ],
+          ),
+        ),
+        // 아래 삼각형 포인터
+        CustomPaint(
+          painter: _TrianglePainter(fill: bg, stroke: border),
+          size: const Size(12, 6),
+        ),
+      ],
+    );
+  }
+}
+
+class _TrianglePainter extends CustomPainter {
+  final Color fill, stroke;
+  const _TrianglePainter({required this.fill, required this.stroke});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final fillPaint   = Paint()..color = fill..style = PaintingStyle.fill;
+    final strokePaint = Paint()..color = stroke..style = PaintingStyle.stroke..strokeWidth = 1;
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..close();
+    canvas.drawPath(path, fillPaint);
+    canvas.drawPath(path, strokePaint);
+  }
+
+  @override
+  bool shouldRepaint(_TrianglePainter o) => o.fill != fill || o.stroke != stroke;
+}
+
+// ── 구직자 위치 도트 ──────────────────────────────────────────────
+class _WorkerDot extends StatelessWidget {
+  final _Worker worker;
+  const _WorkerDot({required this.worker});
+
+  Color get _color {
+    if (worker.activityScore >= 100) return const Color(0xFFFF6B00); // S
+    if (worker.activityScore >= 70)  return const Color(0xFF3B8AFF); // A
+    if (worker.activityScore >= 40)  return const Color(0xFF22C55E); // B
+    return const Color(0xFF9CA3AF);                                   // C/NEW
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 14,
+      height: 14,
+      decoration: BoxDecoration(
+        color: _color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4)],
       ),
     );
   }
