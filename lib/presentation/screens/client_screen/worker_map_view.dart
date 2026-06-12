@@ -223,10 +223,10 @@ class _WorkerMapViewState extends State<WorkerMapView> {
 
   Future<void> _setupMap() async {
     if (_ctrl == null) return;
-    // setPoiVisible은 보조 기능(카카오 POI 레이블 숨김) — 실패해도 계속 진행
     try { await _ctrl!.setPoiVisible(isVisible: true); } catch (_) {}
     if (!mounted) return;
     _mapReady = true;
+    debugPrint('[MAP] _setupMap 완료 — jobs=${_jobs.length}');
     if (_jobs.isNotEmpty) {
       await _refreshMarkers(workers: []);
       _selectJob(0);
@@ -238,22 +238,28 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     if (_ctrl == null) return;
     final w = workers ?? _currentWorkers;
 
-    // E002(LabelLayer not ready)는 최대 6회 재시도, 나머지 에러는 즉시 로그 후 종료
+    // clearMarkers: E002(레이어 없음)는 정상 — 기존 마커 없으면 아무 것도 안 지워도 됨
+    try { await _ctrl!.clearMarkers(); } catch (_) {}
+
+    final jobOpts = _jobs.where((j) => j.hasLocation).map((j) => km.MarkerOption(
+      id: 'job_${j.id}',
+      latLng: j.pos,
+      text: '${j.isPinnedNow ? "[긴급] " : ""}${j.title.length > 9 ? '${j.title.substring(0, 9)}…' : j.title}',
+    )).toList();
+    final workerOpts = w.where((wk) => wk.hasLocation).map((wk) => km.MarkerOption(
+      id: 'w_${wk.id}',
+      latLng: wk.pos,
+      text: wk.grade,
+    )).toList();
+    final all = [...jobOpts, ...workerOpts];
+    debugPrint('[MAP] 마커 배치 시도: jobs=${jobOpts.length}, workers=${workerOpts.length}');
+
+    // addMarkers: E002 발생 시 레이어 초기화 대기 후 재시도 (최대 6회)
     for (int attempt = 0; attempt < 6; attempt++) {
       try {
-        await _ctrl!.clearMarkers();
-        final jobOpts = _jobs.where((j) => j.hasLocation).map((j) => km.MarkerOption(
-          id: 'job_${j.id}',
-          latLng: j.pos,
-          text: '${j.isPinnedNow ? "[긴급] " : ""}${j.title.length > 9 ? '${j.title.substring(0, 9)}…' : j.title}',
-        )).toList();
-        final workerOpts = w.where((wk) => wk.hasLocation).map((wk) => km.MarkerOption(
-          id: 'w_${wk.id}',
-          latLng: wk.pos,
-          text: wk.grade,
-        )).toList();
-        final all = [...jobOpts, ...workerOpts];
         if (all.isNotEmpty) await _ctrl!.addMarkers(markerOptions: all);
+        debugPrint('[MAP] 마커 배치 성공 (attempt=${attempt + 1})');
+
         // 카메라: 선택된 공고 or 첫 공고
         final target = (_selectedIdx != null && _jobs[_selectedIdx!].hasLocation)
             ? _jobs[_selectedIdx!]
@@ -267,12 +273,13 @@ class _WorkerMapViewState extends State<WorkerMapView> {
         return; // 성공
       } catch (e) {
         final isLayerMissing = e.toString().contains('LabelLayer not found');
+        debugPrint('[MAP] addMarkers attempt=${attempt + 1}: $e');
         if (isLayerMissing && attempt < 5) {
-          await Future.delayed(Duration(milliseconds: 250 * (attempt + 1)));
+          await Future.delayed(Duration(milliseconds: 300 * (attempt + 1)));
           if (!mounted) return;
+          try { await _ctrl!.clearMarkers(); } catch (_) {}
           continue;
         }
-        if (!isLayerMissing) debugPrint('[MAP] refreshMarkers: $e');
         return;
       }
     }
