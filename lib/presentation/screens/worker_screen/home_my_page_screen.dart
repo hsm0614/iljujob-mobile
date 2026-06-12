@@ -532,7 +532,7 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: _SectionCard(
-                  title: '내 알바일주 관리',
+                  title: '내 알바 관리',
                   children: [
                     _ItemTile(
                       icon: Icons.edit_rounded,

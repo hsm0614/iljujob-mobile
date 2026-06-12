@@ -131,7 +131,7 @@ class _MetaTile extends StatelessWidget {
                   label,
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey[600],
+                    color: const Color(0xFF6B7280),
                     fontWeight: FontWeight.w500,
                   ),
                 ),

@@ -321,7 +321,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                 child: _SectionCard(
-                  title: '사용자',
+                  title: '사장님 관리',
                   children: [
                     _ItemTile(
                       icon: Icons.workspace_premium,

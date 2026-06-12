@@ -80,7 +80,7 @@ String url = selectedType == 'job'
           const Divider(),
           Expanded(
             child: filtered.isEmpty
-                ? const Center(child: Text('📭 신고 내역이 없습니다.', style: TextStyle(color: Colors.grey)))
+                ? const Center(child: Text('📭 신고 내역이 없습니다.', style: TextStyle(color: Color(0xFF6B7280))))
                 : ListView.builder(
                     itemCount: filtered.length,
                     itemBuilder: (context, index) => _buildReportCard(filtered[index]),
@@ -143,7 +143,7 @@ Widget _buildReportCard(Map<String, dynamic> report) {
           const SizedBox(height: 6),
           Text('📝 사유: $reasonCategory${reasonDetail != null && reasonDetail.isNotEmpty ? ' - $reasonDetail' : ''}'),
           const SizedBox(height: 6),
-          Text('⏰ 날짜: $createdAt', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+          Text('⏰ 날짜: $createdAt', style: const TextStyle(color: Color(0xFF6B7280), fontSize: 12)),
         ],
       ),
     ),

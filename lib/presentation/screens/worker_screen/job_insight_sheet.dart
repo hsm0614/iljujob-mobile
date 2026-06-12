@@ -163,7 +163,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
       children: [
         const Icon(Icons.error_outline, size: 40, color: Colors.grey),
         const SizedBox(height: 12),
-        Text(_error!, style: const TextStyle(color: Colors.grey)),
+        Text(_error!, style: const TextStyle(color: Color(0xFF6B7280))),
         const SizedBox(height: 16),
         TextButton(onPressed: _load, child: const Text('다시 시도')),
       ],

@@ -389,7 +389,7 @@ class _ClientActions extends StatelessWidget {
           child: const Text(
             '✔ 알바 완료됨',
             style: TextStyle(
-              color: Colors.grey,
+              color: Color(0xFF6B7280),
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),

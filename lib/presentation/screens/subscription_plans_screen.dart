@@ -219,48 +219,64 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   }
 
   void _showSuccess() {
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: false,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 60, height: 60,
-              decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
-              child: const Icon(Icons.workspace_premium_rounded, size: 30, color: AppColors.primary),
-            ),
-            const SizedBox(height: 16),
-            const Text('구독이 시작되었어요!', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)),
-            const SizedBox(height: 8),
-            Text(
-              '${_plan.name} 플랜 크레딧이\n계정에 지급되었습니다.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
-            ),
-          ],
-        ),
-        actions: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.pop(context);
-                Navigator.pop(context, true);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-              child: const Text('확인', style: TextStyle(fontWeight: FontWeight.w700)),
-            ),
+      isDismissible: false,
+      enableDrag: false,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        final bottom = MediaQuery.of(context).viewPadding.bottom;
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-        ],
-      ),
+          padding: EdgeInsets.fromLTRB(20, 28, 20, 24 + bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 64, height: 64,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.10),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.workspace_premium_rounded, size: 32, color: AppColors.primary),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                '구독이 시작되었어요!',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, fontFamily: 'Jalnan2TTF', color: Color(0xFF111827)),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${_plan.name} 플랜 크레딧이\n계정에 지급되었습니다.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
+              ),
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.pop(context, true);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: const Text('확인', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

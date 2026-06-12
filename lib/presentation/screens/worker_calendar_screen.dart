@@ -1196,7 +1196,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         '날짜를 선택하면\n일정을 확인할 수 있어요 📅',
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: Color(0xFF9CA3AF),
+          color: Color(0xFF6B7280),
           height: 1.5,
           fontWeight: FontWeight.w700,
         ),
@@ -1214,7 +1214,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
           '$title\n등록된 일정이 없어요 🙂\n오른쪽 아래 + 로 추가해봐요',
           textAlign: TextAlign.center,
           style: const TextStyle(
-            color: Color(0xFF9CA3AF),
+            color: Color(0xFF6B7280),
             height: 1.35,
             fontWeight: FontWeight.w700,
           ),
@@ -1260,7 +1260,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF9CA3AF),
+                        color: Color(0xFF6B7280),
                         fontWeight: FontWeight.w700,
                       ),
                     ),

@@ -458,7 +458,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                   context,
                   '/client_main',
                   (route) => false,
-                  arguments: {'initialTabIndex': 1},
+                  arguments: {'initialTabIndex': 2},
                 ),
           ),
           actions: [
@@ -494,12 +494,12 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                 const SizedBox(height: 8),
                 const Text(
                   '휴업/폐업 여부만 간단히 체크해요.',
-                  style: TextStyle(fontSize: 14, color: Colors.grey),
+                  style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
                 ),
                 const SizedBox(height: 6),
                 const Text(
                   '사업자등록번호가 없으시면\nhsm@outfind.co.kr 로 문의해주세요.',
-                  style: TextStyle(fontSize: 13, color: Colors.grey),
+                  style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
                 ),
                 const SizedBox(height: 12),
 

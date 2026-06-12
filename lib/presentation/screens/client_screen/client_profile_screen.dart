@@ -150,7 +150,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                 const SizedBox(height: 8),
                 const Text(
                   '※ 신고된 내용은 검토 후 24시간 이내에 조치됩니다.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
                 ),
               ],
             ),
@@ -429,7 +429,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
   );
 
   Widget _tinyMuted(String text) =>
-      Text(text, style: const TextStyle(fontSize: 12, color: Colors.grey));
+      Text(text, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)));
 
   Widget _statsCard() {
     return Container(
@@ -501,7 +501,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
                 ),
                 const SizedBox(height: 2),
                 Text(

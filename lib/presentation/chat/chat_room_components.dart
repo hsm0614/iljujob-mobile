@@ -94,7 +94,7 @@ class CancelApplicationDialog extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11.5,
                         height: 1.4,
-                        color: Color(0xFF9CA3AF),
+                        color: Color(0xFF6B7280),
                       ),
                     ),
                   ),

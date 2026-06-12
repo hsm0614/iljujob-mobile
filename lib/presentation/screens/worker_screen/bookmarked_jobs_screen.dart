@@ -401,7 +401,7 @@ class _JobTile extends StatelessWidget {
                         _pill('₩${job.pay} · ${job.payType}'),
                         Text(
                           '등록일 ${_formatDate(job.createdAt)}',
-                          style: const TextStyle(color: Colors.grey),
+                          style: const TextStyle(color: Color(0xFF6B7280)),
                         ),
                       ],
                     ),

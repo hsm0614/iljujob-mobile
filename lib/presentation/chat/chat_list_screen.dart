@@ -427,29 +427,78 @@ class _ChatListScreenState extends State<ChatListScreen>
     }
     final title = (chat['job_title'] ?? '이 채팅방').toString();
 
-    final confirm = await showDialog<bool>(
+    final confirm = await showModalBottomSheet<bool>(
       context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('채팅방 나가기'),
-            content: Text(
-              '$title\n\n채팅 목록에서 이 방이 사라지고 새 메시지 알림을 받지 않습니다. 상대방의 채팅 내역은 삭제되지 않습니다.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: const Text('취소'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.error,
-                  foregroundColor: Colors.white,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        final bottom = MediaQuery.of(context).viewPadding.bottom;
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottom),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE5E7EB),
+                  borderRadius: BorderRadius.circular(999),
                 ),
-                child: const Text('나가기'),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                width: 52, height: 52,
+                decoration: BoxDecoration(
+                  color: AppColors.error.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(Icons.exit_to_app_rounded, color: AppColors.error, size: 26),
+              ),
+              const SizedBox(height: 12),
+              const Text('채팅방 나가기',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Jalnan2TTF', color: Color(0xFF111827)),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '$title\n채팅 목록에서 사라지고 새 메시지 알림을 받지 않습니다.\n상대방의 채팅 내역은 삭제되지 않습니다.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 13.5, color: Color(0xFF6B7280), height: 1.5),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.error,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: const Text('나가기', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF6B7280),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: const Text('취소', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                ),
               ),
             ],
           ),
+        );
+      },
     );
 
     if (confirm == true) {

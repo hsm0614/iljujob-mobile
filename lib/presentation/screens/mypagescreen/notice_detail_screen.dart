@@ -39,7 +39,7 @@ class NoticeDetailScreen extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   formattedDate,
-                  style: const TextStyle(color: Colors.grey),
+                  style: const TextStyle(color: Color(0xFF6B7280)),
                 ),
                 const Divider(height: 24),
                 Expanded(

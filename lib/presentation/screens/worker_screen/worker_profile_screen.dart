@@ -219,7 +219,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
             const SizedBox(height: 8),
             const Text(
               '※ 신고된 내용은 운영 정책에 따라 24시간 이내에 조치됩니다.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
+              style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
             ),
           ],
         ),

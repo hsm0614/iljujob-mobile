@@ -102,26 +102,128 @@ class AlbailjuPostJobCta extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 38,
-      child: FilledButton.icon(
-        onPressed: onPressed,
-        icon: const Icon(Icons.add_rounded, size: 18),
-        label: Text(label),
-        style: FilledButton.styleFrom(
-          backgroundColor: inverted ? Colors.white : AppColors.primary,
-          foregroundColor: inverted ? AppColors.primary : Colors.white,
-          padding: const EdgeInsets.fromLTRB(13, 0, 15, 0),
-          textStyle: const TextStyle(
-            fontFamily: 'Jalnan2TTF',
-            fontSize: 13,
-            fontWeight: FontWeight.w900,
-            height: 1.0,
-          ),
-          shape: RoundedRectangleBorder(
+    final fg = inverted ? AppColors.primary : Colors.white;
+    final bg = inverted ? Colors.white : AppColors.primary;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        child: Ink(
+          height: 40,
+          padding: const EdgeInsets.fromLTRB(10, 0, 14, 0),
+          decoration: BoxDecoration(
+            color: bg,
             borderRadius: BorderRadius.circular(AppRadius.full),
+            border: Border.all(
+              color:
+                  inverted
+                      ? Colors.white.withValues(alpha: 0.90)
+                      : AppColors.primaryDark.withValues(alpha: 0.24),
+            ),
+            boxShadow:
+                inverted
+                    ? [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.10),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ]
+                    : AppShadows.button,
           ),
-          elevation: 0,
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  color:
+                      inverted
+                          ? AppColors.primaryLight
+                          : Colors.white.withValues(alpha: 0.20),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.add_rounded, size: 17, color: fg),
+              ),
+              const SizedBox(width: 7),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: 'Jalnan2TTF',
+                  fontSize: 13,
+                  fontWeight: FontWeight.w900,
+                  color: fg,
+                  height: 1.0,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class AlbailjuPostJobPrimaryButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final String label;
+
+  const AlbailjuPostJobPrimaryButton({
+    super.key,
+    required this.onPressed,
+    this.label = '공고 올리기',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: Ink(
+          height: 56,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.primary, AppColors.primaryDark],
+            ),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            boxShadow: AppShadows.button,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.add_rounded,
+                  size: 20,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 9),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontFamily: 'Jalnan2TTF',
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  height: 1.0,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

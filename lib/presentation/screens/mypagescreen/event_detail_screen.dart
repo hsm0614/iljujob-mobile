@@ -36,7 +36,7 @@ class EventDetailScreen extends StatelessWidget {
             if (startDate.isNotEmpty && endDate.isNotEmpty)
               Text(
                 '📅 기간: $startDate ~ $endDate',
-                style: const TextStyle(fontSize: 14, color: Colors.grey),
+                style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
               ),
             const SizedBox(height: 16),
 

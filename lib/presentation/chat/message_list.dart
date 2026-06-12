@@ -313,7 +313,7 @@ class _MessageBubble extends StatelessWidget {
                       targetName,
                       style: const TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF9CA3AF),
+                        color: Color(0xFF6B7280),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -384,7 +384,7 @@ class _MessageBubble extends StatelessWidget {
                         DateFormat('a h:mm', 'ko_KR').format(when),
                         style: const TextStyle(
                           fontSize: 10,
-                          color: Color(0xFF9CA3AF),
+                          color: Color(0xFF6B7280),
                         ),
                       ),
                       if (isMe) ...[

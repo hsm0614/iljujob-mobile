@@ -818,7 +818,7 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
                 style: TextStyle(fontSize: 16, color: const Color(0xFF6B7280))),
             const SizedBox(height: 8),
             Text('네트워크 연결을 확인하고 다시 시도해주세요',
-                style: TextStyle(color: const Color(0xFF9CA3AF))),
+                style: TextStyle(color: const Color(0xFF6B7280))),
             const SizedBox(height: 16),
             ElevatedButton(onPressed: _loadProducts, child: const Text('다시 시도')),
           ],

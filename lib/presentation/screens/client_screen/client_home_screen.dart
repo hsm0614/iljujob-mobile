@@ -1251,23 +1251,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             const SizedBox(height: 22),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton.icon(
+              child: AlbailjuPostJobPrimaryButton(
                 onPressed: _goToPostJobFlow,
-                icon: const Icon(Icons.add_circle_outline_rounded, size: 20),
-                label: const Text('첫 공고 등록하기'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                  ),
-                  textStyle: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+                label: '첫 공고 등록하기',
               ),
             ),
           ],

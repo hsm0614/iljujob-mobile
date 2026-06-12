@@ -613,7 +613,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                   minutesInterval: 10,
                                   normalTextStyle: const TextStyle(
                                     fontSize: 16,
-                                    color: Colors.grey,
+                                    color: Color(0xFF9CA3AF),
                                   ),
                                   highlightedTextStyle: const TextStyle(
                                     fontSize: 18,
@@ -650,7 +650,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                   minutesInterval: 10,
                                   normalTextStyle: const TextStyle(
                                     fontSize: 16,
-                                    color: Colors.grey,
+                                    color: Color(0xFF9CA3AF),
                                   ),
                                   highlightedTextStyle: const TextStyle(
                                     fontSize: 18,

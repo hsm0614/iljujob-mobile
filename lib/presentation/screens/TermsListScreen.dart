@@ -14,7 +14,7 @@ class TermsListScreen extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
               '서비스 관련 약관',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF6B7280)),
             ),
           ),
           ListTile(
@@ -50,7 +50,7 @@ class TermsListScreen extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
               '개인정보 보호',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.grey),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF6B7280)),
             ),
           ),
           ListTile(

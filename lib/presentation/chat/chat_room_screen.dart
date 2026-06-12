@@ -520,7 +520,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     const SizedBox(height: 6),
                     const Text(
                       '솔직한 평가가 더 나은 매칭을 만들어요',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+                      style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
                     ),
                     const SizedBox(height: 20),
 
@@ -641,7 +641,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                       child: const Text(
                         '나중에 할게요',
                         style: TextStyle(
-                          color: Color(0xFF9CA3AF),
+                          color: Color(0xFF6B7280),
                           fontSize: 13,
                         ),
                       ),
@@ -717,7 +717,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                               '앱 내 캘린더에서 근무 일정을 확인해요',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Color(0xFF9CA3AF),
+                                color: Color(0xFF6B7280),
                               ),
                             ),
                           ],
@@ -1290,7 +1290,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                   const SizedBox(width: 4),
                   const Text(
                     '알바일주 데이터 기준',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+                    style: TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
                   ),
                   const Spacer(),
                   TextButton.icon(
