@@ -414,9 +414,10 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         title: const Text(
           '계정 관리',
           style: TextStyle(
-            fontFamily: 'Jalnan2TTF',
-            color: kBrand,
-            fontSize: 20,
+            color: Color(0xFF191F28),
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            height: 1.2,
           ),
         ),
         actions: [
@@ -821,8 +822,8 @@ class _SectionCard extends StatelessWidget {
                 child: Text(
                   title,
                   style: const TextStyle(
-                    fontFamily: 'Jalnan2TTF',
                     fontSize: 15,
+                    fontWeight: FontWeight.w800,
                     color: Colors.black87,
                   ),
                 ),

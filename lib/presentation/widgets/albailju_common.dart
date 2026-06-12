@@ -44,9 +44,9 @@ class AlbailjuAppBar extends StatelessWidget implements PreferredSizeWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 18,
+                  fontSize: 17,
                   fontWeight: FontWeight.w800,
-                  height: 1.1,
+                  height: 1.2,
                 ),
               )),
       actions: actions,

@@ -16,17 +16,17 @@ import 'package:iljujob/presentation/screens/worker_screen/add_experience_screen
 // 알바일주 색상 팔레트 (worker_calendar_screen과 통일)
 // =====================
 const kBrandBlue = Color(0xFF3B8AFF);
-const kBg        = Color(0xFFF4F6FA);
-const kCard      = Colors.white;
-const kBorder    = Color(0xFFE5E7EB);
-const kMuted     = Color(0xFF6B7280);
-const kText      = Color(0xFF111827);
+const kBg = Color(0xFFF4F6FA);
+const kCard = Colors.white;
+const kBorder = Color(0xFFE5E7EB);
+const kMuted = Color(0xFF6B7280);
+const kText = Color(0xFF111827);
 
 // =====================
 // Models
 // =====================
 class Experience {
-  final int    id;
+  final int id;
   final String place;
   final String description;
   final String year;
@@ -41,16 +41,16 @@ class Experience {
   });
 
   factory Experience.fromJson(Map<String, dynamic> json) => Experience(
-        id:          (json['id'] as num).toInt(),
-        place:       (json['place']       ?? '').toString(),
-        description: (json['description'] ?? '').toString(),
-        year:        (json['year']        ?? '').toString(),
-        duration:    (json['duration']    ?? '').toString(),
-      );
+    id: (json['id'] as num).toInt(),
+    place: (json['place'] ?? '').toString(),
+    description: (json['description'] ?? '').toString(),
+    year: (json['year'] ?? '').toString(),
+    duration: (json['duration'] ?? '').toString(),
+  );
 }
 
 class LicenseItem {
-  final int    id;
+  final int id;
   final String name;
   final String issuedAt;
 
@@ -61,10 +61,10 @@ class LicenseItem {
   });
 
   factory LicenseItem.fromJson(Map<String, dynamic> json) => LicenseItem(
-        id:       (json['id'] as num).toInt(),
-        name:     (json['name']      ?? '').toString(),
-        issuedAt: (json['issued_at'] ?? '').toString(),
-      );
+    id: (json['id'] as num).toInt(),
+    name: (json['name'] ?? '').toString(),
+    issuedAt: (json['issued_at'] ?? '').toString(),
+  );
 }
 
 // =====================
@@ -76,16 +76,16 @@ class YmdSlashInputFormatter extends TextInputFormatter {
     TextEditingValue oldValue,
     TextEditingValue newValue,
   ) {
-    final digits  = newValue.text.replaceAll(RegExp(r'\D'), '');
+    final digits = newValue.text.replaceAll(RegExp(r'\D'), '');
     final clipped = digits.length <= 8 ? digits : digits.substring(0, 8);
-    final buf     = StringBuffer();
+    final buf = StringBuffer();
     for (int i = 0; i < clipped.length; i++) {
       if (i == 4 || i == 6) buf.write('/');
       buf.write(clipped[i]);
     }
     final text = buf.toString();
     return TextEditingValue(
-      text:      text,
+      text: text,
       selection: TextSelection.collapsed(offset: text.length),
     );
   }
@@ -98,115 +98,75 @@ class EditWorkerProfileScreen extends StatefulWidget {
   const EditWorkerProfileScreen({super.key});
 
   @override
-  State<EditWorkerProfileScreen> createState() => _EditWorkerProfileScreenState();
+  State<EditWorkerProfileScreen> createState() =>
+      _EditWorkerProfileScreenState();
 }
 
 class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
   // ── 로딩/저장 상태
   bool _initialLoading = true;
-  bool _saving         = false;
+  bool _saving = false;
 
   // ── 사용자 정보
-  int?    _workerId;
-  String  _phone           = '';
-  String  _profileImageUrl = '';
-  File?   _selectedImage;
+  int? _workerId;
+  String _phone = '';
+  String _profileImageUrl = '';
+  File? _selectedImage;
   String? _birthYear; // yyyymmdd
   String? _gender;
-  bool    _resumeConsent = true;
+  bool _resumeConsent = true;
 
   // ── SharedPreferences 캐시 (매번 재호출 방지)
   SharedPreferences? _prefs;
 
   // ── Controllers
-  final _nameCtrl         = TextEditingController();
+  final _nameCtrl = TextEditingController();
   final _introductionCtrl = TextEditingController();
-  final _experienceCtrl   = TextEditingController(); // 레거시 유지
+  final _experienceCtrl = TextEditingController(); // 레거시 유지
 
   // ── UI 토글
   bool _isResumeExpanded = true;
 
   // ── 카테고리/옵션
-static const _workCategoryMap = <String, List<String>>{
-  '물류·배송': [
-    '상하차',
-    '물류센터',
-    '포장',
-    '검수/피킹',
-    '분류/적재',
-    '배송기사',
-    '입출고',
-  ],
+  static const _workCategoryMap = <String, List<String>>{
+    '물류·배송': ['상하차', '물류센터', '포장', '검수/피킹', '분류/적재', '배송기사', '입출고'],
 
-  '제조·공장': [
-    '제조보조',
-    '생산·조립',
-    '식품제조',
-    '기계조작',
-    '단순노무',
-    '검품·포장',
-  ],
+    '제조·공장': ['제조보조', '생산·조립', '식품제조', '기계조작', '단순노무', '검품·포장'],
 
-  '반도체·전자생산': [
-    '반도체 생산',
-    '전자부품 조립',
-    'PCB·SMT',
-    '품질검사',
-    '클린룸',
-    '장비오퍼레이터',
-  ],
+    '반도체·전자생산': ['반도체 생산', '전자부품 조립', 'PCB·SMT', '품질검사', '클린룸', '장비오퍼레이터'],
 
-  '음식점·카페': [
-    '서빙',
-    '주방보조',
-    '카페·바리스타',
-    '패스트푸드',
-    '포장·설거지',
-  ],
+    '음식점·카페': ['서빙', '주방보조', '카페·바리스타', '패스트푸드', '포장·설거지'],
 
-  '매장·서비스': [
-    '매장판매',
-    '캐셔',
-    '행사스태프',
-    '시식·홍보',
-    '안내·접수',
-  ],
+    '매장·서비스': ['매장판매', '캐셔', '행사스태프', '시식·홍보', '안내·접수'],
 
-  '사무·행정': [
-    '사무보조',
-    '데이터입력',
-    '고객응대',
-    '텔레마케터',
-    '회계보조',
-  ],
+    '사무·행정': ['사무보조', '데이터입력', '고객응대', '텔레마케터', '회계보조'],
 
-  '기타': [
-    '전단지',
-    '주차관리',
-    '청소',
-    '시설관리',
-    '기타',
-  ],
-};
+    '기타': ['전단지', '주차관리', '청소', '시설관리', '기타'],
+  };
   String? _selectedWorkCategory;
 
   static const _strengthOptions = [
-    '꼼꼼해요', '책임감 있어요', '상냥해요', '빠릿해요', '체력이 좋아요', '성실해요',
+    '꼼꼼해요',
+    '책임감 있어요',
+    '상냥해요',
+    '빠릿해요',
+    '체력이 좋아요',
+    '성실해요',
   ];
-  static const _dayOptions  = ['월', '화', '수', '목', '금', '토', '일'];
+  static const _dayOptions = ['월', '화', '수', '목', '금', '토', '일'];
   static const _timeOptions = ['06-12', '12-18', '18-24'];
 
   // ── 데이터 목록
-  List<Experience>  _experiences = [];
-  List<LicenseItem> _licenses    = [];
+  List<Experience> _experiences = [];
+  List<LicenseItem> _licenses = [];
 
-  List<String> _selectedWorks     = [];
+  List<String> _selectedWorks = [];
   List<String> _selectedStrengths = [];
-  List<String> _selectedDays      = [];
-  List<String> _selectedTimes     = [];
+  List<String> _selectedDays = [];
+  List<String> _selectedTimes = [];
 
   // ── 삭제 진행 중 ID 셋
-  final Set<int> _deletingLicenseIds    = {};
+  final Set<int> _deletingLicenseIds = {};
   final Set<int> _deletingExperienceIds = {};
 
   final _imagePicker = ImagePicker();
@@ -229,7 +189,7 @@ static const _workCategoryMap = <String, List<String>>{
   }
 
   Future<void> _init() async {
-    _prefs    = await SharedPreferences.getInstance();
+    _prefs = await SharedPreferences.getInstance();
     _workerId = _prefs!.getInt('userId');
 
     if (_workerId == null) {
@@ -238,11 +198,7 @@ static const _workCategoryMap = <String, List<String>>{
       return;
     }
 
-    await Future.wait([
-      _loadProfile(),
-      _fetchExperiences(),
-      _fetchLicenses(),
-    ]);
+    await Future.wait([_loadProfile(), _fetchExperiences(), _fetchLicenses()]);
 
     if (!mounted) return;
     setState(() => _initialLoading = false);
@@ -262,12 +218,13 @@ static const _workCategoryMap = <String, List<String>>{
     return true;
   }
 
-  List<String> _parseList(dynamic value) => (value ?? '')
-      .toString()
-      .split(',')
-      .map((e) => e.trim())
-      .where((e) => e.isNotEmpty)
-      .toList();
+  List<String> _parseList(dynamic value) =>
+      (value ?? '')
+          .toString()
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
 
   String _fmtYmdSlash(DateTime d) =>
       '${d.year.toString().padLeft(4, '0')}/${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}';
@@ -298,25 +255,30 @@ static const _workCategoryMap = <String, List<String>>{
   Future<void> _loadProfile() async {
     if (_workerId == null) return;
     try {
-      final res = await http.get(Uri.parse('$baseUrl/api/worker/profile?id=$_workerId'));
-      if (res.statusCode != 200) { _toast('프로필 불러오기 실패 (${res.statusCode})'); return; }
+      final res = await http.get(
+        Uri.parse('$baseUrl/api/worker/profile?id=$_workerId'),
+      );
+      if (res.statusCode != 200) {
+        _toast('프로필 불러오기 실패 (${res.statusCode})');
+        return;
+      }
 
       final data = jsonDecode(res.body) as Map<String, dynamic>;
       if (!mounted) return;
 
       setState(() {
-        _nameCtrl.text         = (data['name'] ?? '').toString();
-        _profileImageUrl       = (data['profile_image_url'] ?? '').toString();
-        _selectedWorks         = _parseList(data['desired_work']);
-        _selectedStrengths     = _parseList(data['strengths']);
-        _selectedDays          = _parseList(data['available_days']);
-        _selectedTimes         = _parseList(data['available_times']);
+        _nameCtrl.text = (data['name'] ?? '').toString();
+        _profileImageUrl = (data['profile_image_url'] ?? '').toString();
+        _selectedWorks = _parseList(data['desired_work']);
+        _selectedStrengths = _parseList(data['strengths']);
+        _selectedDays = _parseList(data['available_days']);
+        _selectedTimes = _parseList(data['available_times']);
         _introductionCtrl.text = (data['introduction'] ?? '').toString();
-        _experienceCtrl.text   = (data['experience']   ?? '').toString();
-        _phone                 = (data['phone']         ?? '').toString();
-        _birthYear             = data['birth_year']?.toString();
-        _gender                = data['gender']?.toString();
-        _resumeConsent         = _parseResumeConsent(data['resume_consent']);
+        _experienceCtrl.text = (data['experience'] ?? '').toString();
+        _phone = (data['phone'] ?? '').toString();
+        _birthYear = data['birth_year']?.toString();
+        _gender = data['gender']?.toString();
+        _resumeConsent = _parseResumeConsent(data['resume_consent']);
         // 카테고리 초기값 한 번만 세팅
         _selectedWorkCategory ??= _workCategoryMap.keys.first;
       });
@@ -330,12 +292,17 @@ static const _workCategoryMap = <String, List<String>>{
   Future<void> _fetchExperiences() async {
     if (_workerId == null) return;
     try {
-      final res = await http.get(Uri.parse('$baseUrl/api/worker/experiences?workerId=$_workerId'));
+      final res = await http.get(
+        Uri.parse('$baseUrl/api/worker/experiences?workerId=$_workerId'),
+      );
       if (res.statusCode != 200) return;
       final raw = jsonDecode(res.body);
       if (raw is! List || !mounted) return;
       setState(() {
-        _experiences = raw.map((e) => Experience.fromJson(e as Map<String, dynamic>)).toList();
+        _experiences =
+            raw
+                .map((e) => Experience.fromJson(e as Map<String, dynamic>))
+                .toList();
       });
     } catch (_) {}
   }
@@ -343,18 +310,23 @@ static const _workCategoryMap = <String, List<String>>{
   Future<void> _fetchLicenses() async {
     if (_workerId == null) return;
     try {
-      final res = await http.get(Uri.parse('$baseUrl/api/worker/licenses?workerId=$_workerId'));
+      final res = await http.get(
+        Uri.parse('$baseUrl/api/worker/licenses?workerId=$_workerId'),
+      );
       if (res.statusCode != 200) return;
       final raw = jsonDecode(res.body);
       if (raw is! List || !mounted) return;
       setState(() {
-        _licenses = raw.map((e) => LicenseItem.fromJson(e as Map<String, dynamic>)).toList();
+        _licenses =
+            raw
+                .map((e) => LicenseItem.fromJson(e as Map<String, dynamic>))
+                .toList();
       });
     } catch (_) {}
   }
 
   Future<String?> _uploadProfileImage({
-    required int    workerId,
+    required int workerId,
     required String birthDigits,
   }) async {
     if (_selectedImage == null) return null;
@@ -363,44 +335,48 @@ static const _workCategoryMap = <String, List<String>>{
       'POST',
       Uri.parse('$baseUrl/api/worker/upload-profile-image'),
     );
-    req.fields['id']              = workerId.toString();
-    req.fields['name']            = _nameCtrl.text.trim();
-    req.fields['birth_year']      = birthDigits;
-    req.fields['desired_work']    = _selectedWorks.join(',');
-    req.fields['strengths']       = _selectedStrengths.join(',');
-    req.fields['available_days']  = _selectedDays.join(',');
+    req.fields['id'] = workerId.toString();
+    req.fields['name'] = _nameCtrl.text.trim();
+    req.fields['birth_year'] = birthDigits;
+    req.fields['desired_work'] = _selectedWorks.join(',');
+    req.fields['strengths'] = _selectedStrengths.join(',');
+    req.fields['available_days'] = _selectedDays.join(',');
     req.fields['available_times'] = _selectedTimes.join(',');
-    req.fields['introduction']    = _introductionCtrl.text.trim();
-    req.fields['experience']      = _experienceCtrl.text.trim();
-    req.files.add(await http.MultipartFile.fromPath('image', _selectedImage!.path));
+    req.fields['introduction'] = _introductionCtrl.text.trim();
+    req.fields['experience'] = _experienceCtrl.text.trim();
+    req.files.add(
+      await http.MultipartFile.fromPath('image', _selectedImage!.path),
+    );
 
     final response = await req.send();
-    final body     = await response.stream.bytesToString();
+    final body = await response.stream.bytesToString();
 
     if (response.statusCode != 200) {
       throw Exception('이미지 업로드 실패 (${response.statusCode})');
     }
     final decoded = jsonDecode(body);
-    return decoded is Map<String, dynamic> ? decoded['imageUrl']?.toString() : null;
+    return decoded is Map<String, dynamic>
+        ? decoded['imageUrl']?.toString()
+        : null;
   }
 
   Future<void> _updateProfileJson({
-    required int    workerId,
+    required int workerId,
     required String birthDigits,
   }) async {
     final payload = {
-      'workerId':       workerId,
-      'id':             workerId,
-      'name':           _nameCtrl.text.trim(),
-      'gender':         _gender ?? '',
-      'birth_year':     birthDigits.isEmpty ? null : birthDigits,
-      'strengths':      _selectedStrengths.join(','),
-      'traits':         '',
-      'desired_work':   _selectedWorks.join(','),
+      'workerId': workerId,
+      'id': workerId,
+      'name': _nameCtrl.text.trim(),
+      'gender': _gender ?? '',
+      'birth_year': birthDigits.isEmpty ? null : birthDigits,
+      'strengths': _selectedStrengths.join(','),
+      'traits': '',
+      'desired_work': _selectedWorks.join(','),
       'available_days': _selectedDays.join(','),
-      'available_times':_selectedTimes.join(','),
-      'introduction':   _introductionCtrl.text.trim(),
-      'experience':     _experienceCtrl.text.trim(),
+      'available_times': _selectedTimes.join(','),
+      'introduction': _introductionCtrl.text.trim(),
+      'experience': _experienceCtrl.text.trim(),
       'resume_consent': _resumeConsent ? 1 : 0,
     };
 
@@ -420,7 +396,9 @@ static const _workCategoryMap = <String, List<String>>{
 
     // ✅ birthDigits 변수 통일 (기존 코드에서 혼선 있던 부분)
     final birthDigits = (_birthYear ?? '').replaceAll(RegExp(r'\D'), '');
-    if ((_birthYear ?? '').isNotEmpty && birthDigits.isNotEmpty && birthDigits.length != 8) {
+    if ((_birthYear ?? '').isNotEmpty &&
+        birthDigits.isNotEmpty &&
+        birthDigits.length != 8) {
       _toast('생년월일 형식을 확인해주세요 (YYYY/MM/DD)');
       return;
     }
@@ -432,7 +410,7 @@ static const _workCategoryMap = <String, List<String>>{
       String? newImageUrl;
       if (_selectedImage != null) {
         newImageUrl = await _uploadProfileImage(
-          workerId:    _workerId!,
+          workerId: _workerId!,
           birthDigits: birthDigits,
         );
       }
@@ -446,7 +424,7 @@ static const _workCategoryMap = <String, List<String>>{
           _profileImageUrl = newImageUrl;
         }
         _selectedImage = null;
-        _birthYear     = birthDigits.isEmpty ? null : birthDigits;
+        _birthYear = birthDigits.isEmpty ? null : birthDigits;
       });
 
       _prefs?.setString('workerProfileImageUrl', _profileImageUrl);
@@ -460,7 +438,7 @@ static const _workCategoryMap = <String, List<String>>{
 
   Future<void> _pickImage() async {
     final picked = await _imagePicker.pickImage(
-      source:       ImageSource.gallery,
+      source: ImageSource.gallery,
       imageQuality: 85,
     );
     if (picked != null && mounted) {
@@ -476,8 +454,8 @@ static const _workCategoryMap = <String, List<String>>{
 
     // ✅ confirm 먼저
     final yes = await _confirmBottomSheet(
-      title:        '경력 삭제',
-      message:      '"${exp.place}" 경력을 삭제할까요?\n삭제 후 되돌릴 수 없어요.',
+      title: '경력 삭제',
+      message: '"${exp.place}" 경력을 삭제할까요?\n삭제 후 되돌릴 수 없어요.',
       confirmLabel: '삭제',
     );
     if (!yes || !mounted) return;
@@ -486,7 +464,9 @@ static const _workCategoryMap = <String, List<String>>{
     setState(() => _deletingExperienceIds.add(exp.id));
 
     try {
-      final resp = await http.delete(Uri.parse('$baseUrl/api/worker/experience/${exp.id}'));
+      final resp = await http.delete(
+        Uri.parse('$baseUrl/api/worker/experience/${exp.id}'),
+      );
       if (!mounted) return;
 
       if (resp.statusCode == 200) {
@@ -509,8 +489,8 @@ static const _workCategoryMap = <String, List<String>>{
 
     // ✅ confirm 먼저
     final yes = await _confirmBottomSheet(
-      title:        '자격증 삭제',
-      message:      '"${item.name}"을(를) 삭제할까요?\n삭제 후 되돌릴 수 없어요.',
+      title: '자격증 삭제',
+      message: '"${item.name}"을(를) 삭제할까요?\n삭제 후 되돌릴 수 없어요.',
       confirmLabel: '삭제',
     );
     if (!yes || !mounted) return;
@@ -519,7 +499,9 @@ static const _workCategoryMap = <String, List<String>>{
     setState(() => _deletingLicenseIds.add(item.id));
 
     try {
-      final res = await http.delete(Uri.parse('$baseUrl/api/worker/licenses/${item.id}'));
+      final res = await http.delete(
+        Uri.parse('$baseUrl/api/worker/licenses/${item.id}'),
+      );
       if (!mounted) return;
 
       if (res.statusCode == 200) {
@@ -551,26 +533,26 @@ static const _workCategoryMap = <String, List<String>>{
   }
 
   Future<void> _showAddLicenseSheet() async {
-    String name     = '';
+    String name = '';
     String issuedAt = '';
     final issuedCtrl = TextEditingController();
 
     await showModalBottomSheet<void>(
-      context:            context,
+      context: context,
       isScrollControlled: true,
-      backgroundColor:    Colors.transparent,
+      backgroundColor: Colors.transparent,
       builder: (ctx) {
         return SafeArea(
           top: false,
           child: Container(
-            margin:  const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             decoration: BoxDecoration(
-              color:        Colors.white,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(22),
               boxShadow: [
                 BoxShadow(
-                  color:      Colors.black.withOpacity(0.10),
+                  color: Colors.black.withOpacity(0.10),
                   blurRadius: 24,
                   spreadRadius: 2,
                 ),
@@ -580,22 +562,23 @@ static const _workCategoryMap = <String, List<String>>{
             child: SingleChildScrollView(
               child: StatefulBuilder(
                 builder: (ctx, setLocal) {
-                  final inset   = MediaQuery.of(ctx).viewInsets.bottom;
-                  final canSave = name.trim().isNotEmpty && issuedAt.trim().isNotEmpty;
+                  final inset = MediaQuery.of(ctx).viewInsets.bottom;
+                  final canSave =
+                      name.trim().isNotEmpty && issuedAt.trim().isNotEmpty;
 
                   Future<void> pickIssuedAt() async {
                     final picked = await showKoWheelDatePickerSheet(
                       context,
-                      title:   '취득일 선택',
+                      title: '취득일 선택',
                       initial: DateTime(2020, 1, 1),
-                      min:     DateTime(1950, 1, 1),
-                      max:     DateTime.now(),
-                      brand:   kBrandBlue,
+                      min: DateTime(1950, 1, 1),
+                      max: DateTime.now(),
+                      brand: kBrandBlue,
                     );
                     if (picked != null) {
                       final text = _fmtYmdSlash(picked);
                       setLocal(() {
-                        issuedAt        = text;
+                        issuedAt = text;
                         issuedCtrl.text = text;
                       });
                     }
@@ -605,15 +588,15 @@ static const _workCategoryMap = <String, List<String>>{
                     // ✅ 키보드 inset을 Column 바깥 Padding으로 처리
                     padding: EdgeInsets.only(bottom: inset),
                     child: Column(
-                      mainAxisSize:       MainAxisSize.min,
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Center(
                           child: Container(
-                            width:  42,
+                            width: 42,
                             height: 5,
                             decoration: BoxDecoration(
-                              color:        kBorder,
+                              color: kBorder,
                               borderRadius: BorderRadius.circular(999),
                             ),
                           ),
@@ -622,26 +605,29 @@ static const _workCategoryMap = <String, List<String>>{
                         const Text(
                           '자격증 추가',
                           style: TextStyle(
-                            fontSize:   18,
+                            fontSize: 18,
                             fontWeight: FontWeight.w900,
-                            color:      kText,
+                            color: kText,
                           ),
                         ),
                         const SizedBox(height: 14),
                         _inputField(
-                          label:     '자격증 이름',
-                          hint:      '예) 지게차 운전기능사',
+                          label: '자격증 이름',
+                          hint: '예) 지게차 운전기능사',
                           onChanged: (v) => setLocal(() => name = v),
                         ),
                         const SizedBox(height: 12),
                         _inputField(
-                          label:      '취득일',
-                          hint:       'YYYY/MM/DD',
+                          label: '취득일',
+                          hint: 'YYYY/MM/DD',
                           controller: issuedCtrl,
-                          readOnly:   true,
-                          onTap:      pickIssuedAt,
+                          readOnly: true,
+                          onTap: pickIssuedAt,
                           suffixIcon: IconButton(
-                            icon:      const Icon(Icons.edit_calendar_rounded, color: kBrandBlue),
+                            icon: const Icon(
+                              Icons.edit_calendar_rounded,
+                              color: kBrandBlue,
+                            ),
                             onPressed: pickIssuedAt,
                           ),
                         ),
@@ -651,39 +637,49 @@ static const _workCategoryMap = <String, List<String>>{
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: canSave
-                                ? () async {
-                                    if (_workerId == null) return;
-                                    final digits = issuedAt.replaceAll(RegExp(r'\D'), '');
-                                    if (digits.length != 8) {
-                                      _toast('취득일 형식을 확인해주세요 🙂');
-                                      return;
-                                    }
-                                    try {
-                                      final response = await http.post(
-                                        Uri.parse('$baseUrl/api/worker/licenses'),
-                                        headers: {'Content-Type': 'application/json'},
-                                        body: jsonEncode({
-                                          'worker_id': _workerId,
-                                          'name':      name.trim(),
-                                          'issued_at': issuedAt.trim(),
-                                        }),
+                            onPressed:
+                                canSave
+                                    ? () async {
+                                      if (_workerId == null) return;
+                                      final digits = issuedAt.replaceAll(
+                                        RegExp(r'\D'),
+                                        '',
                                       );
-                                      if (response.statusCode == 200) {
-                                        // ✅ pop 먼저, fetch는 sheet 완전히 닫힌 후
-                                        if (ctx.mounted) Navigator.pop(ctx);
-                                      } else {
-                                        _toast('저장 실패 (${response.statusCode})');
+                                      if (digits.length != 8) {
+                                        _toast('취득일 형식을 확인해주세요 🙂');
+                                        return;
                                       }
-                                    } catch (e) {
-                                      _toast('네트워크 오류가 났어요 🥲');
+                                      try {
+                                        final response = await http.post(
+                                          Uri.parse(
+                                            '$baseUrl/api/worker/licenses',
+                                          ),
+                                          headers: {
+                                            'Content-Type': 'application/json',
+                                          },
+                                          body: jsonEncode({
+                                            'worker_id': _workerId,
+                                            'name': name.trim(),
+                                            'issued_at': issuedAt.trim(),
+                                          }),
+                                        );
+                                        if (response.statusCode == 200) {
+                                          // ✅ pop 먼저, fetch는 sheet 완전히 닫힌 후
+                                          if (ctx.mounted) Navigator.pop(ctx);
+                                        } else {
+                                          _toast(
+                                            '저장 실패 (${response.statusCode})',
+                                          );
+                                        }
+                                      } catch (e) {
+                                        _toast('네트워크 오류가 났어요 🥲');
+                                      }
                                     }
-                                  }
-                                : null,
+                                    : null,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: kBrandBlue,
                               foregroundColor: Colors.white,
-                              elevation:       0,
+                              elevation: 0,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(14),
                               ),
@@ -691,7 +687,10 @@ static const _workCategoryMap = <String, List<String>>{
                             ),
                             child: const Text(
                               '저장하기',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w900,
+                              ),
                             ),
                           ),
                         ),
@@ -715,29 +714,32 @@ static const _workCategoryMap = <String, List<String>>{
   // 기본정보 수정 시트
   // ──────────────────────────────────────────
   Future<void> _showBasicInfoSheet() async {
-    String   tempName   = _nameCtrl.text;
-    String?  tempGender = _gender;
-    DateTime tempBirth  = _birthDigitsToDate(_birthYear, fallback: DateTime(2000, 1, 1));
+    String tempName = _nameCtrl.text;
+    String? tempGender = _gender;
+    DateTime tempBirth = _birthDigitsToDate(
+      _birthYear,
+      fallback: DateTime(2000, 1, 1),
+    );
 
     await showModalBottomSheet<void>(
-      context:          context,
+      context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor:    Colors.black.withOpacity(0.35),
+      barrierColor: Colors.black.withOpacity(0.35),
       builder: (ctx) {
         return SafeArea(
           top: false,
           child: Container(
-            margin:  const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
             decoration: BoxDecoration(
-              color:        Colors.white,
+              color: Colors.white,
               borderRadius: BorderRadius.circular(22),
               boxShadow: [
                 BoxShadow(
-                  blurRadius:   24,
+                  blurRadius: 24,
                   spreadRadius: 2,
-                  color:        Colors.black.withOpacity(0.10),
+                  color: Colors.black.withOpacity(0.10),
                 ),
               ],
             ),
@@ -748,11 +750,11 @@ static const _workCategoryMap = <String, List<String>>{
                 Future<void> pickBirth() async {
                   final picked = await showKoWheelDatePickerSheet(
                     context,
-                    title:   '생년월일 선택',
+                    title: '생년월일 선택',
                     initial: tempBirth,
-                    min:     DateTime(1950, 1, 1),
-                    max:     DateTime.now(),
-                    brand:   kBrandBlue,
+                    min: DateTime(1950, 1, 1),
+                    max: DateTime.now(),
+                    brand: kBrandBlue,
                   );
                   if (picked != null) setLocal(() => tempBirth = picked);
                 }
@@ -767,7 +769,7 @@ static const _workCategoryMap = <String, List<String>>{
                         duration: const Duration(milliseconds: 160),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         decoration: BoxDecoration(
-                          color:        selected ? kBrandBlue.withOpacity(0.12) : kBg,
+                          color: selected ? kBrandBlue.withOpacity(0.12) : kBg,
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
                             color: selected ? kBrandBlue : kBorder,
@@ -800,10 +802,10 @@ static const _workCategoryMap = <String, List<String>>{
                         // 핸들
                         Center(
                           child: Container(
-                            width:  44,
+                            width: 44,
                             height: 5,
                             decoration: BoxDecoration(
-                              color:        kBorder,
+                              color: kBorder,
                               borderRadius: BorderRadius.circular(999),
                             ),
                           ),
@@ -815,9 +817,9 @@ static const _workCategoryMap = <String, List<String>>{
                               child: Text(
                                 '기본 정보 수정',
                                 style: TextStyle(
-                                  fontSize:   18,
+                                  fontSize: 18,
                                   fontWeight: FontWeight.w900,
-                                  color:      kText,
+                                  color: kText,
                                 ),
                               ),
                             ),
@@ -834,15 +836,21 @@ static const _workCategoryMap = <String, List<String>>{
                         _sheetLabel('이름'),
                         _sheetFieldCard(
                           child: TextFormField(
-                            initialValue:    tempName,
+                            initialValue: tempName,
                             textInputAction: TextInputAction.done,
-                            onChanged:       (v) => tempName = v,
-                            style: const TextStyle(fontWeight: FontWeight.w900, color: kText),
+                            onChanged: (v) => tempName = v,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w900,
+                              color: kText,
+                            ),
                             decoration: const InputDecoration(
-                              isDense:    true,
-                              hintText:   '이름 입력',
-                              prefixIcon: Icon(Icons.badge_outlined, color: kMuted),
-                              border:     InputBorder.none,
+                              isDense: true,
+                              hintText: '이름 입력',
+                              prefixIcon: Icon(
+                                Icons.badge_outlined,
+                                color: kMuted,
+                              ),
+                              border: InputBorder.none,
                             ),
                           ),
                         ),
@@ -863,7 +871,7 @@ static const _workCategoryMap = <String, List<String>>{
                         _sheetLabel('생년월일', sub: '휠로 고르면 더 편해요'),
                         InkWell(
                           borderRadius: BorderRadius.circular(16),
-                          onTap:        pickBirth,
+                          onTap: pickBirth,
                           child: _sheetFieldCard(
                             child: Row(
                               children: [
@@ -874,17 +882,17 @@ static const _workCategoryMap = <String, List<String>>{
                                     _fmtYmdSlash(tempBirth),
                                     style: const TextStyle(
                                       fontWeight: FontWeight.w900,
-                                      color:      kText,
+                                      color: kText,
                                     ),
                                   ),
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 10,
-                                    vertical:   7,
+                                    vertical: 7,
                                   ),
                                   decoration: BoxDecoration(
-                                    color:        kBrandBlue.withOpacity(0.10),
+                                    color: kBrandBlue.withOpacity(0.10),
                                     borderRadius: BorderRadius.circular(999),
                                     border: Border.all(
                                       color: kBrandBlue.withOpacity(0.18),
@@ -894,7 +902,7 @@ static const _workCategoryMap = <String, List<String>>{
                                     '선택',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w900,
-                                      color:      kBrandBlue,
+                                      color: kBrandBlue,
                                     ),
                                   ),
                                 ),
@@ -909,7 +917,10 @@ static const _workCategoryMap = <String, List<String>>{
                         _sheetFieldCard(
                           child: Row(
                             children: [
-                              const Icon(Icons.phone_iphone_outlined, color: kMuted),
+                              const Icon(
+                                Icons.phone_iphone_outlined,
+                                color: kMuted,
+                              ),
                               const SizedBox(width: 10),
                               Expanded(
                                 child: Text(
@@ -932,8 +943,10 @@ static const _workCategoryMap = <String, List<String>>{
                               child: OutlinedButton(
                                 onPressed: () => Navigator.pop(ctx),
                                 style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
-                                  shape:   RoundedRectangleBorder(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
+                                  shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(14),
                                   ),
                                   side: const BorderSide(color: kBorder),
@@ -951,16 +964,18 @@ static const _workCategoryMap = <String, List<String>>{
                                 onPressed: () {
                                   setState(() {
                                     _nameCtrl.text = tempName.trim();
-                                    _gender        = tempGender;
-                                    _birthYear     = _fmtYmdDigits(tempBirth);
+                                    _gender = tempGender;
+                                    _birthYear = _fmtYmdDigits(tempBirth);
                                   });
                                   Navigator.pop(ctx);
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: kBrandBlue,
                                   foregroundColor: Colors.white,
-                                  elevation:       0,
-                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 14,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(14),
                                   ),
@@ -995,7 +1010,7 @@ static const _workCategoryMap = <String, List<String>>{
     Color confirmColor = const Color(0xFFDC2626),
   }) async {
     final result = await showModalBottomSheet<bool>(
-      context:         context,
+      context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
         final safeBottom = MediaQuery.of(ctx).viewPadding.bottom;
@@ -1004,17 +1019,17 @@ static const _workCategoryMap = <String, List<String>>{
           child: Padding(
             padding: EdgeInsets.only(bottom: safeBottom),
             child: Container(
-              margin:  const EdgeInsets.fromLTRB(14, 0, 14, 14),
+              margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
               decoration: BoxDecoration(
-                color:        Colors.white,
+                color: Colors.white,
                 borderRadius: BorderRadius.circular(22),
-                border:       Border.all(color: kBorder),
+                border: Border.all(color: kBorder),
                 boxShadow: [
                   BoxShadow(
-                    color:      Colors.black.withOpacity(0.12),
+                    color: Colors.black.withOpacity(0.12),
                     blurRadius: 30,
-                    offset:     const Offset(0, 18),
+                    offset: const Offset(0, 18),
                   ),
                 ],
               ),
@@ -1022,25 +1037,25 @@ static const _workCategoryMap = <String, List<String>>{
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width:  42,
+                    width: 42,
                     height: 5,
                     decoration: BoxDecoration(
-                      color:        kBorder,
+                      color: kBorder,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
                   const SizedBox(height: 12),
                   Container(
-                    width:  56,
+                    width: 56,
                     height: 56,
                     decoration: BoxDecoration(
-                      color:        confirmColor.withOpacity(0.10),
+                      color: confirmColor.withOpacity(0.10),
                       borderRadius: BorderRadius.circular(18),
                     ),
                     child: Icon(
                       Icons.delete_forever_rounded,
                       color: confirmColor,
-                      size:  28,
+                      size: 28,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -1048,10 +1063,9 @@ static const _workCategoryMap = <String, List<String>>{
                     title,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontFamily: 'Jalnan2TTF',
-                      fontSize:   16,
+                      fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color:      kText,
+                      color: kText,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -1059,10 +1073,10 @@ static const _workCategoryMap = <String, List<String>>{
                     message,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize:   13,
-                      height:     1.35,
+                      fontSize: 13,
+                      height: 1.35,
                       fontWeight: FontWeight.w700,
-                      color:      kMuted,
+                      color: kMuted,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -1072,8 +1086,8 @@ static const _workCategoryMap = <String, List<String>>{
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
                             foregroundColor: kText,
-                            side:            const BorderSide(color: kBorder),
-                            padding:         const EdgeInsets.symmetric(vertical: 14),
+                            side: const BorderSide(color: kBorder),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -1092,8 +1106,8 @@ static const _workCategoryMap = <String, List<String>>{
                           style: ElevatedButton.styleFrom(
                             backgroundColor: confirmColor,
                             foregroundColor: Colors.white,
-                            elevation:       0,
-                            padding:         const EdgeInsets.symmetric(vertical: 14),
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
@@ -1124,8 +1138,8 @@ static const _workCategoryMap = <String, List<String>>{
     if (_workerId == null) return;
 
     final yes = await _confirmBottomSheet(
-      title:        '회원 탈퇴',
-      message:      '정말 탈퇴할까요?\n채팅방이 아카이브되고 계정이 삭제돼요.',
+      title: '회원 탈퇴',
+      message: '정말 탈퇴할까요?\n채팅방이 아카이브되고 계정이 삭제돼요.',
       confirmLabel: '탈퇴',
     );
     if (!yes || !mounted) return;
@@ -1154,25 +1168,22 @@ static const _workCategoryMap = <String, List<String>>{
   void _toast(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
-      SnackBar(
-        content:  Text(msg),
-        behavior: SnackBarBehavior.floating,
-      ),
+      SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating),
     );
   }
 
   BoxDecoration _cardDeco() => BoxDecoration(
-        color:        kCard,
-        borderRadius: BorderRadius.circular(18),
-        border:       Border.all(color: kBorder),
-        boxShadow: [
-          BoxShadow(
-            color:      Colors.black.withOpacity(0.04),
-            blurRadius: 18,
-            offset:     const Offset(0, 10),
-          ),
-        ],
-      );
+    color: kCard,
+    borderRadius: BorderRadius.circular(18),
+    border: Border.all(color: kBorder),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withOpacity(0.04),
+        blurRadius: 18,
+        offset: const Offset(0, 10),
+      ),
+    ],
+  );
 
   Widget _sectionTitle(String title, {String? sub}) {
     return Padding(
@@ -1184,16 +1195,13 @@ static const _workCategoryMap = <String, List<String>>{
             title,
             style: const TextStyle(
               fontWeight: FontWeight.w900,
-              fontSize:   14,
-              color:      kText,
+              fontSize: 14,
+              color: kText,
             ),
           ),
           if (sub != null) ...[
             const SizedBox(height: 4),
-            Text(
-              sub,
-              style: const TextStyle(fontSize: 12.5, color: kMuted),
-            ),
+            Text(sub, style: const TextStyle(fontSize: 12.5, color: kMuted)),
           ],
         ],
       ),
@@ -1223,22 +1231,22 @@ static const _workCategoryMap = <String, List<String>>{
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color:        kBg,
+        color: kBg,
         borderRadius: BorderRadius.circular(14),
-        border:       Border.all(color: kBorder),
+        border: Border.all(color: kBorder),
       ),
       child: child,
     );
   }
 
   Widget _inputField({
-    required String        label,
-    required String        hint,
+    required String label,
+    required String hint,
     TextEditingController? controller,
     void Function(String)? onChanged,
-    bool                   readOnly  = false,
-    VoidCallback?          onTap,
-    Widget?                suffixIcon,
+    bool readOnly = false,
+    VoidCallback? onTap,
+    Widget? suffixIcon,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1246,32 +1254,38 @@ static const _workCategoryMap = <String, List<String>>{
         Text(
           label,
           style: const TextStyle(
-            fontSize:   12,
+            fontSize: 12,
             fontWeight: FontWeight.w900,
-            color:      kText,
+            color: kText,
           ),
         ),
         const SizedBox(height: 6),
         TextField(
-          controller:  controller,
-          onChanged:   onChanged,
-          readOnly:    readOnly,
-          onTap:       onTap,
+          controller: controller,
+          onChanged: onChanged,
+          readOnly: readOnly,
+          onTap: onTap,
           style: const TextStyle(fontWeight: FontWeight.w900, color: kText),
           decoration: InputDecoration(
-            hintText:   hint,
-            hintStyle:  const TextStyle(color: kMuted, fontWeight: FontWeight.w700),
-            filled:     true,
-            fillColor:  Colors.white,
+            hintText: hint,
+            hintStyle: const TextStyle(
+              color: kMuted,
+              fontWeight: FontWeight.w700,
+            ),
+            filled: true,
+            fillColor: Colors.white,
             suffixIcon: suffixIcon,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide:   const BorderSide(color: kBorder),
+              borderSide: const BorderSide(color: kBorder),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
-              borderSide:   const BorderSide(color: kBrandBlue, width: 1.4),
+              borderSide: const BorderSide(color: kBrandBlue, width: 1.4),
             ),
           ),
         ),
@@ -1282,12 +1296,12 @@ static const _workCategoryMap = <String, List<String>>{
   Widget _pillChip(String text, bool selected, VoidCallback onTap) {
     return InkWell(
       borderRadius: BorderRadius.circular(999),
-      onTap:        onTap,
+      onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
-        padding:  const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
-          color:        selected ? kBrandBlue.withOpacity(0.12) : Colors.white,
+          color: selected ? kBrandBlue.withOpacity(0.12) : Colors.white,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color: selected ? kBrandBlue : kBorder,
@@ -1298,8 +1312,8 @@ static const _workCategoryMap = <String, List<String>>{
           text,
           style: TextStyle(
             fontWeight: FontWeight.w900,
-            fontSize:   12.5,
-            color:      selected ? kBrandBlue : kMuted,
+            fontSize: 12.5,
+            color: selected ? kBrandBlue : kMuted,
           ),
         ),
       ),
@@ -1313,12 +1327,13 @@ static const _workCategoryMap = <String, List<String>>{
     void Function(String item, bool nowSelected) onToggle,
   ) {
     return Wrap(
-      spacing:    8,
+      spacing: 8,
       runSpacing: 10,
-      children: options.map((o) {
-        final isSel = selected.contains(o);
-        return _pillChip(o, isSel, () => onToggle(o, !isSel));
-      }).toList(),
+      children:
+          options.map((o) {
+            final isSel = selected.contains(o);
+            return _pillChip(o, isSel, () => onToggle(o, !isSel));
+          }).toList(),
     );
   }
 
@@ -1326,24 +1341,25 @@ static const _workCategoryMap = <String, List<String>>{
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
-        children: _dayOptions.map((d) {
-          final sel = _selectedDays.contains(d);
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: _pillChip(d, sel, () {
-              setState(() => sel
-                  ? _selectedDays.remove(d)
-                  : _selectedDays.add(d));
-            }),
-          );
-        }).toList(),
+        children:
+            _dayOptions.map((d) {
+              final sel = _selectedDays.contains(d);
+              return Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: _pillChip(d, sel, () {
+                  setState(
+                    () => sel ? _selectedDays.remove(d) : _selectedDays.add(d),
+                  );
+                }),
+              );
+            }).toList(),
       ),
     );
   }
 
   Widget _workCategorySelect() {
     final categories = _workCategoryMap.keys.toList();
-    final current    = _selectedWorkCategory ?? categories.first;
+    final current = _selectedWorkCategory ?? categories.first;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1351,23 +1367,28 @@ static const _workCategoryMap = <String, List<String>>{
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
-            children: categories.map((c) {
-              final sel = current == c;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: _pillChip(c, sel,
-                    () => setState(() => _selectedWorkCategory = c)),
-              );
-            }).toList(),
+            children:
+                categories.map((c) {
+                  final sel = current == c;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: _pillChip(
+                      c,
+                      sel,
+                      () => setState(() => _selectedWorkCategory = c),
+                    ),
+                  );
+                }).toList(),
           ),
         ),
         const SizedBox(height: 12),
         _wrapMulti(
           _workCategoryMap[current]!,
           _selectedWorks,
-          (item, nowSel) => setState(() => nowSel
-              ? _selectedWorks.add(item)
-              : _selectedWorks.remove(item)),
+          (item, nowSel) => setState(
+            () =>
+                nowSel ? _selectedWorks.add(item) : _selectedWorks.remove(item),
+          ),
         ),
       ],
     );
@@ -1377,9 +1398,9 @@ static const _workCategoryMap = <String, List<String>>{
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color:        const Color(0xFFEFF6FF),
+        color: const Color(0xFFEFF6FF),
         borderRadius: BorderRadius.circular(14),
-        border:       Border.all(color: const Color(0xFFC7D2FE)),
+        border: Border.all(color: const Color(0xFFC7D2FE)),
       ),
       child: Row(
         children: [
@@ -1389,10 +1410,10 @@ static const _workCategoryMap = <String, List<String>>{
             child: Text(
               text,
               style: const TextStyle(
-                fontSize:   12,
-                color:      Color(0xFF1D4ED8),
+                fontSize: 12,
+                color: Color(0xFF1D4ED8),
                 fontWeight: FontWeight.w700,
-                height:     1.35,
+                height: 1.35,
               ),
             ),
           ),
@@ -1405,15 +1426,16 @@ static const _workCategoryMap = <String, List<String>>{
   // build sections
   // ──────────────────────────────────────────
   Widget _buildProfileCard() {
-    final avatarProvider = _selectedImage != null
-        ? FileImage(_selectedImage!) as ImageProvider
-        : (_profileImageUrl.isNotEmpty
-            ? NetworkImage(_profileImageUrl) as ImageProvider
-            : null);
+    final avatarProvider =
+        _selectedImage != null
+            ? FileImage(_selectedImage!) as ImageProvider
+            : (_profileImageUrl.isNotEmpty
+                ? NetworkImage(_profileImageUrl) as ImageProvider
+                : null);
 
     return Container(
       decoration: _cardDeco(),
-      padding:    const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           GestureDetector(
@@ -1421,24 +1443,33 @@ static const _workCategoryMap = <String, List<String>>{
             child: Stack(
               children: [
                 CircleAvatar(
-                  radius:          28,
+                  radius: 28,
                   backgroundImage: avatarProvider,
                   backgroundColor: const Color(0xFFEFF6FF),
-                  child: avatarProvider == null
-                      ? const Icon(Icons.person_rounded, color: kBrandBlue, size: 28)
-                      : null,
+                  child:
+                      avatarProvider == null
+                          ? const Icon(
+                            Icons.person_rounded,
+                            color: kBrandBlue,
+                            size: 28,
+                          )
+                          : null,
                 ),
                 Positioned(
-                  right:  0,
+                  right: 0,
                   bottom: 0,
                   child: Container(
-                    width:  22,
+                    width: 22,
                     height: 22,
                     decoration: const BoxDecoration(
-                      color:  kBrandBlue,
-                      shape:  BoxShape.circle,
+                      color: kBrandBlue,
+                      shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.edit_rounded, size: 13, color: Colors.white),
+                    child: const Icon(
+                      Icons.edit_rounded,
+                      size: 13,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ],
@@ -1452,17 +1483,17 @@ static const _workCategoryMap = <String, List<String>>{
                 Text(
                   _nameCtrl.text.isNotEmpty ? _nameCtrl.text : '이름 미입력',
                   style: const TextStyle(
-                    fontSize:   16,
+                    fontSize: 16,
                     fontWeight: FontWeight.w900,
-                    color:      kText,
+                    color: kText,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   _birthDisplayText(_birthYear),
                   style: const TextStyle(
-                    fontSize:   13,
-                    color:      kBrandBlue,
+                    fontSize: 13,
+                    color: kBrandBlue,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -1476,13 +1507,17 @@ static const _workCategoryMap = <String, List<String>>{
           ),
           Container(
             decoration: BoxDecoration(
-              color:        kBrandBlue.withOpacity(0.10),
+              color: kBrandBlue.withOpacity(0.10),
               borderRadius: BorderRadius.circular(12),
-              border:       Border.all(color: kBrandBlue.withOpacity(0.18)),
+              border: Border.all(color: kBrandBlue.withOpacity(0.18)),
             ),
             child: IconButton(
               onPressed: _showBasicInfoSheet,
-              icon:  const Icon(Icons.edit_outlined, color: kBrandBlue, size: 20),
+              icon: const Icon(
+                Icons.edit_outlined,
+                color: kBrandBlue,
+                size: 20,
+              ),
               tooltip: '기본정보 수정',
             ),
           ),
@@ -1505,16 +1540,16 @@ static const _workCategoryMap = <String, List<String>>{
               child: Row(
                 children: [
                   Container(
-                    width:  36,
+                    width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color:        kBrandBlue.withOpacity(0.10),
+                      color: kBrandBlue.withOpacity(0.10),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
                       Icons.description_rounded,
                       color: kBrandBlue,
-                      size:  20,
+                      size: 20,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -1522,9 +1557,9 @@ static const _workCategoryMap = <String, List<String>>{
                     child: Text(
                       '내 지원서',
                       style: TextStyle(
-                        color:      kBrandBlue,
+                        color: kBrandBlue,
                         fontWeight: FontWeight.w900,
-                        fontSize:   15.5,
+                        fontSize: 15.5,
                       ),
                     ),
                   ),
@@ -1561,15 +1596,17 @@ static const _workCategoryMap = <String, List<String>>{
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color:        Colors.white,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border:       Border.all(color: kBorder),
+            border: Border.all(color: kBorder),
           ),
           child: Row(
             children: [
               Icon(
-                _resumeConsent ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-                size:  20,
+                _resumeConsent
+                    ? Icons.visibility_rounded
+                    : Icons.visibility_off_rounded,
+                size: 20,
                 color: _resumeConsent ? kBrandBlue : kMuted,
               ),
               const SizedBox(width: 10),
@@ -1579,15 +1616,15 @@ static const _workCategoryMap = <String, List<String>>{
                       ? '사장님이 내 이력서를 볼 수 있어요.'
                       : '사장님은 기본 정보만 볼 수 있어요.',
                   style: TextStyle(
-                    fontSize:   13,
-                    color:      _resumeConsent ? kText : kMuted,
+                    fontSize: 13,
+                    color: _resumeConsent ? kText : kMuted,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
               Switch(
-                value:       _resumeConsent,
-                onChanged:   (v) => setState(() => _resumeConsent = v),
+                value: _resumeConsent,
+                onChanged: (v) => setState(() => _resumeConsent = v),
                 activeThumbColor: kBrandBlue,
               ),
             ],
@@ -1599,9 +1636,10 @@ static const _workCategoryMap = <String, List<String>>{
         _wrapMulti(
           _timeOptions,
           _selectedTimes,
-          (item, nowSel) => setState(() => nowSel
-              ? _selectedTimes.add(item)
-              : _selectedTimes.remove(item)),
+          (item, nowSel) => setState(
+            () =>
+                nowSel ? _selectedTimes.add(item) : _selectedTimes.remove(item),
+          ),
         ),
 
         // 강점
@@ -1609,9 +1647,12 @@ static const _workCategoryMap = <String, List<String>>{
         _wrapMulti(
           _strengthOptions,
           _selectedStrengths,
-          (item, nowSel) => setState(() => nowSel
-              ? _selectedStrengths.add(item)
-              : _selectedStrengths.remove(item)),
+          (item, nowSel) => setState(
+            () =>
+                nowSel
+                    ? _selectedStrengths.add(item)
+                    : _selectedStrengths.remove(item),
+          ),
         ),
 
         // 희망업무
@@ -1622,22 +1663,25 @@ static const _workCategoryMap = <String, List<String>>{
         _sectionTitle('자기소개', sub: '사장님이 먼저 보는 핵심이에요. 2~3줄이면 충분해요!'),
         Container(
           decoration: BoxDecoration(
-            color:        Colors.white,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border:       Border.all(color: kBorder),
+            border: Border.all(color: kBorder),
           ),
           padding: const EdgeInsets.all(12),
           child: TextField(
             controller: _introductionCtrl,
-            minLines:   5,
-            maxLines:   7,
-            maxLength:  300,
+            minLines: 5,
+            maxLines: 7,
+            maxLength: 300,
             style: const TextStyle(fontSize: 14.5, height: 1.4, color: kText),
             decoration: InputDecoration(
               hintText: '예) 평일 저녁 가능 / 상하차 3개월 경험 / 책임감 있게 마무리합니다',
-              hintStyle: const TextStyle(color: kMuted, fontWeight: FontWeight.w600),
-              border:    InputBorder.none,
-              isDense:   true,
+              hintStyle: const TextStyle(
+                color: kMuted,
+                fontWeight: FontWeight.w600,
+              ),
+              border: InputBorder.none,
+              isDense: true,
               counterStyle: const TextStyle(fontSize: 12, color: kMuted),
               contentPadding: EdgeInsets.zero,
             ),
@@ -1648,9 +1692,9 @@ static const _workCategoryMap = <String, List<String>>{
         _sectionTitle('가능 요일', sub: '최소 2개 이상 선택하면 매칭이 더 잘 돼요'),
         Container(
           decoration: BoxDecoration(
-            color:        Colors.white,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border:       Border.all(color: kBorder),
+            border: Border.all(color: kBorder),
           ),
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
           child: Column(
@@ -1659,21 +1703,28 @@ static const _workCategoryMap = <String, List<String>>{
               _daysRow(),
               const SizedBox(height: 10),
               Wrap(
-                spacing:    8,
+                spacing: 8,
                 runSpacing: 8,
                 children: [
                   _pillChip(
                     '평일',
-                    _selectedDays.toSet().containsAll(['월', '화', '수', '목', '금']),
+                    _selectedDays.toSet().containsAll([
+                      '월',
+                      '화',
+                      '수',
+                      '목',
+                      '금',
+                    ]),
                     () {
                       setState(() {
-                        const wk  = ['월', '화', '수', '목', '금'];
+                        const wk = ['월', '화', '수', '목', '금'];
                         final all = _selectedDays.toSet().containsAll(wk);
                         if (all) {
                           _selectedDays.removeWhere(wk.contains);
                         } else {
                           for (final d in wk) {
-                            if (!_selectedDays.contains(d)) _selectedDays.add(d);
+                            if (!_selectedDays.contains(d))
+                              _selectedDays.add(d);
                           }
                         }
                       });
@@ -1684,13 +1735,14 @@ static const _workCategoryMap = <String, List<String>>{
                     _selectedDays.toSet().containsAll(['토', '일']),
                     () {
                       setState(() {
-                        const wk  = ['토', '일'];
+                        const wk = ['토', '일'];
                         final all = _selectedDays.toSet().containsAll(wk);
                         if (all) {
                           _selectedDays.removeWhere(wk.contains);
                         } else {
                           for (final d in wk) {
-                            if (!_selectedDays.contains(d)) _selectedDays.add(d);
+                            if (!_selectedDays.contains(d))
+                              _selectedDays.add(d);
                           }
                         }
                       });
@@ -1711,7 +1763,7 @@ static const _workCategoryMap = <String, List<String>>{
         _sectionTitle('경력', sub: '일한 곳/기간/무슨 일(간단)을 써두면 매칭이 쉬워져요.'),
         if (_experiences.isEmpty)
           _emptyCard(
-            icon:  Icons.work_outline_rounded,
+            icon: Icons.work_outline_rounded,
             label: '등록된 경력이 없어요.\n간단히라도 추가하면 신뢰도가 확 올라가요.',
           )
         else
@@ -1724,7 +1776,7 @@ static const _workCategoryMap = <String, List<String>>{
         _sectionTitle('자격증 / 면허', sub: '신뢰도에 도움돼요. (증빙 첨부는 준비중)'),
         if (_licenses.isEmpty)
           _emptyCard(
-            icon:  Icons.card_membership_rounded,
+            icon: Icons.card_membership_rounded,
             label: '등록된 자격증이 없어요.',
           )
         else
@@ -1739,23 +1791,23 @@ static const _workCategoryMap = <String, List<String>>{
   Widget _buildExperienceItem(Experience e) {
     final isDel = _deletingExperienceIds.contains(e.id);
     return Container(
-      margin:     const EdgeInsets.only(bottom: 10),
-      padding:    const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color:        Colors.white,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border:       Border.all(color: kBorder),
+        border: Border.all(color: kBorder),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width:  36,
+            width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color:        kBg,
+              color: kBg,
               borderRadius: BorderRadius.circular(10),
-              border:       Border.all(color: kBorder),
+              border: Border.all(color: kBorder),
             ),
             child: const Icon(Icons.badge_outlined, color: kMuted, size: 20),
           ),
@@ -1766,11 +1818,15 @@ static const _workCategoryMap = <String, List<String>>{
               children: [
                 Text(
                   e.place,
-                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5, color: kText),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 14.5,
+                    color: kText,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 Wrap(
-                  spacing:    8,
+                  spacing: 8,
                   runSpacing: 6,
                   children: [
                     _tagPill('${e.year}년', blue: true),
@@ -1783,8 +1839,8 @@ static const _workCategoryMap = <String, List<String>>{
                     e.description,
                     style: const TextStyle(
                       fontSize: 13.5,
-                      color:    kMuted,
-                      height:   1.3,
+                      color: kMuted,
+                      height: 1.3,
                     ),
                   ),
                 ],
@@ -1793,16 +1849,19 @@ static const _workCategoryMap = <String, List<String>>{
           ),
           isDel
               ? const SizedBox(
-                  width:  20,
-                  height: 20,
-                  child:  CircularProgressIndicator(strokeWidth: 2, color: kMuted),
-                )
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: kMuted),
+              )
               : IconButton(
-                  icon:        const Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626)),
-                  onPressed:   () => _deleteExperience(e),
-                  splashRadius: 20,
-                  tooltip:     '삭제',
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Color(0xFFDC2626),
                 ),
+                onPressed: () => _deleteExperience(e),
+                splashRadius: 20,
+                tooltip: '삭제',
+              ),
         ],
       ),
     );
@@ -1811,12 +1870,12 @@ static const _workCategoryMap = <String, List<String>>{
   Widget _buildLicenseItem(LicenseItem l) {
     final isDel = _deletingLicenseIds.contains(l.id);
     return Container(
-      margin:     const EdgeInsets.only(bottom: 10),
-      padding:    const EdgeInsets.all(14),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color:        kBg,
+        color: kBg,
         borderRadius: BorderRadius.circular(14),
-        border:       Border.all(color: kBorder),
+        border: Border.all(color: kBorder),
       ),
       child: Row(
         children: [
@@ -1828,8 +1887,8 @@ static const _workCategoryMap = <String, List<String>>{
                   l.name,
                   style: const TextStyle(
                     fontWeight: FontWeight.w900,
-                    fontSize:   14.5,
-                    color:      kText,
+                    fontSize: 14.5,
+                    color: kText,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -1839,11 +1898,14 @@ static const _workCategoryMap = <String, List<String>>{
                 ),
                 const SizedBox(height: 10),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
-                    color:        Colors.white,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(10),
-                    border:       Border.all(color: kBorder),
+                    border: Border.all(color: kBorder),
                   ),
                   child: const Row(
                     children: [
@@ -1863,14 +1925,17 @@ static const _workCategoryMap = <String, List<String>>{
           ),
           isDel
               ? const SizedBox(
-                  width:  20,
-                  height: 20,
-                  child:  CircularProgressIndicator(strokeWidth: 2, color: kMuted),
-                )
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: kMuted),
+              )
               : IconButton(
-                  icon:     const Icon(Icons.delete_outline_rounded, color: Color(0xFFDC2626)),
-                  onPressed: () => _deleteLicense(l),
+                icon: const Icon(
+                  Icons.delete_outline_rounded,
+                  color: Color(0xFFDC2626),
                 ),
+                onPressed: () => _deleteLicense(l),
+              ),
         ],
       ),
     );
@@ -1880,7 +1945,7 @@ static const _workCategoryMap = <String, List<String>>{
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color:        blue ? kBrandBlue.withOpacity(0.10) : kBg,
+        color: blue ? kBrandBlue.withOpacity(0.10) : kBg,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(
           color: blue ? kBrandBlue.withOpacity(0.20) : kBorder,
@@ -1890,8 +1955,8 @@ static const _workCategoryMap = <String, List<String>>{
         label,
         style: TextStyle(
           fontWeight: FontWeight.w900,
-          fontSize:   12.5,
-          color:      blue ? kBrandBlue : kMuted,
+          fontSize: 12.5,
+          color: blue ? kBrandBlue : kMuted,
         ),
       ),
     );
@@ -1901,17 +1966,17 @@ static const _workCategoryMap = <String, List<String>>{
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color:        Colors.white,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        border:       Border.all(color: kBorder),
+        border: Border.all(color: kBorder),
       ),
       child: Row(
         children: [
           Container(
-            width:  40,
+            width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color:        kBrandBlue.withOpacity(0.10),
+              color: kBrandBlue.withOpacity(0.10),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: kBrandBlue, size: 20),
@@ -1922,8 +1987,8 @@ static const _workCategoryMap = <String, List<String>>{
               label,
               style: const TextStyle(
                 fontSize: 13.5,
-                color:    kMuted,
-                height:   1.3,
+                color: kMuted,
+                height: 1.3,
               ),
             ),
           ),
@@ -1937,12 +2002,12 @@ static const _workCategoryMap = <String, List<String>>{
       width: double.infinity,
       child: OutlinedButton.icon(
         onPressed: onPressed,
-        icon:  const Icon(Icons.add_rounded, size: 18),
+        icon: const Icon(Icons.add_rounded, size: 18),
         label: Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
         style: OutlinedButton.styleFrom(
           foregroundColor: kBrandBlue,
-          side:            const BorderSide(color: kBrandBlue, width: 1.4),
-          padding:         const EdgeInsets.symmetric(vertical: 12),
+          side: const BorderSide(color: kBrandBlue, width: 1.4),
+          padding: const EdgeInsets.symmetric(vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
@@ -1959,7 +2024,11 @@ static const _workCategoryMap = <String, List<String>>{
         Divider(height: 32, color: kBorder),
         const Text(
           '계정 관리',
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: kText),
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 15,
+            color: kText,
+          ),
         ),
         const SizedBox(height: 6),
         const Text(
@@ -1973,8 +2042,8 @@ static const _workCategoryMap = <String, List<String>>{
             onPressed: _handleDeleteAccount,
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFFDC2626),
-              side:            const BorderSide(color: Color(0xFFDC2626)),
-              padding:         const EdgeInsets.symmetric(vertical: 14),
+              side: const BorderSide(color: Color(0xFFDC2626)),
+              padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -1998,16 +2067,16 @@ static const _workCategoryMap = <String, List<String>>{
       backgroundColor: kBg,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation:       0.8,
-        iconTheme:       const IconThemeData(color: kText),
-        titleSpacing:    16,
+        elevation: 0.8,
+        iconTheme: const IconThemeData(color: kText),
+        titleSpacing: 16,
         title: const Text(
           '프로필 수정',
           style: TextStyle(
-            fontFamily: 'Jalnan2TTF',
-            color:      kBrandBlue,
+            color: kText,
             fontWeight: FontWeight.w900,
-            fontSize:   22,
+            fontSize: 17,
+            height: 1.2,
           ),
         ),
         actions: [
@@ -2015,35 +2084,45 @@ static const _workCategoryMap = <String, List<String>>{
             padding: const EdgeInsets.only(right: 12),
             child: TextButton.icon(
               onPressed: _saving ? null : _saveProfile,
-              icon: _saving
-                  ? const SizedBox(
-                      width:  16,
-                      height: 16,
-                      child:  CircularProgressIndicator(strokeWidth: 2, color: kBrandBlue),
-                    )
-                  : const Icon(Icons.check_rounded, size: 18),
-              label: const Text('저장', style: TextStyle(fontWeight: FontWeight.w900)),
+              icon:
+                  _saving
+                      ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: kBrandBlue,
+                        ),
+                      )
+                      : const Icon(Icons.check_rounded, size: 18),
+              label: const Text(
+                '저장',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
               style: TextButton.styleFrom(
                 foregroundColor: kBrandBlue,
-                textStyle:       const TextStyle(fontSize: 14),
+                textStyle: const TextStyle(fontSize: 14),
               ),
             ),
           ),
         ],
       ),
-      body: _initialLoading
-          ? const Center(child: CircularProgressIndicator(color: kBrandBlue))
-          : SafeArea(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                children: [
-                  _buildProfileCard(),
-                  const SizedBox(height: 14),
-                  _buildResumeCard(),
-                  _buildAccountSection(),
-                ],
+      body:
+          _initialLoading
+              ? const Center(
+                child: CircularProgressIndicator(color: kBrandBlue),
+              )
+              : SafeArea(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                  children: [
+                    _buildProfileCard(),
+                    const SizedBox(height: 14),
+                    _buildResumeCard(),
+                    _buildAccountSection(),
+                  ],
+                ),
               ),
-            ),
     );
   }
 }
@@ -2054,25 +2133,25 @@ static const _workCategoryMap = <String, List<String>>{
 class _MouseWheelScrollBehavior extends MaterialScrollBehavior {
   @override
   Set<PointerDeviceKind> get dragDevices => {
-        PointerDeviceKind.touch,
-        PointerDeviceKind.mouse,
-        PointerDeviceKind.trackpad,
-        PointerDeviceKind.stylus,
-        PointerDeviceKind.unknown,
-      };
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+    PointerDeviceKind.stylus,
+    PointerDeviceKind.unknown,
+  };
 }
 
 Future<DateTime?> showKoWheelDatePickerSheet(
   BuildContext context, {
-  required String   title,
+  required String title,
   required DateTime initial,
   required DateTime min,
   required DateTime max,
-  required Color    brand,
+  required Color brand,
 }) async {
   DateTime clamp(DateTime d) {
     if (d.isBefore(min)) return min;
-    if (d.isAfter(max))  return max;
+    if (d.isAfter(max)) return max;
     return d;
   }
 
@@ -2081,67 +2160,78 @@ Future<DateTime?> showKoWheelDatePickerSheet(
     return firstNext.subtract(const Duration(days: 1)).day;
   }
 
-  int year  = initial.year.clamp(min.year, max.year);
+  int year = initial.year.clamp(min.year, max.year);
   int month = initial.month;
-  int day   = initial.day;
+  int day = initial.day;
 
-  final yearList  = List<int>.generate(max.year - min.year + 1, (i) => min.year + i);
+  final yearList = List<int>.generate(
+    max.year - min.year + 1,
+    (i) => min.year + i,
+  );
   final monthList = List<int>.generate(12, (i) => i + 1);
-  List<int> dayList = List<int>.generate(daysInMonth(year, month), (i) => i + 1);
+  List<int> dayList = List<int>.generate(
+    daysInMonth(year, month),
+    (i) => i + 1,
+  );
 
-  final yearCtrl  = FixedExtentScrollController(initialItem: yearList.indexOf(year));
+  final yearCtrl = FixedExtentScrollController(
+    initialItem: yearList.indexOf(year),
+  );
   final monthCtrl = FixedExtentScrollController(initialItem: month - 1);
-  final dayCtrl   = FixedExtentScrollController(
+  final dayCtrl = FixedExtentScrollController(
     initialItem: (day - 1).clamp(0, dayList.length - 1),
   );
 
   String pretty(DateTime d) => '${d.year}년 ${d.month}월 ${d.day}일';
 
   return showModalBottomSheet<DateTime>(
-    context:         context,
+    context: context,
     backgroundColor: Colors.transparent,
-    barrierColor:    Colors.black.withOpacity(0.35),
+    barrierColor: Colors.black.withOpacity(0.35),
     builder: (ctx) {
       DateTime temp = clamp(DateTime(year, month, day));
 
       Widget labelBox(String text) => Container(
-            alignment: Alignment.center,
-            padding:   const EdgeInsets.symmetric(vertical: 10),
-            child: Text(
-              text,
-              style: const TextStyle(fontWeight: FontWeight.w900, color: kMuted),
-            ),
-          );
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Text(
+          text,
+          style: const TextStyle(fontWeight: FontWeight.w900, color: kMuted),
+        ),
+      );
 
       Widget wheel<T>({
-        required List<T>                          items,
-        required FixedExtentScrollController      controller,
-        required void Function(int index)         onSelected,
-        required String Function(T v)             label,
+        required List<T> items,
+        required FixedExtentScrollController controller,
+        required void Function(int index) onSelected,
+        required String Function(T v) label,
       }) {
         return ScrollConfiguration(
           behavior: _MouseWheelScrollBehavior(),
           child: CupertinoPicker(
-            scrollController:  controller,
-            itemExtent:        40,
-            diameterRatio:     1.9,
-            squeeze:           1.05,
-            useMagnifier:      true,
-            magnification:     1.08,
-            selectionOverlay:  const SizedBox.shrink(),
+            scrollController: controller,
+            itemExtent: 40,
+            diameterRatio: 1.9,
+            squeeze: 1.05,
+            useMagnifier: true,
+            magnification: 1.08,
+            selectionOverlay: const SizedBox.shrink(),
             onSelectedItemChanged: onSelected,
-            children: items
-                .map((v) => Center(
-                      child: Text(
-                        label(v),
-                        style: const TextStyle(
-                          fontSize:   18,
-                          fontWeight: FontWeight.w900,
-                          color:      kText,
+            children:
+                items
+                    .map(
+                      (v) => Center(
+                        child: Text(
+                          label(v),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                            color: kText,
+                          ),
                         ),
                       ),
-                    ))
-                .toList(),
+                    )
+                    .toList(),
           ),
         );
       }
@@ -2149,16 +2239,16 @@ Future<DateTime?> showKoWheelDatePickerSheet(
       return SafeArea(
         top: false,
         child: Container(
-          margin:  const EdgeInsets.fromLTRB(12, 0, 12, 12),
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 14),
           decoration: BoxDecoration(
-            color:        Colors.white,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(22),
             boxShadow: [
               BoxShadow(
-                blurRadius:   24,
+                blurRadius: 24,
                 spreadRadius: 2,
-                color:        Colors.black.withOpacity(0.10),
+                color: Colors.black.withOpacity(0.10),
               ),
             ],
           ),
@@ -2176,10 +2266,10 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    width:  44,
+                    width: 44,
                     height: 5,
                     decoration: BoxDecoration(
-                      color:        kBorder,
+                      color: kBorder,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -2189,12 +2279,19 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                       Expanded(
                         child: Text(
                           title,
-                          style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: kText),
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
+                            color: kText,
+                          ),
                         ),
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(ctx),
-                        child: const Text('취소', style: TextStyle(color: kMuted)),
+                        child: const Text(
+                          '취소',
+                          style: TextStyle(color: kMuted),
+                        ),
                       ),
                       const SizedBox(width: 6),
                       ElevatedButton(
@@ -2202,33 +2299,50 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: brand,
                           foregroundColor: Colors.white,
-                          elevation:       0,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 10,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(999),
                           ),
                         ),
-                        child: const Text('완료', style: TextStyle(fontWeight: FontWeight.w900)),
+                        child: const Text(
+                          '완료',
+                          style: TextStyle(fontWeight: FontWeight.w900),
+                        ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 10),
                   // 선택된 날짜 미리보기
                   Container(
-                    width:   double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
-                      color:        brand.withOpacity(0.08),
+                      color: brand.withOpacity(0.08),
                       borderRadius: BorderRadius.circular(14),
-                      border:       Border.all(color: brand.withOpacity(0.18)),
+                      border: Border.all(color: brand.withOpacity(0.18)),
                     ),
                     child: Row(
                       children: [
-                        Icon(CupertinoIcons.calendar, color: brand.withOpacity(0.9), size: 18),
+                        Icon(
+                          CupertinoIcons.calendar,
+                          color: brand.withOpacity(0.9),
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           pretty(temp),
-                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14.5, color: kText),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 14.5,
+                            color: kText,
+                          ),
                         ),
                       ],
                     ),
@@ -2237,9 +2351,9 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                   Container(
                     height: 240,
                     decoration: BoxDecoration(
-                      color:        kBg,
+                      color: kBg,
                       borderRadius: BorderRadius.circular(16),
-                      border:       Border.all(color: kBorder),
+                      border: Border.all(color: kBorder),
                     ),
                     child: Stack(
                       alignment: Alignment.center,
@@ -2247,54 +2361,69 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                         Row(
                           children: [
                             Expanded(
-                              child: Column(children: [
-                                labelBox('년'),
-                                Expanded(
-                                  child: wheel<int>(
-                                    items:      yearList,
-                                    controller: yearCtrl,
-                                    label:      (v) => '$v',
-                                    onSelected: (idx) => setLocal(() {
-                                      year    = yearList[idx];
-                                      dayList = List<int>.generate(daysInMonth(year, month), (i) => i + 1);
-                                      syncTemp();
-                                    }),
+                              child: Column(
+                                children: [
+                                  labelBox('년'),
+                                  Expanded(
+                                    child: wheel<int>(
+                                      items: yearList,
+                                      controller: yearCtrl,
+                                      label: (v) => '$v',
+                                      onSelected:
+                                          (idx) => setLocal(() {
+                                            year = yearList[idx];
+                                            dayList = List<int>.generate(
+                                              daysInMonth(year, month),
+                                              (i) => i + 1,
+                                            );
+                                            syncTemp();
+                                          }),
+                                    ),
                                   ),
-                                ),
-                              ]),
+                                ],
+                              ),
                             ),
                             Expanded(
-                              child: Column(children: [
-                                labelBox('월'),
-                                Expanded(
-                                  child: wheel<int>(
-                                    items:      monthList,
-                                    controller: monthCtrl,
-                                    label:      (v) => '$v',
-                                    onSelected: (idx) => setLocal(() {
-                                      month   = monthList[idx];
-                                      dayList = List<int>.generate(daysInMonth(year, month), (i) => i + 1);
-                                      syncTemp();
-                                    }),
+                              child: Column(
+                                children: [
+                                  labelBox('월'),
+                                  Expanded(
+                                    child: wheel<int>(
+                                      items: monthList,
+                                      controller: monthCtrl,
+                                      label: (v) => '$v',
+                                      onSelected:
+                                          (idx) => setLocal(() {
+                                            month = monthList[idx];
+                                            dayList = List<int>.generate(
+                                              daysInMonth(year, month),
+                                              (i) => i + 1,
+                                            );
+                                            syncTemp();
+                                          }),
+                                    ),
                                   ),
-                                ),
-                              ]),
+                                ],
+                              ),
                             ),
                             Expanded(
-                              child: Column(children: [
-                                labelBox('일'),
-                                Expanded(
-                                  child: wheel<int>(
-                                    items:      dayList,
-                                    controller: dayCtrl,
-                                    label:      (v) => '$v',
-                                    onSelected: (idx) => setLocal(() {
-                                      day = dayList[idx];
-                                      syncTemp();
-                                    }),
+                              child: Column(
+                                children: [
+                                  labelBox('일'),
+                                  Expanded(
+                                    child: wheel<int>(
+                                      items: dayList,
+                                      controller: dayCtrl,
+                                      label: (v) => '$v',
+                                      onSelected:
+                                          (idx) => setLocal(() {
+                                            day = dayList[idx];
+                                            syncTemp();
+                                          }),
+                                    ),
                                   ),
-                                ),
-                              ]),
+                                ],
+                              ),
                             ),
                           ],
                         ),

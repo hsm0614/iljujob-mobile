@@ -1083,17 +1083,26 @@ class _ChatListScreenState extends State<ChatListScreen>
           return (unread) > 0;
         }).toList();
 
-    final urgentOnly = filtered
-        .where((c) => c['is_urgent_call'] == 1 || c['is_urgent_call'] == true)
-        .toList();
+    final urgentOnly =
+        filtered
+            .where(
+              (c) => c['is_urgent_call'] == 1 || c['is_urgent_call'] == true,
+            )
+            .toList();
 
     // 탭별 안읽음 총합
     final totalUnread = filtered.fold<int>(0, (sum, c) {
-      final n = userType == 'worker' ? (c['unread_count_worker'] ?? 0) : (c['unread_count_client'] ?? 0);
+      final n =
+          userType == 'worker'
+              ? (c['unread_count_worker'] ?? 0)
+              : (c['unread_count_client'] ?? 0);
       return sum + (n as int);
     });
     final urgentUnread = urgentOnly.fold<int>(0, (sum, c) {
-      final n = userType == 'worker' ? (c['unread_count_worker'] ?? 0) : (c['unread_count_client'] ?? 0);
+      final n =
+          userType == 'worker'
+              ? (c['unread_count_worker'] ?? 0)
+              : (c['unread_count_client'] ?? 0);
       return sum + (n as int);
     });
 
@@ -1163,9 +1172,9 @@ class _ChatListScreenState extends State<ChatListScreen>
                             const Text(
                               '채팅',
                               style: TextStyle(
-                                fontFamily: 'Jalnan2TTF',
                                 color: Colors.white,
-                                fontSize: 22,
+                                fontSize: 21,
+                                fontWeight: FontWeight.w800,
                                 height: 1.2,
                               ),
                             ),
@@ -1190,8 +1199,8 @@ class _ChatListScreenState extends State<ChatListScreen>
                     unselectedLabelColor: AppColors.textTertiary,
                     labelStyle: const TextStyle(fontWeight: FontWeight.w700),
                     tabs: [
-                      _BadgeTab(label: '전체',     count: totalUnread),
-                      _BadgeTab(label: '안읽음',   count: unreadOnly.length),
+                      _BadgeTab(label: '전체', count: totalUnread),
+                      _BadgeTab(label: '안읽음', count: unreadOnly.length),
                       _BadgeTab(label: '⚡ 긴급호출', count: urgentUnread),
                     ],
                   ),
@@ -1328,7 +1337,11 @@ class _BadgeTab extends StatelessWidget {
               ),
               child: Text(
                 count > 99 ? '99+' : '$count',
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white),
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
               ),
             ),
           ],

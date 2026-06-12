@@ -1451,7 +1451,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          fontFamily: 'Jalnan2TTF',
                         ),
                       ),
                     ),

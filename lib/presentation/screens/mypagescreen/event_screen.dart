@@ -61,7 +61,10 @@ class _EventScreenState extends State<EventScreen> {
     if (v == null) return '';
     try {
       final s = v.toString();
-      final date = DateTime.tryParse(s) ?? DateTime.tryParse(s.split(' ').first) ?? DateTime.now();
+      final date =
+          DateTime.tryParse(s) ??
+          DateTime.tryParse(s.split(' ').first) ??
+          DateTime.now();
       return '${date.year}.${_2(date.month)}.${_2(date.day)}';
     } catch (_) {
       return v.toString();
@@ -80,8 +83,12 @@ class _EventScreenState extends State<EventScreen> {
   bool _isOngoing(Map e) {
     try {
       final now = DateTime.now();
-      final s = DateTime.tryParse(e['start_date'] ?? '') ?? now.subtract(const Duration(days: 9999));
-      final d = DateTime.tryParse(e['end_date'] ?? '') ?? now.add(const Duration(days: 9999));
+      final s =
+          DateTime.tryParse(e['start_date'] ?? '') ??
+          now.subtract(const Duration(days: 9999));
+      final d =
+          DateTime.tryParse(e['end_date'] ?? '') ??
+          now.add(const Duration(days: 9999));
       return !now.isBefore(s) && !now.isAfter(d);
     } catch (_) {
       return true;
@@ -89,18 +96,20 @@ class _EventScreenState extends State<EventScreen> {
   }
 
   String _badgeText(Map e) => _isOngoing(e) ? '진행중' : '종료';
-  Color _badgeColor(Map e) => _isOngoing(e) ? const Color(0xFF3B8AFF) : Colors.grey;
+  Color _badgeColor(Map e) =>
+      _isOngoing(e) ? const Color(0xFF3B8AFF) : Colors.grey;
 
   @override
   Widget build(BuildContext context) {
     // 검색 필터
     final q = _query.trim().toLowerCase();
-    final filtered = events.where((e) {
-      if (q.isEmpty) return true;
-      final title = (e['title'] ?? '').toString().toLowerCase();
-      final desc  = (e['description'] ?? '').toString().toLowerCase();
-      return title.contains(q) || desc.contains(q);
-    }).toList();
+    final filtered =
+        events.where((e) {
+          if (q.isEmpty) return true;
+          final title = (e['title'] ?? '').toString().toLowerCase();
+          final desc = (e['description'] ?? '').toString().toLowerCase();
+          return title.contains(q) || desc.contains(q);
+        }).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
@@ -110,76 +119,75 @@ class _EventScreenState extends State<EventScreen> {
         child: CustomScrollView(
           slivers: [
             // 헤더
-           SliverAppBar(
-  pinned: true,
-  elevation: 0,
-  backgroundColor: Colors.white,
-  expandedHeight: 170,
-  automaticallyImplyLeading: false,
-  flexibleSpace: FlexibleSpaceBar(
-    background: Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF3B8AFF), Color(0xFF6EB6FF)],
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ✅ 상단: 뒤로가기 + 타이틀
-              Row(
-                children: [
-                  InkWell(
-                    onTap: () => Navigator.maybePop(context),
-                    borderRadius: BorderRadius.circular(999),
-                    child: Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.18),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new,
-                        size: 18,
-                        color: Colors.white,
+            SliverAppBar(
+              pinned: true,
+              elevation: 0,
+              backgroundColor: Colors.white,
+              expandedHeight: 170,
+              automaticallyImplyLeading: false,
+              flexibleSpace: FlexibleSpaceBar(
+                background: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFF3B8AFF), Color(0xFF6EB6FF)],
+                    ),
+                  ),
+                  child: SafeArea(
+                    bottom: false,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // ✅ 상단: 뒤로가기 + 타이틀
+                          Row(
+                            children: [
+                              InkWell(
+                                onTap: () => Navigator.maybePop(context),
+                                borderRadius: BorderRadius.circular(999),
+                                child: Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.18),
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: const Icon(
+                                    Icons.arrow_back_ios_new,
+                                    size: 18,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              const Text(
+                                '이벤트',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 21,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.2,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // ✅ 검색
+                          _SearchField(
+                            hintText: '이벤트 검색',
+                            onChanged: (v) => setState(() => _query = v),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  const Text(
-                    '이벤트',
-                    style: TextStyle(
-                      fontFamily: 'Jalnan2TTF',
-                      color: Colors.white,
-                      fontSize: 22,
-                      height: 1.2,
-                    ),
-                  ),
-                ],
+                ),
               ),
-
-              const SizedBox(height: 12),
-
-              // ✅ 검색
-              _SearchField(
-                hintText: '이벤트 검색',
-                onChanged: (v) => setState(() => _query = v),
-              ),
-            ],
-          ),
-        ),
-      ),
-    ),
-  ),
-  toolbarHeight: 0,
-),
-
+              toolbarHeight: 0,
+            ),
 
             if (isLoading)
               const SliverFillRemaining(
@@ -189,10 +197,7 @@ class _EventScreenState extends State<EventScreen> {
             else if (error != null)
               SliverFillRemaining(
                 hasScrollBody: false,
-                child: _ErrorState(
-                  message: error!,
-                  onRetry: _fetchEvents,
-                ),
+                child: _ErrorState(message: error!, onRetry: _fetchEvents),
               )
             else if (filtered.isEmpty)
               const SliverFillRemaining(
@@ -209,21 +214,25 @@ class _EventScreenState extends State<EventScreen> {
                 sliver: SliverList.separated(
                   itemCount: filtered.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, i) => _EventCard(
-                    event: filtered[i] as Map,
-                    resolveImage: _resolveImage,
-                    periodText: _period,
-                    badgeText: _badgeText,
-                    badgeColor: _badgeColor,
-                   onTap: (e) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => EventDetailScreen(event: e as Map<String, dynamic>),
-    ),
-  );
-},
-                  ),
+                  itemBuilder:
+                      (context, i) => _EventCard(
+                        event: filtered[i] as Map,
+                        resolveImage: _resolveImage,
+                        periodText: _period,
+                        badgeText: _badgeText,
+                        badgeColor: _badgeColor,
+                        onTap: (e) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (_) => EventDetailScreen(
+                                    event: e as Map<String, dynamic>,
+                                  ),
+                            ),
+                          );
+                        },
+                      ),
                 ),
               ),
           ],
@@ -256,7 +265,10 @@ class _EventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final img = resolveImage(event['image_url']);
     final title = (event['title'] ?? '').toString();
-    final description = (event['description'] ?? '').toString().replaceAll(r'\n', '\n');
+    final description = (event['description'] ?? '').toString().replaceAll(
+      r'\n',
+      '\n',
+    );
     final period = periodText(event);
 
     return Material(
@@ -270,26 +282,38 @@ class _EventCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 썸네일
-           ClipRRect(
-  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-  child: AspectRatio(
-    aspectRatio: 16 / 9,
-    child: Container(
-      color: const Color(0xFFE9EEF8), // ✅ 빈 공간 배경
-      child: img.isNotEmpty
-          ? Image.network(
-              img,
-              fit: BoxFit.contain, // ✅ 온전하게 보이게
-              errorBuilder: (_, __, ___) => const Center(
-                child: Icon(Icons.broken_image_outlined, size: 40, color: Colors.black26),
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
               ),
-            )
-          : const Center(
-              child: Icon(Icons.image_outlined, size: 40, color: Colors.black26),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Container(
+                  color: const Color(0xFFE9EEF8), // ✅ 빈 공간 배경
+                  child:
+                      img.isNotEmpty
+                          ? Image.network(
+                            img,
+                            fit: BoxFit.contain, // ✅ 온전하게 보이게
+                            errorBuilder:
+                                (_, __, ___) => const Center(
+                                  child: Icon(
+                                    Icons.broken_image_outlined,
+                                    size: 40,
+                                    color: Colors.black26,
+                                  ),
+                                ),
+                          )
+                          : const Center(
+                            child: Icon(
+                              Icons.image_outlined,
+                              size: 40,
+                              color: Colors.black26,
+                            ),
+                          ),
+                ),
+              ),
             ),
-    ),
-  ),
-),
 
             // 본문
             Padding(
@@ -301,7 +325,10 @@ class _EventCard extends StatelessWidget {
                   Row(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: badgeColor(event).withOpacity(0.12),
                           borderRadius: BorderRadius.circular(8),
@@ -319,7 +346,10 @@ class _EventCard extends StatelessWidget {
                         const SizedBox(width: 8),
                         Text(
                           '📅 $period',
-                          style: const TextStyle(fontSize: 12, color: Colors.black54),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black54,
+                          ),
                         ),
                       ],
                     ],
@@ -329,7 +359,10 @@ class _EventCard extends StatelessWidget {
                   // 제목
                   Text(
                     title,
-                    style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800),
+                    style: const TextStyle(
+                      fontSize: 16.5,
+                      fontWeight: FontWeight.w800,
+                    ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -338,7 +371,11 @@ class _EventCard extends StatelessWidget {
                   // 설명
                   Text(
                     description,
-                    style: const TextStyle(fontSize: 14, color: Colors.black87, height: 1.25),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.black87,
+                      height: 1.25,
+                    ),
                     maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -359,14 +396,18 @@ class _SearchField extends StatefulWidget {
   @override
   State<_SearchField> createState() => _SearchFieldState();
 }
+
 class _SearchFieldState extends State<_SearchField> {
   final controller = TextEditingController();
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white, borderRadius: BorderRadius.circular(14),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+        ],
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
@@ -376,8 +417,14 @@ class _SearchFieldState extends State<_SearchField> {
           Expanded(
             child: TextField(
               controller: controller,
-              decoration: InputDecoration(hintText: widget.hintText, border: InputBorder.none),
-              onChanged: (v) { widget.onChanged(v); setState(() {}); },
+              decoration: InputDecoration(
+                hintText: widget.hintText,
+                border: InputBorder.none,
+              ),
+              onChanged: (v) {
+                widget.onChanged(v);
+                setState(() {});
+              },
             ),
           ),
           if (controller.text.isNotEmpty)
@@ -440,7 +487,11 @@ class _ErrorState extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline, size: 56, color: Colors.redAccent),
             const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w700)),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w700),
+            ),
             const SizedBox(height: 8),
             OutlinedButton.icon(
               onPressed: onRetry,
@@ -471,7 +522,10 @@ class _SkeletonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Column(
         children: [
           // 썸네일 자리

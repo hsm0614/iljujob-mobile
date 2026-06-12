@@ -720,10 +720,10 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
         title: const Text(
           '알바 공고 리스트',
           style: TextStyle(
-            fontFamily: 'Jalnan2TTF',
-            color: kBrandBlue,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
+            color: Color(0xFF191F28),
+            fontSize: 17,
+            fontWeight: FontWeight.w800,
+            height: 1.2,
           ),
         ),
         actions: [
@@ -796,10 +796,8 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
                       '공고 등록',
                       style: TextStyle(
                         color: kBrandBlue,
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.w800,
-                        // 폰트 대소문자 혼용 때문에 적용 안될 수 있어서 통일 추천
-                        fontFamily: 'Jalnan2TTF',
                       ),
                     ),
                     const SizedBox(width: 2),

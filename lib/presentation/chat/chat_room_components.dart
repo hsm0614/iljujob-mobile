@@ -84,8 +84,11 @@ class CancelApplicationDialog extends StatelessWidget {
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.info_outline_rounded,
-                      size: 16, color: Color(0xFF9CA3AF)),
+                  Icon(
+                    Icons.info_outline_rounded,
+                    size: 16,
+                    color: Color(0xFF9CA3AF),
+                  ),
                   SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -180,10 +183,8 @@ class ChatImageBubble extends StatelessWidget {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ChatImageScreen(
-              imageUrl: imageUrl,
-              heroTag: heroTag,
-            ),
+            builder:
+                (_) => ChatImageScreen(imageUrl: imageUrl, heroTag: heroTag),
           ),
         );
       },
@@ -196,24 +197,26 @@ class ChatImageBubble extends StatelessWidget {
             width: 200,
             height: 200,
             fit: BoxFit.cover,
-            placeholder: (_, __) => Container(
-              width: 200,
-              height: 200,
-              alignment: Alignment.center,
-              color: Colors.black12,
-              child: const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
-            errorWidget: (_, __, ___) => Container(
-              width: 200,
-              height: 200,
-              alignment: Alignment.center,
-              color: Colors.black12,
-              child: const Icon(Icons.broken_image),
-            ),
+            placeholder:
+                (_, __) => Container(
+                  width: 200,
+                  height: 200,
+                  alignment: Alignment.center,
+                  color: Colors.black12,
+                  child: const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+            errorWidget:
+                (_, __, ___) => Container(
+                  width: 200,
+                  height: 200,
+                  alignment: Alignment.center,
+                  color: Colors.black12,
+                  child: const Icon(Icons.broken_image),
+                ),
           ),
         ),
       ),
@@ -318,11 +321,10 @@ class AlbailjuChatAppBarTitle extends StatelessWidget {
                 name,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  fontFamily: 'Jalnan2TTF',
                   fontSize: 15,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w800,
                   color: Color(0xFF0D0D0D),
-                  height: 1.1,
+                  height: 1.2,
                 ),
               ),
               if (jobTitle.isNotEmpty) ...[

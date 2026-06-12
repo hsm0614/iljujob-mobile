@@ -31,7 +31,9 @@ class _NoticeListScreenState extends State<NoticeListScreen> {
 
   String _formatDate(String dateStr) {
     try {
-      final d = DateTime.tryParse(dateStr) ?? DateTime.tryParse(dateStr.split(' ').first);
+      final d =
+          DateTime.tryParse(dateStr) ??
+          DateTime.tryParse(dateStr.split(' ').first);
       if (d == null) return dateStr;
       return '${d.year}.${d.month.toString().padLeft(2, '0')}.${d.day.toString().padLeft(2, '0')}';
     } catch (_) {
@@ -74,12 +76,13 @@ class _NoticeListScreenState extends State<NoticeListScreen> {
   Widget build(BuildContext context) {
     final q = _query.trim().toLowerCase();
 
-    final filtered = _notices.where((n) {
-      if (q.isEmpty) return true;
-      final t = n.title.toLowerCase();
-      final w = (n.writer).toLowerCase();
-      return t.contains(q) || w.contains(q);
-    }).toList();
+    final filtered =
+        _notices.where((n) {
+          if (q.isEmpty) return true;
+          final t = n.title.toLowerCase();
+          final w = (n.writer).toLowerCase();
+          return t.contains(q) || w.contains(q);
+        }).toList();
 
     // 고정 공지(있다면) 위로
     filtered.sort((a, b) {
@@ -119,9 +122,9 @@ class _NoticeListScreenState extends State<NoticeListScreen> {
                           const Text(
                             '공지사항',
                             style: TextStyle(
-                              fontFamily: 'Jalnan2TTF',
                               color: Colors.white,
-                              fontSize: 22,
+                              fontSize: 21,
+                              fontWeight: FontWeight.w800,
                               height: 1.2,
                             ),
                           ),
@@ -147,9 +150,7 @@ class _NoticeListScreenState extends State<NoticeListScreen> {
             else if (_error != null)
               SliverFillRemaining(
                 hasScrollBody: false,
-                child: _ErrorState(
-                  message: '공지사항을 불러오지 못했습니다.',
-                ),
+                child: _ErrorState(message: '공지사항을 불러오지 못했습니다.'),
               )
             else if (filtered.isEmpty)
               const SliverFillRemaining(
@@ -187,20 +188,23 @@ class _NoticeListScreenState extends State<NoticeListScreen> {
           ],
         ),
       ),
-      floatingActionButton: _isAdmin
-          ? FloatingActionButton(
-              onPressed: () async {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const NoticeCreateScreen()),
-                );
-                if (result == true) _loadData();
-              },
-              tooltip: '공지 작성',
-              backgroundColor: brandBlue,
-              child: const Icon(Icons.add),
-            )
-          : null,
+      floatingActionButton:
+          _isAdmin
+              ? FloatingActionButton(
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NoticeCreateScreen(),
+                    ),
+                  );
+                  if (result == true) _loadData();
+                },
+                tooltip: '공지 작성',
+                backgroundColor: brandBlue,
+                child: const Icon(Icons.add),
+              )
+              : null,
     );
   }
 }
@@ -259,7 +263,10 @@ class _NoticeCard extends StatelessWidget {
                     // 뱃지
                     if (pinned) ...[
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFF3B8AFF).withOpacity(0.12),
                           borderRadius: BorderRadius.circular(8),
@@ -278,7 +285,10 @@ class _NoticeCard extends StatelessWidget {
 
                     Text(
                       title,
-                      style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w900),
+                      style: const TextStyle(
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w900,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -290,7 +300,10 @@ class _NoticeCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             writer,
-                            style: const TextStyle(color: Colors.black54, fontSize: 12.8),
+                            style: const TextStyle(
+                              color: Colors.black54,
+                              fontSize: 12.8,
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -298,7 +311,10 @@ class _NoticeCard extends StatelessWidget {
                         const SizedBox(width: 10),
                         Text(
                           dateText,
-                          style: const TextStyle(color: Colors.black45, fontSize: 12),
+                          style: const TextStyle(
+                            color: Colors.black45,
+                            fontSize: 12,
+                          ),
                         ),
                       ],
                     ),
@@ -333,7 +349,9 @@ class _SearchFieldState extends State<_SearchField> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
+        ],
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
@@ -343,7 +361,10 @@ class _SearchFieldState extends State<_SearchField> {
           Expanded(
             child: TextField(
               controller: controller,
-              decoration: InputDecoration(hintText: widget.hintText, border: InputBorder.none),
+              decoration: InputDecoration(
+                hintText: widget.hintText,
+                border: InputBorder.none,
+              ),
               onChanged: (v) {
                 widget.onChanged(v);
                 setState(() {});
@@ -412,7 +433,11 @@ class _ErrorState extends StatelessWidget {
           children: const [
             Icon(Icons.error_outline, size: 56, color: Colors.redAccent),
             SizedBox(height: 12),
-            Text('오류가 발생했습니다.', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w800)),
+            Text(
+              '오류가 발생했습니다.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
             SizedBox(height: 6),
             Text('다시 시도해주세요.', style: TextStyle(color: Colors.black54)),
           ],
@@ -440,7 +465,10 @@ class _SkeletonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
       padding: const EdgeInsets.all(14),
       child: Row(
         children: [
@@ -472,7 +500,10 @@ class _SkeletonCard extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      decoration: BoxDecoration(color: const Color(0xFFEDEFF5), borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEDEFF5),
+        borderRadius: BorderRadius.circular(8),
+      ),
     );
   }
 }
