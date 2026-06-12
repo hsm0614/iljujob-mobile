@@ -1561,13 +1561,13 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       child: Scaffold(
         backgroundColor: AppColors.bgPage,
         appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(72),
+          preferredSize: const Size.fromHeight(88),
           child: Container(
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF3B8AFF), Color(0xFF6EB6FF)],
+                colors: [AppColors.primary, AppColors.primaryDark],
               ),
             ),
             child: SafeArea(
@@ -1579,7 +1579,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Row(
                             children: [
@@ -1587,9 +1587,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                 '알바일주',
                                 style: TextStyle(
                                   fontFamily: 'Jalnan2TTF',
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w800,
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.w900,
                                   color: Colors.white,
+                                  height: 1.1,
                                 ),
                               ),
                               const SizedBox(width: 6),
