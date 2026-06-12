@@ -10,6 +10,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:iljujob/config/constants.dart';
+import 'package:iljujob/presentation/chat/chat_room_screen.dart';
+import '../worker_screen/worker_profile_screen.dart';
 import 'nearby_workers_screen.dart';
 
 // ── 디자인 토큰 ───────────────────────────────────────────────────
@@ -120,24 +122,32 @@ class _Job {
 // ── 구직자 모델 ───────────────────────────────────────────────────
 class _Worker {
   final int id;
-  final String name;
+  final String name, profileImageUrl;
   final double lat, lng;
   final int activityScore;
+  final double distanceM;
+  final bool alreadySent;
 
   const _Worker({
     required this.id,
     required this.name,
+    required this.profileImageUrl,
     required this.lat,
     required this.lng,
     required this.activityScore,
+    required this.distanceM,
+    required this.alreadySent,
   });
 
   factory _Worker.fromJson(Map<String, dynamic> j) => _Worker(
     id: _i(j['id']),
     name: (j['name'] ?? '').toString(),
+    profileImageUrl: (j['profile_image_url'] ?? '').toString(),
     lat: _d(j['lat']),
     lng: _d(j['lng']),
     activityScore: _i(j['activity_score']),
+    distanceM: _d(j['distance_m']),
+    alreadySent: j['already_sent'] == true || j['already_sent'] == 1,
   );
 
   static double _d(dynamic v) {
@@ -176,6 +186,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   km.KakaoMapController? _ctrl;
   StreamSubscription<km.CameraMoveEndEvent>? _cameraSub;
   bool _mapReady = false;
+  bool _mapMoving = false;
 
   final _scrollCtrl = ScrollController();
   List<_Job> _jobs = [];
@@ -187,6 +198,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   bool _isSubscribed = false;
   int _urgentCredits = 0;
   bool _broadcastSending = false;
+  bool _directSending = false;
 
   int? _clientId;
   String? _authToken;
@@ -200,8 +212,6 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   Size? _viewSize;
   Timer? _positionSyncTimer;
   int _positionSyncSeq = 0;
-  bool _positionSyncing = false;
-  DateTime _lastDragSyncAt = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void initState() {
@@ -361,45 +371,33 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   }
 
   void _markMapMoving() {
+    if (!_mapMoving && mounted) setState(() => _mapMoving = true);
     _positionSyncTimer?.cancel();
-    _syncPositionsDuringGesture();
   }
 
-  void _syncPositionsDuringGesture() {
-    if (!_mapReady || _ctrl == null || _positionSyncing) return;
-    final now = DateTime.now();
-    if (now.difference(_lastDragSyncAt).inMilliseconds < 80) return;
-    _lastDragSyncAt = now;
-    _positionSyncing = true;
-    unawaited(
-      _updateCardPositions().whenComplete(() {
-        _positionSyncing = false;
-      }),
-    );
-  }
-
-  void _schedulePositionSync() {
+  void _schedulePositionSync({bool reveal = true}) {
     final seq = ++_positionSyncSeq;
     _positionSyncTimer?.cancel();
-    Future<void> runAfter(Duration delay) async {
+    Future<void> runAfter(Duration delay, {bool last = false}) async {
       await Future.delayed(delay);
       if (!mounted || seq != _positionSyncSeq) return;
       await _updateCardPositions();
+      if (last && reveal && mounted && seq == _positionSyncSeq) {
+        setState(() => _mapMoving = false);
+      }
     }
 
-    // 카카오맵은 이동 종료 이벤트만 제공하므로 애니메이션 중 짧게 여러 번 보정한다.
+    // 카카오맵은 이동 종료 이벤트만 제공하므로 종료 직후 좌표 안정화를 몇 차례 보정한다.
     for (final delay in const [
       Duration.zero,
       Duration(milliseconds: 80),
       Duration(milliseconds: 160),
-      Duration(milliseconds: 260),
-      Duration(milliseconds: 380),
     ]) {
       unawaited(runAfter(delay));
     }
     _positionSyncTimer = Timer(const Duration(milliseconds: 540), () {
       if (!mounted || seq != _positionSyncSeq) return;
-      unawaited(runAfter(Duration.zero));
+      unawaited(runAfter(Duration.zero, last: true));
     });
   }
 
@@ -536,6 +534,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       _workerCount = 0;
       _currentWorkers = [];
       _workerScreenPos.clear();
+      _mapMoving = true;
     });
     final job = _jobs[idx];
     debugPrint(
@@ -554,12 +553,13 @@ class _WorkerMapViewState extends State<WorkerMapView> {
           isConsecutive: false,
         ),
       );
-      _schedulePositionSync();
+      _schedulePositionSync(reveal: false);
     }
     if (job.hasLocation) {
       _loadWorkers(job);
     } else {
       debugPrint('[MAP] hasLocation=false → _loadWorkers 스킵');
+      if (mounted) setState(() => _mapMoving = false);
     }
   }
 
@@ -586,6 +586,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     // 알바생이 있으면 공고 + 모든 알바생 위치를 한 화면에 fitPoints
     final workersWithLoc = workers.where((w) => w.hasLocation).toList();
     if (_ctrl != null && workersWithLoc.isNotEmpty) {
+      if (mounted) setState(() => _mapMoving = true);
       final pts = [job.pos, ...workersWithLoc.map((w) => w.pos)];
       debugPrint('[MAP][WORKER] fitPoints ${pts.length}개');
       await _ctrl!.moveCamera(
@@ -599,6 +600,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       _schedulePositionSync();
     } else if (_mapReady) {
       await _updateCardPositions();
+      if (mounted) setState(() => _mapMoving = false);
     }
   }
 
@@ -688,6 +690,252 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     }
   }
 
+  bool get _canDirectMessageSelected {
+    final job = _selectedJob;
+    return job != null && (job.isUrgent || _isSubscribed);
+  }
+
+  String _maskName(String name) {
+    if (name.isEmpty) return '알바생';
+    if (name.length == 1) return name;
+    if (name.length == 2) return '${name[0]}*';
+    final mid = name.length ~/ 2;
+    return name.replaceRange(mid, mid + 1, '*');
+  }
+
+  String _distanceLabel(double meters) {
+    if (meters <= 0) return '거리 정보 없음';
+    if (meters < 1000) return '${meters.round()}m';
+    return '${(meters / 1000).toStringAsFixed(1)}km';
+  }
+
+  Future<void> _sendDirectToWorker(_Worker worker) async {
+    final job = _selectedJob;
+    if (job == null || _clientId == null || _directSending) return;
+    if (!_canDirectMessageSelected) {
+      _showSnack('구독 중이거나 긴급호출 공고일 때만 메시지를 보낼 수 있어요.', isError: true);
+      return;
+    }
+    setState(() => _directSending = true);
+    try {
+      final res = await http
+          .post(
+            Uri.parse('$baseUrl/api/direct-message/send'),
+            headers: {..._auth, 'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'jobId': job.id,
+              'clientId': _clientId,
+              'workerIds': [worker.id],
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+      if (!mounted) return;
+      final body = jsonDecode(res.body) as Map<String, dynamic>;
+      if (res.statusCode != 200) {
+        _showSnack(
+          body['message']?.toString() ?? '메시지 발송에 실패했어요.',
+          isError: true,
+        );
+        return;
+      }
+      final results = body['results'] as List? ?? [];
+      final roomId = results.isNotEmpty ? results.first['chatRoomId'] : null;
+      _dotCache.remove(job.id);
+      _countCache.remove(job.id);
+      Navigator.pop(context);
+      _showSnack('메시지를 보냈어요.', isError: false);
+      if (roomId != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => ChatRoomScreen(
+                  chatRoomId:
+                      roomId is int ? roomId : int.parse(roomId.toString()),
+                  jobInfo: {
+                    'id': job.id,
+                    'job_id': job.id,
+                    'title': job.title,
+                    'location_city': job.location,
+                    'client_id': _clientId,
+                    'worker_id': worker.id,
+                    'user_name': worker.name,
+                    'user_thumbnail_url': worker.profileImageUrl,
+                  },
+                ),
+          ),
+        );
+      }
+      unawaited(_loadWorkers(job));
+    } catch (_) {
+      if (mounted) _showSnack('네트워크 오류', isError: true);
+    } finally {
+      if (mounted) setState(() => _directSending = false);
+    }
+  }
+
+  void _showWorkerSheet(_Worker worker) {
+    final job = _selectedJob;
+    final canMessage = _canDirectMessageSelected;
+    final gradeColor = switch (worker.grade) {
+      'S' => const Color(0xFFFF6B00),
+      'A' => _primary,
+      'B' => _green,
+      _ => const Color(0xFF9CA3AF),
+    };
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder:
+          (_) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(18, 18, 18, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundColor: const Color(0xFFF2F4F6),
+                        backgroundImage:
+                            worker.profileImageUrl.isNotEmpty
+                                ? NetworkImage(worker.profileImageUrl)
+                                : null,
+                        child:
+                            worker.profileImageUrl.isEmpty
+                                ? const Icon(
+                                  Icons.person_rounded,
+                                  color: _textSub,
+                                )
+                                : null,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _maskName(worker.name),
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.w900,
+                                color: _textMain,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '${_distanceLabel(worker.distanceM)} · 활동등급 ${worker.grade}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: _textSub,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: gradeColor.withValues(alpha: 0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            worker.grade,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                              color: gradeColor,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (worker.alreadySent) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8F9FB),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: _border),
+                      ),
+                      child: const Text(
+                        '이미 이 공고로 메시지를 보낸 알바생입니다.',
+                        style: TextStyle(fontSize: 12, color: _textSub),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _Btn(
+                          label: '프로필 보기',
+                          icon: Icons.account_circle_rounded,
+                          color: _primary,
+                          filled: false,
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (_) => WorkerProfileScreen(
+                                      workerId: worker.id,
+                                    ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _Btn(
+                          label:
+                              worker.alreadySent
+                                  ? '발송 완료'
+                                  : canMessage
+                                  ? (_directSending ? '발송 중' : '메시지 보내기')
+                                  : '구독/긴급만',
+                          icon:
+                              worker.alreadySent
+                                  ? Icons.check_rounded
+                                  : Icons.send_rounded,
+                          color: canMessage ? _red : _textSub,
+                          filled: true,
+                          onTap:
+                              canMessage &&
+                                      !worker.alreadySent &&
+                                      !_directSending
+                                  ? () => _sendDirectToWorker(worker)
+                                  : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (!canMessage && job != null) ...[
+                    const SizedBox(height: 10),
+                    const Text(
+                      '일반 공고는 구독 중일 때만 직접 메시지를 보낼 수 있어요.',
+                      style: TextStyle(fontSize: 12, color: _textSub),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+    );
+  }
+
   void _showSnack(String msg, {required bool isError}) =>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -718,7 +966,6 @@ class _WorkerMapViewState extends State<WorkerMapView> {
               return Listener(
                 behavior: HitTestBehavior.translucent,
                 onPointerDown: (_) => _markMapMoving(),
-                onPointerMove: (_) => _syncPositionsDuringGesture(),
                 onPointerCancel: (_) => _schedulePositionSync(),
                 onPointerUp: (_) => _schedulePositionSync(),
                 child: km.KakaoMap(
@@ -734,20 +981,25 @@ class _WorkerMapViewState extends State<WorkerMapView> {
           ),
         ),
 
-        // ── 구직자 도트 오버레이 ─────────────────────────────────
-        for (final w in _currentWorkers.where((w) => w.hasLocation)) ...[
-          if (_workerScreenPos[w.id] case final Offset p
-              when p.dx >= 0 && p.dy >= 0)
-            Positioned(
-              left: p.dx - 14,
-              top: p.dy - 14,
-              child: _WorkerDot(worker: w),
-            ),
-        ],
+        if (!_mapMoving) ...[
+          // ── 구직자 도트 오버레이 ───────────────────────────────
+          for (final w in _currentWorkers.where((w) => w.hasLocation)) ...[
+            if (_workerScreenPos[w.id] case final Offset p
+                when p.dx >= 0 && p.dy >= 0)
+              Positioned(
+                left: p.dx - 14,
+                top: p.dy - 14,
+                child: GestureDetector(
+                  onTap: () => _showWorkerSheet(w),
+                  child: _WorkerDot(worker: w),
+                ),
+              ),
+          ],
 
-        // ── 공고 카드 오버레이 (직방 스타일) ─────────────────────
-        // 같은 위치 공고들은 살짝 오프셋으로 구별 가능하게
-        ..._buildJobCards(),
+          // ── 공고 카드 오버레이 (직방 스타일) ───────────────────
+          // 같은 위치 공고들은 살짝 오프셋으로 구별 가능하게
+          ..._buildJobCards(),
+        ],
 
         // ── 상단 공고 칩 ──────────────────────────────────────────
         Positioned(
@@ -944,7 +1196,8 @@ class _WorkerMapViewState extends State<WorkerMapView> {
               key: ValueKey(_selectedJob!.id),
               job: _selectedJob!,
               workerCount: _workerCount,
-              canUrgentCall: _canUrgentCall,
+              canUrgentCall: _selectedJob!.isUrgent && _canUrgentCall,
+              isUrgentJob: _selectedJob!.isUrgent,
               isSubscribed: _isSubscribed,
               broadcasting: _broadcastSending,
               bottomPad: bottomPad,
@@ -1050,6 +1303,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
         ),
       ).timeout(const Duration(seconds: 5));
       if (_ctrl != null) {
+        if (mounted) setState(() => _mapMoving = true);
         await _ctrl!.moveCamera(
           cameraUpdate: km.CameraUpdate(
             position: km.LatLng(latitude: p.latitude, longitude: p.longitude),
@@ -1061,6 +1315,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
             isConsecutive: false,
           ),
         );
+        _schedulePositionSync();
       }
     } catch (_) {}
   }
@@ -1099,7 +1354,7 @@ class _Fab extends StatelessWidget {
 class _ExpandableJobCard extends StatefulWidget {
   final _Job job;
   final int workerCount;
-  final bool canUrgentCall, isSubscribed, broadcasting;
+  final bool canUrgentCall, isUrgentJob, isSubscribed, broadcasting;
   final double bottomPad;
   final VoidCallback onUrgentCall, onBroadcast, onBuyPass;
 
@@ -1108,6 +1363,7 @@ class _ExpandableJobCard extends StatefulWidget {
     required this.job,
     required this.workerCount,
     required this.canUrgentCall,
+    required this.isUrgentJob,
     required this.isSubscribed,
     required this.broadcasting,
     required this.bottomPad,
@@ -1248,6 +1504,7 @@ class _ExpandableJobCardState extends State<_ExpandableJobCard> {
                 job: job,
                 bottomPad: widget.bottomPad,
                 canUrgentCall: widget.canUrgentCall,
+                isUrgentJob: widget.isUrgentJob,
                 isSubscribed: widget.isSubscribed,
                 broadcasting: widget.broadcasting,
                 onUrgentCall: widget.onUrgentCall,
@@ -1258,6 +1515,7 @@ class _ExpandableJobCardState extends State<_ExpandableJobCard> {
                 job: job,
                 bottomPad: widget.bottomPad,
                 canUrgentCall: widget.canUrgentCall,
+                isUrgentJob: widget.isUrgentJob,
                 isSubscribed: widget.isSubscribed,
                 broadcasting: widget.broadcasting,
                 onUrgentCall: widget.onUrgentCall,
@@ -1276,13 +1534,14 @@ class _ExpandableJobCardState extends State<_ExpandableJobCard> {
 class _CollapsedMeta extends StatelessWidget {
   final _Job job;
   final double bottomPad;
-  final bool canUrgentCall, isSubscribed, broadcasting;
+  final bool canUrgentCall, isUrgentJob, isSubscribed, broadcasting;
   final VoidCallback onUrgentCall, onBroadcast, onBuyPass;
 
   const _CollapsedMeta({
     required this.job,
     required this.bottomPad,
     required this.canUrgentCall,
+    required this.isUrgentJob,
     required this.isSubscribed,
     required this.broadcasting,
     required this.onUrgentCall,
@@ -1350,6 +1609,7 @@ class _CollapsedMeta extends StatelessWidget {
             const SizedBox(height: 12),
           _ActionRow(
             canUrgentCall: canUrgentCall,
+            isUrgentJob: isUrgentJob,
             isSubscribed: isSubscribed,
             broadcasting: broadcasting,
             onUrgentCall: onUrgentCall,
@@ -1366,13 +1626,14 @@ class _CollapsedMeta extends StatelessWidget {
 class _ExpandedDetail extends StatelessWidget {
   final _Job job;
   final double bottomPad;
-  final bool canUrgentCall, isSubscribed, broadcasting;
+  final bool canUrgentCall, isUrgentJob, isSubscribed, broadcasting;
   final VoidCallback onUrgentCall, onBroadcast, onBuyPass;
 
   const _ExpandedDetail({
     required this.job,
     required this.bottomPad,
     required this.canUrgentCall,
+    required this.isUrgentJob,
     required this.isSubscribed,
     required this.broadcasting,
     required this.onUrgentCall,
@@ -1515,6 +1776,7 @@ class _ExpandedDetail extends StatelessWidget {
           const SizedBox(height: 12),
           _ActionRow(
             canUrgentCall: canUrgentCall,
+            isUrgentJob: isUrgentJob,
             isSubscribed: isSubscribed,
             broadcasting: broadcasting,
             onUrgentCall: onUrgentCall,
@@ -1529,11 +1791,12 @@ class _ExpandedDetail extends StatelessWidget {
 
 // ── 공통 액션 버튼 행 ─────────────────────────────────────────────
 class _ActionRow extends StatelessWidget {
-  final bool canUrgentCall, isSubscribed, broadcasting;
+  final bool canUrgentCall, isUrgentJob, isSubscribed, broadcasting;
   final VoidCallback onUrgentCall, onBroadcast, onBuyPass;
 
   const _ActionRow({
     required this.canUrgentCall,
+    required this.isUrgentJob,
     required this.isSubscribed,
     required this.broadcasting,
     required this.onUrgentCall,
@@ -1547,7 +1810,15 @@ class _ActionRow extends StatelessWidget {
       children: [
         Expanded(
           child:
-              canUrgentCall
+              !isUrgentJob
+                  ? _Btn(
+                    label: '긴급 공고만',
+                    icon: Icons.lock_rounded,
+                    color: _textSub,
+                    filled: false,
+                    onTap: null,
+                  )
+                  : canUrgentCall
                   ? _Btn(
                     label: '긴급 호출',
                     icon: Icons.emergency_rounded,
