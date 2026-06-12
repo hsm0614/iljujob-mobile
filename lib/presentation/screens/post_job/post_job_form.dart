@@ -131,10 +131,12 @@ const _qSubs = [
 class PostJobForm extends StatefulWidget {
   final bool isRepost;
   final Job? existingJob;
+  final VoidCallback? onSubmitComplete;
   const PostJobForm({
     super.key,
     required this.isRepost,
     required this.existingJob,
+    this.onSubmitComplete,
   });
   @override
   State<PostJobForm> createState() => _PostJobFormState();
@@ -826,6 +828,7 @@ class _PostJobFormState extends State<PostJobForm>
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () {
+                        widget.onSubmitComplete?.call();
                         Navigator.pop(sheetCtx);
                         if (isUrgent && jobId != null) {
                           Navigator.pushNamedAndRemoveUntil(
