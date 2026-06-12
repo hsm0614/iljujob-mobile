@@ -1437,8 +1437,6 @@ class _EditJobScreenState extends State<EditJobScreen> {
         resizeToAvoidBottomInset: true,
         appBar: AppBar(
           title: const Text('공고 수정'),
-          backgroundColor: Colors.white,
-          foregroundColor: const Color(0xFF191F28),
           elevation: 0,
         ),
         body: SingleChildScrollView(

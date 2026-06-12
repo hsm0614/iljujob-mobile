@@ -1288,11 +1288,7 @@ class _AiJobWizardState extends State<AiJobWizard>
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            size: 20,
-            color: _text,
-          ),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           onPressed: () {
             setState(() => _isGenerating = false); // 로딩 상태 해제
           },

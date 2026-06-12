@@ -280,16 +280,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
-          '알바생 프로필',
-          style: TextStyle(
-            fontFamily: 'Jalnan2TTF',
-            color: Color(0xFF3B8AFF),
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        title: const Text('알바생 프로필'),
         actions: [
           IconButton(
             icon: const Icon(Icons.report, color: Colors.red),

@@ -1025,15 +1025,7 @@ Widget build(BuildContext context) {
     appBar: AppBar(
       backgroundColor: Colors.white,
       elevation: 0.5,
-      title: const Text(
-        '공고 상세',
-        style: TextStyle(
-          fontFamily: "Jalnan2TTF",
-          fontSize: 22,
-          fontWeight: FontWeight.w600,
-          color: kBrand,
-        ),
-      ),
+      title: const Text('공고 상세'),
       centerTitle: false,
       actions: [
         if (_shouldShowReportButton())

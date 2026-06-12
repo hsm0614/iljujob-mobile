@@ -275,7 +275,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text('구독 플랜', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+        title: const Text('구독 플랜'),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(height: 1, color: AppColors.border),

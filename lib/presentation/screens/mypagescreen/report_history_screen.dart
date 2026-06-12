@@ -63,10 +63,7 @@ String url = selectedType == 'job'
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Text('신고 내역', style: TextStyle(color: Colors.black)),
-        iconTheme: const IconThemeData(color: Colors.black),
-        elevation: 1,
+        title: const Text('신고 내역'),
       ),
       body: Column(
         children: [

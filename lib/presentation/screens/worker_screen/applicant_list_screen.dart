@@ -168,8 +168,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
         foregroundColor: _brandBlue,
         elevation: 0.4,
         title: Row(children: [
-          const Text('지원자 목록',
-            style: TextStyle(fontFamily: 'jalnan2ttf', fontWeight: FontWeight.w700)),
+          const Text('지원자 목록'),
           const SizedBox(width: 8),
           // 지원자 수 배지
           if (applicants.isNotEmpty)

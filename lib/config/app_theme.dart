@@ -248,16 +248,17 @@ class AppTheme {
         // AppBar
         appBarTheme: const AppBarTheme(
           backgroundColor: AppColors.bgCard,
-          foregroundColor: AppColors.textPrimary,
+          foregroundColor: AppColors.primary,
           elevation: 0,
           scrolledUnderElevation: 0.5,
           centerTitle: false,
           titleTextStyle: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
+            fontFamily: 'Jalnan2TTF',
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+            color: AppColors.primary,
           ),
-          iconTheme: IconThemeData(color: AppColors.textPrimary),
+          iconTheme: IconThemeData(color: AppColors.primary),
         ),
         // ElevatedButton
         elevatedButtonTheme: ElevatedButtonThemeData(

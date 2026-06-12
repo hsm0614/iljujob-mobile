@@ -406,19 +406,11 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
-        iconTheme: const IconThemeData(color: Colors.black),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: _confirmLeaveIfDirty,
         ),
-        title: const Text(
-          '계정 관리',
-          style: TextStyle(
-            fontFamily: 'Jalnan2TTF',
-            color: kBrand,
-            fontSize: 20,
-          ),
-        ),
+        title: const Text('계정 관리'),
         actions: [
           TextButton(
             onPressed: _canSave ? _saveProfile : null,

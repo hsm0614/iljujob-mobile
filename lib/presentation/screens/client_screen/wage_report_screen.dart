@@ -72,12 +72,8 @@ class _WageReportScreenState extends State<WageReportScreen> {
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: AppBar(
         backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
         elevation: 0,
-        title: const Text(
-          '임금 AI 리포트',
-          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
-        ),
+        title: const Text('임금 AI 리포트'),
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),

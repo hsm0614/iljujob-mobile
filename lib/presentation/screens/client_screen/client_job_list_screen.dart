@@ -73,15 +73,7 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          iconTheme: const IconThemeData(color: Colors.black),
-          title: const Text(
-            '등록한 공고',
-            style: TextStyle(
-              color: Color(0xFF3B8AFF),
-              fontWeight: FontWeight.bold,
-              fontSize: 20,
-            ),
-          ),
+          title: const Text('등록한 공고'),
         ),
         body: Column(
           children: [

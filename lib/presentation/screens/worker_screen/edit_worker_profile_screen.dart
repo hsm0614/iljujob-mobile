@@ -1999,17 +1999,8 @@ static const _workCategoryMap = <String, List<String>>{
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation:       0.8,
-        iconTheme:       const IconThemeData(color: kText),
         titleSpacing:    16,
-        title: const Text(
-          '프로필 수정',
-          style: TextStyle(
-            fontFamily: 'Jalnan2TTF',
-            color:      kBrandBlue,
-            fontWeight: FontWeight.w900,
-            fontSize:   22,
-          ),
-        ),
+        title: const Text('프로필 수정'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),

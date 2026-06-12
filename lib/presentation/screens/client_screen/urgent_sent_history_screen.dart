@@ -131,12 +131,11 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
         elevation: 0,
         centerTitle: false,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: AppColors.textPrimary),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
           widget.jobTitle != null ? '⚡ ${widget.jobTitle}' : '⚡ 긴급호출 발송이력',
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
         ),
       ),
       body: _loading

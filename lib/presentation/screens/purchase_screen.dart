@@ -765,11 +765,9 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
-        title: const Text('이용권 구매',
-            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 17, color: _text)),
+        title: const Text('이용권 구매'),
         centerTitle: true,
-        backgroundColor: _bg,
-        foregroundColor: _text,
+        backgroundColor: AppColors.bgCard,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         bottom: TabBar(

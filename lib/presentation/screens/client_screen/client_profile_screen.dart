@@ -526,15 +526,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
-          '기업 프로필',
-          style: TextStyle(
-            color: Color(0xFF3B8AFF),
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
+        title: const Text('기업 프로필'),
       ),
       body:
           isLoading

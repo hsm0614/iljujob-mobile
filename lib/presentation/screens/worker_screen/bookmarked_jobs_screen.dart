@@ -191,17 +191,10 @@ Widget build(BuildContext context) {
     appBar: AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
-      title: const Text(
-        
-        '내가 찜한 공고',
-        style: TextStyle(
-          fontWeight: FontWeight.w800,
-          color: kBrand,
-        ),
-      ),
+      title: const Text('내가 찜한 공고'),
       actions: [
         IconButton(
-          icon: const Icon(Icons.refresh, color: Colors.black87),
+          icon: const Icon(Icons.refresh),
           onPressed: _loadBookmarkedJobs,
           tooltip: '새로고침',
         ),

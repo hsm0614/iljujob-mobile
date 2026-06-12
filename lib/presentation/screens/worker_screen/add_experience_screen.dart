@@ -266,7 +266,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.black87),
+          icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
         ),
       ),

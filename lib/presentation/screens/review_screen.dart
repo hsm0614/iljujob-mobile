@@ -182,11 +182,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0.5,
-          foregroundColor: const Color(0xFF191F28),
-          title: const Text(
-            '후기 보내기',
-            style: TextStyle(fontWeight: FontWeight.w800),
-          ),
+          title: const Text('후기 보내기'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => Navigator.pop(context),

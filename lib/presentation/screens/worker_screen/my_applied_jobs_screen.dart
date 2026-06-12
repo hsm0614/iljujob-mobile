@@ -914,20 +914,11 @@ final isDeleted = job.status == 'deleted';
           backgroundColor: Colors.white,
           elevation: 0,
           centerTitle: false,
-          iconTheme: const IconThemeData(color: Color(0xFF191F28)),
-          title: const Text(
-            '내 활동',
-            style: TextStyle(
-              fontFamily: 'Jalnan2TTF',
-              color: kBrandBlue,
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
+          title: const Text('내 활동'),
           actions: [
             IconButton(
               onPressed: _loadAll,
-              icon: const Icon(Icons.refresh_rounded, color: Color(0xFF6B7280)),
+              icon: const Icon(Icons.refresh_rounded),
               tooltip: '새로고침',
             ),
           ],

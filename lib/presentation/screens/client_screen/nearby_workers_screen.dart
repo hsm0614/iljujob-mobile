@@ -182,7 +182,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('긴급 호출', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+            const Text('긴급 호출', style: TextStyle(fontFamily: 'Jalnan2TTF', fontSize: 17, fontWeight: FontWeight.w900, color: AppColors.primary)),
             Text(widget.jobTitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w400)),
           ],
         ),

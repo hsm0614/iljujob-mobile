@@ -450,12 +450,9 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
         surfaceTintColor: Colors.white,
         centerTitle: false,
         // quickMode일 때 타이틀 다르게
-        title: Text(
-          widget.quickMode ? '빠른 등록 · 공고 선택' : '기존 공고 선택',
-          style: const TextStyle(color: textDark, fontWeight: FontWeight.w900),
-        ),
+        title: Text(widget.quickMode ? '빠른 등록 · 공고 선택' : '기존 공고 선택'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: textDark),
+          icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),
       ),

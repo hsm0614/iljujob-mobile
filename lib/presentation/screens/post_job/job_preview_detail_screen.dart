@@ -187,15 +187,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
         backgroundColor: Colors.white,
         elevation: 0.5,
         foregroundColor: _kBrand,
-        title: const Text(
-          '공고 미리보기',
-          style: TextStyle(
-            fontFamily: 'Jalnan2TTF',
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-            color: _kBrand,
-          ),
-        ),
+        title: const Text('공고 미리보기'),
         actions: [
           Container(
             margin: const EdgeInsets.only(right: 16),

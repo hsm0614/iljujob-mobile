@@ -118,16 +118,8 @@ class PostJobScreen extends StatelessWidget {
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0.5,
-          foregroundColor: AppColors.textPrimary,
           titleSpacing: 0,
-          title: Text(
-            isRepost ? '공고 다시 올리기' : '알바 공고 작성',
-            style: const TextStyle(
-              fontFamily: 'Jalnan2TTF',
-              fontSize: 20,
-              color: AppColors.primary,
-            ),
-          ),
+          title: Text(isRepost ? '공고 다시 올리기' : '알바 공고 작성'),
         ),
         body: SafeArea(
           child: GestureDetector(
