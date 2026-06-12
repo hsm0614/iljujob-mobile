@@ -29,11 +29,12 @@ class _FullMapScreenState extends State<FullMapScreen> {
     // 프레임 붙은 뒤 살짝 대기 (레이어 준비)
     await Future.delayed(const Duration(milliseconds: 80));
 
+    // setPoiVisible은 실패해도 무시 — 루프 밖에서 단 1회 호출
+    try { await _c!.setPoiVisible(isVisible: true); } catch (_) {}
+
     Exception? last;
     for (int i = 0; i < 8; i++) {
       try {
-        // 엔진 워밍업 & 카메라 고정
-        await _c!.setPoiVisible(isVisible: true);
         await _c!.moveCamera(
           cameraUpdate: km.CameraUpdate.fromLatLng(pos),
           animation: const km.CameraAnimation(

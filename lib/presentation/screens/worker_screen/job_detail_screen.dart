@@ -2050,13 +2050,13 @@ class _MapWithSafeMarkerState extends State<MapWithSafeMarker> {
 
     final pos = km.LatLng(latitude: widget.lat, longitude: widget.lng);
 
+    // setPoiVisible은 실패해도 무시 — 루프 밖에서 단 1회 호출
+    try { await _c!.setPoiVisible(isVisible: true); } catch (_) {}
+
     // 2) 최대 10회, 100ms 간격 재시도
     Exception? last;
     for (var i = 0; i < 10; i++) {
       try {
-        // 레이어 “워밍업” (엔진 쿡 찌르기)
-        await _c!.setPoiVisible(isVisible: true);
-
         await _c!.moveCamera(
           cameraUpdate: km.CameraUpdate.fromLatLng(pos),
           animation: const km.CameraAnimation(
