@@ -183,12 +183,14 @@ class _WorkerMapViewState extends State<WorkerMapView> {
 
   // ── 내 공고 ───────────────────────────────────────────────────
   Future<void> _fetchJobs() async {
-    if (_clientId == null) return;
+    if (_clientId == null) { debugPrint('[MAP][JOBS] clientId null — 중단'); return; }
     if (mounted) setState(() => _loading = true);
+    debugPrint('[MAP][JOBS] 요청 시작 clientId=$_clientId');
     try {
       final res = await http
           .get(Uri.parse('$baseUrl/api/job/my-jobs?clientId=$_clientId&limit=50'))
           .timeout(const Duration(seconds: 10));
+      debugPrint('[MAP][JOBS] 응답 status=${res.statusCode}');
       if (!mounted) return;
       if (res.statusCode == 200) {
         final raw = jsonDecode(res.body);
@@ -200,25 +202,37 @@ class _WorkerMapViewState extends State<WorkerMapView> {
             .toList()
           ..sort((a, b) => (b.isPinnedNow ? 1 : 0) - (a.isPinnedNow ? 1 : 0));
 
+        debugPrint('[MAP][JOBS] 공고 ${jobs.length}개 로드 / 위치있는것: ${jobs.where((j) => j.hasLocation).length}개');
+        for (final j in jobs) {
+          debugPrint('  └ [${j.id}] "${j.title}" lat=${j.lat} lng=${j.lng} hasLoc=${j.hasLocation}');
+        }
+
         setState(() { _jobs = jobs; _loading = false; });
         // 지도 준비됐으면 바로 카드 오버레이 표시
         if (_mapReady && jobs.isNotEmpty) {
+          debugPrint('[MAP][JOBS] mapReady=true → selectJob(0) + updateCardPositions');
           _selectJob(0);
           await _updateCardPositions();
+        } else {
+          debugPrint('[MAP][JOBS] mapReady=$_mapReady, jobs=${jobs.length} → 지도 준비 대기');
         }
       } else {
+        debugPrint('[MAP][JOBS] 에러 body=${res.body}');
         if (mounted) setState(() => _loading = false);
       }
-    } on TimeoutException { if (mounted) setState(() => _loading = false); }
-      on SocketException  { if (mounted) setState(() => _loading = false); }
-      catch (_)           { if (mounted) setState(() => _loading = false); }
+    } on TimeoutException { debugPrint('[MAP][JOBS] Timeout'); if (mounted) setState(() => _loading = false); }
+      on SocketException  { debugPrint('[MAP][JOBS] SocketException'); if (mounted) setState(() => _loading = false); }
+      catch (e)           { debugPrint('[MAP][JOBS] catch: $e'); if (mounted) setState(() => _loading = false); }
   }
 
   // ── 카카오맵 준비 ──────────────────────────────────────────────
   void _onMapCreated(km.KakaoMapController ctrl) {
+    debugPrint('[MAP] onMapCreated 호출됨');
     _ctrl = ctrl;
-    // 카메라 이동이 끝나면 Flutter 오버레이 카드 위치 업데이트
-    _cameraSub = ctrl.onCameraMoveEndStream.listen((_) => _updateCardPositions());
+    _cameraSub = ctrl.onCameraMoveEndStream.listen((e) {
+      debugPrint('[MAP] onCameraMoveEnd 이벤트 수신');
+      _updateCardPositions();
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.delayed(const Duration(milliseconds: 100));
       await _setupMap();
@@ -226,10 +240,12 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   }
 
   Future<void> _setupMap() async {
+    debugPrint('[MAP] _setupMap 시작 ctrl=${_ctrl != null}');
     if (_ctrl == null) return;
-    try { await _ctrl!.setPoiVisible(isVisible: true); } catch (_) {}
+    try { await _ctrl!.setPoiVisible(isVisible: true); debugPrint('[MAP] setPoiVisible OK'); } catch (e) { debugPrint('[MAP] setPoiVisible 실패: $e'); }
     if (!mounted) return;
     _mapReady = true;
+    debugPrint('[MAP] _setupMap 완료 — mapReady=true, jobs=${_jobs.length}');
     if (_jobs.isNotEmpty) {
       _selectJob(0);
       await _updateCardPositions();
@@ -238,16 +254,33 @@ class _WorkerMapViewState extends State<WorkerMapView> {
 
   // ── 직방 스타일: LatLng → 화면 좌표 변환 후 setState ───────────
   Future<void> _updateCardPositions() async {
-    if (_ctrl == null || !mounted) return;
+    if (_ctrl == null || !mounted) {
+      debugPrint('[MAP][CARD] 스킵 — ctrl=${_ctrl != null}, mounted=$mounted');
+      return;
+    }
+    final jobsWithLoc = _jobs.where((j) => j.hasLocation).toList();
+    final workersWithLoc = _currentWorkers.where((w) => w.hasLocation).toList();
+    debugPrint('[MAP][CARD] toScreenPoint 시작 — jobs=${jobsWithLoc.length}, workers=${workersWithLoc.length}');
 
-    // 공고 + 구직자 전부 병렬로 변환
-    final jobFutures = _jobs.where((j) => j.hasLocation).map((j) async {
-      try { return (j.id, await _ctrl!.toScreenPoint(position: j.pos)); }
-      catch (_) { return (j.id, null); }
+    final jobFutures = jobsWithLoc.map((j) async {
+      try {
+        final p = await _ctrl!.toScreenPoint(position: j.pos);
+        debugPrint('[MAP][CARD] job[${j.id}] "${j.title}" → offset=$p');
+        return (j.id, p);
+      } catch (e) {
+        debugPrint('[MAP][CARD] job[${j.id}] toScreenPoint 실패: $e');
+        return (j.id, null as Offset?);
+      }
     }).toList();
-    final workerFutures = _currentWorkers.where((w) => w.hasLocation).map((w) async {
-      try { return (w.id, await _ctrl!.toScreenPoint(position: w.pos)); }
-      catch (_) { return (w.id, null); }
+    final workerFutures = workersWithLoc.map((w) async {
+      try {
+        final p = await _ctrl!.toScreenPoint(position: w.pos);
+        debugPrint('[MAP][CARD] worker[${w.id}] → offset=$p');
+        return (w.id, p);
+      } catch (e) {
+        debugPrint('[MAP][CARD] worker[${w.id}] toScreenPoint 실패: $e');
+        return (w.id, null as Offset?);
+      }
     }).toList();
 
     final jobResults    = await Future.wait(jobFutures);
@@ -260,27 +293,33 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       _workerScreenPos.clear();
       for (final (id, pos) in workerResults) { _workerScreenPos[id] = pos; }
     });
+    debugPrint('[MAP][CARD] setState 완료 — jobPositions: $_jobScreenPos');
   }
 
   // ── 공고 선택 ─────────────────────────────────────────────────
   void _selectJob(int idx) {
+    debugPrint('[MAP] selectJob($idx) — jobs=${_jobs.length}');
     if (idx < 0 || idx >= _jobs.length) return;
     setState(() {
       _selectedIdx = idx;
       _workerCount = 0;
     });
     final job = _jobs[idx];
+    debugPrint('[MAP] selectJob → "${job.title}" lat=${job.lat} lng=${job.lng} hasLoc=${job.hasLocation}');
     if (job.hasLocation && _ctrl != null) {
       _ctrl!.moveCamera(
         cameraUpdate: km.CameraUpdate(position: job.pos, type: 0),
         animation: const km.CameraAnimation(duration: 350, autoElevation: true, isConsecutive: false),
       );
-      // onCameraMoveEndStream → _updateCardPositions 자동 호출됨
+      debugPrint('[MAP] moveCamera 호출 → onCameraMoveEnd 대기');
+    } else {
+      debugPrint('[MAP] moveCamera 스킵 — hasLoc=${job.hasLocation}, ctrl=${_ctrl != null}');
     }
     if (job.hasLocation) _loadWorkers(job);
   }
 
   Future<void> _loadWorkers(_Job job) async {
+    debugPrint('[MAP][WORKER] loadWorkers jobId=${job.id}');
     if (mounted) setState(() => _workersLoading = true);
     final results = await Future.wait([
       _dotCache.containsKey(job.id)
@@ -291,6 +330,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     if (!mounted) return;
     final workers = results[0] as List<_Worker>;
     final count   = results[1] as int;
+    debugPrint('[MAP][WORKER] 알바생 ${workers.length}명 / 반경 count=$count');
     _dotCache[job.id] = workers;
     setState(() {
       _currentWorkers = workers;
@@ -383,6 +423,22 @@ class _WorkerMapViewState extends State<WorkerMapView> {
           ),
         ),
 
+        // ── 디버그: 카드 상태 오버레이 ───────────────────────────
+        Positioned(
+          left: 8, bottom: 200,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(8)),
+            child: Text(
+              'jobs=${_jobs.length} mapReady=$_mapReady\n'
+              'jobPos=${_jobScreenPos.length} workerPos=${_workerScreenPos.length}\n'
+              'jobs w/loc=${_jobs.where((j)=>j.hasLocation).length}\n'
+              '${_jobScreenPos.entries.map((e) => '#${e.key}:${e.value?.dx.toStringAsFixed(0)},${e.value?.dy.toStringAsFixed(0)}').join(' ')}',
+              style: const TextStyle(color: Colors.white, fontSize: 10),
+            ),
+          ),
+        ),
+
         // ── 구직자 도트 오버레이 ──────────────────────────────────
         ..._currentWorkers.where((w) => w.hasLocation).map((w) {
           final p = _workerScreenPos[w.id];
@@ -407,7 +463,10 @@ class _WorkerMapViewState extends State<WorkerMapView> {
             child: FractionalTranslation(
               translation: const Offset(-0.5, -1.0),
               child: GestureDetector(
-                onTap: () => _selectJob(i),
+                onTap: () {
+                  debugPrint('[MAP][TAP] 카드 탭 — job[$i] "${job.title}"');
+                  _selectJob(i);
+                },
                 child: _JobMapCard(job: job, isSelected: isSelected),
               ),
             ),
