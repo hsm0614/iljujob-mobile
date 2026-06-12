@@ -1111,12 +1111,26 @@ class _ChatListScreenState extends State<ChatListScreen>
               SliverAppBar(
                 pinned: true,
                 elevation: 0,
-                backgroundColor: AppColors.bgCard,
-                expandedHeight: 124,
+                backgroundColor: AppColors.primary,
+                surfaceTintColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                expandedHeight: 130,
+                toolbarHeight: 88,
+                titleSpacing: 20,
+                title: const Text(
+                  '채팅',
+                  style: TextStyle(
+                    fontFamily: 'Jalnan2TTF',
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    height: 1.1,
+                  ),
+                ),
                 actions: [
                   if (_isBannerHidden)
                     Padding(
-                      padding: const EdgeInsets.only(right: 12, top: 8),
+                      padding: const EdgeInsets.only(right: 12),
                       child: TextButton.icon(
                         onPressed: () => _setBannerHidden(false),
                         icon: const Icon(
@@ -1155,31 +1169,18 @@ class _ChatListScreenState extends State<ChatListScreen>
                     ),
                     child: SafeArea(
                       bottom: false,
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 10),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '채팅',
-                              style: TextStyle(
-                                fontFamily: 'Jalnan2TTF',
-                                color: Colors.white,
-                                fontSize: 22,
-                                height: 1.2,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            _SearchField(
-                              onChanged: (q) => setState(() => _query = q),
-                            ),
-                          ],
+                      child: Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                          child: _SearchField(
+                            onChanged: (q) => setState(() => _query = q),
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-                toolbarHeight: 0,
               ),
               SliverPersistentHeader(
                 pinned: true,
