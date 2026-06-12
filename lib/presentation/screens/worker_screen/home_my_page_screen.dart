@@ -37,6 +37,7 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
   int _totalScore = 0;
   String _grade = 'NEW';
   int _loginScore = 0;
+  int _statusUpdateScore = 0;
   int _attendanceScore = 0;
   int _responseScore = 0;
   int _cancelPenalty = 0;
@@ -74,8 +75,10 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
 
   String _formatPhone(String phone) {
     final p = phone.replaceAll(RegExp(r'\D'), '');
-    if (p.length == 11) return '${p.substring(0, 3)}-${p.substring(3, 7)}-${p.substring(7)}';
-    if (p.length == 10) return '${p.substring(0, 2)}-${p.substring(2, 6)}-${p.substring(6)}';
+    if (p.length == 11)
+      return '${p.substring(0, 3)}-${p.substring(3, 7)}-${p.substring(7)}';
+    if (p.length == 10)
+      return '${p.substring(0, 2)}-${p.substring(2, 6)}-${p.substring(6)}';
     return phone;
   }
 
@@ -116,12 +119,16 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
   Future<void> _loadCachedProfile() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final cachedName = [
-      prefs.getString('workerName'),
-      prefs.getString('userName'),
-      prefs.getString('name'),
-      prefs.getString('user_name'),
-    ].where((v) => v != null && v.trim().isNotEmpty).map((e) => e!.trim()).toList();
+    final cachedName =
+        [
+              prefs.getString('workerName'),
+              prefs.getString('userName'),
+              prefs.getString('name'),
+              prefs.getString('user_name'),
+            ]
+            .where((v) => v != null && v.trim().isNotEmpty)
+            .map((e) => e!.trim())
+            .toList();
 
     final cachedPhone = (prefs.getString('userPhone') ?? '').trim();
     final cachedImage = (prefs.getString('workerProfileImageUrl') ?? '').trim();
@@ -149,7 +156,9 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
         );
 
         if (res.statusCode != 200 && uid != null) {
-          res = await http.get(Uri.parse('$baseUrl/api/worker/profile?id=$uid'));
+          res = await http.get(
+            Uri.parse('$baseUrl/api/worker/profile?id=$uid'),
+          );
         }
       } else {
         if (uid == null) return;
@@ -159,9 +168,12 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
       if (res.statusCode != 200) return;
 
       final raw = jsonDecode(res.body);
-      final Map<String, dynamic> data = (raw is Map && raw['data'] is Map)
-          ? Map<String, dynamic>.from(raw['data'] as Map)
-          : (raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{});
+      final Map<String, dynamic> data =
+          (raw is Map && raw['data'] is Map)
+              ? Map<String, dynamic>.from(raw['data'] as Map)
+              : (raw is Map
+                  ? Map<String, dynamic>.from(raw)
+                  : <String, dynamic>{});
 
       final name = _pickFirstNonEmpty(data, [
         'name',
@@ -192,7 +204,8 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
         await prefs.setString('userName', name);
       }
       if (phone.isNotEmpty) await prefs.setString('userPhone', phone);
-      if (image.isNotEmpty) await prefs.setString('workerProfileImageUrl', image);
+      if (image.isNotEmpty)
+        await prefs.setString('workerProfileImageUrl', image);
 
       if (!mounted) return;
       setState(() {
@@ -208,70 +221,71 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
   // Settlement Summary (정산 완료/예정)
   // =========================
 
- Future<void> _refreshSettlementSummary() async {
-  if (!mounted) return;
-  setState(() => _loadingSettle = true);
+  Future<void> _refreshSettlementSummary() async {
+    if (!mounted) return;
+    setState(() => _loadingSettle = true);
 
-  http.Response? res;
-  try {
-    final token = await _token();
-    final uid = await _userId();
+    http.Response? res;
+    try {
+      final token = await _token();
+      final uid = await _userId();
 
-    Uri? uri;
-    if (token.isNotEmpty) {
-      uri = Uri.parse('$baseUrl/api/worker/settlement-summary');
-      res = await http
-          .get(uri, headers: {'Authorization': 'Bearer $token'})
-          .timeout(const Duration(seconds: 8));
-    } else if (uid != null) {
-      uri = Uri.parse('$baseUrl/api/worker/settlement-summary?id=$uid');
-      res = await http.get(uri).timeout(const Duration(seconds: 8));
-    } else {
-      debugPrint('❌ settlement-summary: no token & no userId');
-      return;
+      Uri? uri;
+      if (token.isNotEmpty) {
+        uri = Uri.parse('$baseUrl/api/worker/settlement-summary');
+        res = await http
+            .get(uri, headers: {'Authorization': 'Bearer $token'})
+            .timeout(const Duration(seconds: 8));
+      } else if (uid != null) {
+        uri = Uri.parse('$baseUrl/api/worker/settlement-summary?id=$uid');
+        res = await http.get(uri).timeout(const Duration(seconds: 8));
+      } else {
+        debugPrint('❌ settlement-summary: no token & no userId');
+        return;
+      }
+
+      if (res.statusCode != 200) return;
+
+      final raw = jsonDecode(res.body);
+      final Map<String, dynamic> data =
+          (raw is Map && raw['data'] is Map)
+              ? Map<String, dynamic>.from(raw['data'] as Map)
+              : (raw is Map
+                  ? Map<String, dynamic>.from(raw)
+                  : <String, dynamic>{});
+
+      final settled = _pickFirstInt(data, [
+        'settledAmount',
+        'completedAmount',
+        'paidAmount',
+        'settled',
+        'completed',
+        'paid',
+      ]);
+
+      final pending = _pickFirstInt(data, [
+        'pendingAmount',
+        'expectedAmount',
+        'scheduledAmount',
+        'pending',
+        'expected',
+        'scheduled',
+      ]);
+
+      if (!mounted) return;
+      setState(() {
+        _settledAmount = settled;
+        _pendingAmount = pending;
+      });
+    } on TimeoutException {
+      debugPrint('⏱️ settlement-summary timeout (서버/네트워크 응답 없음)');
+    } catch (e) {
+      debugPrint('❌ settlement-summary error: $e');
+    } finally {
+      if (!mounted) return;
+      setState(() => _loadingSettle = false); // ✅ 무조건 종료
     }
-
-
-
-    if (res.statusCode != 200) return;
-
-    final raw = jsonDecode(res.body);
-    final Map<String, dynamic> data = (raw is Map && raw['data'] is Map)
-        ? Map<String, dynamic>.from(raw['data'] as Map)
-        : (raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{});
-
-    final settled = _pickFirstInt(data, [
-      'settledAmount',
-      'completedAmount',
-      'paidAmount',
-      'settled',
-      'completed',
-      'paid',
-    ]);
-
-    final pending = _pickFirstInt(data, [
-      'pendingAmount',
-      'expectedAmount',
-      'scheduledAmount',
-      'pending',
-      'expected',
-      'scheduled',
-    ]);
-
-    if (!mounted) return;
-    setState(() {
-      _settledAmount = settled;
-      _pendingAmount = pending;
-    });
-  } on TimeoutException {
-    debugPrint('⏱️ settlement-summary timeout (서버/네트워크 응답 없음)');
-  } catch (e) {
-    debugPrint('❌ settlement-summary error: $e');
-  } finally {
-    if (!mounted) return;
-    setState(() => _loadingSettle = false); // ✅ 무조건 종료
   }
-}
 
   // =========================
   // Activity Score
@@ -289,12 +303,14 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
       if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         setState(() {
-          _totalScore      = (data['total_score']         as num?)?.toInt() ?? 0;
-          _grade           = data['grade']?.toString() ?? 'NEW';
-          _loginScore      = (data['login_score']         as num?)?.toInt() ?? 0;
-          _attendanceScore = (data['attendance_score']    as num?)?.toInt() ?? 0;
-          _responseScore   = (data['response_rate_score'] as num?)?.toInt() ?? 0;
-          _cancelPenalty   = (data['cancel_penalty']      as num?)?.toInt() ?? 0;
+          _totalScore = (data['total_score'] as num?)?.toInt() ?? 0;
+          _grade = data['grade']?.toString() ?? 'NEW';
+          _loginScore = (data['login_score'] as num?)?.toInt() ?? 0;
+          _statusUpdateScore =
+              (data['status_update_score'] as num?)?.toInt() ?? 0;
+          _attendanceScore = (data['attendance_score'] as num?)?.toInt() ?? 0;
+          _responseScore = (data['response_rate_score'] as num?)?.toInt() ?? 0;
+          _cancelPenalty = (data['cancel_penalty'] as num?)?.toInt() ?? 0;
         });
       }
     } catch (_) {
@@ -317,104 +333,111 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
   }
 
   Future<void> _confirmLogout() async {
-  if (!mounted) return;
+    if (!mounted) return;
 
-  final ok = await showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true, // ✅ 중요 (안드로이드 하단 겹침 방지)
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => _ConfirmSheet(
-      title: '로그아웃할까요?',
-      message: '로그아웃하면 다시 로그인해야 해요.',
-      confirmText: '로그아웃',
-      confirmColor: const Color(0xFFDC2626),
-      icon: Icons.logout_rounded,
-    ),
-  );
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true, // ✅ 중요 (안드로이드 하단 겹침 방지)
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder:
+          (_) => _ConfirmSheet(
+            title: '로그아웃할까요?',
+            message: '로그아웃하면 다시 로그인해야 해요.',
+            confirmText: '로그아웃',
+            confirmColor: const Color(0xFFDC2626),
+            icon: Icons.logout_rounded,
+          ),
+    );
 
-  if (ok != true) return;
-
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.clear();
-
-  if (!mounted) return;
-  Navigator.of(context, rootNavigator: true)
-      .pushNamedAndRemoveUntil('/onboarding', (route) => false);
-}
-Future<void> _confirmWithdraw() async {
-  if (!mounted) return;
-
-  final ok = await showModalBottomSheet<bool>(
-    context: context,
-    isScrollControlled: true, // ✅ 중요
-    useSafeArea: true,
-    backgroundColor: Colors.transparent,
-    builder: (_) => const _ConfirmSheet(
-      title: '정말 탈퇴할까요?',
-      message: '탈퇴하면 계정 정보가 삭제되고 복구가 어려워요.',
-      confirmText: '탈퇴하기',
-      confirmColor: Color(0xFFDC2626),
-      icon: Icons.person_off_rounded,
-    ),
-  );
-
-  if (ok != true) return;
-  await _withdrawAccount();
-}
-
-Future<void> _withdrawAccount() async {
-  final uid = await _userId();
-  if (uid == null) {
-    debugPrint('❌ withdraw: no userId');
-    return;
-  }
-
-  final uri = Uri.parse('$baseUrl/api/worker/profile?id=$uid');
-
-  try {
-    final token = await _token();
-
-    http.Response res;
-    if (token.isNotEmpty) {
-      res = await http
-          .delete(uri, headers: {'Authorization': 'Bearer $token'})
-          .timeout(const Duration(seconds: 8));
-
-      // 토큰 방식 막혀있으면(서버 구현차이) id 방식 재시도
-      if (res.statusCode == 401 || res.statusCode == 403) {
-        res = await http.delete(uri).timeout(const Duration(seconds: 8));
-      }
-    } else {
-      res = await http.delete(uri).timeout(const Duration(seconds: 8));
-    }
-
-    if (res.statusCode != 200) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('탈퇴 실패 (${res.statusCode})')),
-      );
-      return;
-    }
+    if (ok != true) return;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
 
     if (!mounted) return;
-    Navigator.of(context, rootNavigator: true)
-        .pushNamedAndRemoveUntil('/onboarding', (route) => false);
-  } on TimeoutException {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('서버 응답이 늦어요. 잠시 후 다시 시도해줘')),
-    );
-  } catch (e) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('탈퇴 중 오류가 발생했어')),
-    );
+    Navigator.of(
+      context,
+      rootNavigator: true,
+    ).pushNamedAndRemoveUntil('/onboarding', (route) => false);
   }
-}
+
+  Future<void> _confirmWithdraw() async {
+    if (!mounted) return;
+
+    final ok = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true, // ✅ 중요
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder:
+          (_) => const _ConfirmSheet(
+            title: '정말 탈퇴할까요?',
+            message: '탈퇴하면 계정 정보가 삭제되고 복구가 어려워요.',
+            confirmText: '탈퇴하기',
+            confirmColor: Color(0xFFDC2626),
+            icon: Icons.person_off_rounded,
+          ),
+    );
+
+    if (ok != true) return;
+    await _withdrawAccount();
+  }
+
+  Future<void> _withdrawAccount() async {
+    final uid = await _userId();
+    if (uid == null) {
+      debugPrint('❌ withdraw: no userId');
+      return;
+    }
+
+    final uri = Uri.parse('$baseUrl/api/worker/profile?id=$uid');
+
+    try {
+      final token = await _token();
+
+      http.Response res;
+      if (token.isNotEmpty) {
+        res = await http
+            .delete(uri, headers: {'Authorization': 'Bearer $token'})
+            .timeout(const Duration(seconds: 8));
+
+        // 토큰 방식 막혀있으면(서버 구현차이) id 방식 재시도
+        if (res.statusCode == 401 || res.statusCode == 403) {
+          res = await http.delete(uri).timeout(const Duration(seconds: 8));
+        }
+      } else {
+        res = await http.delete(uri).timeout(const Duration(seconds: 8));
+      }
+
+      if (res.statusCode != 200) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('탈퇴 실패 (${res.statusCode})')));
+        return;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+
+      if (!mounted) return;
+      Navigator.of(
+        context,
+        rootNavigator: true,
+      ).pushNamedAndRemoveUntil('/onboarding', (route) => false);
+    } on TimeoutException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('서버 응답이 늦어요. 잠시 후 다시 시도해줘')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('탈퇴 중 오류가 발생했어')));
+    }
+  }
 
   // =========================
   // UI
@@ -497,6 +520,7 @@ Future<void> _withdrawAccount() async {
                   grade: _grade,
                   brandBlue: kBrandBlue,
                   loginScore: _loginScore,
+                  statusUpdateScore: _statusUpdateScore,
                   attendanceScore: _attendanceScore,
                   responseScore: _responseScore,
                   cancelPenalty: _cancelPenalty,
@@ -518,22 +542,27 @@ Future<void> _withdrawAccount() async {
                     _ItemTile(
                       icon: Icons.favorite_border,
                       label: '찜한 공고',
-                      onTap: () => Navigator.pushNamed(context, '/bookmarked-jobs'),
+                      onTap:
+                          () =>
+                              Navigator.pushNamed(context, '/bookmarked-jobs'),
                     ),
                     _ItemTile(
                       icon: Icons.notifications_active,
                       label: '알림 설정',
-                      onTap: () => Navigator.pushNamed(context, '/notifications'),
+                      onTap:
+                          () => Navigator.pushNamed(context, '/notifications'),
                     ),
                     _ItemTile(
                       icon: Icons.report,
                       label: '신고 내역',
-                      onTap: () => Navigator.pushNamed(context, '/report-history'),
+                      onTap:
+                          () => Navigator.pushNamed(context, '/report-history'),
                     ),
                     _ItemTile(
                       icon: Icons.block,
                       label: '차단한 사용자',
-                      onTap: () => Navigator.pushNamed(context, '/blocked-users'),
+                      onTap:
+                          () => Navigator.pushNamed(context, '/blocked-users'),
                     ),
                   ],
                 ),
@@ -542,7 +571,10 @@ Future<void> _withdrawAccount() async {
 
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: _SectionCard(
                   title: '고객센터',
                   children: [
@@ -568,7 +600,10 @@ Future<void> _withdrawAccount() async {
 
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: _SectionCard(
                   title: '서비스',
                   children: const [
@@ -592,17 +627,31 @@ Future<void> _withdrawAccount() async {
                     _ItemTile(
                       icon: Icons.logout_rounded,
                       label: '로그아웃',
-                      labelStyle: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFFDC2626)),
-                      trailing: const Icon(Icons.logout, size: 18, color: Color(0xFFDC2626)),
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFFDC2626),
+                      ),
+                      trailing: const Icon(
+                        Icons.logout,
+                        size: 18,
+                        color: Color(0xFFDC2626),
+                      ),
                       onTap: _confirmLogout,
                     ),
                     _ItemTile(
-  icon: Icons.person_off_rounded,
-  label: '회원 탈퇴',
-  labelStyle: const TextStyle(fontWeight: FontWeight.w800, color: Color(0xFFDC2626)),
-  trailing: const Icon(Icons.delete_forever, size: 18, color: Color(0xFFDC2626)),
-  onTap: _confirmWithdraw,
-),
+                      icon: Icons.person_off_rounded,
+                      label: '회원 탈퇴',
+                      labelStyle: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFFDC2626),
+                      ),
+                      trailing: const Icon(
+                        Icons.delete_forever,
+                        size: 18,
+                        color: Color(0xFFDC2626),
+                      ),
+                      onTap: _confirmWithdraw,
+                    ),
                   ],
                 ),
               ),
@@ -650,7 +699,11 @@ class _WorkerProfileCard extends StatelessWidget {
         color: Colors.white.withOpacity(0.97),
         borderRadius: BorderRadius.circular(20),
         boxShadow: const [
-          BoxShadow(color: Color(0x1F000000), blurRadius: 10, offset: Offset(0, 6)),
+          BoxShadow(
+            color: Color(0x1F000000),
+            blurRadius: 10,
+            offset: Offset(0, 6),
+          ),
         ],
       ),
       padding: const EdgeInsets.all(12),
@@ -664,10 +717,16 @@ class _WorkerProfileCard extends StatelessWidget {
                   CircleAvatar(
                     radius: 30,
                     backgroundColor: const Color(0xFFEAF2FF),
-                    backgroundImage: (!loading && hasImg) ? NetworkImage(imageUrl) : null,
-                    child: (loading || !hasImg)
-                        ? const Icon(Icons.account_circle, size: 30, color: Color(0xFF6B7280))
-                        : null,
+                    backgroundImage:
+                        (!loading && hasImg) ? NetworkImage(imageUrl) : null,
+                    child:
+                        (loading || !hasImg)
+                            ? const Icon(
+                              Icons.account_circle,
+                              size: 30,
+                              color: Color(0xFF6B7280),
+                            )
+                            : null,
                   ),
                   Positioned(
                     bottom: -2,
@@ -683,9 +742,18 @@ class _WorkerProfileCard extends StatelessWidget {
                           decoration: BoxDecoration(
                             color: brandBlue,
                             shape: BoxShape.circle,
-                            boxShadow: const [BoxShadow(color: Color(0xFFBCC0CB), blurRadius: 4)],
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0xFFBCC0CB),
+                                blurRadius: 4,
+                              ),
+                            ],
                           ),
-                          child: const Icon(Icons.edit_rounded, size: 16, color: Colors.white),
+                          child: const Icon(
+                            Icons.edit_rounded,
+                            size: 16,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -726,9 +794,14 @@ class _WorkerProfileCard extends StatelessWidget {
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFFEAF2FF),
                   foregroundColor: const Color(0xFF3B8AFF),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   textStyle: const TextStyle(fontWeight: FontWeight.w800),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
                   minimumSize: const Size(0, 40),
                 ),
               ),
@@ -886,7 +959,10 @@ class _Pill extends StatelessWidget {
                 text,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12.8, fontWeight: FontWeight.w800),
+                style: const TextStyle(
+                  fontSize: 12.8,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ],
@@ -900,10 +976,7 @@ class _SectionCard extends StatelessWidget {
   final String title;
   final List<Widget> children;
 
-  const _SectionCard({
-    required this.title,
-    required this.children,
-  });
+  const _SectionCard({required this.title, required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -912,7 +985,11 @@ class _SectionCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         boxShadow: const [
-          BoxShadow(color: Color(0x1F000000), blurRadius: 8, offset: Offset(0, 4)),
+          BoxShadow(
+            color: Color(0x1F000000),
+            blurRadius: 8,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       child: Column(
@@ -984,10 +1061,21 @@ class _ItemTile extends StatelessWidget {
           leading: Icon(icon, size: 22, color: const Color(0xFF3B8AFF)),
           title: Text(
             label,
-            style: labelStyle ?? t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+            style:
+                labelStyle ??
+                t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
-          trailing: trailing ?? const Icon(Icons.arrow_forward_ios, size: 16, color: Color(0xFF9CA3AF)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          trailing:
+              trailing ??
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: Color(0xFF9CA3AF),
+              ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 6,
+            vertical: 2,
+          ),
           dense: true,
           minLeadingWidth: 0,
         ),
@@ -1027,8 +1115,13 @@ class _ExpandableBizInfo extends StatelessWidget {
       data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
       child: ExpansionTile(
         leading: Icon(Icons.info_outline_rounded, color: brandBlue),
-        title: const Text('사업자 정보', style: TextStyle(fontWeight: FontWeight.w800)),
-        shape: const RoundedRectangleBorder(side: BorderSide(color: Colors.transparent)),
+        title: const Text(
+          '사업자 정보',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+        shape: const RoundedRectangleBorder(
+          side: BorderSide(color: Colors.transparent),
+        ),
         childrenPadding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
         children: const [
           _BizInfoItem('법인명', '주식회사 찾다'),
@@ -1063,10 +1156,16 @@ class _BizInfoItem extends StatelessWidget {
         children: [
           SizedBox(
             width: 110,
-            child: Text(k, style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13.5)),
+            child: Text(
+              k,
+              style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13.5),
+            ),
           ),
           Expanded(
-            child: Text(v, style: const TextStyle(fontSize: 13.5, color: Color(0xFF191F28))),
+            child: Text(
+              v,
+              style: const TextStyle(fontSize: 13.5, color: Color(0xFF191F28)),
+            ),
           ),
         ],
       ),
@@ -1090,79 +1189,96 @@ class _ConfirmSheet extends StatelessWidget {
   });
 
   @override
-Widget build(BuildContext context) {
-  final bottomSafe = MediaQuery.of(context).viewPadding.bottom;
+  Widget build(BuildContext context) {
+    final bottomSafe = MediaQuery.of(context).viewPadding.bottom;
 
-  return Container(
-    decoration: const BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-    ),
-    padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomSafe), // ✅ 여기!
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 42,
-          height: 5,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE5E7EB),
-            borderRadius: BorderRadius.circular(999),
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          width: 52,
-          height: 52,
-          decoration: BoxDecoration(
-            color: confirmColor.withOpacity(0.10),
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Icon(icon, color: confirmColor),
-        ),
-        const SizedBox(height: 12),
-        Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 6),
-        Text(
-          message,
-          textAlign: TextAlign.center,
-          style: const TextStyle(fontSize: 12.5, color: Color(0xFF6B7280), height: 1.35),
-        ),
-        const SizedBox(height: 14),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => Navigator.pop(context, false),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF111827),
-                  side: const BorderSide(color: Color(0xFFE5E7EB)),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-                child: const Text('취소', style: TextStyle(fontWeight: FontWeight.w900)),
-              ),
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomSafe), // ✅ 여기!
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 42,
+            height: 5,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE5E7EB),
+              borderRadius: BorderRadius.circular(999),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: confirmColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                  elevation: 0,
-                ),
-                child: Text(confirmText, style: const TextStyle(fontWeight: FontWeight.w900)),
-              ),
+          ),
+          const SizedBox(height: 12),
+          Container(
+            width: 52,
+            height: 52,
+            decoration: BoxDecoration(
+              color: confirmColor.withOpacity(0.10),
+              borderRadius: BorderRadius.circular(16),
             ),
-          ],
-        ),
-      ],
-    ),
-  );
-}
+            child: Icon(icon, color: confirmColor),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 12.5,
+              color: Color(0xFF6B7280),
+              height: 1.35,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF111827),
+                    side: const BorderSide(color: Color(0xFFE5E7EB)),
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: const Text(
+                    '취소',
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: confirmColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    confirmText,
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /* --------------------------- Trust Score Card --------------------------- */
@@ -1173,6 +1289,7 @@ class _TrustScoreCard extends StatelessWidget {
   final String grade;
   final Color brandBlue;
   final int loginScore;
+  final int statusUpdateScore;
   final int attendanceScore;
   final int responseScore;
   final int cancelPenalty;
@@ -1183,6 +1300,7 @@ class _TrustScoreCard extends StatelessWidget {
     required this.grade,
     required this.brandBlue,
     this.loginScore = 0,
+    this.statusUpdateScore = 0,
     this.attendanceScore = 0,
     this.responseScore = 0,
     this.cancelPenalty = 0,
@@ -1190,32 +1308,47 @@ class _TrustScoreCard extends StatelessWidget {
 
   Color get _gradeColor {
     switch (grade) {
-      case 'S': return const Color(0xFFFF6B00);
-      case 'A': return const Color(0xFF3B8AFF);
-      case 'B': return const Color(0xFF10B981);
-      case 'C': return const Color(0xFF6B7280);
-      default:  return const Color(0xFF9CA3AF);
+      case 'S':
+        return const Color(0xFFFF6B00);
+      case 'A':
+        return const Color(0xFF3B8AFF);
+      case 'B':
+        return const Color(0xFF10B981);
+      case 'C':
+        return const Color(0xFF6B7280);
+      default:
+        return const Color(0xFF9CA3AF);
     }
   }
 
   String get _gradeLabel {
     switch (grade) {
-      case 'S': return '최고 신뢰';
-      case 'A': return '높은 신뢰';
-      case 'B': return '보통';
-      case 'C': return '낮음';
-      default:  return '새로운 알바생';
+      case 'S':
+        return '최고 신뢰';
+      case 'A':
+        return '높은 신뢰';
+      case 'B':
+        return '보통';
+      case 'C':
+        return '낮음';
+      default:
+        return '새로운 알바생';
     }
   }
 
   // Returns (nextGrade, minScore, maxScore) for progress bar
   (String, int, int) get _nextGradeInfo {
     switch (grade) {
-      case 'NEW': return ('C', 0, 30);
-      case 'C':   return ('B', 30, 60);
-      case 'B':   return ('A', 60, 100);
-      case 'A':   return ('S', 100, 150);
-      default:    return ('S', 150, 150); // already S
+      case 'NEW':
+        return ('C', 0, 30);
+      case 'C':
+        return ('B', 30, 60);
+      case 'B':
+        return ('A', 60, 100);
+      case 'A':
+        return ('S', 100, 150);
+      default:
+        return ('S', 150, 150); // already S
     }
   }
 
@@ -1223,148 +1356,231 @@ class _TrustScoreCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final (nextGrade, minScore, maxScore) = _nextGradeInfo;
     final isMax = grade == 'S';
-    final progress = isMax
-        ? 1.0
-        : ((score - minScore) / (maxScore - minScore)).clamp(0.0, 1.0);
+    final progress =
+        isMax
+            ? 1.0
+            : ((score - minScore) / (maxScore - minScore)).clamp(0.0, 1.0);
     final remaining = isMax ? 0 : (maxScore - score).clamp(0, 999);
 
     return GestureDetector(
       onTap: loading ? null : () => _showDetailSheet(context),
       child: Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(color: Color(0x0F000000), blurRadius: 8, offset: Offset(0, 2)),
-        ],
-      ),
-      child: loading
-          ? const SizedBox(height: 72, child: Center(child: CircularProgressIndicator(strokeWidth: 2)))
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ─── 헤더: 등급 아이콘 + 점수 ───────────────────────────
-                Row(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0F000000),
+              blurRadius: 8,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child:
+            loading
+                ? const SizedBox(
+                  height: 72,
+                  child: Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+                : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: _gradeColor.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Center(
-                        child: Text(
-                          grade,
-                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: _gradeColor),
+                    // ─── 헤더: 등급 아이콘 + 점수 ───────────────────────────
+                    Row(
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: _gradeColor.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Center(
+                            child: Text(
+                              grade,
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w900,
+                                color: _gradeColor,
+                              ),
+                            ),
+                          ),
                         ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                '내 신뢰도',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF9CA3AF),
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.baseline,
+                                textBaseline: TextBaseline.alphabetic,
+                                children: [
+                                  Text(
+                                    '$score점',
+                                    style: const TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF111827),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '· $_gradeLabel',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: _gradeColor,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // ─── 진행 바 ─────────────────────────────────────────────
+                    Row(
+                      children: [
+                        Text(
+                          grade,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: _gradeColor,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: progress,
+                              minHeight: 6,
+                              backgroundColor: const Color(0xFFE5E7EB),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                _gradeColor,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          nextGrade,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFF9CA3AF),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      isMax
+                          ? '최고 등급이에요! 계속 유지해주세요 🎉'
+                          : '$nextGrade 등급까지 $remaining점 남았어요',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF6B7280),
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
+                    const SizedBox(height: 14),
+
+                    // ─── 세부 점수 칩 ────────────────────────────────────────
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: [
+                        _ScoreChip(
+                          label: '접속',
+                          score: loginScore,
+                          icon: Icons.wifi_rounded,
+                          color: const Color(0xFF3B8AFF),
+                        ),
+                        _ScoreChip(
+                          label: '활동',
+                          score: statusUpdateScore,
+                          icon: Icons.touch_app_rounded,
+                          color: const Color(0xFF8B5CF6),
+                        ),
+                        _ScoreChip(
+                          label: '출근',
+                          score: attendanceScore,
+                          icon: Icons.check_circle_outline_rounded,
+                          color: const Color(0xFF10B981),
+                        ),
+                        _ScoreChip(
+                          label: '응답',
+                          score: responseScore,
+                          icon: Icons.thumb_up_alt_outlined,
+                          color: const Color(0xFF0F766E),
+                        ),
+                        if (cancelPenalty > 0)
+                          _ScoreChip(
+                            label: '페널티',
+                            score: -cancelPenalty,
+                            icon: Icons.warning_amber_rounded,
+                            color: const Color(0xFFE55353),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+
+                    // ─── 점수 올리는 방법 ────────────────────────────────────
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF4F6FA),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            '내 신뢰도',
-                            style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w600),
+                            '이렇게 올릴 수 있어요',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF374151),
+                            ),
                           ),
-                          const SizedBox(height: 2),
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.baseline,
-                            textBaseline: TextBaseline.alphabetic,
-                            children: [
-                              Text(
-                                '$score점',
-                                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF111827)),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                '· $_gradeLabel',
-                                style: TextStyle(fontSize: 13, color: _gradeColor, fontWeight: FontWeight.w700),
-                              ),
-                            ],
+                          const SizedBox(height: 6),
+                          _TipRow(
+                            icon: Icons.phone_iphone_rounded,
+                            text: '앱에 자주 접속하기 (+3점/일)',
+                          ),
+                          _TipRow(
+                            icon: Icons.search_rounded,
+                            text: '공고 조회 · 북마크 · 채팅하기 (활동 점수 적립)',
+                          ),
+                          _TipRow(
+                            icon: Icons.event_available_rounded,
+                            text: '출근 확정 후 실제 출근하기 (+10점)',
+                          ),
+                          _TipRow(
+                            icon: Icons.warning_amber_rounded,
+                            text: '수락 후 취소/노쇼는 점수가 깎여요',
                           ),
                         ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 14),
-
-                // ─── 진행 바 ─────────────────────────────────────────────
-                Row(
-                  children: [
-                    Text(
-                      grade,
-                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _gradeColor),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(4),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 6,
-                          backgroundColor: const Color(0xFFE5E7EB),
-                          valueColor: AlwaysStoppedAnimation<Color>(_gradeColor),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      nextGrade,
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF9CA3AF)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  isMax
-                      ? '최고 등급이에요! 계속 유지해주세요 🎉'
-                      : '$nextGrade 등급까지 $remaining점 남았어요',
-                  style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
-                ),
-                const SizedBox(height: 14),
-
-                // ─── 세부 점수 칩 ────────────────────────────────────────
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: [
-                    _ScoreChip(label: '접속', score: loginScore, icon: Icons.wifi_rounded, color: const Color(0xFF3B8AFF)),
-                    _ScoreChip(label: '출근', score: attendanceScore, icon: Icons.check_circle_outline_rounded, color: const Color(0xFF10B981)),
-                    _ScoreChip(label: '수락', score: responseScore, icon: Icons.thumb_up_alt_outlined, color: const Color(0xFF8B5CF6)),
-                    if (cancelPenalty > 0)
-                      _ScoreChip(label: '페널티', score: -cancelPenalty, icon: Icons.warning_amber_rounded, color: const Color(0xFFE55353)),
-                  ],
-                ),
-                const SizedBox(height: 14),
-
-                // ─── 점수 올리는 방법 ────────────────────────────────────
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF4F6FA),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '이렇게 올릴 수 있어요',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFF374151)),
-                      ),
-                      const SizedBox(height: 6),
-                      _TipRow(icon: Icons.phone_iphone_rounded, text: '앱에 자주 접속하기 (+3점/일)'),
-                      _TipRow(icon: Icons.search_rounded, text: '공고 조회 · 북마크 · 채팅하기 (활동 점수 적립)'),
-                      _TipRow(icon: Icons.event_available_rounded, text: '출근 확정 후 실제 출근하기 (+10점)'),
-                    ],
-                  ),
-                ),
-              ],
-            ),
       ),
     );
   }
@@ -1375,15 +1591,17 @@ class _TrustScoreCard extends StatelessWidget {
       isScrollControlled: true,
       useSafeArea: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _ScoreDetailSheet(
-        score: score,
-        grade: grade,
-        gradeColor: _gradeColor,
-        loginScore: loginScore,
-        attendanceScore: attendanceScore,
-        responseScore: responseScore,
-        cancelPenalty: cancelPenalty,
-      ),
+      builder:
+          (_) => _ScoreDetailSheet(
+            score: score,
+            grade: grade,
+            gradeColor: _gradeColor,
+            loginScore: loginScore,
+            statusUpdateScore: statusUpdateScore,
+            attendanceScore: attendanceScore,
+            responseScore: responseScore,
+            cancelPenalty: cancelPenalty,
+          ),
     );
   }
 }
@@ -1393,6 +1611,7 @@ class _ScoreDetailSheet extends StatelessWidget {
   final String grade;
   final Color gradeColor;
   final int loginScore;
+  final int statusUpdateScore;
   final int attendanceScore;
   final int responseScore;
   final int cancelPenalty;
@@ -1402,6 +1621,7 @@ class _ScoreDetailSheet extends StatelessWidget {
     required this.grade,
     required this.gradeColor,
     required this.loginScore,
+    required this.statusUpdateScore,
     required this.attendanceScore,
     required this.responseScore,
     required this.cancelPenalty,
@@ -1414,46 +1634,135 @@ class _ScoreDetailSheet extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(context).padding.bottom + 24),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        16,
+        20,
+        MediaQuery.of(context).padding.bottom + 24,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
-            child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(99))),
+            child: Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.black12,
+                borderRadius: BorderRadius.circular(99),
+              ),
+            ),
           ),
           const SizedBox(height: 20),
           Row(
             children: [
               Container(
-                width: 44, height: 44,
-                decoration: BoxDecoration(color: gradeColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
-                child: Center(child: Text(grade, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: gradeColor))),
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: gradeColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    grade,
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w900,
+                      color: gradeColor,
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('내 신뢰도 상세', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF111827))),
-                  Text('현재 $score점', style: TextStyle(fontSize: 13, color: gradeColor, fontWeight: FontWeight.w700)),
+                  const Text(
+                    '내 신뢰도 상세',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF111827),
+                    ),
+                  ),
+                  Text(
+                    '현재 $score점',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: gradeColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 20),
-          _DetailRow(icon: Icons.wifi_rounded, color: const Color(0xFF3B8AFF), label: '앱 접속', score: loginScore, desc: '하루 1회 접속 시 +3점'),
-          _DetailRow(icon: Icons.bookmark_rounded, color: const Color(0xFF8B5CF6), label: '활동 점수', score: responseScore, desc: '공고 조회·북마크·채팅 시 점수 적립'),
-          _DetailRow(icon: Icons.check_circle_outline_rounded, color: const Color(0xFF10B981), label: '출근 완료', score: attendanceScore, desc: '출근 확정 후 실제 출근 시 +10점'),
+          const Text(
+            '획득/차감 내역',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF111827),
+            ),
+          ),
+          const SizedBox(height: 10),
+          _DetailRow(
+            icon: Icons.wifi_rounded,
+            color: const Color(0xFF3B8AFF),
+            label: '앱 접속으로 얻은 점수',
+            score: loginScore,
+            desc: '하루 1회 접속 시 +3점',
+          ),
+          _DetailRow(
+            icon: Icons.touch_app_rounded,
+            color: const Color(0xFF8B5CF6),
+            label: '활동으로 얻은 점수',
+            score: statusUpdateScore,
+            desc: '공고 조회·북마크·채팅·응답 활동',
+          ),
+          _DetailRow(
+            icon: Icons.thumb_up_alt_outlined,
+            color: const Color(0xFF0F766E),
+            label: '응답으로 얻거나 깎인 점수',
+            score: responseScore,
+            desc: '긴급호출 응답/미응답 이력 반영',
+          ),
+          _DetailRow(
+            icon: Icons.check_circle_outline_rounded,
+            color: const Color(0xFF10B981),
+            label: '출근 완료로 얻은 점수',
+            score: attendanceScore,
+            desc: '출근 확정 후 실제 출근 시 +10점',
+          ),
           if (cancelPenalty > 0)
-            _DetailRow(icon: Icons.warning_amber_rounded, color: const Color(0xFFE55353), label: '페널티', score: -cancelPenalty, desc: '수락 후 취소 또는 노쇼 시 감점'),
+            _DetailRow(
+              icon: Icons.warning_amber_rounded,
+              color: const Color(0xFFE55353),
+              label: '취소/노쇼로 깎인 점수',
+              score: -cancelPenalty,
+              desc: '수락 후 취소 또는 노쇼 확정 시 차감',
+            ),
           const SizedBox(height: 20),
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: const Color(0xFFF4F6FA), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF4F6FA),
+              borderRadius: BorderRadius.circular(12),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('등급 기준', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF374151))),
+                const Text(
+                  '등급 기준',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF374151),
+                  ),
+                ),
                 const SizedBox(height: 8),
                 _GradeRow('NEW', '0 ~ 19점', const Color(0xFF9CA3AF), grade),
                 _GradeRow('C', '20 ~ 39점', const Color(0xFF6B7280), grade),
@@ -1475,7 +1784,13 @@ class _DetailRow extends StatelessWidget {
   final String label;
   final int score;
   final String desc;
-  const _DetailRow({required this.icon, required this.color, required this.label, required this.score, required this.desc});
+  const _DetailRow({
+    required this.icon,
+    required this.color,
+    required this.label,
+    required this.score,
+    required this.desc,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1484,21 +1799,45 @@ class _DetailRow extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         children: [
-          Container(width: 36, height: 36, decoration: BoxDecoration(color: color.withValues(alpha: 0.10), borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, size: 18, color: color)),
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, size: 18, color: color),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
-                Text(desc, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111827),
+                  ),
+                ),
+                Text(
+                  desc,
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: Color(0xFF6B7280),
+                  ),
+                ),
               ],
             ),
           ),
           Text(
             isNeg ? '$score점' : '+$score점',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: isNeg ? const Color(0xFFE55353) : color),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: isNeg ? const Color(0xFFE55353) : color,
+            ),
           ),
         ],
       ),
@@ -1521,15 +1860,42 @@ class _GradeRow extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 32, padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            decoration: BoxDecoration(color: color.withValues(alpha: isCurrent ? 0.2 : 0.08), borderRadius: BorderRadius.circular(6)),
-            child: Center(child: Text(gradeLabel, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: color))),
+            width: 32,
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: isCurrent ? 0.2 : 0.08),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Center(
+              child: Text(
+                gradeLabel,
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w900,
+                  color: color,
+                ),
+              ),
+            ),
           ),
           const SizedBox(width: 8),
-          Text(range, style: TextStyle(fontSize: 12, color: isCurrent ? color : const Color(0xFF6B7280), fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w400)),
+          Text(
+            range,
+            style: TextStyle(
+              fontSize: 12,
+              color: isCurrent ? color : const Color(0xFF6B7280),
+              fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w400,
+            ),
+          ),
           if (isCurrent) ...[
             const SizedBox(width: 6),
-            Text('← 현재', style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.w700)),
+            Text(
+              '← 현재',
+              style: TextStyle(
+                fontSize: 11,
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ],
         ],
       ),
@@ -1543,16 +1909,27 @@ class _ScoreChip extends StatelessWidget {
   final IconData icon;
   final Color color;
 
-  const _ScoreChip({required this.label, required this.score, required this.icon, required this.color});
+  const _ScoreChip({
+    required this.label,
+    required this.score,
+    required this.icon,
+    required this.color,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isNeg = score < 0;
-    final bg = isNeg ? const Color(0xFFE55353).withValues(alpha: 0.08) : color.withValues(alpha: 0.08);
+    final bg =
+        isNeg
+            ? const Color(0xFFE55353).withValues(alpha: 0.08)
+            : color.withValues(alpha: 0.08);
     final fg = isNeg ? const Color(0xFFE55353) : color;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(20),
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1560,7 +1937,11 @@ class _ScoreChip extends StatelessWidget {
           const SizedBox(width: 4),
           Text(
             '$label ${isNeg ? score : '+$score'}',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: fg),
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: fg,
+            ),
           ),
         ],
       ),
@@ -1582,7 +1963,10 @@ class _TipRow extends StatelessWidget {
         children: [
           Icon(icon, size: 13, color: const Color(0xFF3B8AFF)),
           const SizedBox(width: 6),
-          Text(text, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+          Text(
+            text,
+            style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+          ),
         ],
       ),
     );

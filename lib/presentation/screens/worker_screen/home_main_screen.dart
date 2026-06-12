@@ -1710,8 +1710,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   ),
                 ),
               ),
-              SliverToBoxAdapter(child: _buildBannerSlider()),
-              const SliverToBoxAdapter(child: SizedBox(height: 12)),
               SliverToBoxAdapter(
                 child: _AiRecommendStrip(
                   onJobTap:
@@ -2305,7 +2303,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                             searching
                                                 ? null
                                                 : () async {
-                                                  if (ctrl.text.trim().isEmpty) {
+                                                  if (ctrl.text
+                                                      .trim()
+                                                      .isEmpty) {
                                                     return;
                                                   }
                                                   setS(() {
@@ -3236,6 +3236,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     return '${d.month.toString().padLeft(2, '0')}.${d.day.toString().padLeft(2, '0')}';
   }
 
+  // ignore: unused_element
   Widget _buildBannerSlider() {
     if (_isBannerHidden || bannerAds.isEmpty) return const SizedBox.shrink();
 

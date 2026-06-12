@@ -576,6 +576,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     }
   }
 
+  // ignore: unused_element
   Widget _buildBannerSlider() {
     if (_isBannerHidden || bannerAds.isEmpty) return const SizedBox.shrink();
     final canNav = bannerAds.length > 1;
@@ -1570,7 +1571,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         ),
                         title: const Text(
                           '⚡ 긴급 호출 발송',
-                          style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFFEF4444)),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFEF4444),
+                          ),
                         ),
                         onTap: () => Navigator.pop(context, 'urgent-call'),
                       ),
@@ -1678,7 +1682,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             context,
             '/nearby-workers',
             arguments: {
-              'jobId':    job.id,
+              'jobId': job.id,
               'clientId': clientId,
               'jobTitle': job.title,
             },
@@ -1775,7 +1779,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 runSpacing: 6,
                 children: [
                   if (job.isUrgent && !isClosed)
-                    _badge('⚡ 긴급', color: AppColors.badgeNew, icon: Icons.emergency_rounded),
+                    _badge(
+                      '⚡ 긴급',
+                      color: AppColors.badgeNew,
+                      icon: Icons.emergency_rounded,
+                    ),
                   if (reserved)
                     _badge(
                       publishRemainText(job),
@@ -1811,9 +1819,15 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     final prefs = await SharedPreferences.getInstance();
                     final cid = prefs.getInt('userId');
                     if (cid != null && mounted) {
-                      Navigator.pushNamed(context, '/nearby-workers', arguments: {
-                        'jobId': job.id, 'clientId': cid, 'jobTitle': job.title,
-                      });
+                      Navigator.pushNamed(
+                        context,
+                        '/nearby-workers',
+                        arguments: {
+                          'jobId': job.id,
+                          'clientId': cid,
+                          'jobTitle': job.title,
+                        },
+                      );
                     }
                   },
                   child: Container(
@@ -1822,14 +1836,27 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     decoration: BoxDecoration(
                       color: const Color(0xFFEF4444).withValues(alpha: 0.07),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.25)),
+                      border: Border.all(
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.25),
+                      ),
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.emergency_rounded, size: 14, color: Color(0xFFEF4444)),
+                        Icon(
+                          Icons.emergency_rounded,
+                          size: 14,
+                          color: Color(0xFFEF4444),
+                        ),
                         SizedBox(width: 5),
-                        Text('긴급 호출 발송', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFFEF4444))),
+                        Text(
+                          '긴급 호출 발송',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w800,
+                            color: Color(0xFFEF4444),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -1933,7 +1960,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     runSpacing: 6,
                     children: [
                       if (job.isUrgent && !isClosed)
-                        _badge('⚡ 긴급', color: AppColors.badgeNew, icon: Icons.emergency_rounded),
+                        _badge(
+                          '⚡ 긴급',
+                          color: AppColors.badgeNew,
+                          icon: Icons.emergency_rounded,
+                        ),
                       if (reserved)
                         _badge(
                           publishRemainText(job),
@@ -2214,15 +2245,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           tabs: const [Tab(text: '전체'), Tab(text: '일급'), Tab(text: '주급')],
         ),
         actions: [
-          if (_isBannerHidden && bannerAds.isNotEmpty)
-            IconButton(
-              tooltip: '배너 다시 보기',
-              icon: const Icon(
-                Icons.campaign_outlined,
-                color: AppColors.primary,
-              ),
-              onPressed: () => _setBannerHidden(false),
-            ),
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: 12),
@@ -2241,7 +2263,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _buildKpiRow()),
-            SliverToBoxAdapter(child: _buildBannerSlider()),
             SliverToBoxAdapter(child: _buildSafeCompanyPrompt()),
             SliverToBoxAdapter(child: _buildSearchBar()),
             SliverToBoxAdapter(child: _buildStatusSegment()),

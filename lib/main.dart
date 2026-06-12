@@ -66,6 +66,7 @@ import 'package:iljujob/presentation/screens/signup_client_screen/client_welcome
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/presentation/screens/subscription_plans_screen.dart';
 import 'package:iljujob/presentation/screens/client_screen/nearby_workers_screen.dart';
+
 // ============================================================
 // 전역 변수
 // ============================================================
@@ -100,12 +101,22 @@ Future<void> _initializeLocalNotifications() async {
     requestBadgePermission: false,
     requestSoundPermission: false,
   );
-  const initSettings = InitializationSettings(android: androidInit, iOS: iosInit);
-  await flutterLocalNotificationsPlugin.initialize(initSettings);
+  const initSettings = InitializationSettings(
+    android: androidInit,
+    iOS: iosInit,
+  );
+  await flutterLocalNotificationsPlugin.initialize(
+    initSettings,
+    onDidReceiveNotificationResponse: (response) async {
+      await _handleLocalNotificationPayload(response.payload);
+    },
+  );
 
-  final androidPlugin = flutterLocalNotificationsPlugin
-      .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin>();
+  final androidPlugin =
+      flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
 
   await androidPlugin?.createNotificationChannel(
     const AndroidNotificationChannel(
@@ -161,7 +172,8 @@ Future<void> _hydrateUserInfo() async {
     if (resp.statusCode == 200) {
       final data = jsonDecode(resp.body);
       if (data['id'] != null) await prefs.setInt('userId', data['id']);
-      if (data['phone'] != null) await prefs.setString('userPhone', data['phone']);
+      if (data['phone'] != null)
+        await prefs.setString('userPhone', data['phone']);
       if (data['name'] != null) await prefs.setString('userName', data['name']);
       debugPrint('✅ 유저 정보 보정 완료: id=${data['id']} phone=${data['phone']}');
     }
@@ -218,7 +230,9 @@ Future<void> sendFcmTokenUnified() async {
   try {
     if (Platform.isIOS) {
       final settings = await FirebaseMessaging.instance.requestPermission(
-        alert: true, badge: true, sound: true,
+        alert: true,
+        badge: true,
+        sound: true,
       );
       if (settings.authorizationStatus != AuthorizationStatus.authorized) {
         debugPrint('⚠️ iOS 알림 권한 없음');
@@ -227,7 +241,10 @@ Future<void> sendFcmTokenUnified() async {
     }
 
     final fcm = await FirebaseMessaging.instance.getToken();
-    if (fcm == null) { debugPrint('❌ FCM 토큰 null'); return; }
+    if (fcm == null) {
+      debugPrint('❌ FCM 토큰 null');
+      return;
+    }
 
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('userId');
@@ -239,7 +256,7 @@ Future<void> sendFcmTokenUnified() async {
       return;
     }
 
-    final resp = await http.post(
+    await http.post(
       Uri.parse('$baseUrl/api/user/update-token'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
@@ -249,7 +266,6 @@ Future<void> sendFcmTokenUnified() async {
         'fcmToken': fcm,
       }),
     );
-
   } catch (e) {
     debugPrint('❌ FCM 토큰 전송 실패: $e');
   }
@@ -324,8 +340,13 @@ Future<void> _showNotification(RemoteMessage message) async {
   final notification = message.notification;
   if (notification == null) return;
 
-  final channelId   = message.data['type'] == 'chat' ? 'chat' : 'basic_channel';
-  final channelName = message.data['type'] == 'chat' ? '채팅 알림' : '기본 알림';
+  final isChat =
+      message.data['chatRoomId'] != null ||
+      message.data['type'] == 'chat' ||
+      message.data['type'] == 'chat_message' ||
+      message.data['type'] == 'direct_message';
+  final channelId = isChat ? 'chat' : 'basic_channel';
+  final channelName = isChat ? '채팅 알림' : '기본 알림';
 
   await flutterLocalNotificationsPlugin.show(
     notification.hashCode,
@@ -333,7 +354,8 @@ Future<void> _showNotification(RemoteMessage message) async {
     notification.body,
     NotificationDetails(
       android: AndroidNotificationDetails(
-        channelId, channelName,
+        channelId,
+        channelName,
         channelDescription: '$channelName 채널',
         importance: Importance.max,
         priority: Priority.high,
@@ -344,7 +366,29 @@ Future<void> _showNotification(RemoteMessage message) async {
         presentSound: true,
       ),
     ),
+    payload: jsonEncode(message.data),
   );
+}
+
+Future<void> _handleLocalNotificationPayload(String? payload) async {
+  if (payload == null || payload.isEmpty) return;
+  try {
+    final decoded = jsonDecode(payload);
+    if (decoded is! Map) return;
+    final data = decoded.map((key, value) => MapEntry('$key', '$value'));
+    await _handleNotificationData(data);
+  } catch (e) {
+    debugPrint('❌ 로컬 알림 payload 처리 실패: $e');
+  }
+}
+
+Future<void> _handleNotificationData(Map<String, String> data) async {
+  final type = data['type'];
+  if (type == 'new_nearby_job' || type == 'custom_matched_job') {
+    await _handleJobNotification(RemoteMessage(data: data));
+  } else if (data['chatRoomId'] != null) {
+    await _handleChatNotification(RemoteMessage(data: data));
+  }
 }
 
 Future<void> _handleJobNotification(RemoteMessage message) async {
@@ -366,46 +410,35 @@ Future<void> _handleJobNotification(RemoteMessage message) async {
 Future<void> _handleChatNotification(RemoteMessage message) async {
   final data = message.data;
   final chatRoomId = int.tryParse(data['chatRoomId'] ?? '');
-  final jobId      = int.tryParse(data['jobId'] ?? '');
 
-  final prefs    = await SharedPreferences.getInstance();
-  final userType = prefs.getString('userType');
-  final userId   = prefs.getInt('userId');
-  final token    = prefs.getString('authToken') ?? '';
+  final prefs = await SharedPreferences.getInstance();
+  final token = prefs.getString('authToken') ?? '';
 
-  if (chatRoomId == null || jobId == null || userId == null || userType == null) {
-    debugPrint('❌ 필수 정보 누락');
+  if (chatRoomId == null) {
+    debugPrint('❌ chatRoomId 누락');
     return;
   }
 
-  final isWorker  = userType == 'worker';
-  final paramName = isWorker ? 'workerId' : 'clientId';
-  final url = Uri.parse('$baseUrl/api/chat/get-room-by-id?jobId=$jobId&$paramName=$userId');
-
   try {
-    final resp = await http.get(url, headers: {
-      'Authorization': 'Bearer $token',
-      'Content-Type': 'application/json',
-    });
+    final resp = await http.get(
+      Uri.parse('$baseUrl/api/chat/detail/$chatRoomId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
 
     if (resp.statusCode == 200) {
       final body = jsonDecode(resp.body);
       navigatorKey.currentState?.pushNamed(
         '/chat-room',
-        arguments: {'chatRoomId': chatRoomId, 'jobInfo': body['jobInfo']},
+        arguments: {
+          'chatRoomId': chatRoomId,
+          'jobInfo': body['jobInfo'] ?? body,
+        },
       );
     } else if (resp.statusCode == 401 || resp.statusCode == 403) {
       debugPrint('❌ 권한 오류(${resp.statusCode})');
-      final jobResp = await http.get(
-        Uri.parse('$baseUrl/api/job/$jobId'),
-        headers: {'Authorization': 'Bearer $token'},
-      );
-      if (jobResp.statusCode == 200) {
-        navigatorKey.currentState?.pushNamed(
-          '/chat-room',
-          arguments: {'chatRoomId': chatRoomId, 'jobInfo': jsonDecode(jobResp.body)},
-        );
-      }
     } else {
       debugPrint('❌ jobInfo 조회 실패(${resp.statusCode})');
     }
@@ -414,7 +447,10 @@ Future<void> _handleChatNotification(RemoteMessage message) async {
   }
 }
 
-Future<void> _handleInitialMessage(SharedPreferences prefs, String userType) async {
+Future<void> _handleInitialMessage(
+  SharedPreferences prefs,
+  String userType,
+) async {
   final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
   if (initialMessage == null) return;
 
@@ -430,13 +466,15 @@ Future<void> _handleInitialMessage(SharedPreferences prefs, String userType) asy
         final token = prefs.getString('authToken') ?? '';
         final job = await JobService.fetchJobByIdWithToken(jobId, token);
         if (job != null) {
-          navigator.push(MaterialPageRoute(builder: (_) => JobDetailScreen(job: job)));
+          navigator.push(
+            MaterialPageRoute(builder: (_) => JobDetailScreen(job: job)),
+          );
         }
       }
     } else if (initialMessage.data['chatRoomId'] != null) {
-      final data       = initialMessage.data;
+      final data = initialMessage.data;
       final chatRoomId = int.tryParse(data['chatRoomId'] ?? '');
-      final jobId      = int.tryParse(data['jobId'] ?? '');
+      final jobId = int.tryParse(data['jobId'] ?? '');
 
       if (chatRoomId != null && jobId != null) {
         final jobInfo = <String, dynamic>{
@@ -446,18 +484,21 @@ Future<void> _handleInitialMessage(SharedPreferences prefs, String userType) asy
             'worker_id': int.tryParse(data['workerId'] ?? '') ?? 0,
           if (data['clientId'] != null)
             'client_id': int.tryParse(data['clientId'] ?? '') ?? 0,
-          if (data['senderType'] != null)
-            'senderType': data['senderType'],
+          if (data['senderType'] != null) 'senderType': data['senderType'],
         };
 
-        final homeWithChatTab = userType == 'client'
-            ? const ClientMainScreen(initialTabIndex: 3)
-            : const HomeScreen(initialTabIndex: 3);
+        final homeWithChatTab =
+            userType == 'client'
+                ? const ClientMainScreen(initialTabIndex: 3)
+                : const HomeScreen(initialTabIndex: 3);
 
         navigator.push(MaterialPageRoute(builder: (_) => homeWithChatTab));
-        navigator.push(MaterialPageRoute(
-          builder: (_) => ChatRoomScreen(chatRoomId: chatRoomId, jobInfo: jobInfo),
-        ));
+        navigator.push(
+          MaterialPageRoute(
+            builder:
+                (_) => ChatRoomScreen(chatRoomId: chatRoomId, jobInfo: jobInfo),
+          ),
+        );
       }
     }
   });
@@ -508,7 +549,9 @@ void main() async {
   await _initFirebaseAndAnalytics();
 
   await FirebaseMessaging.instance.requestPermission(
-    alert: true, badge: true, sound: true,
+    alert: true,
+    badge: true,
+    sound: true,
   );
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
@@ -524,11 +567,11 @@ void main() async {
   await _refreshAccessToken(prefs);
   await _hydrateUserInfo();
 
-  final hasSeenOnboarding  = prefs.getBool('hasSeenOnboarding') ?? false;
-  final refreshedToken     = prefs.getString('authToken') ?? '';
-  final refreshedUserType  = prefs.getString('userType') ?? 'worker';
+  final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
+  final refreshedToken = prefs.getString('authToken') ?? '';
+  final refreshedUserType = prefs.getString('userType') ?? 'worker';
   final refreshedUserPhone = prefs.getString('userPhone');
-  final refreshedUserId    = prefs.getInt('userId');
+  final refreshedUserId = prefs.getInt('userId');
 
   // ✅ 앱 시작 시 알림 상태 동기화
   await syncNotificationStatus();
@@ -538,12 +581,9 @@ void main() async {
   });
 
   FirebaseMessaging.onMessageOpenedApp.listen((message) async {
-    final type = message.data['type'];
-    if (type == 'new_nearby_job' || type == 'custom_matched_job') {
-      await _handleJobNotification(message);
-    } else if (message.data['chatRoomId'] != null) {
-      await _handleChatNotification(message);
-    }
+    await _handleNotificationData(
+      message.data.map((key, value) => MapEntry(key, value.toString())),
+    );
   });
 
   final startScreen = _determineStartScreen(
@@ -621,10 +661,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       title: '알바일주',
       debugShowCheckedModeBanner: false,
       locale: const Locale('ko', 'KR'),
-      supportedLocales: const [
-        Locale('ko', 'KR'),
-        Locale('en', 'US'),
-      ],
+      supportedLocales: const [Locale('ko', 'KR'), Locale('en', 'US')],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -636,17 +673,17 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       ],
       home: widget.startScreen,
       routes: {
-        '/admin':              (context) => const AdminMainScreen(),
-        '/admin_users':        (context) => const AdminUserListScreen(),
-        '/admin_grant_pass':   (context) => const AdminGrantPassScreen(),
+        '/admin': (context) => const AdminMainScreen(),
+        '/admin_users': (context) => const AdminUserListScreen(),
+        '/admin_grant_pass': (context) => const AdminGrantPassScreen(),
         '/admin_safe_company': (context) => const AdminSafeCompanyScreen(),
-        '/admin_report':       (context) => const AdminReportScreen(),
-        '/admin_event_write':  (context) => const EventWriteScreen(),
-        '/onboarding':         (context) => const OnboardingScreen(),
-        '/home':               (context) => const HomeScreen(),
-        '/signup_worker':      (context) => const SignupWorkerScreen(),
-        '/signup_client':      (context) => const SignupClientScreen(),
-        '/post_job':           (context) => const PostJobScreen(),
+        '/admin_report': (context) => const AdminReportScreen(),
+        '/admin_event_write': (context) => const EventWriteScreen(),
+        '/onboarding': (context) => const OnboardingScreen(),
+        '/home': (context) => const HomeScreen(),
+        '/signup_worker': (context) => const SignupWorkerScreen(),
+        '/signup_client': (context) => const SignupClientScreen(),
+        '/post_job': (context) => const PostJobScreen(),
         '/client_main': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
           int initialTabIndex = 1;
@@ -655,23 +692,23 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           }
           return ClientMainScreen(initialTabIndex: initialTabIndex);
         },
-        '/edit_job':           (context) => const EditJobScreen(),
-        '/mypage':             (context) => const WorkerMyPageScreen(),
-        '/client-mypage':      (context) => const ClientMyPageScreen(),
-        '/bookmarked-jobs':    (context) => const BookmarkedJobsScreen(),
-        '/notices':            (context) => const NoticeListScreen(),
-        '/events':             (context) => const EventScreen(),
-        '/support':            (context) => const SupportScreen(),
-        '/inquiry':            (context) => const InquiryScreen(),
-        '/faq':                (context) => const FaqScreen(),
-        '/report-history':     (context) => const ReportHistoryScreen(),
-        '/applicants':         (context) => const ApplicantListScreen(),
+        '/edit_job': (context) => const EditJobScreen(),
+        '/mypage': (context) => const WorkerMyPageScreen(),
+        '/client-mypage': (context) => const ClientMyPageScreen(),
+        '/bookmarked-jobs': (context) => const BookmarkedJobsScreen(),
+        '/notices': (context) => const NoticeListScreen(),
+        '/events': (context) => const EventScreen(),
+        '/support': (context) => const SupportScreen(),
+        '/inquiry': (context) => const InquiryScreen(),
+        '/faq': (context) => const FaqScreen(),
+        '/report-history': (context) => const ReportHistoryScreen(),
+        '/applicants': (context) => const ApplicantListScreen(),
         '/client_business_info': (context) => const ClientBusinessInfoScreen(),
-        '/review':             (context) => ReviewScreenRouter(),
-        '/purchase-pass':      (context) => const PurchasePassScreen(),
-        '/blocked-users':      (context) => const BlockedUserListScreen(),
-        '/worker_map':         (context) => const WorkerMapScreen(),
-        '/client_welcome':     (context) => const ClientWelcomeScreen(),
+        '/review': (context) => ReviewScreenRouter(),
+        '/purchase-pass': (context) => const PurchasePassScreen(),
+        '/blocked-users': (context) => const BlockedUserListScreen(),
+        '/worker_map': (context) => const WorkerMapScreen(),
+        '/client_welcome': (context) => const ClientWelcomeScreen(),
         '/portone-payment': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
           if (args == null || args is! Map<String, dynamic>) {
@@ -683,7 +720,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             companyPhone: args['companyPhone'],
           );
         },
-        '/subscribe':            (_) => const SubscriptionPlansScreen(),
+        '/subscribe': (_) => const SubscriptionPlansScreen(),
         '/nearby-workers': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
           if (args == null || args is! Map<String, dynamic>) {
@@ -691,12 +728,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           }
           int toInt(dynamic v) => v is int ? v : int.tryParse('$v') ?? 0;
           return NearbyWorkersScreen(
-            jobId:    toInt(args['jobId']),
+            jobId: toInt(args['jobId']),
             clientId: toInt(args['clientId']),
             jobTitle: args['jobTitle']?.toString() ?? '',
           );
         },
-        '/subscription/manage':  (_) => const SubscriptionManageScreen(),
+        '/subscription/manage': (_) => const SubscriptionManageScreen(),
         '/job-detail': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
           if (args == null || args is! Job) {
@@ -718,27 +755,28 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           }
           return ClientProfileScreen(clientId: args);
         },
-        '/signup-choice':       (context) => const SignupChoiceScreen(),
-        '/edit_profile':        (context) => const EditClientProfileScreen(),
+        '/signup-choice': (context) => const SignupChoiceScreen(),
+        '/edit_profile': (context) => const EditClientProfileScreen(),
         '/edit_profile_worker': (_) => const EditWorkerProfileScreen(),
-        '/notifications':       (context) => const NotificationSettingsScreen(),
-        '/terms-list':          (context) => const TermsListScreen(),
-        '/worker-calendar':     (_) => const WorkerCalendarScreen(),
+        '/notifications': (context) => const NotificationSettingsScreen(),
+        '/terms-list': (context) => const TermsListScreen(),
+        '/worker-calendar': (_) => const WorkerCalendarScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/chat-room') {
           final args = settings.arguments as Map<String, dynamic>;
           return MaterialPageRoute(
-            builder: (context) => ChatRoomScreen(
-              chatRoomId: args['chatRoomId'],
-              jobInfo: args['jobInfo'],
-            ),
+            builder:
+                (context) => ChatRoomScreen(
+                  chatRoomId: args['chatRoomId'],
+                  jobInfo: args['jobInfo'],
+                ),
           );
         }
         return MaterialPageRoute(
-          builder: (_) => const Scaffold(
-            body: Center(child: Text('페이지를 찾을 수 없습니다')),
-          ),
+          builder:
+              (_) =>
+                  const Scaffold(body: Center(child: Text('페이지를 찾을 수 없습니다'))),
         );
       },
     );
@@ -749,12 +787,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 // 한국어 업데이트 메시지
 // ============================================================
 class UpgraderMessagesKo extends UpgraderMessages {
-  @override String get title => '업데이트 안내';
-  @override String get body  => '새 버전이 공개되었습니다. 지금 업데이트하시겠어요?';
-  @override String get prompt => '스토어로 이동';
-  @override String get buttonTitleIgnore => '나중에';
-  @override String get buttonTitleLater  => '다음에';
-  @override String get releaseNotes => '변경사항';
+  @override
+  String get title => '업데이트 안내';
+  @override
+  String get body => '새 버전이 공개되었습니다. 지금 업데이트하시겠어요?';
+  @override
+  String get prompt => '스토어로 이동';
+  @override
+  String get buttonTitleIgnore => '나중에';
+  @override
+  String get buttonTitleLater => '다음에';
+  @override
+  String get releaseNotes => '변경사항';
 }
 
 bool _upgradeDialogShown = false;
@@ -799,25 +843,35 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 52, height: 52,
+              width: 52,
+              height: 52,
               decoration: BoxDecoration(
                 color: const Color(0xFF3B8AFF).withOpacity(0.12),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.system_update_alt,
-                  color: Color(0xFF3B8AFF), size: 26),
+              child: const Icon(
+                Icons.system_update_alt,
+                color: Color(0xFF3B8AFF),
+                size: 26,
+              ),
             ),
             const SizedBox(height: 12),
-            const Text('업데이트가 있어요',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const Text(
+              '업데이트가 있어요',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 6),
             Text(
               force
                   ? '안정적인 이용을 위해 최신 버전으로 업데이트가 필요합니다.'
                   : '더 빠르고 편해진 알바일주를 써보세요.',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, height: 1.35,
-                  color: Color(0xFF4B5563), fontWeight: FontWeight.w700),
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.35,
+                color: Color(0xFF4B5563),
+                fontWeight: FontWeight.w700,
+              ),
             ),
             const SizedBox(height: 12),
             _ReleaseNotesBox(text: upgrader.releaseNotes),
@@ -830,11 +884,14 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(46),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                       side: const BorderSide(color: Color(0xFFE5E7EB)),
                     ),
-                    child: Text(force ? '필수 업데이트' : '나중에',
-                        style: const TextStyle(fontWeight: FontWeight.w900)),
+                    child: Text(
+                      force ? '필수 업데이트' : '나중에',
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -848,21 +905,31 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
                       backgroundColor: const Color(0xFF3B8AFF),
                       minimumSize: const Size.fromHeight(46),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                       elevation: 0,
                     ),
-                    child: const Text('업데이트하기',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w900, color: Colors.white)),
+                    child: const Text(
+                      '업데이트하기',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 4),
             if (!force)
-              const Text('업데이트는 스토어에서 진행됩니다.',
-                  style: TextStyle(fontSize: 11,
-                      color: Color(0xFF9CA3AF), fontWeight: FontWeight.w700)),
+              const Text(
+                '업데이트는 스토어에서 진행됩니다.',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Color(0xFF9CA3AF),
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
           ],
         ),
       ),
@@ -886,9 +953,15 @@ class _ReleaseNotesBox extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
-      child: Text(t,
-          style: const TextStyle(fontSize: 12, height: 1.35,
-              color: Color(0xFF374151), fontWeight: FontWeight.w700)),
+      child: Text(
+        t,
+        style: const TextStyle(
+          fontSize: 12,
+          height: 1.35,
+          color: Color(0xFF374151),
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 }
