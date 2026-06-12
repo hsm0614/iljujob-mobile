@@ -326,23 +326,16 @@ class _WorkerMapViewState extends State<WorkerMapView> {
 
   // ── 공고 선택 ─────────────────────────────────────────────────
   void _selectJob(int idx) {
-    debugPrint('[MAP] selectJob($idx) — jobs=${_jobs.length}');
+    debugPrint('[MAP] selectJob($idx)');
     if (idx < 0 || idx >= _jobs.length) return;
-    setState(() {
-      _selectedIdx = idx;
-      _workerCount = 0;
-    });
+    setState(() { _selectedIdx = idx; _workerCount = 0; _mapMoving = true; });
     final job = _jobs[idx];
-    debugPrint('[MAP] selectJob → "${job.title}" lat=${job.lat} lng=${job.lng} hasLoc=${job.hasLocation}');
     if (job.hasLocation && _ctrl != null) {
-      setState(() => _mapMoving = true); // 이동 시작 → 카드 즉시 숨김
+      // zoomLevel 12 = 동네 수준 (~3-5km 반경 표시), fromLatLng의 17(건물 수준) 대신 사용
       _ctrl!.moveCamera(
-        cameraUpdate: km.CameraUpdate.fromLatLng(job.pos),
+        cameraUpdate: km.CameraUpdate(position: job.pos, zoomLevel: 12, type: 0),
         animation: const km.CameraAnimation(duration: 350, autoElevation: true, isConsecutive: false),
       );
-      debugPrint('[MAP] moveCamera 호출 — 카드 숨김, onCameraMoveEnd 대기');
-    } else {
-      debugPrint('[MAP] moveCamera 스킵 — hasLoc=${job.hasLocation}, ctrl=${_ctrl != null}');
     }
     if (job.hasLocation) _loadWorkers(job);
   }
@@ -366,7 +359,22 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       _workerCount    = count;
       _workersLoading = false;
     });
-    if (_mapReady) await _updateCardPositions();
+
+    // 알바생이 있으면 공고 + 모든 알바생 위치를 한 화면에 fitPoints
+    final workersWithLoc = workers.where((w) => w.hasLocation).toList();
+    if (_ctrl != null && workersWithLoc.isNotEmpty) {
+      setState(() => _mapMoving = true);
+      final pts = [job.pos, ...workersWithLoc.map((w) => w.pos)];
+      debugPrint('[MAP][WORKER] fitPoints ${pts.length}개');
+      await _ctrl!.moveCamera(
+        cameraUpdate: km.CameraUpdate(fitPoints: pts, padding: 80),
+        animation: const km.CameraAnimation(duration: 500, autoElevation: true, isConsecutive: true),
+      );
+      // onCameraMoveEnd 에서 _mapMoving=false + 위치 재계산
+    } else if (_mapReady) {
+      await _updateCardPositions();
+      if (mounted) setState(() => _mapMoving = false);
+    }
   }
 
   Future<List<_Worker>> _fetchWorkers(int jobId) async {
@@ -375,14 +383,24 @@ class _WorkerMapViewState extends State<WorkerMapView> {
         Uri.parse('$baseUrl/api/direct-messages/nearby-workers?jobId=$jobId&radius=5000'),
         headers: _auth,
       ).timeout(const Duration(seconds: 8));
+      debugPrint('[MAP][WORKER] API status=${res.statusCode}');
       if (res.statusCode == 200) {
-        return (jsonDecode(res.body)['workers'] as List? ?? [])
+        final body = jsonDecode(res.body);
+        final list = body['workers'] as List? ?? [];
+        debugPrint('[MAP][WORKER] raw workers=${list.length}');
+        final workers = list
             .whereType<Map<String, dynamic>>()
             .map(_Worker.fromJson)
-            .where((w) => w.hasLocation)
             .toList();
+        final withLoc = workers.where((w) => w.hasLocation).toList();
+        debugPrint('[MAP][WORKER] 위치있는 알바생=${withLoc.length}/${workers.length}');
+        return withLoc;
+      } else {
+        debugPrint('[MAP][WORKER] 에러 body=${res.body}');
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[MAP][WORKER] fetchWorkers 예외: $e');
+    }
     return [];
   }
 
