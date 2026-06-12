@@ -80,9 +80,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
         appBar: AppBar(
           title: const Text('기본 정보 입력'),
           centerTitle: true,
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black87,
-          elevation: 0.5,
+          elevation: 0,
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(24),

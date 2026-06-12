@@ -206,11 +206,8 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
         backgroundColor: const Color(0xFFF4F6FA),
         appBar: AppBar(
           title: const Text('가입 방법 선택'),
-          
           centerTitle: true,
           elevation: 0,
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black87,
         ),
         body: Center(
           child: SingleChildScrollView(

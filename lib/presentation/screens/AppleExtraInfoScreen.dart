@@ -159,16 +159,9 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
       child: Scaffold(
         backgroundColor: const Color(0xFFF4F6FA),
         appBar: AppBar(
-          backgroundColor: Colors.white,
           elevation: 0,
-          title: const Text(
-            '기본 정보 및 프로필 설정',
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: Colors.black,
-            ),
-          ),
           centerTitle: true,
+          title: const Text('기본 정보 및 프로필 설정'),
         ),
         body: Center(
           child: SingleChildScrollView(

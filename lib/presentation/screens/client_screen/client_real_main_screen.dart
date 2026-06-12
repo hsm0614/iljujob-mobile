@@ -713,19 +713,9 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
       ),
 
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: false,
-        iconTheme: const IconThemeData(color: Colors.black),
-        title: const Text(
-          '알바 공고 리스트',
-          style: TextStyle(
-            fontFamily: 'Jalnan2TTF',
-            color: kBrandBlue,
-            fontSize: 20,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
+        title: const Text('알바 공고 리스트'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
