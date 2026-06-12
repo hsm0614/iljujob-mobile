@@ -223,22 +223,14 @@ class _WorkerMapViewState extends State<WorkerMapView> {
 
   Future<void> _setupMap() async {
     if (_ctrl == null) return;
-    Exception? last;
-    for (var i = 0; i < 8; i++) {
-      try {
-        await _ctrl!.setPoiVisible(isVisible: true);
-        _mapReady = true;
-        if (_jobs.isNotEmpty) {
-          await _refreshMarkers();
-          _selectJob(0);
-        }
-        return;
-      } catch (e) {
-        last = e is Exception ? e : Exception(e.toString());
-        await Future.delayed(const Duration(milliseconds: 120));
-      }
+    // setPoiVisible은 보조 기능(카카오 POI 레이블 숨김) — 실패해도 계속 진행
+    try { await _ctrl!.setPoiVisible(isVisible: true); } catch (_) {}
+    if (!mounted) return;
+    _mapReady = true;
+    if (_jobs.isNotEmpty) {
+      await _refreshMarkers(workers: []);
+      _selectJob(0);
     }
-    debugPrint('[MAP] setup failed: $last');
   }
 
   // ── 마커 전체 재그리기 (공고 + 구직자 단일 레이어) ───────────
