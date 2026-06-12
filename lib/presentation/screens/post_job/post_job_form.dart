@@ -1216,7 +1216,7 @@ class _PostJobFormState extends State<PostJobForm>
               ),
             ),
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(99),
                 child: LinearProgressIndicator(
@@ -1230,32 +1230,40 @@ class _PostJobFormState extends State<PostJobForm>
             FadeTransition(
               opacity: _fadeAnim,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 24, 24, 8),
+                padding: const EdgeInsets.fromLTRB(22, 14, 22, 4),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '${_q + 1} / $_totalQ',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: _label,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _qTitles[_q],
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              color: _text,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          '${_q + 1}/$_totalQ',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: _label,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _qTitles[_q],
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: _text,
-                        letterSpacing: -0.5,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       _qSubs[_q],
-                      style: const TextStyle(fontSize: 14, color: _label),
+                      style: const TextStyle(fontSize: 13, color: _label),
                     ),
                   ],
                 ),
@@ -1268,7 +1276,7 @@ class _PostJobFormState extends State<PostJobForm>
                   controller: _contentScrollCtrl,
                   keyboardDismissBehavior:
                       ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
                   child: _buildQ(),
                 ),
               ),

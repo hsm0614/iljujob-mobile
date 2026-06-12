@@ -24,7 +24,17 @@ class WorkConfirmationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isProposed = confirm.status == 'proposed';
-    final isPast     = ['cancelled', 'completed', 'no_show'].contains(confirm.status);
+    final isPast = [
+      'cancelled',
+      'completed',
+      'no_show',
+    ].contains(confirm.status);
+    final canReportNoShow = [
+      'accepted',
+      'scheduled',
+      'day_before_confirmed',
+      'day_of_confirmed',
+    ].contains(confirm.status);
     final statusLabel = _statusLabel(confirm.status);
     final statusColor = _statusColor(confirm.status);
 
@@ -56,21 +66,39 @@ class WorkConfirmationCard extends StatelessWidget {
                     color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(Icons.calendar_today_rounded, size: 16, color: AppColors.primary),
+                  child: Icon(
+                    Icons.calendar_today_rounded,
+                    size: 16,
+                    color: AppColors.primary,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 const Text(
                   '출근 확정 카드',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF111827)),
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF111827),
+                  ),
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: statusColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(99),
                   ),
-                  child: Text(statusLabel, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: statusColor)),
+                  child: Text(
+                    statusLabel,
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: statusColor,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -79,9 +107,18 @@ class WorkConfirmationCard extends StatelessWidget {
             const SizedBox(height: 14),
 
             // 근무 정보
-            _Row(icon: Icons.event_rounded, label: '날짜', value: _formatDate(confirm.workDate)),
+            _Row(
+              icon: Icons.event_rounded,
+              label: '날짜',
+              value: _formatDate(confirm.workDate),
+            ),
             const SizedBox(height: 8),
-            _Row(icon: Icons.access_time_rounded, label: '시간', value: '${confirm.startTime.substring(0,5)} ~ ${confirm.endTime.substring(0,5)}'),
+            _Row(
+              icon: Icons.access_time_rounded,
+              label: '시간',
+              value:
+                  '${confirm.startTime.substring(0, 5)} ~ ${confirm.endTime.substring(0, 5)}',
+            ),
             const SizedBox(height: 8),
             _Row(
               icon: Icons.payments_rounded,
@@ -91,7 +128,15 @@ class WorkConfirmationCard extends StatelessWidget {
             ),
             if (confirm.location != null && confirm.location!.isNotEmpty) ...[
               const SizedBox(height: 8),
-              _Row(icon: Icons.location_on_rounded, label: '위치', value: confirm.location!),
+              _Row(
+                icon: Icons.location_on_rounded,
+                label: '위치',
+                value: confirm.location!,
+              ),
+            ],
+            if (!isProposed && !isPast) ...[
+              const SizedBox(height: 12),
+              _StatusHint(status: confirm.status),
             ],
 
             // 액션 버튼 (구직자가 proposed 상태일 때만)
@@ -105,10 +150,18 @@ class WorkConfirmationCard extends StatelessWidget {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF6B7280),
                         side: const BorderSide(color: Color(0xFFE5E7EB)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 10),
                       ),
-                      child: const Text('거절', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      child: const Text(
+                        '거절',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -120,10 +173,18 @@ class WorkConfirmationCard extends StatelessWidget {
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 10),
                       ),
-                      child: const Text('수락하기', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                      child: const Text(
+                        '수락하기',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -132,8 +193,7 @@ class WorkConfirmationCard extends StatelessWidget {
 
             // 노쇼 신고 버튼 (사장님 전용, 수락 이후 ~ 출근 완료 전)
             if (userType == 'client' &&
-                ['accepted', 'scheduled', 'day_before_confirmed', 'day_of_confirmed', 'checked_in']
-                    .contains(confirm.status) &&
+                canReportNoShow &&
                 onNoShow != null) ...[
               const SizedBox(height: 12),
               SizedBox(
@@ -141,11 +201,16 @@ class WorkConfirmationCard extends StatelessWidget {
                 child: OutlinedButton.icon(
                   onPressed: onNoShow,
                   icon: const Icon(Icons.person_off_rounded, size: 15),
-                  label: const Text('노쇼 신고', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  label: const Text(
+                    '노쇼 신고',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: const Color(0xFFEF4444),
                     side: const BorderSide(color: Color(0xFFEF4444)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                 ),
@@ -167,24 +232,27 @@ class WorkConfirmationCard extends StatelessWidget {
   }
 
   String _statusLabel(String s) => switch (s) {
-    'proposed'             => '제안됨',
-    'accepted'             => '수락됨',
-    'scheduled'            => '예정',
+    'proposed' => '제안됨',
+    'accepted' => '수락됨',
+    'scheduled' => '예정',
     'day_before_confirmed' => 'D-1 확인',
-    'day_of_confirmed'     => '당일 확인',
-    'checked_in'           => '출근 완료',
-    'completed'            => '근무 완료',
-    'cancelled'            => '취소됨',
-    'no_show'              => '노쇼',
-    _                      => s,
+    'day_of_confirmed' => '당일 확인',
+    'checked_in' => '출근 확인',
+    'completed' => '근무 완료',
+    'cancelled' => '취소됨',
+    'no_show' => '노쇼',
+    _ => s,
   };
 
   Color _statusColor(String s) => switch (s) {
-    'proposed'  => const Color(0xFFFF9500),
-    'accepted' || 'scheduled' || 'day_before_confirmed' || 'day_of_confirmed' => AppColors.primary,
+    'proposed' => const Color(0xFFFF9500),
+    'accepted' ||
+    'scheduled' ||
+    'day_before_confirmed' ||
+    'day_of_confirmed' => AppColors.primary,
     'checked_in' || 'completed' => const Color(0xFF22C55E),
-    'cancelled' || 'no_show'   => const Color(0xFFEF4444),
-    _                          => const Color(0xFF6B7280),
+    'cancelled' || 'no_show' => const Color(0xFFEF4444),
+    _ => const Color(0xFF6B7280),
   };
 }
 
@@ -193,17 +261,79 @@ class _Row extends StatelessWidget {
   final String label;
   final String value;
   final Color? valueColor;
-  const _Row({required this.icon, required this.label, required this.value, this.valueColor});
+  const _Row({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
 
   @override
   Widget build(BuildContext context) => Row(
+    children: [
+      Icon(icon, size: 14, color: const Color(0xFF9CA3AF)),
+      const SizedBox(width: 6),
+      Text(
+        '$label  ',
+        style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+      ),
+      Text(
+        value,
+        style: TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w600,
+          color: valueColor ?? const Color(0xFF111827),
+        ),
+      ),
+    ],
+  );
+}
+
+class _StatusHint extends StatelessWidget {
+  final String status;
+  const _StatusHint({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final text = switch (status) {
+      'accepted' || 'scheduled' => '근무가 확정됐어요. 근무일 전 알림이 발송돼요.',
+      'day_before_confirmed' => 'D-1 확인이 완료됐어요. 당일 출근 확인을 기다리고 있어요.',
+      'day_of_confirmed' => '당일 확인이 완료됐어요. 출근 완료 후 정산달력에 반영돼요.',
+      'checked_in' => '출근 확인이 완료됐어요. 근무 완료 처리만 남았어요.',
+      _ => '출근 확정이 진행 중이에요.',
+    };
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFFDBEAFE)),
+      ),
+      child: Row(
         children: [
-          Icon(icon, size: 14, color: const Color(0xFF9CA3AF)),
-          const SizedBox(width: 6),
-          Text('$label  ', style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
-          Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: valueColor ?? const Color(0xFF111827))),
+          const Icon(
+            Icons.info_outline_rounded,
+            size: 16,
+            color: Color(0xFF2563EB),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                fontSize: 12,
+                height: 1.35,
+                color: Color(0xFF1D4ED8),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
         ],
-      );
+      ),
+    );
+  }
 }
 
 // ── 근무 확정 제안 바텀시트 (사장님용) ────────────────────────
@@ -213,10 +343,10 @@ class ProposeWorkConfirmationSheet extends StatefulWidget {
   final int workerId;
   final int clientId;
   final String? jobLocation;
-  final int? defaultWage;       // 공고 시급 자동 채움
+  final int? defaultWage; // 공고 시급 자동 채움
   final String? defaultStartTime; // "09:00"
-  final String? defaultEndTime;   // "18:00"
-  final String? weekdays;         // 장기 공고 여부 ("월화수" 등, 있으면 장기)
+  final String? defaultEndTime; // "18:00"
+  final String? weekdays; // 장기 공고 여부 ("월화수" 등, 있으면 장기)
   final Function(Map<String, dynamic>) onPropose;
 
   const ProposeWorkConfirmationSheet({
@@ -234,10 +364,12 @@ class ProposeWorkConfirmationSheet extends StatefulWidget {
   });
 
   @override
-  State<ProposeWorkConfirmationSheet> createState() => _ProposeWorkConfirmationSheetState();
+  State<ProposeWorkConfirmationSheet> createState() =>
+      _ProposeWorkConfirmationSheetState();
 }
 
-class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSheet> {
+class _ProposeWorkConfirmationSheetState
+    extends State<ProposeWorkConfirmationSheet> {
   DateTime? _date;
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
@@ -254,13 +386,19 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
     if (widget.defaultStartTime != null) {
       final parts = widget.defaultStartTime!.split(':');
       if (parts.length >= 2) {
-        _startTime = TimeOfDay(hour: int.tryParse(parts[0]) ?? 9, minute: int.tryParse(parts[1]) ?? 0);
+        _startTime = TimeOfDay(
+          hour: int.tryParse(parts[0]) ?? 9,
+          minute: int.tryParse(parts[1]) ?? 0,
+        );
       }
     }
     if (widget.defaultEndTime != null) {
       final parts = widget.defaultEndTime!.split(':');
       if (parts.length >= 2) {
-        _endTime = TimeOfDay(hour: int.tryParse(parts[0]) ?? 18, minute: int.tryParse(parts[1]) ?? 0);
+        _endTime = TimeOfDay(
+          hour: int.tryParse(parts[0]) ?? 18,
+          minute: int.tryParse(parts[1]) ?? 0,
+        );
       }
     }
   }
@@ -271,13 +409,20 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
     super.dispose();
   }
 
-  bool get _isWeekdaysJob => widget.weekdays != null && widget.weekdays!.trim().isNotEmpty;
+  bool get _isWeekdaysJob =>
+      widget.weekdays != null && widget.weekdays!.trim().isNotEmpty;
 
-  bool get _canSubmit => _date != null && _startTime != null && _endTime != null && _wageCtrl.text.trim().isNotEmpty;
+  bool get _canSubmit =>
+      _date != null &&
+      _startTime != null &&
+      _endTime != null &&
+      _wageCtrl.text.trim().isNotEmpty;
 
   double? get _estimatedHours {
     if (_startTime == null || _endTime == null) return null;
-    final diff = (_endTime!.hour * 60 + _endTime!.minute) - (_startTime!.hour * 60 + _startTime!.minute);
+    final diff =
+        (_endTime!.hour * 60 + _endTime!.minute) -
+        (_startTime!.hour * 60 + _startTime!.minute);
     return diff > 0 ? diff / 60.0 : null;
   }
 
@@ -299,8 +444,10 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
         workerId: widget.workerId,
         clientId: widget.clientId,
         workDate: DateFormat('yyyy-MM-dd').format(_date!),
-        startTime: '${_startTime!.hour.toString().padLeft(2,'0')}:${_startTime!.minute.toString().padLeft(2,'0')}:00',
-        endTime:   '${_endTime!.hour.toString().padLeft(2,'0')}:${_endTime!.minute.toString().padLeft(2,'0')}:00',
+        startTime:
+            '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}:00',
+        endTime:
+            '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}:00',
         hourlyWage: wage,
         location: widget.jobLocation,
       );
@@ -311,16 +458,18 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
     } catch (e) {
       setState(() => _loading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(e.toString())));
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final pad = MediaQuery.of(context).viewInsets.bottom + MediaQuery.of(context).padding.bottom;
+    final pad =
+        MediaQuery.of(context).viewInsets.bottom +
+        MediaQuery.of(context).padding.bottom;
     final estPay = _estimatedPay;
     final estHours = _estimatedHours;
 
@@ -338,8 +487,12 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
             const SizedBox(height: 12),
             Center(
               child: Container(
-                width: 40, height: 4,
-                decoration: BoxDecoration(color: Colors.black12, borderRadius: BorderRadius.circular(99)),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.black12,
+                  borderRadius: BorderRadius.circular(99),
+                ),
               ),
             ),
             const SizedBox(height: 16),
@@ -359,7 +512,9 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.18)),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.18),
+                  ),
                 ),
                 child: Row(
                   children: [
@@ -369,7 +524,11 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Icon(Icons.event_available_rounded, size: 20, color: Colors.white),
+                      child: const Icon(
+                        Icons.event_available_rounded,
+                        size: 20,
+                        color: Colors.white,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     const Expanded(
@@ -378,12 +537,19 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
                         children: [
                           Text(
                             '출근 확정 제안',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF111827),
+                            ),
                           ),
                           SizedBox(height: 2),
                           Text(
                             '알바생이 수락하면 근무가 확정돼요',
-                            style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF6B7280),
+                            ),
                           ),
                         ],
                       ),
@@ -412,12 +578,19 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFFEA580C)),
+                          const Icon(
+                            Icons.info_outline_rounded,
+                            size: 16,
+                            color: Color(0xFFEA580C),
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               '장기 공고 (${widget.weekdays})입니다.\n출근 첫날 날짜를 선택해주세요.',
-                              style: const TextStyle(fontSize: 12, color: Color(0xFFEA580C)),
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFFEA580C),
+                              ),
                             ),
                           ),
                         ],
@@ -429,15 +602,21 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
                   _FieldLabel('근무 날짜'),
                   const SizedBox(height: 6),
                   _Tile(
-                    text: _date == null
-                        ? '날짜를 선택하세요'
-                        : DateFormat('yyyy년 M월 d일 (E)', 'ko_KR').format(_date!),
+                    text:
+                        _date == null
+                            ? '날짜를 선택하세요'
+                            : DateFormat(
+                              'yyyy년 M월 d일 (E)',
+                              'ko_KR',
+                            ).format(_date!),
                     isEmpty: _date == null,
                     icon: Icons.calendar_today_rounded,
                     onTap: () async {
                       final d = await showDatePicker(
                         context: context,
-                        initialDate: DateTime.now().add(const Duration(days: 1)),
+                        initialDate: DateTime.now().add(
+                          const Duration(days: 1),
+                        ),
                         firstDate: DateTime.now(),
                         lastDate: DateTime.now().add(const Duration(days: 60)),
                         locale: const Locale('ko'),
@@ -457,13 +636,19 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
                             _FieldLabel('시작 시간'),
                             const SizedBox(height: 6),
                             _Tile(
-                              text: _startTime == null ? '시작 시간' : fmt(_startTime!),
+                              text:
+                                  _startTime == null
+                                      ? '시작 시간'
+                                      : fmt(_startTime!),
                               isEmpty: _startTime == null,
                               icon: Icons.access_time_rounded,
                               onTap: () async {
                                 final t = await showTimePicker(
                                   context: context,
-                                  initialTime: const TimeOfDay(hour: 9, minute: 0),
+                                  initialTime: const TimeOfDay(
+                                    hour: 9,
+                                    minute: 0,
+                                  ),
                                 );
                                 if (t != null) setState(() => _startTime = t);
                               },
@@ -485,7 +670,10 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
                               onTap: () async {
                                 final t = await showTimePicker(
                                   context: context,
-                                  initialTime: const TimeOfDay(hour: 18, minute: 0),
+                                  initialTime: const TimeOfDay(
+                                    hour: 18,
+                                    minute: 0,
+                                  ),
                                 );
                                 if (t != null) setState(() => _endTime = t);
                               },
@@ -508,7 +696,10 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
                       suffixText: '원',
                       filled: true,
                       fillColor: const Color(0xFFF9FAFB),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 13,
+                      ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
@@ -519,7 +710,10 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+                        borderSide: BorderSide(
+                          color: AppColors.primary,
+                          width: 1.5,
+                        ),
                       ),
                     ),
                     onChanged: (_) => setState(() {}),
@@ -529,7 +723,10 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
                   if (estPay != null) ...[
                     const SizedBox(height: 12),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 11,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFF0FDF4),
                         borderRadius: BorderRadius.circular(12),
@@ -537,7 +734,11 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.calculate_outlined, size: 15, color: Color(0xFF16A34A)),
+                          const Icon(
+                            Icons.calculate_outlined,
+                            size: 15,
+                            color: Color(0xFF16A34A),
+                          ),
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -565,12 +766,29 @@ class _ProposeWorkConfirmationSheetState extends State<ProposeWorkConfirmationSh
                         foregroundColor: Colors.white,
                         disabledBackgroundColor: const Color(0xFFE5E7EB),
                         elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 15),
                       ),
-                      child: _loading
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : const Text('제안 보내기', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 0.3)),
+                      child:
+                          _loading
+                              ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                              : const Text(
+                                '제안 보내기',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -588,7 +806,14 @@ class _FieldLabel extends StatelessWidget {
   final String text;
   const _FieldLabel(this.text);
   @override
-  Widget build(BuildContext context) => Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF374151)));
+  Widget build(BuildContext context) => Text(
+    text,
+    style: const TextStyle(
+      fontSize: 13,
+      fontWeight: FontWeight.w600,
+      color: Color(0xFF374151),
+    ),
+  );
 }
 
 class _Tile extends StatelessWidget {
@@ -596,39 +821,56 @@ class _Tile extends StatelessWidget {
   final bool isEmpty;
   final IconData icon;
   final VoidCallback onTap;
-  const _Tile({required this.text, required this.isEmpty, required this.icon, required this.onTap});
+  const _Tile({
+    required this.text,
+    required this.isEmpty,
+    required this.icon,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-          decoration: BoxDecoration(
-            color: isEmpty ? const Color(0xFFF9FAFB) : const Color(0xFFEFF6FF),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isEmpty ? const Color(0xFFE5E7EB) : AppColors.primary.withValues(alpha: 0.4),
+    onTap: onTap,
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      decoration: BoxDecoration(
+        color: isEmpty ? const Color(0xFFF9FAFB) : const Color(0xFFEFF6FF),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color:
+              isEmpty
+                  ? const Color(0xFFE5E7EB)
+                  : AppColors.primary.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 16,
+            color: isEmpty ? const Color(0xFF9CA3AF) : AppColors.primary,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: isEmpty ? FontWeight.w400 : FontWeight.w600,
+                color:
+                    isEmpty ? const Color(0xFF9CA3AF) : const Color(0xFF111827),
+              ),
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          child: Row(
-            children: [
-              Icon(icon, size: 16, color: isEmpty ? const Color(0xFF9CA3AF) : AppColors.primary),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  text,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: isEmpty ? FontWeight.w400 : FontWeight.w600,
-                    color: isEmpty ? const Color(0xFF9CA3AF) : const Color(0xFF111827),
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              if (!isEmpty)
-                Icon(Icons.check_circle_rounded, size: 15, color: AppColors.primary),
-            ],
-          ),
-        ),
-      );
+          if (!isEmpty)
+            Icon(
+              Icons.check_circle_rounded,
+              size: 15,
+              color: AppColors.primary,
+            ),
+        ],
+      ),
+    ),
+  );
 }

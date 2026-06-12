@@ -120,16 +120,26 @@ class ChatRoomController extends ChangeNotifier {
 
   bool get isHireConfirmed => isConfirmed || workerWorkConfirmed;
 
+  static const _openWorkConfirmationStatuses = {
+    'proposed',
+    'accepted',
+    'scheduled',
+    'day_before_confirmed',
+    'day_of_confirmed',
+    'checked_in',
+  };
+
+  WorkConfirmation? get openWorkConfirmation {
+    for (final confirm in workConfirmations) {
+      if (_openWorkConfirmationStatuses.contains(confirm.status)) {
+        return confirm;
+      }
+    }
+    return null;
+  }
+
   bool get hasOpenWorkConfirmation {
-    return workConfirmations.any(
-      (c) =>
-          c.status == 'proposed' ||
-          c.status == 'accepted' ||
-          c.status == 'scheduled' ||
-          c.status == 'day_before_confirmed' ||
-          c.status == 'day_of_confirmed' ||
-          c.status == 'checked_in',
-    );
+    return openWorkConfirmation != null;
   }
 
   bool get hasPendingWorkConfirmation {

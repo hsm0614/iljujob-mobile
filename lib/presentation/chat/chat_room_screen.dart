@@ -75,8 +75,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   @override
   void initState() {
     super.initState();
-    _urgentCallStatus =
-        widget.jobInfo['direct_message_status']?.toString();
+    _urgentCallStatus = widget.jobInfo['direct_message_status']?.toString();
     KeyboardMode.setAdjustResize();
 
     // 컨트롤러에 UI 콜백 주입
@@ -209,7 +208,12 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
             clientId: clientId,
             jobLocation: jobSource['location']?.toString(),
             defaultWage: int.tryParse(
-              (jobSource['pay'] ?? jobSource['hourly_wage'] ?? jobSource['wage'] ?? '').toString().replaceAll(RegExp(r'[^0-9]'), ''),
+              (jobSource['pay'] ??
+                      jobSource['hourly_wage'] ??
+                      jobSource['wage'] ??
+                      '')
+                  .toString()
+                  .replaceAll(RegExp(r'[^0-9]'), ''),
             ),
             defaultStartTime: jobSource['start_time']?.toString(),
             defaultEndTime: jobSource['end_time']?.toString(),
@@ -447,13 +451,15 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
     if (!mounted) return;
 
     final isClient = ctrl.userType == 'client';
-    final title    = isClient ? '이번 알바생은 어땠나요?' : '이번 사장님은 어땠나요?';
-    final goodTags = isClient
-        ? ['시간 약속 잘 지킴', '일 잘함', '매너 좋음', '소통 원활']
-        : ['급여 제때 지급', '친절한 안내', '근무 환경 좋음', '약속 잘 지킴'];
-    final badTags  = isClient
-        ? ['지각/무단결근', '불성실한 태도', '연락 불가', '업무 미숙']
-        : ['급여 지연', '불친절', '과도한 업무', '약속 불이행'];
+    final title = isClient ? '이번 알바생은 어땠나요?' : '이번 사장님은 어땠나요?';
+    final goodTags =
+        isClient
+            ? ['시간 약속 잘 지킴', '일 잘함', '매너 좋음', '소통 원활']
+            : ['급여 제때 지급', '친절한 안내', '근무 환경 좋음', '약속 잘 지킴'];
+    final badTags =
+        isClient
+            ? ['지각/무단결근', '불성실한 태도', '연락 불가', '업무 미숙']
+            : ['급여 지연', '불친절', '과도한 업무', '약속 불이행'];
 
     await showDialog<void>(
       context: context,
@@ -465,8 +471,8 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
 
         return StatefulBuilder(
           builder: (ctx, setState) {
-            final isGood  = rating >= 4.0;
-            final tags    = isGood ? goodTags : badTags;
+            final isGood = rating >= 4.0;
+            final tags = isGood ? goodTags : badTags;
 
             Future<void> submit() async {
               if (sending) return;
@@ -480,24 +486,34 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
             }
 
             return Dialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      width: 56, height: 56,
+                      width: 56,
+                      height: 56,
                       decoration: BoxDecoration(
                         color: const Color(0xFF3B8AFF).withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.rate_review_rounded, size: 28, color: Color(0xFF3B8AFF)),
+                      child: const Icon(
+                        Icons.rate_review_rounded,
+                        size: 28,
+                        color: Color(0xFF3B8AFF),
+                      ),
                     ),
                     const SizedBox(height: 14),
                     Text(
                       title,
-                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                      ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 6),
@@ -516,11 +532,16 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                       itemCount: 5,
                       itemSize: 36,
                       itemPadding: const EdgeInsets.symmetric(horizontal: 4),
-                      itemBuilder: (_, __) => const Icon(Icons.star_rounded, color: Color(0xFFFFC107)),
-                      onRatingUpdate: (r) => setState(() {
-                        rating = r;
-                        selectedTags.clear();
-                      }),
+                      itemBuilder:
+                          (_, __) => const Icon(
+                            Icons.star_rounded,
+                            color: Color(0xFFFFC107),
+                          ),
+                      onRatingUpdate:
+                          (r) => setState(() {
+                            rating = r;
+                            selectedTags.clear();
+                          }),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -528,7 +549,10 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: isGood ? const Color(0xFF10B981) : const Color(0xFFEF4444),
+                        color:
+                            isGood
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFFEF4444),
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -537,38 +561,56 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
-                      children: tags.map((tag) {
-                        final active = selectedTags.contains(tag);
-                        return GestureDetector(
-                          onTap: () => setState(() {
-                            active ? selectedTags.remove(tag) : selectedTags.add(tag);
-                          }),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 120),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: active
-                                  ? (isGood ? const Color(0xFF3B8AFF) : const Color(0xFFEF4444))
-                                  : const Color(0xFFF3F4F6),
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                            child: Text(
-                              tag,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: active ? Colors.white : const Color(0xFF6B7280),
+                      children:
+                          tags.map((tag) {
+                            final active = selectedTags.contains(tag);
+                            return GestureDetector(
+                              onTap:
+                                  () => setState(() {
+                                    active
+                                        ? selectedTags.remove(tag)
+                                        : selectedTags.add(tag);
+                                  }),
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 120),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      active
+                                          ? (isGood
+                                              ? const Color(0xFF3B8AFF)
+                                              : const Color(0xFFEF4444))
+                                          : const Color(0xFFF3F4F6),
+                                  borderRadius: BorderRadius.circular(99),
+                                ),
+                                child: Text(
+                                  tag,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        active
+                                            ? Colors.white
+                                            : const Color(0xFF6B7280),
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                        );
-                      }).toList(),
+                            );
+                          }).toList(),
                     ),
                     const SizedBox(height: 20),
 
                     // ── 버튼 ──
                     if (sending)
-                      const SizedBox(height: 44, child: Center(child: CircularProgressIndicator(strokeWidth: 2)))
+                      const SizedBox(
+                        height: 44,
+                        child: Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      )
                     else
                       SizedBox(
                         width: double.infinity,
@@ -578,16 +620,30 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                             backgroundColor: const Color(0xFF3B8AFF),
                             foregroundColor: Colors.white,
                             elevation: 0,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
-                          child: const Text('평가 제출', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800)),
+                          child: const Text(
+                            '평가 제출',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
                         ),
                       ),
                     const SizedBox(height: 4),
                     TextButton(
                       onPressed: () => Navigator.of(ctx).pop(),
-                      child: const Text('나중에 할게요', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 13)),
+                      child: const Text(
+                        '나중에 할게요',
+                        style: TextStyle(
+                          color: Color(0xFF9CA3AF),
+                          fontSize: 13,
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -617,99 +673,144 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
 
     await showDialog<void>(
       context: context,
-      builder: (ctx) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
+      builder:
+          (ctx) => Dialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3B8AFF).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.calendar_today_rounded,
+                          color: Color(0xFF3B8AFF),
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '캘린더에서 확인할까요?',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            SizedBox(height: 2),
+                            Text(
+                              '앱 내 캘린더에서 근무 일정을 확인해요',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF9CA3AF),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   Container(
-                    width: 44, height: 44,
+                    padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF3B8AFF).withValues(alpha: 0.1),
+                      color: const Color(0xFFF4F6FA),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.calendar_today_rounded, color: Color(0xFF3B8AFF), size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('캘린더에서 확인할까요?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
-                        SizedBox(height: 2),
-                        Text('앱 내 캘린더에서 근무 일정을 확인해요', style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF))),
+                        _CalRow(
+                          icon: Icons.business_rounded,
+                          text: conf.companyName ?? '사장님',
+                        ),
+                        const SizedBox(height: 6),
+                        _CalRow(
+                          icon: Icons.event_rounded,
+                          text: conf.workDate.split('T').first,
+                        ),
+                        const SizedBox(height: 6),
+                        _CalRow(
+                          icon: Icons.access_time_rounded,
+                          text:
+                              '${conf.startTime.substring(0, 5)} ~ ${conf.endTime.substring(0, 5)}',
+                        ),
+                        if (conf.location != null) ...[
+                          const SizedBox(height: 6),
+                          _CalRow(
+                            icon: Icons.location_on_rounded,
+                            text: conf.location!,
+                          ),
+                        ],
+                        const SizedBox(height: 6),
+                        _CalRow(
+                          icon: Icons.payments_rounded,
+                          text: '시급 ${fmt.format(conf.hourlyWage)}원',
+                        ),
                       ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF4F6FA),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: [
-                    _CalRow(icon: Icons.business_rounded, text: conf.companyName ?? '사장님'),
-                    const SizedBox(height: 6),
-                    _CalRow(icon: Icons.event_rounded, text: conf.workDate.split('T').first),
-                    const SizedBox(height: 6),
-                    _CalRow(icon: Icons.access_time_rounded,
-                        text: '${conf.startTime.substring(0, 5)} ~ ${conf.endTime.substring(0, 5)}'),
-                    if (conf.location != null) ...[
-                      const SizedBox(height: 6),
-                      _CalRow(icon: Icons.location_on_rounded, text: conf.location!),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(ctx).pop(),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: const Color(0xFF6B7280),
+                            side: const BorderSide(color: Color(0xFFE5E7EB)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text(
+                            '나중에',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(ctx).pop();
+                            _addToCalendar(conf);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF3B8AFF),
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text(
+                            '캘린더 보기',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ),
                     ],
-                    const SizedBox(height: 6),
-                    _CalRow(icon: Icons.payments_rounded, text: '시급 ${fmt.format(conf.hourlyWage)}원'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF6B7280),
-                        side: const BorderSide(color: Color(0xFFE5E7EB)),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: const Text('나중에', style: TextStyle(fontWeight: FontWeight.w700)),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(ctx).pop();
-                        _addToCalendar(conf);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF3B8AFF),
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      child: const Text('캘린더 보기', style: TextStyle(fontWeight: FontWeight.w800)),
-                    ),
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -840,24 +941,39 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   ) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('노쇼 신고', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-        content: const Text(
-          '해당 알바생이 출근하지 않았나요?\n노쇼 처리 시 알바생 신뢰도 점수가 크게 감소합니다.',
-          style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('취소', style: TextStyle(color: Color(0xFF6B7280))),
+      builder:
+          (_) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text(
+              '노쇼 신고',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+            ),
+            content: const Text(
+              '해당 알바생이 출근하지 않았나요?\n노쇼 처리 시 알바생 신뢰도 점수가 크게 감소합니다.',
+              style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text(
+                  '취소',
+                  style: TextStyle(color: Color(0xFF6B7280)),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text(
+                  '노쇼 확정',
+                  style: TextStyle(
+                    color: Color(0xFFEF4444),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('노쇼 확정', style: TextStyle(color: Color(0xFFEF4444), fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
     );
     if (confirmed == true) {
       await ctrl.respondToWorkConfirmation(confirm, 'no_show');
@@ -874,10 +990,14 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
     setState(() => _urgentCallBusy = true);
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken') ?? prefs.getString('accessToken') ?? '';
+      final token =
+          prefs.getString('authToken') ?? prefs.getString('accessToken') ?? '';
       final resp = await http.patch(
         Uri.parse('$baseUrl/api/direct-message/$logId/respond'),
-        headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
         body: jsonEncode({'status': status}),
       );
       if (resp.statusCode == 200) {
@@ -885,19 +1005,25 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         if (!mounted) return;
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(
-            content: Text(status == 'accepted' ? '긴급호출을 수락했어요!' : '긴급호출을 거절했어요.'),
-            backgroundColor: status == 'accepted'
-                ? const Color(0xFF22C55E)
-                : const Color(0xFF6B7280),
-          ));
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                status == 'accepted' ? '긴급호출을 수락했어요!' : '긴급호출을 거절했어요.',
+              ),
+              backgroundColor:
+                  status == 'accepted'
+                      ? const Color(0xFF22C55E)
+                      : const Color(0xFF6B7280),
+            ),
+          );
       }
     } catch (_) {}
     if (mounted) setState(() => _urgentCallBusy = false);
   }
 
   Widget _buildUrgentCallBanner(ChatRoomController ctrl) {
-    final isUrgent = widget.jobInfo['is_urgent_call'] == 1 ||
+    final isUrgent =
+        widget.jobInfo['is_urgent_call'] == 1 ||
         widget.jobInfo['is_urgent_call'] == true;
     if (!isUrgent || ctrl.userType != 'worker') return const SizedBox.shrink();
     if (_urgentCallStatus == 'accepted') {
@@ -911,9 +1037,20 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         ),
         child: const Row(
           children: [
-            Icon(Icons.check_circle_rounded, color: Color(0xFF22C55E), size: 18),
+            Icon(
+              Icons.check_circle_rounded,
+              color: Color(0xFF22C55E),
+              size: 18,
+            ),
             SizedBox(width: 8),
-            Text('긴급호출 수락 완료', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF15803D))),
+            Text(
+              '긴급호출 수락 완료',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF15803D),
+              ),
+            ),
           ],
         ),
       );
@@ -930,7 +1067,10 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
           children: [
             Icon(Icons.block_rounded, color: Color(0xFF9CA3AF), size: 18),
             SizedBox(width: 8),
-            Text('긴급호출을 거절했어요.', style: TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+            Text(
+              '긴급호출을 거절했어요.',
+              style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+            ),
           ],
         ),
       );
@@ -947,7 +1087,13 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: const Color(0xFFFF9500).withValues(alpha: 0.25), blurRadius: 8, offset: const Offset(0, 3))],
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF9500).withValues(alpha: 0.25),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -956,42 +1102,75 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
             children: [
               Text('⚡', style: TextStyle(fontSize: 15)),
               SizedBox(width: 6),
-              Text('긴급 호출이 왔어요!', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: Colors.white)),
+              Text(
+                '긴급 호출이 왔어요!',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 4),
-          const Text('사장님이 지금 바로 일할 분을 찾고 있어요.\n수락하면 바로 연결됩니다.',
-              style: TextStyle(fontSize: 12, color: Colors.white70, height: 1.4)),
+          const Text(
+            '사장님이 지금 바로 일할 분을 찾고 있어요.\n수락하면 바로 연결됩니다.',
+            style: TextStyle(fontSize: 12, color: Colors.white70, height: 1.4),
+          ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: _urgentCallBusy ? null : () => _respondToUrgentCall('rejected'),
+                  onPressed:
+                      _urgentCallBusy
+                          ? null
+                          : () => _respondToUrgentCall('rejected'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: Colors.white54),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
-                  child: const Text('거절', style: TextStyle(fontWeight: FontWeight.w700)),
+                  child: const Text(
+                    '거절',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
               Expanded(
                 flex: 2,
                 child: ElevatedButton(
-                  onPressed: _urgentCallBusy ? null : () => _respondToUrgentCall('accepted'),
+                  onPressed:
+                      _urgentCallBusy
+                          ? null
+                          : () => _respondToUrgentCall('accepted'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: const Color(0xFFFF6B1A),
                     elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
-                  child: _urgentCallBusy
-                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFFFF6B1A)))
-                      : const Text('수락하기', style: TextStyle(fontWeight: FontWeight.w900)),
+                  child:
+                      _urgentCallBusy
+                          ? const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFFFF6B1A),
+                            ),
+                          )
+                          : const Text(
+                            '수락하기',
+                            style: TextStyle(fontWeight: FontWeight.w900),
+                          ),
                 ),
               ),
             ],
@@ -1249,6 +1428,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     isConfirmed: ctrl.isConfirmed,
                     isCompleted: ctrl.isCompleted,
                     hasPendingWorkConfirmation: ctrl.hasPendingWorkConfirmation,
+                    workConfirmationStatus: ctrl.openWorkConfirmation?.status,
                     status: ctrl.status,
                     onConfirmHire: ctrl.confirmHire,
                     onProposeWorkConfirmation: () => _showProposeSheet(ctrl),
@@ -1313,7 +1493,8 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                   onProfileTap: onProfileTap,
                                   targetThumbnailUrl: targetThumbnailUrl,
                                   targetName: targetName,
-                                  showHireNudge: ctrl.userType == 'client' &&
+                                  showHireNudge:
+                                      ctrl.userType == 'client' &&
                                       !ctrl.isConfirmed &&
                                       !ctrl.hasPendingWorkConfirmation &&
                                       ctrl.status == 'active' &&
@@ -1334,10 +1515,10 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                           ),
                                   onNoShowWorkConfirmation:
                                       (confirm) => _confirmNoShow(
-                                            context,
-                                            ctrl,
-                                            confirm,
-                                          ),
+                                        context,
+                                        ctrl,
+                                        confirm,
+                                      ),
                                   inputOverlayHeight: 112,
                                 ),
                               ),
@@ -1472,16 +1653,20 @@ class _CalRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Row(
-        children: [
-          Icon(icon, size: 14, color: const Color(0xFF3B8AFF)),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 13, color: Color(0xFF374151), fontWeight: FontWeight.w500),
-              overflow: TextOverflow.ellipsis,
-            ),
+    children: [
+      Icon(icon, size: 14, color: const Color(0xFF3B8AFF)),
+      const SizedBox(width: 8),
+      Expanded(
+        child: Text(
+          text,
+          style: const TextStyle(
+            fontSize: 13,
+            color: Color(0xFF374151),
+            fontWeight: FontWeight.w500,
           ),
-        ],
-      );
+          overflow: TextOverflow.ellipsis,
+        ),
+      ),
+    ],
+  );
 }

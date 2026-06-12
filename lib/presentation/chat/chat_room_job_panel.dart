@@ -23,6 +23,7 @@ class ChatRoomJobPanel extends StatelessWidget {
   final bool isConfirmed;
   final bool isCompleted;
   final bool hasPendingWorkConfirmation;
+  final String? workConfirmationStatus;
   final String status;
 
   // 클라이언트 액션 콜백
@@ -56,6 +57,7 @@ class ChatRoomJobPanel extends StatelessWidget {
     required this.isConfirmed,
     required this.isCompleted,
     this.hasPendingWorkConfirmation = false,
+    this.workConfirmationStatus,
     required this.status,
     // 클라이언트
     this.onConfirmHire,
@@ -204,6 +206,7 @@ class ChatRoomJobPanel extends StatelessWidget {
                 isConfirmed: isConfirmed,
                 isCompleted: isCompleted,
                 hasPendingWorkConfirmation: hasPendingWorkConfirmation,
+                workConfirmationStatus: workConfirmationStatus,
                 status: status,
                 onConfirmHire: onConfirmHire,
                 onMarkCompleted: onMarkCompleted,
@@ -243,6 +246,7 @@ class _ClientActions extends StatelessWidget {
   final bool isConfirmed;
   final bool isCompleted;
   final bool hasPendingWorkConfirmation;
+  final String? workConfirmationStatus;
   final String status;
   final VoidCallback? onConfirmHire;
   final VoidCallback? onMarkCompleted;
@@ -252,6 +256,7 @@ class _ClientActions extends StatelessWidget {
     required this.isConfirmed,
     required this.isCompleted,
     required this.hasPendingWorkConfirmation,
+    this.workConfirmationStatus,
     required this.status,
     this.onConfirmHire,
     this.onMarkCompleted,
@@ -268,26 +273,60 @@ class _ClientActions extends StatelessWidget {
     }
 
     final isActive = status == 'active';
+    final openStatus = workConfirmationStatus ?? '';
+    final isWaitingWorker = openStatus == 'proposed';
+    final isWorkAccepted = {
+      'accepted',
+      'scheduled',
+      'day_before_confirmed',
+      'day_of_confirmed',
+    }.contains(openStatus);
+    final isCheckedIn = openStatus == 'checked_in';
+    final hasOpenConfirmation =
+        hasPendingWorkConfirmation ||
+        isWaitingWorker ||
+        isWorkAccepted ||
+        isCheckedIn;
+    final proposeText =
+        isWaitingWorker
+            ? '알바생 응답 대기중'
+            : isCheckedIn
+            ? '출근 확인됨'
+            : isWorkAccepted
+            ? '출근 확정 완료'
+            : onProposeWorkConfirmation != null
+            ? '출근 확정 제안하기'
+            : '채용 확정하기';
+    final proposeIcon =
+        isWaitingWorker
+            ? Icons.hourglass_top_rounded
+            : isCheckedIn
+            ? Icons.how_to_reg_rounded
+            : isWorkAccepted
+            ? Icons.event_available_rounded
+            : onProposeWorkConfirmation != null
+            ? Icons.event_available_rounded
+            : Icons.thumb_up_alt_rounded;
+    final helperText =
+        isWaitingWorker
+            ? '알바생 수락을 기다리는 중'
+            : isCheckedIn
+            ? '근무 완료 처리를 진행해주세요'
+            : isWorkAccepted
+            ? '근무일 알림과 출근 확인이 진행돼요'
+            : onProposeWorkConfirmation != null
+            ? '알바생 수락 후 출근확인 가능'
+            : '확정 후 출근확인 가능';
 
     // 채용 확정 전: 사장님 UX는 출근 확정 제안으로 통일한다.
     if (!isConfirmed) {
       add(
         _ActionButton(
-          text:
-              hasPendingWorkConfirmation
-                  ? '알바생 응답 대기중'
-                  : onProposeWorkConfirmation != null
-                  ? '출근 확정 제안하기'
-                  : '채용 확정하기',
-          icon:
-              hasPendingWorkConfirmation
-                  ? Icons.hourglass_top_rounded
-                  : onProposeWorkConfirmation != null
-                  ? Icons.event_available_rounded
-                  : Icons.thumb_up_alt_rounded,
+          text: proposeText,
+          icon: proposeIcon,
           color: const Color(0xFF1675F4),
           onPressed:
-              isActive && !hasPendingWorkConfirmation
+              isActive && !hasOpenConfirmation
                   ? (onProposeWorkConfirmation ?? onConfirmHire)
                   : null,
         ),
@@ -310,11 +349,7 @@ class _ClientActions extends StatelessWidget {
               ),
               const SizedBox(width: 5),
               Text(
-                onProposeWorkConfirmation != null
-                    ? hasPendingWorkConfirmation
-                        ? '알바생이 제안을 확인하면 확정돼요'
-                        : '알바생 수락 후 출근확인 가능'
-                    : '확정 후 출근확인 가능',
+                helperText,
                 style: const TextStyle(
                   fontSize: 11,
                   color: Color(0xFF1D4ED8),
@@ -638,33 +673,37 @@ class _InfoBit extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Expanded(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 12, color: color),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                text,
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(
+            text,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: color,
             ),
-          ],
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
         ),
-      );
+      ],
+    ),
+  );
 }
 
 class _InfoDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
-        width: 1,
-        height: 14,
-        color: const Color(0xFFD1D5DB),
-        margin: const EdgeInsets.symmetric(horizontal: 4),
-      );
+    width: 1,
+    height: 14,
+    color: const Color(0xFFD1D5DB),
+    margin: const EdgeInsets.symmetric(horizontal: 4),
+  );
 }
 
 // ─────────────────────────────────────────────
