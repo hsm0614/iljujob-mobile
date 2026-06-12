@@ -117,7 +117,8 @@ class WorkerMapView extends StatefulWidget {
 class _WorkerMapViewState extends State<WorkerMapView> {
   km.KakaoMapController? _ctrl;
   StreamSubscription<km.CameraMoveEndEvent>? _cameraSub;
-  bool _mapReady = false;
+  bool _mapReady  = false;
+  bool _mapMoving = false; // 카드 숨김 여부 (이동 중)
 
   final _scrollCtrl = ScrollController();
   List<_Job>    _jobs           = [];
@@ -232,9 +233,11 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     debugPrint('[MAP] onMapCreated 호출됨');
     _ctrl = ctrl;
     _cameraSub = ctrl.onCameraMoveEndStream.listen((_) async {
-      debugPrint('[MAP] onCameraMoveEnd 이벤트 수신 — 150ms 대기 후 toScreenPoint');
-      await Future.delayed(const Duration(milliseconds: 150));
-      if (mounted) _updateCardPositions();
+      debugPrint('[MAP] onCameraMoveEnd — 즉시 위치 재계산');
+      if (mounted) {
+        await _updateCardPositions();
+        if (mounted) setState(() => _mapMoving = false);
+      }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.delayed(const Duration(milliseconds: 100));
@@ -332,12 +335,12 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     final job = _jobs[idx];
     debugPrint('[MAP] selectJob → "${job.title}" lat=${job.lat} lng=${job.lng} hasLoc=${job.hasLocation}');
     if (job.hasLocation && _ctrl != null) {
-      // fromLatLng: zoomLevel 포함해야 카메라 실제 이동 (type:0+zoomLevel:-1은 이동 안 됨)
+      setState(() => _mapMoving = true); // 이동 시작 → 카드 즉시 숨김
       _ctrl!.moveCamera(
         cameraUpdate: km.CameraUpdate.fromLatLng(job.pos),
         animation: const km.CameraAnimation(duration: 350, autoElevation: true, isConsecutive: false),
       );
-      debugPrint('[MAP] moveCamera(fromLatLng) 호출 → onCameraMoveEnd 대기');
+      debugPrint('[MAP] moveCamera 호출 — 카드 숨김, onCameraMoveEnd 대기');
     } else {
       debugPrint('[MAP] moveCamera 스킵 — hasLoc=${job.hasLocation}, ctrl=${_ctrl != null}');
     }
@@ -454,34 +457,22 @@ class _WorkerMapViewState extends State<WorkerMapView> {
           ),
         ),
 
-        // ── 디버그: 카드 상태 오버레이 ───────────────────────────
-        Positioned(
-          left: 8, bottom: 200,
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.7), borderRadius: BorderRadius.circular(8)),
-            child: Text(
-              'jobs=${_jobs.length} mapReady=$_mapReady\n'
-              'jobPos=${_jobScreenPos.length} workerPos=${_workerScreenPos.length}\n'
-              'jobs w/loc=${_jobs.where((j)=>j.hasLocation).length}\n'
-              '${_jobScreenPos.entries.map((e) => '#${e.key}:${e.value?.dx.toStringAsFixed(0)},${e.value?.dy.toStringAsFixed(0)}').join(' ')}',
-              style: const TextStyle(color: Colors.white, fontSize: 10),
-            ),
-          ),
-        ),
-
-        // ── 구직자 도트 오버레이 (유효 좌표만) ───────────────────
+        // ── 구직자 도트 오버레이 ─────────────────────────────────
         for (final w in _currentWorkers.where((w) => w.hasLocation)) ...[
           if (_workerScreenPos[w.id] case final Offset p
               when p.dx >= 0 && p.dy >= 0)
             Positioned(
-              left: p.dx - 7,
-              top: p.dy - 7,
-              child: _WorkerDot(worker: w),
+              left: p.dx - 14,
+              top: p.dy - 14,
+              child: AnimatedOpacity(
+                opacity: _mapMoving ? 0.0 : 1.0,
+                duration: const Duration(milliseconds: 180),
+                child: _WorkerDot(worker: w),
+              ),
             ),
         ],
 
-        // ── 공고 카드 오버레이 (직방 스타일, 유효 좌표만) ─────────
+        // ── 공고 카드 오버레이 (직방 스타일) ─────────────────────
         for (final e in _jobs.asMap().entries.where((e) => e.value.hasLocation)) ...[
           if (_jobScreenPos[e.value.id] case final Offset p
               when p.dx >= 0 && p.dy >= 0)
@@ -490,12 +481,13 @@ class _WorkerMapViewState extends State<WorkerMapView> {
               top: p.dy,
               child: FractionalTranslation(
                 translation: const Offset(-0.5, -1.0),
-                child: GestureDetector(
-                  onTap: () {
-                    debugPrint('[MAP][TAP] 카드 탭 — job[${e.key}] "${e.value.title}"');
-                    _selectJob(e.key);
-                  },
-                  child: _JobMapCard(job: e.value, isSelected: e.key == _selectedIdx),
+                child: AnimatedOpacity(
+                  opacity: _mapMoving ? 0.0 : 1.0,
+                  duration: const Duration(milliseconds: 180),
+                  child: GestureDetector(
+                    onTap: () => _selectJob(e.key),
+                    child: _JobMapCard(job: e.value, isSelected: e.key == _selectedIdx),
+                  ),
                 ),
               ),
             ),
@@ -774,10 +766,15 @@ class _ExpandableJobCardState extends State<_ExpandableJobCard> {
                   maxLines: 1, overflow: TextOverflow.ellipsis)),
               const SizedBox(width: 8),
               Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.people_alt_rounded, size: 14, color: _primary),
+                Icon(Icons.people_alt_rounded, size: 14, color: widget.workerCount > 0 ? _primary : _textSub),
                 const SizedBox(width: 3),
-                Text('${widget.workerCount}명',
-                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: _primary)),
+                Text(
+                  widget.workerCount > 0 ? '${widget.workerCount}명' : '없음',
+                  style: TextStyle(
+                    fontSize: 13, fontWeight: FontWeight.w700,
+                    color: widget.workerCount > 0 ? _primary : _textSub,
+                  ),
+                ),
                 const SizedBox(width: 2),
                 const Text('5km', style: TextStyle(fontSize: 10, color: _textSub)),
               ]),
@@ -1141,16 +1138,29 @@ class _WorkerDot extends StatelessWidget {
     return const Color(0xFF9CA3AF);                                   // C/NEW
   }
 
+  String get _grade {
+    if (worker.activityScore >= 100) return 'S';
+    if (worker.activityScore >= 70)  return 'A';
+    if (worker.activityScore >= 40)  return 'B';
+    return 'C';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 14,
-      height: 14,
+      width: 28,
+      height: 28,
       decoration: BoxDecoration(
         color: _color,
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white, width: 2),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4)],
+        border: Border.all(color: Colors.white, width: 2.5),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.22), blurRadius: 6, offset: const Offset(0, 2))],
+      ),
+      child: Center(
+        child: Text(
+          _grade,
+          style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w900, height: 1),
+        ),
       ),
     );
   }
