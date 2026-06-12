@@ -506,6 +506,13 @@ Future<void> _loadBookmarkedJobs() async {
           color: const Color(0xFFF4F6FA),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: const Color(0xFFE5E8EB)),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x08000000),
+              blurRadius: 6,
+              offset: Offset(0, 2),
+            ),
+          ],
         ),
         child: TextField(
           onChanged: (v) {
@@ -513,9 +520,13 @@ Future<void> _loadBookmarkedJobs() async {
             _applyFilters();
           },
           decoration: const InputDecoration(
-            prefixIcon: Icon(Icons.search_rounded, color: Color(0xFF9CA3AF), size: 20),
-            hintText: '제목 또는 지역 검색',
-            hintStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+            prefixIcon: Icon(
+              Icons.search_rounded,
+              color: Color(0xFF9CA3AF),
+              size: 20,
+            ),
+            hintText: '제목 또는 지역으로 검색',
+            hintStyle: TextStyle(color: Color(0xFFB0B8C1), fontSize: 14),
             border: InputBorder.none,
             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             isDense: true,
@@ -526,16 +537,13 @@ Future<void> _loadBookmarkedJobs() async {
   }
 
   Widget _topTabs() {
-    final appliedCount = filteredApplied.length;
-    final bookmarkedCount = filteredBookmarked.length;
-
-    Widget tabItem({required int idx, required String title, String? sub}) {
+    Widget tabItem({required int idx, required String title, required int count}) {
       final selected = _tabIndex == idx;
       return Expanded(
         child: InkWell(
           onTap: () => setState(() => _tabIndex = idx),
           child: SizedBox(
-            height: 44,
+            height: 48,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -547,17 +555,36 @@ Future<void> _loadBookmarkedJobs() async {
                       title,
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
-                        color: selected ? const Color(0xFF191F28) : const Color(0xFF6B7280),
+                        fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                        color: selected
+                            ? const Color(0xFF191F28)
+                            : const Color(0xFF9CA3AF),
                       ),
                     ),
-                    if (sub != null) ...[
-                      const SizedBox(width: 6),
-                      Text(
-                        sub,
-                        style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w600),
+                    const SizedBox(width: 5),
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
                       ),
-                    ],
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? kBrandBlue
+                            : const Color(0xFFE7ECF3),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$count',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: selected
+                              ? Colors.white
+                              : const Color(0xFF9CA3AF),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -578,8 +605,8 @@ Future<void> _loadBookmarkedJobs() async {
       children: [
         Row(
           children: [
-            tabItem(idx: 0, title: '지원 현황', sub: null),
-            tabItem(idx: 1, title: '찜한 공고', sub: '($bookmarkedCount건)'),
+            tabItem(idx: 0, title: '지원 현황', count: filteredApplied.length),
+            tabItem(idx: 1, title: '찜한 공고', count: filteredBookmarked.length),
           ],
         ),
         Container(height: 1, color: const Color(0xFFE7E7E7)),
@@ -910,18 +937,61 @@ final isDeleted = job.status == 'deleted';
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         backgroundColor: const Color(0xFFF4F6FA),
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          centerTitle: false,
-          title: const Text('내 활동'),
-          actions: [
-            IconButton(
-              onPressed: _loadAll,
-              icon: const Icon(Icons.refresh_rounded),
-              tooltip: '새로고침',
+        appBar: PreferredSize(
+          preferredSize: const Size.fromHeight(72),
+          child: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF3B8AFF), Color(0xFF6EB6FF)],
+              ),
             ),
-          ],
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 8, 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Text(
+                            '내 활동',
+                            style: TextStyle(
+                              fontFamily: 'Jalnan2TTF',
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            '지원 ${appliedJobs.length}건 · 찜 ${bookmarkedJobs.length}건',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.white.withValues(alpha: 0.80),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _loadAll,
+                      icon: const Icon(
+                        Icons.refresh_rounded,
+                        color: Colors.white,
+                      ),
+                      tooltip: '새로고침',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
         body: isLoading
             ? const Center(child: CircularProgressIndicator())

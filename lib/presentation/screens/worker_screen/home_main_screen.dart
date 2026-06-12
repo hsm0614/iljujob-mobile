@@ -1564,8 +1564,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           preferredSize: const Size.fromHeight(72),
           child: Container(
             decoration: const BoxDecoration(
-              color: AppColors.bgCard,
-              boxShadow: AppShadows.card,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF3B8AFF), Color(0xFF6EB6FF)],
+              ),
             ),
             child: SafeArea(
               bottom: false,
@@ -1573,7 +1576,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 padding: const EdgeInsets.fromLTRB(20, 12, 16, 10),
                 child: Row(
                   children: [
-                    // 브랜드 + 서브타이틀
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1587,7 +1589,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                   fontFamily: 'Jalnan2TTF',
                                   fontSize: 20,
                                   fontWeight: FontWeight.w800,
-                                  color: AppColors.primary,
+                                  color: Colors.white,
                                 ),
                               ),
                               const SizedBox(width: 6),
@@ -1597,9 +1599,12 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.primaryLight,
+                                  color: Colors.white.withValues(alpha: 0.22),
                                   borderRadius: BorderRadius.circular(
                                     AppRadius.xs,
+                                  ),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.50),
                                   ),
                                 ),
                                 child: const Text(
@@ -1607,7 +1612,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
+                                    color: Colors.white,
                                   ),
                                 ),
                               ),
@@ -1618,9 +1623,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                             isLoading
                                 ? '공고 탐색 중...'
                                 : '내 근처 단기 알바 $nearbyCount개',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 11.5,
-                              color: AppColors.textTertiary,
+                              color: Colors.white.withValues(alpha: 0.80),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -1640,16 +1645,14 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                           vertical: 7,
                         ),
                         decoration: BoxDecoration(
-                          color:
-                              isAvailableToday
-                                  ? AppColors.success.withValues(alpha: 0.10)
-                                  : AppColors.bgMuted,
+                          color: isAvailableToday
+                              ? Colors.white
+                              : Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(AppRadius.full),
                           border: Border.all(
-                            color:
-                                isAvailableToday
-                                    ? AppColors.success
-                                    : AppColors.border,
+                            color: isAvailableToday
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: 0.45),
                           ),
                         ),
                         child: Row(
@@ -1661,10 +1664,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                               height: 7,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color:
-                                    isAvailableToday
-                                        ? AppColors.success
-                                        : AppColors.textDisabled,
+                                color: isAvailableToday
+                                    ? AppColors.success
+                                    : Colors.white.withValues(alpha: 0.70),
                               ),
                             ),
                             const SizedBox(width: 5),
@@ -1673,10 +1675,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color:
-                                    isAvailableToday
-                                        ? AppColors.success
-                                        : AppColors.textTertiary,
+                                color: isAvailableToday
+                                    ? AppColors.success
+                                    : Colors.white,
                               ),
                             ),
                           ],
