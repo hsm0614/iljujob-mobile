@@ -123,7 +123,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
   final _introductionCtrl = TextEditingController();
   final _experienceCtrl   = TextEditingController(); // 레거시 유지
 
-  // ── UI 토글
+  // ── UI 토글 (레거시, 미사용)
+  // ignore: unused_field
   bool _isResumeExpanded = true;
 
   // ── 카테고리/옵션
@@ -1491,60 +1492,27 @@ static const _workCategoryMap = <String, List<String>>{
     );
   }
 
-  Widget _buildResumeCard() {
-    return Container(
-      decoration: _cardDeco(),
-      child: Column(
+  // ── 섹션 카드 공통 헤더
+  Widget _cardHeader(IconData icon, String title, {Color? iconColor}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+      child: Row(
         children: [
-          // 헤더 (접기/펼치기)
-          InkWell(
-            borderRadius: BorderRadius.circular(18),
-            onTap: () => setState(() => _isResumeExpanded = !_isResumeExpanded),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 12, 16),
-              child: Row(
-                children: [
-                  Container(
-                    width:  36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color:        kBrandBlue.withOpacity(0.10),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.description_rounded,
-                      color: kBrandBlue,
-                      size:  20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Text(
-                      '내 지원서',
-                      style: TextStyle(
-                        color:      kBrandBlue,
-                        fontWeight: FontWeight.w900,
-                        fontSize:   15.5,
-                      ),
-                    ),
-                  ),
-                  Icon(
-                    _isResumeExpanded
-                        ? Icons.expand_less_rounded
-                        : Icons.expand_more_rounded,
-                    color: kMuted,
-                  ),
-                ],
-              ),
+          Container(
+            width: 34, height: 34,
+            decoration: BoxDecoration(
+              color: (iconColor ?? kBrandBlue).withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(10),
             ),
+            child: Icon(icon, color: iconColor ?? kBrandBlue, size: 18),
           ),
-          // ✅ AnimatedCrossFade 제거 → AnimatedSize + Visibility 조합
-          // TextField가 있는 부분이 unmount되지 않도록 Offstage 사용
-          Offstage(
-            offstage: !_isResumeExpanded,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: _buildResumeFields(),
+          const SizedBox(width: 10),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w900,
+              color: kText,
             ),
           ),
         ],
@@ -1552,187 +1520,260 @@ static const _workCategoryMap = <String, List<String>>{
     );
   }
 
-  Widget _buildResumeFields() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 이력서 열람 동의
-        _sectionTitle('이력서 열람 동의', sub: '동의 ON 시 사장님이 내 이력서 상세를 볼 수 있어요.'),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color:        Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border:       Border.all(color: kBorder),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                _resumeConsent ? Icons.visibility_rounded : Icons.visibility_off_rounded,
-                size:  20,
-                color: _resumeConsent ? kBrandBlue : kMuted,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  _resumeConsent
-                      ? '사장님이 내 이력서를 볼 수 있어요.'
-                      : '사장님은 기본 정보만 볼 수 있어요.',
-                  style: TextStyle(
-                    fontSize:   13,
-                    color:      _resumeConsent ? kText : kMuted,
-                    fontWeight: FontWeight.w700,
+  Widget _buildIntroCard() {
+    return Container(
+      decoration: _cardDeco(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _cardHeader(Icons.edit_note_rounded, '자기소개'),
+          const Divider(height: 1, color: kBorder),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '사장님이 가장 먼저 읽는 내용이에요. 2~3줄이면 충분해요!',
+                  style: TextStyle(fontSize: 12.5, color: kMuted),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: kBorder),
+                  ),
+                  padding: const EdgeInsets.all(12),
+                  child: TextField(
+                    controller: _introductionCtrl,
+                    minLines: 4,
+                    maxLines: 7,
+                    maxLength: 300,
+                    style: const TextStyle(fontSize: 14.5, height: 1.5, color: kText),
+                    decoration: const InputDecoration(
+                      hintText: '예) 평일 저녁 가능 / 상하차 3개월 경험 / 책임감 있게 마무리합니다',
+                      hintStyle: TextStyle(color: kMuted, fontWeight: FontWeight.w600),
+                      border: InputBorder.none,
+                      isDense: true,
+                      counterStyle: TextStyle(fontSize: 12, color: kMuted),
+                      contentPadding: EdgeInsets.zero,
+                    ),
                   ),
                 ),
-              ),
-              Switch(
-                value:       _resumeConsent,
-                onChanged:   (v) => setState(() => _resumeConsent = v),
-                activeThumbColor: kBrandBlue,
-              ),
-            ],
-          ),
-        ),
-
-        // 근무 가능시간
-        _sectionTitle('근무 가능시간'),
-        _wrapMulti(
-          _timeOptions,
-          _selectedTimes,
-          (item, nowSel) => setState(() => nowSel
-              ? _selectedTimes.add(item)
-              : _selectedTimes.remove(item)),
-        ),
-
-        // 강점
-        _sectionTitle('강점'),
-        _wrapMulti(
-          _strengthOptions,
-          _selectedStrengths,
-          (item, nowSel) => setState(() => nowSel
-              ? _selectedStrengths.add(item)
-              : _selectedStrengths.remove(item)),
-        ),
-
-        // 희망업무
-        _sectionTitle('희망업무'),
-        _workCategorySelect(),
-
-        // 자기소개
-        _sectionTitle('자기소개', sub: '사장님이 먼저 보는 핵심이에요. 2~3줄이면 충분해요!'),
-        Container(
-          decoration: BoxDecoration(
-            color:        Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border:       Border.all(color: kBorder),
-          ),
-          padding: const EdgeInsets.all(12),
-          child: TextField(
-            controller: _introductionCtrl,
-            minLines:   5,
-            maxLines:   7,
-            maxLength:  300,
-            style: const TextStyle(fontSize: 14.5, height: 1.4, color: kText),
-            decoration: InputDecoration(
-              hintText: '예) 평일 저녁 가능 / 상하차 3개월 경험 / 책임감 있게 마무리합니다',
-              hintStyle: const TextStyle(color: kMuted, fontWeight: FontWeight.w600),
-              border:    InputBorder.none,
-              isDense:   true,
-              counterStyle: const TextStyle(fontSize: 12, color: kMuted),
-              contentPadding: EdgeInsets.zero,
+              ],
             ),
           ),
-        ),
+        ],
+      ),
+    );
+  }
 
-        // 가능 요일
-        _sectionTitle('가능 요일', sub: '최소 2개 이상 선택하면 매칭이 더 잘 돼요'),
-        Container(
-          decoration: BoxDecoration(
-            color:        Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border:       Border.all(color: kBorder),
+  Widget _buildWorkConditionCard() {
+    return Container(
+      decoration: _cardDeco(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _cardHeader(Icons.tune_rounded, '근무 조건'),
+          const Divider(height: 1, color: kBorder),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 희망업무
+                _sectionTitle('희망업무'),
+                _workCategorySelect(),
+
+                // 가능 요일
+                _sectionTitle('가능 요일', sub: '최소 2개 이상 선택하면 매칭이 더 잘 돼요'),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: kBorder),
+                  ),
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _daysRow(),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8, runSpacing: 8,
+                        children: [
+                          _pillChip(
+                            '평일',
+                            _selectedDays.toSet().containsAll(['월', '화', '수', '목', '금']),
+                            () {
+                              setState(() {
+                                const wk = ['월', '화', '수', '목', '금'];
+                                final all = _selectedDays.toSet().containsAll(wk);
+                                if (all) {
+                                  _selectedDays.removeWhere(wk.contains);
+                                } else {
+                                  for (final d in wk) {
+                                    if (!_selectedDays.contains(d)) _selectedDays.add(d);
+                                  }
+                                }
+                              });
+                            },
+                          ),
+                          _pillChip(
+                            '주말',
+                            _selectedDays.toSet().containsAll(['토', '일']),
+                            () {
+                              setState(() {
+                                const wk = ['토', '일'];
+                                final all = _selectedDays.toSet().containsAll(wk);
+                                if (all) {
+                                  _selectedDays.removeWhere(wk.contains);
+                                } else {
+                                  for (final d in wk) {
+                                    if (!_selectedDays.contains(d)) _selectedDays.add(d);
+                                  }
+                                }
+                              });
+                            },
+                          ),
+                          _pillChip(
+                            '전체 해제',
+                            _selectedDays.isEmpty,
+                            () => setState(() => _selectedDays.clear()),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // 근무 가능시간
+                _sectionTitle('근무 가능시간'),
+                _wrapMulti(
+                  _timeOptions, _selectedTimes,
+                  (item, nowSel) => setState(() => nowSel
+                      ? _selectedTimes.add(item)
+                      : _selectedTimes.remove(item)),
+                ),
+
+                // 강점
+                _sectionTitle('강점', sub: '최대 3개 골라보세요'),
+                _wrapMulti(
+                  _strengthOptions, _selectedStrengths,
+                  (item, nowSel) => setState(() => nowSel
+                      ? _selectedStrengths.add(item)
+                      : _selectedStrengths.remove(item)),
+                ),
+              ],
+            ),
           ),
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _daysRow(),
-              const SizedBox(height: 10),
-              Wrap(
-                spacing:    8,
-                runSpacing: 8,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCareerCard() {
+    return Container(
+      decoration: _cardDeco(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _cardHeader(Icons.work_history_rounded, '경력 / 자격증'),
+          const Divider(height: 1, color: kBorder),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 경력
+                _sectionTitle('경력', sub: '일한 곳/기간을 간단히 써두면 신뢰도가 올라가요'),
+                if (_experiences.isEmpty)
+                  _emptyCard(
+                    icon: Icons.work_outline_rounded,
+                    label: '등록된 경력이 없어요.\n간단히라도 추가하면 신뢰도가 확 올라가요.',
+                  )
+                else
+                  ..._experiences.map((e) => _buildExperienceItem(e)),
+                const SizedBox(height: 10),
+                _addButton(label: '경력 추가하기', onPressed: _showAddExperienceModal),
+
+                // 자격증
+                _sectionTitle('자격증 / 면허', sub: '신뢰도에 도움돼요. (증빙 첨부는 준비중)'),
+                if (_licenses.isEmpty)
+                  _emptyCard(
+                    icon: Icons.card_membership_rounded,
+                    label: '등록된 자격증이 없어요.',
+                  )
+                else
+                  ..._licenses.map((l) => _buildLicenseItem(l)),
+                const SizedBox(height: 10),
+                _addButton(label: '자격증 추가하기', onPressed: _showAddLicenseSheet),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingsCard() {
+    return Container(
+      decoration: _cardDeco(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _cardHeader(Icons.settings_rounded, '설정', iconColor: kMuted),
+          const Divider(height: 1, color: kBorder),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: kBorder),
+              ),
+              child: Row(
                 children: [
-                  _pillChip(
-                    '평일',
-                    _selectedDays.toSet().containsAll(['월', '화', '수', '목', '금']),
-                    () {
-                      setState(() {
-                        const wk  = ['월', '화', '수', '목', '금'];
-                        final all = _selectedDays.toSet().containsAll(wk);
-                        if (all) {
-                          _selectedDays.removeWhere(wk.contains);
-                        } else {
-                          for (final d in wk) {
-                            if (!_selectedDays.contains(d)) _selectedDays.add(d);
-                          }
-                        }
-                      });
-                    },
+                  Icon(
+                    _resumeConsent ? Icons.visibility_rounded : Icons.visibility_off_rounded,
+                    size: 20,
+                    color: _resumeConsent ? kBrandBlue : kMuted,
                   ),
-                  _pillChip(
-                    '주말',
-                    _selectedDays.toSet().containsAll(['토', '일']),
-                    () {
-                      setState(() {
-                        const wk  = ['토', '일'];
-                        final all = _selectedDays.toSet().containsAll(wk);
-                        if (all) {
-                          _selectedDays.removeWhere(wk.contains);
-                        } else {
-                          for (final d in wk) {
-                            if (!_selectedDays.contains(d)) _selectedDays.add(d);
-                          }
-                        }
-                      });
-                    },
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          '이력서 열람 동의',
+                          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: kText),
+                        ),
+                        Text(
+                          _resumeConsent
+                              ? '사장님이 내 이력서를 볼 수 있어요.'
+                              : '사장님은 기본 정보만 볼 수 있어요.',
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: _resumeConsent ? kBrandBlue : kMuted,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  _pillChip(
-                    '전체 해제',
-                    _selectedDays.isEmpty,
-                    () => setState(() => _selectedDays.clear()),
+                  Switch(
+                    value: _resumeConsent,
+                    onChanged: (v) => setState(() => _resumeConsent = v),
+                    activeThumbColor: kBrandBlue,
                   ),
                 ],
               ),
-            ],
+            ),
           ),
-        ),
-
-        // 경력
-        _sectionTitle('경력', sub: '일한 곳/기간/무슨 일(간단)을 써두면 매칭이 쉬워져요.'),
-        if (_experiences.isEmpty)
-          _emptyCard(
-            icon:  Icons.work_outline_rounded,
-            label: '등록된 경력이 없어요.\n간단히라도 추가하면 신뢰도가 확 올라가요.',
-          )
-        else
-          ..._experiences.map((e) => _buildExperienceItem(e)),
-
-        const SizedBox(height: 10),
-        _addButton(label: '경력 추가하기', onPressed: _showAddExperienceModal),
-
-        // 자격증
-        _sectionTitle('자격증 / 면허', sub: '신뢰도에 도움돼요. (증빙 첨부는 준비중)'),
-        if (_licenses.isEmpty)
-          _emptyCard(
-            icon:  Icons.card_membership_rounded,
-            label: '등록된 자격증이 없어요.',
-          )
-        else
-          ..._licenses.map((l) => _buildLicenseItem(l)),
-
-        const SizedBox(height: 10),
-        _addButton(label: '자격증 추가하기', onPressed: _showAddLicenseSheet),
-      ],
+        ],
+      ),
     );
   }
 
@@ -2030,7 +2071,13 @@ static const _workCategoryMap = <String, List<String>>{
                 children: [
                   _buildProfileCard(),
                   const SizedBox(height: 14),
-                  _buildResumeCard(),
+                  _buildIntroCard(),
+                  const SizedBox(height: 14),
+                  _buildWorkConditionCard(),
+                  const SizedBox(height: 14),
+                  _buildCareerCard(),
+                  const SizedBox(height: 14),
+                  _buildSettingsCard(),
                   _buildAccountSection(),
                 ],
               ),
