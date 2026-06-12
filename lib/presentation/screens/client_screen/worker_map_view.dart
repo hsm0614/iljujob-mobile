@@ -229,9 +229,10 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   void _onMapCreated(km.KakaoMapController ctrl) {
     debugPrint('[MAP] onMapCreated 호출됨');
     _ctrl = ctrl;
-    _cameraSub = ctrl.onCameraMoveEndStream.listen((e) {
-      debugPrint('[MAP] onCameraMoveEnd 이벤트 수신');
-      _updateCardPositions();
+    _cameraSub = ctrl.onCameraMoveEndStream.listen((_) async {
+      debugPrint('[MAP] onCameraMoveEnd 이벤트 수신 — 150ms 대기 후 toScreenPoint');
+      await Future.delayed(const Duration(milliseconds: 150));
+      if (mounted) _updateCardPositions();
     });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await Future.delayed(const Duration(milliseconds: 100));
@@ -262,38 +263,43 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     final workersWithLoc = _currentWorkers.where((w) => w.hasLocation).toList();
     debugPrint('[MAP][CARD] toScreenPoint 시작 — jobs=${jobsWithLoc.length}, workers=${workersWithLoc.length}');
 
-    final jobFutures = jobsWithLoc.map((j) async {
+    // 순차 호출 — 동시 다발 platform channel 호출 시 iOS 크래시 가능성 있음
+    final newJobPos = <int, Offset?>{};
+    for (final j in jobsWithLoc) {
       try {
         final p = await _ctrl!.toScreenPoint(position: j.pos);
-        debugPrint('[MAP][CARD] job[${j.id}] "${j.title}" → offset=$p');
-        return (j.id, p);
+        debugPrint('[MAP][CARD] job[${j.id}] "${j.title}" lat=${j.lat},${j.lng} → offset=$p');
+        newJobPos[j.id] = p;
       } catch (e) {
         debugPrint('[MAP][CARD] job[${j.id}] toScreenPoint 실패: $e');
-        return (j.id, null as Offset?);
+        newJobPos[j.id] = null;
       }
-    }).toList();
-    final workerFutures = workersWithLoc.map((w) async {
+      if (!mounted) return;
+    }
+    final newWorkerPos = <int, Offset?>{};
+    for (final w in workersWithLoc) {
       try {
         final p = await _ctrl!.toScreenPoint(position: w.pos);
         debugPrint('[MAP][CARD] worker[${w.id}] → offset=$p');
-        return (w.id, p);
+        newWorkerPos[w.id] = p;
       } catch (e) {
         debugPrint('[MAP][CARD] worker[${w.id}] toScreenPoint 실패: $e');
-        return (w.id, null as Offset?);
+        newWorkerPos[w.id] = null;
       }
-    }).toList();
+      if (!mounted) return;
+    }
 
-    final jobResults    = await Future.wait(jobFutures);
-    final workerResults = await Future.wait(workerFutures);
     if (!mounted) return;
-
     setState(() {
-      _jobScreenPos.clear();
-      for (final (id, pos) in jobResults)    { _jobScreenPos[id]    = pos; }
-      _workerScreenPos.clear();
-      for (final (id, pos) in workerResults) { _workerScreenPos[id] = pos; }
+      _jobScreenPos
+        ..clear()
+        ..addAll(newJobPos);
+      _workerScreenPos
+        ..clear()
+        ..addAll(newWorkerPos);
     });
-    debugPrint('[MAP][CARD] setState 완료 — jobPositions: $_jobScreenPos');
+    final validCount = newJobPos.values.where((p) => p != null).length;
+    debugPrint('[MAP][CARD] setState 완료 — valid=$validCount/${jobsWithLoc.length} / positions: $newJobPos');
   }
 
   // ── 공고 선택 ─────────────────────────────────────────────────
@@ -307,11 +313,12 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     final job = _jobs[idx];
     debugPrint('[MAP] selectJob → "${job.title}" lat=${job.lat} lng=${job.lng} hasLoc=${job.hasLocation}');
     if (job.hasLocation && _ctrl != null) {
+      // fromLatLng: zoomLevel 포함해야 카메라 실제 이동 (type:0+zoomLevel:-1은 이동 안 됨)
       _ctrl!.moveCamera(
-        cameraUpdate: km.CameraUpdate(position: job.pos, type: 0),
+        cameraUpdate: km.CameraUpdate.fromLatLng(job.pos),
         animation: const km.CameraAnimation(duration: 350, autoElevation: true, isConsecutive: false),
       );
-      debugPrint('[MAP] moveCamera 호출 → onCameraMoveEnd 대기');
+      debugPrint('[MAP] moveCamera(fromLatLng) 호출 → onCameraMoveEnd 대기');
     } else {
       debugPrint('[MAP] moveCamera 스킵 — hasLoc=${job.hasLocation}, ctrl=${_ctrl != null}');
     }
@@ -439,39 +446,36 @@ class _WorkerMapViewState extends State<WorkerMapView> {
           ),
         ),
 
-        // ── 구직자 도트 오버레이 ──────────────────────────────────
-        ..._currentWorkers.where((w) => w.hasLocation).map((w) {
-          final p = _workerScreenPos[w.id];
-          if (p == null || p.dx < 0 || p.dy < 0) return const SizedBox.shrink();
-          return Positioned(
-            left: p.dx - 7,
-            top: p.dy - 7,
-            child: _WorkerDot(worker: w),
-          );
-        }),
+        // ── 구직자 도트 오버레이 (유효 좌표만) ───────────────────
+        for (final w in _currentWorkers.where((w) => w.hasLocation)) ...[
+          if (_workerScreenPos[w.id] case final Offset p
+              when p.dx >= 0 && p.dy >= 0)
+            Positioned(
+              left: p.dx - 7,
+              top: p.dy - 7,
+              child: _WorkerDot(worker: w),
+            ),
+        ],
 
-        // ── 공고 카드 오버레이 (직방 스타일) ─────────────────────
-        ..._jobs.asMap().entries.where((e) => e.value.hasLocation).map((e) {
-          final i = e.key;
-          final job = e.value;
-          final p = _jobScreenPos[job.id];
-          if (p == null || p.dx < 0 || p.dy < 0) return const SizedBox.shrink();
-          final isSelected = i == _selectedIdx;
-          return Positioned(
-            left: p.dx,
-            top: p.dy,
-            child: FractionalTranslation(
-              translation: const Offset(-0.5, -1.0),
-              child: GestureDetector(
-                onTap: () {
-                  debugPrint('[MAP][TAP] 카드 탭 — job[$i] "${job.title}"');
-                  _selectJob(i);
-                },
-                child: _JobMapCard(job: job, isSelected: isSelected),
+        // ── 공고 카드 오버레이 (직방 스타일, 유효 좌표만) ─────────
+        for (final e in _jobs.asMap().entries.where((e) => e.value.hasLocation)) ...[
+          if (_jobScreenPos[e.value.id] case final Offset p
+              when p.dx >= 0 && p.dy >= 0)
+            Positioned(
+              left: p.dx,
+              top: p.dy,
+              child: FractionalTranslation(
+                translation: const Offset(-0.5, -1.0),
+                child: GestureDetector(
+                  onTap: () {
+                    debugPrint('[MAP][TAP] 카드 탭 — job[${e.key}] "${e.value.title}"');
+                    _selectJob(e.key);
+                  },
+                  child: _JobMapCard(job: e.value, isSelected: e.key == _selectedIdx),
+                ),
               ),
             ),
-          );
-        }),
+        ],
 
         // ── 상단 공고 칩 ──────────────────────────────────────────
         Positioned(
