@@ -253,14 +253,23 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     // clearMarkers: E002(레이어 없음)는 정상 — 기존 마커 없으면 아무 것도 안 지워도 됨
     try { await _ctrl!.clearMarkers(); } catch (_) {}
 
-    final jobOpts = _jobs.where((j) => j.hasLocation).map((j) => km.MarkerOption(
-      id: 'job_${j.id}',
-      latLng: j.pos,
-      text: '${j.isPinnedNow ? "[긴급] " : ""}${j.title.length > 9 ? '${j.title.substring(0, 9)}…' : j.title}',
-    )).toList();
+    final jobOpts = _jobs.where((j) => j.hasLocation).map((j) {
+      final short  = j.title.length > 7 ? '${j.title.substring(0, 7)}…' : j.title;
+      final wage   = j.hourlyWage > 0
+          ? ' · ${(j.hourlyWage / 10000).toStringAsFixed(j.hourlyWage % 10000 == 0 ? 0 : 1)}만원'
+          : '';
+      final prefix = j.isPinnedNow ? '⚡긴급 ' : '📍 ';
+      return km.MarkerOption(
+        id: 'job_${j.id}',
+        latLng: j.pos,
+        rank: j.isPinnedNow ? 100 : 50,
+        text: '$prefix$short$wage',
+      );
+    }).toList();
     final workerOpts = w.where((wk) => wk.hasLocation).map((wk) => km.MarkerOption(
       id: 'w_${wk.id}',
       latLng: wk.pos,
+      rank: 10,
       text: wk.grade,
     )).toList();
     final all = [...jobOpts, ...workerOpts];
@@ -272,13 +281,13 @@ class _WorkerMapViewState extends State<WorkerMapView> {
         if (all.isNotEmpty) await _ctrl!.addMarkers(markerOptions: all);
         debugPrint('[MAP] 마커 배치 성공 (attempt=${attempt + 1})');
 
-        // 카메라: 선택된 공고 or 첫 공고
+        // 카메라: 선택된 공고 or 첫 공고 (zoom은 현재값 유지 — fromLatLng 쓰면 zoomLevel:17로 강제 변경됨)
         final target = (_selectedIdx != null && _jobs[_selectedIdx!].hasLocation)
             ? _jobs[_selectedIdx!]
             : _jobs.where((j) => j.hasLocation).firstOrNull;
         if (target != null) {
           await _ctrl!.moveCamera(
-            cameraUpdate: km.CameraUpdate.fromLatLng(target.pos),
+            cameraUpdate: km.CameraUpdate(position: target.pos, type: 0),
             animation: const km.CameraAnimation(duration: 300, autoElevation: true, isConsecutive: false),
           );
         }
@@ -314,10 +323,10 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       _workerCount = 0;
     });
     final job = _jobs[idx];
-    // 카메라 이동
+    // 카메라 이동 (zoom 유지 — fromLatLng는 zoomLevel:17 강제 변경하므로 사용 안 함)
     if (job.hasLocation && _ctrl != null) {
       _ctrl!.moveCamera(
-        cameraUpdate: km.CameraUpdate.fromLatLng(job.pos),
+        cameraUpdate: km.CameraUpdate(position: job.pos, type: 0),
         animation: const km.CameraAnimation(duration: 350, autoElevation: true, isConsecutive: false),
       );
     }
@@ -590,7 +599,10 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       ).timeout(const Duration(seconds: 5));
       if (_ctrl != null) {
         await _ctrl!.moveCamera(
-          cameraUpdate: km.CameraUpdate.fromLatLng(km.LatLng(latitude: p.latitude, longitude: p.longitude)),
+          cameraUpdate: km.CameraUpdate(
+            position: km.LatLng(latitude: p.latitude, longitude: p.longitude),
+            type: 0,
+          ),
           animation: const km.CameraAnimation(duration: 400, autoElevation: true, isConsecutive: false),
         );
       }
