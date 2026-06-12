@@ -122,52 +122,51 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
   void _showBlockDialog(String targetType, int targetId) {
     showDialog(
       context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('사용자 차단'),
-            content: const Text(
-              '해당 사용자를 차단하시겠습니까?\n'
-              '차단 시 더 이상 채팅 및 지원 등의 상호작용이 제한됩니다.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('취소'),
-              ),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.block),
-                label: const Text('차단'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                onPressed: () async {
-                  Navigator.pop(context);
-
-                  final prefs = await SharedPreferences.getInstance();
-                  final userId = prefs.getInt('userId') ?? 0;
-
-                  final response = await http.post(
-                    Uri.parse('$baseUrl/api/user-block/block'),
-                    headers: {'Content-Type': 'application/json'},
-                    body: jsonEncode({
-                      'userId': userId,
-                      'targetId': targetId,
-                      'targetType': targetType, // 'worker'
-                    }),
-                  );
-
-                  if (response.statusCode == 200) {
-                    setState(() => isBlocked = true);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('해당 사용자를 차단했습니다.')),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('차단 실패: ${response.body}')),
-                    );
-                  }
-                },
-              ),
-            ],
+      builder: (_) => AlertDialog(
+        title: const Text('사용자 차단'),
+        content: const Text(
+          '해당 사용자를 차단하시겠습니까?\n'
+          '차단 시 더 이상 채팅 및 지원 등의 상호작용이 제한됩니다.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
           ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.block),
+            label: const Text('차단'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () async {
+              Navigator.pop(context);
+
+              final prefs = await SharedPreferences.getInstance();
+              final userId = prefs.getInt('userId') ?? 0;
+
+              final response = await http.post(
+                Uri.parse('$baseUrl/api/user-block/block'),
+                headers: {'Content-Type': 'application/json'},
+                body: jsonEncode({
+                  'userId': userId,
+                  'targetId': targetId,
+                  'targetType': targetType, // 'worker'
+                }),
+              );
+
+              if (response.statusCode == 200) {
+                setState(() => isBlocked = true);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('해당 사용자를 차단했습니다.')),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('차단 실패: ${response.body}')),
+                );
+              }
+            },
+          ),
+        ],
+      ),
     );
   }
 
@@ -185,92 +184,90 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
 
     showDialog(
       context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('사용자 신고'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<String>(
-                  items:
-                      reasonOptions
-                          .map(
-                            (reason) => DropdownMenuItem<String>(
-                              value: reason,
-                              child: Text(reason),
-                            ),
-                          )
-                          .toList(),
-                  initialValue: selectedReason,
-                  onChanged: (value) {
-                    selectedReason = value;
-                  },
-                  decoration: const InputDecoration(
-                    labelText: '신고 사유',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: reasonController,
-                  maxLines: 4,
-                  decoration: const InputDecoration(
-                    hintText: '상세 내용을 입력해주세요 (선택)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '※ 신고된 내용은 운영 정책에 따라 24시간 이내에 조치됩니다.',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
+      builder: (_) => AlertDialog(
+        title: const Text('사용자 신고'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropdownButtonFormField<String>(
+              items: reasonOptions
+                  .map(
+                    (reason) => DropdownMenuItem<String>(
+                      value: reason,
+                      child: Text(reason),
+                    ),
+                  )
+                  .toList(),
+              initialValue: selectedReason,
+              onChanged: (value) {
+                selectedReason = value;
+              },
+              decoration: const InputDecoration(
+                labelText: '신고 사유',
+                border: OutlineInputBorder(),
+              ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('취소'),
+            const SizedBox(height: 8),
+            TextField(
+              controller: reasonController,
+              maxLines: 4,
+              decoration: const InputDecoration(
+                hintText: '상세 내용을 입력해주세요 (선택)',
+                border: OutlineInputBorder(),
               ),
-              ElevatedButton(
-                onPressed: () async {
-                  if (selectedReason == null || selectedReason!.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('신고 사유를 선택해주세요')),
-                    );
-                    return;
-                  }
-
-                  final prefs = await SharedPreferences.getInstance();
-                  final reporterId = prefs.getInt('userId') ?? 0;
-
-                  final response = await http.post(
-                    Uri.parse('$baseUrl/api/user-report'),
-                    headers: {'Content-Type': 'application/json'},
-                    body: jsonEncode({
-                      'reporterId': reporterId,
-                      'targetId': targetId,
-                      'targetType': targetType,
-                      'reasonCategory': selectedReason,
-                      'reasonDetail': reasonController.text.trim(),
-                    }),
-                  );
-
-                  Navigator.pop(context);
-
-                  if (response.statusCode == 200) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('신고가 접수되었습니다.')),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('신고 실패: ${response.body}')),
-                    );
-                  }
-                },
-                child: const Text('신고'),
-              ),
-            ],
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '※ 신고된 내용은 운영 정책에 따라 24시간 이내에 조치됩니다.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('취소'),
           ),
+          ElevatedButton(
+            onPressed: () async {
+              if (selectedReason == null || selectedReason!.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('신고 사유를 선택해주세요')),
+                );
+                return;
+              }
+
+              final prefs = await SharedPreferences.getInstance();
+              final reporterId = prefs.getInt('userId') ?? 0;
+
+              final response = await http.post(
+                Uri.parse('$baseUrl/api/user-report'),
+                headers: {'Content-Type': 'application/json'},
+                body: jsonEncode({
+                  'reporterId': reporterId,
+                  'targetId': targetId,
+                  'targetType': targetType,
+                  'reasonCategory': selectedReason,
+                  'reasonDetail': reasonController.text.trim(),
+                }),
+              );
+
+              Navigator.pop(context);
+
+              if (response.statusCode == 200) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('신고가 접수되었습니다.')),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('신고 실패: ${response.body}')),
+                );
+              }
+            },
+            child: const Text('신고'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -287,10 +284,10 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
         title: const Text(
           '알바생 프로필',
           style: TextStyle(
-            color: Color(0xFF191F28),
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-            height: 1.2,
+            fontFamily: 'Jalnan2TTF',
+            color: Color(0xFF3B8AFF),
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
           ),
         ),
         actions: [
@@ -308,96 +305,110 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
           ),
         ],
       ),
-      body:
-          isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : profile == null
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : profile == null
               ? const Center(child: Text('프로필 정보를 불러올 수 없습니다.'))
               : SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ===== 헤더: 아바타 + 통계 =====
-                    Center(
-                      child: Column(
-                        children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundImage:
-                                (profile!['profile_image_url'] != null &&
-                                        (profile!['profile_image_url']
-                                                as String)
-                                            .isNotEmpty)
-                                    ? NetworkImage(
-                                      profile!['profile_image_url'],
-                                    )
-                                    : null,
-                            child:
-                                (profile!['profile_image_url'] == null ||
-                                        (profile!['profile_image_url']
-                                                as String)
-                                            .isEmpty)
-                                    ? const Icon(Icons.person, size: 40)
-                                    : null,
-                          ),
-                          const SizedBox(height: 16),
-                          _statWrap(),
-                        ],
+                  padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ===== 헤더: 아바타 + 통계 =====
+                      Center(
+                        child: Column(
+                          children: [
+                            CircleAvatar(
+                              radius: 50,
+                              backgroundImage:
+                                  (profile!['profile_image_url'] != null &&
+                                          (profile!['profile_image_url'] as String)
+                                              .isNotEmpty)
+                                      ? NetworkImage(
+                                          profile!['profile_image_url'],
+                                        )
+                                      : null,
+                              child: (profile!['profile_image_url'] == null ||
+                                      (profile!['profile_image_url'] as String)
+                                          .isEmpty)
+                                  ? const Icon(Icons.person, size: 40)
+                                  : null,
+                            ),
+                            const SizedBox(height: 16),
+                            _statWrap(),
+                          ],
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 16),
 
-                    // ===== 이력서 열람 안내 카드 =====
-                    _resumeInfoCard(),
-                    const SizedBox(height: 8),
-                    Text(
-                      canViewResume
-                          ? '강점, 희망 분야, 경력, 자격증까지 확인할 수 있습니다.'
-                          : '이 알바생은 이력서 열람에 동의하지 않았습니다.\n기본 정보만 확인할 수 있어요.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: const Color(0xFF6B7280),
-                      ),
-                    ),
-
-                    // ===== 기본 정보 (항상 표시) =====
-                    const SizedBox(height: 24),
-                    const _SectionTitle('기본 정보'),
-                    const SizedBox(height: 8),
-                    _buildInfoTile('이름', maskName(profile!['name'] ?? '없음')),
-                    _buildInfoTile('성별', profile!['gender'] ?? '없음'),
-                    _buildInfoTile('출생년도', getBirthYear()),
-
-                    // ===== 이력서 상세 (동의한 경우에만) =====
-                    if (canViewResume) ...[
-                      const SizedBox(height: 24),
-                      const _SectionTitle('이력서 상세'),
+                      // ===== 이력서 열람 안내 카드 =====
+                      _resumeInfoCard(),
                       const SizedBox(height: 8),
-                      _buildInfoTile('강점', profile!['strengths'] ?? '없음'),
-                      _buildInfoTile('성격', profile!['traits'] ?? '없음'),
+                      Text(
+                        canViewResume
+                            ? '강점, 희망 분야, 경력, 자격증까지 확인할 수 있습니다.'
+                            : '이 알바생은 이력서 열람에 동의하지 않았습니다.\n기본 정보만 확인할 수 있어요.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: const Color(0xFF6B7280),
+                        ),
+                      ),
+
+                      // ===== 기본 정보 (항상 표시) =====
+                      const SizedBox(height: 24),
+                      const _SectionTitle('기본 정보'),
+                      const SizedBox(height: 8),
                       _buildInfoTile(
-                        '업무 희망 분야',
-                        profile!['desired_work'] ?? '없음',
+                        '이름',
+                        maskName(profile!['name'] ?? '없음'),
                       ),
                       _buildInfoTile(
-                        '가능 요일',
-                        profile!['available_days'] ?? '없음',
+                        '성별',
+                        profile!['gender'] ?? '없음',
                       ),
                       _buildInfoTile(
-                        '가능 시간대',
-                        profile!['available_times'] ?? '없음',
+                        '출생년도',
+                        getBirthYear(),
                       ),
-                      _buildInfoTile('자기소개', profile!['introduction'] ?? '없음'),
-                      const SizedBox(height: 20),
-                      _buildExperienceList(),
-                      const SizedBox(height: 20),
-                      _buildLicenseChips(),
+
+                      // ===== 이력서 상세 (동의한 경우에만) =====
+                      if (canViewResume) ...[
+                        const SizedBox(height: 24),
+                        const _SectionTitle('이력서 상세'),
+                        const SizedBox(height: 8),
+                        _buildInfoTile(
+                          '강점',
+                          profile!['strengths'] ?? '없음',
+                        ),
+                        _buildInfoTile(
+                          '성격',
+                          profile!['traits'] ?? '없음',
+                        ),
+                        _buildInfoTile(
+                          '업무 희망 분야',
+                          profile!['desired_work'] ?? '없음',
+                        ),
+                        _buildInfoTile(
+                          '가능 요일',
+                          profile!['available_days'] ?? '없음',
+                        ),
+                        _buildInfoTile(
+                          '가능 시간대',
+                          profile!['available_times'] ?? '없음',
+                        ),
+                        _buildInfoTile(
+                          '자기소개',
+                          profile!['introduction'] ?? '없음',
+                        ),
+                        const SizedBox(height: 20),
+                        _buildExperienceList(),
+                        const SizedBox(height: 20),
+                        _buildLicenseChips(),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
     );
   }
 
@@ -439,10 +450,9 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
     final enabled = canViewResume;
     final icon = enabled ? Icons.visibility : Icons.visibility_off;
     final title = enabled ? '이력서 열람 가능' : '이력서 열람 불가';
-    final desc =
-        enabled
-            ? '이 알바생은 이력서 열람에 동의했어요.\n강점, 경력, 자격증까지 확인해보세요.'
-            : '이 알바생은 이력서 열람에 동의하지 않았어요.\n기본 정보만 확인 가능합니다.';
+    final desc = enabled
+        ? '이 알바생은 이력서 열람에 동의했어요.\n강점, 경력, 자격증까지 확인해보세요.'
+        : '이 알바생은 이력서 열람에 동의하지 않았어요.\n기본 정보만 확인 가능합니다.';
 
     return Container(
       decoration: BoxDecoration(
@@ -451,7 +461,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
         border: Border.all(color: const Color(0xFFE5E8EB)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: .03),
+            color: Colors.black.withValues(alpha:.03),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -465,7 +475,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: const Color(0xFF1675F4).withValues(alpha: .12),
+              color: const Color(0xFF1675F4).withValues(alpha:.12),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: const Color(0xFF1675F4)),
@@ -485,7 +495,10 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                 const SizedBox(height: 4),
                 Text(
                   desc,
-                  style: TextStyle(fontSize: 12.5, color: Colors.grey.shade700),
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    color: Colors.grey.shade700,
+                  ),
                 ),
               ],
             ),
@@ -529,7 +542,9 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
             const SizedBox(height: 2),
             Text(
               label,
-              style: const TextStyle(fontSize: 11),
+              style: const TextStyle(
+                fontSize: 11,
+              ),
               textAlign: TextAlign.center,
             ),
           ],
@@ -611,15 +626,14 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
         Wrap(
           spacing: 8,
           runSpacing: 4,
-          children:
-              licenses
-                  .map(
-                    (lic) => Chip(
-                      label: Text('${lic['name']} (${lic['issued_at']})'),
-                      backgroundColor: const Color(0xFFEEF5FF),
-                    ),
-                  )
-                  .toList(),
+          children: licenses
+              .map(
+                (lic) => Chip(
+                  label: Text('${lic['name']} (${lic['issued_at']})'),
+                  backgroundColor: const Color(0xFFEEF5FF),
+                ),
+              )
+              .toList(),
         ),
       ],
     );
@@ -645,7 +659,10 @@ class _SectionTitle extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           text,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+          ),
         ),
         const SizedBox(width: 8),
         Expanded(

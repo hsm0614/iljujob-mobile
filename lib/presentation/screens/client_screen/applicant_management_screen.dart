@@ -472,15 +472,15 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         title: const Text(
           '지원자 관리',
           style: TextStyle(
-            color: Color(0xFF191F28),
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-            height: 1.2,
+            fontFamily: 'Jalnan2TTF',
+            color: kBrandBlue,
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
           ),
         ),
-        centerTitle: false,
+        centerTitle: true,
         backgroundColor: Colors.white,
-        foregroundColor: Color(0xFF191F28),
+        foregroundColor: Colors.black,
         elevation: 0.5,
         actions: [
           IconButton(

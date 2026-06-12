@@ -50,7 +50,8 @@ class PostJobScreen extends StatelessWidget {
                       '작성 중인 공고가 있어요',
                       style: TextStyle(
                         fontSize: 18,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Jalnan2TTF',
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -122,10 +123,9 @@ class PostJobScreen extends StatelessWidget {
           title: Text(
             isRepost ? '공고 다시 올리기' : '알바 공고 작성',
             style: const TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-              height: 1.2,
+              fontFamily: 'Jalnan2TTF',
+              fontSize: 20,
+              color: AppColors.primary,
             ),
           ),
         ),

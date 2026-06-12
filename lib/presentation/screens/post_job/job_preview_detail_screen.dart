@@ -190,10 +190,10 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
         title: const Text(
           '공고 미리보기',
           style: TextStyle(
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-            color: _kText,
-            height: 1.2,
+            fontFamily: 'Jalnan2TTF',
+            fontSize: 20,
+            fontWeight: FontWeight.w700,
+            color: _kBrand,
           ),
         ),
         actions: [
@@ -327,7 +327,8 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                           widget.title,
                           style: const TextStyle(
                             fontSize: 19,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
+                            fontFamily: 'Jalnan2TTF',
                             color: _kText,
                           ),
                         ),

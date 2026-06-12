@@ -7,55 +7,51 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../config/constants.dart';
 import '../../data/services/ai_api.dart';
 
-const _kProductId = 'subscribe';
+const _kProductId      = 'subscribe';
 const _kAndroidPackage = 'kr.co.iljujob';
 
 // ─── 플랜별 혜택 정의 ────────────────────────────────────────────
 const _planBenefits = {
   'lite': [
-    _Benefit(Icons.flash_on_rounded, '즉시 게시 3회/월', Color(0xFF3B8AFF)),
-    _Benefit(Icons.emergency_rounded, '긴급 호출 1회/월', Color(0xFFEF4444)),
-    _Benefit(Icons.verified_rounded, '구독 배지 표시', Color(0xFF3B8AFF)),
+    _Benefit(Icons.flash_on_rounded,        '즉시 게시 3회/월',    Color(0xFF3B8AFF)),
+    _Benefit(Icons.emergency_rounded,       '긴급 호출 1회/월',    Color(0xFFEF4444)),
+    _Benefit(Icons.verified_rounded,        '구독 배지 표시',       Color(0xFF3B8AFF)),
   ],
   'standard': [
-    _Benefit(Icons.flash_on_rounded, '즉시 게시 3회/월', Color(0xFF3B8AFF)),
-    _Benefit(Icons.emergency_rounded, '긴급 호출 3회/월', Color(0xFFEF4444)),
-    _Benefit(Icons.verified_user_rounded, '출근 안심 포함', Color(0xFF10B981)),
-    _Benefit(Icons.verified_rounded, '구독 배지 표시', Color(0xFF3B8AFF)),
+    _Benefit(Icons.flash_on_rounded,        '즉시 게시 3회/월',    Color(0xFF3B8AFF)),
+    _Benefit(Icons.emergency_rounded,       '긴급 호출 3회/월',    Color(0xFFEF4444)),
+    _Benefit(Icons.verified_user_rounded,   '출근 안심 포함',       Color(0xFF10B981)),
+    _Benefit(Icons.verified_rounded,        '구독 배지 표시',       Color(0xFF3B8AFF)),
   ],
   'pro': [
-    _Benefit(Icons.flash_on_rounded, '즉시 게시 5회/월', Color(0xFF3B8AFF)),
-    _Benefit(Icons.emergency_rounded, '긴급 호출 5회/월 (최대 20명)', Color(0xFFEF4444)),
-    _Benefit(Icons.verified_user_rounded, '출근 안심 포함', Color(0xFF10B981)),
-    _Benefit(Icons.headset_mic_rounded, '우선 CS 지원', Color(0xFFFFB300)),
-    _Benefit(Icons.verified_rounded, '구독 배지 표시', Color(0xFF3B8AFF)),
+    _Benefit(Icons.flash_on_rounded,        '즉시 게시 5회/월',    Color(0xFF3B8AFF)),
+    _Benefit(Icons.emergency_rounded,       '긴급 호출 5회/월 (최대 20명)', Color(0xFFEF4444)),
+    _Benefit(Icons.verified_user_rounded,   '출근 안심 포함',       Color(0xFF10B981)),
+    _Benefit(Icons.headset_mic_rounded,     '우선 CS 지원',         Color(0xFFFFB300)),
+    _Benefit(Icons.verified_rounded,        '구독 배지 표시',       Color(0xFF3B8AFF)),
   ],
 };
 
 const _defaultBenefits = [
-  _Benefit(Icons.flash_on_rounded, '즉시 게시 크레딧 매월 지급', Color(0xFF3B8AFF)),
-  _Benefit(Icons.emergency_rounded, '긴급 호출 크레딧 매월 지급', Color(0xFFEF4444)),
-  _Benefit(Icons.verified_rounded, '구독 배지 표시', Color(0xFF3B8AFF)),
+  _Benefit(Icons.flash_on_rounded,    '즉시 게시 크레딧 매월 지급',   Color(0xFF3B8AFF)),
+  _Benefit(Icons.emergency_rounded,   '긴급 호출 크레딧 매월 지급',   Color(0xFFEF4444)),
+  _Benefit(Icons.verified_rounded,    '구독 배지 표시',               Color(0xFF3B8AFF)),
 ];
 
 class _Benefit {
   final IconData icon;
-  final String label;
-  final Color color;
+  final String   label;
+  final Color    color;
   const _Benefit(this.icon, this.label, this.color);
 }
 
 // ─── 플랜 레이블 ─────────────────────────────────────────────────
 String _planLabel(String? plan) {
   switch (plan?.toLowerCase()) {
-    case 'lite':
-      return '라이트';
-    case 'standard':
-      return '스탠다드';
-    case 'pro':
-      return '프로';
-    default:
-      return plan?.toUpperCase() ?? '';
+    case 'lite':     return '라이트';
+    case 'standard': return '스탠다드';
+    case 'pro':      return '프로';
+    default:         return plan?.toUpperCase() ?? '';
   }
 }
 
@@ -68,11 +64,11 @@ class SubscriptionManageScreen extends StatefulWidget {
 }
 
 class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
-  bool _loading = true;
-  bool _active = false;
-  String? _plan;
+  bool      _loading  = true;
+  bool      _active   = false;
+  String?   _plan;
   DateTime? _expiresAt;
-  bool? _isTrial;
+  bool?     _isTrial;
 
   @override
   void initState() {
@@ -92,14 +88,14 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
     setState(() => _loading = true);
     try {
       final api = AiApi(baseUrl);
-      final s = await api.fetchMySubscription();
+      final s   = await api.fetchMySubscription();
       if (!mounted) return;
       setState(() {
-        _active = s.active;
-        _plan = s.plan;
+        _active    = s.active;
+        _plan      = s.plan;
         _expiresAt = s.expiresAt;
-        _isTrial = s.isTrial;
-        _loading = false;
+        _isTrial   = s.isTrial;
+        _loading   = false;
       });
     } catch (_) {
       if (!mounted) return;
@@ -159,7 +155,8 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
 
   void _toast(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(msg)));
   }
 
   @override
@@ -170,15 +167,15 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
         title: const Text(
           '구독 관리',
           style: TextStyle(
-            color: Color(0xFF191F28),
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-            height: 1.2,
+            fontFamily: 'Jalnan2TTF',
+            color: Color(0xFF3B8AFF),
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
           ),
         ),
-        centerTitle: false,
+        centerTitle: true,
         backgroundColor: Colors.white,
-        foregroundColor: Color(0xFF191F28),
+        foregroundColor: Colors.black,
         elevation: 0.5,
         actions: [
           IconButton(
@@ -187,93 +184,87 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
           ),
         ],
       ),
-      body:
-          _loading
-              ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFF3B8AFF)),
-              )
-              : RefreshIndicator(
-                onRefresh: _refresh,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
-                  children: [
-                    // ── 상태 카드
-                    _StatusCard(
-                      active: _active,
-                      plan: _plan,
-                      isTrial: _isTrial,
-                      expiresText: _expiresText(),
-                      remainText: _remainText(),
-                    ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF3B8AFF)))
+          : RefreshIndicator(
+              onRefresh: _refresh,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+                children: [
+                  // ── 상태 카드
+                  _StatusCard(
+                    active:      _active,
+                    plan:        _plan,
+                    isTrial:     _isTrial,
+                    expiresText: _expiresText(),
+                    remainText:  _remainText(),
+                  ),
 
-                    const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                    // ── 혜택
-                    _BenefitSection(plan: _plan, active: _active),
+                  // ── 혜택
+                  _BenefitSection(plan: _plan, active: _active),
 
-                    const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                    // ── 구독 관리 / 복원
-                    _ManageSection(
-                      onOpenStore: _openStore,
-                      onRestore: _restore,
-                    ),
+                  // ── 구독 관리 / 복원
+                  _ManageSection(
+                    onOpenStore: _openStore,
+                    onRestore:   _restore,
+                  ),
 
-                    const SizedBox(height: 16),
+                  const SizedBox(height: 16),
 
-                    // ── 정책
-                    _PolicySection(onOpenStore: _openStore),
+                  // ── 정책
+                  _PolicySection(onOpenStore: _openStore),
 
-                    const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                    // ── 미구독 CTA
-                    if (!_active)
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: FilledButton.icon(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF3B8AFF),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          onPressed: () async {
-                            final result = await Navigator.pushNamed(
-                              context,
-                              '/subscribe',
-                            );
-                            if (!mounted) return;
-                            if (result == true) {
-                              await _refresh();
-                              _toast('구독이 활성화되었어요!');
-                            }
-                          },
-                          icon: const Icon(Icons.workspace_premium_rounded),
-                          label: const Text(
-                            '구독 시작하기',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
+                  // ── 미구독 CTA
+                  if (!_active)
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: FilledButton.icon(
+                        style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF3B8AFF),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14)),
+                        ),
+                        onPressed: () async {
+                          final result =
+                              await Navigator.pushNamed(context, '/subscribe');
+                          if (!mounted) return;
+                          if (result == true) {
+                            await _refresh();
+                            _toast('구독이 활성화되었어요!');
+                          }
+                        },
+                        icon: const Icon(Icons.workspace_premium_rounded),
+                        label: const Text(
+                          '구독 시작하기',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
-                  ],
-                ),
+                    ),
+                ],
               ),
+            ),
     );
   }
 }
 
 // ─── 상태 카드 ───────────────────────────────────────────────────
 class _StatusCard extends StatelessWidget {
-  final bool active;
+  final bool    active;
   final String? plan;
-  final bool? isTrial;
-  final String expiresText;
-  final String remainText;
+  final bool?   isTrial;
+  final String  expiresText;
+  final String  remainText;
 
   const _StatusCard({
     required this.active,
@@ -290,18 +281,19 @@ class _StatusCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors:
-              active
-                  ? [const Color(0xFF3B8AFF), const Color(0xFF1A6FFF)]
-                  : [const Color(0xFF9CA3AF), const Color(0xFF6B7280)],
+          colors: active
+              ? [const Color(0xFF3B8AFF), const Color(0xFF1A6FFF)]
+              : [const Color(0xFF9CA3AF), const Color(0xFF6B7280)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: (active ? const Color(0xFF3B8AFF) : const Color(0xFF9CA3AF))
-                .withValues(alpha: 0.3),
+            color: (active
+                    ? const Color(0xFF3B8AFF)
+                    : const Color(0xFF9CA3AF))
+                .withValues(alpha:0.3),
             blurRadius: 16,
             offset: const Offset(0, 6),
           ),
@@ -314,9 +306,7 @@ class _StatusCard extends StatelessWidget {
           Row(
             children: [
               Icon(
-                active
-                    ? Icons.verified_rounded
-                    : Icons.workspace_premium_outlined,
+                active ? Icons.verified_rounded : Icons.workspace_premium_outlined,
                 color: Colors.white,
                 size: 22,
               ),
@@ -332,12 +322,10 @@ class _StatusCard extends StatelessWidget {
               const Spacer(),
               if (active && label.isNotEmpty)
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 5,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
+                    color: Colors.white.withValues(alpha:0.2),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
@@ -352,12 +340,10 @@ class _StatusCard extends StatelessWidget {
               if (isTrial == true) ...[
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.3),
+                    color: Colors.orange.withValues(alpha:0.3),
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: const Text(
@@ -380,11 +366,7 @@ class _StatusCard extends StatelessWidget {
           ] else
             const Text(
               '구독하면 즉시 게시·긴급 호출 크레딧을 매월 받을 수 있어요.',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 13,
-                height: 1.5,
-              ),
+              style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
             ),
         ],
       ),
@@ -392,38 +374,35 @@ class _StatusCard extends StatelessWidget {
   }
 
   static Widget _infoRow(String k, String v) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 2),
-    child: Row(
-      children: [
-        SizedBox(
-          width: 70,
-          child: Text(
-            k,
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
-          ),
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 70,
+              child: Text(k,
+                  style: const TextStyle(
+                      color: Colors.white70, fontSize: 13)),
+            ),
+            Text(v,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700)),
+          ],
         ),
-        Text(
-          v,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    ),
-  );
+      );
 }
 
 // ─── 혜택 섹션 ───────────────────────────────────────────────────
 class _BenefitSection extends StatelessWidget {
   final String? plan;
-  final bool active;
+  final bool    active;
   const _BenefitSection({required this.plan, required this.active});
 
   @override
   Widget build(BuildContext context) {
-    final benefits = _planBenefits[plan?.toLowerCase()] ?? _defaultBenefits;
+    final benefits =
+        _planBenefits[plan?.toLowerCase()] ?? _defaultBenefits;
     final label = _planLabel(plan);
 
     return Container(
@@ -438,14 +417,13 @@ class _BenefitSection extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.workspace_premium_rounded,
-                color: Color(0xFF3B8AFF),
-                size: 18,
-              ),
+              const Icon(Icons.workspace_premium_rounded,
+                  color: Color(0xFF3B8AFF), size: 18),
               const SizedBox(width: 8),
               Text(
-                active && label.isNotEmpty ? '$label 플랜 혜택' : '구독 혜택',
+                active && label.isNotEmpty
+                    ? '$label 플랜 혜택'
+                    : '구독 혜택',
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
@@ -476,7 +454,7 @@ class _BenefitRow extends StatelessWidget {
             width: 32,
             height: 32,
             decoration: BoxDecoration(
-              color: benefit.color.withValues(alpha: 0.1),
+              color: benefit.color.withValues(alpha:0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(benefit.icon, color: benefit.color, size: 17),
@@ -552,23 +530,17 @@ class _ManageSection extends StatelessWidget {
             ),
             child: Icon(icon, color: const Color(0xFF3B8AFF), size: 20),
           ),
-          title: Text(
-            title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-          ),
-          subtitle: Text(
-            subtitle,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
-          ),
-          trailing: const Icon(
-            Icons.chevron_right_rounded,
-            color: Color(0xFF9CA3AF),
-          ),
+          title: Text(title,
+              style: const TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w700)),
+          subtitle: Text(subtitle,
+              style: const TextStyle(
+                  fontSize: 12, color: Color(0xFF9CA3AF))),
+          trailing: const Icon(Icons.chevron_right_rounded,
+              color: Color(0xFF9CA3AF)),
           onTap: onTap,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 4,
-          ),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         ),
         if (showDivider)
           const Divider(height: 1, indent: 64, color: Color(0xFFF4F6FA)),
@@ -600,27 +572,21 @@ class _PolicySection extends StatelessWidget {
               color: const Color(0xFFF4F6FA),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(
-              Icons.description_outlined,
-              color: Color(0xFF6B7280),
-              size: 20,
-            ),
+            child: const Icon(Icons.description_outlined,
+                color: Color(0xFF6B7280), size: 20),
           ),
-          title: const Text(
-            '해지 · 환불 · 문의',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-          ),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          title: const Text('해지 · 환불 · 문의',
+              style: TextStyle(
+                  fontSize: 14, fontWeight: FontWeight.w700)),
+          childrenPadding:
+              const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
             const Text(
               '• 구독 해지는 각 스토어 구독 관리 페이지에서 직접 처리됩니다.\n'
               '• 환불 규정은 Apple App Store / Google Play 정책을 따릅니다.\n'
               '• 결제 영수증은 스토어 구매 내역에서 확인하세요.',
               style: TextStyle(
-                fontSize: 13,
-                color: Color(0xFF6B7280),
-                height: 1.6,
-              ),
+                  fontSize: 13, color: Color(0xFF6B7280), height: 1.6),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -635,16 +601,11 @@ class _PolicySection extends StatelessWidget {
                     foregroundColor: const Color(0xFF3B8AFF),
                     side: const BorderSide(color: Color(0xFF3B8AFF)),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                        borderRadius: BorderRadius.circular(8)),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
+                        horizontal: 14, vertical: 8),
                     textStyle: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
+                        fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                 ),
                 OutlinedButton.icon(
@@ -665,16 +626,11 @@ class _PolicySection extends StatelessWidget {
                     foregroundColor: const Color(0xFF6B7280),
                     side: const BorderSide(color: Color(0xFFD1D5DB)),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
+                        borderRadius: BorderRadius.circular(8)),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
+                        horizontal: 14, vertical: 8),
                     textStyle: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
+                        fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                 ),
               ],

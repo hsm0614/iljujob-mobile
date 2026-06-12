@@ -74,7 +74,11 @@ Future<DateTime?> showCalendarBottomPicker(
                   const SizedBox(height: 12),
                   const Text(
                     '날짜 선택',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                    style: TextStyle(
+                      fontFamily: 'Jalnan2TTF',
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   TableCalendar(
@@ -827,10 +831,10 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         title: const Text(
           '내 정산 달력',
           style: TextStyle(
-            color: Color(0xFF191F28),
-            fontSize: 17,
-            fontWeight: FontWeight.w800,
-            height: 1.2,
+            fontFamily: 'Jalnan2TTF',
+            color: kBrandBlue,
+            fontSize: 22,
+            fontWeight: FontWeight.w900,
           ),
         ),
         actions: [
@@ -1799,6 +1803,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                     title,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
+                      fontFamily: 'Jalnan2TTF',
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                       color: Color(0xFF111827),
@@ -2200,6 +2205,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
+                            fontFamily: 'Jalnan2TTF',
                             fontSize: 18,
                             fontWeight: FontWeight.w800,
                           ),

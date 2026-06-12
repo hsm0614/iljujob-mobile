@@ -480,9 +480,9 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
                           const Text(
                             '마이페이지',
                             style: TextStyle(
+                              fontFamily: 'Jalnan2TTF',
                               color: Colors.white,
-                              fontSize: 21,
-                              fontWeight: FontWeight.w800,
+                              fontSize: 22,
                               height: 1.1,
                             ),
                           ),
@@ -1010,9 +1010,9 @@ class _SectionCard extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
+                    fontFamily: 'Jalnan2TTF',
                     fontSize: 16,
                     color: Color(0xFF191F28),
-                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],

@@ -10,7 +10,6 @@ import '../../../config/constants.dart';
 import '../../../data/models/job.dart';
 import 'job_detail_screen.dart';
 import '../../chat/chat_room_screen.dart';
-
 const kBrandBlue = Color(0xFF3B8AFF);
 
 class MyAppliedJobsScreen extends StatefulWidget {
@@ -39,38 +38,35 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
 
   // Review status
   Map<String, bool> reviewStatusMap = {};
-  List<dynamic> _extractBookmarkList(dynamic decoded) {
-    dynamic v = decoded;
+List<dynamic> _extractBookmarkList(dynamic decoded) {
+  dynamic v = decoded;
 
-    // 흔한 래핑 케이스들 처리
+  // 흔한 래핑 케이스들 처리
+  if (v is Map) {
+    v = v['data'] ?? v['result'] ?? v;
     if (v is Map) {
-      v = v['data'] ?? v['result'] ?? v;
-      if (v is Map) {
-        v =
-            v['bookmarks'] ??
-            v['items'] ??
-            v['results'] ??
-            v['jobs'] ??
-            v['list'] ??
-            v;
-      }
+      v = v['bookmarks'] ??
+          v['items'] ??
+          v['results'] ??
+          v['jobs'] ??
+          v['list'] ??
+          v;
     }
-
-    if (v is List) return v;
-    return const [];
   }
 
-  int _payToInt(String s) {
-    final onlyNum = s.replaceAll(RegExp(r'[^0-9]'), '');
-    return int.tryParse(onlyNum) ?? 0;
-  }
+  if (v is List) return v;
+  return const [];
+}
+int _payToInt(String s) {
+  final onlyNum = s.replaceAll(RegExp(r'[^0-9]'), '');
+  return int.tryParse(onlyNum) ?? 0;
+}
 
-  String _fmtPay(String s) {
-    final n = _payToInt(s);
-    if (n <= 0) return s; // 혹시 이상한 값이면 원본 유지
-    return NumberFormat('#,###').format(n);
-  }
-
+String _fmtPay(String s) {
+  final n = _payToInt(s);
+  if (n <= 0) return s; // 혹시 이상한 값이면 원본 유지
+  return NumberFormat('#,###').format(n);
+}
   @override
   void initState() {
     super.initState();
@@ -82,7 +78,10 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
 
   Future<void> _loadAll() async {
     setState(() => isLoading = true);
-    await Future.wait([_loadAppliedJobs(), _loadBookmarkedJobs()]);
+    await Future.wait([
+      _loadAppliedJobs(),
+      _loadBookmarkedJobs(),
+    ]);
     if (!mounted) return;
     _applyFilters();
     setState(() => isLoading = false);
@@ -98,40 +97,35 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setStringList('hiddenJobIds', hiddenJobIds.toList());
   }
+Future<Job?> _fetchJobById(String jobId, {String? token}) async {
+  final headers = <String, String>{
+    if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+  };
 
-  Future<Job?> _fetchJobById(String jobId, {String? token}) async {
-    final headers = <String, String>{
-      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-    };
+  final candidates = <Uri>[
+    Uri.parse('$baseUrl/api/job/$jobId'),
+    Uri.parse('$baseUrl/api/job/detail?jobId=$jobId'),
+    Uri.parse('$baseUrl/api/job/get?jobId=$jobId'),
+    Uri.parse('$baseUrl/api/job/get_job?jobId=$jobId'),
+    Uri.parse('$baseUrl/api/job/job-detail?jobId=$jobId'),
+  ];
 
-    final candidates = <Uri>[
-      Uri.parse('$baseUrl/api/job/$jobId'),
-      Uri.parse('$baseUrl/api/job/detail?jobId=$jobId'),
-      Uri.parse('$baseUrl/api/job/get?jobId=$jobId'),
-      Uri.parse('$baseUrl/api/job/get_job?jobId=$jobId'),
-      Uri.parse('$baseUrl/api/job/job-detail?jobId=$jobId'),
-    ];
+  for (final uri in candidates) {
+    try {
+      final res = await http.get(uri, headers: headers);
+      if (res.statusCode == 200) {
+        final decoded = jsonDecode(res.body);
+        // 서버가 {job:{...}} / {...} 둘 다 가능하게
+        final Map<String, dynamic>? map = (decoded is Map && decoded['job'] is Map)
+            ? Map<String, dynamic>.from(decoded['job'])
+            : (decoded is Map ? Map<String, dynamic>.from(decoded) : null);
 
-    for (final uri in candidates) {
-      try {
-        final res = await http.get(uri, headers: headers);
-        if (res.statusCode == 200) {
-          final decoded = jsonDecode(res.body);
-          // 서버가 {job:{...}} / {...} 둘 다 가능하게
-          final Map<String, dynamic>? map =
-              (decoded is Map && decoded['job'] is Map)
-                  ? Map<String, dynamic>.from(decoded['job'])
-                  : (decoded is Map
-                      ? Map<String, dynamic>.from(decoded)
-                      : null);
-
-          if (map != null && map.isNotEmpty) return Job.fromJson(map);
-        }
-      } catch (_) {}
-    }
-    return null;
+        if (map != null && map.isNotEmpty) return Job.fromJson(map);
+      }
+    } catch (_) {}
   }
-
+  return null;
+}
   // ---------------------------
   // Applied jobs
   // ---------------------------
@@ -148,9 +142,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
     // ✅ 너 기존 코드 그대로 유지 (endpoint 주의!)
     // 너는 위에서 /api/applications/my-jobs 를 쓰고 있는데
     // 다른 화면에서는 /api/apply/my-jobs 도 쓰더라. 프로젝트 기준에 맞춰 하나로 통일해.
-    final url = Uri.parse(
-      '$baseUrl/api/applications/my-jobs?workerId=$workerId',
-    );
+    final url = Uri.parse('$baseUrl/api/applications/my-jobs?workerId=$workerId');
 
     try {
       final res = await http.get(url);
@@ -206,186 +198,174 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
     return false;
   }
 
-  Future<void> _removeBookmark(Job job) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt('userId');
-      final token = prefs.getString('authToken');
+Future<void> _removeBookmark(Job job) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('userId');
+    final token = prefs.getString('authToken');
 
-      if (userId == null) {
-        _showErrorSnackbar('로그인 정보가 없습니다. 다시 로그인해주세요.');
-        return;
-      }
-
-      final uri = Uri.parse('$baseUrl/api/bookmark/remove');
-      final res = await http.post(
-        uri,
-        headers: {
-          'Content-Type': 'application/json',
-          if (token != null && token.isNotEmpty)
-            'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({'userId': userId, 'jobId': job.id}),
-      );
-
-      if (res.statusCode == 200) {
-        bookmarkedJobs.removeWhere((j) => j.id == job.id);
-        _applyFilters();
-
-        if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('찜에서 해제했어요.')));
-      } else {
-        _showErrorSnackbar('찜 해제에 실패했습니다. (${res.statusCode})');
-      }
-    } catch (e) {
-      _showErrorSnackbar('찜 해제 중 오류가 발생했습니다: $e');
-    }
-  }
-
-  List<Map<String, dynamic>> _extractJobsList(dynamic decoded) {
-    dynamic v = decoded;
-
-    // 흔한 래핑 케이스들 처리
-    if (v is Map) {
-      v = v['data'] ?? v['result'] ?? v;
-      if (v is Map) {
-        v =
-            v['bookmarks'] ??
-            v['items'] ??
-            v['results'] ??
-            v['jobs'] ??
-            v['list'] ??
-            v;
-      }
+    if (userId == null) {
+      _showErrorSnackbar('로그인 정보가 없습니다. 다시 로그인해주세요.');
+      return;
     }
 
-    if (v is! List) return [];
-
-    final out = <Map<String, dynamic>>[];
-    for (final e in v) {
-      if (e is Map) {
-        out.add(Map<String, dynamic>.from(e));
-      }
-    }
-    return out;
-  }
-
-  Future<void> _loadBookmarkedJobs() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt('userId');
-      final token = prefs.getString('authToken');
-
-      if (userId == null) {
-        bookmarkedJobs = [];
-        return;
-      }
-
-      final headers = <String, String>{
+    final uri = Uri.parse('$baseUrl/api/bookmark/remove');
+    final res = await http.post(
+      uri,
+      headers: {
         'Content-Type': 'application/json',
         if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
-      };
+      },
+      body: jsonEncode({'userId': userId, 'jobId': job.id}),
+    );
 
-      final candidates = <Uri>[
-        Uri.parse('$baseUrl/api/bookmark/list?userId=$userId'),
-        Uri.parse('$baseUrl/api/bookmark/list?workerId=$userId'),
-        Uri.parse('$baseUrl/api/bookmark/list?worker_id=$userId'),
-      ];
+    if (res.statusCode == 200) {
+      bookmarkedJobs.removeWhere((j) => j.id == job.id);
+      _applyFilters();
 
-      http.Response? resp200;
-      for (final uri in candidates) {
-        final r = await http.get(uri, headers: headers);
-        if (r.statusCode == 200) {
-          resp200 = r;
-          break;
-        }
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('찜에서 해제했어요.')),
+      );
+    } else {
+      _showErrorSnackbar('찜 해제에 실패했습니다. (${res.statusCode})');
+    }
+  } catch (e) {
+    _showErrorSnackbar('찜 해제 중 오류가 발생했습니다: $e');
+  }
+}
+List<Map<String, dynamic>> _extractJobsList(dynamic decoded) {
+  dynamic v = decoded;
 
-      if (resp200 == null) {
-        bookmarkedJobs = [];
-        return;
-      }
-
-      final decoded = jsonDecode(resp200.body);
-      final list = _extractBookmarkList(decoded);
-
-      List<Job> jobs = [];
-
-      // ✅ 1) 공고 객체가 바로 오는 경우
-      if (list.isNotEmpty && list.first is Map) {
-        final maps =
-            list
-                .whereType<Map>()
-                .map((e) => Map<String, dynamic>.from(e))
-                .toList();
-        jobs = maps.map((m) => Job.fromJson(m)).toList();
-      }
-      // ✅ 2) jobId만 오는 경우 -> 상세 조회로 Job 리스트 만들기
-      else if (list.isNotEmpty && (list.first is String || list.first is num)) {
-        final ids = list.map((e) => e.toString()).toList();
-
-        // 병렬로 가져오기 (수량 적으니 OK)
-        final fetched = await Future.wait(
-          ids.map((id) => _fetchJobById(id, token: token)),
-        );
-        jobs = fetched.whereType<Job>().toList();
-      }
-
-      // ✅ UI가 보는 리스트에 넣기
-      bookmarkedJobs = jobs;
-    } catch (e, st) {
-      debugPrint('❌ _loadBookmarkedJobs error: $e\n$st');
-      bookmarkedJobs = [];
+  // 흔한 래핑 케이스들 처리
+  if (v is Map) {
+    v = v['data'] ?? v['result'] ?? v;
+    if (v is Map) {
+      v = v['bookmarks'] ??
+          v['items'] ??
+          v['results'] ??
+          v['jobs'] ??
+          v['list'] ??
+          v;
     }
   }
+
+  if (v is! List) return [];
+
+  final out = <Map<String, dynamic>>[];
+  for (final e in v) {
+    if (e is Map) {
+      out.add(Map<String, dynamic>.from(e));
+    }
+  }
+  return out;
+}
+
+Future<void> _loadBookmarkedJobs() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('userId');
+    final token = prefs.getString('authToken');
+
+    if (userId == null) {
+   
+      bookmarkedJobs = [];
+      return;
+    }
+
+    final headers = <String, String>{
+      'Content-Type': 'application/json',
+      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+    };
+
+    final candidates = <Uri>[
+      Uri.parse('$baseUrl/api/bookmark/list?userId=$userId'),
+      Uri.parse('$baseUrl/api/bookmark/list?workerId=$userId'),
+      Uri.parse('$baseUrl/api/bookmark/list?worker_id=$userId'),
+    ];
+
+    http.Response? resp200;
+    for (final uri in candidates) {
+      final r = await http.get(uri, headers: headers);
+      if (r.statusCode == 200) {
+        resp200 = r;
+        break;
+      }
+    }
+
+    if (resp200 == null) {
+      bookmarkedJobs = [];
+      return;
+    }
+
+    final decoded = jsonDecode(resp200.body);
+    final list = _extractBookmarkList(decoded);
+
+
+    List<Job> jobs = [];
+
+    // ✅ 1) 공고 객체가 바로 오는 경우
+    if (list.isNotEmpty && list.first is Map) {
+      final maps = list.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+      jobs = maps.map((m) => Job.fromJson(m)).toList();
+    } 
+    // ✅ 2) jobId만 오는 경우 -> 상세 조회로 Job 리스트 만들기
+    else if (list.isNotEmpty && (list.first is String || list.first is num)) {
+      final ids = list.map((e) => e.toString()).toList();
+
+      // 병렬로 가져오기 (수량 적으니 OK)
+      final fetched = await Future.wait(ids.map((id) => _fetchJobById(id, token: token)));
+      jobs = fetched.whereType<Job>().toList();
+    }
+
+    // ✅ UI가 보는 리스트에 넣기
+    bookmarkedJobs = jobs;
+
+  } catch (e, st) {
+    debugPrint('❌ _loadBookmarkedJobs error: $e\n$st');
+    bookmarkedJobs = [];
+  }
+}
 
   // ---------------------------
   // Bookmarked jobs (찜한 공고)
   // ---------------------------
-
+ 
   // ---------------------------
   // Filters
   // ---------------------------
   void _applyFilters() {
-    List<Job> a = appliedJobs;
-    List<Job> b = bookmarkedJobs;
+  List<Job> a = appliedJobs;
+  List<Job> b = bookmarkedJobs;
 
-    // 로컬 숨김
-    a = a.where((j) => !hiddenJobIds.contains(j.id)).toList();
-    b = b.where((j) => !hiddenJobIds.contains(j.id)).toList();
+  // 로컬 숨김
+  a = a.where((j) => !hiddenJobIds.contains(j.id)).toList();
+  b = b.where((j) => !hiddenJobIds.contains(j.id)).toList();
 
-    // ✅ 지원현황: deleted 숨김 유지
-    a = a.where((j) => j.status != 'deleted').toList();
+  // ✅ 지원현황: deleted 숨김 유지
+  a = a.where((j) => j.status != 'deleted').toList();
 
-    // ✅ 찜탭: deleted만 보여주기
-    b = b.where((j) => j.status == 'deleted').toList();
+  // ✅ 찜탭: deleted만 보여주기
+  b = b.where((j) => j.status == 'deleted').toList();
 
-    // ✅ 상태 필터: 찜탭에서는 의미 없으니 applied에만 적용
-    if (filterStatus != '전체') {
-      a = a.where((j) => j.status == filterStatus).toList();
-    }
-
-    // 검색(둘 다 적용)
-    if (searchQuery.trim().isNotEmpty) {
-      final q = searchQuery.trim();
-      a =
-          a
-              .where((j) => j.title.contains(q) || j.location.contains(q))
-              .toList();
-      b =
-          b
-              .where((j) => j.title.contains(q) || j.location.contains(q))
-              .toList();
-    }
-
-    if (!mounted) return;
-    setState(() {
-      filteredApplied = a;
-      filteredBookmarked = b; // ✅ 이제 deleted만 들어감
-    });
+  // ✅ 상태 필터: 찜탭에서는 의미 없으니 applied에만 적용
+  if (filterStatus != '전체') {
+    a = a.where((j) => j.status == filterStatus).toList();
   }
+
+  // 검색(둘 다 적용)
+  if (searchQuery.trim().isNotEmpty) {
+    final q = searchQuery.trim();
+    a = a.where((j) => j.title.contains(q) || j.location.contains(q)).toList();
+    b = b.where((j) => j.title.contains(q) || j.location.contains(q)).toList();
+  }
+
+  if (!mounted) return;
+  setState(() {
+    filteredApplied = a;
+    filteredBookmarked = b; // ✅ 이제 deleted만 들어감
+  });
+}
 
   // ---------------------------
   // Actions
@@ -397,21 +377,17 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
   Future<void> _confirmDelete(String jobId) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('목록에서 숨기기'),
-            content: const Text('이 항목을 목록에서 숨길까요?\n(내역은 이 기기에서만 숨겨져요)'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('취소'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('숨기기', style: TextStyle(color: Colors.red)),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('목록에서 숨기기'),
+        content: const Text('이 항목을 목록에서 숨길까요?\n(내역은 이 기기에서만 숨겨져요)'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('취소')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('숨기기', style: TextStyle(color: Colors.red)),
           ),
+        ],
+      ),
     );
 
     if (confirmed == true) {
@@ -439,23 +415,17 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
   Future<void> _confirmCancel(Job job) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('지원 취소'),
-            content: const Text(
-              '이 공고 지원을 취소할까요?\n취소 후 다시 지원하려면 새로 지원해야 할 수 있어요.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('닫기'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('지원 취소', style: TextStyle(color: Colors.red)),
-              ),
-            ],
+      builder: (context) => AlertDialog(
+        title: const Text('지원 취소'),
+        content: const Text('이 공고 지원을 취소할까요?\n취소 후 다시 지원하려면 새로 지원해야 할 수 있어요.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('닫기')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('지원 취소', style: TextStyle(color: Colors.red)),
           ),
+        ],
+      ),
     );
 
     if (confirmed == true) {
@@ -487,9 +457,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
 
       if (res.statusCode == 200) {
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('지원이 취소되었습니다.')));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('지원이 취소되었습니다.')));
         await _loadAppliedJobs();
         _applyFilters();
       } else {
@@ -503,15 +471,10 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
   Future<void> _openChatRoom(Job job) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('authToken') ?? '';
-    final uri = Uri.parse(
-      '$baseUrl/api/chat/get-room-by-id?jobId=${job.id}&workerId=${job.workerId}',
-    );
+    final uri = Uri.parse('$baseUrl/api/chat/get-room-by-id?jobId=${job.id}&workerId=${job.workerId}');
 
     try {
-      final res = await http.get(
-        uri,
-        headers: {'Authorization': 'Bearer $token'},
-      );
+      final res = await http.get(uri, headers: {'Authorization': 'Bearer $token'});
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         final chatRoomId = data['chatRoomId'];
@@ -520,10 +483,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
         if (!mounted) return;
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (_) => ChatRoomScreen(chatRoomId: chatRoomId, jobInfo: jobInfo),
-          ),
+          MaterialPageRoute(builder: (_) => ChatRoomScreen(chatRoomId: chatRoomId, jobInfo: jobInfo)),
         );
       } else {
         _showErrorSnackbar('채팅방 정보 요청 실패 (${res.statusCode})');
@@ -553,11 +513,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
             _applyFilters();
           },
           decoration: const InputDecoration(
-            prefixIcon: Icon(
-              Icons.search_rounded,
-              color: Color(0xFF9CA3AF),
-              size: 20,
-            ),
+            prefixIcon: Icon(Icons.search_rounded, color: Color(0xFF9CA3AF), size: 20),
             hintText: '제목 또는 지역 검색',
             hintStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
             border: InputBorder.none,
@@ -591,23 +547,15 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                       title,
                       style: TextStyle(
                         fontSize: 14,
-                        fontWeight:
-                            selected ? FontWeight.w700 : FontWeight.w600,
-                        color:
-                            selected
-                                ? const Color(0xFF191F28)
-                                : const Color(0xFF6B7280),
+                        fontWeight: selected ? FontWeight.w700 : FontWeight.w600,
+                        color: selected ? const Color(0xFF191F28) : const Color(0xFF6B7280),
                       ),
                     ),
                     if (sub != null) ...[
                       const SizedBox(width: 6),
                       Text(
                         sub,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF9CA3AF),
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF), fontWeight: FontWeight.w600),
                       ),
                     ],
                   ],
@@ -656,16 +604,9 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
             border: Border.all(
               color: selected ? kBrandBlue : const Color(0xFFE5E8EB),
             ),
-            boxShadow:
-                selected
-                    ? [
-                      BoxShadow(
-                        color: kBrandBlue.withOpacity(0.20),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                    : [],
+            boxShadow: selected
+                ? [BoxShadow(color: kBrandBlue.withOpacity(0.20), blurRadius: 6, offset: const Offset(0, 2))]
+                : [],
           ),
           child: Text(
             label,
@@ -696,26 +637,23 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
   }
 
   String _statusText(Job job) {
-    if (job.status == 'deleted') return '삭제됨';
-    if (job.status == 'active') return '채용중';
-    if (job.status == 'hired' || job.status == 'confirmed') return '채용 확정';
-    return '마감';
-  }
+  if (job.status == 'deleted') return '삭제됨';
+  if (job.status == 'active') return '채용중';
+  if (job.status == 'hired' || job.status == 'confirmed') return '채용 확정';
+  return '마감';
+}
 
-  Color _statusColor(Job job) {
-    if (job.status == 'deleted') return const Color(0xFF9CA3AF);
-    if (job.status == 'active') return const Color(0xFF3B8AFF);
-    if (job.status == 'hired' || job.status == 'confirmed')
-      return const Color(0xFF10B981);
-    return const Color(0xFF9CA3AF);
-  }
+Color _statusColor(Job job) {
+  if (job.status == 'deleted') return const Color(0xFF9CA3AF);
+  if (job.status == 'active') return const Color(0xFF3B8AFF);
+  if (job.status == 'hired' || job.status == 'confirmed') return const Color(0xFF10B981);
+  return const Color(0xFF9CA3AF);
+}
+
 
   Widget _emptyView({required bool forBookmark}) {
     final title = forBookmark ? '찜한 공고가 아직 없어요.' : '아직 지원한 알바가 없어요.';
-    final desc =
-        forBookmark
-            ? '마음에 드는 공고를 하트로 저장해두면\n나중에 빠르게 다시 볼 수 있어요.'
-            : '지금 바로 동네 알바를 찾아볼까요?';
+    final desc = forBookmark ? '마음에 드는 공고를 하트로 저장해두면\n나중에 빠르게 다시 볼 수 있어요.' : '지금 바로 동네 알바를 찾아볼까요?';
     final cta = forBookmark ? '공고 둘러보기' : '공고보러 가기';
 
     return Center(
@@ -724,19 +662,12 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-            ),
+            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             Text(
               desc,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: const Color(0xFF6B7280),
-                height: 1.4,
-              ),
+              style: TextStyle(fontSize: 13, color: const Color(0xFF6B7280), height: 1.4),
             ),
             const SizedBox(height: 16),
             SizedBox(
@@ -744,22 +675,14 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: kBrandBlue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                 ),
                 onPressed: () {
                   // 홈으로 보내는 안전한 기본 동작
                   Navigator.popUntil(context, (r) => r.isFirst);
                 },
-                child: Text(
-                  cta,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
+                child: Text(cta, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
               ),
             ),
           ],
@@ -771,13 +694,10 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
   Widget _jobRow(Job job, {required bool bookmarkedTab}) {
     final reviewKey = '${job.clientId}-${job.title}';
     final reviewed = reviewStatusMap[reviewKey] == true;
-    final isDeleted = job.status == 'deleted';
-    final appliedAt =
-        job.createdAt != null ? DateFormat('MM.dd').format(job.createdAt!) : '';
-    final start =
-        job.startDate != null ? DateFormat('MM.dd').format(job.startDate!) : '';
-    final end =
-        job.endDate != null ? DateFormat('MM.dd').format(job.endDate!) : '';
+final isDeleted = job.status == 'deleted';
+    final appliedAt = job.createdAt != null ? DateFormat('MM.dd').format(job.createdAt!) : '';
+    final start = job.startDate != null ? DateFormat('MM.dd').format(job.startDate!) : '';
+    final end = job.endDate != null ? DateFormat('MM.dd').format(job.endDate!) : '';
 
     final statusText = _statusText(job);
     final statusColor = _statusColor(job);
@@ -796,239 +716,187 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
           width: 74,
           height: 74,
           fit: BoxFit.cover,
-          errorBuilder:
-              (_, __, ___) => Container(
-                width: 74,
-                height: 74,
-                color: const Color(0xFFF2F4F7),
-                child: const Icon(
-                  Icons.image_not_supported_outlined,
-                  color: Color(0xFFBCC0CB),
-                ),
-              ),
+          errorBuilder: (_, __, ___) => Container(
+            width: 74,
+            height: 74,
+            color: const Color(0xFFF2F4F7),
+            child: const Icon(Icons.image_not_supported_outlined, color: Color(0xFFBCC0CB)),
+          ),
         ),
       );
     }
 
-    return InkWell(
-      onTap:
-          (bookmarkedTab && isDeleted)
-              ? null
-              : () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => JobDetailScreen(job: job)),
-                );
-              },
-      child: Opacity(
+  return InkWell(
+  onTap: (bookmarkedTab && isDeleted)
+      ? null
+      : () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => JobDetailScreen(job: job)),
+          );
+        },
+     child: Opacity(
         opacity: (bookmarkedTab && isDeleted) ? 0.55 : 1.0,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Left info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // location + status
+         child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // location + status
+                  Row(
+                    children: [
+                      const Icon(Icons.place_outlined, size: 16, color: kBrandBlue),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          job.location,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 12.5, color: Color(0xFF6B7280), fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.10),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          statusText,
+                          style: TextStyle(color: statusColor, fontSize: 12.5, fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+
+                  Text(
+                    job.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800),
+                  ),
+                  const SizedBox(height: 6),
+
+                  Text(
+                    '$start ~ $end  ·  ${job.workingHours}',
+                    style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280), fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 6),
+
+                if (job.pay.isNotEmpty)
+  Text(
+    '${job.payType} ${_fmtPay(job.pay)}원${bookmarkedTab ? '' : '   ·   지원일 $appliedAt'}',
+    style: const TextStyle(fontSize: 13, color: Color(0xFF191F28), fontWeight: FontWeight.w700),
+  ),
+
+                  const SizedBox(height: 10),
+
+                  // Bottom actions (지원현황 탭에서만)
+                  if (!bookmarkedTab)
                     Row(
                       children: [
-                        const Icon(
-                          Icons.place_outlined,
-                          size: 16,
-                          color: kBrandBlue,
+                        TextButton.icon(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            minimumSize: const Size(0, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          onPressed: () => _confirmCancel(job),
+                          icon: const Icon(Icons.cancel_outlined, size: 18, color: Colors.red),
+                          label: const Text('지원 취소', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700)),
                         ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            job.location,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              color: Color(0xFF6B7280),
-                              fontWeight: FontWeight.w600,
-                            ),
+                        const Spacer(),
+                        TextButton.icon(
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 4),
+                            minimumSize: const Size(0, 32),
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusColor.withOpacity(0.10),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            statusText,
-                            style: TextStyle(
-                              color: statusColor,
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          onPressed: reviewed
+                              ? null
+                              : () {
+                                  Navigator.pushNamed(
+                                    context,
+                                    '/review',
+                                    arguments: {
+                                      'jobId': job.id,
+                                      'clientId': job.clientId,
+                                      'jobTitle': job.title,
+                                      'companyName': job.company,
+                                    },
+                                  );
+                                },
+                          icon: Icon(Icons.edit_note, size: 18, color: reviewed ? Colors.grey : kBrandBlue),
+                          label: Text(
+                            reviewed ? '후기 작성 완료' : '후기 남기기',
+                            style: TextStyle(color: reviewed ? Colors.grey : kBrandBlue, fontWeight: FontWeight.w800),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
-
-                    Text(
-                      job.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-
-                    Text(
-                      '$start ~ $end  ·  ${job.workingHours}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF6B7280),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-
-                    if (job.pay.isNotEmpty)
-                      Text(
-                        '${job.payType} ${_fmtPay(job.pay)}원${bookmarkedTab ? '' : '   ·   지원일 $appliedAt'}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF191F28),
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-
-                    const SizedBox(height: 10),
-
-                    // Bottom actions (지원현황 탭에서만)
-                    if (!bookmarkedTab)
-                      Row(
-                        children: [
-                          TextButton.icon(
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                              ),
-                              minimumSize: const Size(0, 32),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            onPressed: () => _confirmCancel(job),
-                            icon: const Icon(
-                              Icons.cancel_outlined,
-                              size: 18,
-                              color: Colors.red,
-                            ),
-                            label: const Text(
-                              '지원 취소',
-                              style: TextStyle(
-                                color: Colors.red,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          const Spacer(),
-                          TextButton.icon(
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                              ),
-                              minimumSize: const Size(0, 32),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            onPressed:
-                                reviewed
-                                    ? null
-                                    : () {
-                                      Navigator.pushNamed(
-                                        context,
-                                        '/review',
-                                        arguments: {
-                                          'jobId': job.id,
-                                          'clientId': job.clientId,
-                                          'jobTitle': job.title,
-                                          'companyName': job.company,
-                                        },
-                                      );
-                                    },
-                            icon: Icon(
-                              Icons.edit_note,
-                              size: 18,
-                              color: reviewed ? Colors.grey : kBrandBlue,
-                            ),
-                            label: Text(
-                              reviewed ? '후기 작성 완료' : '후기 남기기',
-                              style: TextStyle(
-                                color: reviewed ? Colors.grey : kBrandBlue,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
+                ],
               ),
+            ),
 
-              const SizedBox(width: 12),
+            const SizedBox(width: 12),
 
-              // Right: image + heart
-              Stack(
-                children: [
-                  thumb(),
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Icon(
-                      bookmarkedTab ? Icons.favorite : Icons.favorite_border,
-                      color:
-                          bookmarkedTab ? kBrandBlue : const Color(0xFFBCC0CB),
-                      size: 22,
-                    ),
+            // Right: image + heart
+            Stack(
+              children: [
+                thumb(),
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Icon(
+                    bookmarkedTab ? Icons.favorite : Icons.favorite_border,
+                    color: bookmarkedTab ? kBrandBlue : const Color(0xFFBCC0CB),
+                    size: 22,
                   ),
-                ],
-              ),
+                ),
+              ],
+            ),
 
-              // trailing actions (chat/hide)
-              const SizedBox(width: 6),
-              Column(
-                children: [
-                  if (bookmarkedTab && isDeleted) ...[
-                    IconButton(
-                      icon: const Icon(Icons.favorite, size: 22),
-                      color: Colors.redAccent,
-                      tooltip: '찜 해제',
-                      onPressed: () => _removeBookmark(job),
-                    ),
-                  ] else ...[
-                    IconButton(
-                      icon: const Icon(Icons.chat_bubble_outline, size: 20),
-                      color: const Color(0xFF3B8AFF),
-                      tooltip: '채팅하기',
-                      onPressed: () => _openChatRoom(job),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, size: 22),
-                      color: Colors.redAccent,
-                      tooltip: '목록에서 숨기기',
-                      onPressed: () => _confirmDelete(job.id),
-                    ),
-                  ],
-                ],
-              ),
-            ],
-          ),
+            // trailing actions (chat/hide)
+            const SizedBox(width: 6),
+         Column(
+  children: [
+    if (bookmarkedTab && isDeleted) ...[
+      IconButton(
+        icon: const Icon(Icons.favorite, size: 22),
+        color: Colors.redAccent,
+        tooltip: '찜 해제',
+        onPressed: () => _removeBookmark(job),
+      ),
+    ] else ...[
+      IconButton(
+        icon: const Icon(Icons.chat_bubble_outline, size: 20),
+        color: const Color(0xFF3B8AFF),
+        tooltip: '채팅하기',
+        onPressed: () => _openChatRoom(job),
+      ),
+      IconButton(
+        icon: const Icon(Icons.delete_outline, size: 22),
+        color: Colors.redAccent,
+        tooltip: '목록에서 숨기기',
+        onPressed: () => _confirmDelete(job.id),
+      ),
+    ],
+  ],
+),
+
+          ],
         ),
       ),
+     ),
     );
+
   }
 
   // ---------------------------
@@ -1050,10 +918,10 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
           title: const Text(
             '내 활동',
             style: TextStyle(
-              color: Color(0xFF191F28),
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-              height: 1.2,
+              fontFamily: 'Jalnan2TTF',
+              color: kBrandBlue,
+              fontSize: 22,
+              fontWeight: FontWeight.w900,
             ),
           ),
           actions: [
@@ -1064,35 +932,27 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
             ),
           ],
         ),
-        body:
-            isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : Column(
-                  children: [
-                    _headerSearch(),
-                    _topTabs(),
-                    _statusChips(),
-                    Expanded(
-                      child:
-                          list.isEmpty
-                              ? _emptyView(forBookmark: _tabIndex == 1)
-                              : ListView.builder(
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  12,
-                                  16,
-                                  24,
-                                ),
-                                itemCount: list.length,
-                                itemBuilder:
-                                    (context, i) => _jobCard(
-                                      list[i],
-                                      bookmarkedTab: _tabIndex == 1,
-                                    ),
-                              ),
-                    ),
-                  ],
-                ),
+        body: isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  _headerSearch(),
+                  _topTabs(),
+                  _statusChips(),
+                  Expanded(
+                    child: list.isEmpty
+                        ? _emptyView(forBookmark: _tabIndex == 1)
+                        : ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                            itemCount: list.length,
+                            itemBuilder: (context, i) => _jobCard(
+                              list[i],
+                              bookmarkedTab: _tabIndex == 1,
+                            ),
+                          ),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -1105,11 +965,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 12,
-            offset: Offset(0, 2),
-          ),
+          BoxShadow(color: Color(0x0D000000), blurRadius: 12, offset: Offset(0, 2)),
         ],
       ),
       child: ClipRRect(

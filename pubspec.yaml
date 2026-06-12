@@ -33,20 +33,6 @@ flutter_native_splash:
     # icon_background_color: "#1675F4"  ← 이 줄을 넣지 말아야 원형 배경이 사라집니다!
 flutter:
   fonts:
-    - family: NotoSansKR
-      fonts:
-        - asset: assets/fonts/NotoSansKR-Regular.ttf
-          weight: 400
-        - asset: assets/fonts/NotoSansKR-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/NotoSansKR-SemiBold.ttf
-          weight: 600
-        - asset: assets/fonts/NotoSansKR-Bold.ttf
-          weight: 700
-        - asset: assets/fonts/NotoSansKR-ExtraBold.ttf
-          weight: 800
-        - asset: assets/fonts/NotoSansKR-Black.ttf
-          weight: 900
     - family: Jalnan2TTF
       fonts:
         - asset: assets/fonts/Jalnan2TTF.ttf
