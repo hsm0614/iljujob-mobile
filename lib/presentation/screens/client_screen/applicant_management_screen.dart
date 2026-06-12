@@ -19,7 +19,7 @@ class ApplicantModel {
   final String? profileImageUrl;
   final int? birthYear;
   final String? gender;
-  final int activityScore;
+  final int? activityScore;
 
   ApplicantModel({
     required this.applicationId,
@@ -31,7 +31,7 @@ class ApplicantModel {
     this.profileImageUrl,
     this.birthYear,
     this.gender,
-    this.activityScore = 0,
+    this.activityScore,
   });
 
   factory ApplicantModel.fromJson(Map<String, dynamic> j) {
@@ -53,11 +53,14 @@ class ApplicantModel {
     );
   }
 
+  int get safeActivityScore => activityScore ?? 0;
+
   String get activityGrade {
-    if (activityScore >= 100) return 'S';
-    if (activityScore >= 70) return 'A';
-    if (activityScore >= 40) return 'B';
-    if (activityScore >= 20) return 'C';
+    final score = safeActivityScore;
+    if (score >= 100) return 'S';
+    if (score >= 70) return 'A';
+    if (score >= 40) return 'B';
+    if (score >= 20) return 'C';
     return 'NEW';
   }
 
