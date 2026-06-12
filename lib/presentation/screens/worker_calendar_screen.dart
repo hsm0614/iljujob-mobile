@@ -29,6 +29,108 @@ const _kCompleted = 'completed';
 const _kCancelled = {'cancelled', 'canceled'};
 
 // =====================
+// 날짜 선택 바텀시트 (앱 전역 공용)
+// =====================
+Future<DateTime?> showCalendarBottomPicker(
+  BuildContext context, {
+  required DateTime initialDate,
+  DateTime?        firstDate,
+  DateTime?        lastDate,
+}) async {
+  DateTime focused = DateTime(initialDate.year, initialDate.month, initialDate.day);
+  DateTime? picked;
+
+  await showModalBottomSheet<void>(
+    context:            context,
+    isScrollControlled: true,
+    useSafeArea:        true,
+    backgroundColor:    Colors.transparent,
+    builder: (ctx) => StatefulBuilder(
+      builder: (ctx, setSt) {
+        return Container(
+          decoration: const BoxDecoration(
+            color:        Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width:  42,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color:        const Color(0xFFE5E7EB),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                '날짜 선택',
+                style: TextStyle(fontFamily: 'Jalnan2TTF', fontSize: 18, fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              TableCalendar(
+                firstDay:          firstDate ?? DateTime(2020),
+                lastDay:           lastDate  ?? DateTime(2035, 12, 31),
+                focusedDay:        focused,
+                locale:            'ko_KR',
+                startingDayOfWeek: StartingDayOfWeek.monday,
+                availableGestures: AvailableGestures.all,
+                headerStyle: HeaderStyle(
+                  formatButtonVisible: false,
+                  titleCentered:       true,
+                  titleTextStyle:      const TextStyle(fontWeight: FontWeight.w900, color: kText),
+                  titleTextFormatter:  (date, locale) => DateFormat('yyyy년 M월', locale).format(date),
+                  leftChevronIcon:     const Icon(Icons.chevron_left_rounded,  color: kText),
+                  rightChevronIcon:    const Icon(Icons.chevron_right_rounded, color: kText),
+                ),
+                daysOfWeekStyle: const DaysOfWeekStyle(
+                  weekdayStyle: TextStyle(color: kMuted, fontWeight: FontWeight.w800),
+                  weekendStyle: TextStyle(color: kMuted, fontWeight: FontWeight.w800),
+                ),
+                selectedDayPredicate: (day) => picked != null && isSameDay(day, picked!),
+                calendarStyle: CalendarStyle(
+                  todayDecoration: BoxDecoration(
+                    color: kBrandBlue.withOpacity(0.10),
+                    shape: BoxShape.circle,
+                  ),
+                  selectedDecoration: const BoxDecoration(color: kBrandBlue, shape: BoxShape.circle),
+                  selectedTextStyle:  const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
+                  todayTextStyle:     const TextStyle(color: kBrandBlue, fontWeight: FontWeight.w900),
+                ),
+                onDaySelected: (selectedDay, focusedDay) {
+                  setSt(() {
+                    picked  = DateTime(selectedDay.year, selectedDay.month, selectedDay.day);
+                    focused = focusedDay;
+                  });
+                  Navigator.pop(ctx);
+                },
+                onPageChanged: (f) => setSt(() => focused = f),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text(
+                    '취소',
+                    style: TextStyle(color: kMuted, fontWeight: FontWeight.w900),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    ),
+  );
+  return picked;
+}
+
+// =====================
 // WorkerCalendarScreen
 // =====================
 class WorkerCalendarScreen extends StatefulWidget {
@@ -196,6 +298,29 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
       if ((it['status'] ?? '').toString() == _kCompleted) sum += _amount(it);
     }
     return _completedTotalCache = sum;
+  }
+
+  /// title별 월 금액 합계 (취소 제외, 금액 내림차순)
+  List<MapEntry<String, int>> get _jobBreakdown {
+    final map = <String, int>{};
+    for (final it in _items) {
+      if (_isCancelled(it)) continue;
+      final title = (it['title'] ?? '').toString().trim();
+      final key   = title.isEmpty ? '기타' : title;
+      map[key] = (map[key] ?? 0) + _amount(it);
+    }
+    final sorted = map.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+    return sorted;
+  }
+
+  /// 이번달 근무일수 (취소 제외)
+  int get _workDayCount {
+    final days = <DateTime>{};
+    for (final it in _items) {
+      if (_isCancelled(it)) continue;
+      days.add(_asDate(it['work_date']));
+    }
+    return days.length;
   }
 
   List<Map<String, dynamic>> _itemsOf(DateTime day) =>
@@ -484,6 +609,8 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
       status:   normalizedStatus,
     );
 
+    int batchCreatedCount = 0;
+
     final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
@@ -496,8 +623,8 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         onSave: (payload) async {
           if (!isEdit) return await _createManualSession(payload);
 
-          final source    = _sourceOf(item);
-          final id        = _idOf(item);
+          final source = _sourceOf(item);
+          final id     = _idOf(item);
           if (id == null) { _snack('id가 없어서 저장이 안돼요 🥲'); return false; }
 
           if ((payload['status'] ?? '').toString() == _kCompleted) {
@@ -508,6 +635,16 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
           if (!r.ok) _snack('저장이 실패했어요 🥲');
           return r.ok;
         },
+        onSaveBatch: !isEdit
+            ? (payloads) async {
+                int ok = 0;
+                for (final p in payloads) {
+                  if (await _createManualSession(p)) ok++;
+                }
+                batchCreatedCount = ok;
+                return ok > 0;
+              }
+            : null,
         onDelete: isEdit
             ? () async {
                 final source = _sourceOf(item);
@@ -532,6 +669,9 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
 
     if (saved == true) {
       await _fetchMonth(_focusedDay);
+      if (mounted && batchCreatedCount > 1) {
+        _snack('$batchCreatedCount개 일정이 추가됐어요 ✅');
+      }
     }
   }
 
@@ -585,6 +725,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                   children: [
                     if (_error != null) _warningBox(_error!),
                     _buildSummaryCard(total),
+                    _buildBreakdownCard(),
                     const SizedBox(height: 12),
                     _buildCalendar(),
                     const SizedBox(height: 10),
@@ -1062,6 +1203,82 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     );
   }
 
+  Widget _buildBreakdownCard() {
+    final breakdown = _jobBreakdown;
+    if (breakdown.isEmpty) return const SizedBox.shrink();
+
+    final display  = breakdown.take(4).toList();
+    final extra    = breakdown.length - display.length;
+    final dayCount = _workDayCount;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+        decoration: _cardDecoration(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    '이번 달 공고별 정산',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: kText),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color:        kBrandBlue.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: Text(
+                    '총 $dayCount일 근무',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: kBrandBlue),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            for (final e in display) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Row(
+                  children: [
+                    Container(
+                      width:  6,
+                      height: 6,
+                      decoration: const BoxDecoration(color: kBrandBlue, shape: BoxShape.circle),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        e.key,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: kText),
+                      ),
+                    ),
+                    Text(
+                      '${NumberFormat('#,###').format(e.value)}원',
+                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: kText),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            if (extra > 0)
+              Text(
+                '+ $extra개 더',
+                style: const TextStyle(fontSize: 11, color: kMuted, fontWeight: FontWeight.w700),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _moneyBox(String label, int amount, {bool strong = false}) {
     return Expanded(
       child: Container(
@@ -1311,16 +1528,18 @@ class SessionEditInitial {
 }
 
 typedef SavePayloadFn  = Future<bool> Function(Map<String, dynamic> payload);
+typedef SaveBatchFn    = Future<bool> Function(List<Map<String, dynamic>> payloads);
 typedef SimpleActionFn = Future<bool> Function();
 
 // =====================
 // SessionEditSheet
 // =====================
 class SessionEditSheet extends StatefulWidget {
-  final Color          brandBlue;
-  final bool           isEdit;
+  final Color           brandBlue;
+  final bool            isEdit;
   final SessionEditInitial initial;
-  final SavePayloadFn  onSave;
+  final SavePayloadFn   onSave;
+  final SaveBatchFn?    onSaveBatch;
   final SimpleActionFn? onDelete;
 
   const SessionEditSheet({
@@ -1329,6 +1548,7 @@ class SessionEditSheet extends StatefulWidget {
     required this.isEdit,
     required this.initial,
     required this.onSave,
+    this.onSaveBatch,
     this.onDelete,
   });
 
@@ -1346,6 +1566,11 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
   late TimeOfDay _endT;
   late String    _status;
   bool           _saving = false;
+
+  // 반복 추가
+  bool         _isRepeat         = false;
+  DateTime?    _repeatEndDate;
+  Set<int>     _selectedWeekdays = {1, 2, 3, 4, 5}; // 월~금 기본
 
   @override
   void initState() {
@@ -1379,16 +1604,42 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
       '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
   Future<void> _pickDate() async {
-    final picked = await showDatePicker(
-      context:     context,
+    final picked = await showCalendarBottomPicker(
+      context,
       initialDate: _workDate,
-      firstDate:   DateTime(2020, 1, 1),
-      lastDate:    DateTime(2035, 12, 31),
-      locale:      const Locale('ko', 'KR'),
     );
     if (picked != null && mounted) {
-      setState(() => _workDate = DateTime(picked.year, picked.month, picked.day));
+      setState(() {
+        _workDate = picked;
+        // 반복 종료일이 시작일보다 앞서면 초기화
+        if (_repeatEndDate != null && _repeatEndDate!.isBefore(_workDate)) {
+          _repeatEndDate = null;
+        }
+      });
     }
+  }
+
+  Future<void> _pickEndDate() async {
+    final picked = await showCalendarBottomPicker(
+      context,
+      initialDate: _repeatEndDate ?? _workDate,
+      firstDate:   _workDate,
+    );
+    if (picked != null && mounted) {
+      setState(() => _repeatEndDate = picked);
+    }
+  }
+
+  List<DateTime> _generateRepeatDates() {
+    final end = _repeatEndDate;
+    if (end == null || _selectedWeekdays.isEmpty) return [_workDate];
+    final dates = <DateTime>[];
+    var cur = _workDate;
+    while (!cur.isAfter(end)) {
+      if (_selectedWeekdays.contains(cur.weekday)) dates.add(cur);
+      cur = cur.add(const Duration(days: 1));
+    }
+    return dates.isEmpty ? [_workDate] : dates;
   }
 
   Future<void> _pickTime({required bool isStart}) async {
@@ -1408,7 +1659,6 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
   Future<void> _save() async {
     if (_saving) return;
 
-    // 금액 검사 (콤마 제거 후 파싱)
     final pay = int.tryParse(_payCtrl.text.replaceAll(',', '').trim()) ?? 0;
     if (pay <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1417,7 +1667,6 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
       return;
     }
 
-    // 시간 유효성 검사
     final startMinutes = _startT.hour * 60 + _startT.minute;
     final endMinutes   = _endT.hour   * 60 + _endT.minute;
     if (endMinutes <= startMinutes) {
@@ -1427,10 +1676,16 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
       return;
     }
 
+    if (_isRepeat && !widget.isEdit && _selectedWeekdays.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('요일을 하나 이상 선택해주세요 📅')),
+      );
+      return;
+    }
+
     setState(() => _saving = true);
 
-    final payload = <String, dynamic>{
-      'work_date':  _fmtYmd(_workDate),
+    final base = <String, dynamic>{
       'start_time': _fmtTime(_startT),
       'end_time':   _fmtTime(_endT),
       'pay':        pay,
@@ -1440,7 +1695,15 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
     };
 
     try {
-      final ok = await widget.onSave(payload);
+      bool ok;
+      if (_isRepeat && !widget.isEdit && widget.onSaveBatch != null) {
+        final payloads = _generateRepeatDates()
+            .map((d) => {...base, 'work_date': _fmtYmd(d)})
+            .toList();
+        ok = await widget.onSaveBatch!(payloads);
+      } else {
+        ok = await widget.onSave({...base, 'work_date': _fmtYmd(_workDate)});
+      }
       if (!mounted) return;
       if (ok) {
         Navigator.pop(context, true);
@@ -1614,6 +1877,93 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 12),
+
+                  // 반복 추가 섹션 (신규 추가 시에만)
+                  if (!widget.isEdit)
+                    _formCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '반복 추가',
+                                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: kText),
+                                    ),
+                                    SizedBox(height: 2),
+                                    Text(
+                                      '요일 반복 일정을 한 번에 추가해요',
+                                      style: TextStyle(fontSize: 11, color: kMuted, fontWeight: FontWeight.w700),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Switch(
+                                value:     _isRepeat,
+                                onChanged: (v) => setState(() {
+                                  _isRepeat = v;
+                                  if (!v) _repeatEndDate = null;
+                                }),
+                                activeThumbColor: widget.brandBlue,
+                activeTrackColor: widget.brandBlue.withValues(alpha: 0.4),
+                              ),
+                            ],
+                          ),
+                          if (_isRepeat) ...[
+                            const Divider(height: 18),
+                            _kvRow(
+                              label: '종료일',
+                              value: _repeatEndDate != null
+                                  ? DateFormat('yyyy.MM.dd (E)', 'ko_KR').format(_repeatEndDate!)
+                                  : '선택하세요',
+                              onTap: _pickEndDate,
+                            ),
+                            const SizedBox(height: 10),
+                            const Text(
+                              '요일 선택',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: kMuted),
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                for (final e in const [
+                                  [1, '월'], [2, '화'], [3, '수'], [4, '목'],
+                                  [5, '금'], [6, '토'], [7, '일'],
+                                ])
+                                  _weekdayChip(e[0] as int, e[1] as String),
+                              ],
+                            ),
+                            if (_repeatEndDate != null) ...[
+                              const SizedBox(height: 10),
+                              Container(
+                                width:   double.infinity,
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color:        widget.brandBlue.withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '총 ${_generateRepeatDates().length}개 일정이 추가돼요',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize:   12,
+                                    fontWeight: FontWeight.w900,
+                                    color:      widget.brandBlue,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ],
+                      ),
+                    ),
+
                   const SizedBox(height: 14),
 
                   // 버튼 영역
@@ -1671,7 +2021,11 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                                   ),
                                 )
                               : Text(
-                                  widget.isEdit ? '저장' : '추가',
+                                  widget.isEdit
+                                      ? '저장'
+                                      : (_isRepeat && _repeatEndDate != null
+                                          ? '${_generateRepeatDates().length}일 추가'
+                                          : '추가'),
                                   style: const TextStyle(fontWeight: FontWeight.w900),
                                 ),
                         ),
@@ -1816,7 +2170,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color:        selected ? widget.brandBlue.withOpacity(0.12) : Colors.white,
+          color:        selected ? widget.brandBlue.withValues(alpha: 0.12) : Colors.white,
           borderRadius: BorderRadius.circular(999),
           border:       Border.all(color: selected ? widget.brandBlue : kBorder),
         ),
@@ -1827,6 +2181,40 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
             fontSize:   12,
             fontWeight: FontWeight.w900,
             color:      selected ? widget.brandBlue : kMuted,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _weekdayChip(int weekday, String label) {
+    final selected  = _selectedWeekdays.contains(weekday);
+    final isWeekend = weekday >= 6;
+    return GestureDetector(
+      onTap: () => setState(() {
+        if (selected) {
+          _selectedWeekdays.remove(weekday);
+        } else {
+          _selectedWeekdays.add(weekday);
+        }
+      }),
+      child: Container(
+        width:  36,
+        height: 36,
+        decoration: BoxDecoration(
+          color:        selected ? widget.brandBlue : Colors.white,
+          borderRadius: BorderRadius.circular(999),
+          border:       Border.all(color: selected ? widget.brandBlue : kBorder),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize:   12,
+            fontWeight: FontWeight.w900,
+            color: selected
+                ? Colors.white
+                : (isWeekend ? const Color(0xFFEF4444) : kText),
           ),
         ),
       ),
