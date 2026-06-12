@@ -21,6 +21,7 @@ import 'package:iljujob/presentation/screens/client_screen/wage_report_screen.da
 import 'package:iljujob/presentation/screens/post_job/SelectPreviousJobScreen.dart';
 import 'package:iljujob/widget/app_ui.dart';
 import 'package:iljujob/config/app_theme.dart';
+import 'package:iljujob/presentation/widgets/albailju_common.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 
 DateTime _nowLocal() => DateTime.now();
@@ -2223,20 +2224,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      appBar: AppBar(
-        backgroundColor: AppColors.bgCard,
-        elevation: 0,
-        centerTitle: false,
-        iconTheme: const IconThemeData(color: AppColors.textPrimary),
-        title: const Text(
-          '사장님 공고 관리',
-          style: TextStyle(
-            fontFamily: 'Jalnan2TTF',
-            color: AppColors.primary,
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
+      appBar: AlbailjuAppBar(
+        title: '사장님 공고 관리',
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppColors.textPrimary,
@@ -2248,7 +2237,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: _PostJobCtaButton(onPressed: _goToPostJobFlow),
+              child: AlbailjuPostJobCta(onPressed: _goToPostJobFlow),
             ),
           ),
         ],
@@ -2291,61 +2280,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             ],
             const SliverToBoxAdapter(child: SizedBox(height: 18)),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _PostJobCtaButton extends StatelessWidget {
-  final VoidCallback onPressed;
-  const _PostJobCtaButton({required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 36,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadius.full),
-          onTap: onPressed,
-          child: Ink(
-            padding: const EdgeInsets.fromLTRB(10, 0, 12, 0),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.full),
-              color: AppColors.primaryLight,
-              border: Border.all(color: AppColors.primaryMid),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 22,
-                  height: 22,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.add_rounded,
-                    size: 16,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 7),
-                const Text(
-                  '공고 올리기',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w900,
-                    height: 1.0,
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );

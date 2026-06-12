@@ -18,6 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:iljujob/data/models/job.dart';
 import 'package:iljujob/config/app_theme.dart';
+import 'package:iljujob/presentation/widgets/albailju_common.dart';
 import 'package:iljujob/presentation/screens/worker_screen/job_detail_screen.dart';
 import 'package:iljujob/utiles/keyboard_mode.dart';
 
@@ -1374,16 +1375,12 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
           backgroundColor: AppColors.bgPage,
 
           // ── 앱바
-          appBar: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 0.5,
-            foregroundColor: Colors.black87,
-            titleSpacing: 0,
+          appBar: AlbailjuAppBar(
             leading: IconButton(
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.pop(context, 'updated'),
             ),
-            title: Row(
+            titleWidget: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 GestureDetector(
