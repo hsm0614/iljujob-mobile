@@ -279,7 +279,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     try {
       tl = await _ctrl!.fromScreenPoint(point: Offset.zero);
       br = await _ctrl!.fromScreenPoint(point: Offset(vs.width, vs.height));
-      debugPrint('[MAP][CARD] TL=$tl  BR=$br');
+      debugPrint('[MAP][CARD] TL=(${tl?.latitude.toStringAsFixed(5)}, ${tl?.longitude.toStringAsFixed(5)}) BR=(${br?.latitude.toStringAsFixed(5)}, ${br?.longitude.toStringAsFixed(5)})');
     } catch (e) {
       debugPrint('[MAP][CARD] fromScreenPoint 예외: $e');
     }
@@ -308,7 +308,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     final newJobPos = <int, Offset?>{};
     for (final j in jobsWithLoc) {
       final p = latLngToScreen(j.lat, j.lng);
-      debugPrint('[MAP][CARD] job[${j.id}] "${j.title}" → ${p.dx.toStringAsFixed(1)},${p.dy.toStringAsFixed(1)}');
+      debugPrint('[MAP][CARD] job[${j.id}] lat=${j.lat.toStringAsFixed(5)},${j.lng.toStringAsFixed(5)} → screen(${p.dx.toStringAsFixed(1)},${p.dy.toStringAsFixed(1)})');
       newJobPos[j.id] = p;
     }
     final newWorkerPos = <int, Offset?>{};
@@ -330,14 +330,19 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     if (idx < 0 || idx >= _jobs.length) return;
     setState(() { _selectedIdx = idx; _workerCount = 0; _mapMoving = true; });
     final job = _jobs[idx];
+    debugPrint('[MAP] 선택 공고 id=${job.id} lat=${job.lat} lng=${job.lng} hasLoc=${job.hasLocation}');
     if (job.hasLocation && _ctrl != null) {
-      // zoomLevel 12 = 동네 수준 (~3-5km 반경 표시), fromLatLng의 17(건물 수준) 대신 사용
       _ctrl!.moveCamera(
         cameraUpdate: km.CameraUpdate(position: job.pos, zoomLevel: 12, type: 0),
         animation: const km.CameraAnimation(duration: 350, autoElevation: true, isConsecutive: false),
       );
     }
-    if (job.hasLocation) _loadWorkers(job);
+    if (job.hasLocation) {
+      _loadWorkers(job);
+    } else {
+      debugPrint('[MAP] hasLocation=false → _loadWorkers 스킵');
+      if (mounted) setState(() => _mapMoving = false);
+    }
   }
 
   Future<void> _loadWorkers(_Job job) async {
@@ -491,25 +496,8 @@ class _WorkerMapViewState extends State<WorkerMapView> {
         ],
 
         // ── 공고 카드 오버레이 (직방 스타일) ─────────────────────
-        for (final e in _jobs.asMap().entries.where((e) => e.value.hasLocation)) ...[
-          if (_jobScreenPos[e.value.id] case final Offset p
-              when p.dx >= 0 && p.dy >= 0)
-            Positioned(
-              left: p.dx,
-              top: p.dy,
-              child: FractionalTranslation(
-                translation: const Offset(-0.5, -1.0),
-                child: AnimatedOpacity(
-                  opacity: _mapMoving ? 0.0 : 1.0,
-                  duration: const Duration(milliseconds: 180),
-                  child: GestureDetector(
-                    onTap: () => _selectJob(e.key),
-                    child: _JobMapCard(job: e.value, isSelected: e.key == _selectedIdx),
-                  ),
-                ),
-              ),
-            ),
-        ],
+        // 같은 위치 공고들은 살짝 오프셋으로 구별 가능하게
+        ..._buildJobCards(),
 
         // ── 상단 공고 칩 ──────────────────────────────────────────
         Positioned(
@@ -661,6 +649,54 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     ),
     child: child,
   );
+
+  // ── 공고 카드 오버레이 빌드 (같은 위치 겹침 처리) ────────────
+  List<Widget> _buildJobCards() {
+    // 같은 화면 좌표(32px 이내)끼리 묶어서 오프셋 부여
+    final entries = _jobs.asMap().entries
+        .where((e) => e.value.hasLocation)
+        .where((e) {
+          final p = _jobScreenPos[e.value.id];
+          return p != null && p.dx >= 0 && p.dy >= 0;
+        })
+        .toList();
+
+    // 그룹별 오프셋 계산: 같은 픽셀 근방 공고들은 X축으로 벌려서 표시
+    final used = <int, int>{}; // jobId → groupSlot
+    final groups = <String, List<int>>{}; // "roundedX,roundedY" → [jobIds]
+    for (final e in entries) {
+      final p = _jobScreenPos[e.value.id]!;
+      final key = '${(p.dx / 32).round()},${(p.dy / 32).round()}';
+      groups.putIfAbsent(key, () => []).add(e.value.id);
+    }
+    for (final ids in groups.values) {
+      for (int slot = 0; slot < ids.length; slot++) {
+        used[ids[slot]] = slot;
+      }
+    }
+
+    return entries.map((e) {
+      final p = _jobScreenPos[e.value.id]!;
+      final slot = used[e.value.id] ?? 0;
+      // 같은 위치 여러 공고: 카드 너비(~80px) 간격으로 수평 펼침
+      final offsetX = slot * 84.0;
+      return Positioned(
+        left: p.dx + offsetX,
+        top: p.dy,
+        child: FractionalTranslation(
+          translation: const Offset(-0.5, -1.0),
+          child: AnimatedOpacity(
+            opacity: _mapMoving ? 0.0 : 1.0,
+            duration: const Duration(milliseconds: 180),
+            child: GestureDetector(
+              onTap: () => _selectJob(e.key),
+              child: _JobMapCard(job: e.value, isSelected: e.key == _selectedIdx),
+            ),
+          ),
+        ),
+      );
+    }).toList();
+  }
 
   Future<void> _goToMyLocation() async {
     if (!await Geolocator.isLocationServiceEnabled()) return;
