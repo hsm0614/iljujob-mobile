@@ -237,32 +237,44 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   Future<void> _refreshMarkers({List<_Worker>? workers}) async {
     if (_ctrl == null) return;
     final w = workers ?? _currentWorkers;
-    try {
-      await _ctrl!.clearMarkers();
-      final jobOpts = _jobs.where((j) => j.hasLocation).map((j) => km.MarkerOption(
-        id: 'job_${j.id}',
-        latLng: j.pos,
-        text: '${j.isPinnedNow ? "[긴급] " : ""}${j.title.length > 9 ? '${j.title.substring(0, 9)}…' : j.title}',
-      )).toList();
-      final workerOpts = w.where((wk) => wk.hasLocation).map((wk) => km.MarkerOption(
-        id: 'w_${wk.id}',
-        latLng: wk.pos,
-        text: wk.grade,
-      )).toList();
-      final all = [...jobOpts, ...workerOpts];
-      if (all.isNotEmpty) await _ctrl!.addMarkers(markerOptions: all);
-      // 카메라: 선택된 공고 or 첫 공고
-      final target = (_selectedIdx != null && _jobs[_selectedIdx!].hasLocation)
-          ? _jobs[_selectedIdx!]
-          : _jobs.where((j) => j.hasLocation).firstOrNull;
-      if (target != null) {
-        await _ctrl!.moveCamera(
-          cameraUpdate: km.CameraUpdate.fromLatLng(target.pos),
-          animation: const km.CameraAnimation(duration: 300, autoElevation: true, isConsecutive: false),
-        );
+
+    // E002(LabelLayer not ready)는 최대 6회 재시도, 나머지 에러는 즉시 로그 후 종료
+    for (int attempt = 0; attempt < 6; attempt++) {
+      try {
+        await _ctrl!.clearMarkers();
+        final jobOpts = _jobs.where((j) => j.hasLocation).map((j) => km.MarkerOption(
+          id: 'job_${j.id}',
+          latLng: j.pos,
+          text: '${j.isPinnedNow ? "[긴급] " : ""}${j.title.length > 9 ? '${j.title.substring(0, 9)}…' : j.title}',
+        )).toList();
+        final workerOpts = w.where((wk) => wk.hasLocation).map((wk) => km.MarkerOption(
+          id: 'w_${wk.id}',
+          latLng: wk.pos,
+          text: wk.grade,
+        )).toList();
+        final all = [...jobOpts, ...workerOpts];
+        if (all.isNotEmpty) await _ctrl!.addMarkers(markerOptions: all);
+        // 카메라: 선택된 공고 or 첫 공고
+        final target = (_selectedIdx != null && _jobs[_selectedIdx!].hasLocation)
+            ? _jobs[_selectedIdx!]
+            : _jobs.where((j) => j.hasLocation).firstOrNull;
+        if (target != null) {
+          await _ctrl!.moveCamera(
+            cameraUpdate: km.CameraUpdate.fromLatLng(target.pos),
+            animation: const km.CameraAnimation(duration: 300, autoElevation: true, isConsecutive: false),
+          );
+        }
+        return; // 성공
+      } catch (e) {
+        final isLayerMissing = e.toString().contains('LabelLayer not found');
+        if (isLayerMissing && attempt < 5) {
+          await Future.delayed(Duration(milliseconds: 250 * (attempt + 1)));
+          if (!mounted) return;
+          continue;
+        }
+        if (!isLayerMissing) debugPrint('[MAP] refreshMarkers: $e');
+        return;
       }
-    } catch (e) {
-      debugPrint('[MAP] refreshMarkers: $e');
     }
   }
 
@@ -751,7 +763,7 @@ class _CollapsedMeta extends StatelessWidget {
   }
 }
 
-// ── 확장 상태: 상세 정보 + 설명 + 버튼 ──────────────────────────
+// ── 확장 상태: 잡 디테일 스타일 ──────────────────────────────────
 class _ExpandedDetail extends StatelessWidget {
   final _Job job;
   final double bottomPad;
@@ -766,57 +778,96 @@ class _ExpandedDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final chips = <_InfoChip>[
-      if (job.startDate.isNotEmpty)   _InfoChip(Icons.calendar_today_rounded, job.startDate),
-      if (job.timeRange.isNotEmpty)   _InfoChip(Icons.access_time_rounded,    job.timeRange),
-      if (job.location.isNotEmpty)    _InfoChip(Icons.place_rounded,           job.location),
-      if (job.hourlyWage > 0)         _InfoChip(Icons.payments_rounded,        '시급 ${_comma(job.hourlyWage)}원'),
-      if (job.category.isNotEmpty)    _InfoChip(Icons.work_outline_rounded,     job.category),
-      if (job.applicantCount > 0)     _InfoChip(Icons.how_to_reg_rounded,       '지원 ${job.applicantCount}명'),
+    final metaRows = <(IconData, String, String)>[
+      if (job.startDate.isNotEmpty)  (Icons.calendar_today_rounded, '날짜', job.startDate),
+      if (job.timeRange.isNotEmpty)  (Icons.access_time_rounded,    '시간', job.timeRange),
+      if (job.location.isNotEmpty)   (Icons.place_rounded,          '위치', job.location),
+      if (job.category.isNotEmpty)   (Icons.work_outline_rounded,   '직종', job.category),
+      if (job.applicantCount > 0)    (Icons.how_to_reg_rounded,     '지원', '${job.applicantCount}명'),
     ];
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(18, 0, 18, bottomPad + 14),
+      padding: EdgeInsets.fromLTRB(18, 4, 18, bottomPad + 14),
       child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // 정보 칩 Wrap
-        if (chips.isNotEmpty) ...[
-          Wrap(
-            spacing: 6, runSpacing: 6,
-            children: chips.map((c) => Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF4F6FA),
-                borderRadius: BorderRadius.circular(8),
+
+        // 시급 강조 박스
+        if (job.hourlyWage > 0) ...[
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0F7FF),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _primary.withValues(alpha: 0.25)),
+            ),
+            child: Row(children: [
+              const Icon(Icons.payments_rounded, size: 16, color: _primary),
+              const SizedBox(width: 8),
+              Text(
+                '시급 ${_comma(job.hourlyWage)}원',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: _primary),
               ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(c.icon, size: 12, color: _textSub),
-                const SizedBox(width: 4),
-                Text(c.label, style: const TextStyle(fontSize: 12, color: _textSub)),
-              ]),
-            )).toList(),
+            ]),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 10),
         ],
+
+        // 메타 정보 박스
+        if (metaRows.isNotEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8F9FB),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _border),
+            ),
+            child: Column(children: [
+              for (int i = 0; i < metaRows.length; i++) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 9),
+                  child: Row(children: [
+                    Icon(metaRows[i].$1, size: 14, color: _textSub),
+                    const SizedBox(width: 8),
+                    Text(metaRows[i].$2,
+                        style: const TextStyle(fontSize: 12, color: _textSub, fontWeight: FontWeight.w700)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(metaRows[i].$3,
+                          textAlign: TextAlign.right,
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 13, color: _textMain, fontWeight: FontWeight.w800)),
+                    ),
+                  ]),
+                ),
+                if (i < metaRows.length - 1) const Divider(height: 1, color: _border),
+              ],
+            ]),
+          ),
 
         // 공고 설명
         if (job.description.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          const Text('공고 설명',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: _textSub)),
+          const SizedBox(height: 6),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8F9FB),
-              borderRadius: BorderRadius.circular(10),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(color: _border),
             ),
             child: Text(
               job.description,
               style: const TextStyle(fontSize: 13, color: _textMain, height: 1.6),
-              maxLines: 5, overflow: TextOverflow.ellipsis,
+              maxLines: 6, overflow: TextOverflow.ellipsis,
             ),
           ),
-          const SizedBox(height: 14),
         ],
 
+        const SizedBox(height: 12),
         _ActionRow(canUrgentCall: canUrgentCall, isSubscribed: isSubscribed,
             broadcasting: broadcasting, onUrgentCall: onUrgentCall,
             onBroadcast: onBroadcast, onBuyPass: onBuyPass),
@@ -824,8 +875,6 @@ class _ExpandedDetail extends StatelessWidget {
     );
   }
 }
-
-class _InfoChip { final IconData icon; final String label; const _InfoChip(this.icon, this.label); }
 
 // ── 공통 액션 버튼 행 ─────────────────────────────────────────────
 class _ActionRow extends StatelessWidget {
