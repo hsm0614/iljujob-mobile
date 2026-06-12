@@ -521,10 +521,9 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   // ─── 요약 카드 ───────────────────────────────────────────────────
 
   Widget _buildSummaryRow() {
-    final chattingCount = _groups.fold(
+    final completedCount = _groups.fold(
       0,
-      (s, g) =>
-          s + g.applicants.where((a) => a.isConfirmed && !a.isCompleted).length,
+      (s, g) => s + g.applicants.where((a) => a.isCompleted).length,
     );
     return Row(
       children: [
@@ -537,7 +536,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         const SizedBox(width: 10),
         _summaryCard('미확인', '$_unreadCount명', _blue, _blueBg),
         const SizedBox(width: 10),
-        _summaryCard('채팅 중', '$chattingCount명', _green, _greenBg),
+        _summaryCard('완료', '$completedCount명', _green, _greenBg),
       ],
     );
   }
@@ -704,154 +703,183 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
         border: Border(bottom: BorderSide(color: const Color(0xFFF4F6FA))),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 공고 활성 상태 도트
-          Container(
-            width: 8,
-            height: 8,
-            margin: const EdgeInsets.only(right: 10),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color:
-                  group.jobStatus == 'active'
-                      ? const Color(0xFF22C55E)
-                      : const Color(0xFFBCC0CB),
-            ),
-          ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  group.jobTitle,
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFF191F28),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+          Row(
+            children: [
+              // 공고 활성 상태 도트
+              Container(
+                width: 8,
+                height: 8,
+                margin: const EdgeInsets.only(right: 10),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color:
+                      group.jobStatus == 'active'
+                          ? const Color(0xFF22C55E)
+                          : const Color(0xFFBCC0CB),
                 ),
-                const SizedBox(height: 3),
-                Row(
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (group.locationCity != null) ...[
-                      Icon(
-                        Icons.location_on_rounded,
-                        size: 12,
-                        color: const Color(0xFF9CA3AF),
+                    Text(
+                      group.jobTitle,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF191F28),
                       ),
-                      const SizedBox(width: 2),
-                      Text(
-                        group.locationCity!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: const Color(0xFF9CA3AF),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    if (group.startDate != null) ...[
-                      Icon(
-                        Icons.calendar_today_rounded,
-                        size: 12,
-                        color: const Color(0xFF9CA3AF),
-                      ),
-                      const SizedBox(width: 2),
-                      Text(
-                        group.startDate!.length >= 10
-                            ? group.startDate!.substring(0, 10)
-                            : group.startDate!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: const Color(0xFF9CA3AF),
-                        ),
-                      ),
-                    ],
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        if (group.locationCity != null) ...[
+                          Icon(
+                            Icons.location_on_rounded,
+                            size: 12,
+                            color: const Color(0xFF9CA3AF),
+                          ),
+                          const SizedBox(width: 2),
+                          Flexible(
+                            child: Text(
+                              group.locationCity!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: const Color(0xFF9CA3AF),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        if (group.startDate != null) ...[
+                          Icon(
+                            Icons.calendar_today_rounded,
+                            size: 12,
+                            color: const Color(0xFF9CA3AF),
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            group.startDate!.length >= 10
+                                ? group.startDate!.substring(0, 10)
+                                : group.startDate!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: const Color(0xFF9CA3AF),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          // 지원자 수 뱃지
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            decoration: BoxDecoration(
-              color:
-                  group.applicants.isEmpty
-                      ? const Color(0xFFF4F6FA)
-                      : (hasNew ? _blueBg : const Color(0xFFF0FFF4)),
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              group.applicants.isEmpty
-                  ? '지원자 없음'
-                  : '${group.applicants.length}명${hasNew ? ' · 신규 ${group.newCount}' : ''}',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color:
-                    group.applicants.isEmpty
-                        ? Colors.grey
-                        : (hasNew ? _blue : _green),
               ),
-            ),
-          ),
-          if (group.applicants.isNotEmpty) ...[
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => _toggleAllApplicants(group),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                decoration: BoxDecoration(
-                  color: allSelected ? _blue : Colors.white,
-                  borderRadius: BorderRadius.circular(999),
-                  border: Border.all(
-                    color: allSelected ? _blue : const Color(0xFFD1D5DB),
-                  ),
-                ),
-                child: Text(
-                  allSelected ? '선택 해제' : '전체 선택',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: allSelected ? Colors.white : const Color(0xFF6B7280),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 6),
-            GestureDetector(
-              onTap:
-                  selectedCount > 0 && !_bulkSending
-                      ? () => _showBulkMessageSheet(group)
-                      : null,
-              child: Container(
+              const SizedBox(width: 8),
+              // 지원자 수 뱃지
+              Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: selectedCount > 0 ? _green : const Color(0xFFF4F6FA),
+                  color:
+                      group.applicants.isEmpty
+                          ? const Color(0xFFF4F6FA)
+                          : (hasNew ? _blueBg : const Color(0xFFF0FFF4)),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  selectedCount > 0 ? '메시지 $selectedCount' : '메시지',
+                  group.applicants.isEmpty
+                      ? '0명'
+                      : '${group.applicants.length}명${hasNew ? ' · 신규 ${group.newCount}' : ''}',
                   style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                     color:
-                        selectedCount > 0
-                            ? Colors.white
-                            : const Color(0xFF9CA3AF),
+                        group.applicants.isEmpty
+                            ? Colors.grey
+                            : (hasNew ? _blue : _green),
                   ),
                 ),
               ),
+            ],
+          ),
+          if (group.applicants.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                _smallActionChip(
+                  label: allSelected ? '선택 해제' : '전체 선택',
+                  selected: allSelected,
+                  color: _blue,
+                  onTap: () => _toggleAllApplicants(group),
+                ),
+                const SizedBox(width: 8),
+                _smallActionChip(
+                  label: selectedCount > 0 ? '메시지 $selectedCount' : '메시지',
+                  selected: selectedCount > 0,
+                  color: _green,
+                  onTap:
+                      selectedCount > 0 && !_bulkSending
+                          ? () => _showBulkMessageSheet(group)
+                          : null,
+                ),
+                const Spacer(),
+              ],
             ),
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _smallActionChip({
+    required String label,
+    required bool selected,
+    required Color color,
+    VoidCallback? onTap,
+  }) {
+    final enabled = onTap != null;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color:
+              selected && enabled
+                  ? color
+                  : enabled
+                  ? Colors.white
+                  : const Color(0xFFF4F6FA),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(
+            color:
+                selected && enabled
+                    ? color
+                    : enabled
+                    ? const Color(0xFFD1D5DB)
+                    : const Color(0xFFF4F6FA),
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color:
+                selected && enabled
+                    ? Colors.white
+                    : enabled
+                    ? const Color(0xFF6B7280)
+                    : const Color(0xFF9CA3AF),
+          ),
+        ),
       ),
     );
   }
@@ -906,18 +934,24 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Wrap(
+                      spacing: 5,
+                      runSpacing: 3,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        Text(
-                          applicant.workerName,
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 92),
+                          child: Text(
+                            applicant.workerName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 6),
                         _activityGradeBadge(applicant),
-                        const SizedBox(width: 4),
                         _statusChip(applicant),
                       ],
                     ),
@@ -937,11 +971,12 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               GestureDetector(
                 onTap: () => _goToChat(applicant, group),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
+                    horizontal: 11,
                     vertical: 7,
                   ),
                   decoration: BoxDecoration(
