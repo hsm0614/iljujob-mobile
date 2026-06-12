@@ -125,12 +125,15 @@ class ChatRoomController extends ChangeNotifier {
       (c) =>
           c.status == 'proposed' ||
           c.status == 'accepted' ||
-          c.status == 'scheduled',
+          c.status == 'scheduled' ||
+          c.status == 'day_before_confirmed' ||
+          c.status == 'day_of_confirmed' ||
+          c.status == 'checked_in',
     );
   }
 
   bool get hasPendingWorkConfirmation {
-    return workConfirmations.any((c) => c.status == 'proposed');
+    return hasOpenWorkConfirmation;
   }
 
   bool get inputEnabled {
