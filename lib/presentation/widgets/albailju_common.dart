@@ -8,6 +8,7 @@ class AlbailjuAppBar extends StatelessWidget implements PreferredSizeWidget {
   final List<Widget>? actions;
   final PreferredSizeWidget? bottom;
   final bool centerTitle;
+  final bool brand;
 
   const AlbailjuAppBar({
     super.key,
@@ -17,23 +18,55 @@ class AlbailjuAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.actions,
     this.bottom,
     this.centerTitle = false,
+    this.brand = false,
   });
 
   @override
-  Size get preferredSize =>
-      Size.fromHeight(kToolbarHeight + (bottom?.preferredSize.height ?? 0));
+  Size get preferredSize => Size.fromHeight(
+    (brand ? 88 : kToolbarHeight) + (bottom?.preferredSize.height ?? 0),
+  );
 
   @override
   Widget build(BuildContext context) {
+    final titleColor = brand ? Colors.white : AppColors.primary;
+    final appBarBottom =
+        bottom == null
+            ? null
+            : PreferredSize(
+              preferredSize: bottom!.preferredSize,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: AppColors.bgCard,
+                  border: Border(
+                    bottom: BorderSide(color: AppColors.borderSub),
+                  ),
+                ),
+                child: bottom!,
+              ),
+            );
+
     return AppBar(
-      backgroundColor: AppColors.bgCard,
-      foregroundColor: AppColors.textPrimary,
-      surfaceTintColor: AppColors.bgCard,
+      backgroundColor: brand ? AppColors.primary : AppColors.bgCard,
+      foregroundColor: brand ? Colors.white : AppColors.textPrimary,
+      surfaceTintColor: brand ? AppColors.primary : AppColors.bgCard,
       elevation: 0,
       scrolledUnderElevation: 0.5,
+      toolbarHeight: brand ? 88 : kToolbarHeight,
       centerTitle: centerTitle,
       titleSpacing: leading == null ? 20 : 0,
       leading: leading,
+      flexibleSpace:
+          brand
+              ? const DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.primary, AppColors.primaryDark],
+                  ),
+                ),
+              )
+              : null,
       title:
           titleWidget ??
           (title == null
@@ -44,14 +77,13 @@ class AlbailjuAppBar extends StatelessWidget implements PreferredSizeWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   fontFamily: 'Jalnan2TTF',
-                  color: AppColors.primary,
-                  fontSize: 20,
+                  fontSize: 24,
                   fontWeight: FontWeight.w900,
                   height: 1.1,
-                ),
+                ).copyWith(color: titleColor),
               )),
       actions: actions,
-      bottom: bottom,
+      bottom: appBarBottom,
     );
   }
 }
@@ -59,11 +91,13 @@ class AlbailjuAppBar extends StatelessWidget implements PreferredSizeWidget {
 class AlbailjuPostJobCta extends StatelessWidget {
   final VoidCallback onPressed;
   final String label;
+  final bool inverted;
 
   const AlbailjuPostJobCta({
     super.key,
     required this.onPressed,
     this.label = '공고 올리기',
+    this.inverted = false,
   });
 
   @override
@@ -75,8 +109,8 @@ class AlbailjuPostJobCta extends StatelessWidget {
         icon: const Icon(Icons.add_rounded, size: 18),
         label: Text(label),
         style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          backgroundColor: inverted ? Colors.white : AppColors.primary,
+          foregroundColor: inverted ? AppColors.primary : Colors.white,
           padding: const EdgeInsets.fromLTRB(13, 0, 15, 0),
           textStyle: const TextStyle(
             fontFamily: 'Jalnan2TTF',

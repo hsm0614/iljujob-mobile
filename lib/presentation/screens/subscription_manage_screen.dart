@@ -169,7 +169,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: AlbailjuAppBar(
         title: '구독 관리',
-        centerTitle: true,
+        brand: true,
         actions: [
           IconButton(
             onPressed: _refresh,

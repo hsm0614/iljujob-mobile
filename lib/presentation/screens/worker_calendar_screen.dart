@@ -828,7 +828,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
       backgroundColor: kBg,
       appBar: AlbailjuAppBar(
         title: '내 정산 달력',
-        centerTitle: true,
+        brand: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),

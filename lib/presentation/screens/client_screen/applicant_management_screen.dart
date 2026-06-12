@@ -471,7 +471,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: AlbailjuAppBar(
         title: '지원자 관리',
-        centerTitle: true,
+        brand: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),

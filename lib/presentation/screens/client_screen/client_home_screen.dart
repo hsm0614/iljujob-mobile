@@ -2226,6 +2226,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       appBar: AlbailjuAppBar(
         title: '공고 관리',
+        brand: true,
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppColors.textPrimary,
@@ -2237,7 +2238,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           Center(
             child: Padding(
               padding: const EdgeInsets.only(right: 12),
-              child: AlbailjuPostJobCta(onPressed: _goToPostJobFlow),
+              child: AlbailjuPostJobCta(
+                onPressed: _goToPostJobFlow,
+                inverted: true,
+              ),
             ),
           ),
         ],
