@@ -43,9 +43,10 @@ class AlbailjuAppBar extends StatelessWidget implements PreferredSizeWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Jalnan2TTF',
+                  color: AppColors.primary,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
                   height: 1.1,
                 ),
               )),
@@ -78,6 +79,7 @@ class AlbailjuPostJobCta extends StatelessWidget {
           foregroundColor: Colors.white,
           padding: const EdgeInsets.fromLTRB(13, 0, 15, 0),
           textStyle: const TextStyle(
+            fontFamily: 'Jalnan2TTF',
             fontSize: 13,
             fontWeight: FontWeight.w900,
             height: 1.0,

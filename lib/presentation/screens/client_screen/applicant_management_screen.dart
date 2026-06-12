@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../config/constants.dart';
 import '../../chat/chat_room_screen.dart'; // 경로 맞게 수정
+import '../../widgets/albailju_common.dart';
 
 // ─── 모델 ────────────────────────────────────────────────────────
 
@@ -468,20 +469,9 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
-      appBar: AppBar(
-        title: const Text(
-          '지원자 관리',
-          style: TextStyle(
-            fontFamily: 'Jalnan2TTF',
-            color: kBrandBlue,
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
+      appBar: AlbailjuAppBar(
+        title: '지원자 관리',
         centerTitle: true,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0.5,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),

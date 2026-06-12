@@ -2225,7 +2225,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       appBar: AlbailjuAppBar(
-        title: '사장님 공고 관리',
+        title: '공고 관리',
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppColors.textPrimary,

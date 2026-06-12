@@ -10,6 +10,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_slidable/flutter_slidable.dart';
 
 import '../../config/constants.dart';
+import '../widgets/albailju_common.dart';
 
 // =====================
 // 색상 팔레트
@@ -825,18 +826,9 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
 
     return Scaffold(
       backgroundColor: kBg,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.8,
-        title: const Text(
-          '내 정산 달력',
-          style: TextStyle(
-            fontFamily: 'Jalnan2TTF',
-            color: kBrandBlue,
-            fontSize: 22,
-            fontWeight: FontWeight.w900,
-          ),
-        ),
+      appBar: AlbailjuAppBar(
+        title: '내 정산 달력',
+        centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded),
