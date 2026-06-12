@@ -3460,7 +3460,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                               ),
                               const SizedBox(height: 2),
                               const Text(
-                                '즉시 노출 + 반경 3km 알바생 최대 10명 직접 호출',
+                                '즉시 노출 + 반경 5km 알바생 최대 10명 · 무응답 시 100% 환급',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color: Color(0xFF991B1B),
@@ -3736,8 +3736,9 @@ class _CompareConfig {
   // [항목, 기본, 즉시게시, 긴급호출, 강조여부]
   static const rows = [
     ['노출 시점', '12시간 후', '즉시 노출', '즉시 노출', '1'],
-    ['상단 고정', '없음', '24시간 고정', '만료까지\n고정', '1'],
-    ['긴급 호출', '불가', '불가', '포함\n(최대 10명)', '1'],
+    ['상단 고정', '없음', '없음', '24시간 고정', '1'],
+    ['긴급 호출', '불가', '불가', '최대 10명', '1'],
+    ['무응답 환급', '-', '-', '100% 자동', '1'],
     ['조건 알림', '없음', '알바생 알림', '알바생 알림', '0'],
   ];
 }
@@ -3771,9 +3772,9 @@ class _CompareCard extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
                 child: Row(
                   children: [
-                    const Expanded(flex: 3, child: SizedBox()),
+                    const Expanded(flex: 4, child: SizedBox()),
                     Expanded(
-                      flex: 2,
+                      flex: 3,
                       child: Center(
                         child: Text(
                           '기본',
@@ -3786,7 +3787,7 @@ class _CompareCard extends StatelessWidget {
                       ),
                     ),
                     Expanded(
-                      flex: 2,
+                      flex: 3,
                       child: Center(
                         child: Container(
                           padding: const EdgeInsets.symmetric(
@@ -3809,7 +3810,7 @@ class _CompareCard extends StatelessWidget {
                       ),
                     ),
                     Expanded(
-                      flex: 2,
+                      flex: 3,
                       child: Center(
                         child: Container(
                           padding: const EdgeInsets.symmetric(
@@ -3921,7 +3922,7 @@ class _CompareCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       const Text(
-                        '즉시 노출 + 상단 고정',
+                        '즉시 노출',
                         style: TextStyle(fontSize: 10, color: Colors.white70),
                       ),
                       const SizedBox(height: 2),
@@ -3968,7 +3969,7 @@ class _CompareRow extends StatelessWidget {
     child: Row(
       children: [
         Expanded(
-          flex: 3,
+          flex: 4,
           child: Text(
             label,
             style: const TextStyle(
@@ -3979,7 +3980,7 @@ class _CompareRow extends StatelessWidget {
           ),
         ),
         Expanded(
-          flex: 2,
+          flex: 3,
           child: Center(
             child: Text(
               free,
@@ -3989,7 +3990,7 @@ class _CompareRow extends StatelessWidget {
           ),
         ),
         Expanded(
-          flex: 2,
+          flex: 3,
           child: Center(
             child: Text(
               paid,
@@ -4003,7 +4004,7 @@ class _CompareRow extends StatelessWidget {
           ),
         ),
         Expanded(
-          flex: 2,
+          flex: 3,
           child: Center(
             child: Text(
               urgent,
