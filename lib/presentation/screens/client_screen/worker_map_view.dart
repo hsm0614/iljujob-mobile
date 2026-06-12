@@ -176,7 +176,6 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   km.KakaoMapController? _ctrl;
   StreamSubscription<km.CameraMoveEndEvent>? _cameraSub;
   bool _mapReady = false;
-  bool _mapMoving = false; // 카드 숨김 여부 (이동 중)
 
   final _scrollCtrl = ScrollController();
   List<_Job> _jobs = [];
@@ -201,6 +200,8 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   Size? _viewSize;
   Timer? _positionSyncTimer;
   int _positionSyncSeq = 0;
+  bool _positionSyncing = false;
+  DateTime _lastDragSyncAt = DateTime.fromMillisecondsSinceEpoch(0);
 
   @override
   void initState() {
@@ -332,7 +333,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     _cameraSub = ctrl.onCameraMoveEndStream.listen((_) async {
       debugPrint('[MAP] onCameraMoveEnd — 위치 동기화');
       if (mounted) {
-        _schedulePositionSync(showAfter: true);
+        _schedulePositionSync();
       }
     });
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -360,28 +361,45 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   }
 
   void _markMapMoving() {
-    if (!_mapMoving && mounted) setState(() => _mapMoving = true);
     _positionSyncTimer?.cancel();
+    _syncPositionsDuringGesture();
   }
 
-  void _schedulePositionSync({bool showAfter = false}) {
+  void _syncPositionsDuringGesture() {
+    if (!_mapReady || _ctrl == null || _positionSyncing) return;
+    final now = DateTime.now();
+    if (now.difference(_lastDragSyncAt).inMilliseconds < 80) return;
+    _lastDragSyncAt = now;
+    _positionSyncing = true;
+    unawaited(
+      _updateCardPositions().whenComplete(() {
+        _positionSyncing = false;
+      }),
+    );
+  }
+
+  void _schedulePositionSync() {
     final seq = ++_positionSyncSeq;
     _positionSyncTimer?.cancel();
-    Future<void> runAfter(Duration delay, {bool reveal = false}) async {
+    Future<void> runAfter(Duration delay) async {
       await Future.delayed(delay);
       if (!mounted || seq != _positionSyncSeq) return;
       await _updateCardPositions();
-      if (mounted && showAfter && reveal && seq == _positionSyncSeq) {
-        setState(() => _mapMoving = false);
-      }
     }
 
-    // 네이티브 맵 이벤트 직후 좌표가 늦게 안정화되는 경우가 있어 짧게 두 번 맞춘다.
-    unawaited(runAfter(Duration.zero));
-    unawaited(runAfter(const Duration(milliseconds: 90)));
-    _positionSyncTimer = Timer(const Duration(milliseconds: 180), () {
+    // 카카오맵은 이동 종료 이벤트만 제공하므로 애니메이션 중 짧게 여러 번 보정한다.
+    for (final delay in const [
+      Duration.zero,
+      Duration(milliseconds: 80),
+      Duration(milliseconds: 160),
+      Duration(milliseconds: 260),
+      Duration(milliseconds: 380),
+    ]) {
+      unawaited(runAfter(delay));
+    }
+    _positionSyncTimer = Timer(const Duration(milliseconds: 540), () {
       if (!mounted || seq != _positionSyncSeq) return;
-      unawaited(runAfter(Duration.zero, reveal: true));
+      unawaited(runAfter(Duration.zero));
     });
   }
 
@@ -518,7 +536,6 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       _workerCount = 0;
       _currentWorkers = [];
       _workerScreenPos.clear();
-      _mapMoving = true;
     });
     final job = _jobs[idx];
     debugPrint(
@@ -543,7 +560,6 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       _loadWorkers(job);
     } else {
       debugPrint('[MAP] hasLocation=false → _loadWorkers 스킵');
-      if (mounted) setState(() => _mapMoving = false);
     }
   }
 
@@ -570,7 +586,6 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     // 알바생이 있으면 공고 + 모든 알바생 위치를 한 화면에 fitPoints
     final workersWithLoc = workers.where((w) => w.hasLocation).toList();
     if (_ctrl != null && workersWithLoc.isNotEmpty) {
-      setState(() => _mapMoving = true);
       final pts = [job.pos, ...workersWithLoc.map((w) => w.pos)];
       debugPrint('[MAP][WORKER] fitPoints ${pts.length}개');
       await _ctrl!.moveCamera(
@@ -582,10 +597,8 @@ class _WorkerMapViewState extends State<WorkerMapView> {
         ),
       );
       _schedulePositionSync();
-      // onCameraMoveEnd 에서 _mapMoving=false + 위치 재계산
     } else if (_mapReady) {
       await _updateCardPositions();
-      if (mounted) setState(() => _mapMoving = false);
     }
   }
 
@@ -705,8 +718,9 @@ class _WorkerMapViewState extends State<WorkerMapView> {
               return Listener(
                 behavior: HitTestBehavior.translucent,
                 onPointerDown: (_) => _markMapMoving(),
-                onPointerCancel: (_) => _schedulePositionSync(showAfter: true),
-                onPointerUp: (_) => _schedulePositionSync(showAfter: true),
+                onPointerMove: (_) => _syncPositionsDuringGesture(),
+                onPointerCancel: (_) => _schedulePositionSync(),
+                onPointerUp: (_) => _schedulePositionSync(),
                 child: km.KakaoMap(
                   initialPosition: const km.LatLng(
                     latitude: 37.5665,
@@ -727,11 +741,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
             Positioned(
               left: p.dx - 14,
               top: p.dy - 14,
-              child: AnimatedOpacity(
-                opacity: _mapMoving ? 0.0 : 1.0,
-                duration: const Duration(milliseconds: 180),
-                child: _WorkerDot(worker: w),
-              ),
+              child: _WorkerDot(worker: w),
             ),
         ],
 
@@ -1014,16 +1024,9 @@ class _WorkerMapViewState extends State<WorkerMapView> {
         top: p.dy,
         child: FractionalTranslation(
           translation: const Offset(-0.5, -1.0),
-          child: AnimatedOpacity(
-            opacity: _mapMoving ? 0.0 : 1.0,
-            duration: const Duration(milliseconds: 180),
-            child: GestureDetector(
-              onTap: () => _selectJob(e.key),
-              child: _JobMapCard(
-                job: e.value,
-                isSelected: e.key == _selectedIdx,
-              ),
-            ),
+          child: GestureDetector(
+            onTap: () => _selectJob(e.key),
+            child: _JobMapCard(job: e.value, isSelected: e.key == _selectedIdx),
           ),
         ),
       );
