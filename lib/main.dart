@@ -66,6 +66,8 @@ import 'package:iljujob/presentation/screens/signup_client_screen/client_welcome
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/presentation/screens/subscription_plans_screen.dart';
 import 'package:iljujob/presentation/screens/client_screen/nearby_workers_screen.dart';
+import 'package:iljujob/config/api_headers.dart';
+import 'package:iljujob/presentation/screens/force_update_screen.dart';
 
 // ============================================================
 // 전역 변수
@@ -505,6 +507,28 @@ Future<void> _handleInitialMessage(
 }
 
 // ============================================================
+// 강제 업데이트 체크
+// ============================================================
+Future<Widget?> _checkForceUpdate() async {
+  try {
+    final resp = await http
+        .get(Uri.parse('$baseUrl/api/version'))
+        .timeout(const Duration(seconds: 5));
+    if (resp.statusCode == 200) {
+      final data = jsonDecode(resp.body);
+      if (data['force_update'] == true) {
+        return ForceUpdateScreen(
+          iosUrl: data['ios_url'] ?? 'https://apps.apple.com/kr/app/id6744899891',
+          androidUrl: data['android_url'] ??
+              'https://play.google.com/store/apps/details?id=com.iljujob',
+        );
+      }
+    }
+  } catch (_) {}
+  return null;
+}
+
+// ============================================================
 // 시작 화면 결정
 // ============================================================
 Widget _determineStartScreen({
@@ -547,6 +571,7 @@ void main() async {
   await initializeDateFormatting('ko', null);
   await _initializeLocalNotifications();
   await _initFirebaseAndAnalytics();
+  await initAppMeta();
 
   await FirebaseMessaging.instance.requestPermission(
     alert: true,
@@ -594,7 +619,9 @@ void main() async {
     userType: refreshedUserType,
   );
 
-  runApp(MyApp(startScreen: startScreen, upgrader: upgrader));
+  final forceUpdateScreen = await _checkForceUpdate();
+
+  runApp(MyApp(startScreen: forceUpdateScreen ?? startScreen, upgrader: upgrader));
 
   WidgetsBinding.instance.addPostFrameCallback((_) async {
     await _maybeShowUpgradeDialog(upgrader);
@@ -686,7 +713,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         '/post_job': (context) => const PostJobScreen(),
         '/client_main': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
-          int initialTabIndex = 1;
+          int initialTabIndex = 2;
           if (args is Map && args['initialTabIndex'] is int) {
             initialTabIndex = args['initialTabIndex'];
           }
