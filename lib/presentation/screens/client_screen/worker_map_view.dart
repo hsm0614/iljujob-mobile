@@ -224,6 +224,18 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   Future<void> _setupMap() async {
     if (_ctrl == null) return;
     try { await _ctrl!.setPoiVisible(isVisible: true); } catch (_) {}
+
+    // 기본 레이어 생성 — addMarkers 호출 전 반드시 필요
+    // (SDK가 자동으로 만들지 않음, E002 원인)
+    try {
+      await _ctrl!.addMarkerLayer(
+        layerId: km.KakaoMapController.defaultLabelLayerId,
+      );
+      debugPrint('[MAP] 기본 레이어 생성 완료');
+    } catch (e) {
+      debugPrint('[MAP] 기본 레이어 생성 실패: $e');
+    }
+
     if (!mounted) return;
     _mapReady = true;
     debugPrint('[MAP] _setupMap 완료 — jobs=${_jobs.length}');
