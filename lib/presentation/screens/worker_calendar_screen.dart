@@ -863,17 +863,20 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
           child:
               _loading
                   ? const Center(child: CircularProgressIndicator())
-                  : Column(
-                    children: [
-                      if (_error != null) _warningBox(_error!),
-                      _buildSummaryCard(total),
-                      _buildMonthInsightCard(),
-                      _buildBreakdownCard(),
-                      const SizedBox(height: 12),
-                      _buildCalendar(),
-                      const SizedBox(height: 10),
-                      Expanded(child: _buildDayPanel(_selectedDay)),
-                    ],
+                  : SingleChildScrollView(
+                    padding: const EdgeInsets.only(bottom: 88),
+                    child: Column(
+                      children: [
+                        if (_error != null) _warningBox(_error!),
+                        _buildSummaryCard(total),
+                        _buildMonthInsightCard(),
+                        _buildBreakdownCard(),
+                        const SizedBox(height: 12),
+                        _buildCalendar(),
+                        const SizedBox(height: 10),
+                        _buildDayPanel(_selectedDay),
+                      ],
+                    ),
                   ),
         ),
       ),
@@ -1189,6 +1192,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       padding: const EdgeInsets.all(12),
+      constraints: const BoxConstraints(minHeight: 180),
       decoration: _cardDecoration(),
       child: day == null ? _buildNoDaySelected() : _buildDayList(day),
     );
@@ -1305,13 +1309,12 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         ],
         const SizedBox(height: 10),
 
-        // 아이템 리스트
-        Expanded(
-          child: ListView.separated(
-            itemCount: list.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (_, i) => _buildSessionCard(list[i]),
-          ),
+        ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: list.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 10),
+          itemBuilder: (_, i) => _buildSessionCard(list[i]),
         ),
       ],
     );
