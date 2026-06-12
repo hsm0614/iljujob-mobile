@@ -138,6 +138,8 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   // 직방 스타일 오버레이: LatLng → 화면 좌표
   final Map<int, Offset?> _jobScreenPos    = {};
   final Map<int, Offset?> _workerScreenPos = {};
+  // 뷰포트 좌표 변환용 (fromScreenPoint 칼리브레이션)
+  Size? _viewSize;
 
   @override
   void initState() {
@@ -253,53 +255,70 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     }
   }
 
-  // ── 직방 스타일: LatLng → 화면 좌표 변환 후 setState ───────────
+  // ── 직방 스타일: fromScreenPoint 칼리브레이션 → 선형 보간 ────────
   Future<void> _updateCardPositions() async {
     if (_ctrl == null || !mounted) {
       debugPrint('[MAP][CARD] 스킵 — ctrl=${_ctrl != null}, mounted=$mounted');
       return;
     }
-    final jobsWithLoc = _jobs.where((j) => j.hasLocation).toList();
-    final workersWithLoc = _currentWorkers.where((w) => w.hasLocation).toList();
-    debugPrint('[MAP][CARD] toScreenPoint 시작 — jobs=${jobsWithLoc.length}, workers=${workersWithLoc.length}');
+    final vs = _viewSize;
+    if (vs == null || vs.isEmpty) {
+      debugPrint('[MAP][CARD] viewSize null → 스킵');
+      return;
+    }
 
-    // 순차 호출 — 동시 다발 platform channel 호출 시 iOS 크래시 가능성 있음
+    final jobsWithLoc     = _jobs.where((j) => j.hasLocation).toList();
+    final workersWithLoc  = _currentWorkers.where((w) => w.hasLocation).toList();
+    debugPrint('[MAP][CARD] 칼리브레이션 시작 — jobs=${jobsWithLoc.length}, workers=${workersWithLoc.length}, view=$vs');
+
+    // 뷰포트 네 모서리 → LatLng 획득 (fromScreenPoint)
+    km.LatLng? tl, br;
+    try {
+      tl = await _ctrl!.fromScreenPoint(point: Offset.zero);
+      br = await _ctrl!.fromScreenPoint(point: Offset(vs.width, vs.height));
+      debugPrint('[MAP][CARD] TL=$tl  BR=$br');
+    } catch (e) {
+      debugPrint('[MAP][CARD] fromScreenPoint 예외: $e');
+    }
+
+    if (!mounted) return;
+
+    if (tl == null || br == null) {
+      debugPrint('[MAP][CARD] fromScreenPoint null → 카드 위치 계산 불가');
+      setState(() { _jobScreenPos.clear(); _workerScreenPos.clear(); });
+      return;
+    }
+
+    final latRange = tl.latitude  - br.latitude;
+    final lngRange = br.longitude - tl.longitude;
+    if (latRange.abs() < 1e-10 || lngRange.abs() < 1e-10) {
+      debugPrint('[MAP][CARD] latRange/lngRange 너무 작음 → 스킵');
+      return;
+    }
+
+    // 선형 보간 함수
+    Offset latLngToScreen(double lat, double lng) => Offset(
+      (lng - tl!.longitude) / lngRange * vs.width,
+      (tl.latitude - lat)   / latRange * vs.height,
+    );
+
     final newJobPos = <int, Offset?>{};
     for (final j in jobsWithLoc) {
-      try {
-        final p = await _ctrl!.toScreenPoint(position: j.pos);
-        debugPrint('[MAP][CARD] job[${j.id}] "${j.title}" lat=${j.lat},${j.lng} → offset=$p');
-        newJobPos[j.id] = p;
-      } catch (e) {
-        debugPrint('[MAP][CARD] job[${j.id}] toScreenPoint 실패: $e');
-        newJobPos[j.id] = null;
-      }
-      if (!mounted) return;
+      final p = latLngToScreen(j.lat, j.lng);
+      debugPrint('[MAP][CARD] job[${j.id}] "${j.title}" → ${p.dx.toStringAsFixed(1)},${p.dy.toStringAsFixed(1)}');
+      newJobPos[j.id] = p;
     }
     final newWorkerPos = <int, Offset?>{};
     for (final w in workersWithLoc) {
-      try {
-        final p = await _ctrl!.toScreenPoint(position: w.pos);
-        debugPrint('[MAP][CARD] worker[${w.id}] → offset=$p');
-        newWorkerPos[w.id] = p;
-      } catch (e) {
-        debugPrint('[MAP][CARD] worker[${w.id}] toScreenPoint 실패: $e');
-        newWorkerPos[w.id] = null;
-      }
-      if (!mounted) return;
+      newWorkerPos[w.id] = latLngToScreen(w.lat, w.lng);
     }
 
     if (!mounted) return;
     setState(() {
-      _jobScreenPos
-        ..clear()
-        ..addAll(newJobPos);
-      _workerScreenPos
-        ..clear()
-        ..addAll(newWorkerPos);
+      _jobScreenPos..clear()..addAll(newJobPos);
+      _workerScreenPos..clear()..addAll(newWorkerPos);
     });
-    final validCount = newJobPos.values.where((p) => p != null).length;
-    debugPrint('[MAP][CARD] setState 완료 — valid=$validCount/${jobsWithLoc.length} / positions: $newJobPos');
+    debugPrint('[MAP][CARD] 완료 — ${newJobPos.length}개 job 위치 계산');
   }
 
   // ── 공고 선택 ─────────────────────────────────────────────────
@@ -423,10 +442,15 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       children: [
         // ── 카카오맵 (항상 풀스크린) ────────────────────────────────
         Positioned.fill(
-          child: km.KakaoMap(
-            initialPosition: const km.LatLng(latitude: 37.5665, longitude: 126.9780),
-            initialLevel: 5,
-            onMapCreated: _onMapCreated,
+          child: LayoutBuilder(
+            builder: (_, constraints) {
+              _viewSize = constraints.biggest;
+              return km.KakaoMap(
+                initialPosition: const km.LatLng(latitude: 37.5665, longitude: 126.9780),
+                initialLevel: 5,
+                onMapCreated: _onMapCreated,
+              );
+            },
           ),
         ),
 
