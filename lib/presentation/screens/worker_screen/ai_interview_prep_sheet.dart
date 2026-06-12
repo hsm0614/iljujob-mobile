@@ -206,7 +206,7 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                         style: TextStyle(color: Colors.black54, fontSize: 13)),
                     SizedBox(height: 6),
                     Text('보통 5~10초 걸려요',
-                        style: TextStyle(color: Colors.black38, fontSize: 11)),
+                        style: TextStyle(color: Color(0xFF6B7280), fontSize: 11)),
                     SizedBox(height: 24),
                   ],
                 ),

@@ -670,7 +670,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                   ),
                   child: const Text(
                     '파일을 불러오지 못했습니다.',
-                    style: TextStyle(color: Colors.black45),
+                    style: TextStyle(color: Color(0xFF6B7280)),
                   ),
                 ),
           ),
@@ -687,7 +687,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         alignment: Alignment.center,
         child: const Text(
           '아직 업로드된 파일이 없습니다.',
-          style: TextStyle(color: Colors.black45),
+          style: TextStyle(color: Color(0xFF6B7280)),
         ),
       );
     }

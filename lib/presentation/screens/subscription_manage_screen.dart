@@ -548,7 +548,7 @@ class _ManageSection extends StatelessWidget {
           ),
           subtitle: Text(
             subtitle,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+            style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
           ),
           trailing: const Icon(
             Icons.chevron_right_rounded,

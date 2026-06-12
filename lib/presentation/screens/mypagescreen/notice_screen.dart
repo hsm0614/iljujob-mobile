@@ -298,7 +298,7 @@ class _NoticeCard extends StatelessWidget {
                         const SizedBox(width: 10),
                         Text(
                           dateText,
-                          style: const TextStyle(color: Colors.black45, fontSize: 12),
+                          style: const TextStyle(color: Colors.black54, fontSize: 12),
                         ),
                       ],
                     ),
@@ -427,11 +427,16 @@ class _SkeletonList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
+    return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-      itemCount: 7,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (_, __) => _SkeletonCard(),
+      child: Column(
+        children: [
+          for (int i = 0; i < 7; i++) ...[
+            _SkeletonCard(),
+            if (i < 6) const SizedBox(height: 12),
+          ],
+        ],
+      ),
     );
   }
 }
