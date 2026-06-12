@@ -1200,7 +1200,7 @@ Widget _buildHeaderCard(String postedLabel, DateTime? postedUtc) {
                 widget.job.title,
                 style: const TextStyle(
                   fontSize: 19,
-                  fontWeight: FontWeight.w200,
+                  fontWeight: FontWeight.w700,
                   fontFamily: 'Jalnan2TTF',
                 ),
               ),
@@ -1222,7 +1222,7 @@ Widget _buildHeaderCard(String postedLabel, DateTime? postedUtc) {
               postedLabel,
               style: const TextStyle(
                 fontSize: 12,
-                color: Colors.grey,
+                color: Color(0xFF6B7280),
               ),
             ),
             const SizedBox(width: 6),
@@ -1233,7 +1233,7 @@ Widget _buildHeaderCard(String postedLabel, DateTime? postedUtc) {
                   : '-',
               style: const TextStyle(
                 fontSize: 12,
-                color: Colors.grey,
+                color: Color(0xFF6B7280),
               ),
             ),
           ],
@@ -1494,7 +1494,7 @@ Widget _buildLocationSection() {
       const SizedBox(height: 6),
       const Text(
         '정확한 위치는 사장님과 대화하면서 한 번 더 확인해보는 게 좋아요 😊',
-        style: TextStyle(fontSize: 11, color: Colors.grey),
+        style: TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
       ),
       const SizedBox(height: 10),
 
@@ -1785,7 +1785,7 @@ Widget _buildClientSection() {
                                 widget.job.locationCity,
                             style: const TextStyle(
                               fontSize: 13,
-                              color: Colors.grey,
+                              color: Color(0xFF6B7280),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
