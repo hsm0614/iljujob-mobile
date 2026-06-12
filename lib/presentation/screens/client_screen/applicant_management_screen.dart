@@ -43,43 +43,62 @@ class ApplicantModel {
       workerId: j['worker_id'] ?? 0,
       workerName: j['worker_name'] ?? '이름 없음',
       profileImageUrl: j['profile_image_url'],
-      birthYear: j['birth_year'] != null ? int.tryParse('${j['birth_year']}') : null,
+      birthYear:
+          j['birth_year'] != null ? int.tryParse('${j['birth_year']}') : null,
       gender: j['gender'],
-      activityScore: j['activity_score'] != null ? int.tryParse('${j['activity_score']}') ?? 0 : 0,
+      activityScore:
+          j['activity_score'] != null
+              ? int.tryParse('${j['activity_score']}') ?? 0
+              : 0,
     );
   }
 
   String get activityGrade {
     if (activityScore >= 100) return 'S';
-    if (activityScore >= 70)  return 'A';
-    if (activityScore >= 40)  return 'B';
-    if (activityScore >= 20)  return 'C';
+    if (activityScore >= 70) return 'A';
+    if (activityScore >= 40) return 'B';
+    if (activityScore >= 20) return 'C';
     return 'NEW';
   }
 
   Color get activityGradeColor {
     switch (activityGrade) {
-      case 'S':   return const Color(0xFFFF6B00);
-      case 'A':   return const Color(0xFF3B8AFF);
-      case 'B':   return const Color(0xFF0F766E);
-      case 'C':   return const Color(0xFF6B7280);
-      default:    return const Color(0xFF9CA3AF);
+      case 'S':
+        return const Color(0xFFFF6B00);
+      case 'A':
+        return const Color(0xFF3B8AFF);
+      case 'B':
+        return const Color(0xFF0F766E);
+      case 'C':
+        return const Color(0xFF6B7280);
+      default:
+        return const Color(0xFF9CA3AF);
     }
   }
 
   Color get activityGradeBg {
     switch (activityGrade) {
-      case 'S':   return const Color(0xFFFFF0E6);
-      case 'A':   return const Color(0xFFE8F0FF);
-      case 'B':   return const Color(0xFFE8F7EF);
-      case 'C':   return const Color(0xFFF1F3F5);
-      default:    return const Color(0xFFF4F6FA);
+      case 'S':
+        return const Color(0xFFFFF0E6);
+      case 'A':
+        return const Color(0xFFE8F0FF);
+      case 'B':
+        return const Color(0xFFE8F7EF);
+      case 'C':
+        return const Color(0xFFF1F3F5);
+      default:
+        return const Color(0xFFF4F6FA);
     }
   }
 
   bool get isNew => !isConfirmed;
   int get age => birthYear != null ? DateTime.now().year - birthYear! : 0;
-  String get genderLabel => gender == 'male' ? '남' : gender == 'female' ? '여' : '';
+  String get genderLabel =>
+      gender == 'male'
+          ? '남'
+          : gender == 'female'
+          ? '여'
+          : '';
 }
 
 class JobApplicantGroup {
@@ -100,9 +119,10 @@ class JobApplicantGroup {
   });
 
   factory JobApplicantGroup.fromJson(Map<String, dynamic> j) {
-    final list = (j['applicants'] as List? ?? [])
-        .map((a) => ApplicantModel.fromJson(a))
-        .toList();
+    final list =
+        (j['applicants'] as List? ?? [])
+            .map((a) => ApplicantModel.fromJson(a))
+            .toList();
     return JobApplicantGroup(
       jobId: j['job_id'] ?? 0,
       jobTitle: j['job_title'] ?? '공고 없음',
@@ -131,17 +151,20 @@ class ApplicantManagementScreen extends StatefulWidget {
   const ApplicantManagementScreen({super.key});
 
   @override
-  State<ApplicantManagementScreen> createState() => _ApplicantManagementScreenState();
+  State<ApplicantManagementScreen> createState() =>
+      _ApplicantManagementScreenState();
 }
 
 class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   bool _loading = true;
+  bool _bulkSending = false;
   String? _error;
   List<JobApplicantGroup> _groups = [];
   int _totalCount = 0;
   int _unreadCount = 0;
   int _currentPage = 1;
   final Map<int, bool> _expanded = {};
+  final Map<int, Set<int>> _selectedByJob = {};
 
   @override
   void initState() {
@@ -150,7 +173,10 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   }
 
   Future<void> _fetch() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final prefs = await SharedPreferences.getInstance();
       final clientId = prefs.getInt('userId') ?? 0;
@@ -163,9 +189,10 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       if (res.statusCode != 200) throw Exception('서버 오류 (${res.statusCode})');
 
       final data = jsonDecode(res.body);
-      final groups = (data['jobs'] as List? ?? [])
-          .map((j) => JobApplicantGroup.fromJson(j))
-          .toList();
+      final groups =
+          (data['jobs'] as List? ?? [])
+              .map((j) => JobApplicantGroup.fromJson(j))
+              .toList();
       final summary = data['summary'] as Map<String, dynamic>? ?? {};
 
       if (!mounted) return;
@@ -175,10 +202,14 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         _unreadCount = summary['unread'] ?? 0;
         _loading = false;
         _currentPage = 1;
+        _selectedByJob.clear();
       });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
@@ -190,11 +221,16 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     return _groups.sublist(start, end);
   }
 
-  Future<void> _goToChat(ApplicantModel applicant, JobApplicantGroup group) async {
+  Future<void> _goToChat(
+    ApplicantModel applicant,
+    JobApplicantGroup group,
+  ) async {
     try {
-      final res = await http.get(Uri.parse(
-        '$baseUrl/api/chat/get-room?jobId=${group.jobId}&workerId=${applicant.workerId}',
-      ));
+      final res = await http.get(
+        Uri.parse(
+          '$baseUrl/api/chat/get-room?jobId=${group.jobId}&workerId=${applicant.workerId}',
+        ),
+      );
       if (!mounted) return;
 
       if (res.statusCode == 200) {
@@ -205,32 +241,223 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => ChatRoomScreen(
-              chatRoomId: roomId is int ? roomId : int.parse(roomId.toString()),
-              jobInfo: {
-                'id': group.jobId,
-                'job_id': group.jobId,
-                'title': group.jobTitle,
-                'location_city': group.locationCity,
-                'worker_id': applicant.workerId,
-                'user_name': applicant.workerName,
-                'user_thumbnail_url': applicant.profileImageUrl,
-                'client_thumbnail_url': null,
-                'client_company_name': null,
-              },
-            ),
+            builder:
+                (_) => ChatRoomScreen(
+                  chatRoomId:
+                      roomId is int ? roomId : int.parse(roomId.toString()),
+                  jobInfo: {
+                    'id': group.jobId,
+                    'job_id': group.jobId,
+                    'title': group.jobTitle,
+                    'location_city': group.locationCity,
+                    'worker_id': applicant.workerId,
+                    'user_name': applicant.workerName,
+                    'user_thumbnail_url': applicant.profileImageUrl,
+                    'client_thumbnail_url': null,
+                    'client_company_name': null,
+                  },
+                ),
           ),
         ).then((_) => _fetch());
       } else if (res.statusCode == 404) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('아직 채팅방이 없습니다.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('아직 채팅방이 없습니다.')));
       } else {
         throw Exception('채팅방 조회 실패');
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('오류: $e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('오류: $e')));
+    }
+  }
+
+  Set<int> _selectedSet(int jobId) =>
+      _selectedByJob.putIfAbsent(jobId, () => <int>{});
+
+  bool _isSelected(JobApplicantGroup group, ApplicantModel applicant) =>
+      _selectedSet(group.jobId).contains(applicant.workerId);
+
+  void _toggleApplicant(JobApplicantGroup group, ApplicantModel applicant) {
+    setState(() {
+      final selected = _selectedSet(group.jobId);
+      if (selected.contains(applicant.workerId)) {
+        selected.remove(applicant.workerId);
+      } else {
+        selected.add(applicant.workerId);
+      }
+    });
+  }
+
+  void _toggleAllApplicants(JobApplicantGroup group) {
+    setState(() {
+      final selected = _selectedSet(group.jobId);
+      final ids = group.applicants.map((a) => a.workerId).toSet();
+      if (selected.length == ids.length) {
+        selected.clear();
+      } else {
+        selected
+          ..clear()
+          ..addAll(ids);
+      }
+    });
+  }
+
+  Future<String> _authToken() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('authToken') ?? '';
+  }
+
+  Future<void> _showBulkMessageSheet(JobApplicantGroup group) async {
+    final selected = _selectedSet(group.jobId).toList();
+    if (selected.isEmpty || _bulkSending) return;
+
+    final controller = TextEditingController(
+      text: '안녕하세요. ${group.jobTitle} 공고 담당자입니다.\n지원해주셔서 감사합니다. 채팅 확인 부탁드려요.',
+    );
+    final message = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) {
+        final bottom = MediaQuery.of(ctx).viewInsets.bottom;
+        return Padding(
+          padding: EdgeInsets.fromLTRB(18, 18, 18, bottom + 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.mark_chat_unread_rounded, color: _blue),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '선택 지원자 ${selected.length}명에게 메시지',
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFF191F28),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                group.jobTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: controller,
+                minLines: 4,
+                maxLines: 7,
+                maxLength: 500,
+                decoration: InputDecoration(
+                  hintText: '지원자에게 보낼 메시지를 입력하세요.',
+                  filled: true,
+                  fillColor: const Color(0xFFF8F9FB),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE5E8EB)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Color(0xFFE5E8EB)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _blue, width: 1.4),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    final text = controller.text.trim();
+                    if (text.isEmpty) return;
+                    Navigator.pop(ctx, text);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _blue,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    '메시지 발송',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    controller.dispose();
+    if (message == null || message.trim().isEmpty) return;
+    await _sendBulkMessage(group, selected, message.trim());
+  }
+
+  Future<void> _sendBulkMessage(
+    JobApplicantGroup group,
+    List<int> workerIds,
+    String message,
+  ) async {
+    if (_bulkSending) return;
+    setState(() => _bulkSending = true);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final clientId = prefs.getInt('userId') ?? 0;
+      final token = await _authToken();
+      final res = await http
+          .post(
+            Uri.parse('$baseUrl/api/applicants/bulk-message'),
+            headers: {
+              'Content-Type': 'application/json',
+              if (token.isNotEmpty) 'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({
+              'jobId': group.jobId,
+              'clientId': clientId,
+              'workerIds': workerIds,
+              'message': message,
+            }),
+          )
+          .timeout(const Duration(seconds: 12));
+      if (!mounted) return;
+      final body = jsonDecode(res.body) as Map<String, dynamic>;
+      if (res.statusCode != 200) {
+        throw Exception(body['message']?.toString() ?? '발송 실패');
+      }
+      setState(() => _selectedSet(group.jobId).clear());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${body['sent'] ?? workerIds.length}명에게 메시지를 보냈어요.'),
+        ),
+      );
+      await _fetch();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('메시지 발송 실패: $e')));
+    } finally {
+      if (mounted) setState(() => _bulkSending = false);
     }
   }
 
@@ -239,40 +466,52 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6FA),
       appBar: AppBar(
-        title: const Text('지원자 관리', style: TextStyle(fontFamily: 'Jalnan2TTF', color: kBrandBlue, fontSize: 20, fontWeight: FontWeight.w900)),
+        title: const Text(
+          '지원자 관리',
+          style: TextStyle(
+            fontFamily: 'Jalnan2TTF',
+            color: kBrandBlue,
+            fontSize: 20,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
         centerTitle: true,
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
         elevation: 0.5,
         actions: [
-          IconButton(icon: const Icon(Icons.refresh_rounded), onPressed: _fetch),
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: _fetch,
+          ),
         ],
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
+      body:
+          _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _error != null
               ? _buildError()
               : _groups.isEmpty
-                  ? _buildEmpty()
-                  : RefreshIndicator(
-                      onRefresh: _fetch,
-                      child: Column(
+              ? _buildEmpty()
+              : RefreshIndicator(
+                onRefresh: _fetch,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                         children: [
-                          Expanded(
-                            child: ListView(
-                              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                              children: [
-                                _buildSummaryRow(),
-                                const SizedBox(height: 16),
-                                ..._pagedGroups.map(_buildJobCard),
-                              ],
-                            ),
-                          ),
-                          if (_totalPages > 1) _buildPagination(),
-                          const SizedBox(height: 8),
+                          _buildSummaryRow(),
+                          const SizedBox(height: 16),
+                          ..._pagedGroups.map(_buildJobCard),
                         ],
                       ),
                     ),
+                    if (_totalPages > 1) _buildPagination(),
+                    const SizedBox(height: 8),
+                  ],
+                ),
+              ),
     );
   }
 
@@ -281,11 +520,17 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   Widget _buildSummaryRow() {
     final chattingCount = _groups.fold(
       0,
-      (s, g) => s + g.applicants.where((a) => a.isConfirmed && !a.isCompleted).length,
+      (s, g) =>
+          s + g.applicants.where((a) => a.isConfirmed && !a.isCompleted).length,
     );
     return Row(
       children: [
-        _summaryCard('전체', '$_totalCount명', const Color(0xFF191F28), Colors.white),
+        _summaryCard(
+          '전체',
+          '$_totalCount명',
+          const Color(0xFF191F28),
+          Colors.white,
+        ),
         const SizedBox(width: 10),
         _summaryCard('미확인', '$_unreadCount명', _blue, _blueBg),
         const SizedBox(width: 10),
@@ -294,7 +539,12 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     );
   }
 
-  Widget _summaryCard(String label, String value, Color textColor, Color bgColor) {
+  Widget _summaryCard(
+    String label,
+    String value,
+    Color textColor,
+    Color bgColor,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -305,10 +555,19 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         ),
         child: Column(
           children: [
-            Text(value,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: textColor)),
+            Text(
+              value,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: textColor,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+            Text(
+              label,
+              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+            ),
           ],
         ),
       ),
@@ -320,9 +579,10 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   Widget _buildJobCard(JobApplicantGroup group) {
     final isExpanded = _expanded[group.jobId] ?? false;
     final hasMore = group.applicants.length > _applicantsPreview;
-    final showList = isExpanded
-        ? group.applicants
-        : group.applicants.take(_applicantsPreview).toList();
+    final showList =
+        isExpanded
+            ? group.applicants
+            : group.applicants.take(_applicantsPreview).toList();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -332,7 +592,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         border: Border.all(color: const Color(0xFFE5E8EB)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -351,33 +611,51 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
               child: Center(
                 child: Column(
                   children: [
-                    Icon(Icons.inbox_rounded, size: 28, color: const Color(0xFFD1D5DB)),
+                    Icon(
+                      Icons.inbox_rounded,
+                      size: 28,
+                      color: const Color(0xFFD1D5DB),
+                    ),
                     const SizedBox(height: 8),
-                    Text('아직 지원자가 없어요',
-                        style: TextStyle(fontSize: 13, color: const Color(0xFFBCC0CB))),
+                    Text(
+                      '아직 지원자가 없어요',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: const Color(0xFFBCC0CB),
+                      ),
+                    ),
                   ],
                 ),
               ),
             )
           else ...[
-            ...showList.asMap().entries.map((e) => _buildApplicantRow(
-                  e.value,
-                  group,
-                  isLast: e.key == showList.length - 1 && !hasMore,
-                )),
+            ...showList.asMap().entries.map(
+              (e) => _buildApplicantRow(
+                e.value,
+                group,
+                isLast: e.key == showList.length - 1 && !hasMore,
+              ),
+            ),
 
             // 더보기 / 접기
             if (hasMore)
               InkWell(
-                onTap: () => setState(() => _expanded[group.jobId] = !isExpanded),
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
+                onTap:
+                    () => setState(() => _expanded[group.jobId] = !isExpanded),
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(18),
+                ),
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF4F6FA),
-                    borderRadius: const BorderRadius.vertical(bottom: Radius.circular(18)),
-                    border: Border(top: BorderSide(color: const Color(0xFFF4F6FA))),
+                    borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.circular(18),
+                    ),
+                    border: Border(
+                      top: BorderSide(color: const Color(0xFFF4F6FA)),
+                    ),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -387,7 +665,10 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                             ? '접기'
                             : '${group.applicants.length - _applicantsPreview}명 더보기',
                         style: const TextStyle(
-                            fontSize: 13, color: _blue, fontWeight: FontWeight.w600),
+                          fontSize: 13,
+                          color: _blue,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                       const SizedBox(width: 4),
                       Icon(
@@ -409,6 +690,9 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
 
   Widget _buildJobCardHeader(JobApplicantGroup group) {
     final hasNew = group.newCount > 0;
+    final selectedCount = _selectedSet(group.jobId).length;
+    final allSelected =
+        group.applicants.isNotEmpty && selectedCount == group.applicants.length;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
@@ -426,9 +710,10 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
             margin: const EdgeInsets.only(right: 10),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: group.jobStatus == 'active'
-                  ? const Color(0xFF22C55E)
-                  : const Color(0xFFBCC0CB),
+              color:
+                  group.jobStatus == 'active'
+                      ? const Color(0xFF22C55E)
+                      : const Color(0xFFBCC0CB),
             ),
           ),
           Expanded(
@@ -438,7 +723,10 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 Text(
                   group.jobTitle,
                   style: const TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF191F28)),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF191F28),
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -446,22 +734,36 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 Row(
                   children: [
                     if (group.locationCity != null) ...[
-                      Icon(Icons.location_on_rounded,
-                          size: 12, color: const Color(0xFF9CA3AF)),
+                      Icon(
+                        Icons.location_on_rounded,
+                        size: 12,
+                        color: const Color(0xFF9CA3AF),
+                      ),
                       const SizedBox(width: 2),
-                      Text(group.locationCity!,
-                          style: TextStyle(fontSize: 12, color: const Color(0xFF9CA3AF))),
+                      Text(
+                        group.locationCity!,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: const Color(0xFF9CA3AF),
+                        ),
+                      ),
                       const SizedBox(width: 8),
                     ],
                     if (group.startDate != null) ...[
-                      Icon(Icons.calendar_today_rounded,
-                          size: 12, color: const Color(0xFF9CA3AF)),
+                      Icon(
+                        Icons.calendar_today_rounded,
+                        size: 12,
+                        color: const Color(0xFF9CA3AF),
+                      ),
                       const SizedBox(width: 2),
                       Text(
                         group.startDate!.length >= 10
                             ? group.startDate!.substring(0, 10)
                             : group.startDate!,
-                        style: TextStyle(fontSize: 12, color: const Color(0xFF9CA3AF)),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: const Color(0xFF9CA3AF),
+                        ),
                       ),
                     ],
                   ],
@@ -474,9 +776,10 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
-              color: group.applicants.isEmpty
-                  ? const Color(0xFFF4F6FA)
-                  : (hasNew ? _blueBg : const Color(0xFFF0FFF4)),
+              color:
+                  group.applicants.isEmpty
+                      ? const Color(0xFFF4F6FA)
+                      : (hasNew ? _blueBg : const Color(0xFFF0FFF4)),
               borderRadius: BorderRadius.circular(999),
             ),
             child: Text(
@@ -486,12 +789,65 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: group.applicants.isEmpty
-                    ? Colors.grey
-                    : (hasNew ? _blue : _green),
+                color:
+                    group.applicants.isEmpty
+                        ? Colors.grey
+                        : (hasNew ? _blue : _green),
               ),
             ),
           ),
+          if (group.applicants.isNotEmpty) ...[
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => _toggleAllApplicants(group),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                decoration: BoxDecoration(
+                  color: allSelected ? _blue : Colors.white,
+                  borderRadius: BorderRadius.circular(999),
+                  border: Border.all(
+                    color: allSelected ? _blue : const Color(0xFFD1D5DB),
+                  ),
+                ),
+                child: Text(
+                  allSelected ? '선택 해제' : '전체 선택',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: allSelected ? Colors.white : const Color(0xFF6B7280),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 6),
+            GestureDetector(
+              onTap:
+                  selectedCount > 0 && !_bulkSending
+                      ? () => _showBulkMessageSheet(group)
+                      : null,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
+                decoration: BoxDecoration(
+                  color: selectedCount > 0 ? _green : const Color(0xFFF4F6FA),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  selectedCount > 0 ? '메시지 $selectedCount' : '메시지',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color:
+                        selectedCount > 0
+                            ? Colors.white
+                            : const Color(0xFF9CA3AF),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -504,19 +860,41 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     JobApplicantGroup group, {
     required bool isLast,
   }) {
+    final selected = _isSelected(group, applicant);
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Row(
             children: [
-              Container(
-                width: 8,
-                height: 8,
-                margin: const EdgeInsets.only(right: 10),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: applicant.isNew ? _blue : Colors.transparent,
+              GestureDetector(
+                onTap: () => _toggleApplicant(group, applicant),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 140),
+                  width: 24,
+                  height: 24,
+                  margin: const EdgeInsets.only(right: 10),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: selected ? _blue : Colors.white,
+                    border: Border.all(
+                      color:
+                          selected
+                              ? _blue
+                              : applicant.isNew
+                              ? _blue
+                              : const Color(0xFFD1D5DB),
+                      width: 1.5,
+                    ),
+                  ),
+                  child:
+                      selected
+                          ? const Icon(
+                            Icons.check_rounded,
+                            size: 15,
+                            color: Colors.white,
+                          )
+                          : null,
                 ),
               ),
               _buildAvatar(applicant),
@@ -527,9 +905,13 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   children: [
                     Row(
                       children: [
-                        Text(applicant.workerName,
-                            style: const TextStyle(
-                                fontSize: 14, fontWeight: FontWeight.w600)),
+                        Text(
+                          applicant.workerName,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                         const SizedBox(width: 6),
                         _activityGradeBadge(applicant),
                         const SizedBox(width: 4),
@@ -540,10 +922,14 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                     Text(
                       [
                         if (applicant.age > 0) '${applicant.age}세',
-                        if (applicant.genderLabel.isNotEmpty) applicant.genderLabel,
+                        if (applicant.genderLabel.isNotEmpty)
+                          applicant.genderLabel,
                         _timeAgo(applicant.appliedAt),
                       ].join(' · '),
-                      style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF9CA3AF),
+                      ),
                     ),
                   ],
                 ),
@@ -551,23 +937,34 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
               GestureDetector(
                 onTap: () => _goToChat(applicant, group),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 7,
+                  ),
                   decoration: BoxDecoration(
                     color: _blue,
                     borderRadius: BorderRadius.circular(999),
                   ),
-                  child: const Text('채팅',
-                      style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white)),
+                  child: const Text(
+                    '채팅',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
         ),
         if (!isLast)
-          Divider(height: 1, thickness: 0.5, indent: 46, color: const Color(0xFFF4F6FA)),
+          Divider(
+            height: 1,
+            thickness: 0.5,
+            indent: 46,
+            color: const Color(0xFFF4F6FA),
+          ),
       ],
     );
   }
@@ -583,7 +980,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         children: [
           _pageArrowBtn(
             icon: Icons.chevron_left_rounded,
-            onTap: _currentPage > 1 ? () => setState(() => _currentPage--) : null,
+            onTap:
+                _currentPage > 1 ? () => setState(() => _currentPage--) : null,
           ),
           const SizedBox(width: 8),
           ...List.generate(_totalPages, (i) {
@@ -599,7 +997,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   color: isSelected ? _blue : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                      color: isSelected ? _blue : const Color(0xFFD1D5DB)),
+                    color: isSelected ? _blue : const Color(0xFFD1D5DB),
+                  ),
                 ),
                 child: Center(
                   child: Text(
@@ -607,7 +1006,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: isSelected ? Colors.white : const Color(0xFF6B7280),
+                      color:
+                          isSelected ? Colors.white : const Color(0xFF6B7280),
                     ),
                   ),
                 ),
@@ -617,9 +1017,10 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
           const SizedBox(width: 8),
           _pageArrowBtn(
             icon: Icons.chevron_right_rounded,
-            onTap: _currentPage < _totalPages
-                ? () => setState(() => _currentPage++)
-                : null,
+            onTap:
+                _currentPage < _totalPages
+                    ? () => setState(() => _currentPage++)
+                    : null,
           ),
         ],
       ),
@@ -637,8 +1038,11 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
           borderRadius: BorderRadius.circular(10),
           border: Border.all(color: const Color(0xFFD1D5DB)),
         ),
-        child: Icon(icon, size: 20,
-            color: active ? const Color(0xFF6B7280) : const Color(0xFFD1D5DB)),
+        child: Icon(
+          icon,
+          size: 20,
+          color: active ? const Color(0xFF6B7280) : const Color(0xFFD1D5DB),
+        ),
       ),
     );
   }
@@ -663,7 +1067,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     ];
     final c = colors[applicant.workerId % colors.length];
 
-    if (applicant.profileImageUrl != null && applicant.profileImageUrl!.isNotEmpty) {
+    if (applicant.profileImageUrl != null &&
+        applicant.profileImageUrl!.isNotEmpty) {
       return CircleAvatar(
         radius: 20,
         backgroundImage: NetworkImage(applicant.profileImageUrl!),
@@ -675,7 +1080,11 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       backgroundColor: c[0],
       child: Text(
         applicant.workerName.isNotEmpty ? applicant.workerName[0] : '?',
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: c[1]),
+        style: TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: c[1],
+        ),
       ),
     );
   }
@@ -699,8 +1108,12 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   }
 
   Widget _statusChip(ApplicantModel applicant) {
-    if (applicant.isCompleted) return _chip('완료', const Color(0xFFE1F5EE), const Color(0xFF085041));
-    if (applicant.isConfirmed) return _chip('채용확정', const Color(0xFFE6F1FB), const Color(0xFF0C447C));
+    if (applicant.isCompleted) {
+      return _chip('완료', const Color(0xFFE1F5EE), const Color(0xFF085041));
+    }
+    if (applicant.isConfirmed) {
+      return _chip('채용확정', const Color(0xFFE6F1FB), const Color(0xFF0C447C));
+    }
     if (applicant.isNew) return _chip('신규', _blueBg, _blue);
     return _chip('확인', const Color(0xFFF1F3F5), const Color(0xFF9CA3AF));
   }
@@ -708,9 +1121,14 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   Widget _chip(String label, Color bg, Color fg) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(999)),
-      child: Text(label,
-          style: TextStyle(fontSize: 10, color: fg, fontWeight: FontWeight.w600)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 10, color: fg, fontWeight: FontWeight.w600),
+      ),
     );
   }
 
@@ -719,13 +1137,21 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.people_alt_outlined, size: 56, color: Color(0xFFBCC0CB)),
+          const Icon(
+            Icons.people_alt_outlined,
+            size: 56,
+            color: Color(0xFFBCC0CB),
+          ),
           const SizedBox(height: 16),
-          const Text('아직 지원자가 없어요',
-              style: TextStyle(fontSize: 16, color: Color(0xFF9CA3AF))),
+          const Text(
+            '아직 지원자가 없어요',
+            style: TextStyle(fontSize: 16, color: Color(0xFF9CA3AF)),
+          ),
           const SizedBox(height: 8),
-          const Text('공고를 올리면 알바생들이 지원할 거예요!',
-              style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF))),
+          const Text(
+            '공고를 올리면 알바생들이 지원할 거예요!',
+            style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+          ),
           const SizedBox(height: 24),
           TextButton(onPressed: _fetch, child: const Text('새로고침')),
         ],
@@ -740,8 +1166,10 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         children: [
           const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
           const SizedBox(height: 12),
-          Text(_error ?? '알 수 없는 오류',
-              style: const TextStyle(color: Color(0xFF6B7280))),
+          Text(
+            _error ?? '알 수 없는 오류',
+            style: const TextStyle(color: Color(0xFF6B7280)),
+          ),
           const SizedBox(height: 16),
           ElevatedButton(onPressed: _fetch, child: const Text('다시 시도')),
         ],
