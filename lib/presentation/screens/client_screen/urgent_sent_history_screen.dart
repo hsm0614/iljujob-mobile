@@ -45,7 +45,7 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
         'clientId': '${widget.clientId}',
         if (widget.jobId != null) 'jobId': '${widget.jobId}',
       };
-      final uri = Uri.parse('$baseUrl/api/direct-messages/sent-history')
+      final uri = Uri.parse('$baseUrl/api/direct-message/sent-history')
           .replace(queryParameters: params);
       final resp = await http.get(uri, headers: {'Authorization': 'Bearer $_token'});
       if (resp.statusCode == 200) {

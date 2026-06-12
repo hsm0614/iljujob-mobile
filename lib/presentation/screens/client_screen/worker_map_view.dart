@@ -385,7 +385,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   Future<List<_Worker>> _fetchWorkers(int jobId) async {
     try {
       final res = await http.get(
-        Uri.parse('$baseUrl/api/direct-messages/nearby-workers?jobId=$jobId&radius=5000'),
+        Uri.parse('$baseUrl/api/direct-message/nearby-workers?jobId=$jobId&radius=5000'),
         headers: _auth,
       ).timeout(const Duration(seconds: 8));
       debugPrint('[MAP][WORKER] API status=${res.statusCode}');
@@ -413,7 +413,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     if (_countCache.containsKey(jobId)) return _countCache[jobId]!;
     try {
       final res = await http.get(
-        Uri.parse('$baseUrl/api/direct-messages/nearby-count?jobId=$jobId&radius=5000'),
+        Uri.parse('$baseUrl/api/direct-message/nearby-count?jobId=$jobId&radius=5000'),
         headers: _auth,
       ).timeout(const Duration(seconds: 6));
       if (res.statusCode == 200) {
