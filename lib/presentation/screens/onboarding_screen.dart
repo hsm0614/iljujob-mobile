@@ -20,22 +20,30 @@ class OnboardingScreen extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 SizedBox(height: size.height * 0.10),
 
                 // 브랜드
                 const _BrandBlock(),
 
-                SizedBox(height: size.height * 0.07),
+                const SizedBox(height: 20),
+
+                // 기능 태그 (단색 아웃라인 필)
+                const _FeatureTags(),
+
+                SizedBox(height: size.height * 0.06),
 
                 // 역할 선택 레이블
-                const Text(
-                  '어떤 분이신가요?',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '어떤 분이신가요?',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
 
@@ -52,7 +60,8 @@ class OnboardingScreen extends StatelessWidget {
                         subtitle: '오늘 일하고\n오늘 받는 단기 알바',
                         badge: null,
                         isHighlighted: false,
-                        onTap: () => Navigator.pushNamed(context, '/signup-choice'),
+                        onTap: () =>
+                            Navigator.pushNamed(context, '/signup-choice'),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -76,13 +85,11 @@ class OnboardingScreen extends StatelessWidget {
 
                 const Spacer(),
 
-                Center(
-                  child: const Text(
-                    '전화번호 인증으로 바로 시작합니다.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textTertiary,
-                    ),
+                const Text(
+                  '전화번호 인증으로 바로 시작합니다.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textTertiary,
                   ),
                 ),
                 const SizedBox(height: 28),
@@ -103,10 +110,9 @@ class _BrandBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return const Column(
       children: [
-        const Text(
+        Text(
           '알바일주',
           style: TextStyle(
             fontFamily: 'Jalnan2TTF',
@@ -115,8 +121,8 @@ class _BrandBlock extends StatelessWidget {
             letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 8),
-        const Text(
+        SizedBox(height: 8),
+        Text(
           '필요한 날, 딱 맞는 알바',
           style: TextStyle(
             fontSize: 15,
@@ -125,6 +131,62 @@ class _BrandBlock extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// 기능 키워드 태그 (아웃라인 필, 단색)
+// ─────────────────────────────────────────────
+class _FeatureTags extends StatelessWidget {
+  const _FeatureTags();
+
+  @override
+  Widget build(BuildContext context) {
+    const tags = ['긴급 호출', '즉시 게시', '일급·주급'];
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (int i = 0; i < tags.length; i++) ...[
+          if (i > 0)
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 6),
+              child: Text(
+                '·',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textTertiary,
+                ),
+              ),
+            ),
+          _Tag(tags[i]),
+        ],
+      ],
+    );
+  }
+}
+
+class _Tag extends StatelessWidget {
+  final String label;
+  const _Tag(this.label);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 11,
+          color: AppColors.textSecondary,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 }
@@ -269,8 +331,10 @@ class _TypeCardState extends State<_TypeCard> {
                 top: -10,
                 right: 12,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 9,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     borderRadius: BorderRadius.circular(AppRadius.full),
