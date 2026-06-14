@@ -648,8 +648,8 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
             children: [
               const SizedBox(height: 16),
               const Text(
-                '알바일주 가입을 환영합니다! 👋',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                '알바일주 가입을 환영합니다',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF191F28)),
               ),
               const SizedBox(height: 8),
               const Text(
@@ -671,7 +671,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                 ),
                 padding: const EdgeInsets.all(16),
                 child: _buildLabeledField(
-                  '📱 휴대폰 번호',
+                  '휴대폰 번호',
                   TextField(
                     controller: _phoneController,
                     keyboardType: TextInputType.phone,
@@ -729,8 +729,8 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
             children: [
               const SizedBox(height: 16),
               const Text(
-                '기본 정보를 입력해주세요 🙋‍♂️',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+                '기본 정보를 입력해주세요',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF191F28)),
               ),
               const SizedBox(height: 12),
               const Text(
@@ -755,7 +755,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildLabeledField(
-                      '👤 이름',
+                      '이름',
                       TextField(
                         controller: _nameController,
                         decoration: _inputDecoration(
@@ -766,7 +766,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      '⚥ 성별',
+                      '성별',
                       style: TextStyle(fontWeight: FontWeight.w700),
                     ),
                     const SizedBox(height: 8),
@@ -805,7 +805,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                     ),
                     const SizedBox(height: 16),
                     _buildLabeledField(
-                      '🎂 출생년도',
+                      '출생년도',
                       TextField(
                         controller: _birthController,
                         keyboardType: TextInputType.number,
@@ -886,7 +886,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        '💪 자신 있는 업무 (2개까지 선택)',
+                        '자신 있는 업무 (2개까지 선택)',
                         style: TextStyle(fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 12),
@@ -952,7 +952,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        '🌟 나를 표현하는 단어',
+                        '나를 표현하는 단어',
                         style: TextStyle(fontWeight: FontWeight.w800),
                       ),
                       const SizedBox(height: 12),

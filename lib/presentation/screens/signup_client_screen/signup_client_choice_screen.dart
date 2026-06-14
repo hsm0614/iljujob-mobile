@@ -218,8 +218,12 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
-                    '사장님, 알바일주 시작하기 🏢',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                    '알바일주 시작하기',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF191F28),
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),

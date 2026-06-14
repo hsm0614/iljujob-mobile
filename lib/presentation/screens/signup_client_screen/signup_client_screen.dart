@@ -529,7 +529,8 @@ final response = await http.post(
               style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  height: 1.3),
+                  height: 1.3,
+                  color: Color(0xFF191F28)),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -541,7 +542,7 @@ final response = await http.post(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('📱 휴대폰 번호',
+                  const Text('휴대폰 번호',
                       style: TextStyle(
                           fontWeight: FontWeight.w700, fontSize: 13)),
                   const SizedBox(height: 8),
@@ -556,7 +557,7 @@ final response = await http.post(
                   // ✅ SMS 모드일 때 인증번호 입력
                   if (_useSmsMode && _smsSent) ...[
                     const SizedBox(height: 12),
-                    const Text('🔑 인증번호',
+                    const Text('인증번호',
                         style: TextStyle(
                             fontWeight: FontWeight.w700, fontSize: 13)),
                     const SizedBox(height: 8),
@@ -674,7 +675,8 @@ final response = await http.post(
               style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w800,
-                  height: 1.3),
+                  height: 1.3,
+                  color: Color(0xFF191F28)),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -687,7 +689,7 @@ final response = await http.post(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('🙋 담당자 이름',
+                  const Text('담당자 이름',
                       style: TextStyle(
                           fontWeight: FontWeight.w700, fontSize: 13)),
                   const SizedBox(height: 8),

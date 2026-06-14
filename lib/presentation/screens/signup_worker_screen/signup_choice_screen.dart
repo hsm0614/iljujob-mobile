@@ -260,8 +260,12 @@ final bool _showProfileSetup = false;
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
-                    '알바일주 시작하기 👋',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                    '알바일주 시작하기',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF191F28),
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
@@ -435,8 +439,8 @@ ChoiceChip(
             // 2) 자신 있는 업무
             // ─────────────────────────────
             const Text(
-              '💪 자신 있는 업무 (2개까지)',
-              style: TextStyle(fontWeight: FontWeight.w800),
+              '자신 있는 업무 (2개까지)',
+              style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF191F28)),
             ),
             const SizedBox(height: 12),
             Wrap(
@@ -467,8 +471,8 @@ ChoiceChip(
             // 3) 나를 표현하는 단어
             // ─────────────────────────────
             const Text(
-              '🌟 나를 표현하는 단어',
-              style: TextStyle(fontWeight: FontWeight.w800),
+              '나를 표현하는 단어',
+              style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF191F28)),
             ),
             const SizedBox(height: 12),
             Wrap(
