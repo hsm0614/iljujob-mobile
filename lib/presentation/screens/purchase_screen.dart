@@ -986,21 +986,72 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
           tabs: const [Tab(text: '즉시 게시'), Tab(text: '긴급 호출')],
         ),
       ),
-      body: TabBarView(
-        controller: _tabCtrl,
+      body: Column(
         children: [
-          _InstantTab(
-            remainingCount: remainingInstant,
-            options: _instantOptions,
-            isPurchasing: _isPurchasing,
-            onSelect: _showInstantConfirmSheet,
-            formatPrice: formatPrice,
-            onSwitchToUrgent: () => _tabCtrl.animateTo(1),
+          // ── 긴급호출 소개 고정 배너 (탭 무관 항상 노출) ──
+          GestureDetector(
+            onTap: () => _tabCtrl.animateTo(1),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: const Color(0xFFFFF5F5),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(7),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFEBEB),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.bolt_rounded, size: 16, color: _red),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '⚡ 긴급 호출 — 갑작스러운 결근, 30분 내 대타 구하기',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Color(0xFFEF4444),
+                          ),
+                        ),
+                        SizedBox(height: 2),
+                        Text(
+                          '반경 5km 알바생에게 직접 메시지 · 응답 0명이면 100% 환급',
+                          style: TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded, size: 18, color: _red),
+                ],
+              ),
+            ),
           ),
-          _UrgentTab(
-            remainingCount: remainingUrgent,
-            isPurchasing: _isPurchasing,
-            onBuy: _showUrgentConfirmSheet,
+          const Divider(height: 1, color: Color(0xFFFFE4E4)),
+          // ── TabBarView ──
+          Expanded(
+            child: TabBarView(
+              controller: _tabCtrl,
+              children: [
+                _InstantTab(
+                  remainingCount: remainingInstant,
+                  options: _instantOptions,
+                  isPurchasing: _isPurchasing,
+                  onSelect: _showInstantConfirmSheet,
+                  formatPrice: formatPrice,
+                  onSwitchToUrgent: () => _tabCtrl.animateTo(1),
+                ),
+                _UrgentTab(
+                  remainingCount: remainingUrgent,
+                  isPurchasing: _isPurchasing,
+                  onBuy: _showUrgentConfirmSheet,
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -1092,65 +1143,8 @@ class _InstantTabState extends State<_InstantTab> {
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-            itemCount: widget.options.length + 1, // +1: 긴급호출 소개 배너
+            itemCount: widget.options.length,
             itemBuilder: (ctx, i) {
-              // 마지막 아이템: 긴급호출 크로스 프로모션
-              if (i == widget.options.length) {
-                return Padding(
-                  padding: const EdgeInsets.only(top: 8),
-                  child: GestureDetector(
-                    onTap: widget.onSwitchToUrgent,
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF5F5),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
-                      ),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFFEBEB),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(Icons.bolt_rounded, color: Color(0xFFEF4444), size: 20),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '⚡ 긴급 호출 이용권도 있어요',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFFEF4444),
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  '알바생이 갑자기 못 나올 때, 반경 5km 내 대기 중인 알바생 최대 10명에게 직접 인앱 메시지를 보낼 수 있어요. ₩7,900 · 응답 0명이면 100% 환급.',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Color(0xFF6B7280),
-                                    height: 1.5,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const Icon(Icons.chevron_right_rounded, color: Color(0xFFEF4444), size: 20),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }
               final opt = widget.options[i];
               final count = opt['count'] as int;
               final price = opt['price'] as int;
