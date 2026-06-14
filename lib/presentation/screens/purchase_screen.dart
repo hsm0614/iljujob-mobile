@@ -995,6 +995,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
             isPurchasing: _isPurchasing,
             onSelect: _showInstantConfirmSheet,
             formatPrice: formatPrice,
+            onSwitchToUrgent: () => _tabCtrl.animateTo(1),
           ),
           _UrgentTab(
             remainingCount: remainingUrgent,
@@ -1016,12 +1017,14 @@ class _InstantTab extends StatefulWidget {
   final bool isPurchasing;
   final void Function(int count, int price) onSelect;
   final String Function(int) formatPrice;
+  final VoidCallback? onSwitchToUrgent;
   const _InstantTab({
     required this.remainingCount,
     required this.options,
     required this.isPurchasing,
     required this.onSelect,
     required this.formatPrice,
+    this.onSwitchToUrgent,
   });
   @override
   State<_InstantTab> createState() => _InstantTabState();
@@ -1089,8 +1092,65 @@ class _InstantTabState extends State<_InstantTab> {
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-            itemCount: widget.options.length,
+            itemCount: widget.options.length + 1, // +1: 긴급호출 소개 배너
             itemBuilder: (ctx, i) {
+              // 마지막 아이템: 긴급호출 크로스 프로모션
+              if (i == widget.options.length) {
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: GestureDetector(
+                    onTap: widget.onSwitchToUrgent,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF5F5),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFEBEB),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.bolt_rounded, color: Color(0xFFEF4444), size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  '⚡ 긴급 호출 이용권도 있어요',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFFEF4444),
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  '알바생이 갑자기 못 나올 때, 반경 5km 내 대기 중인 알바생 최대 10명에게 직접 인앱 메시지를 보낼 수 있어요. ₩7,900 · 응답 0명이면 100% 환급.',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Color(0xFF6B7280),
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.chevron_right_rounded, color: Color(0xFFEF4444), size: 20),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
               final opt = widget.options[i];
               final count = opt['count'] as int;
               final price = opt['price'] as int;
@@ -1315,6 +1375,48 @@ class _UrgentTab extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // 긴급 호출 소개
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '긴급 호출이란?',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF191F28),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '알바생이 갑자기 결근하거나 급하게 인력이 필요할 때 사용하는 기능이에요. 공고 위치 기준 반경 5km 내 활동 중인 알바생에게 사장님이 직접 인앱 메시지를 보낼 수 있어요.',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF6B7280),
+                          height: 1.55,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Row(
+                        children: [
+                          _MiniChip('즉시 노출'),
+                          SizedBox(width: 6),
+                          _MiniChip('24시간 상단 고정'),
+                          SizedBox(width: 6),
+                          _MiniChip('개인정보 비노출'),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
                 // 잔여 배너
                 Container(
                   width: double.infinity,
@@ -1540,6 +1642,27 @@ class _UrgentTab extends StatelessWidget {
 // ════════════════════════════════════════════════════════
 // 공용 위젯
 // ════════════════════════════════════════════════════════
+class _MiniChip extends StatelessWidget {
+  final String label;
+  const _MiniChip(this.label);
+  @override
+  Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFEBEB),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFFEF4444),
+          ),
+        ),
+      );
+}
+
 class _BottomCta extends StatelessWidget {
   final bool isSelected;
   final bool isPurchasing;
