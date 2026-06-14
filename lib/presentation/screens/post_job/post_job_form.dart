@@ -23,6 +23,7 @@ import 'package:iljujob/presentation/screens/client_screen/wage_report_screen.da
 import 'package:iljujob/presentation/screens/purchase_screen.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:iljujob/config/app_theme.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 // 2026년 적용 최저시급
 const int minWagePerHour = 10320;
@@ -157,7 +158,7 @@ class _PostJobFormState extends State<PostJobForm>
   String _longTermMode = '요일 지정';
   String _negotiationText = '';
   TimeOfDay? _startTime, _endTime;
-  String _payType = '일급';
+  String _payType = '시급';
   int _pay = 0;
   bool _isSameDayPay = false;
   // 장기 공고 전용
@@ -569,6 +570,18 @@ class _PostJobFormState extends State<PostJobForm>
   void _validatePay() {
     if (_pay <= 0) {
       setState(() => _payWarning = null);
+      return;
+    }
+
+    // ── 시급: 직접 시급 검증
+    if (_payType == '시급') {
+      setState(
+        () =>
+            _payWarning =
+                _pay >= minWagePerHour
+                    ? null
+                    : '최저시급 미달 · 최소 ${NumberFormat('#,###').format(minWagePerHour)}원 이상',
+      );
       return;
     }
 
@@ -1101,7 +1114,7 @@ class _PostJobFormState extends State<PostJobForm>
         _negoCtrl.text = _negotiationText;
         _startTime = _parseTime(d['startTime']?.toString());
         _endTime = _parseTime(d['endTime']?.toString());
-        _payType = d['payType']?.toString() ?? '일급';
+        _payType = d['payType']?.toString() ?? '시급';
         _pay = d['pay'] as int? ?? 0;
         _payCtrl.text = _pay > 0 ? NumberFormat('#,###').format(_pay) : '';
         _isSameDayPay = d['isSameDayPay'] as bool? ?? false;
@@ -1120,30 +1133,85 @@ class _PostJobFormState extends State<PostJobForm>
     final raw = prefs.getString(_draftKey);
     if (raw == null || raw.isEmpty || !mounted) return;
 
-    final shouldRestore = await showDialog<bool>(
+    final shouldRestore = await showModalBottomSheet<bool>(
       context: context,
-      barrierDismissible: false,
-      builder:
-          (dialogContext) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
-            title: const Text('작성 중인 공고가 있어요'),
-            content: const Text(
-              '이전에 입력하던 내용을 이어서 작성할까요?',
-              style: TextStyle(color: AppColors.textSecondary),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext, false),
-                child: const Text('새로 시작'),
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      isDismissible: false,
+      enableDrag: false,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.black12,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                ),
               ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(dialogContext, true),
-                child: const Text('이어서 작성'),
+              const SizedBox(height: 20),
+              const Text(
+                '✏️ 작성 중인 공고가 있어요',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
               ),
+              const SizedBox(height: 8),
+              const Text(
+                '이전에 입력하던 내용을 이어서 작성할까요?',
+                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('새로 시작'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        '이어서 작성',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
             ],
           ),
+        ),
+      ),
     );
 
     if (shouldRestore == true) {
@@ -1804,7 +1872,7 @@ class _PostJobFormState extends State<PostJobForm>
               _isShortTerm,
               () => setState(() {
                 _isShortTerm = true;
-                if (_payType == '월급') _payType = '일급';
+                if (_payType == '월급') _payType = '시급';
               }),
             ),
             const SizedBox(width: 10),
@@ -1825,11 +1893,112 @@ class _PostJobFormState extends State<PostJobForm>
         if (_isShortTerm) ...[
           GestureDetector(
             onTap: () async {
-              final picked = await showDatePicker(
+              DateTime focused = _startDate ?? today;
+              DateTime? selected = _startDate;
+              final picked = await showModalBottomSheet<DateTime>(
                 context: context,
-                initialDate: _startDate ?? today,
-                firstDate: today,
-                lastDate: today.add(const Duration(days: 365)),
+                backgroundColor: Colors.white,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                isScrollControlled: true,
+                builder: (ctx) {
+                  return StatefulBuilder(
+                    builder: (ctx, set) => SafeArea(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const SizedBox(height: 12),
+                          Container(
+                            width: 40,
+                            height: 4,
+                            decoration: BoxDecoration(
+                              color: Colors.black12,
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            '근무 날짜 선택',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: _text,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          TableCalendar(
+                            locale: 'ko_KR',
+                            focusedDay: focused,
+                            firstDay: today,
+                            lastDay: today.add(const Duration(days: 365)),
+                            selectedDayPredicate: (d) => isSameDay(d, selected),
+                            onDaySelected: (d, f) => set(() {
+                              selected = DateTime(d.year, d.month, d.day);
+                              focused = d;
+                            }),
+                            onPageChanged: (f) => set(() => focused = f),
+                            calendarStyle: const CalendarStyle(
+                              todayDecoration: BoxDecoration(
+                                color: Color(0xFFCCDEFF),
+                                shape: BoxShape.circle,
+                              ),
+                              todayTextStyle: TextStyle(
+                                color: _blue,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              selectedDecoration: BoxDecoration(
+                                color: _blue,
+                                shape: BoxShape.circle,
+                              ),
+                              selectedTextStyle: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                              ),
+                              weekendTextStyle: TextStyle(color: Color(0xFFEF4444)),
+                            ),
+                            headerStyle: const HeaderStyle(
+                              formatButtonVisible: false,
+                              titleCentered: true,
+                              titleTextStyle: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: _text,
+                              ),
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: selected == null
+                                    ? null
+                                    : () => Navigator.pop(ctx, selected),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _blue,
+                                  foregroundColor: Colors.white,
+                                  disabledBackgroundColor: _border,
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text(
+                                  '선택 완료',
+                                  style: TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               );
               if (picked != null) {
                 setState(() {
@@ -1869,7 +2038,7 @@ class _PostJobFormState extends State<PostJobForm>
                         Text(
                           _startDate != null
                               ? df.format(_startDate!)
-                              : '날짜를 입력해주세요',
+                              : '날짜를 선택해주세요',
                           style: TextStyle(
                             fontSize: 15,
                             color: _startDate != null ? _text : _label,
@@ -2294,9 +2463,9 @@ class _PostJobFormState extends State<PostJobForm>
         // ── 급여 유형 탭
         Row(
           children:
-              (_isShortTerm ? ['일급', '주급'] : ['월급', '일급', '주급']).map((t) {
+              (_isShortTerm ? ['시급', '일급', '주급'] : ['시급', '월급', '일급', '주급']).map((t) {
                 final sel = _payType == t;
-                final types = _isShortTerm ? ['일급', '주급'] : ['월급', '일급', '주급'];
+                final types = _isShortTerm ? ['시급', '일급', '주급'] : ['시급', '월급', '일급', '주급'];
                 final isLast = t == types.last;
                 return Expanded(
                   child: Padding(
@@ -2346,11 +2515,15 @@ class _PostJobFormState extends State<PostJobForm>
                     ? '예) 2,500,000'
                     : _payType == '주급'
                     ? '예) 412,800'
+                    : _payType == '시급'
+                    ? '예) 10,320'
                     : '예) 100,000',
-            suffixText: '원',
+            suffixText: _payType == '시급' ? '원/시간' : '원',
             helperText:
                 _payType == '월급'
                     ? '최저 2,156,880원 이상 (209h 기준)'
+                    : _payType == '시급'
+                    ? '2026년 기준 최저시급 ${fmt.format(minWagePerHour)}원'
                     : '최저 ${fmt.format(minWagePerHour)}원/시간 이상',
             filled: true,
             fillColor: _bg,
@@ -3338,11 +3511,12 @@ class _PublishSheetState extends State<_PublishSheet> {
             ),
             const SizedBox(height: 20),
             const Text(
-              '마지막으로 등록 방식을 선택해주세요',
+              '마지막으로\n등록 방식을 선택해주세요',
               style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
+                fontSize: 22,
+                fontFamily: 'Jalnan2TTF',
                 color: _text,
+                height: 1.35,
               ),
             ),
             const SizedBox(height: 4),
@@ -3384,6 +3558,121 @@ class _PublishSheetState extends State<_PublishSheet> {
             ],
             const SizedBox(height: 20),
             if (!_confirming) ...[
+              // ── 긴급호출 (최우선 CTA)
+              GestureDetector(
+                onTap: widget.urgentPassCount > 0
+                    ? widget.onUrgentSubmit
+                    : widget.onBuyPass,
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: widget.urgentPassCount > 0
+                          ? [const Color(0xFFEF4444), const Color(0xFFDC2626)]
+                          : [const Color(0xFFF87171), const Color(0xFFEF4444)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.30),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(9),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.20),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(
+                          Icons.bolt_rounded,
+                          size: 22,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Text(
+                                  '긴급 호출',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                const SizedBox(width: 7),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.25),
+                                    borderRadius: BorderRadius.circular(99),
+                                  ),
+                                  child: Text(
+                                    widget.urgentPassCount > 0
+                                        ? '${widget.urgentPassCount}회 보유'
+                                        : '이용권 없음',
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              widget.urgentPassCount > 0
+                                  ? '즉시 노출 · 반경 5km 알바생 최대 10명 · 무응답 100% 환급'
+                                  : '이용권을 구매하면 즉시 노출 + 알바생 직접 호출 가능',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white.withValues(alpha: 0.88),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  const Expanded(child: Divider(color: _border)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      '또는 일반 등록',
+                      style: const TextStyle(fontSize: 12, color: _sub),
+                    ),
+                  ),
+                  const Expanded(child: Divider(color: _border)),
+                ],
+              ),
+              const SizedBox(height: 16),
               _CompareCard(
                 paidPassCount: widget.paidPassCount,
                 passCountLoading: widget.passCountLoading,
@@ -3396,91 +3685,6 @@ class _PublishSheetState extends State<_PublishSheet> {
                   setState(() => _boosterSelected = true);
                 },
               ),
-              if (widget.urgentPassCount > 0) ...[
-                const SizedBox(height: 12),
-                GestureDetector(
-                  onTap: widget.onUrgentSubmit,
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFFFF0F0),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: const Color(0xFFEF4444),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEF4444),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            Icons.bolt_rounded,
-                            size: 20,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Text(
-                                    '⚡ 긴급 호출',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w800,
-                                      color: Color(0xFFEF4444),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 7,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFEF4444),
-                                      borderRadius: BorderRadius.circular(99),
-                                    ),
-                                    child: Text(
-                                      '${widget.urgentPassCount}회 보유',
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        fontWeight: FontWeight.w700,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 2),
-                              const Text(
-                                '즉시 노출 + 반경 5km 알바생 최대 10명 · 무응답 시 100% 환급',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Color(0xFF991B1B),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(
-                          Icons.chevron_right_rounded,
-                          color: Color(0xFFEF4444),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
               if (_boosterSelected == true) ...[
                 const SizedBox(height: 20),
                 const Divider(height: 1),

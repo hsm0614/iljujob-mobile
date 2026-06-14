@@ -2218,6 +2218,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           labelColor: AppColors.textPrimary,
           unselectedLabelColor: AppColors.textTertiary,
           indicatorColor: AppColors.primary,
+          labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
           tabs: const [Tab(text: '전체'), Tab(text: '일급'), Tab(text: '주급')],
         ),
         actions: [
