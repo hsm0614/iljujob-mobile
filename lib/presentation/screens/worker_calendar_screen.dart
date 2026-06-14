@@ -7,9 +7,8 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_slidable/flutter_slidable.dart';
-
 import '../../config/constants.dart';
+import '../../data/models/job.dart';
 import '../widgets/albailju_common.dart';
 
 // =====================
@@ -231,7 +230,10 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     return 'manual';
   }
 
-  bool _isJobSource(Map<String, dynamic> it) => _sourceOf(it) == 'job';
+  bool _isJobSource(Map<String, dynamic> it) {
+    final s = _sourceOf(it);
+    return s == 'job' || s == 'confirmation';
+  }
 
   dynamic _idOf(Map<String, dynamic> it) =>
       it['id'] ??
@@ -969,16 +971,17 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                _pill(
-                  label: overdue > 0 ? '확인 필요 $overdue건' : '정상',
-                  bg:
-                      overdue > 0
-                          ? const Color(0xFFFFF7ED)
-                          : const Color(0xFFDCFCE7),
-                  fg:
-                      overdue > 0
-                          ? const Color(0xFF9A3412)
-                          : const Color(0xFF166534),
+                GestureDetector(
+                  onTap: _showOverdueSheet,
+                  child: _pill(
+                    label: overdue > 0 ? '확인 필요 $overdue건  ?' : '정상  ?',
+                    bg: overdue > 0
+                        ? const Color(0xFFFFF7ED)
+                        : const Color(0xFFDCFCE7),
+                    fg: overdue > 0
+                        ? const Color(0xFF9A3412)
+                        : const Color(0xFF166534),
+                  ),
                 ),
               ],
             ),
@@ -1148,12 +1151,11 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
             if (scheduled <= 0 && completed <= 0)
               return const SizedBox.shrink();
 
-            // 완료만 있으면 초록, 예정만 있으면 파랑, 둘 다 있으면 파랑 (예정 우선 표시)
             final showAmount = scheduled > 0 ? scheduled : completed;
-            final markerColor =
-                completed > 0 && scheduled == 0
-                    ? const Color(0xFF16A34A) // 완료 → 초록
-                    : kBrandBlue; // 예정(혹은 혼재) → 파랑
+            final markerColor = completed > 0 && scheduled == 0
+                ? const Color(0xFF16A34A)
+                : kBrandBlue;
+            final isSelected = isSameDay(day, _selectedDay);
 
             return Align(
               alignment: Alignment.bottomCenter,
@@ -1161,14 +1163,16 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                 margin: const EdgeInsets.only(bottom: 3),
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: markerColor.withOpacity(0.12),
+                  color: isSelected
+                      ? Colors.white.withOpacity(0.30)
+                      : markerColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   NumberFormat.compact(locale: 'ko_KR').format(showAmount),
                   style: TextStyle(
                     fontSize: 10,
-                    color: markerColor,
+                    color: isSelected ? Colors.white : markerColor,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -1222,83 +1226,20 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
       );
     }
 
-    final hasJob = list.any(_isJobSource);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 헤더
-        LayoutBuilder(
-          builder: (context, c) {
-            final narrow = c.maxWidth < 320;
-            return Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w900,
-                      color: kText,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Icon(
-                  Icons.swipe_left_rounded,
-                  size: 18,
-                  color: kBrandBlue,
-                ),
-                const SizedBox(width: 6),
-                if (!narrow)
-                  Flexible(
-                    child: Text(
-                      hasJob ? '공고 일정은 수정이 안 돼요 (완료/삭제만 가능)' : '밀어서 완료/수정/삭제',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF6B7280),
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-              ],
-            );
-          },
-        ),
-
-        // 공고 안내 배너
-        if (hasJob) ...[
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFEFF6FF),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFC7D2FE)),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.info_outline_rounded, size: 18, color: kBrandBlue),
-                SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    '공고로 들어온 일정은 회사 정보라서 수정이 어려워요 🙂\n완료 처리하거나, 삭제로 정리해주세요!',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF1D4ED8),
-                      fontWeight: FontWeight.w900,
-                      height: 1.35,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+        Text(
+          title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            color: kText,
           ),
-        ],
+        ),
         const SizedBox(height: 10),
 
         ListView.separated(
@@ -1314,7 +1255,8 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
 
   Widget _buildSessionCard(Map<String, dynamic> it) {
     final source = _sourceOf(it);
-    final isJob = source == 'job';
+    final isJob = _isJobSource(it);
+    final isConfirmation = source == 'confirmation';
     final cancelled = _isCancelled(it);
     final completed = (it['status'] ?? '').toString() == _kCompleted;
     final amount = _amount(it);
@@ -1323,186 +1265,329 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     final start = (it['start_time'] ?? it['start_at'] ?? '').toString();
     final end = (it['end_time'] ?? it['end_at'] ?? '').toString();
 
-    final badgeText =
-        completed
-            ? '완료'
-            : cancelled
-            ? '취소됨'
-            : '예정';
-    final badgeBg =
-        completed
-            ? const Color(0xFFDCFCE7)
-            : cancelled
+    final badgeText = completed ? '완료' : cancelled ? '취소됨' : '예정';
+    final badgeBg = completed
+        ? const Color(0xFFDCFCE7)
+        : cancelled
             ? const Color(0xFFF3F4F6)
-            : kBrandBlue.withOpacity(0.12);
-    final badgeFg =
-        completed
-            ? const Color(0xFF166534)
-            : cancelled
+            : const Color(0xFFEFF6FF);
+    final badgeFg = completed
+        ? const Color(0xFF166534)
+        : cancelled
             ? const Color(0xFF6B7280)
             : kBrandBlue;
 
-    return Slidable(
-      key: ValueKey('$source-${_idOf(it)}'),
-      endActionPane: ActionPane(
-        motion: const StretchMotion(),
-        extentRatio: isJob ? 0.46 : 0.70,
-        children: [
-          SlidableAction(
-            onPressed: (_) => _markCompleted(it),
-            backgroundColor: const Color(0xFF16A34A),
-            foregroundColor: Colors.white,
-            icon: Icons.check_circle_rounded,
-            label: '완료',
-          ),
-          if (!isJob)
-            SlidableAction(
-              onPressed: (_) => _openEditSheet(item: it),
-              backgroundColor: kBrandBlue,
-              foregroundColor: Colors.white,
-              icon: Icons.edit_rounded,
-              label: '수정',
+    return Opacity(
+      opacity: cancelled ? 0.68 : 1.0,
+      child: Container(
+        decoration: BoxDecoration(
+          color: const Color(0xFFF4F6FA),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: kBorder),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.035),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
             ),
-          SlidableAction(
-            onPressed: (_) => _deleteSession(it),
-            backgroundColor: const Color(0xFFDC2626),
-            foregroundColor: Colors.white,
-            icon: Icons.delete_rounded,
-            label: '삭제',
-          ),
-        ],
+          ],
+        ),
+        child: Column(
+          children: [
+            // ── 메인 내용 (탭 → 잡디테일 or 수정 시트)
+            InkWell(
+              onTap: () {
+                if (isJob) {
+                  _navigateToJobDetail(it);
+                } else {
+                  _openEditSheet(item: it);
+                }
+              },
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEFF6FF),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: const Icon(Icons.event_note_rounded, color: kBrandBlue, size: 22),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            jobTitle.isEmpty ? '공고' : jobTitle,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: kText),
+                          ),
+                          const SizedBox(height: 3),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  company,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 12, color: kMuted, fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                              if (start.isNotEmpty || end.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                Text(
+                                  '${start.isEmpty ? '--:--' : start}~${end.isEmpty ? '--:--' : end}',
+                                  style: const TextStyle(fontSize: 11, color: kMuted, fontWeight: FontWeight.w700),
+                                ),
+                              ],
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              _pill(label: badgeText, bg: badgeBg, fg: badgeFg),
+                              if (isJob) ...[
+                                const SizedBox(width: 6),
+                                _pill(
+                                  label: isConfirmation ? '채팅확정' : '공고',
+                                  bg: const Color(0xFFF3F4F6),
+                                  fg: const Color(0xFF6B7280),
+                                ),
+                              ],
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    '${NumberFormat('#,###').format(amount)}원',
+                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: kText),
+                                  ),
+                                ),
+                              ),
+                              if (isJob)
+                                const Icon(Icons.open_in_new_rounded, size: 14, color: kMuted),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // ── 액션 버튼 행
+            const Divider(height: 1, thickness: 1),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              child: Row(
+                children: [
+                  if (!completed && !cancelled)
+                    _actionBtn(
+                      icon: Icons.check_circle_outline_rounded,
+                      label: '완료',
+                      color: const Color(0xFF16A34A),
+                      onTap: () => _markCompleted(it),
+                    ),
+                  if (!isJob && !completed && !cancelled)
+                    _actionBtn(
+                      icon: Icons.edit_outlined,
+                      label: '수정',
+                      color: kBrandBlue,
+                      onTap: () => _openEditSheet(item: it),
+                    ),
+                  const Spacer(),
+                  _actionBtn(
+                    icon: Icons.delete_outline_rounded,
+                    label: '삭제',
+                    color: const Color(0xFFDC2626),
+                    onTap: () => _deleteSession(it),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
-      child: InkWell(
-        onTap: () {
-          if (isJob) {
-            _snack('공고 일정은 수정할 수 없어요 🙂\n(완료/삭제만 가능해요)');
-            return;
-          }
-          _openEditSheet(item: it);
-        },
-        borderRadius: BorderRadius.circular(18),
-        child: Opacity(
-          opacity: cancelled ? 0.68 : 1.0,
-          child: Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF4F6FA),
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: kBorder),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.035),
-                  blurRadius: 14,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                // 아이콘
-                Container(
-                  width: 46,
-                  height: 46,
+    );
+  }
+
+  Widget _actionBtn({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 15, color: color),
+            const SizedBox(width: 4),
+            Text(label, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w700)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _navigateToJobDetail(Map<String, dynamic> it) async {
+    final rawId = it['job_id'];
+    if (rawId == null) {
+      _snack('공고 정보가 없어요.');
+      return;
+    }
+    final jobId = rawId is int ? rawId : int.tryParse('$rawId');
+    if (jobId == null) return;
+
+    try {
+      final token = await _token();
+      final resp = await http.get(
+        Uri.parse('$baseUrl/api/job/$jobId'),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+      if (!mounted) return;
+      if (resp.statusCode == 200) {
+        final decoded = jsonDecode(resp.body);
+        final Map<String, dynamic> raw = decoded is Map
+            ? (decoded['job'] as Map<String, dynamic>? ?? Map<String, dynamic>.from(decoded))
+            : {};
+        if (raw.isEmpty) { _snack('공고 정보를 불러오지 못했어요.'); return; }
+        final job = Job.fromJson(raw);
+        if (!mounted) return;
+        Navigator.of(context).pushNamed('/job-detail', arguments: job);
+      } else {
+        _snack('공고 정보를 불러오지 못했어요.');
+      }
+    } catch (_) {
+      _snack('공고 정보를 불러오는 중 오류가 났어요.');
+    }
+  }
+
+  void _showOverdueSheet() {
+    final scheduled = _scheduledTotal;
+    final completed = _completedTotal;
+    final scheduledCount = _scheduledSessionCount;
+    final completedCount = _completedSessionCount;
+    final overdue = _overdueScheduledCount;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        final safeBottom = MediaQuery.of(ctx).padding.bottom;
+        return Container(
+          margin: const EdgeInsets.fromLTRB(14, 0, 14, 14),
+          padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + safeBottom),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: kBorder),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.10),
+                blurRadius: 30,
+                offset: const Offset(0, 12),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 5,
                   decoration: BoxDecoration(
-                    color: kBrandBlue.withOpacity(0.10),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(
-                    Icons.event_note_rounded,
-                    color: kBrandBlue,
+                    color: const Color(0xFFE5E7EB),
+                    borderRadius: BorderRadius.circular(999),
                   ),
                 ),
-                const SizedBox(width: 12),
-                // 내용
-                Expanded(
-                  child: Column(
+              ),
+              const SizedBox(height: 16),
+              const Text('이번달 근무 현황',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: kText)),
+              const SizedBox(height: 14),
+              _summaryRow('예정', scheduledCount, scheduled, kBrandBlue),
+              const SizedBox(height: 8),
+              _summaryRow('완료', completedCount, completed, const Color(0xFF16A34A)),
+              const Divider(height: 20),
+              _summaryRow('합계', scheduledCount + completedCount, scheduled + completed, kText, bold: true),
+              if (overdue > 0) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF7ED),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFFED7AA)),
+                  ),
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        jobTitle.isEmpty ? '공고' : jobTitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w900,
-                          color: kText,
+                    children: const [
+                      Icon(Icons.info_outline_rounded, color: Color(0xFFF97316), size: 17),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '확인 필요 = 날짜가 지났는데 아직 완료 처리가 안 된 근무예요.\n실제로 일했다면 아래 목록에서 완료 버튼을 눌러주세요.',
+                          style: TextStyle(
+                            fontSize: 12, color: Color(0xFF9A3412),
+                            height: 1.45, fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              company,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: kMuted,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                          if (start.isNotEmpty || end.isNotEmpty) ...[
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                '${start.isEmpty ? '--:--' : start} ~ ${end.isEmpty ? '--:--' : end}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  color: kMuted,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          _pill(label: badgeText, bg: badgeBg, fg: badgeFg),
-                          if (isJob) ...[
-                            const SizedBox(width: 8),
-                            _pill(
-                              label: '공고',
-                              bg: const Color(0xFFF3F4F6),
-                              fg: const Color(0xFF6B7280),
-                            ),
-                          ],
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: FittedBox(
-                              // ✅ 긴 금액 오버플로우 방지
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                '${NumberFormat('#,###').format(amount)}원',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w900,
-                                  color: kText,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 8),
-                const Icon(
-                  Icons.chevron_right_rounded,
-                  color: Color(0xFF9CA3AF),
-                ),
               ],
-            ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _summaryRow(String label, int count, int amount, Color color, {bool bold = false}) {
+    return Row(
+      children: [
+        Container(
+          width: 8, height: 8,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            color: bold ? kText : kMuted,
+            fontWeight: bold ? FontWeight.w900 : FontWeight.w700,
           ),
         ),
-      ),
+        const Spacer(),
+        Text('$count건',
+            style: const TextStyle(fontSize: 13, color: kMuted, fontWeight: FontWeight.w700)),
+        const SizedBox(width: 16),
+        Text(
+          '${NumberFormat('#,###').format(amount)}원',
+          style: TextStyle(
+            fontSize: 14,
+            color: bold ? kText : color,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ],
     );
   }
 
