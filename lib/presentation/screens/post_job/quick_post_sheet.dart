@@ -360,15 +360,20 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
       final isDelayed = !isPaid && result['status'] == 'reserved';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(isDelayed
-              ? '공고가 등록되었어요. 12시간 후 노출됩니다.'
-              : '공고가 즉시 노출됩니다!'),
-          backgroundColor: isDelayed ? const Color(0xFF6B7280) : const Color(0xFF22C55E),
+          content: Text(
+            isDelayed ? '공고가 등록되었어요. 12시간 후 노출됩니다.' : '공고가 즉시 노출됩니다!',
+          ),
+          backgroundColor:
+              isDelayed ? const Color(0xFF6B7280) : const Color(0xFF22C55E),
         ),
       );
 
       if (userType == 'client') {
-        Navigator.pushNamedAndRemoveUntil(context, '/client_main', (_) => false);
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/client_main',
+          (_) => false,
+        );
       } else {
         Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
       }
@@ -402,7 +407,11 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
             children: [
               const Text(
                 '등록 방식 선택',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: _blue),
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                  color: _blue,
+                ),
               ),
               const SizedBox(height: 6),
               const Text(
@@ -431,10 +440,11 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
               _OptionCard(
                 icon: Icons.bolt_rounded,
                 title: '즉시 게시',
-                desc: '즉시 노출 + 상단 고정',
-                badge: _passLoading
-                    ? '조회중…'
-                    : _paidPassCount > 0
+                desc: '12시간 대기 없이 즉시 노출',
+                badge:
+                    _passLoading
+                        ? '조회중…'
+                        : _paidPassCount > 0
                         ? '이용권 $_paidPassCount개'
                         : '₩4,900',
                 badgeOk: _paidPassCount > 0,

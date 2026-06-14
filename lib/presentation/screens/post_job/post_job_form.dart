@@ -3545,7 +3545,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '근무지 반경 3km 내 오늘 가능한 알바생 ${widget.availableWorkersCount}명',
+                      '근무지 반경 5km 내 오늘 가능한 알바생 ${widget.availableWorkersCount}명',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,

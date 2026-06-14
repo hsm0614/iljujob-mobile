@@ -48,10 +48,14 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
   Future<void> _fetchWorkers() async {
     setState(() => _loading = true);
     try {
-      final resp = await http.get(
-        Uri.parse('$baseUrl/api/direct-message/nearby-workers?jobId=${widget.jobId}'),
-        headers: {'Authorization': 'Bearer ${await _token()}'},
-      ).timeout(const Duration(seconds: 10));
+      final resp = await http
+          .get(
+            Uri.parse(
+              '$baseUrl/api/direct-message/nearby-workers?jobId=${widget.jobId}',
+            ),
+            headers: {'Authorization': 'Bearer ${await _token()}'},
+          )
+          .timeout(const Duration(seconds: 10));
       if (resp.statusCode == 200) {
         final body = jsonDecode(resp.body);
         setState(() {
@@ -116,16 +120,16 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
 
   String _gradeLabel(int score) {
     if (score >= 100) return 'S';
-    if (score >= 70)  return 'A';
-    if (score >= 40)  return 'B';
-    if (score >= 20)  return 'C';
+    if (score >= 70) return 'A';
+    if (score >= 40) return 'B';
+    if (score >= 20) return 'C';
     return 'N';
   }
 
   Color _gradeColor(int score) {
     if (score >= 100) return const Color(0xFFFF9500);
-    if (score >= 70)  return AppColors.primary;
-    if (score >= 40)  return const Color(0xFF22C55E);
+    if (score >= 70) return AppColors.primary;
+    if (score >= 40) return const Color(0xFF22C55E);
     return const Color(0xFF9CA3AF);
   }
 
@@ -148,7 +152,8 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
     DateTime? dt;
     if (raw is String) {
       dt = DateTime.tryParse(raw) ?? DateTime.tryParse('${raw}Z');
-      if (dt != null && !raw.endsWith('Z') && !raw.contains('+')) dt = dt.toLocal();
+      if (dt != null && !raw.endsWith('Z') && !raw.contains('+'))
+        dt = dt.toLocal();
     }
     if (dt == null) return '1개월+ 전 접속';
     final diff = DateTime.now().difference(dt.toLocal());
@@ -163,7 +168,9 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
   void _openProfile(int workerId) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => WorkerProfileScreen(workerId: workerId)),
+      MaterialPageRoute(
+        builder: (_) => WorkerProfileScreen(workerId: workerId),
+      ),
     );
   }
 
@@ -182,8 +189,23 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('긴급 호출', style: TextStyle(fontFamily: 'Jalnan2TTF', fontSize: 17, fontWeight: FontWeight.w900, color: AppColors.primary)),
-            Text(widget.jobTitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w400)),
+            const Text(
+              '긴급 호출',
+              style: TextStyle(
+                fontFamily: 'Jalnan2TTF',
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+                color: AppColors.primary,
+              ),
+            ),
+            Text(
+              widget.jobTitle,
+              style: const TextStyle(
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
           ],
         ),
         bottom: PreferredSize(
@@ -191,17 +213,20 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
           child: Container(height: 1, color: AppColors.border),
         ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
-          : _workers.isEmpty
+      body:
+          _loading
+              ? const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              )
+              : _workers.isEmpty
               ? _buildEmpty()
               : Column(
-                  children: [
-                    _buildHeader(),
-                    Expanded(child: _buildList()),
-                    _buildBottomBar(),
-                  ],
-                ),
+                children: [
+                  _buildHeader(),
+                  Expanded(child: _buildList()),
+                  _buildBottomBar(),
+                ],
+              ),
     );
   }
 
@@ -219,11 +244,19 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.people_alt_rounded, size: 14, color: Color(0xFFFF9500)),
+                const Icon(
+                  Icons.people_alt_rounded,
+                  size: 14,
+                  color: Color(0xFFFF9500),
+                ),
                 const SizedBox(width: 4),
                 Text(
                   '반경 5km 내 ${_workers.length}명',
-                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFFFF9500)),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFFF9500),
+                  ),
                 ),
               ],
             ),
@@ -231,7 +264,10 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
           const Spacer(),
           Text(
             '최대 $_maxSelect명 선택',
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
           ),
         ],
       ),
@@ -245,13 +281,16 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
       separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemBuilder: (context, i) {
         final w = _workers[i];
-        final id = w['id'] is int ? w['id'] as int : int.tryParse('${w['id']}') ?? 0;
-        final score = (w['activity_score'] is num)
-            ? (w['activity_score'] as num).toInt()
-            : int.tryParse('${w['activity_score'] ?? 0}') ?? 0;
-        final distance = (w['distance_m'] is num)
-            ? w['distance_m'] as num
-            : double.tryParse('${w['distance_m'] ?? ''}');
+        final id =
+            w['id'] is int ? w['id'] as int : int.tryParse('${w['id']}') ?? 0;
+        final score =
+            (w['activity_score'] is num)
+                ? (w['activity_score'] as num).toInt()
+                : int.tryParse('${w['activity_score'] ?? 0}') ?? 0;
+        final distance =
+            (w['distance_m'] is num)
+                ? w['distance_m'] as num
+                : double.tryParse('${w['distance_m'] ?? ''}');
         final grade = _gradeLabel(score);
         final gradeColor = _gradeColor(score);
         final isSelected = _selected.contains(id);
@@ -260,7 +299,8 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
         final rawName = w['name']?.toString();
         final maskedName = _maskName(rawName);
         final alreadySent = w['already_sent'] == 1 || w['already_sent'] == true;
-        final availableToday = w['available_today'] == 1 || w['available_today'] == true;
+        final availableToday =
+            w['available_today'] == 1 || w['available_today'] == true;
 
         return GestureDetector(
           onTap: () {
@@ -284,16 +324,18 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
             duration: const Duration(milliseconds: 150),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: alreadySent
-                  ? const Color(0xFFF9FAFB)
-                  : isSelected
+              color:
+                  alreadySent
+                      ? const Color(0xFFF9FAFB)
+                      : isSelected
                       ? AppColors.primary.withValues(alpha: 0.06)
                       : Colors.white,
               borderRadius: BorderRadius.circular(AppRadius.lg),
               border: Border.all(
-                color: alreadySent
-                    ? const Color(0xFFE5E7EB)
-                    : isSelected
+                color:
+                    alreadySent
+                        ? const Color(0xFFE5E7EB)
+                        : isSelected
                         ? AppColors.primary
                         : AppColors.border,
                 width: isSelected && !alreadySent ? 1.5 : 1,
@@ -310,13 +352,21 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                     shape: BoxShape.circle,
                     color: isSelected ? AppColors.primary : Colors.transparent,
                     border: Border.all(
-                      color: isSelected ? AppColors.primary : const Color(0xFFD1D5DB),
+                      color:
+                          isSelected
+                              ? AppColors.primary
+                              : const Color(0xFFD1D5DB),
                       width: 1.5,
                     ),
                   ),
-                  child: isSelected
-                      ? const Icon(Icons.check_rounded, size: 13, color: Colors.white)
-                      : null,
+                  child:
+                      isSelected
+                          ? const Icon(
+                            Icons.check_rounded,
+                            size: 13,
+                            color: Colors.white,
+                          )
+                          : null,
                 ),
                 const SizedBox(width: 12),
 
@@ -324,12 +374,19 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                 CircleAvatar(
                   radius: 22,
                   backgroundColor: AppColors.bgMuted,
-                  backgroundImage: w['profile_image_url'] != null
-                      ? NetworkImage(w['profile_image_url']) as ImageProvider
-                      : null,
-                  child: w['profile_image_url'] == null
-                      ? const Icon(Icons.person_rounded, color: AppColors.textSecondary, size: 22)
-                      : null,
+                  backgroundImage:
+                      w['profile_image_url'] != null
+                          ? NetworkImage(w['profile_image_url'])
+                              as ImageProvider
+                          : null,
+                  child:
+                      w['profile_image_url'] == null
+                          ? const Icon(
+                            Icons.person_rounded,
+                            color: AppColors.textSecondary,
+                            size: 22,
+                          )
+                          : null,
                 ),
                 const SizedBox(width: 12),
 
@@ -345,34 +402,51 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: alreadySent ? const Color(0xFF9CA3AF) : const Color(0xFF111827),
+                              color:
+                                  alreadySent
+                                      ? const Color(0xFF9CA3AF)
+                                      : const Color(0xFF111827),
                             ),
                           ),
                           if (availableToday && !alreadySent) ...[
                             const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.primary,
                                 borderRadius: BorderRadius.circular(99),
                               ),
                               child: const Text(
                                 '오늘 가능',
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ],
                           if (alreadySent) ...[
                             const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFF3F4F6),
                                 borderRadius: BorderRadius.circular(99),
                               ),
                               child: const Text(
                                 '발송됨',
-                                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF9CA3AF)),
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xFF9CA3AF),
+                                ),
                               ),
                             ),
                           ],
@@ -382,19 +456,33 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                       Row(
                         children: [
                           if (distance != null) ...[
-                            const Icon(Icons.location_on_rounded, size: 11, color: AppColors.textTertiary),
+                            const Icon(
+                              Icons.location_on_rounded,
+                              size: 11,
+                              color: AppColors.textTertiary,
+                            ),
                             const SizedBox(width: 2),
                             Text(
                               _distanceLabel(distance),
-                              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                             const SizedBox(width: 8),
                           ],
-                          const Icon(Icons.access_time_rounded, size: 11, color: Color(0xFF6B7280)),
+                          const Icon(
+                            Icons.access_time_rounded,
+                            size: 11,
+                            color: Color(0xFF6B7280),
+                          ),
                           const SizedBox(width: 2),
                           Text(
                             _lastActiveLabel(w['last_active_at']),
-                            style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF6B7280),
+                            ),
                           ),
                         ],
                       ),
@@ -414,14 +502,29 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                         decoration: BoxDecoration(
                           color: gradeColor.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
-                          border: Border.all(color: gradeColor.withValues(alpha: 0.3)),
+                          border: Border.all(
+                            color: gradeColor.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(grade, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900, color: gradeColor)),
-                              Text('$score', style: TextStyle(fontSize: 9, color: gradeColor)),
+                              Text(
+                                grade,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900,
+                                  color: gradeColor,
+                                ),
+                              ),
+                              Text(
+                                '$score',
+                                style: TextStyle(
+                                  fontSize: 9,
+                                  color: gradeColor,
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -431,7 +534,11 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                         onTap: () => _openProfile(id),
                         child: const Text(
                           '프로필',
-                          style: TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
@@ -448,7 +555,12 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
   Widget _buildBottomBar() {
     final count = _selected.length;
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        12,
+        16,
+        MediaQuery.of(context).padding.bottom + 12,
+      ),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: AppColors.border)),
@@ -461,7 +573,10 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
               padding: const EdgeInsets.only(bottom: 8),
               child: Text(
                 '$count명 선택됨',
-                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ),
           SizedBox(
@@ -469,23 +584,37 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
             child: ElevatedButton(
               onPressed: count > 0 && !_sending ? _send : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: count > 0 ? const Color(0xFFEF4444) : AppColors.bgMuted,
+                backgroundColor:
+                    count > 0 ? const Color(0xFFEF4444) : AppColors.bgMuted,
                 foregroundColor: Colors.white,
                 disabledBackgroundColor: AppColors.bgMuted,
                 elevation: 0,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
-              child: _sending
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Text(
-                      count > 0 ? '⚡ $count명에게 긴급 호출 발송' : '알바생을 선택해주세요',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: count > 0 ? Colors.white : AppColors.textSecondary,
+              child:
+                  _sending
+                      ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                      : Text(
+                        count > 0 ? '⚡ $count명에게 긴급 호출 발송' : '알바생을 선택해주세요',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color:
+                              count > 0
+                                  ? Colors.white
+                                  : AppColors.textSecondary,
+                        ),
                       ),
-                    ),
             ),
           ),
         ],
@@ -500,12 +629,20 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.location_off_rounded, size: 60, color: AppColors.textDisabled),
+            Icon(
+              Icons.location_off_rounded,
+              size: 60,
+              color: AppColors.textDisabled,
+            ),
             const SizedBox(height: 16),
             const Text(
-              '반경 3km 내 오늘 가능한 알바생이 없어요',
+              '반경 5km 내 오늘 가능한 알바생이 없어요',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF374151)),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: Color(0xFF374151),
+              ),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -519,7 +656,9 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 side: const BorderSide(color: AppColors.primary),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
               child: const Text('새로고침'),
             ),
