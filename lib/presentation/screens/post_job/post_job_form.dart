@@ -177,18 +177,22 @@ class _PostJobFormState extends State<PostJobForm>
 
   String companyName = '', managerName = '', managerPhone = '';
   DateTime? publishAt;
-  bool _isProUser = false, _isAIGenerating = false, _isSubmitting = false;
+  bool _isAIGenerating = false, _isSubmitting = false;
   bool _passCountLoading = false, _suspLoaded = false;
   int _paidPassCount = 0;
   int _urgentPassCount = 0;
-  int _weeklyFreeAiRemaining = 0;
-  String _weeklyFreeAiResetText = '';
+  // AI 할당량: -1=무제한(pro), 0=소진, N=잔여
+  String? _subscriptionPlan;
+  int _aiQuotaRemaining = 0;
+  String _aiQuotaResetText = '';
   String? _payWarning;
   SuspensionState? _suspension;
   Timer? _draftSaveTimer;
 
   static const _kAiFreeWeekKey = 'ai_free_week_key';
   static const _kAiFreeUsedKey = 'ai_free_used';
+  static const _kAiMonthKey = 'ai_month_key';
+  static const _kAiMonthUsed = 'ai_month_used';
 
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fadeAnim;
@@ -233,7 +237,7 @@ class _PostJobFormState extends State<PostJobForm>
     );
     _loadSuspension();
     _checkProStatus();
-    _loadWeeklyFreeAiQuota();
+    _loadAiQuota();
   }
 
   @override
@@ -390,7 +394,7 @@ class _PostJobFormState extends State<PostJobForm>
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('authToken');
       if (token == null || token.isEmpty) {
-        setState(() => _isProUser = false);
+        setState(() => _subscriptionPlan = null);
         return;
       }
       final res = await http
@@ -401,16 +405,14 @@ class _PostJobFormState extends State<PostJobForm>
           .timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
         final d = jsonDecode(res.body);
-        setState(
-          () =>
-              _isProUser =
-                  ((d['plan']?.toString() ?? '') == 'pro' ||
-                      (d['plan']?.toString() ?? '') == 'premium') &&
-                  d['active'] == true,
-        );
+        final plan = d['plan']?.toString();
+        final isActive = d['active'] == true;
+        setState(() {
+          _subscriptionPlan = isActive ? plan : null;
+        });
       }
     } catch (_) {
-      setState(() => _isProUser = false);
+      setState(() => _subscriptionPlan = null);
     }
   }
 
@@ -453,8 +455,42 @@ class _PostJobFormState extends State<PostJobForm>
     }
   }
 
-  Future<void> _loadWeeklyFreeAiQuota() async {
+  String _currentMonthKey() {
+    final now = DateTime.now();
+    return '${now.year}_${now.month.toString().padLeft(2, '0')}';
+  }
+
+  // 플랜별 AI 할당량 로드: -1=무제한(pro), 0=소진, N=잔여
+  Future<void> _loadAiQuota() async {
     final prefs = await SharedPreferences.getInstance();
+
+    if (_subscriptionPlan == 'pro') {
+      if (!mounted) return;
+      setState(() => _aiQuotaRemaining = -1);
+      return;
+    }
+
+    if (_subscriptionPlan == 'lite' || _subscriptionPlan == 'standard') {
+      final limit = _subscriptionPlan == 'standard' ? 10 : 3;
+      final monthKey = _currentMonthKey();
+      int used = prefs.getInt(_kAiMonthUsed) ?? 0;
+      if (prefs.getString(_kAiMonthKey) != monthKey) {
+        await prefs.setString(_kAiMonthKey, monthKey);
+        await prefs.setInt(_kAiMonthUsed, 0);
+        used = 0;
+      }
+      final now = DateTime.now();
+      final nextMonth = DateTime(now.year, now.month + 1, 1);
+      if (!mounted) return;
+      setState(() {
+        _aiQuotaRemaining = (limit - used).clamp(0, limit);
+        _aiQuotaResetText =
+            DateFormat('M월 d일', 'ko_KR').format(nextMonth);
+      });
+      return;
+    }
+
+    // 비구독: 주 1회 무료
     final nowKey = _currentWeekKey();
     int used = prefs.getInt(_kAiFreeUsedKey) ?? 0;
     if (prefs.getString(_kAiFreeWeekKey) != nowKey) {
@@ -464,20 +500,33 @@ class _PostJobFormState extends State<PostJobForm>
     }
     if (!mounted) return;
     setState(() {
-      _weeklyFreeAiRemaining = used >= 1 ? 0 : 1;
-      _weeklyFreeAiResetText = DateFormat(
+      _aiQuotaRemaining = used >= 1 ? 0 : 1;
+      _aiQuotaResetText = DateFormat(
         'M월 d일 00:00',
         'ko_KR',
       ).format(_nextWeekStart());
     });
   }
 
-  Future<void> _consumeWeeklyFreeAi() async {
+  Future<void> _consumeAiUsage() async {
+    if (_subscriptionPlan == 'pro') return;
     final prefs = await SharedPreferences.getInstance();
+
+    if (_subscriptionPlan == 'lite' || _subscriptionPlan == 'standard') {
+      final limit = _subscriptionPlan == 'standard' ? 10 : 3;
+      final used = (prefs.getInt(_kAiMonthUsed) ?? 0) + 1;
+      await prefs.setString(_kAiMonthKey, _currentMonthKey());
+      await prefs.setInt(_kAiMonthUsed, used);
+      if (!mounted) return;
+      setState(() => _aiQuotaRemaining = (limit - used).clamp(0, limit));
+      return;
+    }
+
+    // 비구독: 주 1회 소진
     await prefs.setString(_kAiFreeWeekKey, _currentWeekKey());
     await prefs.setInt(_kAiFreeUsedKey, 1);
     if (!mounted) return;
-    setState(() => _weeklyFreeAiRemaining = 0);
+    setState(() => _aiQuotaRemaining = 0);
   }
 
   Future<void> _loadInitialData() async {
@@ -2694,39 +2743,12 @@ class _PostJobFormState extends State<PostJobForm>
               _isAIGenerating
                   ? null
                   : () async {
-                    await _loadWeeklyFreeAiQuota();
-                    if (_isProUser || _weeklyFreeAiRemaining > 0) {
-                      _showAIDialog(
-                        isWeeklyFree: !_isProUser && _weeklyFreeAiRemaining > 0,
-                      );
+                    await _loadAiQuota();
+                    // -1=무제한(pro), N>0=잔여, 0=소진
+                    if (_aiQuotaRemaining != 0) {
+                      _showAIDialog();
                     } else {
-                      showDialog(
-                        context: context,
-                        builder:
-                            (_) => AlertDialog(
-                              title: const Text('이번 주 작성 도움 사용 완료'),
-                              content: Text('다음 충전: $_weeklyFreeAiResetText'),
-                              actions: [
-                                TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text('확인'),
-                                ),
-                                ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/subscription/manage',
-                                    );
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: _blue,
-                                  ),
-                                  child: const Text('Pro 업그레이드'),
-                                ),
-                              ],
-                            ),
-                      );
+                      _showAiPaywall();
                     }
                   },
           child: Container(
@@ -2797,6 +2819,29 @@ class _PostJobFormState extends State<PostJobForm>
                               fontSize: 12,
                               fontWeight: FontWeight.w800,
                               color: _blue,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            _aiQuotaRemaining == -1
+                                ? '무제한'
+                                : _subscriptionPlan == null
+                                    ? '주 1회'
+                                    : '$_aiQuotaRemaining회',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
                             ),
                           ),
                         ),
@@ -3063,7 +3108,104 @@ class _PostJobFormState extends State<PostJobForm>
     );
   }
 
-  void _showAIDialog({required bool isWeeklyFree}) {
+  void _showAiPaywall() {
+    final planLabel = _subscriptionPlan == 'lite'
+        ? '라이트'
+        : _subscriptionPlan == 'standard'
+            ? '스탠다드'
+            : null;
+    final resetInfo = planLabel != null
+        ? '$planLabel 플랜 · 다음 충전: $_aiQuotaResetText'
+        : '다음 충전: $_aiQuotaResetText';
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE5E7EB),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Icon(Icons.auto_awesome, color: Color(0xFF3B8AFF), size: 32),
+            const SizedBox(height: 12),
+            const Text(
+              'AI 공고문 작성 횟수를 모두 사용했어요',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 16,
+                color: Color(0xFF191F28),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              resetInfo,
+              style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '라이트 3회 · 스탠다드 10회 · 프로 무제한',
+              style: TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.pushNamed(context, '/subscription/manage');
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF3B8AFF),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  '구독 플랜 보기',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  '닫기',
+                  style: TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAIDialog() {
     if (_title.trim().isEmpty || _location.isEmpty || _pay <= 0) {
       ScaffoldMessenger.of(
         context,
@@ -3097,7 +3239,7 @@ class _PostJobFormState extends State<PostJobForm>
               managerPhone: managerPhone.isNotEmpty ? managerPhone : null,
               isShortTerm: _isShortTerm,
               onGenerated: (text) async {
-                if (isWeeklyFree) await _consumeWeeklyFreeAi();
+                await _consumeAiUsage();
                 if (!mounted) return;
                 setState(() {
                   _description = text;
@@ -3108,7 +3250,9 @@ class _PostJobFormState extends State<PostJobForm>
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      isWeeklyFree ? '이번 주 작성 도움 기능을 사용했습니다.' : '공고문이 적용되었습니다.',
+                      _subscriptionPlan == null
+                          ? '이번 주 작성 도움 기능을 사용했습니다.'
+                          : '공고문이 적용되었습니다.',
                     ),
                     backgroundColor: Colors.green,
                   ),
