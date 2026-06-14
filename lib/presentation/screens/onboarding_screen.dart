@@ -20,35 +20,28 @@ class OnboardingScreen extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: size.height * 0.08),
+                SizedBox(height: size.height * 0.10),
 
-                // ── 브랜드 블록
+                // 브랜드
                 const _BrandBlock(),
 
-                SizedBox(height: size.height * 0.045),
+                SizedBox(height: size.height * 0.07),
 
-                // ── 기능 요약 칩 3개
-                const _FeatureRow(),
-
-                SizedBox(height: size.height * 0.045),
-
-                // ── 역할 선택
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '어떤 분이신가요?',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
+                // 역할 선택 레이블
+                const Text(
+                  '어떤 분이신가요?',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
                   ),
                 ),
 
                 const SizedBox(height: 14),
 
+                // 카드
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -56,19 +49,10 @@ class OnboardingScreen extends StatelessWidget {
                       child: _TypeCard(
                         label: '알바생',
                         icon: Icons.person_outline_rounded,
-                        iconBgColor: const Color(0xFFEFF6FF),
-                        iconColor: AppColors.primary,
-                        features: const [
-                          '💰  일급·주급 즉시 지급',
-                          '📍  내 근처 오늘 공고만',
-                          '⭐  신뢰등급으로 빠른 매칭',
-                        ],
+                        subtitle: '오늘 일하고\n오늘 받는 단기 알바',
                         badge: null,
                         isHighlighted: false,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          Navigator.pushNamed(context, '/signup-choice');
-                        },
+                        onTap: () => Navigator.pushNamed(context, '/signup-choice'),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -76,24 +60,15 @@ class OnboardingScreen extends StatelessWidget {
                       child: _TypeCard(
                         label: '사장님',
                         icon: Icons.storefront_outlined,
-                        iconBgColor: AppColors.primaryLight,
-                        iconColor: AppColors.primary,
-                        features: const [
-                          '⚡  긴급 호출 30분 대타',
-                          '🎫  즉시 게시 상단 노출',
-                          '🤖  AI 공고문 자동 작성',
-                        ],
+                        subtitle: '갑작스러운 결근도\n30분 내 해결',
                         badge: '빠른 채용',
                         isHighlighted: true,
-                        onTap: () {
-                          HapticFeedback.lightImpact();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const SignupClientChoiceScreen(),
-                            ),
-                          );
-                        },
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SignupClientChoiceScreen(),
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -101,14 +76,16 @@ class OnboardingScreen extends StatelessWidget {
 
                 const Spacer(),
 
-                const Text(
-                  '전화번호 인증으로 바로 시작합니다.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textTertiary,
+                Center(
+                  child: const Text(
+                    '전화번호 인증으로 바로 시작합니다.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textTertiary,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 28),
               ],
             ),
           ),
@@ -127,116 +104,27 @@ class _BrandBlock extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ShaderMask(
-          shaderCallback: (rect) => const LinearGradient(
-            colors: [AppColors.primary, AppColors.primaryMid],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ).createShader(rect),
-          child: const Text(
-            '알바일주',
-            style: TextStyle(
-              fontFamily: 'Jalnan2TTF',
-              fontSize: 48,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: 1.0,
-            ),
+        const Text(
+          '알바일주',
+          style: TextStyle(
+            fontFamily: 'Jalnan2TTF',
+            fontSize: 46,
+            color: AppColors.primary,
+            letterSpacing: 0.5,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         const Text(
           '필요한 날, 딱 맞는 알바',
           style: TextStyle(
             fontSize: 15,
             color: AppColors.textSecondary,
             fontWeight: FontWeight.w500,
-            letterSpacing: 0.3,
           ),
         ),
       ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// 기능 요약 칩 3개
-// ─────────────────────────────────────────────
-class _FeatureRow extends StatelessWidget {
-  const _FeatureRow();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _FeatureChip(
-            emoji: '⚡',
-            label: '긴급 호출',
-            color: const Color(0xFFEF4444),
-            bgColor: const Color(0xFFFFF5F5),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _FeatureChip(
-            emoji: '🎫',
-            label: '즉시 게시',
-            color: AppColors.primary,
-            bgColor: const Color(0xFFEFF6FF),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _FeatureChip(
-            emoji: '💰',
-            label: '일급·주급',
-            color: const Color(0xFF10B981),
-            bgColor: const Color(0xFFF0FDF4),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _FeatureChip extends StatelessWidget {
-  final String emoji;
-  final String label;
-  final Color color;
-  final Color bgColor;
-
-  const _FeatureChip({
-    required this.emoji,
-    required this.label,
-    required this.color,
-    required this.bgColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
-      ),
-      child: Column(
-        children: [
-          Text(emoji, style: const TextStyle(fontSize: 18)),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: color,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
@@ -247,9 +135,7 @@ class _FeatureChip extends StatelessWidget {
 class _TypeCard extends StatefulWidget {
   final String label;
   final IconData icon;
-  final Color iconBgColor;
-  final Color iconColor;
-  final List<String> features;
+  final String subtitle;
   final String? badge;
   final bool isHighlighted;
   final VoidCallback onTap;
@@ -257,9 +143,7 @@ class _TypeCard extends StatefulWidget {
   const _TypeCard({
     required this.label,
     required this.icon,
-    required this.iconBgColor,
-    required this.iconColor,
-    required this.features,
+    required this.subtitle,
     required this.badge,
     required this.isHighlighted,
     required this.onTap,
@@ -306,7 +190,7 @@ class _TypeCardState extends State<_TypeCard> {
                       ? AppShadows.cardElevated
                       : AppShadows.card,
                 ),
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
+                padding: const EdgeInsets.all(20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -315,47 +199,43 @@ class _TypeCardState extends State<_TypeCard> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: widget.iconBgColor,
+                        color: widget.isHighlighted
+                            ? AppColors.primaryLight
+                            : const Color(0xFFEFF6FF),
                         borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: Icon(
                         widget.icon,
                         size: 22,
-                        color: widget.iconColor,
+                        color: AppColors.primary,
                       ),
                     ),
-                    const SizedBox(height: 14),
+
+                    const SizedBox(height: 16),
 
                     // 라벨
                     Text(
                       widget.label,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: 'Jalnan2TTF',
                         fontSize: 17,
-                        fontWeight: FontWeight.w700,
-                        color: widget.isHighlighted
-                            ? AppColors.textPrimary
-                            : AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-
-                    // 기능 목록
-                    ...widget.features.map(
-                      (f) => Padding(
-                        padding: const EdgeInsets.only(bottom: 5),
-                        child: Text(
-                          f,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                            height: 1.4,
-                          ),
-                        ),
+                        color: AppColors.textPrimary,
                       ),
                     ),
 
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 6),
+
+                    // 부제목
+                    Text(
+                      widget.subtitle,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                        height: 1.55,
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
 
                     // 화살표
                     Align(
