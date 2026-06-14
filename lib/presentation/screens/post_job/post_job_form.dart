@@ -2618,50 +2618,164 @@ class _PostJobFormState extends State<PostJobForm>
         if (_category.isNotEmpty) ...[
           const SizedBox(height: 10),
           GestureDetector(
-            onTap:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (_) => WageReportScreen(
-                          category: _category,
-                          locationCity:
-                              _locationCity.isNotEmpty ? _locationCity : null,
-                          payType: _payType,
-                          currentPay: _pay > 0 ? _pay : null,
-                          hours: (_workMins() / 60).round().clamp(1, 24),
+            onTap: () {
+                if (_subscriptionPlan != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => WageReportScreen(
+                        category: _category,
+                        locationCity:
+                            _locationCity.isNotEmpty ? _locationCity : null,
+                        payType: _payType,
+                        currentPay: _pay > 0 ? _pay : null,
+                        hours: (_workMins() / 60).round().clamp(1, 24),
+                      ),
+                    ),
+                  );
+                } else {
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: Colors.transparent,
+                    builder: (_) => Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(24),
                         ),
-                  ),
-                ),
+                      ),
+                      padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Center(
+                            child: Container(
+                              width: 40,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE5E7EB),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          const Icon(
+                            Icons.analytics_rounded,
+                            color: Color(0xFF3B8AFF),
+                            size: 32,
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            '임금 AI 리포트는 구독자 전용이에요',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 16,
+                              color: Color(0xFF191F28),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          const Text(
+                            '업종·지역·경쟁 공고 시급을 분석해\n적정 급여를 AI가 추천해 드려요.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF6B7280),
+                              height: 1.5,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                Navigator.pushNamed(
+                                  context,
+                                  '/subscription/manage',
+                                );
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF3B8AFF),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text(
+                                '구독 시작하기',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text(
+                                '닫기',
+                                style: TextStyle(
+                                  color: Color(0xFF6B7280),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+              },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
+                color: _subscriptionPlan != null
+                    ? const Color(0xFFEFF6FF)
+                    : const Color(0xFFF3F4F6),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFF93C5FD)),
+                border: Border.all(
+                  color: _subscriptionPlan != null
+                      ? const Color(0xFF93C5FD)
+                      : const Color(0xFFD1D5DB),
+                ),
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
+                children: [
                   Icon(
-                    Icons.analytics_rounded,
+                    _subscriptionPlan != null
+                        ? Icons.analytics_rounded
+                        : Icons.lock_outline_rounded,
                     size: 16,
-                    color: Color(0xFF2563EB),
+                    color: _subscriptionPlan != null
+                        ? const Color(0xFF2563EB)
+                        : const Color(0xFF9CA3AF),
                   ),
-                  SizedBox(width: 6),
+                  const SizedBox(width: 6),
                   Text(
                     '이 업종 임금 AI 리포트 보기',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF2563EB),
+                      color: _subscriptionPlan != null
+                          ? const Color(0xFF2563EB)
+                          : const Color(0xFF9CA3AF),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  SizedBox(width: 4),
+                  const SizedBox(width: 4),
                   Icon(
                     Icons.chevron_right_rounded,
                     size: 14,
-                    color: Color(0xFF2563EB),
+                    color: _subscriptionPlan != null
+                        ? const Color(0xFF2563EB)
+                        : const Color(0xFF9CA3AF),
                   ),
                 ],
               ),
