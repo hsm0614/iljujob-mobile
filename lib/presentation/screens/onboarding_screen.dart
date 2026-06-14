@@ -22,35 +22,47 @@ class OnboardingScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // ── 상단 여백 (화면 높이에 비례)
-                SizedBox(height: size.height * 0.10),
+                SizedBox(height: size.height * 0.08),
 
                 // ── 브랜드 블록
-                _BrandBlock(),
+                const _BrandBlock(),
 
-                SizedBox(height: size.height * 0.07),
+                SizedBox(height: size.height * 0.045),
 
-                // ── 질문
-                const Text(
-                  '어떤 분이신가요?',
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
+                // ── 기능 요약 칩 3개
+                const _FeatureRow(),
+
+                SizedBox(height: size.height * 0.045),
+
+                // ── 역할 선택
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    '어떤 분이신가요?',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
                 ),
 
-                const SizedBox(height: 18),
+                const SizedBox(height: 14),
 
-                // ── 카드 2개 (가로형, 동등 비중)
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Expanded(
                       child: _TypeCard(
                         label: '알바생',
-                        subtitle: '오늘 가능한 알바 찾기',
                         icon: Icons.person_outline_rounded,
+                        iconBgColor: const Color(0xFFEFF6FF),
+                        iconColor: AppColors.primary,
+                        features: const [
+                          '💰  일급·주급 즉시 지급',
+                          '📍  내 근처 오늘 공고만',
+                          '⭐  신뢰등급으로 빠른 매칭',
+                        ],
                         badge: null,
                         isHighlighted: false,
                         onTap: () {
@@ -63,14 +75,24 @@ class OnboardingScreen extends StatelessWidget {
                     Expanded(
                       child: _TypeCard(
                         label: '사장님',
-                        subtitle: '알바생 바로 구하기',
                         icon: Icons.storefront_outlined,
+                        iconBgColor: AppColors.primaryLight,
+                        iconColor: AppColors.primary,
+                        features: const [
+                          '⚡  긴급 호출 30분 대타',
+                          '🎫  즉시 게시 상단 노출',
+                          '🤖  AI 공고문 자동 작성',
+                        ],
                         badge: '빠른 채용',
                         isHighlighted: true,
                         onTap: () {
                           HapticFeedback.lightImpact();
-                      Navigator.push(context,
-  MaterialPageRoute(builder: (_) => const SignupClientChoiceScreen()));
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SignupClientChoiceScreen(),
+                            ),
+                          );
                         },
                       ),
                     ),
@@ -79,7 +101,6 @@ class OnboardingScreen extends StatelessWidget {
 
                 const Spacer(),
 
-                // ── 하단 안내
                 const Text(
                   '전화번호 인증으로 바로 시작합니다.',
                   style: TextStyle(
@@ -101,11 +122,12 @@ class OnboardingScreen extends StatelessWidget {
 // 브랜드 블록
 // ─────────────────────────────────────────────
 class _BrandBlock extends StatelessWidget {
+  const _BrandBlock();
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // ✅ Jalnan2TTF 폰트 적용
         ShaderMask(
           shaderCallback: (rect) => const LinearGradient(
             colors: [AppColors.primary, AppColors.primaryMid],
@@ -118,21 +140,103 @@ class _BrandBlock extends StatelessWidget {
               fontFamily: 'Jalnan2TTF',
               fontSize: 48,
               fontWeight: FontWeight.w800,
-              color: Colors.white, // ShaderMask가 덮어씀
+              color: Colors.white,
               letterSpacing: 1.0,
             ),
           ),
         ),
         const SizedBox(height: 10),
         const Text(
-          '오늘 채용 · 오늘 근무',
+          '필요한 날, 딱 맞는 알바',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: 15,
             color: AppColors.textSecondary,
-            letterSpacing: 0.5,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.3,
           ),
         ),
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────
+// 기능 요약 칩 3개
+// ─────────────────────────────────────────────
+class _FeatureRow extends StatelessWidget {
+  const _FeatureRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _FeatureChip(
+            emoji: '⚡',
+            label: '긴급 호출',
+            color: const Color(0xFFEF4444),
+            bgColor: const Color(0xFFFFF5F5),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _FeatureChip(
+            emoji: '🎫',
+            label: '즉시 게시',
+            color: AppColors.primary,
+            bgColor: const Color(0xFFEFF6FF),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _FeatureChip(
+            emoji: '💰',
+            label: '일급·주급',
+            color: const Color(0xFF10B981),
+            bgColor: const Color(0xFFF0FDF4),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FeatureChip extends StatelessWidget {
+  final String emoji;
+  final String label;
+  final Color color;
+  final Color bgColor;
+
+  const _FeatureChip({
+    required this.emoji,
+    required this.label,
+    required this.color,
+    required this.bgColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 18)),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -142,16 +246,20 @@ class _BrandBlock extends StatelessWidget {
 // ─────────────────────────────────────────────
 class _TypeCard extends StatefulWidget {
   final String label;
-  final String subtitle;
   final IconData icon;
+  final Color iconBgColor;
+  final Color iconColor;
+  final List<String> features;
   final String? badge;
   final bool isHighlighted;
   final VoidCallback onTap;
 
   const _TypeCard({
     required this.label,
-    required this.subtitle,
     required this.icon,
+    required this.iconBgColor,
+    required this.iconColor,
+    required this.features,
     required this.badge,
     required this.isHighlighted,
     required this.onTap,
@@ -198,92 +306,91 @@ class _TypeCardState extends State<_TypeCard> {
                       ? AppShadows.cardElevated
                       : AppShadows.card,
                 ),
-                padding: const EdgeInsets.fromLTRB(16, 22, 16, 22),
+                padding: const EdgeInsets.fromLTRB(16, 20, 16, 20),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // 아이콘
                     Container(
-                      width: 46,
-                      height: 46,
+                      width: 44,
+                      height: 44,
                       decoration: BoxDecoration(
-                        color: widget.isHighlighted
-                            ? AppColors.primaryLight
-                            : AppColors.bgMuted,
+                        color: widget.iconBgColor,
                         borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: Icon(
                         widget.icon,
-                        size: 24,
-                        color: widget.isHighlighted
-                            ? AppColors.primary
-                            : AppColors.textTertiary,
+                        size: 22,
+                        color: widget.iconColor,
                       ),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
 
                     // 라벨
                     Text(
                       widget.label,
                       style: TextStyle(
                         fontFamily: 'Jalnan2TTF',
-                        fontSize: 18,
+                        fontSize: 17,
                         fontWeight: FontWeight.w700,
                         color: widget.isHighlighted
                             ? AppColors.textPrimary
                             : AppColors.textSecondary,
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: 10),
 
-                    // 서브타이틀
-                    Text(
-                      widget.subtitle,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textTertiary,
-                        height: 1.4,
+                    // 기능 목록
+                    ...widget.features.map(
+                      (f) => Padding(
+                        padding: const EdgeInsets.only(bottom: 5),
+                        child: Text(
+                          f,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.textSecondary,
+                            height: 1.4,
+                          ),
+                        ),
                       ),
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
 
                     // 화살표
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            color: widget.isHighlighted
-                                ? AppColors.primary
-                                : AppColors.bgMuted,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.arrow_forward_rounded,
-                            size: 14,
-                            color: widget.isHighlighted
-                                ? Colors.white
-                                : AppColors.textTertiary,
-                          ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: widget.isHighlighted
+                              ? AppColors.primary
+                              : AppColors.bgMuted,
+                          shape: BoxShape.circle,
                         ),
-                      ],
+                        child: Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 14,
+                          color: widget.isHighlighted
+                              ? Colors.white
+                              : AppColors.textTertiary,
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
 
-            // 뱃지 (사장님 카드만)
+            // 뱃지
             if (widget.badge != null)
               Positioned(
                 top: -10,
                 right: 12,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 9, vertical: 4),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                   decoration: BoxDecoration(
                     color: AppColors.primary,
                     borderRadius: BorderRadius.circular(AppRadius.full),
