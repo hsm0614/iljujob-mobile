@@ -174,12 +174,15 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
 
                   final prefs = await SharedPreferences.getInstance();
                   final reporterId = prefs.getInt('userId') ?? 0;
+                  final reporterType = prefs.getString('userType');
 
                   final response = await http.post(
                     Uri.parse('$baseUrl/api/user-report'),
                     headers: {'Content-Type': 'application/json'},
                     body: jsonEncode({
                       'reporterId': reporterId,
+                      if (reporterType != null && reporterType.isNotEmpty)
+                        'reporterType': reporterType,
                       'targetId': targetId,
                       'targetType': targetType,
                       'reasonCategory': selectedReason,
@@ -428,8 +431,10 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
     ),
   );
 
-  Widget _tinyMuted(String text) =>
-      Text(text, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)));
+  Widget _tinyMuted(String text) => Text(
+    text,
+    style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+  );
 
   Widget _statsCard() {
     return Container(
@@ -501,7 +506,10 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF6B7280),
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(

@@ -32,7 +32,9 @@ class _InquiryScreenState extends State<InquiryScreen> {
   static const int _maxFileSizeBytes = 5 * 1024 * 1024; // 5MB
 
   void _showSnack(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _clearForm() {
@@ -51,19 +53,31 @@ class _InquiryScreenState extends State<InquiryScreen> {
     }
     final src = await showModalBottomSheet<ImageSource>(
       context: context,
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(leading: const Icon(Icons.photo_library), title: const Text('앨범에서 선택'), onTap: () => Navigator.pop(context, ImageSource.gallery)),
-            ListTile(leading: const Icon(Icons.photo_camera), title: const Text('카메라로 촬영'), onTap: () => Navigator.pop(context, ImageSource.camera)),
-          ],
-        ),
-      ),
+      builder:
+          (_) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.photo_library),
+                  title: const Text('앨범에서 선택'),
+                  onTap: () => Navigator.pop(context, ImageSource.gallery),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.photo_camera),
+                  title: const Text('카메라로 촬영'),
+                  onTap: () => Navigator.pop(context, ImageSource.camera),
+                ),
+              ],
+            ),
+          ),
     );
     if (src == null) return;
 
-    final picked = await _picker.pickImage(source: src, imageQuality: 88); // 약간 압축
+    final picked = await _picker.pickImage(
+      source: src,
+      imageQuality: 88,
+    ); // 약간 압축
     if (picked == null) return;
 
     final file = File(picked.path);
@@ -90,12 +104,14 @@ class _InquiryScreenState extends State<InquiryScreen> {
     final prefs = await SharedPreferences.getInstance();
     final userPhone = prefs.getString('userPhone') ?? '';
     final userId = prefs.getInt('userId'); // 신규 구조 호환
+    final userType = prefs.getString('userType');
     final token = prefs.getString('authToken');
 
     try {
       final ok = await _sendInquiry(
         userPhone: userPhone,
         userId: userId,
+        userType: userType,
         token: token,
         inquiryType: _selectedType,
         title: _titleController.text.trim(),
@@ -107,13 +123,17 @@ class _InquiryScreenState extends State<InquiryScreen> {
         if (!mounted) return;
         showDialog(
           context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('접수 완료'),
-            content: const Text('문의가 정상적으로 접수되었습니다.\n빠르게 답변드릴게요!'),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('확인')),
-            ],
-          ),
+          builder:
+              (_) => AlertDialog(
+                title: const Text('접수 완료'),
+                content: const Text('문의가 정상적으로 접수되었습니다.\n빠르게 답변드릴게요!'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('확인'),
+                  ),
+                ],
+              ),
         );
         _clearForm();
       } else {
@@ -129,6 +149,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
   Future<bool> _sendInquiry({
     required String userPhone,
     required int? userId,
+    required String? userType,
     required String? token,
     required String inquiryType,
     required String title,
@@ -137,13 +158,17 @@ class _InquiryScreenState extends State<InquiryScreen> {
   }) async {
     final uri = Uri.parse('$baseUrl/api/inquiry');
 
-    final req = http.MultipartRequest('POST', uri)
-      ..fields['inquiryType'] = inquiryType
-      ..fields['title'] = title
-      ..fields['content'] = content;
+    final req =
+        http.MultipartRequest('POST', uri)
+          ..fields['inquiryType'] = inquiryType
+          ..fields['title'] = title
+          ..fields['content'] = content;
 
     // ── 백엔드 호환: id 우선, 없으면 phone
     if (userId != null) req.fields['userId'] = userId.toString();
+    if (userType != null && userType.isNotEmpty) {
+      req.fields['userType'] = userType;
+    }
     if (userPhone.isNotEmpty) req.fields['userPhone'] = userPhone;
 
     // ── 인증(있으면)
@@ -163,13 +188,22 @@ class _InquiryScreenState extends State<InquiryScreen> {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('userId');
     final userPhone = prefs.getString('userPhone') ?? '';
+    final userType = prefs.getString('userType');
     final token = prefs.getString('authToken');
 
     Uri uri;
     if (userId != null) {
-      uri = Uri.parse('$baseUrl/api/inquiry/inquiries?userId=$userId');
+      final userTypeQuery =
+          userType != null && userType.isNotEmpty ? '&userType=$userType' : '';
+      uri = Uri.parse(
+        '$baseUrl/api/inquiry/inquiries?userId=$userId$userTypeQuery',
+      );
     } else {
-      uri = Uri.parse('$baseUrl/api/inquiry/inquiries?userPhone=$userPhone');
+      final userTypeQuery =
+          userType != null && userType.isNotEmpty ? '&userType=$userType' : '';
+      uri = Uri.parse(
+        '$baseUrl/api/inquiry/inquiries?userPhone=$userPhone$userTypeQuery',
+      );
     }
 
     final headers = <String, String>{};
@@ -211,43 +245,44 @@ class _InquiryScreenState extends State<InquiryScreen> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: Colors.white.withOpacity(0.25)),
             ),
-            child: const Text('고객센터', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              '고객센터',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
           centerTitle: true,
-        bottom: PreferredSize(
-  preferredSize: const Size.fromHeight(72), // ← 64에서 72로
-  child: Padding(
-    padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-    child: _PillTabBar(
-      tabs: const [
-        Tab(
-          text: '1:1 문의하기',
-          icon: Icon(Icons.edit_note_rounded, size: 18),
-          iconMargin: EdgeInsets.zero, // ✅ 기본 10 하단여백 제거
-        ),
-        Tab(
-          text: '내 문의 내역',
-          icon: Icon(Icons.history_rounded, size: 18),
-          iconMargin: EdgeInsets.zero, // ✅
-        ),
-      ],
-    ),
-  ),
-),
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(72), // ← 64에서 72로
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+              child: _PillTabBar(
+                tabs: const [
+                  Tab(
+                    text: '1:1 문의하기',
+                    icon: Icon(Icons.edit_note_rounded, size: 18),
+                    iconMargin: EdgeInsets.zero, // ✅ 기본 10 하단여백 제거
+                  ),
+                  Tab(
+                    text: '내 문의 내역',
+                    icon: Icon(Icons.history_rounded, size: 18),
+                    iconMargin: EdgeInsets.zero, // ✅
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
         body: Container(
           decoration: const BoxDecoration(
             gradient: LinearGradient(
-              begin: Alignment.topCenter, end: Alignment.bottomCenter,
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
               colors: [Color(0xFF3B8AFF), Color(0xFF7CC7FF), Colors.white],
               stops: [0, .25, .25],
             ),
           ),
           child: TabBarView(
-            children: [
-              _buildInquiryForm(),
-              _buildInquiryList(),
-            ],
+            children: [_buildInquiryForm(), _buildInquiryList()],
           ),
         ),
       ),
@@ -264,16 +299,22 @@ class _InquiryScreenState extends State<InquiryScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 유형
-              const Text('문의 유형 *', style: TextStyle(fontWeight: FontWeight.w700)),
+              const Text(
+                '문의 유형 *',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: 8),
               DropdownButtonFormField<String>(
                 initialValue: _selectedType,
-                items: ['선택해주세요', ..._inquiryTypes]
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                    .toList(),
+                items:
+                    ['선택해주세요', ..._inquiryTypes]
+                        .map((t) => DropdownMenuItem(value: t, child: Text(t)))
+                        .toList(),
                 onChanged: (v) => setState(() => _selectedType = v!),
                 decoration: _inputDecoration(),
-                validator: (v) => (v == null || v == '선택해주세요') ? '문의 유형을 선택해주세요.' : null,
+                validator:
+                    (v) =>
+                        (v == null || v == '선택해주세요') ? '문의 유형을 선택해주세요.' : null,
               ),
               const SizedBox(height: 16),
 
@@ -301,7 +342,9 @@ class _InquiryScreenState extends State<InquiryScreen> {
                   controller: _contentController,
                   maxLines: 8,
                   maxLength: _maxContentLen,
-                  decoration: _inputDecoration(hint: '상세 내용을 입력해주세요. (스크린샷/오류 메시지 포함 권장)'),
+                  decoration: _inputDecoration(
+                    hint: '상세 내용을 입력해주세요. (스크린샷/오류 메시지 포함 권장)',
+                  ),
                   validator: (v) {
                     final s = (v ?? '').trim();
                     if (s.isEmpty) return '내용을 입력해주세요.';
@@ -313,7 +356,10 @@ class _InquiryScreenState extends State<InquiryScreen> {
               const SizedBox(height: 16),
 
               // 첨부
-              const Text('사진 첨부 (선택, 최대 5장 / 5MB)', style: TextStyle(fontWeight: FontWeight.w700)),
+              const Text(
+                '사진 첨부 (선택, 최대 5장 / 5MB)',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
               const SizedBox(height: 8),
               _buildImageGrid(),
               const SizedBox(height: 24),
@@ -323,9 +369,17 @@ class _InquiryScreenState extends State<InquiryScreen> {
                 width: double.infinity,
                 child: FilledButton(
                   onPressed: _isSubmitting ? null : _submitInquiry,
-                  child: _isSubmitting
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('문의 보내기'),
+                  child:
+                      _isSubmitting
+                          ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                          : const Text('문의 보내기'),
                 ),
               ),
             ],
@@ -362,7 +416,11 @@ class _InquiryScreenState extends State<InquiryScreen> {
                     backgroundColor: Colors.black.withOpacity(.55),
                     visualDensity: VisualDensity.compact,
                   ),
-                  icon: const Icon(Icons.close_rounded, color: Colors.white, size: 18),
+                  icon: const Icon(
+                    Icons.close_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                 ),
               ),
             ],
@@ -422,7 +480,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
                 final title = (item['title'] ?? '제목 없음').toString();
                 final type = (item['inquiryType'] ?? '').toString();
                 final status = (item['status'] ?? '진행 중').toString();
-               final createdAt = (item['createdAt'] ?? '').toString();
+                final createdAt = (item['createdAt'] ?? '').toString();
 
                 final answerPreview = (item['answer'] ?? '').toString();
 
@@ -441,20 +499,36 @@ class _InquiryScreenState extends State<InquiryScreen> {
                         const CircleAvatar(
                           radius: 20,
                           backgroundColor: Color(0xFF3B8AFF),
-                          child: Icon(Icons.question_answer_rounded, color: Colors.white),
+                          child: Icon(
+                            Icons.question_answer_rounded,
+                            color: Colors.white,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                              Text(
+                                title,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
                               const SizedBox(height: 4),
-                              Text('$type · $createdAt', style: const TextStyle(color: Colors.black54, fontSize: 12)),
+                              Text(
+                                '$type · $createdAt',
+                                style: const TextStyle(
+                                  color: Colors.black54,
+                                  fontSize: 12,
+                                ),
+                              ),
                               if (answerPreview.isNotEmpty) ...[
                                 const SizedBox(height: 6),
                                 Text(
-                                  answerPreview.length > 60 ? '${answerPreview.substring(0, 60)}…' : answerPreview,
+                                  answerPreview.length > 60
+                                      ? '${answerPreview.substring(0, 60)}…'
+                                      : answerPreview,
                                   style: const TextStyle(color: Colors.black87),
                                 ),
                               ],
@@ -480,7 +554,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
     final type = (inquiry['inquiryType'] ?? '').toString();
     final status = (inquiry['status'] ?? '진행 중').toString();
     final content = (inquiry['content'] ?? '내용 없음').toString();
-   final createdAt = (inquiry['createdAt'] ?? '').toString();
+    final createdAt = (inquiry['createdAt'] ?? '').toString();
 
     final answer = (inquiry['answer'] ?? '').toString();
 
@@ -488,48 +562,71 @@ class _InquiryScreenState extends State<InquiryScreen> {
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (_) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
-                const SizedBox(height: 6),
-                Row(
+      builder:
+          (_) => Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
+            ),
+            child: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _StatusBadge(status: status),
-                    const SizedBox(width: 8),
-                    Text('$type · $createdAt', style: const TextStyle(color: Colors.black54, fontSize: 12)),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w900,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        _StatusBadge(status: status),
+                        const SizedBox(width: 8),
+                        Text(
+                          '$type · $createdAt',
+                          style: const TextStyle(
+                            color: Colors.black54,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      '문의 내용',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(content),
+                    const SizedBox(height: 14),
+                    if (answer.isNotEmpty) ...[
+                      const Text(
+                        '답변',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF3B8AFF).withOpacity(.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF3B8AFF).withOpacity(.2),
+                          ),
+                        ),
+                        child: Text(answer),
+                      ),
+                    ],
+                    const SizedBox(height: 8),
                   ],
                 ),
-                const SizedBox(height: 12),
-                const Text('문의 내용', style: TextStyle(fontWeight: FontWeight.w700)),
-                const SizedBox(height: 6),
-                Text(content),
-                const SizedBox(height: 14),
-                if (answer.isNotEmpty) ...[
-                  const Text('답변', style: TextStyle(fontWeight: FontWeight.w700)),
-                  const SizedBox(height: 6),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF3B8AFF).withOpacity(.05),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: const Color(0xFF3B8AFF).withOpacity(.2)),
-                    ),
-                    child: Text(answer),
-                  ),
-                ],
-                const SizedBox(height: 8),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
     );
   }
 
@@ -539,7 +636,10 @@ class _InquiryScreenState extends State<InquiryScreen> {
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
+      ),
     );
   }
 }
@@ -557,13 +657,27 @@ class _PillTabBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(26),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 14, offset: Offset(0, 6))],
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 14,
+            offset: Offset(0, 6),
+          ),
+        ],
       ),
       child: TabBar(
         tabs: const [
-          Tab(text: '1:1 문의하기', icon: Icon(Icons.edit_note_rounded, size: 18), iconMargin: EdgeInsets.zero),
-          Tab(text: '내 문의 내역', icon: Icon(Icons.history_rounded, size: 18), iconMargin: EdgeInsets.zero),
-        ], 
+          Tab(
+            text: '1:1 문의하기',
+            icon: Icon(Icons.edit_note_rounded, size: 18),
+            iconMargin: EdgeInsets.zero,
+          ),
+          Tab(
+            text: '내 문의 내역',
+            icon: Icon(Icons.history_rounded, size: 18),
+            iconMargin: EdgeInsets.zero,
+          ),
+        ],
         indicator: BoxDecoration(
           color: const Color(0xFF3B8AFF),
           borderRadius: BorderRadius.circular(26),
@@ -572,11 +686,15 @@ class _PillTabBar extends StatelessWidget {
         unselectedLabelColor: const Color(0xFF3B8AFF),
         indicatorSize: TabBarIndicatorSize.tab,
         splashBorderRadius: BorderRadius.circular(26),
-        labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0), // ✅ 세로 여백 0
+        labelPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 0,
+        ), // ✅ 세로 여백 0
       ),
     );
   }
 }
+
 class _TabItem extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -587,11 +705,7 @@ class _TabItem extends StatelessWidget {
     return Tab(
       child: Row(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 18),
-          const SizedBox(width: 6),
-          Text(label),
-        ],
+        children: [Icon(icon, size: 18), const SizedBox(width: 6), Text(label)],
       ),
     );
   }
@@ -604,11 +718,14 @@ class _Labeled extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-      const SizedBox(height: 8),
-      child,
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+        const SizedBox(height: 8),
+        child,
+      ],
+    );
   }
 }
 
@@ -640,7 +757,10 @@ class _StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: ShapeDecoration(color: bg, shape: const StadiumBorder()),
-      child: Text(status, style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 12)),
+      child: Text(
+        status,
+        style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 12),
+      ),
     );
   }
 }
