@@ -52,8 +52,15 @@ class AIJobDescriptionService {
           throw const AIGenerationException('AI 응답이 비어 있습니다.');
         }
         return content;
+      } else if (response.statusCode == 401 || response.statusCode == 403) {
+        throw const SubscriptionRequiredException();
       } else if (response.statusCode == 429) {
-        throw const AIGenerationException('AI 요청이 잠시 과부하 상태예요. 잠시 후 다시 시도해주세요.');
+        String errMsg = 'AI 요청이 잠시 과부하 상태예요. 잠시 후 다시 시도해주세요.';
+        try {
+          final d = jsonDecode(response.body);
+          if (d['message'] is String) errMsg = d['message'];
+        } catch (_) {}
+        throw AIGenerationException(errMsg);
       } else {
         String errMsg = '공고문 생성에 실패했어요. 다시 시도해주세요.';
         try {
@@ -129,9 +136,15 @@ class AIJobDescriptionService {
 class AIGenerationException implements Exception {
   final String message;
   const AIGenerationException(this.message);
-  
+
   @override
   String toString() => 'AIGenerationException: $message';
+}
+
+class SubscriptionRequiredException implements Exception {
+  const SubscriptionRequiredException();
+  @override
+  String toString() => 'SubscriptionRequiredException';
 }
 
 // 품질 평가 결과 클래스
@@ -562,7 +575,6 @@ Widget build(BuildContext context) {
         companyName: widget.companyName,
         isShortTerm: widget.isShortTerm,
         tone: selectedTone,
-        
       );
 
       final report = AIJobDescriptionService.validateDescription(content);
@@ -571,20 +583,87 @@ Widget build(BuildContext context) {
         generatedContent = content;
         qualityReport = report;
       });
+    } on SubscriptionRequiredException {
+      if (mounted) _showSubscriptionGate(context);
     } catch (e) {
       if (mounted) {
+        final msg = e is AIGenerationException ? e.message : 'AI 생성 중 오류가 발생했어요.';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('공고문 생성 실패: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text(msg), backgroundColor: Colors.red),
         );
       }
     } finally {
-      setState(() {
-        isGenerating = false;
-      });
+      if (mounted) setState(() { isGenerating = false; });
     }
+  }
+
+  void _showSubscriptionGate(BuildContext ctx) {
+    showModalBottomSheet(
+      context: ctx,
+      backgroundColor: Colors.transparent,
+      builder: (bCtx) {
+        final bottom = MediaQuery.of(bCtx).padding.bottom;
+        return Container(
+          padding: EdgeInsets.fromLTRB(24, 20, 24, 20 + bottom),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Center(
+                child: Container(
+                  width: 40, height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE5E7EB),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                width: 60, height: 60,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFEFF6FF),
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: const Icon(Icons.workspace_premium_rounded, color: Color(0xFF3B8AFF), size: 30),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                '구독자 전용 기능이에요',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF191F28)),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'AI 공고문 작성은 라이트 이상 구독자만\n이용할 수 있어요.',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 14, color: Color(0xFF6B7280), height: 1.5),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(bCtx);
+                    Navigator.pushNamed(ctx, '/subscribe');
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF3B8AFF),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 0,
+                  ),
+                  child: const Text('구독 플랜 보기', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Color _getQualityColor(int score) {

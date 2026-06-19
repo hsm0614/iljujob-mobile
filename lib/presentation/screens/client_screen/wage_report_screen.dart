@@ -28,6 +28,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
   WageReport? _report;
   bool _loading = true;
   String? _error;
+  bool _needsSubscription = false;
 
   final _fmt = NumberFormat('#,###', 'ko_KR');
 
@@ -41,6 +42,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _needsSubscription = false;
     });
     try {
       final r = await AiLaborService.getWageReport(
@@ -50,19 +52,11 @@ class _WageReportScreenState extends State<WageReportScreen> {
         pay: widget.currentPay,
         hours: widget.hours,
       );
-      if (mounted) {
-        setState(() {
-          _report = r;
-          _loading = false;
-        });
-      }
+      if (mounted) setState(() { _report = r; _loading = false; });
+    } on SubscriptionRequiredException {
+      if (mounted) setState(() { _needsSubscription = true; _loading = false; });
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _loading = false;
-        });
-      }
+      if (mounted) setState(() { _error = e.toString(); _loading = false; });
     }
   }
 
@@ -82,14 +76,13 @@ class _WageReportScreenState extends State<WageReportScreen> {
           ),
         ],
       ),
-      body:
-          _loading
-              ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFF2563EB)),
-              )
+      body: _loading
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)))
+          : _needsSubscription
+              ? _buildSubscriptionGate()
               : _error != null
-              ? _buildError()
-              : _buildBody(),
+                  ? _buildError()
+                  : _buildBody(),
     );
   }
 
@@ -108,6 +101,71 @@ class _WageReportScreenState extends State<WageReportScreen> {
           const SizedBox(height: 16),
           ElevatedButton(onPressed: _load, child: const Text('다시 시도')),
         ],
+      ),
+    );
+  }
+
+  Widget _buildSubscriptionGate() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEFF6FF),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Icon(
+                Icons.workspace_premium_rounded,
+                color: Color(0xFF3B8AFF),
+                size: 32,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '구독자 전용 기능이에요',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w900,
+                color: Color(0xFF191F28),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '임금 AI 리포트는 라이트 이상 구독자만\n이용할 수 있어요.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Color(0xFF6B7280),
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pushNamed(context, '/subscribe'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF3B8AFF),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  '구독 플랜 보기',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

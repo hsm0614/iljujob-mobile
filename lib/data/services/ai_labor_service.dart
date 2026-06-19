@@ -7,6 +7,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/models/job.dart';
 
+class SubscriptionRequiredException implements Exception {
+  const SubscriptionRequiredException();
+  @override
+  String toString() => 'SubscriptionRequiredException';
+}
+
 // ── 임금 리포트 모델 ─────────────────────────────────────────────
 class WageReport {
   final String category;
@@ -149,6 +155,10 @@ class AiLaborService {
         if (jobId != null) 'jobId': jobId,
       }),
     ).timeout(const Duration(seconds: 20));
+
+    if (resp.statusCode == 401 || resp.statusCode == 403) {
+      throw const SubscriptionRequiredException();
+    }
 
     final data = jsonDecode(utf8.decode(resp.bodyBytes));
     if (data['ok'] != true) throw data['message'] ?? '분석 실패';
