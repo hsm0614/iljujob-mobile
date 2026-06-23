@@ -3676,7 +3676,104 @@ class _PublishSheetState extends State<_PublishSheet> {
   TimeOfDay? _scheduledTime;
   bool _confirming = false;
 
+  final ScrollController _scrollCtrl = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
+
   bool get _paidOk => widget.paidPassCount > 0 || widget.paidPassCount == -1;
+
+  void _selectInstant() {
+    if (!_paidOk) {
+      widget.onBuyPass();
+      return;
+    }
+    setState(() => _boosterSelected = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_scrollCtrl.hasClients) {
+        _scrollCtrl.animateTo(
+          _scrollCtrl.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 350),
+          curve: Curves.easeOut,
+        );
+      }
+    });
+  }
+
+  void _showFreeUpsell() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(ctx).padding.bottom + 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 36, height: 4, decoration: BoxDecoration(color: const Color(0xFFE5E7EB), borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            Container(
+              width: 52, height: 52,
+              decoration: BoxDecoration(color: const Color(0xFFFFF7ED), shape: BoxShape.circle),
+              child: const Icon(Icons.schedule_rounded, size: 26, color: Color(0xFFFF9500)),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              '무료 게시는 12시간 뒤에 노출돼요',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: Color(0xFF111827)),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              '즉시게시 이용권을 사용하면 지금 바로\n상단에 노출할 수 있어요.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Color(0xFF6B7280), height: 1.5),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      widget.onFreeSubmit();
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      side: const BorderSide(color: Color(0xFFE5E7EB)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('그냥 올리기', style: TextStyle(color: Color(0xFF6B7280), fontWeight: FontWeight.w600)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _selectInstant();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _blue,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: const Text('지금 올리기 →', style: TextStyle(fontWeight: FontWeight.w700)),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   String get _scheduledLabel {
     if (_scheduledDate == null || _scheduledTime == null) return '날짜·시간 선택';
@@ -3714,6 +3811,7 @@ class _PublishSheetState extends State<_PublishSheet> {
     return Padding(
       padding: EdgeInsets.fromLTRB(20, 0, 20, (kb > 0 ? kb : pad) + 16),
       child: SingleChildScrollView(
+        controller: _scrollCtrl,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -3727,20 +3825,6 @@ class _PublishSheetState extends State<_PublishSheet> {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              '마지막으로\n등록 방식을 선택해주세요',
-              style: TextStyle(
-                fontSize: 22,
-                fontFamily: 'Jalnan2TTF',
-                color: _text,
-                height: 1.35,
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              '기본 등록으로 시작하거나, 부스터로 노출 옵션을 추가할 수 있어요',
-              style: TextStyle(fontSize: 13, color: _label),
-            ),
             if (widget.availableWorkersCount > 0) ...[
               const SizedBox(height: 14),
               Container(
@@ -3895,14 +3979,8 @@ class _PublishSheetState extends State<_PublishSheet> {
               _CompareCard(
                 paidPassCount: widget.paidPassCount,
                 passCountLoading: widget.passCountLoading,
-                onFreeTap: widget.onFreeSubmit,
-                onPaidTap: () {
-                  if (!_paidOk) {
-                    widget.onBuyPass();
-                    return;
-                  }
-                  setState(() => _boosterSelected = true);
-                },
+                onFreeTap: _showFreeUpsell,
+                onPaidTap: _selectInstant,
               ),
               if (_boosterSelected == true) ...[
                 const SizedBox(height: 20),
@@ -3979,17 +4057,19 @@ class _PublishSheetState extends State<_PublishSheet> {
               ],
             ] else ...[
               const SizedBox(height: 8),
-              const Icon(Icons.warning_amber_rounded, size: 36, color: _blue),
+              const Icon(Icons.flash_on_rounded, size: 36, color: _blue),
               const SizedBox(height: 12),
-              const Text(
-                '이용권 1회 차감',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              Text(
+                widget.paidPassCount == -1 ? '즉시게시로 등록할까요?' : '이용권 1회 차감',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 8),
-              const Text(
-                '이 공고를 등록하면 보유 이용권이\n1회 차감됩니다. 진행하시겠어요?',
+              Text(
+                widget.paidPassCount == -1
+                    ? '구독 혜택으로 즉시 노출됩니다.\n이용권 차감 없이 진행됩니다.'
+                    : '이 공고를 등록하면 보유 이용권이\n1회 차감됩니다. 진행하시겠어요?',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Colors.black87),
+                style: const TextStyle(fontSize: 14, color: Colors.black87),
               ),
               const SizedBox(height: 24),
               Row(
