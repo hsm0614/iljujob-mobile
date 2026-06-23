@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:intl/intl.dart';
 import 'package:iljujob/data/services/job_insight_service.dart';
+import 'package:iljujob/presentation/screens/subscription_plans_screen.dart';
 
 class JobInsightSheet extends StatefulWidget {
   final int jobId;
@@ -47,6 +48,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
 
   JobInsight? _data;
   bool _isLoading = true;
+  bool _needsSubscription = false;
   String? _error;
 
   @override
@@ -56,22 +58,17 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
   }
 
   Future<void> _load() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-    final d = await JobInsightService.getJobInsight(widget.jobId.toString());
-    if (!mounted) return;
-    if (d != null) {
-      setState(() {
-        _data = d;
-        _isLoading = false;
-      });
-    } else {
-      setState(() {
-        _error = '인사이트를 불러오지 못했어요';
-        _isLoading = false;
-      });
+    setState(() { _isLoading = true; _error = null; _needsSubscription = false; });
+    try {
+      final d = await JobInsightService.getJobInsight(widget.jobId.toString());
+      if (!mounted) return;
+      setState(() { _data = d; _isLoading = false; });
+    } on InsightSubscriptionRequiredException {
+      if (!mounted) return;
+      setState(() { _needsSubscription = true; _isLoading = false; });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() { _error = '인사이트를 불러오지 못했어요'; _isLoading = false; });
     }
   }
 
@@ -141,21 +138,67 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
 
               // ── 본문 ──
               Expanded(
-                child:
-                    _isLoading
-                        ? const Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation(_blue),
-                          ),
-                        )
-                        : _error != null
-                        ? _buildError()
-                        : _buildContent(ctrl),
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(_blue)))
+                    : _needsSubscription
+                    ? _buildSubscriptionGate()
+                    : _error != null
+                    ? _buildError()
+                    : _buildContent(ctrl),
               ),
             ],
           ),
     );
   }
+
+  Widget _buildSubscriptionGate() => Center(
+    child: Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF3182F6), Color(0xFF6C5CE7)],
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Text('✨', style: TextStyle(fontSize: 32)),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            '구독자 전용 기능이에요',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            '공고 인사이트는 구독 플랜에서\n이용할 수 있어요.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionPlansScreen()));
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+              child: const Text('구독 플랜 보기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
 
   Widget _buildError() => Center(
     child: Column(

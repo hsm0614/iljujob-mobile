@@ -5,6 +5,10 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iljujob/config/constants.dart';
 
+class InsightSubscriptionRequiredException implements Exception {
+  const InsightSubscriptionRequiredException();
+}
+
 // ════════════════════════════════════════════════════════
 //  모델
 // ════════════════════════════════════════════════════════
@@ -287,14 +291,13 @@ class JobInsightService {
 
   // ── 4. 공고 인사이트 ──────────────────────────────────
   static Future<JobInsight?> getJobInsight(String jobId) async {
-    try {
-      final res = await http.get(
-        Uri.parse('$baseUrl/api/job/$jobId/insight'),
-        headers: await _headers(),
-      ).timeout(const Duration(seconds: 8));
-      if (res.statusCode != 200) return null;
-      final d = jsonDecode(res.body) as Map<String, dynamic>;
-      return JobInsight.fromJson(d);
-    } catch (_) { return null; }
+    final res = await http.get(
+      Uri.parse('$baseUrl/api/job/$jobId/insight'),
+      headers: await _headers(),
+    ).timeout(const Duration(seconds: 8));
+    if (res.statusCode == 403) throw const InsightSubscriptionRequiredException();
+    if (res.statusCode != 200) return null;
+    final d = jsonDecode(res.body) as Map<String, dynamic>;
+    return JobInsight.fromJson(d);
   }
 }
