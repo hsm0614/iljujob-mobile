@@ -1538,18 +1538,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         ),
                         onTap: () => Navigator.pop(context, 'edit'),
                       ),
-                    if (!isClosed)
-                      ListTile(
-                        leading: const Icon(
-                          Icons.recommend_outlined,
-                          color: AppColors.primary,
-                        ),
-                        title: const Text(
-                          '맞춤 인재',
-                          style: TextStyle(fontWeight: FontWeight.w800),
-                        ),
-                        onTap: () => Navigator.pop(context, 'recommend'),
-                      ),
                     if (!isClosed && job.isUrgent)
                       ListTile(
                         leading: const Icon(
@@ -1634,9 +1622,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       case 'applicants':
         FirebaseAnalytics.instance.logEvent(name: 'client_applicants_tap');
         Navigator.pushNamed(context, '/applicants', arguments: job.id);
-        break;
-      case 'recommend':
-        _openRecommendedWorkersByJobId(job.id.toString());
         break;
       case 'insight':
         final jobId = int.tryParse(job.id.toString());
@@ -2174,7 +2159,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   ),
                 ],
                 const SizedBox(height: 12),
-                // 카드 하단 버튼: 지원자 / 인사이트 / 재공고(마감시만) / 더보기
+                // 카드 하단 버튼: 지원자 / 인사이트 / 맞춤인재 / 재공고(마감시만) / 더보기
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -2204,6 +2189,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         }
                       },
                     ),
+                    if (!isClosed)
+                      _actionBtn(
+                        icon: Icons.person_search_rounded,
+                        label: '맞춤 인재',
+                        color: AppColors.primary,
+                        onTap: () => _openRecommendedWorkersByJobId(job.id.toString()),
+                      ),
                     if (isClosed)
                       _actionBtn(
                         icon: Icons.replay_circle_filled,
