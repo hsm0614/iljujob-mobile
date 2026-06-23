@@ -93,7 +93,7 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
       items.sort((a, b) =>
           _toDouble(b['score']).compareTo(_toDouble(a['score'])));
 
-      final ids = items.map((e) => (e['workerId'] as num).toInt()).toSet().toList();
+      final ids = items.map((e) => _toDouble(e['workerId']).toInt()).toSet().toList();
       final brief = await widget.api.fetchWorkerBriefBatch(ids);
 
       if (!mounted) return;
@@ -211,7 +211,7 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
                               itemBuilder: (_, i) {
                                 final it = _items[i];
                                 final workerId =
-                                    (it['workerId'] as num).toInt();
+                                    _toDouble(it['workerId']).toInt();
                                 final profile = _profiles[workerId];
                                 final busy = _inviting.contains(workerId);
                                 final state =
@@ -414,7 +414,7 @@ class _WorkerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final workerId = (data['workerId'] as num).toInt();
+    final workerId = _toDouble(data['workerId']).toInt();
     final scoreRaw = _toDouble(data['score']).clamp(0.0, 1.0);
     final matchPct = scoreRaw * 100;
     final dist = _toDouble(data['distKm']);
@@ -427,14 +427,15 @@ class _WorkerCard extends StatelessWidget {
         ? maskName(rawName)
         : '인재 #$workerId';
 
-    final activityScore = (profile?['activityScore'] as num?)?.toInt() ?? 0;
+    final activityScore = profile == null ? 0 : _toDouble(profile!['activityScore']).toInt();
     final grade = _grade(activityScore);
     final gradeColor = _gradeColor(grade);
     final matchColor = _matchColor(matchPct);
 
     // 추가 정보 (카테고리, 나이, 성별)
     final category = (profile?['mainCategory'] as String?)?.trim();
-    final birthYear = (profile?['birthYear'] as num?)?.toInt();
+    final birthYearRaw = profile?['birthYear'];
+    final birthYear = birthYearRaw == null ? null : _toDouble(birthYearRaw).toInt();
     final genderRaw = (profile?['gender'] as String?)?.trim() ?? '';
     final gender = genderRaw == 'M' || genderRaw == '남'
         ? '남'
