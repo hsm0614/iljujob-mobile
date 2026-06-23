@@ -7,6 +7,12 @@ enum _Sort { recommend, distance }
 
 enum InviteState { idle, pending, active }
 
+double _toDouble(dynamic v, [double fallback = 0.0]) {
+  if (v == null) return fallback;
+  if (v is num) return v.toDouble();
+  return double.tryParse(v.toString()) ?? fallback;
+}
+
 class RecommendedWorkersSheet extends StatefulWidget {
   final AiApi api;
   final int jobId;
@@ -85,7 +91,7 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
           .toList();
 
       items.sort((a, b) =>
-          ((b['score'] ?? 0) as num).compareTo((a['score'] ?? 0) as num));
+          _toDouble(b['score']).compareTo(_toDouble(a['score'])));
 
       final ids = items.map((e) => (e['workerId'] as num).toInt()).toSet().toList();
       final brief = await widget.api.fetchWorkerBriefBatch(ids);
@@ -113,11 +119,10 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
       if (_items.isEmpty) return;
       if (s == _Sort.recommend) {
         _items.sort((a, b) =>
-            ((b['score'] ?? 0) as num).compareTo((a['score'] ?? 0) as num));
+            _toDouble(b['score']).compareTo(_toDouble(a['score'])));
       } else {
         _items.sort((a, b) =>
-            ((a['distKm'] ?? 1e9) as num)
-                .compareTo((b['distKm'] ?? 1e9) as num));
+            _toDouble(a['distKm'], 1e9).compareTo(_toDouble(b['distKm'], 1e9)));
       }
     });
   }
@@ -410,9 +415,9 @@ class _WorkerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final workerId = (data['workerId'] as num).toInt();
-    final scoreRaw = ((data['score'] ?? 0) as num).toDouble().clamp(0.0, 1.0);
+    final scoreRaw = _toDouble(data['score']).clamp(0.0, 1.0);
     final matchPct = scoreRaw * 100;
-    final dist = ((data['distKm'] ?? 0) as num).toDouble();
+    final dist = _toDouble(data['distKm']);
     final reasons =
         (data['reasons'] as List? ?? const []).cast<String>().take(3).toList();
 
