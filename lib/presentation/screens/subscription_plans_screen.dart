@@ -29,30 +29,29 @@ class _Plan {
   final String key;
   final String name;
   final int    price;
-  final int    instantCredits;
-  final int    urgentCredits;
-  final int    maxRecipients;
+  final int    instantCredits;     // -1=무제한, N=횟수
+  final bool   unlimitedInstant;
+  final bool   unlimitedUrgent;
   final bool   attendanceCare;
   final bool   priorityCs;
   final bool   recommended;
-  final int    aiMonthly; // AI 공고문 생성 횟수/월 (-1=무제한)
   final String iosId;
   final String androidId;
   const _Plan({
     required this.key, required this.name, required this.price,
-    required this.instantCredits, required this.urgentCredits,
-    required this.maxRecipients,
+    required this.instantCredits,
+    this.unlimitedInstant = false,
+    this.unlimitedUrgent  = false,
     required this.attendanceCare, required this.priorityCs,
     required this.iosId, required this.androidId,
     this.recommended = false,
-    this.aiMonthly = 3,
   });
 }
 
 const _plans = [
-  _Plan(key: 'lite',     name: '라이트',   price: 9900,  instantCredits: 3, urgentCredits: 1, maxRecipients: 10, attendanceCare: false, priorityCs: false, aiMonthly: 3,  iosId: _kIosLite,     androidId: _kAndLite),
-  _Plan(key: 'standard', name: '스탠다드', price: 19900, instantCredits: 3, urgentCredits: 3, maxRecipients: 15, attendanceCare: true,  priorityCs: false, aiMonthly: 10, iosId: _kIosStandard, androidId: _kAndStandard, recommended: true),
-  _Plan(key: 'pro',      name: '프로',     price: 39900, instantCredits: 5, urgentCredits: 5, maxRecipients: 20, attendanceCare: true,  priorityCs: true,  aiMonthly: -1, iosId: _kIosPro,      androidId: _kAndPro),
+  _Plan(key: 'lite',     name: '라이트',   price: 9900,  instantCredits: 3,  unlimitedInstant: false, unlimitedUrgent: false, attendanceCare: false, priorityCs: false, iosId: _kIosLite,     androidId: _kAndLite),
+  _Plan(key: 'standard', name: '스탠다드', price: 19900, instantCredits: -1, unlimitedInstant: true,  unlimitedUrgent: false, attendanceCare: true,  priorityCs: false, iosId: _kIosStandard, androidId: _kAndStandard, recommended: true),
+  _Plan(key: 'pro',      name: '프로',     price: 39900, instantCredits: -1, unlimitedInstant: true,  unlimitedUrgent: true,  attendanceCare: true,  priorityCs: true,  iosId: _kIosPro,      androidId: _kAndPro),
 ];
 
 class SubscriptionPlansScreen extends StatefulWidget {
@@ -427,13 +426,14 @@ class _PlanCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 6,
               children: [
-                _Chip(icon: Icons.flash_on_rounded, label: '즉시 게시 ${plan.instantCredits}회', color: AppColors.primary),
-                _Chip(icon: Icons.bolt_rounded, label: '긴급 호출 ${plan.urgentCredits}회 (${plan.maxRecipients}명)', color: const Color(0xFFEF4444)),
                 _Chip(
-                  icon: Icons.auto_awesome_rounded,
-                  label: 'AI 공고문 ${plan.aiMonthly == -1 ? '무제한' : '${plan.aiMonthly}회/월'}',
-                  color: const Color(0xFF6C5CE7),
+                  icon: Icons.flash_on_rounded,
+                  label: plan.unlimitedInstant ? '즉시게시 무제한' : '즉시게시 ${plan.instantCredits}회',
+                  color: AppColors.primary,
                 ),
+                if (plan.unlimitedUrgent)
+                  _Chip(icon: Icons.bolt_rounded, label: '긴급호출 무제한', color: const Color(0xFFEF4444)),
+                _Chip(icon: Icons.auto_awesome_rounded, label: 'AI 기능 무제한', color: const Color(0xFF6C5CE7)),
                 _Chip(icon: Icons.workspace_premium_rounded, label: '구독 배지', color: const Color(0xFFFF9500)),
                 if (plan.attendanceCare)
                   _Chip(icon: Icons.verified_user_rounded, label: '출근 안심', color: const Color(0xFF22C55E)),
@@ -484,15 +484,14 @@ class _CompareTable extends StatelessWidget {
   const _CompareTable({required this.selectedPlan});
 
   static const _rows = [
-    ['즉시 게시', '3회', '3회', '5회'],
-    ['긴급 호출', '1회', '3회', '5회'],
-    ['발송 인원', '10명', '15명', '20명'],
-    ['AI 공고문', '3회/월', '10회/월', '무제한'],
+    ['즉시게시',    '3회/월',  '무제한', '무제한'],
+    ['긴급호출',    '단건 구매', '단건 구매', '무제한'],
+    ['AI 기능',    '포함', '포함', '포함'],
+    ['맞춤 인재',   '포함', '포함', '포함'],
     ['임금 리포트', '포함', '포함', '포함'],
-    ['출근 안심', '-',  '포함', '포함'],
-    ['구독 배지', '포함', '포함', '포함'],
-    ['크레딧 이월', '1개월', '1개월', '1개월'],
-    ['우선 CS', '-', '-', '포함'],
+    ['출근 안심',   '-',   '포함', '포함'],
+    ['구독 배지',   '포함', '포함', '포함'],
+    ['우선 CS',    '-',   '-',   '포함'],
   ];
 
   @override
@@ -579,7 +578,7 @@ class _Notice extends StatelessWidget {
           Text('유의사항', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
           SizedBox(height: 6),
           Text('• 구독은 30일 단위로 자동 갱신됩니다.', style: style),
-          Text('• 미사용 크레딧은 다음 달로 1개월 이월됩니다.', style: style),
+          Text('• 라이트 플랜의 미사용 즉시게시 이용권은 1개월 이월됩니다.', style: style),
           Text('• 구독 취소 시 만료일까지 혜택이 유지됩니다.', style: style),
           Text('• 결제는 구독 선택 즉시 이루어집니다.', style: style),
         ],

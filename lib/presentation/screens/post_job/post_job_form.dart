@@ -191,8 +191,6 @@ class _PostJobFormState extends State<PostJobForm>
 
   static const _kAiFreeWeekKey = 'ai_free_week_key';
   static const _kAiFreeUsedKey = 'ai_free_used';
-  static const _kAiMonthKey = 'ai_month_key';
-  static const _kAiMonthUsed = 'ai_month_used';
 
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fadeAnim;
@@ -455,42 +453,16 @@ class _PostJobFormState extends State<PostJobForm>
     }
   }
 
-  String _currentMonthKey() {
-    final now = DateTime.now();
-    return '${now.year}_${now.month.toString().padLeft(2, '0')}';
-  }
-
-  // 플랜별 AI 할당량 로드: -1=무제한(pro), 0=소진, N=잔여
+  // AI 할당량 로드: 구독자 무제한(-1), 비구독자 주 1회 무료
   Future<void> _loadAiQuota() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    if (_subscriptionPlan == 'pro') {
+    if (_subscriptionPlan != null) {
       if (!mounted) return;
       setState(() => _aiQuotaRemaining = -1);
       return;
     }
 
-    if (_subscriptionPlan == 'lite' || _subscriptionPlan == 'standard') {
-      final limit = _subscriptionPlan == 'standard' ? 10 : 3;
-      final monthKey = _currentMonthKey();
-      int used = prefs.getInt(_kAiMonthUsed) ?? 0;
-      if (prefs.getString(_kAiMonthKey) != monthKey) {
-        await prefs.setString(_kAiMonthKey, monthKey);
-        await prefs.setInt(_kAiMonthUsed, 0);
-        used = 0;
-      }
-      final now = DateTime.now();
-      final nextMonth = DateTime(now.year, now.month + 1, 1);
-      if (!mounted) return;
-      setState(() {
-        _aiQuotaRemaining = (limit - used).clamp(0, limit);
-        _aiQuotaResetText =
-            DateFormat('M월 d일', 'ko_KR').format(nextMonth);
-      });
-      return;
-    }
-
     // 비구독: 주 1회 무료
+    final prefs = await SharedPreferences.getInstance();
     final nowKey = _currentWeekKey();
     int used = prefs.getInt(_kAiFreeUsedKey) ?? 0;
     if (prefs.getString(_kAiFreeWeekKey) != nowKey) {
@@ -501,28 +473,15 @@ class _PostJobFormState extends State<PostJobForm>
     if (!mounted) return;
     setState(() {
       _aiQuotaRemaining = used >= 1 ? 0 : 1;
-      _aiQuotaResetText = DateFormat(
-        'M월 d일 00:00',
-        'ko_KR',
-      ).format(_nextWeekStart());
+      _aiQuotaResetText = DateFormat('M월 d일 00:00', 'ko_KR').format(_nextWeekStart());
     });
   }
 
   Future<void> _consumeAiUsage() async {
-    if (_subscriptionPlan == 'pro') return;
-    final prefs = await SharedPreferences.getInstance();
-
-    if (_subscriptionPlan == 'lite' || _subscriptionPlan == 'standard') {
-      final limit = _subscriptionPlan == 'standard' ? 10 : 3;
-      final used = (prefs.getInt(_kAiMonthUsed) ?? 0) + 1;
-      await prefs.setString(_kAiMonthKey, _currentMonthKey());
-      await prefs.setInt(_kAiMonthUsed, used);
-      if (!mounted) return;
-      setState(() => _aiQuotaRemaining = (limit - used).clamp(0, limit));
-      return;
-    }
+    if (_subscriptionPlan != null) return; // 구독자는 소비 없음
 
     // 비구독: 주 1회 소진
+    final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_kAiFreeWeekKey, _currentWeekKey());
     await prefs.setInt(_kAiFreeUsedKey, 1);
     if (!mounted) return;
@@ -3717,7 +3676,7 @@ class _PublishSheetState extends State<_PublishSheet> {
   TimeOfDay? _scheduledTime;
   bool _confirming = false;
 
-  bool get _paidOk => widget.paidPassCount > 0;
+  bool get _paidOk => widget.paidPassCount > 0 || widget.paidPassCount == -1;
 
   String get _scheduledLabel {
     if (_scheduledDate == null || _scheduledTime == null) return '날짜·시간 선택';
@@ -3818,7 +3777,7 @@ class _PublishSheetState extends State<_PublishSheet> {
             if (!_confirming) ...[
               // ── 긴급호출 (최우선 CTA)
               GestureDetector(
-                onTap: widget.urgentPassCount > 0
+                onTap: (widget.urgentPassCount > 0 || widget.urgentPassCount == -1)
                     ? widget.onUrgentSubmit
                     : widget.onBuyPass,
                 child: Container(
@@ -3826,7 +3785,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: widget.urgentPassCount > 0
+                      colors: (widget.urgentPassCount > 0 || widget.urgentPassCount == -1)
                           ? [const Color(0xFFEF4444), const Color(0xFFDC2626)]
                           : [const Color(0xFFF87171), const Color(0xFFEF4444)],
                       begin: Alignment.topLeft,
@@ -3881,9 +3840,11 @@ class _PublishSheetState extends State<_PublishSheet> {
                                     borderRadius: BorderRadius.circular(99),
                                   ),
                                   child: Text(
-                                    widget.urgentPassCount > 0
-                                        ? '${widget.urgentPassCount}회 보유'
-                                        : '이용권 없음',
+                                    widget.urgentPassCount == -1
+                                        ? '무제한 (구독)'
+                                        : widget.urgentPassCount > 0
+                                            ? '${widget.urgentPassCount}회 보유'
+                                            : '이용권 없음',
                                     style: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
@@ -3895,7 +3856,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              widget.urgentPassCount > 0
+                              (widget.urgentPassCount > 0 || widget.urgentPassCount == -1)
                                   ? '즉시 노출 · 반경 5km 알바생 최대 10명 · 무응답 100% 환급'
                                   : '이용권을 구매하면 즉시 노출 + 알바생 직접 호출 가능',
                               style: TextStyle(
@@ -4221,7 +4182,7 @@ class _CompareCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final paidOk = paidPassCount > 0;
+    final paidOk = paidPassCount > 0 || paidPassCount == -1;
     return Column(
       children: [
         Container(
@@ -4394,6 +4355,8 @@ class _CompareCard extends StatelessWidget {
                       Text(
                         passCountLoading
                             ? '조회 중…'
+                            : paidPassCount == -1
+                            ? '무제한 (구독 혜택)'
                             : paidOk
                             ? '이용권 $paidPassCount개 보유'
                             : '이용권 없음 · 구매하기',

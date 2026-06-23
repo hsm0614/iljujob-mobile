@@ -1678,7 +1678,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       return;
     }
 
-    // 무료 공고 → 이용권 차감 확인 바텀시트
+    // 구독 상태 확인 (standard/pro = 무제한)
+    final sub = await AiApi(baseUrl).fetchMySubscription();
+    final isUnlimited = sub.active && (sub.plan == 'standard' || sub.plan == 'pro');
+    if (!mounted) return;
+
+    // 무료 공고 → 즉시게시 확인 바텀시트
     final confirmed = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: Colors.white,
@@ -1706,9 +1711,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
             ),
             const SizedBox(height: 8),
-            const Text(
-              '즉시게시 이용권 1개를 사용해 지금 바로 공고를 노출합니다.\n12시간을 기다리지 않아도 됩니다.',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
+            Text(
+              isUnlimited
+                  ? '구독 혜택으로 즉시 게시됩니다. 이용권 차감 없이 지금 바로 공고를 노출합니다.'
+                  : '즉시게시 이용권 1개를 사용해 지금 바로 공고를 노출합니다.\n12시간을 기다리지 않아도 됩니다.',
+              style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
             ),
             const SizedBox(height: 24),
             Row(
@@ -1734,7 +1741,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 0,
                     ),
-                    child: const Text('이용권 사용', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                    child: Text(
+                      isUnlimited ? '즉시 게시' : '이용권 사용',
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
+                    ),
                   ),
                 ),
               ],
