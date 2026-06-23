@@ -1398,25 +1398,24 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   // ======= Job Cards =======
   Widget _badge(String text, {required Color color, IconData? icon}) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.10),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(AppRadius.full),
-        border: Border.all(color: color.withValues(alpha: 0.28)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 6),
+            Icon(icon, size: 11, color: color.withValues(alpha: 0.75)),
+            const SizedBox(width: 4),
           ],
           Text(
             text,
             style: TextStyle(
               fontSize: 11,
-              fontWeight: FontWeight.w900,
-              color: color,
+              fontWeight: FontWeight.w600,
+              color: color.withValues(alpha: 0.85),
               height: 1.0,
             ),
           ),
@@ -1899,37 +1898,17 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 runSpacing: 6,
                 children: [
                   if (job.isUrgent && !isClosed)
-                    _badge(
-                      '⚡ 긴급',
-                      color: AppColors.badgeNew,
-                      icon: Icons.emergency_rounded,
-                    ),
-                  if (reserved)
-                    _badge(
-                      publishRemainText(job),
-                      color: AppColors.warning,
-                      icon: Icons.schedule_outlined,
-                    ),
-                  if (pinned)
-                    _badge(
-                      '상단 고정',
-                      color: AppColors.badgeUrgent,
-                      icon: Icons.push_pin_outlined,
-                    ),
-                  if (pinned)
-                    _badge(pinnedRemainText(job), color: AppColors.badgeUrgent),
+                    _badge('⚡ 긴급', color: const Color(0xFFEF4444), icon: Icons.emergency_rounded),
+                  if (reserved && job.isPaid)
+                    _badge(publishRemainText(job), color: const Color(0xFF6B7280), icon: Icons.schedule_outlined),
+                  if (pinned) ...[
+                    _badge('상단 고정', color: const Color(0xFF6B7280), icon: Icons.push_pin_outlined),
+                    _badge(pinnedRemainText(job), color: const Color(0xFF6B7280)),
+                  ],
                   if (isClosed)
-                    _badge(
-                      '마감',
-                      color: AppColors.textSecondary,
-                      icon: Icons.stop_circle_outlined,
-                    ),
+                    _badge('마감', color: const Color(0xFF9CA3AF), icon: Icons.stop_circle_outlined),
                   if (job.expiresAt != null && !isClosed)
-                    _badge(
-                      getExpiryText(job),
-                      color: AppColors.error,
-                      icon: Icons.access_time,
-                    ),
+                    _badge(getExpiryText(job), color: const Color(0xFFEF4444), icon: Icons.access_time),
                 ],
               ),
               if (job.isUrgent && !isClosed) ...[
@@ -2111,46 +2090,19 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     runSpacing: 6,
                     children: [
                       if (job.isUrgent && !isClosed)
-                        _badge(
-                          '⚡ 긴급',
-                          color: AppColors.badgeNew,
-                          icon: Icons.emergency_rounded,
-                        ),
-                      if (reserved)
-                        _badge(
-                          publishRemainText(job),
-                          color: AppColors.warning,
-                          icon: Icons.schedule_outlined,
-                        ),
-                      if (pinned)
-                        _badge(
-                          '상단 고정',
-                          color: AppColors.badgeUrgent,
-                          icon: Icons.push_pin_outlined,
-                        ),
-                      if (pinned)
-                        _badge(
-                          pinnedRemainText(job),
-                          color: AppColors.badgeUrgent,
-                        ),
+                        _badge('⚡ 긴급', color: const Color(0xFFEF4444), icon: Icons.emergency_rounded),
+                      if (reserved && job.isPaid)
+                        _badge(publishRemainText(job), color: const Color(0xFF6B7280), icon: Icons.schedule_outlined),
+                      if (pinned) ...[
+                        _badge('상단 고정', color: const Color(0xFF6B7280), icon: Icons.push_pin_outlined),
+                        _badge(pinnedRemainText(job), color: const Color(0xFF6B7280)),
+                      ],
                       if (isClosed)
-                        _badge(
-                          '마감',
-                          color: AppColors.textSecondary,
-                          icon: Icons.stop_circle_outlined,
-                        ),
+                        _badge('마감', color: const Color(0xFF9CA3AF), icon: Icons.stop_circle_outlined),
                       if (isClosed && job.zeroApplicantRefunded)
-                        _badge(
-                          '이용권 환급',
-                          color: AppColors.success,
-                          icon: Icons.card_giftcard_rounded,
-                        ),
+                        _badge('이용권 환급', color: AppColors.success, icon: Icons.card_giftcard_rounded),
                       if (job.expiresAt != null && !isClosed)
-                        _badge(
-                          getExpiryText(job),
-                          color: AppColors.error,
-                          icon: Icons.access_time,
-                        ),
+                        _badge(getExpiryText(job), color: const Color(0xFFEF4444), icon: Icons.access_time),
                     ],
                   ),
                   const SizedBox(height: 10),
