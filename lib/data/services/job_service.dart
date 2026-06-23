@@ -66,6 +66,12 @@ String _boolTo01(dynamic v) {
 // ════════════════════════════════════════════════════════
 //  JobService
 // ════════════════════════════════════════════════════════
+class NoPassException implements Exception {
+  const NoPassException();
+  @override
+  String toString() => 'NoPassException';
+}
+
 class JobService {
   // ✅ FIX: _parseDateToLocal 제거
   //    - 원래 인스턴스 메서드로 정의되어 static 클래스 내에서 호출 불가
@@ -470,6 +476,9 @@ class JobService {
     final uri  = Uri.parse('$baseUrl/api/job/$jobId/publish-now');
     final resp = await http.post(uri, headers: {'Authorization': 'Bearer $token'});
 
+    if (resp.statusCode == 402) {
+      throw const NoPassException();
+    }
     if (resp.statusCode != 200) {
       throw Exception('즉시 게시 실패: ${resp.body}');
     }
