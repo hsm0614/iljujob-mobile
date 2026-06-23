@@ -252,7 +252,9 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                '${_plan.name} 플랜 크레딧이\n계정에 지급되었습니다.',
+                _plan.unlimitedInstant
+                    ? '${_plan.name} 플랜이 활성화되었습니다.\n즉시게시를 무제한으로 사용할 수 있어요.'
+                    : '${_plan.name} 플랜 즉시게시 이용권 3개가\n계정에 지급되었습니다.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
               ),

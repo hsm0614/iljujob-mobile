@@ -14,25 +14,20 @@ const _kAndroidPackage = 'kr.co.iljujob';
 // ─── 플랜별 혜택 정의 ────────────────────────────────────────────
 const _planBenefits = {
   'lite': [
-    _Benefit(Icons.flash_on_rounded, '즉시 게시 3회/월', Color(0xFF3B8AFF)),
-    _Benefit(Icons.emergency_rounded, '긴급 호출 1회/월 (반경 5km, 10명)', Color(0xFFEF4444)),
-    _Benefit(Icons.auto_awesome_rounded, 'AI 공고문 작성 3회/월', Color(0xFF6C5CE7)),
-    _Benefit(Icons.analytics_rounded, '업종 임금 AI 리포트', Color(0xFF6C5CE7)),
+    _Benefit(Icons.flash_on_rounded, '즉시게시 3회/월', Color(0xFF3B8AFF)),
+    _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', Color(0xFF6C5CE7)),
     _Benefit(Icons.verified_rounded, '구독 배지 표시', Color(0xFF3B8AFF)),
   ],
   'standard': [
-    _Benefit(Icons.flash_on_rounded, '즉시 게시 3회/월', Color(0xFF3B8AFF)),
-    _Benefit(Icons.emergency_rounded, '긴급 호출 3회/월 (반경 5km, 15명)', Color(0xFFEF4444)),
-    _Benefit(Icons.auto_awesome_rounded, 'AI 공고문 작성 10회/월', Color(0xFF6C5CE7)),
-    _Benefit(Icons.analytics_rounded, '업종 임금 AI 리포트', Color(0xFF6C5CE7)),
+    _Benefit(Icons.flash_on_rounded, '즉시게시 무제한', Color(0xFF3B8AFF)),
+    _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', Color(0xFF6C5CE7)),
     _Benefit(Icons.verified_user_rounded, '출근 안심 포함', Color(0xFF10B981)),
     _Benefit(Icons.verified_rounded, '구독 배지 표시', Color(0xFF3B8AFF)),
   ],
   'pro': [
-    _Benefit(Icons.flash_on_rounded, '즉시 게시 5회/월', Color(0xFF3B8AFF)),
-    _Benefit(Icons.emergency_rounded, '긴급 호출 5회/월 (반경 5km, 20명)', Color(0xFFEF4444)),
-    _Benefit(Icons.auto_awesome_rounded, 'AI 공고문 작성 무제한', Color(0xFF6C5CE7)),
-    _Benefit(Icons.analytics_rounded, '업종 임금 AI 리포트', Color(0xFF6C5CE7)),
+    _Benefit(Icons.flash_on_rounded, '즉시게시 무제한', Color(0xFF3B8AFF)),
+    _Benefit(Icons.bolt_rounded, '긴급호출 무제한 (반경 5km, 10명)', Color(0xFFEF4444)),
+    _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', Color(0xFF6C5CE7)),
     _Benefit(Icons.verified_user_rounded, '출근 안심 포함', Color(0xFF10B981)),
     _Benefit(Icons.headset_mic_rounded, '우선 CS 지원', Color(0xFFFFB300)),
     _Benefit(Icons.verified_rounded, '구독 배지 표시', Color(0xFF3B8AFF)),
@@ -40,9 +35,9 @@ const _planBenefits = {
 };
 
 const _defaultBenefits = [
-  _Benefit(Icons.flash_on_rounded, '즉시 게시 크레딧 매월 지급', Color(0xFF3B8AFF)),
-  _Benefit(Icons.emergency_rounded, '긴급 호출 크레딧 매월 지급', Color(0xFFEF4444)),
-  _Benefit(Icons.auto_awesome_rounded, 'AI 공고문 작성 · 임금 리포트', Color(0xFF6C5CE7)),
+  _Benefit(Icons.flash_on_rounded, '즉시게시 이용권 (라이트 3회 / 스탠다드·프로 무제한)', Color(0xFF3B8AFF)),
+  _Benefit(Icons.bolt_rounded, '긴급호출 무제한 (프로 전용)', Color(0xFFEF4444)),
+  _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', Color(0xFF6C5CE7)),
   _Benefit(Icons.verified_rounded, '구독 배지 표시', Color(0xFF3B8AFF)),
 ];
 
@@ -376,7 +371,7 @@ class _StatusCard extends StatelessWidget {
             _infoRow('남은 기간', remainText),
           ] else
             const Text(
-              '구독하면 즉시 게시·긴급 호출 크레딧을 매월 받을 수 있어요.',
+              '구독하면 즉시게시·AI 기능을 자유롭게 사용할 수 있어요.',
               style: TextStyle(
                 color: Colors.white70,
                 fontSize: 13,
