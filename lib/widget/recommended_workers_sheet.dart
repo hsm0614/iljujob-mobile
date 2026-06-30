@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iljujob/config/app_theme.dart';
 import '../../data/services/ai_api.dart';
+import '../../data/services/client_tracking_service.dart';
 
 enum _Sort { recommend, distance }
 
@@ -102,6 +103,8 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
         _profiles = brief;
         _loading = false;
       });
+      ClientTrackingService.instance.track('candidates_sheet_open',
+          properties: {'job_id': widget.jobId, 'count': items.length});
 
       await _restoreInviteStates(ids);
     } catch (e) {
@@ -290,6 +293,8 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
       if (status == 'pending') {
         setState(() => _inviteState[workerId] = InviteState.pending);
         await _persistInviteState(workerId, InviteState.pending, roomId: roomId);
+        ClientTrackingService.instance.track('candidate_invite_sent',
+            properties: {'job_id': widget.jobId, 'worker_id': workerId});
         _showSnack('초대를 전송했어요. 구직자의 수락을 기다리는 중이에요.');
       } else if (status == 'active') {
         setState(() => _inviteState[workerId] = InviteState.active);

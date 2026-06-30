@@ -24,6 +24,7 @@ import 'package:iljujob/presentation/screens/purchase_screen.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:table_calendar/table_calendar.dart';
+import '../../../data/services/client_tracking_service.dart';
 
 // 2026년 적용 최저시급
 const int minWagePerHour = 10320;
@@ -146,6 +147,7 @@ class PostJobForm extends StatefulWidget {
 class _PostJobFormState extends State<PostJobForm>
     with TickerProviderStateMixin {
   int _q = 0;
+  bool _submitted = false;
 
   String _title = '';
   String _category = '';
@@ -223,6 +225,7 @@ class _PostJobFormState extends State<PostJobForm>
   @override
   void initState() {
     super.initState();
+    ClientTrackingService.instance.track('job_post_start');
     _fadeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 260),
@@ -240,6 +243,9 @@ class _PostJobFormState extends State<PostJobForm>
 
   @override
   void dispose() {
+    if (!_submitted) {
+      ClientTrackingService.instance.track('job_post_abandon');
+    }
     _draftSaveTimer?.cancel();
     _saveDraft();
     _fadeCtrl.dispose();
@@ -768,7 +774,10 @@ class _PostJobFormState extends State<PostJobForm>
 
       if (!mounted) return;
       await _clearDraft();
+      _submitted = true;
       final jobId = result['jobId'] as int?;
+      final postType = passType ?? 'free';
+      ClientTrackingService.instance.track('job_post_complete', properties: {'type': postType, 'job_id': jobId});
       final isUrgent = passType == 'urgent';
       final isDelayed = !isPaid && result['status'] == 'reserved';
       final eta = DateTime.now().add(const Duration(hours: 12));

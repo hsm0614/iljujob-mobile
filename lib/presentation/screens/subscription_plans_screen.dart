@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../config/app_theme.dart';
 import '../../config/constants.dart';
+import '../../data/services/client_tracking_service.dart';
 import 'potrone_screen.dart';
 
 // ── IAP 상품 ID ──────────────────────────────────────
@@ -79,6 +80,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
     if (Platform.isIOS) {
       _purchaseSub = _iap.purchaseStream.listen(_onPurchase, onError: (_) {});
     }
+    ClientTrackingService.instance.track('subscription_page_view');
   }
 
   @override
@@ -102,6 +104,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   Future<void> _purchase() async {
     if (_processing) return;
     final plan = _plan;
+    ClientTrackingService.instance.track('subscription_plan_tap', properties: {'plan': plan.key});
 
     if (Platform.isIOS) {
       await _purchaseIos(plan);
@@ -190,6 +193,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       );
       if (!mounted) return;
       if (resp.statusCode == 200) {
+        ClientTrackingService.instance.track('subscription_success', properties: {'plan': _selectedPlan});
         _showSuccess();
       } else {
         _showError('구독 활성화에 실패했어요. 고객센터에 문의해주세요.');

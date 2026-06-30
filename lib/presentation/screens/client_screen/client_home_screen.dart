@@ -24,6 +24,7 @@ import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/presentation/widgets/albailju_common.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:iljujob/presentation/screens/purchase_screen.dart';
+import '../../../data/services/client_tracking_service.dart';
 
 DateTime _nowLocal() => DateTime.now();
 
@@ -76,7 +77,7 @@ class ClientHomeScreen extends StatefulWidget {
 }
 
 class _ClientHomeScreenState extends State<ClientHomeScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   // Data
   List<Job> myJobs = [];
   bool isLoading = false;
@@ -247,6 +248,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    ClientTrackingService.instance.init(baseUrl);
+    ClientTrackingService.instance.startSession();
 
     _pageController = PageController(initialPage: 0);
 
@@ -271,7 +275,18 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ClientTrackingService.instance.startSession();
+    } else if (state == AppLifecycleState.paused) {
+      ClientTrackingService.instance.endSession();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    ClientTrackingService.instance.endSession();
     _bannerTimer?.cancel();
     _tabController.dispose();
     _pageController.dispose();
