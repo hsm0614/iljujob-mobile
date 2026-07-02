@@ -74,6 +74,8 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
 
   Future<void> _send() async {
     if (_selected.isEmpty) return;
+    final messageText = await _showMessageSheet();
+    if (messageText == null) return;
     setState(() => _sending = true);
     try {
       final resp = await http.post(
@@ -86,6 +88,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
           'jobId': widget.jobId,
           'clientId': widget.clientId,
           'workerIds': _selected.toList(),
+          if (messageText.trim().isNotEmpty) 'messageText': messageText.trim(),
         }),
       );
       if (resp.statusCode == 200) {
@@ -102,6 +105,125 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
     } finally {
       if (mounted) setState(() => _sending = false);
     }
+  }
+
+  Future<String?> _showMessageSheet() async {
+    final controller = TextEditingController(
+      text: '${widget.jobTitle} 공고에서 지금 바로 일할 분을 찾고 있어요. 가능하시면 답장해주세요!',
+    );
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (sheetContext) {
+        final bottomInset = MediaQuery.of(sheetContext).viewInsets.bottom;
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(20, 20, 20, 16 + bottomInset),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '긴급호출 문구 수정',
+                  style: TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '${_selected.length}명에게 채팅과 푸시로 함께 전달돼요.',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.35,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  minLines: 3,
+                  maxLines: 5,
+                  maxLength: 120,
+                  textInputAction: TextInputAction.newline,
+                  decoration: InputDecoration(
+                    hintText: '예: 오늘 18시부터 가능하신 분을 찾고 있어요. 시급 우대합니다.',
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    contentPadding: const EdgeInsets.all(14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: AppColors.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(
+                        color: AppColors.primary,
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(sheetContext),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.textSecondary,
+                          side: const BorderSide(color: AppColors.border),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text('취소'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed:
+                            () => Navigator.pop(
+                              sheetContext,
+                              controller.text.trim(),
+                            ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text(
+                          '긴급 호출 보내기',
+                          style: TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    controller.dispose();
+    return result;
   }
 
   void _showError(String msg) {
@@ -152,8 +274,9 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
     DateTime? dt;
     if (raw is String) {
       dt = DateTime.tryParse(raw) ?? DateTime.tryParse('${raw}Z');
-      if (dt != null && !raw.endsWith('Z') && !raw.contains('+'))
+      if (dt != null && !raw.endsWith('Z') && !raw.contains('+')) {
         dt = dt.toLocal();
+      }
     }
     if (dt == null) return '1개월+ 전 접속';
     final diff = DateTime.now().difference(dt.toLocal());

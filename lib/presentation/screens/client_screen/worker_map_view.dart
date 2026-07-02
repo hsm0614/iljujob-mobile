@@ -662,6 +662,14 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   Future<void> _sendBroadcast() async {
     final job = _selectedJob;
     if (job == null || _broadcastSending) return;
+    final messageText = await _showPushMessageSheet(
+      title: '알림 문구 수정',
+      subtitle: '반경 5km 알바생에게 보낼 푸시 문구예요.',
+      initialText:
+          '${job.location.isNotEmpty ? '[${job.location}] ' : ''}${job.title}',
+      actionLabel: '알림 발송',
+    );
+    if (messageText == null) return;
     setState(() => _broadcastSending = true);
     try {
       final res = await http
@@ -672,6 +680,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
               'jobId': job.id,
               'clientId': _clientId,
               'radiusMeters': 5000,
+              if (messageText.trim().isNotEmpty) 'pushBody': messageText.trim(),
             }),
           )
           .timeout(const Duration(seconds: 10));
@@ -716,6 +725,13 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       _showSnack('구독 중이거나 긴급호출 공고일 때만 메시지를 보낼 수 있어요.', isError: true);
       return;
     }
+    final messageText = await _showPushMessageSheet(
+      title: '긴급호출 문구 수정',
+      subtitle: '${_maskName(worker.name)}님에게 채팅과 푸시로 함께 전달돼요.',
+      initialText: '${job.title} 공고에서 지금 바로 일할 분을 찾고 있어요. 가능하시면 답장해주세요!',
+      actionLabel: '메시지 보내기',
+    );
+    if (messageText == null) return;
     setState(() => _directSending = true);
     try {
       final res = await http
@@ -726,6 +742,8 @@ class _WorkerMapViewState extends State<WorkerMapView> {
               'jobId': job.id,
               'clientId': _clientId,
               'workerIds': [worker.id],
+              if (messageText.trim().isNotEmpty)
+                'messageText': messageText.trim(),
             }),
           )
           .timeout(const Duration(seconds: 10));
@@ -772,6 +790,125 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     } finally {
       if (mounted) setState(() => _directSending = false);
     }
+  }
+
+  Future<String?> _showPushMessageSheet({
+    required String title,
+    required String subtitle,
+    required String initialText,
+    required String actionLabel,
+  }) async {
+    final controller = TextEditingController(text: initialText);
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (sheetContext) {
+        final bottomInset = MediaQuery.of(sheetContext).viewInsets.bottom;
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(20, 20, 20, 16 + bottomInset),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w900,
+                    color: _textMain,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  subtitle,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    height: 1.35,
+                    color: _textSub,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: controller,
+                  autofocus: true,
+                  minLines: 3,
+                  maxLines: 5,
+                  maxLength: 120,
+                  textInputAction: TextInputAction.newline,
+                  decoration: InputDecoration(
+                    hintText: '예: 오늘 18시부터 가능하신 분을 찾고 있어요. 시급 우대합니다.',
+                    filled: true,
+                    fillColor: const Color(0xFFF8FAFC),
+                    contentPadding: const EdgeInsets.all(14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: _border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: _border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(14),
+                      borderSide: const BorderSide(color: _primary, width: 1.5),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(sheetContext),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: _textSub,
+                          side: const BorderSide(color: _border),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: const Text('취소'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed:
+                            () => Navigator.pop(
+                              sheetContext,
+                              controller.text.trim(),
+                            ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text(
+                          actionLabel,
+                          style: const TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    controller.dispose();
+    return result;
   }
 
   void _showWorkerSheet(_Worker worker) {
