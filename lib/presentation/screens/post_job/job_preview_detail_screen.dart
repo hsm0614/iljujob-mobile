@@ -168,6 +168,9 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
 
     if (flatDays.isNotEmpty) {
       final first = flatDays.first;
+      if (first == '협의') {
+        return '요일 협의';
+      }
       if (RegExp(r'^협의\s*:').hasMatch(first)) {
         final txt = first.replaceFirst(RegExp(r'^협의\s*:\s*'), '').trim();
         return '요일 협의: ${txt.isEmpty ? '상세 협의' : txt}';
