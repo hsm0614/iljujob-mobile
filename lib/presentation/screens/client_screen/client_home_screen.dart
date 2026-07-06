@@ -1581,14 +1581,26 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     ),
                     if (reserved && !job.isPaid)
                       ListTile(
-                        leading: const Icon(Icons.publish_rounded, color: AppColors.primary),
-                        title: const Text('즉시게시로 전환 (이용권 1개)', style: TextStyle(fontWeight: FontWeight.w800)),
+                        leading: const Icon(
+                          Icons.publish_rounded,
+                          color: AppColors.primary,
+                        ),
+                        title: const Text(
+                          '즉시게시로 전환 (이용권 1개)',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
                         onTap: () => Navigator.pop(context, 'publish-now'),
                       ),
                     if (reserved && job.isPaid)
                       ListTile(
-                        leading: const Icon(Icons.publish_rounded, color: AppColors.warning),
-                        title: const Text('예약 즉시 게시', style: TextStyle(fontWeight: FontWeight.w800)),
+                        leading: const Icon(
+                          Icons.publish_rounded,
+                          color: AppColors.warning,
+                        ),
+                        title: const Text(
+                          '예약 즉시 게시',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
                         onTap: () => Navigator.pop(context, 'publish-now'),
                       ),
                     if (isClosed)
@@ -1695,7 +1707,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
 
     // 구독 상태 확인 (standard/pro = 무제한)
     final sub = await AiApi(baseUrl).fetchMySubscription();
-    final isUnlimited = sub.active && (sub.plan == 'standard' || sub.plan == 'pro');
+    final isUnlimited =
+        sub.active && (sub.plan == 'standard' || sub.plan == 'pro');
     if (!mounted) return;
 
     // 무료 공고 → 즉시게시 확인 바텀시트
@@ -1705,68 +1718,88 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 36, height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              '즉시게시로 전환할까요?',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              isUnlimited
-                  ? '구독 혜택으로 즉시 게시됩니다. 이용권 차감 없이 지금 바로 공고를 노출합니다.'
-                  : '즉시게시 이용권 1개를 사용해 지금 바로 공고를 노출합니다.\n12시간을 기다리지 않아도 됩니다.',
-              style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
-            ),
-            const SizedBox(height: 24),
-            Row(
+      builder:
+          (_) => Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      side: const BorderSide(color: AppColors.border),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                Center(
+                  child: Container(
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: AppColors.border,
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                    child: const Text('취소', style: TextStyle(color: AppColors.textSecondary)),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      elevation: 0,
-                    ),
-                    child: Text(
-                      isUnlimited ? '즉시 게시' : '이용권 사용',
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700),
-                    ),
+                const SizedBox(height: 20),
+                const Text(
+                  '즉시게시로 전환할까요?',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.textPrimary,
                   ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isUnlimited
+                      ? '구독 혜택으로 즉시 게시됩니다. 이용권 차감 없이 지금 바로 공고를 노출합니다.'
+                      : '즉시게시 이용권 1개를 사용해 지금 바로 공고를 노출합니다.\n12시간을 기다리지 않아도 됩니다.',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          side: const BorderSide(color: AppColors.border),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          '취소',
+                          style: TextStyle(color: AppColors.textSecondary),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          isUnlimited ? '즉시 게시' : '이용권 사용',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
 
     if (confirmed != true || !mounted) return;
@@ -1783,42 +1816,77 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
-        builder: (_) => Padding(
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 36, height: 4,
-                  decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(2)),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text('이용권이 없어요', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
-              const SizedBox(height: 8),
-              const Text('즉시게시 이용권을 구매하거나 구독 플랜을 이용해보세요.', style: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5)),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    Navigator.push(context, MaterialPageRoute(builder: (_) => const PurchasePassScreen(fromPostJob: false)));
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    elevation: 0,
+        builder:
+            (_) => Padding(
+              padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
-                  child: const Text('이용권 구매하기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-                ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    '이용권이 없어요',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '즉시게시 이용권을 구매하거나 구독 플랜을 이용해보세요.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder:
+                                (_) => const PurchasePassScreen(
+                                  fromPostJob: false,
+                                ),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: const Text(
+                        '이용권 구매하기',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
       );
     } catch (_) {
       _toast('즉시 게시에 실패했습니다.');
@@ -1908,17 +1976,40 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 runSpacing: 6,
                 children: [
                   if (job.isUrgent && !isClosed)
-                    _badge('⚡ 긴급', color: const Color(0xFFEF4444), icon: Icons.emergency_rounded),
+                    _badge(
+                      '⚡ 긴급',
+                      color: const Color(0xFFEF4444),
+                      icon: Icons.emergency_rounded,
+                    ),
                   if (reserved && job.isPaid)
-                    _badge(publishRemainText(job), color: const Color(0xFF6B7280), icon: Icons.schedule_outlined),
+                    _badge(
+                      publishRemainText(job),
+                      color: const Color(0xFF6B7280),
+                      icon: Icons.schedule_outlined,
+                    ),
                   if (pinned) ...[
-                    _badge('상단 고정', color: const Color(0xFF6B7280), icon: Icons.push_pin_outlined),
-                    _badge(pinnedRemainText(job), color: const Color(0xFF6B7280)),
+                    _badge(
+                      '상단 고정',
+                      color: const Color(0xFF6B7280),
+                      icon: Icons.push_pin_outlined,
+                    ),
+                    _badge(
+                      pinnedRemainText(job),
+                      color: const Color(0xFF6B7280),
+                    ),
                   ],
                   if (isClosed)
-                    _badge('마감', color: const Color(0xFF9CA3AF), icon: Icons.stop_circle_outlined),
+                    _badge(
+                      '마감',
+                      color: const Color(0xFF9CA3AF),
+                      icon: Icons.stop_circle_outlined,
+                    ),
                   if (job.expiresAt != null && !isClosed)
-                    _badge(getExpiryText(job), color: const Color(0xFFEF4444), icon: Icons.access_time),
+                    _badge(
+                      getExpiryText(job),
+                      color: const Color(0xFFEF4444),
+                      icon: Icons.access_time,
+                    ),
                 ],
               ),
               if (job.isUrgent && !isClosed) ...[
@@ -1977,25 +2068,42 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 GestureDetector(
                   onTap: () => _upgradeToInstant(job),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 9,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFFFFF7ED),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFFF9500).withValues(alpha: 0.35)),
+                      border: Border.all(
+                        color: const Color(0xFFFF9500).withValues(alpha: 0.35),
+                      ),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.schedule_rounded, size: 13, color: Color(0xFFFF9500)),
+                        const Icon(
+                          Icons.schedule_rounded,
+                          size: 13,
+                          color: Color(0xFFFF9500),
+                        ),
                         const SizedBox(width: 5),
                         Expanded(
                           child: Text(
                             '${publishRemainText(job)} 대기 중',
-                            style: const TextStyle(fontSize: 12, color: Color(0xFFB45309), fontWeight: FontWeight.w600),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFFB45309),
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                         const Text(
                           '지금 올리기 →',
-                          style: TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w700),
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ],
                     ),
@@ -2022,6 +2130,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     final formattedPay = NumberFormat('#,###').format(_payToInt(job.pay));
     final payTypeColor =
         job.payType == '주급' ? AppColors.badgeWeekly : AppColors.badgeDaily;
+    final primaryAction = _primaryJobAction(job);
 
     final titleStyle = TextStyle(
       fontSize: 16,
@@ -2100,19 +2209,46 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     runSpacing: 6,
                     children: [
                       if (job.isUrgent && !isClosed)
-                        _badge('⚡ 긴급', color: const Color(0xFFEF4444), icon: Icons.emergency_rounded),
+                        _badge(
+                          '⚡ 긴급',
+                          color: const Color(0xFFEF4444),
+                          icon: Icons.emergency_rounded,
+                        ),
                       if (reserved && job.isPaid)
-                        _badge(publishRemainText(job), color: const Color(0xFF6B7280), icon: Icons.schedule_outlined),
+                        _badge(
+                          publishRemainText(job),
+                          color: const Color(0xFF6B7280),
+                          icon: Icons.schedule_outlined,
+                        ),
                       if (pinned) ...[
-                        _badge('상단 고정', color: const Color(0xFF6B7280), icon: Icons.push_pin_outlined),
-                        _badge(pinnedRemainText(job), color: const Color(0xFF6B7280)),
+                        _badge(
+                          '상단 고정',
+                          color: const Color(0xFF6B7280),
+                          icon: Icons.push_pin_outlined,
+                        ),
+                        _badge(
+                          pinnedRemainText(job),
+                          color: const Color(0xFF6B7280),
+                        ),
                       ],
                       if (isClosed)
-                        _badge('마감', color: const Color(0xFF9CA3AF), icon: Icons.stop_circle_outlined),
+                        _badge(
+                          '마감',
+                          color: const Color(0xFF9CA3AF),
+                          icon: Icons.stop_circle_outlined,
+                        ),
                       if (isClosed && job.zeroApplicantRefunded)
-                        _badge('이용권 환급', color: AppColors.success, icon: Icons.card_giftcard_rounded),
+                        _badge(
+                          '이용권 환급',
+                          color: AppColors.success,
+                          icon: Icons.card_giftcard_rounded,
+                        ),
                       if (job.expiresAt != null && !isClosed)
-                        _badge(getExpiryText(job), color: const Color(0xFFEF4444), icon: Icons.access_time),
+                        _badge(
+                          getExpiryText(job),
+                          color: const Color(0xFFEF4444),
+                          icon: Icons.access_time,
+                        ),
                     ],
                   ),
                   const SizedBox(height: 10),
@@ -2158,25 +2294,44 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   GestureDetector(
                     onTap: () => _upgradeToInstant(job),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFFFFF7ED),
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFFF9500).withValues(alpha: 0.35)),
+                        border: Border.all(
+                          color: const Color(
+                            0xFFFF9500,
+                          ).withValues(alpha: 0.35),
+                        ),
                       ),
                       child: Row(
                         children: [
-                          const Icon(Icons.schedule_rounded, size: 14, color: Color(0xFFFF9500)),
+                          const Icon(
+                            Icons.schedule_rounded,
+                            size: 14,
+                            color: Color(0xFFFF9500),
+                          ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
                               '${publishRemainText(job)} 대기 중',
-                              style: const TextStyle(fontSize: 13, color: Color(0xFFB45309), fontWeight: FontWeight.w600),
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFFB45309),
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
                           const Text(
                             '지금 올리기 →',
-                            style: TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ],
                       ),
@@ -2184,7 +2339,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   ),
                 ],
                 const SizedBox(height: 12),
-                // 카드 하단 버튼: 지원자 / 인사이트 / 맞춤인재 / 재공고(마감시만) / 더보기
+                _PrimaryJobActionButton(action: primaryAction),
+                const SizedBox(height: 10),
+                // 카드 하단 보조 버튼
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -2219,7 +2376,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         icon: Icons.person_search_rounded,
                         label: '맞춤 인재',
                         color: AppColors.primary,
-                        onTap: () => _openRecommendedWorkersByJobId(job.id.toString()),
+                        onTap:
+                            () => _openRecommendedWorkersByJobId(
+                              job.id.toString(),
+                            ),
                       ),
                     if (isClosed)
                       _actionBtn(
@@ -2262,6 +2422,66 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           ),
         ),
       ),
+    );
+  }
+
+  _JobPrimaryAction _primaryJobAction(Job job) {
+    final isClosed = job.status == 'closed';
+    final reserved = isJobReserved(job);
+
+    if (reserved && !job.isPaid) {
+      return _JobPrimaryAction(
+        icon: Icons.publish_rounded,
+        label: '지금 바로 공고 올리기',
+        caption: '예약 대기 중인 공고를 즉시 노출합니다.',
+        color: AppColors.primary,
+        onTap: () => _upgradeToInstant(job),
+      );
+    }
+
+    if (isClosed) {
+      return _JobPrimaryAction(
+        icon: Icons.replay_circle_filled_rounded,
+        label: '재공고로 다시 모집하기',
+        caption: '기존 조건을 바탕으로 빠르게 다시 올립니다.',
+        color: AppColors.primary,
+        onTap:
+            () => Navigator.pushNamed(
+              context,
+              '/post_job',
+              arguments: {'isRepost': true, 'existingJob': job},
+            ),
+      );
+    }
+
+    if (job.isUrgent) {
+      return _JobPrimaryAction(
+        icon: Icons.emergency_rounded,
+        label: '근처 알바생에게 긴급 호출',
+        caption: '공고 주변 활동 알바생에게 바로 알립니다.',
+        color: const Color(0xFFEF4444),
+        onTap: () => _openUrgentCall(job),
+      );
+    }
+
+    return _JobPrimaryAction(
+      icon: Icons.people_outline_rounded,
+      label: '지원자 확인하기',
+      caption: '새 지원자를 확인하고 채팅을 시작합니다.',
+      color: AppColors.primary,
+      onTap:
+          () => Navigator.pushNamed(context, '/applicants', arguments: job.id),
+    );
+  }
+
+  Future<void> _openUrgentCall(Job job) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cid = prefs.getInt('userId');
+    if (cid == null || !mounted) return;
+    Navigator.pushNamed(
+      context,
+      '/nearby-workers',
+      arguments: {'jobId': job.id, 'clientId': cid, 'jobTitle': job.title},
     );
   }
 
@@ -2382,8 +2602,14 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           labelColor: AppColors.textPrimary,
           unselectedLabelColor: AppColors.textTertiary,
           indicatorColor: AppColors.primary,
-          labelStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 13),
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.w700,
+            fontSize: 13,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.w500,
+            fontSize: 13,
+          ),
           tabs: const [Tab(text: '전체'), Tab(text: '일급'), Tab(text: '주급')],
         ),
         actions: [
@@ -2436,6 +2662,92 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             ],
             const SliverToBoxAdapter(child: SizedBox(height: 18)),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _JobPrimaryAction {
+  final IconData icon;
+  final String label;
+  final String caption;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _JobPrimaryAction({
+    required this.icon,
+    required this.label,
+    required this.caption,
+    required this.color,
+    required this.onTap,
+  });
+}
+
+class _PrimaryJobActionButton extends StatelessWidget {
+  final _JobPrimaryAction action;
+
+  const _PrimaryJobActionButton({required this.action});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: action.color.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        onTap: action.onTap,
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: action.color.withValues(alpha: 0.22)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 34,
+                height: 34,
+                decoration: BoxDecoration(
+                  color: action.color,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(action.icon, color: Colors.white, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      action.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w900,
+                        color: action.color,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      action.caption,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.chevron_right_rounded, color: action.color, size: 22),
+            ],
+          ),
         ),
       ),
     );
