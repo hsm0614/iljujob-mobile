@@ -186,8 +186,8 @@ class _ChatListScreenState extends State<ChatListScreen>
     if (_isBannerHidden || bannerAds.isEmpty) return const SizedBox.shrink();
 
     return Container(
-      height: 100,
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      height: 76,
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       child: Stack(
         children: [
           PageView.builder(
@@ -211,13 +211,13 @@ class _ChatListScreenState extends State<ChatListScreen>
                   }
                 },
                 child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(14),
                     color: AppColors.bgMuted,
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(14),
                     child: Image.network(
                       '$baseUrl${banner.imageUrl}',
                       fit: BoxFit.cover,
@@ -242,22 +242,65 @@ class _ChatListScreenState extends State<ChatListScreen>
             },
           ),
           Positioned(
-            top: 6,
-            right: 6,
+            top: 7,
+            left: 10,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.28),
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: const Text(
+                '광고',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 7,
+            right: 9,
             child: ClipOval(
               child: Material(
                 color: Colors.black.withValues(alpha: 0.25),
                 child: InkWell(
                   onTap: () => _setBannerHidden(true),
                   child: const SizedBox(
-                    width: 26,
-                    height: 26,
-                    child: Icon(Icons.close, size: 14, color: Colors.white),
+                    width: 24,
+                    height: 24,
+                    child: Icon(Icons.close, size: 13, color: Colors.white),
                   ),
                 ),
               ),
             ),
           ),
+          if (bannerAds.length > 1)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 7,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(
+                  bannerAds.length,
+                  (index) => AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: _currentBannerIndex == index ? 14 : 5,
+                    height: 5,
+                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(
+                        alpha: _currentBannerIndex == index ? 0.95 : 0.52,
+                      ),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -703,23 +746,31 @@ class _ChatListScreenState extends State<ChatListScreen>
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: AppColors.primaryLight,
+        color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryMid),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.notifications_none_rounded,
-            color: AppColors.primary,
-            size: 18,
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(999),
+            ),
+            child: const Icon(
+              Icons.notifications_none_rounded,
+              color: AppColors.primary,
+              size: 17,
+            ),
           ),
           const SizedBox(width: 8),
           const Expanded(
             child: Text(
-              '알림이 꺼져 있어요. 채팅 메시지를 놓칠 수 있어요.',
+              '답변과 출근확정을 놓치지 않게 알림을 켜주세요.',
               style: TextStyle(
                 fontSize: 12.5,
                 color: AppColors.textPrimary,
@@ -739,12 +790,19 @@ class _ChatListScreenState extends State<ChatListScreen>
               await sendFcmTokenUnified();
               await _checkNotificationBannerNeeded(); // 허용하면 배너 사라짐
             },
-            child: const Text(
-              '허용',
-              style: TextStyle(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
                 color: AppColors.primary,
-                fontWeight: FontWeight.w700,
-                fontSize: 13,
+                borderRadius: BorderRadius.circular(999),
+              ),
+              child: const Text(
+                '켜기',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 12.5,
+                ),
               ),
             ),
           ),
@@ -762,11 +820,66 @@ class _ChatListScreenState extends State<ChatListScreen>
     );
   }
 
+  bool _isTruthy(dynamic value) {
+    if (value == null) return false;
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    final text = value.toString().trim().toLowerCase();
+    return text == '1' || text == 'true' || text == 'yes' || text == 'y';
+  }
+
+  bool _isConfirmedRoom(Map chat) {
+    final statusText = [
+      chat['application_status'],
+      chat['direct_message_status'],
+      chat['match_status'],
+      chat['status'],
+    ].where((v) => v != null).join(' ').toLowerCase();
+
+    return _isTruthy(chat['is_confirmed']) ||
+        _isTruthy(chat['is_hired']) ||
+        _isTruthy(chat['work_confirmed']) ||
+        chat['confirmed_at'] != null ||
+        statusText.contains('confirmed') ||
+        statusText.contains('accepted') ||
+        statusText.contains('hired') ||
+        statusText.contains('출근') ||
+        statusText.contains('확정') ||
+        statusText.contains('채택');
+  }
+
+  Widget _buildRoomBadge({
+    required String label,
+    required Color foreground,
+    required Color background,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: foreground,
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
   Widget _buildChatItem(Map chat) {
     final unreadCount =
         userType == 'worker'
             ? (chat['unread_count_worker'] ?? 0)
             : (chat['unread_count_client'] ?? 0);
+    final hasUnread = unreadCount > 0;
+    final isUrgent =
+        chat['is_urgent_call'] == 1 || chat['is_urgent_call'] == true;
+    final isConfirmed = _isConfirmedRoom(chat);
+    final showRoomBadges = hasUnread || isUrgent || isConfirmed;
 
     String resolveProfileImageUrl(String? url) {
       if (url == null || url.trim().isEmpty) return '';
@@ -881,7 +994,10 @@ class _ChatListScreenState extends State<ChatListScreen>
         ],
       ),
       child: Material(
-        color: AppColors.bgCard,
+        color:
+            hasUnread
+                ? AppColors.primaryLight.withValues(alpha: 0.45)
+                : AppColors.bgCard,
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           onTap: () {
@@ -965,7 +1081,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.w700,
+                                    fontWeight: FontWeight.w800,
                                     fontSize: 15.5,
                                     color: AppColors.textPrimary,
                                   ),
@@ -1001,7 +1117,36 @@ class _ChatListScreenState extends State<ChatListScreen>
                               ),
                             ],
                           ),
-                          const SizedBox(height: 2),
+                          if (showRoomBadges) ...[
+                            const SizedBox(height: 5),
+                            Wrap(
+                              spacing: 5,
+                              runSpacing: 5,
+                              children: [
+                                if (hasUnread)
+                                  _buildRoomBadge(
+                                    label: '새 메시지',
+                                    foreground: Colors.white,
+                                    background: AppColors.primary,
+                                  ),
+                                if (isConfirmed)
+                                  _buildRoomBadge(
+                                    label: '출근확정',
+                                    foreground: AppColors.success,
+                                    background: AppColors.success.withValues(
+                                      alpha: 0.12,
+                                    ),
+                                  ),
+                                if (isUrgent)
+                                  _buildRoomBadge(
+                                    label: '긴급호출',
+                                    foreground: AppColors.warningDark,
+                                    background: AppColors.warningLight,
+                                  ),
+                              ],
+                            ),
+                          ],
+                          const SizedBox(height: 4),
                           // 상대 + 오늘가능
                           Row(
                             children: [
@@ -1242,7 +1387,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                     tabs: [
                       _BadgeTab(label: '전체',     count: totalUnread),
                       _BadgeTab(label: '안읽음',   count: unreadOnly.length),
-                      _BadgeTab(label: '⚡ 긴급호출', count: urgentUnread),
+                      _BadgeTab(label: '긴급', count: urgentUnread),
                     ],
                   ),
                 ),
@@ -1449,8 +1594,8 @@ class _EmptyState extends StatelessWidget {
 
   const _EmptyState()
     : icon = Icons.chat_bubble_outline,
-      title = '채팅이 아직 없어요',
-      message = '마음에 드는 공고에 지원하고 사장님과 대화를 시작해보세요.';
+      title = '지원하면 채팅이 열려요',
+      message = '마음에 드는 공고에 지원하면 사장님과 바로 대화를 시작할 수 있어요.';
 
   const _EmptyState.search({required String query})
     : icon = Icons.search_off_rounded,
