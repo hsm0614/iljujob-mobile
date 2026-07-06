@@ -736,6 +736,21 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     }
   }
 
+  Future<void> _openExternalApplyPage() async {
+    final rawUrl = widget.job.externalApplyUrl?.trim();
+    final uri = rawUrl == null ? null : Uri.tryParse(rawUrl);
+    if (uri == null ||
+        (uri.scheme != 'http' && uri.scheme != 'https') ||
+        uri.host.trim().isEmpty) {
+      _showSnack('외부 신청 페이지 주소가 올바르지 않습니다.');
+      return;
+    }
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched) {
+      _showSnack('외부 신청 페이지를 열 수 없습니다.');
+    }
+  }
+
   Future<void> _submitReport(
     String category,
     String detail,
@@ -806,7 +821,10 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
     // ---- 기존 로직(일반 공고) 유지 ----
     final isSuspended = _suspension?.isSuspended ?? false;
-    final isButtonDisabled = hasApplied || isClosed || isBlocked || isSuspended;
+    final hasExternalApply = widget.job.hasExternalApply;
+    final isButtonDisabled =
+        isClosed ||
+        (!hasExternalApply && (hasApplied || isBlocked || isSuspended));
 
     return SafeArea(
       child: Padding(
@@ -881,10 +899,22 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                         ),
                         elevation: 0,
                       ),
-                      onPressed: isButtonDisabled ? null : _applyToJob,
+                      onPressed:
+                          isButtonDisabled
+                              ? null
+                              : hasExternalApply
+                              ? _openExternalApplyPage
+                              : _applyToJob,
                       child: Text(
                         isClosed
                             ? '마감된 공고'
+                            : hasExternalApply
+                            ? ((widget.job.externalApplyLabel
+                                        ?.trim()
+                                        .isNotEmpty ??
+                                    false)
+                                ? widget.job.externalApplyLabel!.trim()
+                                : '자세히 보고 신청하기')
                             : hasApplied
                             ? '지원 완료'
                             : isBlocked
@@ -903,6 +933,28 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 ),
               ],
             ),
+            if (hasExternalApply) ...[
+              const SizedBox(height: 8),
+              const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.open_in_new_rounded,
+                    size: 14,
+                    color: Color(0xFF6B7280),
+                  ),
+                  SizedBox(width: 4),
+                  Text(
+                    '외부 페이지로 이동합니다',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -913,7 +965,10 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     String text;
     IconData icon;
 
-    if (hasApplied) {
+    if (widget.job.hasExternalApply && !isClosed) {
+      text = '공고 내용을 확인한 뒤 별도 신청 페이지에서 진행해요.';
+      icon = Icons.open_in_new_rounded;
+    } else if (hasApplied) {
       text = '이미 지원한 공고예요. 채팅에서 사장님 답변을 확인해보세요.';
       icon = Icons.check_circle_rounded;
     } else if (isClosed) {

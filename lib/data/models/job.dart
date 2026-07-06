@@ -1,5 +1,6 @@
 // lib/models/job.dart
 import 'dart:convert'; // jsonDecode용
+
 // ---------- 파서들: 모두 UTC 반환 ----------
 DateTime? _parseToUtcAssumingKST(dynamic v) {
   if (v == null) return null;
@@ -103,7 +104,8 @@ List<String> _parseImageUrlsFromJson(Map<String, dynamic> json) {
   }
 
   // 2) 단일 URL 필드들(있으면 추가)
-  final single = json['image_url'] ??
+  final single =
+      json['image_url'] ??
       json['imageUrl'] ??
       json['thumbnail_url'] ??
       json['thumbUrl'];
@@ -132,12 +134,12 @@ class Job {
   final String? company;
 
   // ✅ 모두 UTC로 보관
-  final DateTime? createdAt;     // UTC
-  final DateTime? startDate;     // UTC (KST 자정 의미)
-  final DateTime? endDate;       // UTC (KST 자정 의미)
-  final DateTime? publishAt;     // UTC (UI 노출/예약)
-  final DateTime? pinnedUntil;   // UTC (고정 종료)
-  final DateTime? expiresAt;     // UTC (노출 만료)
+  final DateTime? createdAt; // UTC
+  final DateTime? startDate; // UTC (KST 자정 의미)
+  final DateTime? endDate; // UTC (KST 자정 의미)
+  final DateTime? publishAt; // UTC (UI 노출/예약)
+  final DateTime? pinnedUntil; // UTC (고정 종료)
+  final DateTime? expiresAt; // UTC (노출 만료)
 
   final String? weekdays;
   final double lat;
@@ -155,16 +157,19 @@ class Job {
   final String? agencyPhone;
   final String? agencyEmail;
   final String? agencyNote;
-final double? matchScore;        // 매칭 점수 0~1
-final List<String> matchReasons; // ["가까움", "시간대겹침", "시급상위"]
-final bool zeroApplicantRefunded; // 지원자 0명 이용권 자동 환급 여부
+  final bool externalApplyEnabled;
+  final String? externalApplyUrl;
+  final String? externalApplyLabel;
+  final double? matchScore; // 매칭 점수 0~1
+  final List<String> matchReasons; // ["가까움", "시간대겹침", "시급상위"]
+  final bool zeroApplicantRefunded; // 지원자 0명 이용권 자동 환급 여부
 
-// 장기 공고 전용
-final String jobType;          // 'short' | 'long'
-final bool isAlwaysOpen;       // 상시모집
-final int? workDaysPerWeek;    // 주 N일
-final String? requiredCerts;   // 자격요건
-final String? welfare;         // 복리후생
+  // 장기 공고 전용
+  final String jobType; // 'short' | 'long'
+  final bool isAlwaysOpen; // 상시모집
+  final int? workDaysPerWeek; // 주 N일
+  final String? requiredCerts; // 자격요건
+  final String? welfare; // 복리후생
 
   Job({
     required this.id,
@@ -201,14 +206,17 @@ final String? welfare;         // 복리후생
     this.agencyPhone,
     this.agencyEmail,
     this.agencyNote,
+    this.externalApplyEnabled = false,
+    this.externalApplyUrl,
+    this.externalApplyLabel,
     this.matchScore,
-this.matchReasons = const [],
-this.zeroApplicantRefunded = false,
-this.jobType = 'short',
-this.isAlwaysOpen = false,
-this.workDaysPerWeek,
-this.requiredCerts,
-this.welfare,
+    this.matchReasons = const [],
+    this.zeroApplicantRefunded = false,
+    this.jobType = 'short',
+    this.isAlwaysOpen = false,
+    this.workDaysPerWeek,
+    this.requiredCerts,
+    this.welfare,
   });
 
   String get workingHours => '$startTime ~ $endTime';
@@ -217,6 +225,10 @@ this.welfare,
   DateTime? get postedAtUtc => publishAt ?? createdAt;
   bool get isScheduled =>
       publishAt != null && publishAt!.isAfter(DateTime.now().toUtc());
+  bool get hasExternalApply =>
+      isPaid &&
+      externalApplyEnabled &&
+      (externalApplyUrl?.trim().isNotEmpty ?? false);
 
   factory Job.fromJson(Map<String, dynamic> json) {
     T? pick<T>(List<String> keys) {
@@ -228,14 +240,18 @@ this.welfare,
     }
 
     // 정책: 서버 스탬프(created/updated 등)는 UTC, 노출/스케줄(publish/start/end)은 KST 의미
-    final publishAtUtc =
-        _parseServerDateTimeUtc(json['publish_at'] ?? json['publishAt']);
-    final createdAtUtc =
-        _parseServerDateTimeUtc(json['created_at'] ?? json['createdAt']);
-    final expiresAtUtc =
-        _parseServerDateTimeUtc(json['expires_at'] ?? json['expiresAt']);
-    final pinnedUntilUtc =
-        _parseServerDateTimeUtc(json['pinned_until'] ?? json['pinnedUntil']);
+    final publishAtUtc = _parseServerDateTimeUtc(
+      json['publish_at'] ?? json['publishAt'],
+    );
+    final createdAtUtc = _parseServerDateTimeUtc(
+      json['created_at'] ?? json['createdAt'],
+    );
+    final expiresAtUtc = _parseServerDateTimeUtc(
+      json['expires_at'] ?? json['expiresAt'],
+    );
+    final pinnedUntilUtc = _parseServerDateTimeUtc(
+      json['pinned_until'] ?? json['pinnedUntil'],
+    );
 
     return Job(
       id: json['id']?.toString() ?? '',
@@ -263,20 +279,22 @@ this.welfare,
       endDate: _parseDateOnlyUtcFromKST(pick(['end_date', 'endDate'])),
 
       weekdays: json['weekdays'],
-      lat: (() {
-        final v = json['lat'];
-        if (v is double) return v;
-        if (v is int) return v.toDouble();
-        if (v is String) return double.tryParse(v) ?? 0.0;
-        return 0.0;
-      })(),
-      lng: (() {
-        final v = json['lng'];
-        if (v is double) return v;
-        if (v is int) return v.toDouble();
-        if (v is String) return double.tryParse(v) ?? 0.0;
-        return 0.0;
-      })(),
+      lat:
+          (() {
+            final v = json['lat'];
+            if (v is double) return v;
+            if (v is int) return v.toDouble();
+            if (v is String) return double.tryParse(v) ?? 0.0;
+            return 0.0;
+          })(),
+      lng:
+          (() {
+            final v = json['lng'];
+            if (v is double) return v;
+            if (v is int) return v.toDouble();
+            if (v is String) return double.tryParse(v) ?? 0.0;
+            return 0.0;
+          })(),
 
       // 🔥 여기만 변경됨: 배열 + 단일 URL 모두 처리
       imageUrls: _parseImageUrlsFromJson(json),
@@ -302,13 +320,16 @@ this.welfare,
       }(),
       isSameDayPay:
           json['is_same_day_pay'] == 1 || json['is_same_day_pay'] == true,
-      isCertifiedCompany: json['is_certified_company'] == 1 ||
+      isCertifiedCompany:
+          json['is_certified_company'] == 1 ||
           json['is_certified_company'] == true,
-      isPaid: json['is_paid'] == null
-          ? true
-          : (json['is_paid'] == 1 || json['is_paid'] == true),
+      isPaid:
+          json['is_paid'] == null
+              ? true
+              : (json['is_paid'] == 1 || json['is_paid'] == true),
       isUrgent: json['is_urgent'] == 1 || json['is_urgent'] == true,
-      isAgency: json['is_agency'] == 1 ||
+      isAgency:
+          json['is_agency'] == 1 ||
           json['is_agency'] == true ||
           json['isAgency'] == 1 ||
           json['isAgency'] == true,
@@ -316,81 +337,93 @@ this.welfare,
       agencyPhone: (json['agency_phone'] ?? json['agencyPhone'])?.toString(),
       agencyEmail: (json['agency_email'] ?? json['agencyEmail'])?.toString(),
       agencyNote: (json['agency_note'] ?? json['agencyNote'])?.toString(),
-    
-      matchScore: () {
-  final v = json['score'] ?? json['matchScore'];
-  if (v is num) return v.toDouble();
-  if (v is String) return double.tryParse(v);
-  return null;
-}(),
-matchReasons: () {
-  final v = json['reasons'] ?? json['matchReasons'];
-  if (v is List) return v.map((e) => e.toString()).toList();
-  if (v is String) {
-    try {
-      final parsed = jsonDecode(v);
-      if (parsed is List) return parsed.map((e) => e.toString()).toList();
-    } catch (_) {}
-  }
-  return <String>[];
-}(),
-zeroApplicantRefunded: json['zero_applicant_refunded'] == 1 ||
-    json['zero_applicant_refunded'] == true,
-jobType: (json['job_type'] ?? 'short').toString(),
-isAlwaysOpen: json['is_always_open'] == 1 || json['is_always_open'] == true,
-workDaysPerWeek: json['work_days_per_week'] != null
-    ? int.tryParse(json['work_days_per_week'].toString())
-    : null,
-requiredCerts: json['required_certs']?.toString(),
-welfare: json['welfare']?.toString(),
-    );
+      externalApplyEnabled:
+          json['external_apply_enabled'] == 1 ||
+          json['external_apply_enabled'] == true ||
+          json['externalApplyEnabled'] == 1 ||
+          json['externalApplyEnabled'] == true,
+      externalApplyUrl:
+          (json['external_apply_url'] ?? json['externalApplyUrl'])?.toString(),
+      externalApplyLabel:
+          (json['external_apply_label'] ?? json['externalApplyLabel'])
+              ?.toString(),
 
+      matchScore: () {
+        final v = json['score'] ?? json['matchScore'];
+        if (v is num) return v.toDouble();
+        if (v is String) return double.tryParse(v);
+        return null;
+      }(),
+      matchReasons: () {
+        final v = json['reasons'] ?? json['matchReasons'];
+        if (v is List) return v.map((e) => e.toString()).toList();
+        if (v is String) {
+          try {
+            final parsed = jsonDecode(v);
+            if (parsed is List) return parsed.map((e) => e.toString()).toList();
+          } catch (_) {}
+        }
+        return <String>[];
+      }(),
+      zeroApplicantRefunded:
+          json['zero_applicant_refunded'] == 1 ||
+          json['zero_applicant_refunded'] == true,
+      jobType: (json['job_type'] ?? 'short').toString(),
+      isAlwaysOpen:
+          json['is_always_open'] == 1 || json['is_always_open'] == true,
+      workDaysPerWeek:
+          json['work_days_per_week'] != null
+              ? int.tryParse(json['work_days_per_week'].toString())
+              : null,
+      requiredCerts: json['required_certs']?.toString(),
+      welfare: json['welfare']?.toString(),
+    );
   }
-// Job 클래스 안에 추가 (toJson 위에)
-Job copyWith({
-  double? matchScore,
-  List<String>? matchReasons,
-}) {
-  return Job(
-    id: id,
-    userNumber: userNumber,
-    title: title,
-    location: location,
-    locationCity: locationCity,
-    pay: pay,
-    payType: payType,
-    startTime: startTime,
-    endTime: endTime,
-    category: category,
-    description: description,
-    company: company,
-    createdAt: createdAt,
-    startDate: startDate,
-    endDate: endDate,
-    publishAt: publishAt,
-    pinnedUntil: pinnedUntil,
-    expiresAt: expiresAt,
-    weekdays: weekdays,
-    lat: lat,
-    lng: lng,
-    imageUrls: imageUrls,
-    status: status,
-    chatRoomId: chatRoomId,
-    clientId: clientId,
-    workerId: workerId,
-    isSameDayPay: isSameDayPay,
-    isCertifiedCompany: isCertifiedCompany,
-    isPaid: isPaid,
-    isUrgent: isUrgent,
-    isAgency: isAgency,
-    agencyPhone: agencyPhone,
-    agencyEmail: agencyEmail,
-    agencyNote: agencyNote,
-    matchScore: matchScore ?? this.matchScore,
-    matchReasons: matchReasons ?? this.matchReasons,
-    zeroApplicantRefunded: zeroApplicantRefunded,
-  );
-}
+  // Job 클래스 안에 추가 (toJson 위에)
+  Job copyWith({double? matchScore, List<String>? matchReasons}) {
+    return Job(
+      id: id,
+      userNumber: userNumber,
+      title: title,
+      location: location,
+      locationCity: locationCity,
+      pay: pay,
+      payType: payType,
+      startTime: startTime,
+      endTime: endTime,
+      category: category,
+      description: description,
+      company: company,
+      createdAt: createdAt,
+      startDate: startDate,
+      endDate: endDate,
+      publishAt: publishAt,
+      pinnedUntil: pinnedUntil,
+      expiresAt: expiresAt,
+      weekdays: weekdays,
+      lat: lat,
+      lng: lng,
+      imageUrls: imageUrls,
+      status: status,
+      chatRoomId: chatRoomId,
+      clientId: clientId,
+      workerId: workerId,
+      isSameDayPay: isSameDayPay,
+      isCertifiedCompany: isCertifiedCompany,
+      isPaid: isPaid,
+      isUrgent: isUrgent,
+      isAgency: isAgency,
+      agencyPhone: agencyPhone,
+      agencyEmail: agencyEmail,
+      agencyNote: agencyNote,
+      externalApplyEnabled: externalApplyEnabled,
+      externalApplyUrl: externalApplyUrl,
+      externalApplyLabel: externalApplyLabel,
+      matchScore: matchScore ?? this.matchScore,
+      matchReasons: matchReasons ?? this.matchReasons,
+      zeroApplicantRefunded: zeroApplicantRefunded,
+    );
+  }
 
   Map<String, dynamic> toJson() {
     return {
@@ -424,13 +457,16 @@ Job copyWith({
       'is_same_day_pay': isSameDayPay,
       'is_certified_company': isCertifiedCompany ? 1 : 0,
       'is_paid': isPaid ? 1 : 0,
-          'is_agency': isAgency ? 1 : 0,
+      'is_agency': isAgency ? 1 : 0,
       'agency_phone': agencyPhone,
       'agency_email': agencyEmail,
       'agency_note': agencyNote,
-'score': matchScore,
-'reasons': matchReasons,
-'zero_applicant_refunded': zeroApplicantRefunded ? 1 : 0,
+      'external_apply_enabled': externalApplyEnabled ? 1 : 0,
+      'external_apply_url': externalApplyUrl,
+      'external_apply_label': externalApplyLabel,
+      'score': matchScore,
+      'reasons': matchReasons,
+      'zero_applicant_refunded': zeroApplicantRefunded ? 1 : 0,
     };
   }
 }

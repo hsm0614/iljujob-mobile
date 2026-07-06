@@ -80,9 +80,10 @@ class JobService {
 
   // ─── 1. 공고 리스트 조회 ─────────────────────────────
   static Future<List<Job>> fetchJobs({int? clientId}) async {
-    final String base = (clientId != null)
-        ? '$baseUrl/api/client/jobs'
-        : '$baseUrl/api/job/jobs';
+    final String base =
+        (clientId != null)
+            ? '$baseUrl/api/client/jobs'
+            : '$baseUrl/api/job/jobs';
 
     final qp = <String, String>{
       if (clientId != null) 'clientId': '$clientId',
@@ -149,20 +150,28 @@ class JobService {
 
     // ✅ 안전 정렬: publishAt(없으면 createdAt) DESC → id DESC
     jobs.sort((a, b) {
-      final ap = a.publishAt ??
+      final ap =
+          a.publishAt ??
           a.createdAt ??
           DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
-      final bp = b.publishAt ??
+      final bp =
+          b.publishAt ??
           b.createdAt ??
           DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
       final c1 = bp.compareTo(ap);
       if (c1 != 0) return c1;
 
       int ai, bi;
-      try { ai = (a.id is int) ? a.id as int : int.parse(a.id.toString()); }
-      catch (_) { ai = 0; }
-      try { bi = (b.id is int) ? b.id as int : int.parse(b.id.toString()); }
-      catch (_) { bi = 0; }
+      try {
+        ai = (a.id is int) ? a.id as int : int.parse(a.id.toString());
+      } catch (_) {
+        ai = 0;
+      }
+      try {
+        bi = (b.id is int) ? b.id as int : int.parse(b.id.toString());
+      } catch (_) {
+        bi = 0;
+      }
 
       return bi.compareTo(ai);
     });
@@ -191,13 +200,17 @@ class JobService {
     double? lat,
     double? lng,
     List<File> images = const [],
-    String? publishAt,   // ✅ UTC ISO 문자열 (post_job_form에서 toUtc().toIso8601String()으로 전달)
+    String?
+    publishAt, // ✅ UTC ISO 문자열 (post_job_form에서 toUtc().toIso8601String()으로 전달)
     bool isSameDayPay = false,
     required bool isPaid,
     bool isAgency = false,
     String? agencyPhone,
     String? agencyEmail,
     String? agencyNote,
+    bool externalApplyEnabled = false,
+    String? externalApplyUrl,
+    String externalApplyLabel = '자세히 보고 신청하기',
     // 장기 공고 전용
     String jobType = 'short',
     bool isAlwaysOpen = false,
@@ -214,46 +227,55 @@ class JobService {
       throw Exception('로그인이 필요합니다(토큰 없음)');
     }
 
-    final request = http.MultipartRequest('POST', uri)
-      ..headers['Authorization'] = 'Bearer $token'
-      ..fields.addAll({
-        'title': title.trim(),
-        'category': category.trim(),
-        if (categoryMajor != null && categoryMajor.isNotEmpty)
-          'category_major': categoryMajor.trim(),
-        if (categorySub != null && categorySub.isNotEmpty)
-          'category_sub': categorySub.trim(),
-        'location': location.trim(),
-        'location_city': locationCity.trim(),
-        'start_date': startDate,   // ✅ 이미 YYYY-MM-DD 로컬 기준
-        'end_date': endDate,       // ✅ 이미 YYYY-MM-DD 로컬 기준
-        'start_time': startTime,
-        'end_time': endTime,
-        'pay_type': payType,
-        'pay': pay.toString(),
-        'description': description.trim(),
-        'client_id': clientId.toString(),
-        'is_same_day_pay': isSameDayPay ? '1' : '0',
-        if (weekdays != null && weekdays.isNotEmpty) 'weekdays': weekdays,
-        if (lat != null) 'lat': lat.toString(),
-        if (lng != null) 'lng': lng.toString(),
-        'is_agency': isAgency ? '1' : '0',
-        // 장기 공고 전용
-        'job_type': jobType,
-        if (jobType == 'long') 'is_always_open': isAlwaysOpen ? '1' : '0',
-        if (jobType == 'long' && workDaysPerWeek != null)
-          'work_days_per_week': workDaysPerWeek.toString(),
-        if (jobType == 'long' && requiredCerts != null && requiredCerts.isNotEmpty)
-          'required_certs': requiredCerts,
-        if (jobType == 'long' && welfare != null && welfare.isNotEmpty)
-          'welfare': welfare,
-        if (agencyPhone != null && agencyPhone.trim().isNotEmpty)
-          'agency_phone': agencyPhone.trim(),
-        if (agencyEmail != null && agencyEmail.trim().isNotEmpty)
-          'agency_email': agencyEmail.trim(),
-        if (agencyNote != null && agencyNote.trim().isNotEmpty)
-          'agency_note': agencyNote.trim(),
-      });
+    final request =
+        http.MultipartRequest('POST', uri)
+          ..headers['Authorization'] = 'Bearer $token'
+          ..fields.addAll({
+            'title': title.trim(),
+            'category': category.trim(),
+            if (categoryMajor != null && categoryMajor.isNotEmpty)
+              'category_major': categoryMajor.trim(),
+            if (categorySub != null && categorySub.isNotEmpty)
+              'category_sub': categorySub.trim(),
+            'location': location.trim(),
+            'location_city': locationCity.trim(),
+            'start_date': startDate, // ✅ 이미 YYYY-MM-DD 로컬 기준
+            'end_date': endDate, // ✅ 이미 YYYY-MM-DD 로컬 기준
+            'start_time': startTime,
+            'end_time': endTime,
+            'pay_type': payType,
+            'pay': pay.toString(),
+            'description': description.trim(),
+            'client_id': clientId.toString(),
+            'is_same_day_pay': isSameDayPay ? '1' : '0',
+            if (weekdays != null && weekdays.isNotEmpty) 'weekdays': weekdays,
+            if (lat != null) 'lat': lat.toString(),
+            if (lng != null) 'lng': lng.toString(),
+            'is_agency': isAgency ? '1' : '0',
+            // 장기 공고 전용
+            'job_type': jobType,
+            if (jobType == 'long') 'is_always_open': isAlwaysOpen ? '1' : '0',
+            if (jobType == 'long' && workDaysPerWeek != null)
+              'work_days_per_week': workDaysPerWeek.toString(),
+            if (jobType == 'long' &&
+                requiredCerts != null &&
+                requiredCerts.isNotEmpty)
+              'required_certs': requiredCerts,
+            if (jobType == 'long' && welfare != null && welfare.isNotEmpty)
+              'welfare': welfare,
+            if (agencyPhone != null && agencyPhone.trim().isNotEmpty)
+              'agency_phone': agencyPhone.trim(),
+            if (agencyEmail != null && agencyEmail.trim().isNotEmpty)
+              'agency_email': agencyEmail.trim(),
+            if (agencyNote != null && agencyNote.trim().isNotEmpty)
+              'agency_note': agencyNote.trim(),
+            'external_apply_enabled':
+                (isPaid && externalApplyEnabled) ? '1' : '0',
+            if (isPaid && externalApplyEnabled && externalApplyUrl != null)
+              'external_apply_url': externalApplyUrl.trim(),
+            if (isPaid && externalApplyEnabled)
+              'external_apply_label': externalApplyLabel.trim(),
+          });
 
     // ✅ FIX: 예약 공개 시각은 UTC ISO 문자열로 전달 (서버에서 파싱)
     if (publishAt != null && publishAt.isNotEmpty) {
@@ -343,9 +365,10 @@ class JobService {
       throw Exception('로그인이 필요합니다(토큰 없음)');
     }
 
-    final req = http.MultipartRequest('POST', uri)
-      ..headers['Authorization'] = 'Bearer $token'
-      ..headers['Accept'] = 'application/json';
+    final req =
+        http.MultipartRequest('POST', uri)
+          ..headers['Authorization'] = 'Bearer $token'
+          ..headers['Accept'] = 'application/json';
 
     // ── 데이터 정규화 ────────────────────────────────────
     final normalized = Map<String, dynamic>.from(data);
@@ -364,18 +387,21 @@ class JobService {
       }
     }
 
-    mirror('start_time',          'startTime');
-    mirror('end_time',            'endTime');
-    mirror('start_date',          'startDate');
-    mirror('end_date',            'endDate');
-    mirror('pay_type',            'payType');
-    mirror('location_city',       'locationCity');
-    mirror('publish_at',          'publishAt');
-    mirror('pinned_until',        'pinnedUntil');
-    mirror('expires_at',          'expiresAt');
-    mirror('is_same_day_pay',     'isSameDayPay');
-    mirror('is_certified_company','isCertifiedCompany');
-    mirror('is_paid',             'isPaid');
+    mirror('start_time', 'startTime');
+    mirror('end_time', 'endTime');
+    mirror('start_date', 'startDate');
+    mirror('end_date', 'endDate');
+    mirror('pay_type', 'payType');
+    mirror('location_city', 'locationCity');
+    mirror('publish_at', 'publishAt');
+    mirror('pinned_until', 'pinnedUntil');
+    mirror('expires_at', 'expiresAt');
+    mirror('is_same_day_pay', 'isSameDayPay');
+    mirror('is_certified_company', 'isCertifiedCompany');
+    mirror('is_paid', 'isPaid');
+    mirror('external_apply_enabled', 'externalApplyEnabled');
+    mirror('external_apply_url', 'externalApplyUrl');
+    mirror('external_apply_label', 'externalApplyLabel');
 
     // 시간 정규화 ("HH:mm")
     for (final key in ['start_time', 'end_time', 'startTime', 'endTime']) {
@@ -393,9 +419,14 @@ class JobService {
 
     // bool → 1/0
     for (final key in [
-      'is_paid', 'isPaid',
-      'is_same_day_pay', 'isSameDayPay',
-      'is_certified_company', 'isCertifiedCompany',
+      'is_paid',
+      'isPaid',
+      'is_same_day_pay',
+      'isSameDayPay',
+      'is_certified_company',
+      'isCertifiedCompany',
+      'external_apply_enabled',
+      'externalApplyEnabled',
     ]) {
       if (normalized.containsKey(key)) {
         normalized[key] = _boolTo01(normalized[key]);
@@ -408,7 +439,8 @@ class JobService {
 
     // 빈 값은 제거 (기존 값 훼손 방지)
     normalized.removeWhere(
-        (k, v) => v == null || (v is String && v.trim().isEmpty));
+      (k, v) => v == null || (v is String && v.trim().isEmpty),
+    );
 
     // 필드 채우기
     normalized.forEach((k, v) => req.fields[k] = v.toString());
@@ -425,7 +457,7 @@ class JobService {
     }
 
     final streamed = await req.send();
-    final resBody  = await streamed.stream.bytesToString();
+    final resBody = await streamed.stream.bytesToString();
 
     if (streamed.statusCode != 200) {
       throw Exception('공고 수정 실패 (${streamed.statusCode}) | $resBody');
@@ -435,7 +467,8 @@ class JobService {
   // ─── 7. 북마크된 공고 목록 ────────────────────────────
   static Future<List<Job>> fetchBookmarkedJobs(int userId) async {
     final response = await http.get(
-        Uri.parse('$baseUrl/api/bookmark/list?userId=$userId'));
+      Uri.parse('$baseUrl/api/bookmark/list?userId=$userId'),
+    );
 
     if (response.statusCode == 200) {
       final List<dynamic> jsonData = jsonDecode(response.body);
@@ -473,8 +506,11 @@ class JobService {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('authToken') ?? '';
 
-    final uri  = Uri.parse('$baseUrl/api/job/$jobId/publish-now');
-    final resp = await http.post(uri, headers: {'Authorization': 'Bearer $token'});
+    final uri = Uri.parse('$baseUrl/api/job/$jobId/publish-now');
+    final resp = await http.post(
+      uri,
+      headers: {'Authorization': 'Bearer $token'},
+    );
 
     if (resp.statusCode == 402) {
       throw const NoPassException();
@@ -490,12 +526,13 @@ class JobService {
     required double lng,
     int radiusM = 3000,
   }) async {
-    final uri = Uri.parse('$baseUrl/api/job/available-workers-count')
-        .replace(queryParameters: {
-      'lat': lat.toString(),
-      'lng': lng.toString(),
-      'radius': radiusM.toString(),
-    });
+    final uri = Uri.parse('$baseUrl/api/job/available-workers-count').replace(
+      queryParameters: {
+        'lat': lat.toString(),
+        'lng': lng.toString(),
+        'radius': radiusM.toString(),
+      },
+    );
     final resp = await http.get(uri).timeout(const Duration(seconds: 5));
     if (resp.statusCode == 200) {
       return (jsonDecode(resp.body)['count'] as num).toInt();

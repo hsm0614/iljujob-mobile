@@ -168,6 +168,7 @@ class _PostJobFormState extends State<PostJobForm>
   final _requiredCertsCtrl = TextEditingController();
   final _welfareCtrl = TextEditingController();
   String _description = '';
+  bool _externalApplyEnabled = false;
   final List<File> _images = [];
   List<String> _imageUrls = [], _deleteImageUrls = [];
 
@@ -175,6 +176,7 @@ class _PostJobFormState extends State<PostJobForm>
   final _titleCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
   final _negoCtrl = TextEditingController();
+  final _externalApplyUrlCtrl = TextEditingController();
 
   String companyName = '', managerName = '', managerPhone = '';
   DateTime? publishAt;
@@ -252,6 +254,7 @@ class _PostJobFormState extends State<PostJobForm>
     _titleCtrl.dispose();
     _descCtrl.dispose();
     _negoCtrl.dispose();
+    _externalApplyUrlCtrl.dispose();
     _payCtrl.dispose();
     super.dispose();
   }
@@ -733,6 +736,15 @@ class _PostJobFormState extends State<PostJobForm>
       _showError('근무 날짜를 선택해주세요.');
       return;
     }
+    final externalApplyUrl = _normalizedExternalApplyUrl();
+    if (_externalApplyEnabled && externalApplyUrl == null) {
+      _showError('외부 신청 페이지 주소를 확인해주세요.');
+      return;
+    }
+    if (_externalApplyEnabled && !isPaid) {
+      _showError('외부 신청 연결은 즉시게시·긴급호출 공고에서만 사용할 수 있어요.');
+      return;
+    }
 
     setState(() => _isSubmitting = true);
     try {
@@ -791,6 +803,8 @@ class _PostJobFormState extends State<PostJobForm>
         workDaysPerWeek: !_isShortTerm ? _workDaysPerWeek : null,
         requiredCerts: !_isShortTerm ? _requiredCertsCtrl.text.trim() : null,
         welfare: !_isShortTerm ? _welfareCtrl.text.trim() : null,
+        externalApplyEnabled: isPaid && _externalApplyEnabled,
+        externalApplyUrl: externalApplyUrl,
       );
 
       if (!mounted) return;
@@ -1017,8 +1031,13 @@ class _PostJobFormState extends State<PostJobForm>
             urgentPassCount: _urgentPassCount,
             passCountLoading: _passCountLoading,
             availableWorkersCount: availableCount,
+            externalApplyEnabled: _externalApplyEnabled,
             onFreeSubmit: () {
               Navigator.pop(ctx);
+              if (_externalApplyEnabled) {
+                _showError('외부 신청 연결은 즉시게시·긴급호출 공고에서만 사용할 수 있어요.');
+                return;
+              }
               _submit(isPaid: false);
             },
             onPaidSubmit: (dt) {
@@ -1083,6 +1102,18 @@ class _PostJobFormState extends State<PostJobForm>
     _scheduleDraftSave();
   }
 
+  String? _normalizedExternalApplyUrl() {
+    final raw = _externalApplyUrlCtrl.text.trim();
+    if (raw.isEmpty) return null;
+    final withScheme =
+        raw.startsWith(RegExp(r'https?://')) ? raw : 'https://$raw';
+    final uri = Uri.tryParse(withScheme);
+    if (uri == null) return null;
+    if (uri.scheme != 'http' && uri.scheme != 'https') return null;
+    if (uri.host.trim().isEmpty) return null;
+    return uri.toString();
+  }
+
   void _scheduleDraftSave() {
     _draftSaveTimer?.cancel();
     _draftSaveTimer = Timer(const Duration(milliseconds: 450), _saveDraft);
@@ -1095,7 +1126,9 @@ class _PostJobFormState extends State<PostJobForm>
         _category.isNotEmpty ||
         _location.isNotEmpty ||
         _pay > 0 ||
-        _description.trim().isNotEmpty;
+        _description.trim().isNotEmpty ||
+        _externalApplyEnabled ||
+        _externalApplyUrlCtrl.text.trim().isNotEmpty;
     final prefs = await SharedPreferences.getInstance();
     if (!hasDraft) {
       await prefs.remove(_draftKey);
@@ -1124,6 +1157,8 @@ class _PostJobFormState extends State<PostJobForm>
         'pay': _pay,
         'isSameDayPay': _isSameDayPay,
         'description': _description,
+        'externalApplyEnabled': _externalApplyEnabled,
+        'externalApplyUrl': _externalApplyUrlCtrl.text.trim(),
       }),
     );
   }
@@ -1161,6 +1196,8 @@ class _PostJobFormState extends State<PostJobForm>
         _isSameDayPay = d['isSameDayPay'] as bool? ?? false;
         _description = d['description']?.toString() ?? '';
         _descCtrl.text = _description;
+        _externalApplyEnabled = d['externalApplyEnabled'] as bool? ?? false;
+        _externalApplyUrlCtrl.text = d['externalApplyUrl']?.toString() ?? '';
       });
       _validatePay();
     } catch (_) {
@@ -3227,6 +3264,16 @@ class _PostJobFormState extends State<PostJobForm>
           ),
         ),
         const SizedBox(height: 24),
+        _ExternalApplyOption(
+          enabled: _externalApplyEnabled,
+          controller: _externalApplyUrlCtrl,
+          onChanged: (enabled) {
+            setState(() => _externalApplyEnabled = enabled);
+            _scheduleDraftSave();
+          },
+          onUrlChanged: (_) => _scheduleDraftSave(),
+        ),
+        const SizedBox(height: 20),
         _LaborNotice(),
         const SizedBox(height: 24),
         _NextBtn(
@@ -3597,6 +3644,118 @@ class _ImgThumb extends StatelessWidget {
   );
 }
 
+class _ExternalApplyOption extends StatelessWidget {
+  final bool enabled;
+  final TextEditingController controller;
+  final ValueChanged<bool> onChanged;
+  final ValueChanged<String> onUrlChanged;
+
+  const _ExternalApplyOption({
+    required this.enabled,
+    required this.controller,
+    required this.onChanged,
+    required this.onUrlChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 180),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: enabled ? const Color(0xFFEEF5FF) : _bg,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: enabled ? _blue : _border),
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => onChanged(!enabled),
+            borderRadius: BorderRadius.circular(12),
+            child: Row(
+              children: [
+                Icon(
+                  enabled
+                      ? Icons.check_box_rounded
+                      : Icons.check_box_outline_blank_rounded,
+                  color: enabled ? _blue : _label,
+                  size: 22,
+                ),
+                const SizedBox(width: 10),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '별도 페이지로 지원을 받을래요',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          color: _text,
+                        ),
+                      ),
+                      SizedBox(height: 3),
+                      Text(
+                        '유료 공고에서만 가능 · 공고 상세 확인 후 외부 페이지로 이동',
+                        style: TextStyle(fontSize: 11, color: _sub),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (enabled) ...[
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.url,
+              textInputAction: TextInputAction.done,
+              autocorrect: false,
+              onChanged: onUrlChanged,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: _text,
+              ),
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: Colors.white,
+                hintText: 'https://example.com/apply',
+                hintStyle: const TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFFBCC0C8),
+                ),
+                prefixIcon: const Icon(
+                  Icons.link_rounded,
+                  size: 18,
+                  color: _label,
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 13,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _border),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _border),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: _blue, width: 1.4),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _LaborNotice extends StatefulWidget {
   @override
   State<_LaborNotice> createState() => _LaborNoticeState();
@@ -3723,6 +3882,7 @@ class _PublishSheet extends StatefulWidget {
   final void Function(DateTime?) onPaidSubmit;
   final VoidCallback onUrgentSubmit;
   final VoidCallback onBuyPass;
+  final bool externalApplyEnabled;
   const _PublishSheet({
     required this.paidPassCount,
     required this.passCountLoading,
@@ -3730,6 +3890,7 @@ class _PublishSheet extends StatefulWidget {
     required this.onPaidSubmit,
     required this.onUrgentSubmit,
     required this.onBuyPass,
+    this.externalApplyEnabled = false,
     this.urgentPassCount = 0,
     this.availableWorkersCount = 0,
   });
@@ -4197,6 +4358,37 @@ class _PublishSheetState extends State<_PublishSheet> {
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 14, color: Colors.black87),
               ),
+              if (widget.externalApplyEnabled) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEEF5FF),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFD8E8FF)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.open_in_new_rounded, size: 16, color: _blue),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '구직자는 공고 정보를 본 뒤 외부 신청 페이지로 이동합니다.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: _blue,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
               Row(
                 children: [
