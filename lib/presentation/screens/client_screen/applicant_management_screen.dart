@@ -103,6 +103,24 @@ class ApplicantModel {
           : gender == 'female'
           ? '여'
           : '';
+
+  String get statusLabel {
+    if (isCompleted) return '근무 완료';
+    if (isConfirmed) return '출근 확정';
+    return '처리 필요';
+  }
+
+  String get actionLabel {
+    if (isCompleted) return '완료 확인';
+    if (isConfirmed) return '확정 확인';
+    return '채팅하기';
+  }
+
+  int get sortWeight {
+    if (isCompleted) return 3;
+    if (isConfirmed) return 2;
+    return 1;
+  }
 }
 
 class JobApplicantGroup {
@@ -127,6 +145,11 @@ class JobApplicantGroup {
         (j['applicants'] as List? ?? [])
             .map((a) => ApplicantModel.fromJson(a))
             .toList();
+    list.sort((a, b) {
+      final byStatus = a.sortWeight.compareTo(b.sortWeight);
+      if (byStatus != 0) return byStatus;
+      return b.appliedAt.compareTo(a.appliedAt);
+    });
     return JobApplicantGroup(
       jobId: j['job_id'] ?? 0,
       jobTitle: j['job_title'] ?? '공고 없음',
@@ -138,6 +161,10 @@ class JobApplicantGroup {
   }
 
   int get newCount => applicants.where((a) => a.isNew).length;
+  int get pendingCount =>
+      applicants.where((a) => !a.isConfirmed && !a.isCompleted).length;
+  int get confirmedCount =>
+      applicants.where((a) => a.isConfirmed && !a.isCompleted).length;
 }
 
 // ─── 상수 ────────────────────────────────────────────────────────
@@ -802,6 +829,27 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
           ),
           if (group.applicants.isNotEmpty) ...[
             const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                if (group.pendingCount > 0)
+                  _headerSignalChip(
+                    icon: Icons.priority_high_rounded,
+                    label: '처리 필요 ${group.pendingCount}명',
+                    color: _blue,
+                    background: _blueBg,
+                  ),
+                if (group.confirmedCount > 0)
+                  _headerSignalChip(
+                    icon: Icons.check_circle_outline_rounded,
+                    label: '출근 확정 ${group.confirmedCount}명',
+                    color: _green,
+                    background: _greenBg,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
             Row(
               children: [
                 _smallActionChip(
@@ -874,6 +922,36 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     );
   }
 
+  Widget _headerSignalChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required Color background,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ─── 지원자 행 ───────────────────────────────────────────────────
 
   Widget _buildApplicantRow(
@@ -882,11 +960,18 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     required bool isLast,
   }) {
     final selected = _isSelected(group, applicant);
+    final actionColor =
+        applicant.isCompleted
+            ? _green
+            : applicant.isConfirmed
+            ? const Color(0xFF0C447C)
+            : _blue;
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               GestureDetector(
                 onTap: () => _toggleApplicant(group, applicant),
@@ -924,28 +1009,26 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Wrap(
-                      spacing: 5,
-                      runSpacing: 3,
-                      crossAxisAlignment: WrapCrossAlignment.center,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 92),
+                        Expanded(
                           child: Text(
                             applicant.workerName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w800,
+                              color: Color(0xFF191F28),
                             ),
                           ),
                         ),
-                        _activityGradeBadge(applicant),
+                        const SizedBox(width: 6),
                         _statusChip(applicant),
                       ],
                     ),
-                    const SizedBox(height: 3),
+                    const SizedBox(height: 5),
                     Text(
                       [
                         if (applicant.age > 0) '${applicant.age}세',
@@ -958,6 +1041,18 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                         color: Color(0xFF9CA3AF),
                       ),
                     ),
+                    const SizedBox(height: 7),
+                    Wrap(
+                      spacing: 5,
+                      runSpacing: 5,
+                      children: [
+                        _activityGradeBadge(applicant),
+                        _miniInfoChip(
+                          Icons.schedule_rounded,
+                          _timeAgo(applicant.appliedAt),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -966,18 +1061,19 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 onTap: () => _goToChat(applicant, group),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 11,
-                    vertical: 7,
+                    horizontal: 10,
+                    vertical: 8,
                   ),
                   decoration: BoxDecoration(
-                    color: _blue,
+                    color: actionColor,
                     borderRadius: BorderRadius.circular(999),
                   ),
-                  child: const Text(
-                    '채팅',
+                  child: Text(
+                    applicant.actionLabel,
+                    maxLines: 1,
                     style: TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: FontWeight.w800,
                       color: Colors.white,
                     ),
                   ),
@@ -1119,43 +1215,91 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
 
   Widget _activityGradeBadge(ApplicantModel applicant) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
         color: applicant.activityGradeBg,
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(
-        applicant.activityGrade,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: applicant.activityGradeColor,
-        ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.workspace_premium_rounded,
+            size: 11,
+            color: applicant.activityGradeColor,
+          ),
+          const SizedBox(width: 3),
+          Text(
+            '${applicant.activityGrade} · ${applicant.safeActivityScore}점',
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+              color: applicant.activityGradeColor,
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _statusChip(ApplicantModel applicant) {
     if (applicant.isCompleted) {
-      return _chip('완료', const Color(0xFFE1F5EE), const Color(0xFF085041));
+      return _chip(
+        applicant.statusLabel,
+        const Color(0xFFE1F5EE),
+        const Color(0xFF085041),
+      );
     }
     if (applicant.isConfirmed) {
-      return _chip('채용확정', const Color(0xFFE6F1FB), const Color(0xFF0C447C));
+      return _chip(
+        applicant.statusLabel,
+        const Color(0xFFE6F1FB),
+        const Color(0xFF0C447C),
+      );
     }
-    if (applicant.isNew) return _chip('신규', _blueBg, _blue);
+    if (applicant.isNew) return _chip(applicant.statusLabel, _blueBg, _blue);
     return _chip('확인', const Color(0xFFF1F3F5), const Color(0xFF9CA3AF));
   }
 
   Widget _chip(String label, Color bg, Color fg) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 10, color: fg, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          fontSize: 10.5,
+          color: fg,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  Widget _miniInfoChip(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F6FA),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11, color: const Color(0xFF6B7280)),
+          const SizedBox(width: 3),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 10.5,
+              color: Color(0xFF6B7280),
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
   }
