@@ -33,7 +33,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
   Set<String> hiddenJobIds = {}; // 로컬 숨김
   bool isLoading = true;
   // Filters
-  String filterStatus = '전체'; // 전체 | active | closed
+  String filterStatus = '전체'; // 전체 | applied | confirmed | closed
   String searchQuery = '';
 
   // Review status
@@ -234,33 +234,6 @@ Future<void> _removeBookmark(Job job) async {
     _showErrorSnackbar('찜 해제 중 오류가 발생했습니다: $e');
   }
 }
-List<Map<String, dynamic>> _extractJobsList(dynamic decoded) {
-  dynamic v = decoded;
-
-  // 흔한 래핑 케이스들 처리
-  if (v is Map) {
-    v = v['data'] ?? v['result'] ?? v;
-    if (v is Map) {
-      v = v['bookmarks'] ??
-          v['items'] ??
-          v['results'] ??
-          v['jobs'] ??
-          v['list'] ??
-          v;
-    }
-  }
-
-  if (v is! List) return [];
-
-  final out = <Map<String, dynamic>>[];
-  for (final e in v) {
-    if (e is Map) {
-      out.add(Map<String, dynamic>.from(e));
-    }
-  }
-  return out;
-}
-
 Future<void> _loadBookmarkedJobs() async {
   try {
     final prefs = await SharedPreferences.getInstance();
@@ -345,12 +318,12 @@ Future<void> _loadBookmarkedJobs() async {
   // ✅ 지원현황: deleted 숨김 유지
   a = a.where((j) => j.status != 'deleted').toList();
 
-  // ✅ 찜탭: deleted만 보여주기
-  b = b.where((j) => j.status == 'deleted').toList();
+  // ✅ 찜탭: 삭제된 공고는 숨기고 저장한 공고만 보여주기
+  b = b.where((j) => j.status != 'deleted').toList();
 
-  // ✅ 상태 필터: 찜탭에서는 의미 없으니 applied에만 적용
+  // ✅ 진행 필터: 지원현황 탭에서만 적용
   if (filterStatus != '전체') {
-    a = a.where((j) => j.status == filterStatus).toList();
+    a = a.where((j) => _matchesActivityFilter(j, filterStatus)).toList();
   }
 
   // 검색(둘 다 적용)
@@ -632,7 +605,7 @@ Future<void> _loadBookmarkedJobs() async {
               color: selected ? kBrandBlue : const Color(0xFFE5E8EB),
             ),
             boxShadow: selected
-                ? [BoxShadow(color: kBrandBlue.withOpacity(0.20), blurRadius: 6, offset: const Offset(0, 2))]
+                ? [BoxShadow(color: kBrandBlue.withValues(alpha: 0.20), blurRadius: 6, offset: const Offset(0, 2))]
                 : [],
           ),
           child: Text(
@@ -655,7 +628,8 @@ Future<void> _loadBookmarkedJobs() async {
           spacing: 10,
           children: [
             chip('전체', '전체'),
-            chip('active', '채용 중'),
+            chip('applied', '지원중'),
+            chip('confirmed', '출근 확정'),
             chip('closed', '마감'),
           ],
         ),
@@ -663,10 +637,119 @@ Future<void> _loadBookmarkedJobs() async {
     );
   }
 
+  bool _matchesActivityFilter(Job job, String key) {
+    final status = job.status;
+    if (key == 'applied') return status == 'active';
+    if (key == 'confirmed') return status == 'hired' || status == 'confirmed';
+    if (key == 'closed') return status == 'closed';
+    return true;
+  }
+
+  int _activityCount(String key) => appliedJobs
+      .where((job) => job.status != 'deleted')
+      .where((job) => _matchesActivityFilter(job, key))
+      .length;
+
+  Widget _activitySummary() {
+    Widget item({
+      required String label,
+      required int count,
+      required Color color,
+      required IconData icon,
+    }) {
+      return Expanded(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFE8EDF3)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x08000000),
+                blurRadius: 8,
+                offset: Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 30,
+                height: 30,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, size: 17, color: color),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '$count건',
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF191F28),
+                        height: 1.1,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF8B95A1),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Row(
+        children: [
+          item(
+            label: '지원중',
+            count: _activityCount('applied'),
+            color: kBrandBlue,
+            icon: Icons.send_rounded,
+          ),
+          const SizedBox(width: 8),
+          item(
+            label: '출근 확정',
+            count: _activityCount('confirmed'),
+            color: const Color(0xFF10B981),
+            icon: Icons.verified_rounded,
+          ),
+          const SizedBox(width: 8),
+          item(
+            label: '마감',
+            count: _activityCount('closed'),
+            color: const Color(0xFF9CA3AF),
+            icon: Icons.flag_rounded,
+          ),
+        ],
+      ),
+    );
+  }
+
   String _statusText(Job job) {
   if (job.status == 'deleted') return '삭제됨';
-  if (job.status == 'active') return '채용중';
-  if (job.status == 'hired' || job.status == 'confirmed') return '채용 확정';
+  if (job.status == 'active') return '지원중';
+  if (job.status == 'hired' || job.status == 'confirmed') return '출근 확정';
   return '마감';
 }
 
@@ -791,7 +874,7 @@ final isDeleted = job.status == 'deleted';
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: statusColor.withOpacity(0.10),
+                          color: statusColor.withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -1000,7 +1083,11 @@ final isDeleted = job.status == 'deleted';
                 children: [
                   _headerSearch(),
                   _topTabs(),
-                  _statusChips(),
+                  if (_tabIndex == 0) ...[
+                    _activitySummary(),
+                    _statusChips(),
+                  ] else
+                    const SizedBox(height: 12),
                   Expanded(
                     child: list.isEmpty
                         ? _emptyView(forBookmark: _tabIndex == 1)
