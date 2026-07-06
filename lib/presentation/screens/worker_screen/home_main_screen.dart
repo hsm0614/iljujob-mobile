@@ -1646,14 +1646,16 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                           vertical: 7,
                         ),
                         decoration: BoxDecoration(
-                          color: isAvailableToday
-                              ? Colors.white
-                              : Colors.white.withValues(alpha: 0.15),
+                          color:
+                              isAvailableToday
+                                  ? Colors.white
+                                  : Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(AppRadius.full),
                           border: Border.all(
-                            color: isAvailableToday
-                                ? Colors.white
-                                : Colors.white.withValues(alpha: 0.45),
+                            color:
+                                isAvailableToday
+                                    ? Colors.white
+                                    : Colors.white.withValues(alpha: 0.45),
                           ),
                         ),
                         child: Row(
@@ -1665,9 +1667,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                               height: 7,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: isAvailableToday
-                                    ? AppColors.success
-                                    : Colors.white.withValues(alpha: 0.70),
+                                color:
+                                    isAvailableToday
+                                        ? AppColors.success
+                                        : Colors.white.withValues(alpha: 0.70),
                               ),
                             ),
                             const SizedBox(width: 5),
@@ -1676,9 +1679,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w700,
-                                color: isAvailableToday
-                                    ? AppColors.success
-                                    : Colors.white,
+                                color:
+                                    isAvailableToday
+                                        ? AppColors.success
+                                        : Colors.white,
                               ),
                             ),
                           ],
@@ -1723,6 +1727,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                       ),
                 ),
               ),
+              if (!_isBannerHidden && bannerAds.isNotEmpty) ...[
+                const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                SliverToBoxAdapter(child: _buildBannerSlider()),
+              ],
               const SliverToBoxAdapter(child: SizedBox(height: 8)),
               SliverToBoxAdapter(
                 child: Padding(
@@ -3238,7 +3246,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     return '${d.month.toString().padLeft(2, '0')}.${d.day.toString().padLeft(2, '0')}';
   }
 
-  // ignore: unused_element
   Widget _buildBannerSlider() {
     if (_isBannerHidden || bannerAds.isEmpty) return const SizedBox.shrink();
 
@@ -3340,6 +3347,26 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 ),
               ),
             ],
+            Positioned(
+              top: 6,
+              left: 6,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.24),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
+                ),
+                child: const Text(
+                  '광고',
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                    height: 1,
+                  ),
+                ),
+              ),
+            ),
             Positioned(
               top: 6,
               right: 6,
