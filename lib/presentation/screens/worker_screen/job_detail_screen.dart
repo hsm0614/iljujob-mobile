@@ -169,6 +169,32 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return k.take(6).toList();
   }
 
+  String _payText() {
+    final pay = NumberFormat('#,###').format(int.tryParse(widget.job.pay) ?? 0);
+    return '$pay원';
+  }
+
+  String _shortLocationText() {
+    final city = widget.job.locationCity.trim();
+    if (city.isNotEmpty) return city;
+
+    final location = widget.job.location.trim();
+    if (location.isEmpty) return '위치 확인';
+    return location.split(RegExp(r'\s+')).take(2).join(' ');
+  }
+
+  String _distanceOrLocationText() {
+    final m = _distanceMeters;
+    if (m == null) return _shortLocationText();
+    if (m >= 1000) return '${(m / 1000).toStringAsFixed(1)}km';
+    return '${m.toStringAsFixed(0)}m';
+  }
+
+  String _applicantSummaryText() {
+    if (applicantCount <= 0) return '첫 지원 가능';
+    return '지원 $applicantCount명';
+  }
+
   @override
   void dispose() {
     _pageController.dispose(); // 여기서만 dispose
@@ -793,92 +819,156 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // AI 면접 준비 버튼
-            SizedBox(
-              height: 50,
-              child: OutlinedButton(
-                onPressed: () {
-                  final payInt =
-                      int.tryParse(
-                        widget.job.pay.replaceAll(RegExp(r'[^0-9]'), ''),
-                      ) ??
-                      0;
-                  showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    useSafeArea: true,
-                    builder:
-                        (_) => AiInterviewPrepSheet(
-                          jobTitle: widget.job.title,
-                          category: widget.job.category,
-                          location: widget.job.location,
-                          payType: widget.job.payType,
-                          pay: payInt,
-                        ),
-                  );
-                },
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 14),
-                  side: const BorderSide(color: Color(0xFF3B8AFF)),
-                  foregroundColor: const Color(0xFF3B8AFF),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.auto_awesome_rounded, size: 18),
-                    SizedBox(height: 2),
-                    Text(
-                      '면접 준비',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
+            _buildApplyHint(isButtonDisabled: isButtonDisabled),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                // AI 면접 준비 버튼
+                SizedBox(
+                  height: 50,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      final payInt =
+                          int.tryParse(
+                            widget.job.pay.replaceAll(RegExp(r'[^0-9]'), ''),
+                          ) ??
+                          0;
+                      showModalBottomSheet(
+                        context: context,
+                        isScrollControlled: true,
+                        backgroundColor: Colors.transparent,
+                        useSafeArea: true,
+                        builder:
+                            (_) => AiInterviewPrepSheet(
+                              jobTitle: widget.job.title,
+                              category: widget.job.category,
+                              location: widget.job.location,
+                              payType: widget.job.payType,
+                              pay: payInt,
+                            ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                      side: const BorderSide(color: Color(0xFF3B8AFF)),
+                      foregroundColor: const Color(0xFF3B8AFF),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            // 지원하기 버튼
-            Expanded(
-              child: SizedBox(
-                height: 50,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isButtonDisabled ? Colors.grey : kBrand,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  onPressed: isButtonDisabled ? null : _applyToJob,
-                  child: Text(
-                    isClosed
-                        ? '마감된 공고'
-                        : hasApplied
-                        ? '지원 완료'
-                        : isBlocked
-                        ? '차단된 기업'
-                        : isSuspended
-                        ? '정지된 계정'
-                        : '지원하기',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.auto_awesome_rounded, size: 18),
+                        SizedBox(height: 2),
+                        Text(
+                          '면접 준비',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              ),
+                const SizedBox(width: 10),
+                // 지원하기 버튼
+                Expanded(
+                  child: SizedBox(
+                    height: 50,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            isButtonDisabled ? Colors.grey : kBrand,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      onPressed: isButtonDisabled ? null : _applyToJob,
+                      child: Text(
+                        isClosed
+                            ? '마감된 공고'
+                            : hasApplied
+                            ? '지원 완료'
+                            : isBlocked
+                            ? '차단된 기업'
+                            : isSuspended
+                            ? '정지된 계정'
+                            : '지원하고 채팅 시작',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildApplyHint({required bool isButtonDisabled}) {
+    String text;
+    IconData icon;
+
+    if (hasApplied) {
+      text = '이미 지원한 공고예요. 채팅에서 사장님 답변을 확인해보세요.';
+      icon = Icons.check_circle_rounded;
+    } else if (isClosed) {
+      text = '마감된 공고라 새 지원을 받을 수 없어요.';
+      icon = Icons.lock_clock_rounded;
+    } else if (isBlocked) {
+      text = '차단한 기업의 공고라 지원할 수 없어요.';
+      icon = Icons.block_rounded;
+    } else if (_suspension?.isSuspended ?? false) {
+      text = '계정 상태 확인이 필요해 지원할 수 없어요.';
+      icon = Icons.info_outline_rounded;
+    } else {
+      text = '지원하면 사장님과 대화할 채팅방이 바로 열려요.';
+      icon = Icons.chat_bubble_outline_rounded;
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+      decoration: BoxDecoration(
+        color:
+            isButtonDisabled ? const Color(0xFFF3F4F6) : const Color(0xFFE7F0FF),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            size: 17,
+            color: isButtonDisabled ? const Color(0xFF6B7280) : kBrand,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12.5,
+                height: 1.25,
+                color:
+                    isButtonDisabled
+                        ? const Color(0xFF4B5563)
+                        : const Color(0xFF1D4ED8),
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1103,6 +1193,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     child: _buildHeaderCard(postedLabel, postedUtc),
                   ),
 
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildDecisionSummary(),
+                  ),
+
                   const SizedBox(height: 16),
                   // 🔹 위치 섹션
                   if (widget.job.lat != 0 && widget.job.lng != 0)
@@ -1143,9 +1239,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   Widget _buildHeaderCard(String postedLabel, DateTime? postedUtc) {
-    final pay = NumberFormat('#,###').format(int.tryParse(widget.job.pay) ?? 0);
-    final periodText = _getWorkingPeriodText(widget.job);
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1261,6 +1354,173 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDecisionSummary() {
+    final chips = <Widget>[];
+    if (widget.job.isCertifiedCompany) {
+      chips.add(_trustChip('인증업체', const Color(0xFF0F9F6E)));
+    }
+    if (widget.job.isUrgent) {
+      chips.add(_trustChip('긴급공고', const Color(0xFFEA580C)));
+    }
+    if (widget.job.isSameDayPay == true) {
+      chips.add(_trustChip('당일지급', const Color(0xFF7C3AED)));
+    }
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111827),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  '지원 전 핵심 확인',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+              if (chips.isNotEmpty)
+                Flexible(
+                  child: Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: 5,
+                    runSpacing: 5,
+                    children: chips,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _decisionItem(
+                icon: Icons.payments_rounded,
+                label: widget.job.payType,
+                value: _payText(),
+              ),
+              _summaryDivider(),
+              _decisionItem(
+                icon: Icons.event_available_rounded,
+                label: '일정',
+                value: _getWorkingPeriodText(widget.job),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _decisionItem(
+                icon: Icons.near_me_rounded,
+                label: _distanceMeters == null ? '지역' : '내 위치',
+                value: _distanceOrLocationText(),
+              ),
+              _summaryDivider(),
+              _decisionItem(
+                icon: Icons.groups_rounded,
+                label: '경쟁',
+                value: _applicantSummaryText(),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _trustChip(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.16),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.32)),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: Colors.white.withValues(alpha: 0.94),
+          fontSize: 10.5,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+
+  Widget _decisionItem({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Expanded(
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: Colors.white, size: 18),
+          ),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.58),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _summaryDivider() {
+    return Container(
+      width: 1,
+      height: 34,
+      margin: const EdgeInsets.symmetric(horizontal: 10),
+      color: Colors.white.withValues(alpha: 0.12),
     );
   }
 
