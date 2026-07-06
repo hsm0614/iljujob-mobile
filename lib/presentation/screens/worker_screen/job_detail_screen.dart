@@ -1247,77 +1247,43 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 🔹 상단 작은 라벨들
-          Row(
+          Wrap(
+            spacing: 7,
+            runSpacing: 7,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE7F0FF),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: const Text(
-                  '내 근처 단기 알바',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF3B8AFF),
-                  ),
-                ),
+              _headerTag(
+                '내 근처 단기 알바',
+                background: const Color(0xFFE7F0FF),
+                foreground: const Color(0xFF3B8AFF),
               ),
-              const Spacer(),
+              if (widget.job.category.trim().isNotEmpty)
+                _headerTag(
+                  widget.job.category,
+                  background: const Color(0xFFE5E8EB),
+                  foreground: const Color(0xFF4B5563),
+                ),
               if (widget.job.isSameDayPay == true)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: const Text(
-                    '당일지급',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.orange,
-                    ),
-                  ),
+                _headerTag(
+                  '당일지급',
+                  background: Colors.orange.withValues(alpha: 0.12),
+                  foreground: Colors.orange,
                 ),
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
 
-          // 🔹 카테고리 + 제목
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE5E8EB),
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Text(
-                  widget.job.category,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  widget.job.title,
-                  style: const TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'Jalnan2TTF',
-                  ),
-                ),
-              ),
-            ],
+          // 🔹 제목은 전체 폭을 사용해서 긴 공고도 자연스럽게 줄바꿈
+          Text(
+            widget.job.title,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 18,
+              height: 1.32,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'Jalnan2TTF',
+              color: Color(0xFF4B5563),
+            ),
           ),
 
           const SizedBox(height: 8),
@@ -1347,6 +1313,30 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _headerTag(
+    String text, {
+    required Color background,
+    required Color foreground,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+          color: foreground,
+        ),
       ),
     );
   }
