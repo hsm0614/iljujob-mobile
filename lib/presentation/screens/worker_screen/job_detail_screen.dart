@@ -44,8 +44,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   String? userType;
   int? myUserId;
   bool isBlocked = false;
-  final int _currentImage = 0;
-  final PageController _pageController = PageController();
   double? _distanceMeters;
   String? _nearStationName;
   int? _nearStationWalkMin;
@@ -192,7 +190,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   @override
   void dispose() {
-    _pageController.dispose(); // 여기서만 dispose
     super.dispose();
   }
 
@@ -1382,24 +1379,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     );
   }
 
-  Widget _infoChip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF4F6FA),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: Color(0xFF263144),
-        ),
-      ),
-    );
-  }
-
   Widget _buildJobCoreSection() {
     final isAgency = (widget.job.isAgency == true);
     final description =
@@ -1630,7 +1609,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     }
 
     final coordText = '${lat.toStringAsFixed(6)}, ${lng.toStringAsFixed(6)}';
-    final copyText = (address.isNotEmpty ?? false) ? address : coordText;
+    final copyText = address.isNotEmpty ? address : coordText;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1768,7 +1747,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     (_) => FullMapScreen(
                       lat: lat,
                       lng: lng,
-                      address: (address.isNotEmpty ?? false) ? address : null,
+                      address: address.isNotEmpty ? address : null,
                     ),
               ),
             );
@@ -1786,17 +1765,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   child: km.KakaoMap(
                     initialPosition: km.LatLng(latitude: lat, longitude: lng),
                     initialLevel: 17,
-                    onMapCreated: (c) async {
-                      final pos = km.LatLng(latitude: lat, longitude: lng);
-                      await c.moveCamera(
-                        cameraUpdate: km.CameraUpdate.fromLatLng(pos),
-                        animation: const km.CameraAnimation(
-                          duration: 300,
-                          autoElevation: true,
-                          isConsecutive: false,
-                        ),
-                      );
-                    },
                   ),
                 ),
                 const Align(
@@ -1829,9 +1797,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            (address.isNotEmpty ?? false)
-                                ? address
-                                : '위치: $coordText',
+                            address.isNotEmpty ? address : '위치: $coordText',
                             style: const TextStyle(
                               fontSize: 13,
                               color: Color(0xFF191F28),
@@ -2151,11 +2117,7 @@ class _ImagesCarousel extends StatelessWidget {
   final List<String> imageUrls;
   final String baseUrl;
 
-  const _ImagesCarousel({
-    super.key,
-    required this.imageUrls,
-    required this.baseUrl,
-  });
+  const _ImagesCarousel({required this.imageUrls, required this.baseUrl});
 
   @override
   Widget build(BuildContext context) {

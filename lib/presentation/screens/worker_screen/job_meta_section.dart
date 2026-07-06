@@ -66,7 +66,8 @@ class JobMetaSection extends StatelessWidget {
                   icon: Icons.work_outline_rounded,
                   iconColor: const Color(0xFFEF5350),
                   label: '업종',
-                  value: job.category ?? '기타',
+                  value:
+                      job.category.trim().isEmpty ? '기타' : job.category.trim(),
                   height: tileHeight,
                 ),
               ],
@@ -103,7 +104,7 @@ class _MetaTile extends StatelessWidget {
         border: Border.all(color: const Color(0xFFE5E7EB)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.02),
+            color: Colors.black.withValues(alpha: 0.02),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -116,7 +117,7 @@ class _MetaTile extends StatelessWidget {
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.14),
+              color: iconColor.withValues(alpha: 0.14),
               borderRadius: BorderRadius.circular(999),
             ),
             child: Icon(icon, size: 17, color: iconColor),
@@ -142,8 +143,8 @@ class _MetaTile extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 13,
-                    fontWeight: FontWeight.w600,          // 살짝만 두껍게
-                    color: Color(0xFF222222),             // 완전 새까맣진 않게
+                    fontWeight: FontWeight.w600, // 살짝만 두껍게
+                    color: Color(0xFF222222), // 완전 새까맣진 않게
                   ),
                 ),
               ],

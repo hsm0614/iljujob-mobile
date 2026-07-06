@@ -2659,20 +2659,24 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     if (job.jobType == 'long') {
       opBadges.add(_buildBadge('장기', color: AppColors.badgeLong));
     }
-    if (isNew) opBadges.add(_buildBadge('신규', color: AppColors.badgeNew));
+    if (isNew) {
+      opBadges.add(_buildBadge('신규', color: AppColors.badgeNew));
+    }
     if (isUrgent) {
       opBadges.add(_buildBadge('마감임박', color: AppColors.badgeUrgent));
     }
     if (job.payType == '월급') {
       opBadges.add(_buildBadge('월급', color: AppColors.badgeMonthly));
-    } else if (job.payType == '일급')
+    } else if (job.payType == '일급') {
       opBadges.add(_buildBadge('일급', color: AppColors.badgeDaily));
-    else if (job.payType == '주급')
+    } else if (job.payType == '주급') {
       opBadges.add(_buildBadge('주급', color: AppColors.badgeWeekly));
+    }
     if (job.isSameDayPay == true) {
       opBadges.add(_buildBadge('당일지급', color: AppColors.badgeSameDay));
-    } else if (job.isCertifiedCompany == true)
+    } else if (job.isCertifiedCompany == true) {
       opBadges.add(_buildBadge('안심기업', color: AppColors.badgeSafe));
+    }
 
     final displayBadges = opBadges.take(2).toList();
     final aiSummary = _buildAiSummary(job);
