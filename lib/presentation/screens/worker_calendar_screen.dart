@@ -974,13 +974,15 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                 GestureDetector(
                   onTap: _showOverdueSheet,
                   child: _pill(
-                    label: overdue > 0 ? '확인 필요 $overdue건  ?' : '정상  ?',
-                    bg: overdue > 0
-                        ? const Color(0xFFFFF7ED)
-                        : const Color(0xFFDCFCE7),
-                    fg: overdue > 0
-                        ? const Color(0xFF9A3412)
-                        : const Color(0xFF166534),
+                    label: overdue > 0 ? '완료 처리 필요 $overdue건' : '정리 완료',
+                    bg:
+                        overdue > 0
+                            ? const Color(0xFFFFF7ED)
+                            : const Color(0xFFDCFCE7),
+                    fg:
+                        overdue > 0
+                            ? const Color(0xFF9A3412)
+                            : const Color(0xFF166534),
                   ),
                 ),
               ],
@@ -1152,9 +1154,10 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
               return const SizedBox.shrink();
 
             final showAmount = scheduled > 0 ? scheduled : completed;
-            final markerColor = completed > 0 && scheduled == 0
-                ? const Color(0xFF16A34A)
-                : kBrandBlue;
+            final markerColor =
+                completed > 0 && scheduled == 0
+                    ? const Color(0xFF16A34A)
+                    : kBrandBlue;
             final isSelected = isSameDay(day, _selectedDay);
 
             return Align(
@@ -1163,9 +1166,10 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                 margin: const EdgeInsets.only(bottom: 3),
                 padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                 decoration: BoxDecoration(
-                  color: isSelected
-                      ? Colors.white.withOpacity(0.30)
-                      : markerColor.withOpacity(0.12),
+                  color:
+                      isSelected
+                          ? Colors.white.withOpacity(0.30)
+                          : markerColor.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -1265,15 +1269,22 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     final start = (it['start_time'] ?? it['start_at'] ?? '').toString();
     final end = (it['end_time'] ?? it['end_at'] ?? '').toString();
 
-    final badgeText = completed ? '완료' : cancelled ? '취소됨' : '예정';
-    final badgeBg = completed
-        ? const Color(0xFFDCFCE7)
-        : cancelled
+    final badgeText =
+        completed
+            ? '완료'
+            : cancelled
+            ? '취소됨'
+            : '예정';
+    final badgeBg =
+        completed
+            ? const Color(0xFFDCFCE7)
+            : cancelled
             ? const Color(0xFFF3F4F6)
             : const Color(0xFFEFF6FF);
-    final badgeFg = completed
-        ? const Color(0xFF166534)
-        : cancelled
+    final badgeFg =
+        completed
+            ? const Color(0xFF166534)
+            : cancelled
             ? const Color(0xFF6B7280)
             : kBrandBlue;
 
@@ -1303,7 +1314,9 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                   _openEditSheet(item: it);
                 }
               },
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(18),
+              ),
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
                 child: Row(
@@ -1315,7 +1328,11 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                         color: const Color(0xFFEFF6FF),
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Icon(Icons.event_note_rounded, color: kBrandBlue, size: 22),
+                      child: const Icon(
+                        Icons.event_note_rounded,
+                        color: kBrandBlue,
+                        size: 22,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -1326,7 +1343,11 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                             jobTitle.isEmpty ? '공고' : jobTitle,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: kText),
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w900,
+                              color: kText,
+                            ),
                           ),
                           const SizedBox(height: 3),
                           Row(
@@ -1336,14 +1357,22 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                                   company,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 12, color: kMuted, fontWeight: FontWeight.w700),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: kMuted,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                               if (start.isNotEmpty || end.isNotEmpty) ...[
                                 const SizedBox(width: 8),
                                 Text(
                                   '${start.isEmpty ? '--:--' : start}~${end.isEmpty ? '--:--' : end}',
-                                  style: const TextStyle(fontSize: 11, color: kMuted, fontWeight: FontWeight.w700),
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    color: kMuted,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ],
                             ],
@@ -1367,12 +1396,20 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                                   alignment: Alignment.centerLeft,
                                   child: Text(
                                     '${NumberFormat('#,###').format(amount)}원',
-                                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: kText),
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w900,
+                                      color: kText,
+                                    ),
                                   ),
                                 ),
                               ),
                               if (isJob)
-                                const Icon(Icons.open_in_new_rounded, size: 14, color: kMuted),
+                                const Icon(
+                                  Icons.open_in_new_rounded,
+                                  size: 14,
+                                  color: kMuted,
+                                ),
                             ],
                           ),
                         ],
@@ -1435,7 +1472,14 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
           children: [
             Icon(icon, size: 15, color: color),
             const SizedBox(width: 4),
-            Text(label, style: TextStyle(fontSize: 12, color: color, fontWeight: FontWeight.w700)),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                color: color,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ],
         ),
       ),
@@ -1460,10 +1504,15 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
       if (!mounted) return;
       if (resp.statusCode == 200) {
         final decoded = jsonDecode(resp.body);
-        final Map<String, dynamic> raw = decoded is Map
-            ? (decoded['job'] as Map<String, dynamic>? ?? Map<String, dynamic>.from(decoded))
-            : {};
-        if (raw.isEmpty) { _snack('공고 정보를 불러오지 못했어요.'); return; }
+        final Map<String, dynamic> raw =
+            decoded is Map
+                ? (decoded['job'] as Map<String, dynamic>? ??
+                    Map<String, dynamic>.from(decoded))
+                : {};
+        if (raw.isEmpty) {
+          _snack('공고 정보를 불러오지 못했어요.');
+          return;
+        }
         final job = Job.fromJson(raw);
         if (!mounted) return;
         Navigator.of(context).pushNamed('/job-detail', arguments: job);
@@ -1509,7 +1558,8 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
             children: [
               Center(
                 child: Container(
-                  width: 40, height: 5,
+                  width: 40,
+                  height: 5,
                   decoration: BoxDecoration(
                     color: const Color(0xFFE5E7EB),
                     borderRadius: BorderRadius.circular(999),
@@ -1517,14 +1567,31 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('이번달 근무 현황',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: kText)),
+              const Text(
+                '이번달 근무 현황',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: kText,
+                ),
+              ),
               const SizedBox(height: 14),
               _summaryRow('예정', scheduledCount, scheduled, kBrandBlue),
               const SizedBox(height: 8),
-              _summaryRow('완료', completedCount, completed, const Color(0xFF16A34A)),
+              _summaryRow(
+                '완료',
+                completedCount,
+                completed,
+                const Color(0xFF16A34A),
+              ),
               const Divider(height: 20),
-              _summaryRow('합계', scheduledCount + completedCount, scheduled + completed, kText, bold: true),
+              _summaryRow(
+                '합계',
+                scheduledCount + completedCount,
+                scheduled + completed,
+                kText,
+                bold: true,
+              ),
               if (overdue > 0) ...[
                 const SizedBox(height: 16),
                 Container(
@@ -1537,14 +1604,20 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: const [
-                      Icon(Icons.info_outline_rounded, color: Color(0xFFF97316), size: 17),
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: Color(0xFFF97316),
+                        size: 17,
+                      ),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
                           '확인 필요 = 날짜가 지났는데 아직 완료 처리가 안 된 근무예요.\n실제로 일했다면 아래 목록에서 완료 버튼을 눌러주세요.',
                           style: TextStyle(
-                            fontSize: 12, color: Color(0xFF9A3412),
-                            height: 1.45, fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            color: Color(0xFF9A3412),
+                            height: 1.45,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -1559,11 +1632,18 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     );
   }
 
-  Widget _summaryRow(String label, int count, int amount, Color color, {bool bold = false}) {
+  Widget _summaryRow(
+    String label,
+    int count,
+    int amount,
+    Color color, {
+    bool bold = false,
+  }) {
     return Row(
       children: [
         Container(
-          width: 8, height: 8,
+          width: 8,
+          height: 8,
           decoration: BoxDecoration(color: color, shape: BoxShape.circle),
         ),
         const SizedBox(width: 10),
@@ -1576,8 +1656,14 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
           ),
         ),
         const Spacer(),
-        Text('$count건',
-            style: const TextStyle(fontSize: 13, color: kMuted, fontWeight: FontWeight.w700)),
+        Text(
+          '$count건',
+          style: const TextStyle(
+            fontSize: 13,
+            color: kMuted,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
         const SizedBox(width: 16),
         Text(
           '${NumberFormat('#,###').format(amount)}원',
