@@ -2676,6 +2676,18 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
     final displayBadges = opBadges.take(2).toList();
     final aiSummary = _buildAiSummary(job);
+    final decisionSignals =
+        <Widget>[
+          if (distanceText != null)
+            _jobSignalPill(Icons.near_me_rounded, '${distanceText}km'),
+          if (job.isSameDayPay == true)
+            _jobSignalPill(Icons.payments_rounded, '당일지급'),
+          if (job.isUrgent) _jobSignalPill(Icons.flash_on_rounded, '긴급'),
+          if (job.isCertifiedCompany == true)
+            _jobSignalPill(Icons.verified_rounded, '안심기업'),
+          if (job.matchReasons.isNotEmpty)
+            _jobSignalPill(Icons.auto_awesome_rounded, job.matchReasons.first),
+        ].take(4).toList();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -2895,6 +2907,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     ),
                   ],
 
+                  if (decisionSignals.isNotEmpty) ...[
+                    const SizedBox(height: 9),
+                    Wrap(spacing: 6, runSpacing: 6, children: decisionSignals),
+                  ],
+
                   const SizedBox(height: 12),
 
                   // ── 액션 버튼 행 ────────────────────────────────
@@ -3004,6 +3021,32 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _jobSignalPill(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppColors.bgMuted,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.borderSub),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: AppColors.textSecondary),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
             ),
           ),
         ],

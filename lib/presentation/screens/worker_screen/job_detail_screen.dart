@@ -169,11 +169,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return k.take(6).toList();
   }
 
-  String _payText() {
-    final pay = NumberFormat('#,###').format(int.tryParse(widget.job.pay) ?? 0);
-    return '$pay원';
-  }
-
   String _shortLocationText() {
     final city = widget.job.locationCity.trim();
     if (city.isNotEmpty) return city;
@@ -943,7 +938,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
         color:
-            isButtonDisabled ? const Color(0xFFF3F4F6) : const Color(0xFFE7F0FF),
+            isButtonDisabled
+                ? const Color(0xFFF3F4F6)
+                : const Color(0xFFE7F0FF),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -1193,12 +1190,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     child: _buildHeaderCard(postedLabel, postedUtc),
                   ),
 
-                  const SizedBox(height: 10),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildDecisionSummary(),
-                  ),
-
                   const SizedBox(height: 16),
                   // 🔹 위치 섹션
                   if (widget.job.lat != 0 && widget.job.lng != 0)
@@ -1334,7 +1325,10 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           // 🔹 여기 안에 2x2 메타 카드 네 개 넣기
           JobMetaSection(job: widget.job),
 
-          const SizedBox(height: 8),
+          const SizedBox(height: 10),
+          _buildHeaderSignals(),
+
+          const SizedBox(height: 10),
 
           // 🔹 게시일
           Row(
@@ -1357,170 +1351,44 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     );
   }
 
-  Widget _buildDecisionSummary() {
-    final chips = <Widget>[];
-    if (widget.job.isCertifiedCompany) {
-      chips.add(_trustChip('인증업체', const Color(0xFF0F9F6E)));
-    }
-    if (widget.job.isUrgent) {
-      chips.add(_trustChip('긴급공고', const Color(0xFFEA580C)));
-    }
-    if (widget.job.isSameDayPay == true) {
-      chips.add(_trustChip('당일지급', const Color(0xFF7C3AED)));
-    }
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF111827),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  '지원 전 핵심 확인',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-              if (chips.isNotEmpty)
-                Flexible(
-                  child: Wrap(
-                    alignment: WrapAlignment.end,
-                    spacing: 5,
-                    runSpacing: 5,
-                    children: chips,
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _decisionItem(
-                icon: Icons.payments_rounded,
-                label: widget.job.payType,
-                value: _payText(),
-              ),
-              _summaryDivider(),
-              _decisionItem(
-                icon: Icons.event_available_rounded,
-                label: '일정',
-                value: _getWorkingPeriodText(widget.job),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              _decisionItem(
-                icon: Icons.near_me_rounded,
-                label: _distanceMeters == null ? '지역' : '내 위치',
-                value: _distanceOrLocationText(),
-              ),
-              _summaryDivider(),
-              _decisionItem(
-                icon: Icons.groups_rounded,
-                label: '경쟁',
-                value: _applicantSummaryText(),
-              ),
-            ],
-          ),
-        ],
-      ),
+  Widget _buildHeaderSignals() {
+    return Wrap(
+      spacing: 7,
+      runSpacing: 7,
+      children: [
+        if (widget.job.isCertifiedCompany)
+          _subtleSignalChip(Icons.verified_rounded, '인증업체'),
+        if (widget.job.isUrgent)
+          _subtleSignalChip(Icons.flash_on_rounded, '긴급공고'),
+        _subtleSignalChip(Icons.near_me_rounded, _distanceOrLocationText()),
+        _subtleSignalChip(Icons.groups_rounded, _applicantSummaryText()),
+      ],
     );
   }
 
-  Widget _trustChip(String text, Color color) {
+  Widget _subtleSignalChip(IconData icon, String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.16),
+        color: const Color(0xFFF4F6FA),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: color.withValues(alpha: 0.32)),
+        border: Border.all(color: const Color(0xFFE5E8EB)),
       ),
-      child: Text(
-        text,
-        style: TextStyle(
-          color: Colors.white.withValues(alpha: 0.94),
-          fontSize: 10.5,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-
-  Widget _decisionItem({
-    required IconData icon,
-    required String label,
-    required String value,
-  }) {
-    return Expanded(
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: Colors.white, size: 18),
-          ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: Colors.white.withValues(alpha: 0.58),
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
+          Icon(icon, size: 13, color: const Color(0xFF6B7280)),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: const TextStyle(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF374151),
             ),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _summaryDivider() {
-    return Container(
-      width: 1,
-      height: 34,
-      margin: const EdgeInsets.symmetric(horizontal: 10),
-      color: Colors.white.withValues(alpha: 0.12),
     );
   }
 

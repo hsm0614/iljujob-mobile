@@ -1283,7 +1283,7 @@ class _ConfirmSheet extends StatelessWidget {
 
 /* --------------------------- Trust Score Card --------------------------- */
 
-class _TrustScoreCard extends StatelessWidget {
+class _TrustScoreCard extends StatefulWidget {
   final bool loading;
   final int score;
   final String grade;
@@ -1306,8 +1306,15 @@ class _TrustScoreCard extends StatelessWidget {
     this.cancelPenalty = 0,
   });
 
+  @override
+  State<_TrustScoreCard> createState() => _TrustScoreCardState();
+}
+
+class _TrustScoreCardState extends State<_TrustScoreCard> {
+  bool _expanded = true;
+
   Color get _gradeColor {
-    switch (grade) {
+    switch (widget.grade) {
       case 'S':
         return const Color(0xFFFF6B00);
       case 'A':
@@ -1322,7 +1329,7 @@ class _TrustScoreCard extends StatelessWidget {
   }
 
   String get _gradeLabel {
-    switch (grade) {
+    switch (widget.grade) {
       case 'S':
         return '최고 신뢰';
       case 'A':
@@ -1338,7 +1345,7 @@ class _TrustScoreCard extends StatelessWidget {
 
   // Returns (nextGrade, minScore, maxScore) for progress bar
   (String, int, int) get _nextGradeInfo {
-    switch (grade) {
+    switch (widget.grade) {
       case 'NEW':
         return ('C', 0, 30);
       case 'C':
@@ -1355,15 +1362,18 @@ class _TrustScoreCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (nextGrade, minScore, maxScore) = _nextGradeInfo;
-    final isMax = grade == 'S';
+    final isMax = widget.grade == 'S';
     final progress =
         isMax
             ? 1.0
-            : ((score - minScore) / (maxScore - minScore)).clamp(0.0, 1.0);
-    final remaining = isMax ? 0 : (maxScore - score).clamp(0, 999);
+            : ((widget.score - minScore) / (maxScore - minScore)).clamp(
+              0.0,
+              1.0,
+            );
+    final remaining = isMax ? 0 : (maxScore - widget.score).clamp(0, 999);
 
     return GestureDetector(
-      onTap: loading ? null : () => _showDetailSheet(context),
+      onTap: widget.loading ? null : () => _showDetailSheet(context),
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
@@ -1378,7 +1388,7 @@ class _TrustScoreCard extends StatelessWidget {
           ],
         ),
         child:
-            loading
+            widget.loading
                 ? const SizedBox(
                   height: 72,
                   child: Center(
@@ -1400,7 +1410,7 @@ class _TrustScoreCard extends StatelessWidget {
                           ),
                           child: Center(
                             child: Text(
-                              grade,
+                              widget.grade,
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.w900,
@@ -1428,7 +1438,7 @@ class _TrustScoreCard extends StatelessWidget {
                                 textBaseline: TextBaseline.alphabetic,
                                 children: [
                                   Text(
-                                    '$score점',
+                                    '${widget.score}점',
                                     style: const TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w900,
@@ -1449,135 +1459,160 @@ class _TrustScoreCard extends StatelessWidget {
                             ],
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-
-                    // ─── 진행 바 ─────────────────────────────────────────────
-                    Row(
-                      children: [
-                        Text(
-                          grade,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: _gradeColor,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: LinearProgressIndicator(
-                              value: progress,
-                              minHeight: 6,
-                              backgroundColor: const Color(0xFFE5E7EB),
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                _gradeColor,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          nextGrade,
-                          style: const TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF9CA3AF),
+                        IconButton(
+                          tooltip: _expanded ? '접기' : '펼치기',
+                          visualDensity: VisualDensity.compact,
+                          onPressed:
+                              () => setState(() => _expanded = !_expanded),
+                          icon: Icon(
+                            _expanded
+                                ? Icons.keyboard_arrow_up_rounded
+                                : Icons.keyboard_arrow_down_rounded,
+                            color: const Color(0xFF6B7280),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isMax
-                          ? '최고 등급이에요! 계속 유지해주세요 🎉'
-                          : '$nextGrade 등급까지 $remaining점 남았어요',
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: Color(0xFF6B7280),
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // ─── 세부 점수 칩 ────────────────────────────────────────
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: [
-                        _ScoreChip(
-                          label: '접속',
-                          score: loginScore,
-                          icon: Icons.wifi_rounded,
-                          color: const Color(0xFF3B8AFF),
-                        ),
-                        _ScoreChip(
-                          label: '활동',
-                          score: statusUpdateScore,
-                          icon: Icons.touch_app_rounded,
-                          color: const Color(0xFF8B5CF6),
-                        ),
-                        _ScoreChip(
-                          label: '출근',
-                          score: attendanceScore,
-                          icon: Icons.check_circle_outline_rounded,
-                          color: const Color(0xFF10B981),
-                        ),
-                        _ScoreChip(
-                          label: '응답',
-                          score: responseScore,
-                          icon: Icons.thumb_up_alt_outlined,
-                          color: const Color(0xFF0F766E),
-                        ),
-                        if (cancelPenalty > 0)
-                          _ScoreChip(
-                            label: '페널티',
-                            score: -cancelPenalty,
-                            icon: Icons.warning_amber_rounded,
-                            color: const Color(0xFFE55353),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-
-                    // ─── 점수 올리는 방법 ────────────────────────────────────
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF4F6FA),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Column(
+                    AnimatedCrossFade(
+                      firstChild: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            '이렇게 올릴 수 있어요',
-                            style: TextStyle(
+                          const SizedBox(height: 14),
+
+                          // ─── 진행 바 ─────────────────────────────────────────────
+                          Row(
+                            children: [
+                              Text(
+                                widget.grade,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: _gradeColor,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: LinearProgressIndicator(
+                                    value: progress,
+                                    minHeight: 6,
+                                    backgroundColor: const Color(0xFFE5E7EB),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      _gradeColor,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                nextGrade,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF9CA3AF),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            isMax
+                                ? '최고 등급이에요! 계속 유지해주세요 🎉'
+                                : '$nextGrade 등급까지 $remaining점 남았어요',
+                            style: const TextStyle(
                               fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: Color(0xFF374151),
+                              color: Color(0xFF6B7280),
                             ),
                           ),
-                          const SizedBox(height: 6),
-                          _TipRow(
-                            icon: Icons.phone_iphone_rounded,
-                            text: '앱에 자주 접속하기 (+3점/일)',
+                          const SizedBox(height: 14),
+
+                          // ─── 세부 점수 칩 ────────────────────────────────────────
+                          Wrap(
+                            spacing: 6,
+                            runSpacing: 6,
+                            children: [
+                              _ScoreChip(
+                                label: '접속',
+                                score: widget.loginScore,
+                                icon: Icons.wifi_rounded,
+                                color: const Color(0xFF3B8AFF),
+                              ),
+                              _ScoreChip(
+                                label: '활동',
+                                score: widget.statusUpdateScore,
+                                icon: Icons.touch_app_rounded,
+                                color: const Color(0xFF8B5CF6),
+                              ),
+                              _ScoreChip(
+                                label: '출근',
+                                score: widget.attendanceScore,
+                                icon: Icons.check_circle_outline_rounded,
+                                color: const Color(0xFF10B981),
+                              ),
+                              _ScoreChip(
+                                label: '응답',
+                                score: widget.responseScore,
+                                icon: Icons.thumb_up_alt_outlined,
+                                color: const Color(0xFF0F766E),
+                              ),
+                              if (widget.cancelPenalty > 0)
+                                _ScoreChip(
+                                  label: '페널티',
+                                  score: -widget.cancelPenalty,
+                                  icon: Icons.warning_amber_rounded,
+                                  color: const Color(0xFFE55353),
+                                ),
+                            ],
                           ),
-                          _TipRow(
-                            icon: Icons.search_rounded,
-                            text: '공고 조회 · 북마크 · 채팅하기 (활동 점수 적립)',
-                          ),
-                          _TipRow(
-                            icon: Icons.event_available_rounded,
-                            text: '출근 확정 후 실제 출근하기 (+10점)',
-                          ),
-                          _TipRow(
-                            icon: Icons.warning_amber_rounded,
-                            text: '수락 후 취소/노쇼는 점수가 깎여요',
+                          const SizedBox(height: 14),
+
+                          // ─── 점수 올리는 방법 ────────────────────────────────────
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF4F6FA),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: const [
+                                Text(
+                                  '이렇게 올릴 수 있어요',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF374151),
+                                  ),
+                                ),
+                                SizedBox(height: 6),
+                                _TipRow(
+                                  icon: Icons.phone_iphone_rounded,
+                                  text: '앱에 자주 접속하기 (+3점/일)',
+                                ),
+                                _TipRow(
+                                  icon: Icons.search_rounded,
+                                  text: '공고 조회 · 북마크 · 채팅하기 (활동 점수 적립)',
+                                ),
+                                _TipRow(
+                                  icon: Icons.event_available_rounded,
+                                  text: '출근 확정 후 실제 출근하기 (+10점)',
+                                ),
+                                _TipRow(
+                                  icon: Icons.warning_amber_rounded,
+                                  text: '수락 후 취소/노쇼는 점수가 깎여요',
+                                ),
+                              ],
+                            ),
                           ),
                         ],
                       ),
+                      secondChild: const SizedBox.shrink(),
+                      crossFadeState:
+                          _expanded
+                              ? CrossFadeState.showFirst
+                              : CrossFadeState.showSecond,
+                      duration: const Duration(milliseconds: 180),
                     ),
                   ],
                 ),
@@ -1593,14 +1628,14 @@ class _TrustScoreCard extends StatelessWidget {
       backgroundColor: Colors.transparent,
       builder:
           (_) => _ScoreDetailSheet(
-            score: score,
-            grade: grade,
+            score: widget.score,
+            grade: widget.grade,
             gradeColor: _gradeColor,
-            loginScore: loginScore,
-            statusUpdateScore: statusUpdateScore,
-            attendanceScore: attendanceScore,
-            responseScore: responseScore,
-            cancelPenalty: cancelPenalty,
+            loginScore: widget.loginScore,
+            statusUpdateScore: widget.statusUpdateScore,
+            attendanceScore: widget.attendanceScore,
+            responseScore: widget.responseScore,
+            cancelPenalty: widget.cancelPenalty,
           ),
     );
   }
