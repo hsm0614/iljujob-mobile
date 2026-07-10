@@ -3422,26 +3422,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             ],
             Positioned(
               top: 6,
-              left: 6,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.24),
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                child: const Text(
-                  '광고',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    height: 1,
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 6,
               right: 6,
               child: GestureDetector(
                 onTap: () => setState(() => _isBannerHidden = true),

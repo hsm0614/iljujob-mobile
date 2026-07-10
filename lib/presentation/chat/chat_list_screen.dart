@@ -252,25 +252,6 @@ class _ChatListScreenState extends State<ChatListScreen>
             ),
             Positioned(
               top: 7,
-              left: 10,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.28),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: const Text(
-                  '광고',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10.5,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ),
-            Positioned(
-              top: 7,
               right: 9,
               child: ClipOval(
                 child: Material(

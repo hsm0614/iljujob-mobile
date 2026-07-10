@@ -40,8 +40,9 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
   }
 
   Future<void> _load() async {
-    final banners =
-        await AdBannerService.instance.fetchBanners(widget.placement);
+    final banners = await AdBannerService.instance.fetchBanners(
+      widget.placement,
+    );
     if (!mounted || banners.isEmpty) return;
 
     setState(() => _banner = banners.first);
@@ -55,17 +56,23 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
     if (last != null && now.difference(last) < _impressionDedupe) return;
 
     _lastImpression[key] = now;
-    AdBannerService.instance.logEvent(banner.id, 'impression', widget.placement);
+    AdBannerService.instance.logEvent(
+      banner.id,
+      'impression',
+      widget.placement,
+    );
   }
 
   Future<void> _onTap(AdBanner banner) async {
     AdBannerService.instance.logEvent(banner.id, 'click', widget.placement);
 
-    final uri = Uri.parse(banner.targetUrl).replace(queryParameters: {
-      ...Uri.parse(banner.targetUrl).queryParameters,
-      'src': widget.placement,
-      'bid': banner.id.toString(),
-    });
+    final uri = Uri.parse(banner.targetUrl).replace(
+      queryParameters: {
+        ...Uri.parse(banner.targetUrl).queryParameters,
+        'src': widget.placement,
+        'bid': banner.id.toString(),
+      },
+    );
 
     try {
       await launchUrl(uri, mode: LaunchMode.inAppBrowserView);
@@ -111,26 +118,6 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
                       });
                       return const SizedBox.shrink();
                     },
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.45),
-                      borderRadius: BorderRadius.circular(AppRadius.xs),
-                    ),
-                    child: const Text(
-                      '광고',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
                   ),
                 ),
               ],
