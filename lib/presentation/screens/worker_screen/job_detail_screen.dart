@@ -20,6 +20,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:flutter/services.dart'; // Clipboard
 import 'package:url_launcher/url_launcher.dart';
 import 'package:iljujob/data/services/log_service.dart';
+import 'package:iljujob/widget/ad_banner_widget.dart';
 import 'ai_interview_prep_sheet.dart';
 
 const kBrand = Color(0xFF3B8AFF);
@@ -1274,6 +1275,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: _buildClientSection(),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // 🔹 광고 배너 (원더 제휴)
+                  const AdBannerWidget(
+                    placement: 'app_job_detail',
+                    margin: EdgeInsets.symmetric(horizontal: 16),
                   ),
                 ],
               ),

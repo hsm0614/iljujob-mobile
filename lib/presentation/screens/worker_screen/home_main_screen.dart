@@ -21,6 +21,7 @@ import 'package:iljujob/presentation/screens/worker_screen/labor_consult_screen.
 import 'package:iljujob/data/services/ai_labor_service.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/widget/app_ui.dart';
+import 'package:iljujob/widget/ad_banner_widget.dart';
 
 class HomeMainScreen extends StatefulWidget {
   final VoidCallback? onAiRecommend;
@@ -1715,6 +1716,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     ],
                   ),
                 ),
+              ),
+              const SliverToBoxAdapter(
+                child: AdBannerWidget(placement: 'app_home_worker'),
               ),
               SliverToBoxAdapter(
                 child: _AiRecommendStrip(

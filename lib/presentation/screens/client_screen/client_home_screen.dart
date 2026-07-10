@@ -21,6 +21,7 @@ import 'package:iljujob/presentation/screens/client_screen/wage_report_screen.da
 import 'package:iljujob/presentation/screens/post_job/SelectPreviousJobScreen.dart';
 import 'package:iljujob/widget/app_ui.dart';
 import 'package:iljujob/config/app_theme.dart';
+import 'package:iljujob/widget/ad_banner_widget.dart';
 import 'package:iljujob/presentation/widgets/albailju_common.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:iljujob/presentation/screens/purchase_screen.dart';
@@ -2634,6 +2635,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _buildKpiRow()),
+            const SliverToBoxAdapter(
+              child: AdBannerWidget(
+                placement: 'app_home_owner',
+                margin: EdgeInsets.fromLTRB(12, 0, 12, 8),
+              ),
+            ),
             SliverToBoxAdapter(child: _buildSafeCompanyPrompt()),
             SliverToBoxAdapter(child: _buildSearchBar()),
             SliverToBoxAdapter(child: _buildStatusSegment()),

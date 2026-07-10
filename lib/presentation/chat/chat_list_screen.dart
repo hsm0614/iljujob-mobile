@@ -14,6 +14,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 import 'package:iljujob/config/app_theme.dart';
+import 'package:iljujob/widget/ad_banner_widget.dart';
 
 class ChatListScreen extends StatefulWidget {
   final VoidCallback? onMessagesRead;
@@ -1396,6 +1397,9 @@ class _ChatListScreenState extends State<ChatListScreen>
                 child: _buildNotificationBanner(), // ✅ 여기 추가
               ),
               SliverToBoxAdapter(child: _buildBannerSlider()),
+              const SliverToBoxAdapter(
+                child: AdBannerWidget(placement: 'app_chat_list'),
+              ),
               if (isLoading)
                 const SliverFillRemaining(
                   hasScrollBody: false,
