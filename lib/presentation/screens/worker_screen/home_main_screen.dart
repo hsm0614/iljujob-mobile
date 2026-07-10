@@ -175,15 +175,35 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     }
   }
 
+  Future<void> _recordBannerImpression(int bannerId) async {
+    try {
+      await http.post(
+        Uri.parse('$baseUrl/api/banners/impression'),
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({"bannerId": bannerId}),
+      );
+    } catch (e) {
+      debugPrint('배너 노출 기록 실패: $e');
+    }
+  }
+
   Future<void> _loadBannerAds() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/api/banners'));
+      final uri = Uri.parse(
+        '$baseUrl/api/banners',
+      ).replace(queryParameters: {'audience': 'worker', 'placement': 'home'});
+      final response = await http.get(uri);
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
         if (!mounted) return;
         setState(() {
           bannerAds = data.map((json) => BannerAd.fromJson(json)).toList();
+          if (_currentBannerIndex >= bannerAds.length) _currentBannerIndex = 0;
         });
+        if (bannerAds.isNotEmpty) {
+          final id = int.tryParse(bannerAds[_currentBannerIndex].id.toString());
+          if (id != null) _recordBannerImpression(id);
+        }
         if (bannerAds.length > 1) _startBannerAutoSlide();
       }
     } catch (e) {
@@ -3343,6 +3363,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 onPageChanged: (index) {
                   if (!mounted) return;
                   setState(() => _currentBannerIndex = index);
+                  final id = int.tryParse(bannerAds[index].id.toString());
+                  if (id != null) _recordBannerImpression(id);
                 },
                 itemBuilder: (context, index) {
                   final banner = bannerAds[index];

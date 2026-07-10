@@ -139,7 +139,10 @@ class _ChatListScreenState extends State<ChatListScreen>
 
   Future<void> _loadBannerAds() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/api/banners'));
+      final uri = Uri.parse(
+        '$baseUrl/api/banners',
+      ).replace(queryParameters: {'audience': 'worker', 'placement': 'chat'});
+      final response = await http.get(uri);
       if (response.statusCode != 200) return;
 
       final List<dynamic> data = jsonDecode(response.body);
@@ -186,123 +189,129 @@ class _ChatListScreenState extends State<ChatListScreen>
   Widget _buildBannerSlider() {
     if (_isBannerHidden || bannerAds.isEmpty) return const SizedBox.shrink();
 
-    return Container(
-      height: 76,
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: Stack(
-        children: [
-          PageView.builder(
-            controller: _pageController,
-            itemCount: bannerAds.length,
-            onPageChanged: (index) {
-              setState(() => _currentBannerIndex = index);
-              final id = int.tryParse(bannerAds[index].id.toString());
-              if (id != null) _recordBannerImpression(id);
-            },
-            itemBuilder: (context, index) {
-              final banner = bannerAds[index];
-              return GestureDetector(
-                onTap: () async {
-                  final id = int.tryParse(banner.id.toString());
-                  if (id != null) _recordBannerClick(id);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: AspectRatio(
+        aspectRatio: 4 / 1,
+        child: Stack(
+          children: [
+            PageView.builder(
+              controller: _pageController,
+              itemCount: bannerAds.length,
+              onPageChanged: (index) {
+                setState(() => _currentBannerIndex = index);
+                final id = int.tryParse(bannerAds[index].id.toString());
+                if (id != null) _recordBannerImpression(id);
+              },
+              itemBuilder: (context, index) {
+                final banner = bannerAds[index];
+                return GestureDetector(
+                  onTap: () async {
+                    final id = int.tryParse(banner.id.toString());
+                    if (id != null) _recordBannerClick(id);
 
-                  if (banner.linkUrl != null && banner.linkUrl!.isNotEmpty) {
-                    final Uri url = Uri.parse(banner.linkUrl!);
-                    await launchUrl(url, mode: LaunchMode.externalApplication);
-                  }
-                },
-                child: Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    color: AppColors.bgMuted,
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: Image.network(
-                      '$baseUrl${banner.imageUrl}',
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return const Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Center(
-                          child: Icon(
-                            Icons.error_outline,
-                            color: AppColors.textTertiary,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-          Positioned(
-            top: 7,
-            left: 10,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.28),
-                borderRadius: BorderRadius.circular(999),
-              ),
-              child: const Text(
-                '광고',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            top: 7,
-            right: 9,
-            child: ClipOval(
-              child: Material(
-                color: Colors.black.withValues(alpha: 0.25),
-                child: InkWell(
-                  onTap: () => _setBannerHidden(true),
-                  child: const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: Icon(Icons.close, size: 13, color: Colors.white),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          if (bannerAds.length > 1)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 7,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  bannerAds.length,
-                  (index) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    width: _currentBannerIndex == index ? 14 : 5,
-                    height: 5,
-                    margin: const EdgeInsets.symmetric(horizontal: 2),
+                    if (banner.linkUrl != null && banner.linkUrl!.isNotEmpty) {
+                      final Uri url = Uri.parse(banner.linkUrl!);
+                      await launchUrl(
+                        url,
+                        mode: LaunchMode.externalApplication,
+                      );
+                    }
+                  },
+                  child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(
-                        alpha: _currentBannerIndex == index ? 0.95 : 0.52,
+                      borderRadius: BorderRadius.circular(14),
+                      color: AppColors.bgMuted,
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Image.network(
+                        '$baseUrl${banner.imageUrl}',
+                        fit: BoxFit.contain,
+                        alignment: Alignment.center,
+                        filterQuality: FilterQuality.high,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Center(
+                            child: Icon(
+                              Icons.error_outline,
+                              color: AppColors.textTertiary,
+                            ),
+                          );
+                        },
                       ),
-                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
+                );
+              },
+            ),
+            Positioned(
+              top: 7,
+              left: 10,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.28),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: const Text(
+                  '광고',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 7,
+              right: 9,
+              child: ClipOval(
+                child: Material(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  child: InkWell(
+                    onTap: () => _setBannerHidden(true),
+                    child: const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: Icon(Icons.close, size: 13, color: Colors.white),
                     ),
                   ),
                 ),
               ),
             ),
-        ],
+            if (bannerAds.length > 1)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 7,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    bannerAds.length,
+                    (index) => AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      width: _currentBannerIndex == index ? 14 : 5,
+                      height: 5,
+                      margin: const EdgeInsets.symmetric(horizontal: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(
+                          alpha: _currentBannerIndex == index ? 0.95 : 0.52,
+                        ),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -487,7 +496,8 @@ class _ChatListScreenState extends State<ChatListScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 40, height: 4,
+                width: 40,
+                height: 4,
                 decoration: BoxDecoration(
                   color: const Color(0xFFE5E7EB),
                   borderRadius: BorderRadius.circular(999),
@@ -495,22 +505,37 @@ class _ChatListScreenState extends State<ChatListScreen>
               ),
               const SizedBox(height: 20),
               Container(
-                width: 52, height: 52,
+                width: 52,
+                height: 52,
                 decoration: BoxDecoration(
                   color: AppColors.error.withValues(alpha: 0.10),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: const Icon(Icons.exit_to_app_rounded, color: AppColors.error, size: 26),
+                child: const Icon(
+                  Icons.exit_to_app_rounded,
+                  color: AppColors.error,
+                  size: 26,
+                ),
               ),
               const SizedBox(height: 12),
-              const Text('채팅방 나가기',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Jalnan2TTF', color: Color(0xFF111827)),
+              const Text(
+                '채팅방 나가기',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Jalnan2TTF',
+                  color: Color(0xFF111827),
+                ),
               ),
               const SizedBox(height: 8),
               Text(
                 '$title\n채팅 목록에서 사라지고 새 메시지 알림을 받지 않습니다.\n상대방의 채팅 내역은 삭제되지 않습니다.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13.5, color: Color(0xFF6B7280), height: 1.5),
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  color: Color(0xFF6B7280),
+                  height: 1.5,
+                ),
               ),
               const SizedBox(height: 24),
               SizedBox(
@@ -521,9 +546,14 @@ class _ChatListScreenState extends State<ChatListScreen>
                     backgroundColor: AppColors.error,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                  child: const Text('나가기', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  child: const Text(
+                    '나가기',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
@@ -534,9 +564,14 @@ class _ChatListScreenState extends State<ChatListScreen>
                   style: TextButton.styleFrom(
                     foregroundColor: const Color(0xFF6B7280),
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                  child: const Text('취소', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                  child: const Text(
+                    '취소',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
                 ),
               ),
             ],
@@ -830,12 +865,13 @@ class _ChatListScreenState extends State<ChatListScreen>
   }
 
   bool _isConfirmedRoom(Map chat) {
-    final statusText = [
-      chat['application_status'],
-      chat['direct_message_status'],
-      chat['match_status'],
-      chat['status'],
-    ].where((v) => v != null).join(' ').toLowerCase();
+    final statusText =
+        [
+          chat['application_status'],
+          chat['direct_message_status'],
+          chat['match_status'],
+          chat['status'],
+        ].where((v) => v != null).join(' ').toLowerCase();
 
     return _isTruthy(chat['is_confirmed']) ||
         _isTruthy(chat['is_hired']) ||
@@ -1278,17 +1314,26 @@ class _ChatListScreenState extends State<ChatListScreen>
           return (unread) > 0;
         }).toList();
 
-    final urgentOnly = filtered
-        .where((c) => c['is_urgent_call'] == 1 || c['is_urgent_call'] == true)
-        .toList();
+    final urgentOnly =
+        filtered
+            .where(
+              (c) => c['is_urgent_call'] == 1 || c['is_urgent_call'] == true,
+            )
+            .toList();
 
     // 탭별 안읽음 총합
     final totalUnread = filtered.fold<int>(0, (sum, c) {
-      final n = userType == 'worker' ? (c['unread_count_worker'] ?? 0) : (c['unread_count_client'] ?? 0);
+      final n =
+          userType == 'worker'
+              ? (c['unread_count_worker'] ?? 0)
+              : (c['unread_count_client'] ?? 0);
       return sum + (n as int);
     });
     final urgentUnread = urgentOnly.fold<int>(0, (sum, c) {
-      final n = userType == 'worker' ? (c['unread_count_worker'] ?? 0) : (c['unread_count_client'] ?? 0);
+      final n =
+          userType == 'worker'
+              ? (c['unread_count_worker'] ?? 0)
+              : (c['unread_count_client'] ?? 0);
       return sum + (n as int);
     });
 
@@ -1386,8 +1431,8 @@ class _ChatListScreenState extends State<ChatListScreen>
                     unselectedLabelColor: AppColors.textTertiary,
                     labelStyle: const TextStyle(fontWeight: FontWeight.w700),
                     tabs: [
-                      _BadgeTab(label: '전체',     count: totalUnread),
-                      _BadgeTab(label: '안읽음',   count: unreadOnly.length),
+                      _BadgeTab(label: '전체', count: totalUnread),
+                      _BadgeTab(label: '안읽음', count: unreadOnly.length),
                       _BadgeTab(label: '긴급', count: urgentUnread),
                     ],
                   ),
@@ -1527,7 +1572,11 @@ class _BadgeTab extends StatelessWidget {
               ),
               child: Text(
                 count > 99 ? '99+' : '$count',
-                style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white),
+                style: const TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
+                ),
               ),
             ),
           ],
