@@ -19,6 +19,7 @@ import 'job_meta_section.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/services.dart'; // Clipboard
 import 'package:url_launcher/url_launcher.dart';
+import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/data/services/log_service.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
 import 'ai_interview_prep_sheet.dart';
@@ -1187,7 +1188,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     final postedLabel = widget.job.isScheduled ? '게시 예정' : '게시일';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: AppColors.bgPage,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
@@ -1196,7 +1197,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         actions: [
           if (_shouldShowReportButton())
             IconButton(
-              icon: const Icon(Icons.report, color: Colors.red),
+              icon: const Icon(Icons.report, color: AppColors.error),
               onPressed: () => _showReportDialog(),
             ),
         ],
@@ -1210,18 +1211,34 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   if (isClosed)
                     Container(
                       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.shade200),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
                       ),
-                      child: const Text(
-                        '⛔ 이 공고는 마감되었습니다.',
-                        style: TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        border: Border.all(
+                          color: AppColors.error.withValues(alpha: 0.22),
                         ),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(
+                            Icons.block_rounded,
+                            size: 18,
+                            color: AppColors.error,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            '이 공고는 마감되었습니다',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
 
@@ -1294,15 +1311,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.card,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1314,14 +1325,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             children: [
               _headerTag(
                 '내 근처 단기 알바',
-                background: const Color(0xFFE7F0FF),
-                foreground: const Color(0xFF3B8AFF),
+                background: AppColors.primaryLight,
+                foreground: AppColors.primary,
               ),
               if (widget.job.category.trim().isNotEmpty)
                 _headerTag(
                   widget.job.category,
-                  background: const Color(0xFFE5E8EB),
-                  foreground: const Color(0xFF4B5563),
+                  background: AppColors.bgMuted,
+                  foreground: AppColors.textSecondary,
                 ),
               if (widget.job.isSameDayPay == true)
                 _headerTag(
