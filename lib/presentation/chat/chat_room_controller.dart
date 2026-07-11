@@ -480,7 +480,6 @@ class ChatRoomController extends ChangeNotifier {
 
   void sendMessage(String content, int userId) {
     if (_disposed) return;
-    if (socket == null || !socket!.connected) return;
     if (!inputEnabled) return;
     if (content.trim().isEmpty) return;
 
@@ -498,13 +497,44 @@ class ChatRoomController extends ChangeNotifier {
     });
     onScrollToBottom?.call();
 
+    _emitSend(clientTempId);
+  }
+
+  /// 실패한 메시지 재전송 (버블 탭)
+  void retryMessage(Map<String, dynamic> msg) {
+    if (_disposed) return;
+    final clientTempId = msg['clientTempId']?.toString();
+    if (clientTempId == null || clientTempId.isEmpty) return;
+
+    final idx = messages.indexWhere((m) => m['clientTempId'] == clientTempId);
+    if (idx == -1 || messages[idx]['failed'] != true) return;
+
+    messages[idx]['pending'] = true;
+    messages[idx]['failed'] = false;
+    messages[idx].remove('error');
+    _notify();
+
+    _emitSend(clientTempId);
+  }
+
+  void _emitSend(String clientTempId) {
+    final idx = messages.indexWhere((m) => m['clientTempId'] == clientTempId);
+    if (idx == -1) return;
+    final msg = messages[idx];
+
+    // 오프라인이면 즉시 실패 처리 — 메시지가 조용히 증발하지 않게
+    if (socket == null || !socket!.connected) {
+      _markFailed(clientTempId, '연결이 끊겨 있어요');
+      return;
+    }
+
     final payload = {
       'roomId': chatRoomId,
-      'sender': sender,
-      'senderId': userId,
-      'message': content,
+      'sender': msg['sender'],
+      'senderId': msg['senderId'],
+      'message': msg['message'],
       'clientTempId': clientTempId,
-      'clientCreatedAt': nowIso,
+      'clientCreatedAt': msg['createdAt'],
     };
 
     try {
@@ -520,7 +550,9 @@ class ChatRoomController extends ChangeNotifier {
               if (resp['created_at'] != null && resp['createdAt'] == null)
                 'createdAt': resp['created_at'],
               'clientTempId': resp['clientTempId'] ?? clientTempId,
-              'createdAt': resp['createdAt'] ?? nowIso,
+              'createdAt': resp['createdAt'] ?? msg['createdAt'],
+              'pending': false,
+              'failed': false,
             });
           } else {
             _markFailed(

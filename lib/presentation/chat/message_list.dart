@@ -42,6 +42,9 @@ class ChatMessageList extends StatelessWidget {
   final void Function(WorkConfirmation confirm)? onNoShowWorkConfirmation;
   final double inputOverlayHeight;
 
+  /// 전송 실패 메시지 탭 → 재전송
+  final void Function(Map<String, dynamic> msg)? onRetryMessage;
+
   const ChatMessageList({
     super.key,
     required this.messages,
@@ -57,6 +60,7 @@ class ChatMessageList extends StatelessWidget {
     this.onRejectWorkConfirmation,
     this.onNoShowWorkConfirmation,
     this.inputOverlayHeight = 112,
+    this.onRetryMessage,
   });
 
   // ── 날짜 키 계산
@@ -148,6 +152,8 @@ class ChatMessageList extends StatelessWidget {
             targetThumbnailUrl: targetThumbnailUrl,
             targetName: targetName ?? (userType == 'worker' ? '기업' : '알바생'),
             onProfileTap: onProfileTap,
+            onRetry:
+                onRetryMessage == null ? null : () => onRetryMessage!(msg),
           ),
         );
       }
@@ -253,6 +259,7 @@ class _MessageBubble extends StatelessWidget {
   final String? targetThumbnailUrl;
   final String targetName;
   final VoidCallback? onProfileTap;
+  final VoidCallback? onRetry;
 
   const _MessageBubble({
     required this.msg,
@@ -262,6 +269,7 @@ class _MessageBubble extends StatelessWidget {
     required this.targetName,
     this.targetThumbnailUrl,
     this.onProfileTap,
+    this.onRetry,
   });
 
   @override
@@ -269,6 +277,8 @@ class _MessageBubble extends StatelessWidget {
     final messageText = msg['message']?.toString() ?? '';
     final hasImage =
         msg['imageUrl'] != null && msg['imageUrl'].toString().isNotEmpty;
+    final isPending = msg['pending'] == true;
+    final isFailed = msg['failed'] == true;
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
@@ -319,91 +329,147 @@ class _MessageBubble extends StatelessWidget {
                     ),
                   ),
 
-                // 버블
-                Container(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 4,
-                    vertical: 2,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  constraints: BoxConstraints(
-                    maxWidth: MediaQuery.of(context).size.width * 0.7,
-                  ),
-                  decoration: BoxDecoration(
-                    color:
-                        hasImage
-                            ? (isMe ? AppColors.primary : Colors.white)
-                            : (isMe ? AppColors.primary : AppColors.bgMuted),
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(14),
-                      topRight: const Radius.circular(14),
-                      bottomLeft: Radius.circular(
-                        isMe ? 14 : (isPrevSameSender ? 4 : 14),
+                // 버블 (전송 실패 시 탭 → 재전송)
+                GestureDetector(
+                  onTap: isFailed ? onRetry : null,
+                  child: Opacity(
+                    opacity: isPending ? 0.6 : 1,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(
+                        horizontal: 4,
+                        vertical: 2,
                       ),
-                      bottomRight: Radius.circular(
-                        isMe ? (isPrevSameSender ? 4 : 14) : 14,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
                       ),
-                    ),
-                    border:
-                        !isMe
-                            ? Border.all(color: AppColors.border, width: 0.8)
-                            : null,
-                  ),
-                  child:
-                      hasImage
-                          ? ChatImageBubble(
-                            imageUrl: msg['imageUrl'].toString(),
-                            heroTag: 'img_${when.millisecondsSinceEpoch}',
-                          )
-                          : Text(
-                            messageText,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color:
-                                  isMe ? Colors.white : const Color(0xFF111827),
-                            ),
+                      constraints: BoxConstraints(
+                        maxWidth: MediaQuery.of(context).size.width * 0.7,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            hasImage
+                                ? (isMe ? AppColors.primary : Colors.white)
+                                : (isMe
+                                    ? AppColors.primary
+                                    : AppColors.bgMuted),
+                        borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(14),
+                          topRight: const Radius.circular(14),
+                          bottomLeft: Radius.circular(
+                            isMe ? 14 : (isPrevSameSender ? 4 : 14),
                           ),
+                          bottomRight: Radius.circular(
+                            isMe ? (isPrevSameSender ? 4 : 14) : 14,
+                          ),
+                        ),
+                        border:
+                            isFailed
+                                ? Border.all(
+                                  color: AppColors.error.withValues(
+                                    alpha: 0.55,
+                                  ),
+                                  width: 1,
+                                )
+                                : (!isMe
+                                    ? Border.all(
+                                      color: AppColors.border,
+                                      width: 0.8,
+                                    )
+                                    : null),
+                      ),
+                      child:
+                          hasImage
+                              ? ChatImageBubble(
+                                imageUrl: msg['imageUrl'].toString(),
+                                heroTag: 'img_${when.millisecondsSinceEpoch}',
+                              )
+                              : Text(
+                                messageText,
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color:
+                                      isMe
+                                          ? Colors.white
+                                          : const Color(0xFF111827),
+                                ),
+                              ),
+                    ),
+                  ),
                 ),
 
-                // 시간 + 읽음 표시
+                // 시간 + 읽음/전송 상태 표시
                 Padding(
                   padding: EdgeInsets.only(
                     right: isMe ? 6 : 0,
                     left: isMe ? 0 : 6,
                     top: 2,
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment:
-                        isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
-                    children: [
-                      Text(
-                        DateFormat('a h:mm', 'ko_KR').format(when),
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: Color(0xFF6B7280),
-                        ),
-                      ),
-                      if (isMe) ...[
-                        const SizedBox(width: 6),
-                        Text(
-                          (msg['is_read'] == 1 || msg['is_read'] == true)
-                              ? '읽음'
-                              : '안읽음',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color:
-                                (msg['is_read'] == 1 || msg['is_read'] == true)
-                                    ? AppColors.primary
-                                    : AppColors.textTertiary,
+                  child:
+                      isFailed
+                          ? GestureDetector(
+                            onTap: onRetry,
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.error_outline_rounded,
+                                  size: 12,
+                                  color: AppColors.error,
+                                ),
+                                SizedBox(width: 3),
+                                Text(
+                                  '전송 안 됨 · 탭해서 재전송',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.error,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                          : isPending
+                          ? const Text(
+                            '전송 중…',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: AppColors.textTertiary,
+                            ),
+                          )
+                          : Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment:
+                                isMe
+                                    ? MainAxisAlignment.end
+                                    : MainAxisAlignment.start,
+                            children: [
+                              Text(
+                                DateFormat('a h:mm', 'ko_KR').format(when),
+                                style: const TextStyle(
+                                  fontSize: 10,
+                                  color: Color(0xFF6B7280),
+                                ),
+                              ),
+                              if (isMe) ...[
+                                const SizedBox(width: 6),
+                                Text(
+                                  (msg['is_read'] == 1 ||
+                                          msg['is_read'] == true)
+                                      ? '읽음'
+                                      : '안읽음',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color:
+                                        (msg['is_read'] == 1 ||
+                                                msg['is_read'] == true)
+                                            ? AppColors.primary
+                                            : AppColors.textTertiary,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                        ),
-                      ],
-                    ],
-                  ),
                 ),
               ],
             ),

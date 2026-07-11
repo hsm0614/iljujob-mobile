@@ -1510,10 +1510,12 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
     final src = ctrl.jobSource;
     final jobTitle = (src['title'] ?? src['job_title'] ?? '').toString().trim();
 
-    return WillPopScope(
-      onWillPop: () async {
+    // PopScope: 결과 전달하면서 iOS 엣지 스와이프 뒤로가기 유지
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
         Navigator.pop(context, 'updated');
-        return false;
       },
       child: GestureDetector(
         behavior: HitTestBehavior.translucent,
@@ -1664,6 +1666,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                         ctrl,
                                         confirm,
                                       ),
+                                  onRetryMessage: ctrl.retryMessage,
                                   inputOverlayHeight: 112,
                                 ),
                               ),
@@ -1708,6 +1711,11 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                       controller: _messageController,
                                       focusNode: _inputFocusNode,
                                       enabled: ctrl.inputEnabled,
+                                      minLines: 1,
+                                      maxLines: 5,
+                                      keyboardType: TextInputType.multiline,
+                                      textInputAction:
+                                          TextInputAction.newline,
                                       onTapOutside:
                                           (_) =>
                                               FocusScope.of(context).unfocus(),
@@ -1729,10 +1737,9 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                                         : '지금은 채팅을 보낼 수 없습니다')),
                                         hintStyle: const TextStyle(
                                           fontSize: 14,
-                                          color: Color(0xFF9CA3AF),
+                                          color: AppColors.textTertiary,
                                         ),
                                       ),
-                                      onSubmitted: (_) => _sendMessage(ctrl),
                                     ),
                                   ),
                                 ),
@@ -1749,24 +1756,26 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                           : null,
                                 ),
                                 const SizedBox(width: 2),
-                                GestureDetector(
-                                  onTap:
+                                Material(
+                                  color:
                                       ctrl.inputEnabled
-                                          ? () => _sendMessage(ctrl)
-                                          : null,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          ctrl.inputEnabled
-                                              ? AppColors.primary
-                                              : AppColors.textDisabled,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.send_rounded,
-                                      size: 18,
-                                      color: Colors.white,
+                                          ? AppColors.primary
+                                          : AppColors.textDisabled,
+                                  shape: const CircleBorder(),
+                                  child: InkWell(
+                                    customBorder: const CircleBorder(),
+                                    onTap:
+                                        ctrl.inputEnabled
+                                            ? () => _sendMessage(ctrl)
+                                            : null,
+                                    child: const SizedBox(
+                                      width: 44,
+                                      height: 44,
+                                      child: Icon(
+                                        Icons.send_rounded,
+                                        size: 20,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
                                 ),
