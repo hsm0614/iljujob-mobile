@@ -411,19 +411,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
           onPressed: _confirmLeaveIfDirty,
         ),
         title: const Text('계정 관리'),
-        actions: [
-          TextButton(
-            onPressed: _canSave ? _saveProfile : null,
-            child: Text(
-              _saving ? '저장 중…' : '저장',
-              style: TextStyle(
-                color: _canSave ? kBrand : Colors.black26,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-        ],
+        // 저장은 하단 고정 바 하나로 통일 (우상단 저장 버튼 중복 제거)
       ),
 
       // 저장 버튼을 하단 고정 + SafeArea로 올림 (안드 뒤로가기 영역 회피)

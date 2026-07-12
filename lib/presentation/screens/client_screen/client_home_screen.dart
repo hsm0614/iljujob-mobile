@@ -2588,12 +2588,17 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 ),
               );
             },
-            backgroundColor: AppColors.primaryDark,
-            shape: const CircleBorder(),
+            // 보조 액션은 흰 서피스+파란 아이콘 — 파란 원 2개가 뭉쳐 보이던 문제 완화
+            backgroundColor: Colors.white,
+            foregroundColor: AppColors.primary,
+            elevation: 2,
+            shape: const CircleBorder(
+              side: BorderSide(color: AppColors.border),
+            ),
             tooltip: '임금 리포트',
             child: const Icon(
               Icons.analytics_rounded,
-              color: Colors.white,
+              color: AppColors.primary,
               size: 18,
             ),
           ),
@@ -2689,7 +2694,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               ),
               SliverToBoxAdapter(child: _buildPaginationWidget()),
             ],
-            const SliverToBoxAdapter(child: SizedBox(height: 18)),
+            // FAB(임금리포트·노무상담) 높이만큼 하단 여백 — 마지막 카드가 가리지 않게
+            const SliverToBoxAdapter(child: SizedBox(height: 150)),
           ],
         ),
       ),
