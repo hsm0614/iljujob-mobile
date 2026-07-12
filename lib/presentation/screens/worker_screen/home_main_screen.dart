@@ -48,6 +48,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   List<int> appliedJobIds = [];
   int? _quickApplyingJobId;
   String searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
   String selectedCategory = '전체';
   String sortType = '최신순';
   double currentLatitude = 0.0;
@@ -123,6 +124,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     _bannerTimer?.cancel();
     _pageController?.dispose();
     _scrollController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
@@ -1987,6 +1989,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   }
 
   Widget _buildEmptyJobsView() {
+    // 원인별 빈 상태: 검색어 때문인지, 주변에 공고가 없는 건지 구분해서 처방
+    final hasQuery = searchQuery.trim().isNotEmpty;
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),
@@ -2009,10 +2014,14 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              '이 근처엔 아직 공고가 없어요',
+            Text(
+              hasQuery
+                  ? "'${searchQuery.trim()}' 검색 결과가 없어요"
+                  : '이 근처엔 아직 공고가 없어요',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
@@ -2021,9 +2030,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             ),
             const SizedBox(height: 10),
             Text(
-              '거리 범위를 조금 늘리거나,\n위치 권한을 켜면 더 많은 공고를 찾을 수 있어요.',
+              hasQuery
+                  ? '검색어를 바꾸거나 지우면\n주변 공고를 다시 볼 수 있어요.'
+                  : '거리 범위를 조금 늘리거나,\n위치 권한을 켜면 더 많은 공고를 찾을 수 있어요.',
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,
                 height: 1.35,
@@ -2035,11 +2046,21 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               width: double.infinity,
               height: 46,
               child: ElevatedButton.icon(
-                onPressed: () async => _init(),
-                icon: const Icon(Icons.refresh_rounded, size: 18),
-                label: const Text(
-                  '내 주변 다시 찾기',
-                  style: TextStyle(
+                onPressed:
+                    hasQuery
+                        ? () {
+                          _searchController.clear();
+                          setState(() => searchQuery = '');
+                          _applyFiltersThrottled();
+                        }
+                        : () async => _init(),
+                icon: Icon(
+                  hasQuery ? Icons.backspace_outlined : Icons.refresh_rounded,
+                  size: 18,
+                ),
+                label: Text(
+                  hasQuery ? '검색어 지우기' : '내 주변 다시 찾기',
+                  style: const TextStyle(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -2054,33 +2075,38 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 ),
               ),
             ),
-            const SizedBox(height: 10),
-            SizedBox(
-              width: double.infinity,
-              height: 46,
-              child: OutlinedButton.icon(
-                onPressed: () async => Geolocator.openAppSettings(),
-                icon: const Icon(
-                  Icons.settings_rounded,
-                  size: 18,
-                  color: AppColors.primary,
-                ),
-                label: const Text(
-                  '위치 권한 설정',
-                  style: TextStyle(
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
+            if (!hasQuery) ...[
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: OutlinedButton.icon(
+                  onPressed: () async => Geolocator.openAppSettings(),
+                  icon: const Icon(
+                    Icons.settings_rounded,
+                    size: 18,
                     color: AppColors.primary,
                   ),
-                ),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: AppColors.primary, width: 1.2),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  label: const Text(
+                    '위치 권한 설정',
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(
+                      color: AppColors.primary,
+                      width: 1.2,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -2097,6 +2123,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         border: Border.all(color: AppColors.borderSub),
       ),
       child: TextField(
+        controller: _searchController,
         onChanged: (value) {
           searchQuery = value;
           _runDebounced(_applyFiltersThrottled);

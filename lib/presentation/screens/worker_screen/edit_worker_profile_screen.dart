@@ -1461,10 +1461,11 @@ static const _workCategoryMap = <String, List<String>>{
                 const SizedBox(height: 4),
                 Text(
                   _birthDisplayText(_birthYear),
+                  // 데이터 값은 다크 잉크 — 파랑은 액션 전용
                   style: const TextStyle(
                     fontSize:   13,
-                    color:      kBrandBlue,
-                    fontWeight: FontWeight.w900,
+                    color:      kText,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -1878,27 +1879,7 @@ static const _workCategoryMap = <String, List<String>>{
                   '${l.issuedAt} 취득',
                   style: const TextStyle(color: kMuted, fontSize: 13),
                 ),
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                  decoration: BoxDecoration(
-                    color:        Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border:       Border.all(color: kBorder),
-                  ),
-                  child: const Row(
-                    children: [
-                      Icon(Icons.attachment_rounded, size: 18, color: kMuted),
-                      SizedBox(width: 6),
-                      Expanded(
-                        child: Text(
-                          '증빙 첨부 준비중',
-                          style: TextStyle(fontSize: 12.5, color: kMuted),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                // '증빙 첨부 준비중' 자리표시는 섹션 설명에 이미 있어 카드별 반복 제거
               ],
             ),
           ),
