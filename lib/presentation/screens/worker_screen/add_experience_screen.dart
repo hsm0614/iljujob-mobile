@@ -8,7 +8,10 @@ import '../../../config/constants.dart';
 import 'package:flutter/services.dart';
 
 class AddExperienceScreen extends StatefulWidget {
-  const AddExperienceScreen({super.key});
+  /// 수정 모드: {'id','place','description','year','duration'} 전달 시 프리필 + PUT
+  final Map<String, dynamic>? initial;
+
+  const AddExperienceScreen({super.key, this.initial});
 
   @override
   State<AddExperienceScreen> createState() => _AddExperienceScreenState();
@@ -28,8 +31,10 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
   String? selectedDuration;
   bool isSaving = false;
 
-  final List<String> yearOptions =
-      List.generate(20, (i) => '${DateTime.now().year - i}');
+  final List<String> yearOptions = List.generate(
+    20,
+    (i) => '${DateTime.now().year - i}',
+  );
   final List<String> durationOptions = [
     '1개월 이하',
     '3개월 이하',
@@ -37,6 +42,22 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
     '1년 이상',
     '2년 이상',
   ];
+
+  bool get _isEdit => widget.initial != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final init = widget.initial;
+    if (init != null) {
+      placeController.text = (init['place'] ?? '').toString();
+      descriptionController.text = (init['description'] ?? '').toString();
+      final y = (init['year'] ?? '').toString();
+      if (yearOptions.contains(y)) selectedYear = y;
+      final d = (init['duration'] ?? '').toString();
+      if (durationOptions.contains(d)) selectedDuration = d;
+    }
+  }
 
   @override
   void dispose() {
@@ -51,11 +72,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
     FocusScope.of(context).unfocus();
   }
 
-  InputDecoration _decoration({
-    String? hint,
-    String? label,
-    IconData? icon,
-  }) {
+  InputDecoration _decoration({String? hint, String? label, IconData? icon}) {
     return InputDecoration(
       labelText: label,
       hintText: hint,
@@ -89,7 +106,8 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
   }
 
   Future<void> _pickYearBottomSheet() async {
-    final initial = selectedYear != null ? yearOptions.indexOf(selectedYear!) : 0;
+    final initial =
+        selectedYear != null ? yearOptions.indexOf(selectedYear!) : 0;
     final controller = FixedExtentScrollController(
       initialItem: initial >= 0 ? initial : 0,
     );
@@ -119,8 +137,10 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                const Text('일한 연도 선택',
-                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
+                const Text(
+                  '일한 연도 선택',
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                ),
                 const SizedBox(height: 8),
                 Expanded(
                   child: ListWheelScrollView.useDelegate(
@@ -130,7 +150,8 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                     onSelectedItemChanged: (i) => temp = yearOptions[i],
                     childDelegate: ListWheelChildBuilderDelegate(
                       builder: (context, index) {
-                        if (index < 0 || index >= yearOptions.length) return null;
+                        if (index < 0 || index >= yearOptions.length)
+                          return null;
                         final y = yearOptions[index];
                         final selected = y == temp;
                         return Center(
@@ -138,7 +159,8 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                             y,
                             style: TextStyle(
                               fontSize: selected ? 18 : 16,
-                              fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+                              fontWeight:
+                                  selected ? FontWeight.w800 : FontWeight.w500,
                               color: selected ? kBrand : Colors.black87,
                             ),
                           ),
@@ -149,7 +171,10 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
                   child: Row(
                     children: [
                       Expanded(
@@ -158,7 +183,8 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: kBorder),
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           child: const Text('취소'),
@@ -176,7 +202,8 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                             backgroundColor: kBrand,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12)),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           child: const Text('선택'),
@@ -196,9 +223,9 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
   Future<void> _submit() async {
     final valid = _formKey.currentState?.validate() ?? false;
     if (!valid || selectedYear == null || selectedDuration == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('모든 항목을 입력해주세요')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('모든 항목을 입력해주세요')));
       return;
     }
 
@@ -208,17 +235,31 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
       final prefs = await SharedPreferences.getInstance();
       final workerId = prefs.getInt('userId');
 
-      final res = await http.post(
-        Uri.parse('$baseUrl/api/worker/add-experience'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'workerId': workerId,
-          'place': placeController.text.trim(),
-          'description': descriptionController.text.trim(),
-          'year': selectedYear,
-          'duration': selectedDuration,
-        }),
-      );
+      final res =
+          _isEdit
+              ? await http.put(
+                Uri.parse(
+                  '$baseUrl/api/worker/experience/${widget.initial!['id']}',
+                ),
+                headers: {'Content-Type': 'application/json'},
+                body: jsonEncode({
+                  'place': placeController.text.trim(),
+                  'description': descriptionController.text.trim(),
+                  'year': selectedYear,
+                  'duration': selectedDuration,
+                }),
+              )
+              : await http.post(
+                Uri.parse('$baseUrl/api/worker/add-experience'),
+                headers: {'Content-Type': 'application/json'},
+                body: jsonEncode({
+                  'workerId': workerId,
+                  'place': placeController.text.trim(),
+                  'description': descriptionController.text.trim(),
+                  'year': selectedYear,
+                  'duration': selectedDuration,
+                }),
+              );
 
       if (res.statusCode == 200) {
         int? newId;
@@ -226,8 +267,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
           final data = jsonDecode(res.body);
           if (data is Map<String, dynamic>) {
             if (data['id'] is int) newId = data['id'];
-            if (data['experience'] is Map &&
-                data['experience']['id'] is int) {
+            if (data['experience'] is Map && data['experience']['id'] is int) {
               newId = data['experience']['id'];
             }
           }
@@ -241,14 +281,14 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
           'duration': selectedDuration,
         });
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('저장 실패 (${res.statusCode})')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('저장 실패 (${res.statusCode})')));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('네트워크 오류가 발생했습니다.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('네트워크 오류가 발생했습니다.')));
     } finally {
       if (mounted) setState(() => isSaving = false);
     }
@@ -261,7 +301,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF7F9FC),
       appBar: AppBar(
-        title: const Text('경력 추가'),
+        title: Text(_isEdit ? '경력 수정' : '경력 추가'),
         centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
@@ -310,8 +350,12 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                             label: '근무지/업체명',
                             icon: Icons.store_mall_directory_outlined,
                           ),
-                          validator: (v) =>
-                              (v == null || v.trim().isEmpty) ? '근무지를 입력해주세요' : null,
+                          validator: (v) {
+                            final t = v?.trim() ?? '';
+                            if (t.isEmpty) return '근무지를 입력해주세요';
+                            if (t.length < 2) return '2자 이상 입력해주세요';
+                            return null;
+                          },
                         ),
 
                         _sectionTitle('했던 일'),
@@ -323,8 +367,11 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                             label: '업무 내용',
                             icon: Icons.task_outlined,
                           ).copyWith(counterText: ''),
-                          validator: (v) =>
-                              (v == null || v.trim().isEmpty) ? '업무 내용을 입력해주세요' : null,
+                          validator:
+                              (v) =>
+                                  (v == null || v.trim().isEmpty)
+                                      ? '업무 내용을 입력해주세요'
+                                      : null,
                         ),
 
                         _sectionTitle('일한 연도'),
@@ -341,9 +388,13 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                                 icon: Icons.calendar_month_outlined,
                               ),
                               controller: TextEditingController(
-                                  text: selectedYear ?? ''),
-                              validator: (_) =>
-                                  (selectedYear == null) ? '연도를 선택해주세요' : null,
+                                text: selectedYear ?? '',
+                              ),
+                              validator:
+                                  (_) =>
+                                      (selectedYear == null)
+                                          ? '연도를 선택해주세요'
+                                          : null,
                             ),
                           ),
                         ),
@@ -352,33 +403,42 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                         Wrap(
                           spacing: 8,
                           runSpacing: 10,
-                          children: durationOptions.map((d) {
-                            final isSel = selectedDuration == d;
-                            return ChoiceChip(
-                              label: Text(
-                                d,
-                                style: TextStyle(
-                                  fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                                  color: isSel ? kBrand : Colors.black87,
-                                ),
-                              ),
-                              selected: isSel,
-                              onSelected: (v) {
-                                HapticFeedback.selectionClick();
-                                setState(() => selectedDuration = v ? d : null);
-                              },
-                              selectedColor: kBrand.withOpacity(0.12),
-                              backgroundColor: Colors.white,
-                              side: BorderSide(
-                                color: isSel ? kBrand : kBorder,
-                                width: 1.2,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(999)),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
-                            );
-                          }).toList(),
+                          children:
+                              durationOptions.map((d) {
+                                final isSel = selectedDuration == d;
+                                return ChoiceChip(
+                                  label: Text(
+                                    d,
+                                    style: TextStyle(
+                                      fontWeight:
+                                          isSel
+                                              ? FontWeight.w700
+                                              : FontWeight.w500,
+                                      color: isSel ? kBrand : Colors.black87,
+                                    ),
+                                  ),
+                                  selected: isSel,
+                                  onSelected: (v) {
+                                    HapticFeedback.selectionClick();
+                                    setState(
+                                      () => selectedDuration = v ? d : null,
+                                    );
+                                  },
+                                  selectedColor: kBrand.withOpacity(0.12),
+                                  backgroundColor: Colors.white,
+                                  side: BorderSide(
+                                    color: isSel ? kBrand : kBorder,
+                                    width: 1.2,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 8,
+                                  ),
+                                );
+                              }).toList(),
                         ),
                         const SizedBox(height: 8),
                       ],
@@ -405,15 +465,20 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: isSaving
-                  ? const SizedBox(
-                      height: 22,
-                      width: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text(
-                      '입력 완료',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-                    ),
+              child:
+                  isSaving
+                      ? const SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : Text(
+                        _isEdit ? '수정 완료' : '입력 완료',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
             ),
           ),
         ),
