@@ -348,6 +348,58 @@ Future<void> _loadBookmarkedJobs() async {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
+  /// 카드 더보기 — 저빈도·파괴적 액션 모음 (바텀시트 원칙)
+  void _showCardActions(Job job) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFE5E7EB),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (job.status == 'active')
+              ListTile(
+                leading: const Icon(Icons.cancel_outlined, color: AppColors.error),
+                title: const Text(
+                  '지원 취소',
+                  style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w700),
+                ),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  _confirmCancel(job);
+                },
+              ),
+            ListTile(
+              leading: const Icon(Icons.visibility_off_outlined, color: AppColors.textSecondary),
+              title: const Text(
+                '목록에서 숨기기',
+                style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
+              ),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _confirmDelete(job.id);
+              },
+            ),
+            const SizedBox(height: 6),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _confirmDelete(String jobId) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -910,21 +962,10 @@ final isDeleted = job.status == 'deleted';
                   const SizedBox(height: 10),
 
                   // Bottom actions (지원현황 탭에서만)
+                  // 지원 취소는 ⋯ 더보기로 이동 — 카드 노출 액션 다이어트
                   if (!bookmarkedTab)
                     Row(
                       children: [
-                        // 마감·삭제된 공고에는 취소할 지원이 없음 — 활성 상태에서만 노출
-                        if (job.status == 'active')
-                          TextButton.icon(
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
-                              minimumSize: const Size(0, 32),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            onPressed: () => _confirmCancel(job),
-                            icon: const Icon(Icons.cancel_outlined, size: 18, color: AppColors.error),
-                            label: const Text('지원 취소', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w700)),
-                          ),
                         const Spacer(),
                         TextButton.icon(
                           style: TextButton.styleFrom(
@@ -994,11 +1035,12 @@ final isDeleted = job.status == 'deleted';
         tooltip: '채팅하기',
         onPressed: () => _openChatRoom(job),
       ),
+      // 숨기기·취소 같은 저빈도/파괴적 액션은 더보기로 (카드 액션 다이어트)
       IconButton(
-        icon: const Icon(Icons.delete_outline, size: 22),
-        color: Colors.redAccent,
-        tooltip: '목록에서 숨기기',
-        onPressed: () => _confirmDelete(job.id),
+        icon: const Icon(Icons.more_horiz_rounded, size: 22),
+        color: AppColors.textTertiary,
+        tooltip: '더보기',
+        onPressed: () => _showCardActions(job),
       ),
     ],
   ],

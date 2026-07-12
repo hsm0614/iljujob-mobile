@@ -996,26 +996,17 @@ class _SectionCard extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-            child: Row(
-              children: [
-                Container(
-                  width: 6,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF3B8AFF),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
+            // 섹션 구분은 타이포 위계만으로 — 장식 세로바 제거
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF191F28),
                 ),
-                const SizedBox(width: 10),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontFamily: 'Jalnan2TTF',
-                    fontSize: 16,
-                    color: Color(0xFF191F28),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
           const Divider(height: 1),

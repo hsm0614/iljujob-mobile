@@ -20,7 +20,6 @@ import 'package:iljujob/presentation/chat/chat_room_screen.dart';
 import 'package:iljujob/presentation/screens/worker_screen/labor_consult_screen.dart';
 import 'package:iljujob/data/services/ai_labor_service.dart';
 import 'package:iljujob/config/app_theme.dart';
-import 'package:iljujob/widget/app_ui.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
 
 class HomeMainScreen extends StatefulWidget {
@@ -2630,16 +2629,52 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   }
 
   Widget _buildLaborConsultEntry() {
-    return AppActionBand(
-      icon: Icons.balance_rounded,
-      title: '근로 조건이 헷갈릴 때',
-      subtitle: '임금·휴게시간·계약 관련 질문을 AI에게 물어보세요',
-      actionLabel: '상담',
-      onTap:
-          () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const LaborConsultScreen()),
+    // 한 줄 슬림 배너 — 첫 화면은 공고가 주인공 (컨트롤 영역 다이어트)
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        onTap:
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const LaborConsultScreen()),
+            ),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: AppColors.borderSub),
           ),
+          child: const Row(
+            children: [
+              Icon(
+                Icons.balance_rounded,
+                size: 18,
+                color: AppColors.primary,
+              ),
+              SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '근로 조건이 헷갈릴 때, AI 노무 상담',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: AppColors.textTertiary,
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
