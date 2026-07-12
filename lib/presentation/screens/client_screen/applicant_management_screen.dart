@@ -252,6 +252,16 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     return _groups.sublist(start, end);
   }
 
+  // 채팅(=채용) 전에 지원자 프로필·신뢰도 확인
+  void _goToWorkerProfile(ApplicantModel applicant) {
+    if (applicant.workerId <= 0) return;
+    Navigator.pushNamed(
+      context,
+      '/worker-profile',
+      arguments: applicant.workerId,
+    );
+  }
+
   Future<void> _goToChat(
     ApplicantModel applicant,
     JobApplicantGroup group,
@@ -1003,57 +1013,71 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                           : null,
                 ),
               ),
-              _buildAvatar(applicant),
+              GestureDetector(
+                onTap: () => _goToWorkerProfile(applicant),
+                child: _buildAvatar(applicant),
+              ),
               const SizedBox(width: 12),
+              // 이름·활동등급 영역 탭 = 프로필 상세 (채팅 전 지원자 검증)
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            applicant.workerName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: Color(0xFF191F28),
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _goToWorkerProfile(applicant),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              applicant.workerName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: Color(0xFF191F28),
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        _statusChip(applicant),
-                      ],
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      [
-                        if (applicant.age > 0) '${applicant.age}세',
-                        if (applicant.genderLabel.isNotEmpty)
-                          applicant.genderLabel,
-                        _timeAgo(applicant.appliedAt),
-                      ].join(' · '),
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF9CA3AF),
+                          const SizedBox(width: 3),
+                          const Icon(
+                            Icons.chevron_right_rounded,
+                            size: 16,
+                            color: Color(0xFF9CA3AF),
+                          ),
+                          const Spacer(),
+                          _statusChip(applicant),
+                        ],
                       ),
-                    ),
-                    const SizedBox(height: 7),
-                    Wrap(
-                      spacing: 5,
-                      runSpacing: 5,
-                      children: [
-                        _activityGradeBadge(applicant),
-                        _miniInfoChip(
-                          Icons.schedule_rounded,
+                      const SizedBox(height: 5),
+                      Text(
+                        [
+                          if (applicant.age > 0) '${applicant.age}세',
+                          if (applicant.genderLabel.isNotEmpty)
+                            applicant.genderLabel,
                           _timeAgo(applicant.appliedAt),
+                        ].join(' · '),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Color(0xFF9CA3AF),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+                      const SizedBox(height: 7),
+                      Wrap(
+                        spacing: 5,
+                        runSpacing: 5,
+                        children: [
+                          _activityGradeBadge(applicant),
+                          _miniInfoChip(
+                            Icons.schedule_rounded,
+                            _timeAgo(applicant.appliedAt),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(width: 8),

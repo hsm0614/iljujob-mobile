@@ -103,6 +103,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   String payTypeFilter = '전체';
   bool compactView = false;
   String searchQuery = '';
+  bool _fabOpen = false; // 도구 FAB 확장 여부 (스피드다이얼)
 
   // Summary
   int todayCount = 0;
@@ -2555,72 +2556,112 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     );
   }
 
+  // 사장님 도구 모음: 하나의 FAB를 눌러 펼치는 스피드다이얼 (임금 리포트 / 노무 상담)
+  Widget _buildToolsFab() {
+    void openWageReport() {
+      setState(() => _fabOpen = false);
+      final job = myJobs.isNotEmpty ? myJobs.first : null;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => WageReportScreen(
+            category: job?.category ?? '기타',
+            locationCity: job?.locationCity,
+            payType: job?.payType ?? '시급',
+            currentPay: job?.pay != null
+                ? int.tryParse(job!.pay.replaceAll(RegExp(r'[^0-9]'), ''))
+                : null,
+          ),
+        ),
+      );
+    }
+
+    void openLaborConsult() {
+      setState(() => _fabOpen = false);
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LaborConsultScreen()),
+      );
+    }
+
+    Widget miniAction(IconData icon, String label, VoidCallback onTap) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppColors.textPrimary,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Material(
+            color: Colors.white,
+            elevation: 2,
+            shape: const CircleBorder(
+              side: BorderSide(color: AppColors.border),
+            ),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onTap,
+              child: SizedBox(
+                width: 44,
+                height: 44,
+                child: Icon(icon, color: AppColors.primary, size: 20),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (_fabOpen) ...[
+          miniAction(Icons.analytics_rounded, '임금 리포트', openWageReport),
+          const SizedBox(height: 12),
+          miniAction(Icons.balance_rounded, 'AI 노무 상담', openLaborConsult),
+          const SizedBox(height: 12),
+        ],
+        FloatingActionButton(
+          heroTag: 'tools_fab',
+          onPressed: () => setState(() => _fabOpen = !_fabOpen),
+          backgroundColor: AppColors.primary,
+          shape: const CircleBorder(),
+          tooltip: '사장님 도구',
+          child: AnimatedRotation(
+            turns: _fabOpen ? 0.125 : 0,
+            duration: const Duration(milliseconds: 180),
+            child: Icon(
+              _fabOpen ? Icons.close_rounded : Icons.build_rounded,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final jobs = _filteredJobs();
 
     return Scaffold(
       backgroundColor: AppColors.bgPage,
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          FloatingActionButton.small(
-            heroTag: 'wage_report_fab',
-            onPressed: () {
-              // 첫 번째 공고의 category/location으로 바로 진입
-              final job = myJobs.isNotEmpty ? myJobs.first : null;
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder:
-                      (_) => WageReportScreen(
-                        category: job?.category ?? '기타',
-                        locationCity: job?.locationCity,
-                        payType: job?.payType ?? '시급',
-                        currentPay:
-                            job?.pay != null
-                                ? int.tryParse(
-                                  job!.pay.replaceAll(RegExp(r'[^0-9]'), ''),
-                                )
-                                : null,
-                      ),
-                ),
-              );
-            },
-            // 보조 액션은 흰 서피스+파란 아이콘 — 파란 원 2개가 뭉쳐 보이던 문제 완화
-            backgroundColor: Colors.white,
-            foregroundColor: AppColors.primary,
-            elevation: 2,
-            shape: const CircleBorder(
-              side: BorderSide(color: AppColors.border),
-            ),
-            tooltip: '임금 리포트',
-            child: const Icon(
-              Icons.analytics_rounded,
-              color: AppColors.primary,
-              size: 18,
-            ),
-          ),
-          const SizedBox(height: 10),
-          FloatingActionButton(
-            heroTag: 'labor_consult_fab',
-            onPressed:
-                () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LaborConsultScreen()),
-                ),
-            backgroundColor: AppColors.primary,
-            shape: const CircleBorder(),
-            tooltip: '노무 상담',
-            child: const Icon(
-              Icons.balance_rounded,
-              color: Colors.white,
-              size: 24,
-            ),
-          ),
-        ],
-      ),
+      // 도구 FAB 하나로 통합 (스피드다이얼) — M3 "One FAB" 원칙
+      floatingActionButton: _buildToolsFab(),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       appBar: AlbailjuAppBar(
         title: '공고 관리',
