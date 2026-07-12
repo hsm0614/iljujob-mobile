@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import '../../../config/constants.dart'; // baseUrl
 import '../../../data/services/ai_api.dart'; // fetchMySubscription()
+import '../../../data/services/screen_analytics_service.dart';
 
 class ClientMyPageScreen extends StatefulWidget {
   const ClientMyPageScreen({super.key});
@@ -69,6 +70,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
   @override
   void initState() {
     super.initState();
+    ScreenAnalyticsService.instance.logScreenView('client_my_page');
     _loadProfileInfo();
     _loadSubscription();
   }
@@ -301,7 +303,10 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
                             companyName: companyName,
                             managerName: managerName,
                             phoneNumber: _formatPhone(phoneNumber),
-                            subscriptionPlan: _sub?.active == true ? (_sub!.plan ?? '') : null,
+                            subscriptionPlan:
+                                _sub?.active == true
+                                    ? (_sub!.plan ?? '')
+                                    : null,
                             onEdit:
                                 () => Navigator.pushNamed(
                                   context,
@@ -542,10 +547,7 @@ class _ProfileCard extends StatelessWidget {
                         color: brandBlue,
                         shape: BoxShape.circle,
                         boxShadow: const [
-                          BoxShadow(
-                            color: Color(0xFFBCC0CB),
-                            blurRadius: 4,
-                          ),
+                          BoxShadow(color: Color(0xFFBCC0CB), blurRadius: 4),
                         ],
                       ),
                       child: const Icon(
@@ -566,11 +568,17 @@ class _ProfileCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    Expanded(child: _TwoLine(title: companyName, subtitle: '회사명')),
-                    if (subscriptionPlan != null && subscriptionPlan!.isNotEmpty)
+                    Expanded(
+                      child: _TwoLine(title: companyName, subtitle: '회사명'),
+                    ),
+                    if (subscriptionPlan != null &&
+                        subscriptionPlan!.isNotEmpty)
                       Container(
                         margin: const EdgeInsets.only(left: 6),
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 3,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFF9500),
                           borderRadius: BorderRadius.circular(99),
@@ -578,11 +586,19 @@ class _ProfileCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.workspace_premium_rounded, size: 11, color: Colors.white),
+                            const Icon(
+                              Icons.workspace_premium_rounded,
+                              size: 11,
+                              color: Colors.white,
+                            ),
                             const SizedBox(width: 3),
                             Text(
                               subscriptionPlan!.toUpperCase(),
-                              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white),
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
                             ),
                           ],
                         ),
@@ -671,10 +687,7 @@ class _TwoLine extends StatelessWidget {
         children: [
           TextSpan(
             text: '$subtitle: ',
-            style: const TextStyle(
-              color: Color(0xFF6B7280),
-              fontSize: 13,
-            ),
+            style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13),
           ),
           TextSpan(
             text: title,
@@ -906,19 +919,13 @@ class _BizInfoItem extends StatelessWidget {
             width: 110,
             child: Text(
               k,
-              style: const TextStyle(
-                color: Color(0xFF6B7280),
-                fontSize: 13.5,
-              ),
+              style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13.5),
             ),
           ),
           Expanded(
             child: Text(
               v,
-              style: const TextStyle(
-                fontSize: 13.5,
-                color: Color(0xFF191F28),
-              ),
+              style: const TextStyle(fontSize: 13.5, color: Color(0xFF191F28)),
             ),
           ),
         ],

@@ -15,6 +15,7 @@ import 'dart:async';
 import '../../../data/models/banner_ad.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:iljujob/data/services/log_service.dart';
+import 'package:iljujob/data/services/screen_analytics_service.dart';
 import 'package:iljujob/data/services/chat_service.dart';
 import 'package:iljujob/presentation/chat/chat_room_screen.dart';
 import 'package:iljujob/presentation/screens/worker_screen/labor_consult_screen.dart';
@@ -90,6 +91,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   @override
   void initState() {
     super.initState();
+    ScreenAnalyticsService.instance.logScreenView('worker_home');
     _pageController = PageController(initialPage: 0);
     _loadBannerAds();
     _startBannerAutoSlide();

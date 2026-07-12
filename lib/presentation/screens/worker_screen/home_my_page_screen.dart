@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'dart:async'; // TimeoutException
 import '../../../config/constants.dart'; // baseUrl
+import '../../../data/services/screen_analytics_service.dart';
 import 'edit_worker_profile_screen.dart';
 
 class WorkerMyPageScreen extends StatefulWidget {
@@ -47,6 +48,7 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
   @override
   void initState() {
     super.initState();
+    ScreenAnalyticsService.instance.logScreenView('worker_my_page');
     _bootstrap();
   }
 

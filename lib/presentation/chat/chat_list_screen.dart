@@ -14,6 +14,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 import 'package:iljujob/config/app_theme.dart';
+import 'package:iljujob/data/services/screen_analytics_service.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
 
 class ChatListScreen extends StatefulWidget {
@@ -50,6 +51,9 @@ class _ChatListScreenState extends State<ChatListScreen>
     _loadBannerHidden();
     _loadBannerAds();
     _loadMyIdAndType().then((_) {
+      ScreenAnalyticsService.instance.logScreenView(
+        userType == 'client' ? 'client_chat_list' : 'worker_chat_list',
+      );
       _loadUserTypeAndFetchChats();
     });
 

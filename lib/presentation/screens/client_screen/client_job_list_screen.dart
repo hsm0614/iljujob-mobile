@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iljujob/data/services/job_service.dart';
 import 'package:iljujob/data/models/job.dart';
+import 'package:iljujob/data/services/screen_analytics_service.dart';
 import '../worker_screen/job_detail_screen.dart';
 
 class ClientJobListScreen extends StatefulWidget {
@@ -21,6 +22,7 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
   @override
   void initState() {
     super.initState();
+    ScreenAnalyticsService.instance.logScreenView('client_job_list');
     _jobsFuture = _loadJobs();
   }
 

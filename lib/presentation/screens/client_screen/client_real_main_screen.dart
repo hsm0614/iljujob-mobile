@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../data/models/job.dart';
 import '../../../data/services/job_service.dart';
 import '../worker_screen/job_detail_screen.dart';
+import '../../../data/services/screen_analytics_service.dart';
 import 'worker_map_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -50,6 +51,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
   @override
   void initState() {
     super.initState();
+    ScreenAnalyticsService.instance.logScreenView('client_home');
     _init();
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >=

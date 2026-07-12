@@ -21,6 +21,7 @@ import 'package:flutter/services.dart'; // Clipboard
 import 'package:url_launcher/url_launcher.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/data/services/log_service.dart';
+import 'package:iljujob/data/services/screen_analytics_service.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
 import 'ai_interview_prep_sheet.dart';
 
@@ -123,6 +124,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   @override
   void initState() {
     super.initState();
+    ScreenAnalyticsService.instance.logScreenView('job_detail');
     _loadUserType();
     _checkAlreadyApplied();
     _initializePage();

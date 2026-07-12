@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../../config/constants.dart';
 import '../../data/models/job.dart';
+import '../../data/services/screen_analytics_service.dart';
 import '../widgets/albailju_common.dart';
 
 // =====================
@@ -209,6 +210,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
   @override
   void initState() {
     super.initState();
+    ScreenAnalyticsService.instance.logScreenView('worker_calendar');
     _focusedDay = _dateOnly(widget.initialFocusDay ?? DateTime.now());
     _selectedDay = _dateOnly(_focusedDay);
     _fetchMonth(_focusedDay);

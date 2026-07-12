@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../config/constants.dart';
+import '../../../data/services/screen_analytics_service.dart';
 import '../../chat/chat_room_screen.dart'; // 경로 맞게 수정
 import '../../widgets/albailju_common.dart';
 
@@ -200,6 +201,9 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   @override
   void initState() {
     super.initState();
+    ScreenAnalyticsService.instance.logScreenView(
+      'client_applicant_management',
+    );
     _fetch();
   }
 

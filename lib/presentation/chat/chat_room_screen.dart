@@ -20,6 +20,7 @@ import 'package:iljujob/data/models/job.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/presentation/widgets/albailju_common.dart';
 import 'package:iljujob/presentation/screens/worker_screen/job_detail_screen.dart';
+import 'package:iljujob/data/services/screen_analytics_service.dart';
 import 'package:iljujob/utiles/keyboard_mode.dart';
 
 import 'chat_room_controller.dart';
@@ -76,6 +77,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   @override
   void initState() {
     super.initState();
+    ScreenAnalyticsService.instance.logScreenView('chat_room');
     _urgentCallStatus = widget.jobInfo['direct_message_status']?.toString();
     KeyboardMode.setAdjustResize();
 
@@ -983,10 +985,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
     }
   }
 
-  void _showReplaceWorkerSheet(
-    BuildContext context,
-    WorkConfirmation confirm,
-  ) {
+  void _showReplaceWorkerSheet(BuildContext context, WorkConfirmation confirm) {
     final jobTitle =
         widget.jobInfo['title']?.toString() ??
         widget.jobInfo['job_title']?.toString() ??
@@ -1081,7 +1080,9 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFEF4444).withValues(alpha: 0.25),
+                          color: const Color(
+                            0xFFEF4444,
+                          ).withValues(alpha: 0.25),
                           blurRadius: 8,
                           offset: const Offset(0, 3),
                         ),
