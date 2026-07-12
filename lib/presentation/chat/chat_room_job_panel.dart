@@ -614,25 +614,27 @@ class _WorkerActions extends StatelessWidget {
       );
     }
 
-    // ── 지원 취소
-    add(
-      OutlinedButton.icon(
-        onPressed: workLoading ? null : onCancelApplication,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: const Color(0xFFDC2626),
-          side: const BorderSide(color: Color(0xFFDC2626)),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(999),
+    // ── 지원 취소 (활성 상태에서만 — 마감·완료된 공고엔 취소할 지원이 없음)
+    if (status == 'active' || _isCancelled) {
+      add(
+        OutlinedButton.icon(
+          onPressed: (workLoading || _isCancelled) ? null : onCancelApplication,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFFDC2626),
+            side: const BorderSide(color: Color(0xFFDC2626)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(999),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          icon: const Icon(Icons.cancel_outlined, size: 16),
+          label: Text(
+            _isCancelled ? '지원 취소됨' : '지원 취소',
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
         ),
-        icon: const Icon(Icons.cancel_outlined, size: 16),
-        label: Text(
-          _isCancelled ? '지원 취소됨' : '지원 취소',
-          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-        ),
-      ),
-    );
+      );
+    }
 
     // ── 후기
     add(

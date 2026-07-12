@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:iljujob/config/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
@@ -912,16 +913,18 @@ final isDeleted = job.status == 'deleted';
                   if (!bookmarkedTab)
                     Row(
                       children: [
-                        TextButton.icon(
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            minimumSize: const Size(0, 32),
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        // 마감·삭제된 공고에는 취소할 지원이 없음 — 활성 상태에서만 노출
+                        if (job.status == 'active')
+                          TextButton.icon(
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              minimumSize: const Size(0, 32),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            onPressed: () => _confirmCancel(job),
+                            icon: const Icon(Icons.cancel_outlined, size: 18, color: AppColors.error),
+                            label: const Text('지원 취소', style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w700)),
                           ),
-                          onPressed: () => _confirmCancel(job),
-                          icon: const Icon(Icons.cancel_outlined, size: 18, color: Colors.red),
-                          label: const Text('지원 취소', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w700)),
-                        ),
                         const Spacer(),
                         TextButton.icon(
                           style: TextButton.styleFrom(

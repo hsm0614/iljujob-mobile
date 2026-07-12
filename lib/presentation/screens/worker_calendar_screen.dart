@@ -971,20 +971,24 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                GestureDetector(
-                  onTap: _showOverdueSheet,
-                  child: _pill(
-                    label: overdue > 0 ? '완료 처리 필요 $overdue건' : '정리 완료',
-                    bg:
-                        overdue > 0
-                            ? const Color(0xFFFFF7ED)
-                            : const Color(0xFFDCFCE7),
-                    fg:
-                        overdue > 0
-                            ? const Color(0xFF9A3412)
-                            : const Color(0xFF166534),
+                // 근무 데이터가 없으면 "정리 완료" 뱃지도 없음 (빈 상태에 성취 뱃지 금지)
+                if (overdue > 0 ||
+                    _scheduledSessionCount > 0 ||
+                    _completedSessionCount > 0)
+                  GestureDetector(
+                    onTap: _showOverdueSheet,
+                    child: _pill(
+                      label: overdue > 0 ? '완료 처리 필요 $overdue건' : '정리 완료',
+                      bg:
+                          overdue > 0
+                              ? const Color(0xFFFFF7ED)
+                              : const Color(0xFFDCFCE7),
+                      fg:
+                          overdue > 0
+                              ? const Color(0xFF9A3412)
+                              : const Color(0xFF166534),
+                    ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -1021,25 +1025,31 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                       children: [
                         Text(
                           next == null
-                              ? '다가오는 근무 없음'
+                              ? '다가오는 근무가 아직 없어요'
                               : '$nextDate${nextTime.isEmpty ? '' : ' · $nextTime'}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: kMuted,
+                          style: TextStyle(
+                            fontSize: next == null ? 13 : 12,
+                            color: next == null ? kText : kMuted,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          nextTitle,
+                          // 빈 상태는 같은 말 반복 대신 다음 행동을 안내
+                          next == null
+                              ? '공고에 지원하고 출근이 확정되면 여기에 쌓여요'
+                              : nextTitle,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: kText,
-                            fontWeight: FontWeight.w900,
+                          style: TextStyle(
+                            fontSize: next == null ? 12 : 13,
+                            color: next == null ? kMuted : kText,
+                            fontWeight:
+                                next == null
+                                    ? FontWeight.w600
+                                    : FontWeight.w900,
                           ),
                         ),
                       ],
@@ -1852,10 +1862,11 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
               alignment: Alignment.centerLeft,
               child: Text(
                 '${NumberFormat('#,###').format(amount)}원',
-                style: TextStyle(
+                // 금액은 다크 잉크 — 강조는 배경 틴트로만
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w900,
-                  color: strong ? kBrandBlue : kText,
+                  color: kText,
                 ),
               ),
             ),

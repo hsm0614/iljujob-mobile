@@ -1786,13 +1786,14 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                           ),
                         ),
                         const SizedBox(width: 8),
+                        // 카운트는 액션이 아니므로 중립 톤 (파랑은 CTA 전용)
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 8,
                             vertical: 3,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.primary,
+                            color: AppColors.bgMuted,
                             borderRadius: BorderRadius.circular(AppRadius.full),
                           ),
                           child: Text(
@@ -1800,7 +1801,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: Colors.white,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ),
@@ -2689,13 +2690,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     if (isUrgent) {
       opBadges.add(_buildBadge('마감임박', color: AppColors.badgeUrgent));
     }
-    if (job.payType == '월급') {
-      opBadges.add(_buildBadge('월급', color: AppColors.badgeMonthly));
-    } else if (job.payType == '일급') {
-      opBadges.add(_buildBadge('일급', color: AppColors.badgeDaily));
-    } else if (job.payType == '주급') {
-      opBadges.add(_buildBadge('주급', color: AppColors.badgeWeekly));
-    }
+    // 급여 형태(일급/주급/월급)는 가격 옆 칩으로만 표시 — 상단 뱃지 중복 제거
     if (job.isSameDayPay == true) {
       opBadges.add(_buildBadge('당일지급', color: AppColors.badgeSameDay));
     } else if (job.isCertifiedCompany == true) {
@@ -2824,10 +2819,15 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                     Icons.calendar_today_outlined,
                                     '${_formatDate(job.startDate!)} ~ ${_formatDate(job.endDate!)}',
                                   ),
-                                _metaChip(
-                                  Icons.schedule_outlined,
-                                  job.workingHours,
-                                ),
+                                // 시간 미입력 공고는 "~"만 노출되던 문제 — 값 있을 때만 표시
+                                if (job.workingHours
+                                    .replaceAll('~', '')
+                                    .trim()
+                                    .isNotEmpty)
+                                  _metaChip(
+                                    Icons.schedule_outlined,
+                                    job.workingHours,
+                                  ),
                               ],
                             ),
                           ],
@@ -3110,31 +3110,37 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         // 2행: AI검색 | 위치 | 필터
         Row(
           children: [
-            // AI 자연어 검색
-            GestureDetector(
-              onTap: _showAiSearchSheet,
-              child: Container(
-                height: 36,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.search_rounded, color: Colors.white, size: 14),
-                    SizedBox(width: 5),
-                    Text(
-                      'AI 검색',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2,
+            // AI 자연어 검색 (톤 다운 — 채운 파랑은 지원하기 CTA 전용)
+            Material(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                onTap: _showAiSearchSheet,
+                child: Container(
+                  height: 36,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  alignment: Alignment.center,
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.search_rounded,
+                        color: AppColors.primary,
+                        size: 14,
                       ),
-                    ),
-                  ],
+                      SizedBox(width: 5),
+                      Text(
+                        'AI 검색',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

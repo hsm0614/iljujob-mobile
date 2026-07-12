@@ -252,11 +252,12 @@ class AppTheme {
           elevation: 0,
           scrolledUnderElevation: 0.5,
           centerTitle: false,
+          // 푸시된 화면 제목은 다크 잉크 + 시스템 폰트
+          // (Jalnan·브랜드 블루는 탭 루트의 파란 헤더 같은 브랜드 순간 전용)
           titleTextStyle: TextStyle(
-            fontFamily: 'Jalnan2TTF',
-            fontSize: 20,
-            fontWeight: FontWeight.w900,
-            color: AppColors.primary,
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
           ),
           iconTheme: IconThemeData(color: AppColors.primary),
         ),
