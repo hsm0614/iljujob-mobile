@@ -115,6 +115,7 @@ dependencies:
   package_info_plus: ^8.3.0
   upgrader: ^11.5.0   # 최신 버전으로
   firebase_analytics: ^12.0.2
+  firebase_crashlytics: ^5.0.0
   kakao_maps_flutter: ^0.1.1
   kakao_map_plugin: ^0.3.7
   kakao_map_sdk: ^1.1.4

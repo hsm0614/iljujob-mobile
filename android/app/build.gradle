@@ -3,7 +3,7 @@ plugins {
     id "org.jetbrains.kotlin.android"      // ← 하나만 남기기
     id "dev.flutter.flutter-gradle-plugin"
     id "com.google.gms.google-services"
-    // id "com.google.firebase.crashlytics" // 쓰면 활성화
+    id "com.google.firebase.crashlytics"
 }
 
 // keystore
@@ -90,6 +90,7 @@ dependencies {
     implementation platform("com.google.firebase:firebase-bom:33.13.0")
     implementation "com.google.firebase:firebase-messaging"
     implementation "com.google.firebase:firebase-analytics"
+    implementation "com.google.firebase:firebase-crashlytics"
 
     implementation "androidx.appcompat:appcompat:1.6.1"
     implementation "com.google.android.material:material:1.11.0"

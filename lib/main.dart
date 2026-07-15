@@ -56,6 +56,7 @@ import 'package:iljujob/data/services/dio_client.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:iljujob/presentation/screens/subscription_manage_screen.dart';
 import 'package:iljujob/presentation/screens/signup_worker_screen/signup_choice_screen.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
@@ -94,6 +95,14 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 Future<void> _initFirebaseAndAnalytics() async {
   await Firebase.initializeApp();
   await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
+
+  // Flutter 프레임워크 에러 → Crashlytics
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+  // 프레임워크 밖(비동기 등) 에러 → Crashlytics
+  WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
 }
 
 Future<void> _initializeLocalNotifications() async {

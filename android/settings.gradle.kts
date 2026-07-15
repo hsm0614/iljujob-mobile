@@ -19,8 +19,7 @@ pluginManagement {
         id("com.android.application") version "8.9.1"
         id("org.jetbrains.kotlin.android") version "2.1.0"
         id("com.google.gms.google-services") version "4.4.2"
-        // Crashlytics 플러그인 쓰면 여기에 버전도 명시
-        // id("com.google.firebase.crashlytics") version "3.0.2"
+        id("com.google.firebase.crashlytics") version "3.0.2"
     }
 }
 
@@ -28,7 +27,7 @@ plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
     id("com.android.application") apply false
     id("org.jetbrains.kotlin.android") apply false
-    // id("com.google.firebase.crashlytics") apply false
+    id("com.google.firebase.crashlytics") apply false
 }
 
 /**
