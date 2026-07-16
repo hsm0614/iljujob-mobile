@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -15,6 +16,12 @@ class ScreenAnalyticsService {
   final Map<String, DateTime> _lastSentAt = {};
 
   Future<void> logScreenView(String screenName) async {
+    // Firebase Analytics(GA4) 화면별 기록 — 토큰/로그인 무관하게 항상 전송.
+    // (백엔드 app_screen_events는 아래에서 별도 처리)
+    try {
+      await FirebaseAnalytics.instance.logScreenView(screenName: screenName);
+    } catch (_) {}
+
     try {
       final prefs = await SharedPreferences.getInstance();
       final token =
