@@ -25,6 +25,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../../data/services/client_tracking_service.dart';
+import 'post_job_controller.dart' show getCurrentLocation;
 
 // 2026년 적용 최저시급
 const int minWagePerHour = 10320;
@@ -153,6 +154,7 @@ class _PostJobFormState extends State<PostJobForm>
   String _majorCat = '';
   String _location = '', _locationCity = '';
   double _lat = 0, _lng = 0;
+  bool _gpsLoading = false;
   bool _isShortTerm = true;
   DateTime? _startDate, _endDate;
   List<String> _weekdays = [];
@@ -1846,6 +1848,133 @@ class _PostJobFormState extends State<PostJobForm>
     );
   }
 
+  // 현재 위치(GPS)로 근무지 자동 채우기 — 주소 검색 마찰 제거
+  Future<void> _useCurrentLocation() async {
+    if (_gpsLoading) return;
+    setState(() => _gpsLoading = true);
+    try {
+      final pos = await getCurrentLocation();
+      if (pos == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('위치 권한을 켜주세요. 허용하면 현재 위치로 바로 채워져요.'),
+            ),
+          );
+        }
+        return;
+      }
+      String address = '';
+      try {
+        final marks = await placemarkFromCoordinates(
+          pos.latitude,
+          pos.longitude,
+        );
+        if (marks.isNotEmpty) address = _addressFromPlacemark(marks.first);
+      } catch (_) {}
+      if (address.isEmpty) address = '내 위치';
+      if (!mounted) return;
+      setState(() {
+        _location = address;
+        _locationCity = _extractCity(address);
+        _lat = pos.latitude;
+        _lng = pos.longitude;
+      });
+    } finally {
+      if (mounted) setState(() => _gpsLoading = false);
+    }
+  }
+
+  // 역지오코딩 Placemark → 한국 주소 문자열 (중복 제거)
+  String _addressFromPlacemark(Placemark p) {
+    final parts = <String>[
+      p.administrativeArea ?? '',
+      p.subAdministrativeArea ?? '',
+      p.locality ?? '',
+      p.subLocality ?? '',
+      p.thoroughfare ?? '',
+      p.subThoroughfare ?? '',
+    ];
+    final seen = <String>{};
+    final out = <String>[];
+    for (final raw in parts) {
+      final s = raw.trim();
+      if (s.isEmpty || s == 'null' || seen.contains(s)) continue;
+      seen.add(s);
+      out.add(s);
+    }
+    return out.join(' ');
+  }
+
+  Widget _gpsButton() => SizedBox(
+    width: double.infinity,
+    child: OutlinedButton.icon(
+      onPressed: _gpsLoading ? null : _useCurrentLocation,
+      icon: _gpsLoading
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: _blue),
+            )
+          : const Icon(Icons.my_location_rounded, size: 18, color: _blue),
+      label: Text(
+        _gpsLoading ? '위치 찾는 중…' : '현재 위치로 설정',
+        style: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+          color: _blue,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        minimumSize: const Size.fromHeight(48),
+        side: const BorderSide(color: _blue),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+    ),
+  );
+
+  // 단기 근무 날짜 빠른 선택 (오늘/내일/모레) — 급구 페르소나 정조준
+  Widget _quickDateChips(DateTime today) {
+    Widget chip(String label, DateTime date) {
+      final sel = isSameDay(_startDate, date);
+      return Expanded(
+        child: GestureDetector(
+          onTap: () => setState(() {
+            _startDate = date;
+            _endDate = date;
+          }),
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: sel ? _blue : _bg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: sel ? _blue : _border),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: sel ? Colors.white : _text,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        chip('오늘', today),
+        const SizedBox(width: 8),
+        chip('내일', today.add(const Duration(days: 1))),
+        const SizedBox(width: 8),
+        chip('모레', today.add(const Duration(days: 2))),
+      ],
+    );
+  }
+
   // Q2: 근무지
   Widget _buildQ2() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1925,6 +2054,8 @@ class _PostJobFormState extends State<PostJobForm>
           ),
         ),
       ),
+      const SizedBox(height: 10),
+      _gpsButton(),
       const SizedBox(height: 24),
       if (_location.isNotEmpty) _NextBtn(onTap: _nextQ),
     ],
@@ -1973,6 +2104,8 @@ class _PostJobFormState extends State<PostJobForm>
         const SizedBox(height: 20),
 
         if (_isShortTerm) ...[
+          _quickDateChips(today),
+          const SizedBox(height: 12),
           GestureDetector(
             onTap: () async {
               DateTime focused = _startDate ?? today;
