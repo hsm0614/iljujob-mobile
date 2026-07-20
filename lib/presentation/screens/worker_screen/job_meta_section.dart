@@ -2,17 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../data/models/job.dart';
+import 'package:iljujob/utils/pay_display.dart';
 
 class JobMetaSection extends StatelessWidget {
   final Job job;
   const JobMetaSection({super.key, required this.job});
-
-  String _formatPay(String raw) {
-    final onlyNum = raw.replaceAll(RegExp(r'[^0-9]'), '');
-    if (onlyNum.isEmpty) return raw;
-    final n = int.tryParse(onlyNum) ?? 0;
-    return NumberFormat('#,###').format(n);
-  }
 
   String _formatPeriod(DateTime? start, DateTime? end) {
     if (start == null || end == null) return '협의 가능';
@@ -36,7 +30,7 @@ class JobMetaSection extends StatelessWidget {
                   icon: Icons.payments_rounded,
                   iconColor: const Color(0xFFFFA726),
                   label: '급여',
-                  value: '${_formatPay(job.pay)}원',
+                  value: formatJobPay(job.pay, job.payType),
                   height: tileHeight,
                 ),
                 const SizedBox(height: 8),

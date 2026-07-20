@@ -24,6 +24,7 @@ import 'package:iljujob/data/services/log_service.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
 import 'ai_interview_prep_sheet.dart';
+import 'package:iljujob/utils/pay_display.dart';
 
 const kBrand = Color(0xFF3B8AFF);
 
@@ -161,7 +162,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     final k = <String>[];
     if ((job.category).trim().isNotEmpty) k.add(job.category.trim());
     if (job.isSameDayPay == true) k.add('당일지급');
-    if ((job.payType).trim().isNotEmpty) k.add(job.payType.trim());
+    if ((job.payType).trim().isNotEmpty && !isNegotiablePayType(job.payType)) {
+      k.add(job.payType.trim());
+    }
     final hours = (job.workingHours).trim();
     if (hours.isNotEmpty) k.add(hours);
     final period = _getWorkingPeriodText(job).trim();
@@ -1482,7 +1485,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           const SizedBox(height: 12),
           _infoRow(
             Icons.monetization_on,
-            '${NumberFormat('#,###').format(int.tryParse(widget.job.pay) ?? 0)}원 (${widget.job.payType})',
+            formatJobPay(widget.job.pay, widget.job.payType, includeType: true),
           ),
           const SizedBox(height: 8),
           _infoRow(Icons.calendar_today, _getWorkingPeriodText(widget.job)),

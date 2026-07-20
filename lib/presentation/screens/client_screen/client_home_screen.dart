@@ -22,6 +22,7 @@ import 'package:iljujob/presentation/screens/post_job/SelectPreviousJobScreen.da
 import 'package:iljujob/widget/app_ui.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
+import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/presentation/widgets/albailju_common.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:iljujob/presentation/screens/purchase_screen.dart';
@@ -1921,7 +1922,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     final isClosed = job.status == 'closed';
     final reserved = isJobReserved(job);
     final pinned = isJobPinned(job);
-    final formattedPay = NumberFormat('#,###').format(_payToInt(job.pay));
+    final formattedPay = formatJobPay(job.pay, job.payType);
     final payTypeColor =
         job.payType == '주급' ? AppColors.badgeWeekly : AppColors.badgeDaily;
 
@@ -2137,7 +2138,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               const SizedBox(height: 10),
               _metaLine(Icons.place_outlined, job.location),
               const SizedBox(height: 6),
-              _metaLine(Icons.payments_outlined, '$formattedPay원'),
+              _metaLine(Icons.payments_outlined, formattedPay),
               const SizedBox(height: 6),
               _metaLine(Icons.schedule_outlined, job.workingHours),
             ],
@@ -2151,7 +2152,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     final isClosed = job.status == 'closed';
     final reserved = isJobReserved(job);
     final pinned = isJobPinned(job);
-    final formattedPay = NumberFormat('#,###').format(_payToInt(job.pay));
+    final formattedPay = formatJobPay(job.pay, job.payType);
     final payTypeColor =
         job.payType == '주급' ? AppColors.badgeWeekly : AppColors.badgeDaily;
     final primaryAction = _primaryJobAction(job);
@@ -2285,10 +2286,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 Row(
                   children: [
                     Expanded(
-                      child: _metaLine(
-                        Icons.payments_outlined,
-                        '$formattedPay원',
-                      ),
+                      child: _metaLine(Icons.payments_outlined, formattedPay),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -2564,14 +2562,18 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => WageReportScreen(
-            category: job?.category ?? '기타',
-            locationCity: job?.locationCity,
-            payType: job?.payType ?? '시급',
-            currentPay: job?.pay != null
-                ? int.tryParse(job!.pay.replaceAll(RegExp(r'[^0-9]'), ''))
-                : null,
-          ),
+          builder:
+              (_) => WageReportScreen(
+                category: job?.category ?? '기타',
+                locationCity: job?.locationCity,
+                payType: job?.payType ?? '시급',
+                currentPay:
+                    job?.pay != null
+                        ? int.tryParse(
+                          job!.pay.replaceAll(RegExp(r'[^0-9]'), ''),
+                        )
+                        : null,
+              ),
         ),
       );
     }

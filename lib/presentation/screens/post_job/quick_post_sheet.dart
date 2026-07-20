@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/job_service.dart';
+import 'package:iljujob/utils/pay_display.dart';
 
 // ════════════════════════════════════════════════════════
 //  디자인 토큰 (post_job_form.dart와 동일)
@@ -276,6 +277,10 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
 
   // ─── 급여 검증 ───
   void _validatePay() {
+    if (isNegotiablePayType(payType)) {
+      setState(() => _payWarning = null);
+      return;
+    }
     if (pay <= 0) {
       setState(() => _payWarning = null);
       return;
@@ -312,7 +317,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
       _showSnack('날짜를 선택해주세요');
       return;
     }
-    if (pay <= 0) {
+    if (pay <= 0 && !isNegotiablePayType(payType)) {
       _showSnack('급여를 입력해주세요');
       return;
     }
@@ -339,7 +344,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
         startTime: j['start_time'] ?? '',
         endTime: j['end_time'] ?? '',
         payType: payType,
-        pay: pay,
+        pay: isNegotiablePayType(payType) ? 0 : pay,
         description: j['description'] ?? '',
         images: [],
         clientId: clientId,
@@ -620,7 +625,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                         // 급여 타입 선택
                         Row(
                           children:
-                              ['일급', '주급'].map((t) {
+                              ['일급', '주급', '협의'].map((t) {
                                 final sel = payType == t;
                                 return Expanded(
                                   child: Padding(
@@ -629,7 +634,11 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                                     ),
                                     child: GestureDetector(
                                       onTap: () {
-                                        setState(() => payType = t);
+                                        setState(() {
+                                          payType = t;
+                                          pay = 0;
+                                          _payCtrl.clear();
+                                        });
                                         _validatePay();
                                       },
                                       child: AnimatedContainer(
@@ -667,68 +676,88 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                         const SizedBox(height: 10),
 
                         // 급여 입력
-                        TextFormField(
-                          controller: _payCtrl,
-                          keyboardType: TextInputType.number,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            color: _text,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: '0',
-                            hintStyle: const TextStyle(
+                        if (isNegotiablePayType(payType))
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryLight,
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                color: const Color(0xFFD6E7FF),
+                              ),
+                            ),
+                            child: const Text(
+                              '금액은 공고에 급여 협의로 표시됩니다.',
+                              style: TextStyle(fontSize: 13, color: _sub),
+                            ),
+                          )
+                        else
+                          TextFormField(
+                            controller: _payCtrl,
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
-                              color: _border,
+                              color: _text,
                             ),
-                            suffixText: '원',
-                            suffixStyle: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: _label,
-                            ),
-                            filled: true,
-                            fillColor: _bg,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 16,
-                            ),
-                            enabledBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(
-                                color:
-                                    _payWarning != null ? Colors.red : _border,
+                            decoration: InputDecoration(
+                              hintText: '0',
+                              hintStyle: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: _border,
                               ),
-                            ),
-                            focusedBorder: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                              borderSide: BorderSide(
-                                color: _payWarning != null ? Colors.red : _blue,
-                                width: 1.5,
+                              suffixText: '원',
+                              suffixStyle: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: _label,
                               ),
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          onChanged: (v) {
-                            final num = v.replaceAll(RegExp(r'[^0-9]'), '');
-                            final parsed = num.isEmpty ? 0 : int.parse(num);
-                            setState(() => pay = parsed);
-                            _validatePay();
-                            final formatted =
-                                num.isEmpty ? '' : _fmt.format(parsed);
-                            if (_payCtrl.text != formatted) {
-                              _payCtrl.value = TextEditingValue(
-                                text: formatted,
-                                selection: TextSelection.collapsed(
-                                  offset: formatted.length,
+                              filled: true,
+                              fillColor: _bg,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 16,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                  color:
+                                      _payWarning != null
+                                          ? Colors.red
+                                          : _border,
                                 ),
-                              );
-                            }
-                          },
-                        ),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                                borderSide: BorderSide(
+                                  color:
+                                      _payWarning != null ? Colors.red : _blue,
+                                  width: 1.5,
+                                ),
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                            onChanged: (v) {
+                              final num = v.replaceAll(RegExp(r'[^0-9]'), '');
+                              final parsed = num.isEmpty ? 0 : int.parse(num);
+                              setState(() => pay = parsed);
+                              _validatePay();
+                              final formatted =
+                                  num.isEmpty ? '' : _fmt.format(parsed);
+                              if (_payCtrl.text != formatted) {
+                                _payCtrl.value = TextEditingValue(
+                                  text: formatted,
+                                  selection: TextSelection.collapsed(
+                                    offset: formatted.length,
+                                  ),
+                                );
+                              }
+                            },
+                          ),
 
                         if (_payWarning != null) ...[
                           const SizedBox(height: 8),
@@ -796,7 +825,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                   canSubmit:
                       startDate != null &&
                       endDate != null &&
-                      pay > 0 &&
+                      (pay > 0 || isNegotiablePayType(payType)) &&
                       _payWarning == null,
                   onTap: _showPublishOptions,
                 ),

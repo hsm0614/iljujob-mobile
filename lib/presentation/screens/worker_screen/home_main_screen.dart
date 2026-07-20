@@ -22,6 +22,7 @@ import 'package:iljujob/presentation/screens/worker_screen/labor_consult_screen.
 import 'package:iljujob/data/services/ai_labor_service.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
+import 'package:iljujob/utils/pay_display.dart';
 
 class HomeMainScreen extends StatefulWidget {
   final VoidCallback? onAiRecommend;
@@ -2483,7 +2484,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                             subtitle: Text(
-                                              '${job.locationCity.isNotEmpty ? job.locationCity : job.location} · ${job.payType} ${job.pay}원',
+                                              '${job.locationCity.isNotEmpty ? job.locationCity : job.location} · ${formatJobPay(job.pay, job.payType, includeType: true)}',
                                               style: const TextStyle(
                                                 fontSize: 12,
                                               ),
@@ -2707,8 +2708,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   }
 
   Widget _buildJobCard(Job job) {
-    final payInt = int.tryParse(job.pay.replaceAll(_reNonDigit, '')) ?? 0;
-    final formattedPay = NumberFormat('#,###').format(payInt);
+    final formattedPay = formatJobPay(job.pay, job.payType);
+    final isNegotiablePay = isNegotiablePayType(job.payType);
     final jobIdInt = int.tryParse(job.id.toString());
     final isApplied = appliedJobIds.contains(jobIdInt);
     final isApplyingNow = _quickApplyingJobId == jobIdInt;
@@ -2927,16 +2928,15 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     textBaseline: TextBaseline.alphabetic,
                     children: [
                       Text(
-                        '$formattedPay원',
-                        style: const TextStyle(
-                          fontSize: 22,
+                        formattedPay,
+                        style: TextStyle(
+                          fontSize: isNegotiablePay ? 19 : 22,
                           fontWeight: FontWeight.w900,
                           color: AppColors.textPrimary,
-                          letterSpacing: -0.5,
                           height: 1.1,
                         ),
                       ),
-                      if (job.payType.isNotEmpty) ...[
+                      if (job.payType.isNotEmpty && !isNegotiablePay) ...[
                         const SizedBox(width: 6),
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -3290,8 +3290,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   }
 
   Widget _buildCompactJobCard(Job job) {
-    final payInt = int.tryParse(job.pay.replaceAll(_reNonDigit, '')) ?? 0;
-    final formattedPay = NumberFormat('#,###').format(payInt);
+    final formattedPay = formatJobPay(job.pay, job.payType);
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
@@ -3351,7 +3350,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 const SizedBox(width: 2),
                 Flexible(
                   child: Text(
-                    '$formattedPay원',
+                    formattedPay,
                     style: const TextStyle(
                       fontSize: 13,
                       color: AppColors.textSecondary,
@@ -3706,7 +3705,11 @@ class _AiRecommendStripState extends State<_AiRecommendStrip> {
               );
               final payInt = int.tryParse(payRaw) ?? 0;
               final payStr =
-                  payInt > 0 ? '${NumberFormat('#,###').format(payInt)}원' : '';
+                  isNegotiablePayType((it['pay_type'] ?? '').toString())
+                      ? '급여 협의'
+                      : payInt > 0
+                      ? '${NumberFormat('#,###').format(payInt)}원'
+                      : '';
               final reasons =
                   (it['reasons'] is List)
                       ? (it['reasons'] as List)

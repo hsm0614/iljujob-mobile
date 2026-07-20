@@ -11,6 +11,7 @@ import '../../../config/constants.dart';
 import '../../../data/models/job.dart';
 import 'job_detail_screen.dart';
 import '../../chat/chat_room_screen.dart';
+import 'package:iljujob/utils/pay_display.dart';
 const kBrandBlue = Color(0xFF3B8AFF);
 
 class MyAppliedJobsScreen extends StatefulWidget {
@@ -955,7 +956,7 @@ final isDeleted = job.status == 'deleted';
 
                 if (job.pay.isNotEmpty)
   Text(
-    '${job.payType} ${_fmtPay(job.pay)}원${bookmarkedTab ? '' : '   ·   지원일 $appliedAt'}',
+    '${formatJobPay(job.pay, job.payType, includeType: true)}${bookmarkedTab ? '' : '   ·   지원일 $appliedAt'}',
     style: const TextStyle(fontSize: 13, color: Color(0xFF191F28), fontWeight: FontWeight.w700),
   ),
 

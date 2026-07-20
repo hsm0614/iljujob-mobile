@@ -8,6 +8,7 @@ import 'package:table_calendar/table_calendar.dart';
 import 'package:flutter_time_picker_spinner/flutter_time_picker_spinner.dart';
 
 import 'package:iljujob/data/services/job_service.dart';
+import 'package:iljujob/utils/pay_display.dart';
 
 /// ------------------------------------------------------------
 /// Time helpers (UTC/KST-safe, self-contained for this screen)
@@ -185,11 +186,12 @@ class _EditJobScreenState extends State<EditJobScreen> {
 
       setState(() {
         _title.text = (job.title ?? '').toString();
-        _pay.text = (job.pay ?? '').toString();
         _desc.text = (job.description ?? '').toString();
 
         category = (job.category ?? '제조').toString();
         payType = (job.payType ?? '일급').toString();
+        _pay.text =
+            isNegotiablePayType(payType) ? '' : (job.pay ?? '').toString();
 
         location = (job.location ?? '').toString();
         _location.text = location;
@@ -464,8 +466,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
     }
 
     int toMinutes(TimeOfDay t) => t.hour * 60 + t.minute;
-    bool isOvernight(TimeOfDay s, TimeOfDay e) =>
-        toMinutes(e) <= toMinutes(s);
+    bool isOvernight(TimeOfDay s, TimeOfDay e) => toMinutes(e) <= toMinutes(s);
 
     int durationMinutes(TimeOfDay s, TimeOfDay e) {
       final sm = toMinutes(s), em = toMinutes(e);
@@ -577,9 +578,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                           const SizedBox(height: 6),
                           Text(
                             '총 근무시간 ${durationLabel(duration)}',
-                            style: const TextStyle(
-                              color: Color(0xFF6B7280),
-                            ),
+                            style: const TextStyle(color: Color(0xFF6B7280)),
                           ),
                         ],
                       ),
@@ -772,6 +771,10 @@ class _EditJobScreenState extends State<EditJobScreen> {
   }
 
   void _validatePay() {
+    if (isNegotiablePayType(payType)) {
+      setState(() => _payWarning = null);
+      return;
+    }
     final raw = _pay.text.replaceAll(RegExp(r'[^0-9]'), '');
     final payVal = raw.isEmpty ? 0 : (int.tryParse(raw) ?? 0);
 
@@ -865,13 +868,13 @@ class _EditJobScreenState extends State<EditJobScreen> {
         _scrollToKey(_titleKey);
       } else if (_location.text.trim().isEmpty)
         _scrollToKey(_locationKey);
-      else if (_pay.text.trim().isEmpty)
+      else if (!isNegotiablePayType(payType) && _pay.text.trim().isEmpty)
         _scrollToKey(_payKey);
       return;
     }
 
     final payRaw = _pay.text.replaceAll(RegExp(r'[^0-9]'), '');
-    if (payRaw.isEmpty) {
+    if (payRaw.isEmpty && !isNegotiablePayType(payType)) {
       _showError('급여를 입력해주세요.');
       _scrollToKey(_payKey);
       return;
@@ -892,7 +895,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
       'category': category,
       'location': location,
       'payType': payType,
-      'pay': payRaw, // 숫자만
+      'pay': isNegotiablePayType(payType) ? '0' : payRaw, // 숫자만
       'description': _desc.text.trim(),
       // 시간: 서버가 어떤 키를 받는지 혼용 대비
       'start_time': _Tx.fmtHmOf(startTime),
@@ -1320,10 +1323,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                 children: [
                   const Text(
                     '근무 시간',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF6B7280),
-                    ),
+                    style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -1361,22 +1361,40 @@ class _EditJobScreenState extends State<EditJobScreen> {
   }
 
   Widget _payTypeRow() {
-    return Row(
+    return Wrap(
+      spacing: 10,
+      runSpacing: 8,
       children: [
         _toggleChip(
           label: '일급',
           selected: payType == '일급',
           onTap: () {
-            setState(() => payType = '일급');
+            setState(() {
+              payType = '일급';
+              _pay.clear();
+            });
             _validatePay();
           },
         ),
-        const SizedBox(width: 10),
         _toggleChip(
           label: '주급',
           selected: payType == '주급',
           onTap: () {
-            setState(() => payType = '주급');
+            setState(() {
+              payType = '주급';
+              _pay.clear();
+            });
+            _validatePay();
+          },
+        ),
+        _toggleChip(
+          label: '협의',
+          selected: payType == '협의',
+          onTap: () {
+            setState(() {
+              payType = '협의';
+              _pay.clear();
+            });
             _validatePay();
           },
         ),
@@ -1435,10 +1453,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
     return UnfocusOnTap(
       child: Scaffold(
         resizeToAvoidBottomInset: true,
-        appBar: AppBar(
-          title: const Text('공고 수정'),
-          elevation: 0,
-        ),
+        appBar: AppBar(title: const Text('공고 수정'), elevation: 0),
         body: SingleChildScrollView(
           controller: _scroll,
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
@@ -1584,47 +1599,67 @@ class _EditJobScreenState extends State<EditJobScreen> {
                       const SizedBox(height: 12),
                       Container(
                         key: _payKey,
-                        child: TextFormField(
-                          controller: _pay,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                              RegExp(r'[0-9,]'),
-                            ),
-                          ],
-                          decoration: _inputDeco(
-                            '급여',
-                            hint: '예: 120,000',
-                            suffix:
-                                _pay.text.isEmpty
-                                    ? null
-                                    : IconButton(
-                                      icon: const Icon(Icons.clear),
-                                      onPressed: () {
-                                        setState(() => _pay.clear());
-                                        _validatePay();
-                                      },
+                        child:
+                            isNegotiablePayType(payType)
+                                ? Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEEF5FF),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: const Color(0xFFD6E7FF),
                                     ),
-                          ).copyWith(
-                            errorText: _payWarning,
-                            helperText:
-                                '최저시급 ${_moneyFmt.format(minWagePerHour)}원 이상 권장',
-                            helperStyle: const TextStyle(fontSize: 11),
-                          ),
-                          validator: (v) {
-                            final raw = (v ?? '').replaceAll(
-                              RegExp(r'[^0-9]'),
-                              '',
-                            );
-                            if (raw.isEmpty) return '급여를 입력해주세요';
-                            if (_payWarning != null) return _payWarning;
-                            return null;
-                          },
-                          onChanged: (_) {
-                            _formatPayInput();
-                            _validatePay();
-                          },
-                        ),
+                                  ),
+                                  child: const Text(
+                                    '금액은 공고에 급여 협의로 표시됩니다.',
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF4E5968),
+                                    ),
+                                  ),
+                                )
+                                : TextFormField(
+                                  controller: _pay,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.allow(
+                                      RegExp(r'[0-9,]'),
+                                    ),
+                                  ],
+                                  decoration: _inputDeco(
+                                    '급여',
+                                    hint: '예: 120,000',
+                                    suffix:
+                                        _pay.text.isEmpty
+                                            ? null
+                                            : IconButton(
+                                              icon: const Icon(Icons.clear),
+                                              onPressed: () {
+                                                setState(() => _pay.clear());
+                                                _validatePay();
+                                              },
+                                            ),
+                                  ).copyWith(
+                                    errorText: _payWarning,
+                                    helperText:
+                                        '최저시급 ${_moneyFmt.format(minWagePerHour)}원 이상 권장',
+                                    helperStyle: const TextStyle(fontSize: 11),
+                                  ),
+                                  validator: (v) {
+                                    final raw = (v ?? '').replaceAll(
+                                      RegExp(r'[^0-9]'),
+                                      '',
+                                    );
+                                    if (raw.isEmpty) return '급여를 입력해주세요';
+                                    if (_payWarning != null) return _payWarning;
+                                    return null;
+                                  },
+                                  onChanged: (_) {
+                                    _formatPayInput();
+                                    _validatePay();
+                                  },
+                                ),
                       ),
                     ],
                   ),

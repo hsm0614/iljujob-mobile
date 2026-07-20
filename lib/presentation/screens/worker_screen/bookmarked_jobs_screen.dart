@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/models/job.dart';
 import '../../../data/services/job_service.dart';
 import 'job_detail_screen.dart';
+import 'package:iljujob/utils/pay_display.dart';
 const kBrand  = Color(0xFF3B8AFF);
 const kBorder = Color(0xFFE2E7EF);
 const kBg     = Color(0xFFF7F9FC);
@@ -398,7 +399,7 @@ class _JobTile extends StatelessWidget {
                       spacing: 10,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        _pill('₩${job.pay} · ${job.payType}'),
+                        _pill(formatJobPay(job.pay, job.payType, includeType: true)),
                         Text(
                           '등록일 ${_formatDate(job.createdAt)}',
                           style: const TextStyle(color: Color(0xFF6B7280)),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
-import 'package:intl/intl.dart';
 import '../../../data/models/job.dart';
 import '../../../data/services/job_service.dart';
 import '../worker_screen/job_detail_screen.dart';
@@ -12,6 +11,7 @@ import 'dart:convert';
 import '../../../config/constants.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
+import 'package:iljujob/utils/pay_display.dart';
 
 const kBrandBlue = Color(0xFF3B8AFF);
 const kTextPrimary = Colors.black87;
@@ -306,11 +306,6 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
 
   double _deg2rad(double deg) => deg * (pi / 180);
 
-  String _formatPay(String raw) {
-    final n = int.tryParse(raw.replaceAll(',', '').trim()) ?? 0;
-    return NumberFormat('#,###').format(n);
-  }
-
   Widget _pill(String text) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(
@@ -453,7 +448,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
   }
 
   Widget _buildJobCard(Job job) {
-    final formattedPay = _formatPay(job.pay);
+    final formattedPay = formatJobPay(job.pay, job.payType);
 
     return Card(
       elevation: 0,
@@ -506,8 +501,9 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
               spacing: 8,
               runSpacing: 6,
               children: [
-                _pill('$formattedPay원'),
-                if ((job.payType ?? '').isNotEmpty) _pill(job.payType),
+                _pill(formattedPay),
+                if (job.payType.isNotEmpty && !isNegotiablePayType(job.payType))
+                  _pill(job.payType),
               ],
             ),
           ],
@@ -517,7 +513,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
   }
 
   Widget _buildCompactJobCard(Job job) {
-    final formattedPay = _formatPay(job.pay);
+    final formattedPay = formatJobPay(job.pay, job.payType);
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
@@ -548,7 +544,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          _pill('$formattedPay원'),
+          _pill(formattedPay),
         ],
       ),
     );

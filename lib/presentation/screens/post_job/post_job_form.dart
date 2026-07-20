@@ -26,6 +26,7 @@ import 'package:iljujob/config/app_theme.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../../data/services/client_tracking_service.dart';
 import 'post_job_controller.dart' show getCurrentLocation;
+import 'package:iljujob/utils/pay_display.dart';
 
 // 2026년 적용 최저시급
 const int minWagePerHour = 10320;
@@ -217,7 +218,8 @@ class _PostJobFormState extends State<PostJobForm>
                 : true;
         return hasDate && _startTime != null && _endTime != null;
       case 4:
-        return _pay > 0 && _payWarning == null;
+        return isNegotiablePayType(_payType) ||
+            (_pay > 0 && _payWarning == null);
       case 5:
         return true;
       default:
@@ -605,6 +607,10 @@ class _PostJobFormState extends State<PostJobForm>
       ).difference(DateTime(s.year, s.month, s.day)).inDays +
       1;
   void _validatePay() {
+    if (isNegotiablePayType(_payType)) {
+      setState(() => _payWarning = null);
+      return;
+    }
     if (_pay <= 0) {
       setState(() => _payWarning = null);
       return;
@@ -994,7 +1000,7 @@ class _PostJobFormState extends State<PostJobForm>
                       ? '${_startTime!.format(context)} ~ ${_endTime!.format(context)}'
                       : '시간 미정',
               payType: _payType,
-              pay: _pay,
+              pay: isNegotiablePayType(_payType) ? 0 : _pay,
               description: _description,
               images: _images,
               onSubmit: () {
@@ -1857,9 +1863,7 @@ class _PostJobFormState extends State<PostJobForm>
       if (pos == null) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('위치 권한을 켜주세요. 허용하면 현재 위치로 바로 채워져요.'),
-            ),
+            const SnackBar(content: Text('위치 권한을 켜주세요. 허용하면 현재 위치로 바로 채워져요.')),
           );
         }
         return;
@@ -1910,13 +1914,14 @@ class _PostJobFormState extends State<PostJobForm>
     width: double.infinity,
     child: OutlinedButton.icon(
       onPressed: _gpsLoading ? null : _useCurrentLocation,
-      icon: _gpsLoading
-          ? const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2, color: _blue),
-            )
-          : const Icon(Icons.my_location_rounded, size: 18, color: _blue),
+      icon:
+          _gpsLoading
+              ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: _blue),
+              )
+              : const Icon(Icons.my_location_rounded, size: 18, color: _blue),
       label: Text(
         _gpsLoading ? '위치 찾는 중…' : '현재 위치로 설정',
         style: const TextStyle(
@@ -1939,10 +1944,11 @@ class _PostJobFormState extends State<PostJobForm>
       final sel = isSameDay(_startDate, date);
       return Expanded(
         child: GestureDetector(
-          onTap: () => setState(() {
-            _startDate = date;
-            _endDate = date;
-          }),
+          onTap:
+              () => setState(() {
+                _startDate = date;
+                _endDate = date;
+              }),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12),
             alignment: Alignment.center,
@@ -2683,94 +2689,107 @@ class _PostJobFormState extends State<PostJobForm>
   // Q5: 급여
   Widget _buildQ5() {
     final fmt = NumberFormat('#,###');
+    final payTypes =
+        _isShortTerm
+            ? ['시급', '일급', '주급', '협의']
+            : ['시급', '월급', '일급', '주급', '협의'];
+    final isNegotiable = isNegotiablePayType(_payType);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // ── 급여 유형 탭
-        Row(
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
           children:
-              (_isShortTerm ? ['시급', '일급', '주급'] : ['시급', '월급', '일급', '주급'])
-                  .map((t) {
-                    final sel = _payType == t;
-                    final types =
-                        _isShortTerm
-                            ? ['시급', '일급', '주급']
-                            : ['시급', '월급', '일급', '주급'];
-                    final isLast = t == types.last;
-                    return Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.only(right: isLast ? 0 : 8),
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _payType = t;
-                              _pay = 0;
-                              _payCtrl.clear();
-                            });
-                            _validatePay();
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 160),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: sel ? _blue : _bg,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: sel ? _blue : _border),
-                            ),
-                            child: Center(
-                              child: Text(
-                                t,
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: sel ? Colors.white : _sub,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
+              payTypes.map((t) {
+                final sel = _payType == t;
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _payType = t;
+                      _pay = 0;
+                      _payCtrl.clear();
+                    });
+                    _validatePay();
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: sel ? _blue : _bg,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: sel ? _blue : _border),
+                    ),
+                    child: Text(
+                      t,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: sel ? Colors.white : _sub,
                       ),
-                    );
-                  })
-                  .toList(),
+                    ),
+                  ),
+                );
+              }).toList(),
         ),
         const SizedBox(height: 12),
 
         // ── 직접 입력 필드
-        TextField(
-          controller: _payCtrl,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            hintText:
-                _payType == '월급'
-                    ? '예) 2,500,000'
-                    : _payType == '주급'
-                    ? '예) 412,800'
-                    : _payType == '시급'
-                    ? '예) 10,320'
-                    : '예) 100,000',
-            suffixText: _payType == '시급' ? '원/시간' : '원',
-            helperText:
-                _payType == '월급'
-                    ? '최저 2,156,880원 이상 (209h 기준)'
-                    : _payType == '시급'
-                    ? '2026년 기준 최저시급 ${fmt.format(minWagePerHour)}원'
-                    : '최저 ${fmt.format(minWagePerHour)}원/시간 이상',
-            filled: true,
-            fillColor: _bg,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 14,
+        if (isNegotiable)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.primary.withOpacity(0.18)),
             ),
+            child: const Text(
+              '금액은 공고에 급여 협의로 표시됩니다. 상세 정산 방식은 본문에 적어주세요.',
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            ),
+          )
+        else
+          TextField(
+            controller: _payCtrl,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(
+              hintText:
+                  _payType == '월급'
+                      ? '예) 2,500,000'
+                      : _payType == '주급'
+                      ? '예) 412,800'
+                      : _payType == '시급'
+                      ? '예) 10,320'
+                      : '예) 100,000',
+              suffixText: _payType == '시급' ? '원/시간' : '원',
+              helperText:
+                  _payType == '월급'
+                      ? '최저 2,156,880원 이상 (209h 기준)'
+                      : _payType == '시급'
+                      ? '2026년 기준 최저시급 ${fmt.format(minWagePerHour)}원'
+                      : '최저 ${fmt.format(minWagePerHour)}원/시간 이상',
+              filled: true,
+              fillColor: _bg,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 14,
+              ),
+            ),
+            onChanged: (v) {
+              final n = v.replaceAll(RegExp(r'[^0-9]'), '');
+              setState(() => _pay = n.isEmpty ? 0 : int.parse(n));
+              _validatePay();
+            },
           ),
-          onChanged: (v) {
-            final n = v.replaceAll(RegExp(r'[^0-9]'), '');
-            setState(() => _pay = n.isEmpty ? 0 : int.parse(n));
-            _validatePay();
-          },
-        ),
         if (_payWarning != null) ...[
           const SizedBox(height: 8),
           Container(
@@ -2795,7 +2814,7 @@ class _PostJobFormState extends State<PostJobForm>
           ),
         ],
         const SizedBox(height: 12),
-        if (_pay > 0 && _payWarning == null) _NextBtn(onTap: _nextQ),
+        if (_canNext) _NextBtn(onTap: _nextQ),
 
         // ── 임금 AI 리포트 버튼
         if (_category.isNotEmpty) ...[
@@ -2974,7 +2993,10 @@ class _PostJobFormState extends State<PostJobForm>
         ],
 
         // ── 당일지급 토글 (월급 제외)
-        if (_pay > 0 && _payWarning == null && _payType != '월급') ...[
+        if (_pay > 0 &&
+            _payWarning == null &&
+            _payType != '월급' &&
+            !isNegotiablePayType(_payType)) ...[
           const SizedBox(height: 20),
           const Divider(color: _border),
           const SizedBox(height: 16),
@@ -3527,7 +3549,9 @@ class _PostJobFormState extends State<PostJobForm>
   }
 
   void _showAIDialog() {
-    if (_title.trim().isEmpty || _location.isEmpty || _pay <= 0) {
+    if (_title.trim().isEmpty ||
+        _location.isEmpty ||
+        (_pay <= 0 && !isNegotiablePayType(_payType))) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('제목, 지역, 급여를 먼저 입력해주세요')));
@@ -3549,7 +3573,7 @@ class _PostJobFormState extends State<PostJobForm>
               category: _category,
               location: _location,
               payType: _payType,
-              pay: _pay,
+              pay: isNegotiablePayType(_payType) ? 0 : _pay,
               workingTime:
                   (_startTime != null && _endTime != null)
                       ? '${_startTime!.format(ctx)} ~ ${_endTime!.format(ctx)}'

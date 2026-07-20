@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:intl/intl.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/data/services/job_insight_service.dart';
+import 'package:iljujob/utils/pay_display.dart';
 
 const _kBrand = AppColors.primary;
 const _kBg = AppColors.bgPage;
@@ -182,8 +183,6 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final fmt = NumberFormat('#,###');
-
     return Scaffold(
       backgroundColor: _kBg,
       appBar: AppBar(
@@ -379,7 +378,11 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                   const SizedBox(height: 14),
                   _infoRow(
                     Icons.monetization_on,
-                    '${fmt.format(widget.pay)}원 (${widget.payType})',
+                    formatJobPay(
+                      widget.pay.toString(),
+                      widget.payType,
+                      includeType: true,
+                    ),
                   ),
                   const SizedBox(height: 10),
                   _infoRow(Icons.calendar_today, _periodText()),

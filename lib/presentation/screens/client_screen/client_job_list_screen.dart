@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:iljujob/data/services/job_service.dart';
 import 'package:iljujob/data/models/job.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
+import 'package:iljujob/utils/pay_display.dart';
 import '../worker_screen/job_detail_screen.dart';
 
 class ClientJobListScreen extends StatefulWidget {
@@ -153,16 +154,17 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
-                              '${job.pay}원',
+                              formatJobPay(job.pay, job.payType),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 color: Color(0xFF3B8AFF),
                               ),
                             ),
-                            Text(
-                              '(${job.payType})',
-                              style: const TextStyle(fontSize: 12),
-                            ),
+                            if (!isNegotiablePayType(job.payType))
+                              Text(
+                                '(${job.payType})',
+                                style: const TextStyle(fontSize: 12),
+                              ),
                           ],
                         ),
                         onTap: () {
