@@ -573,7 +573,13 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     final req = ++_jobsReqSeq;
 
     try {
-      final jobs = await JobService.fetchJobs(clientId: null);
+      final hasLocation = currentLatitude != 0.0 && currentLongitude != 0.0;
+      final jobs = await JobService.fetchJobs(
+        clientId: null,
+        lat: hasLocation ? currentLatitude : null,
+        lng: hasLocation ? currentLongitude : null,
+        radiusKm: selectedDistance,
+      );
       if (req != _jobsReqSeq || !mounted) return;
 
       final prefs = await SharedPreferences.getInstance();
@@ -647,10 +653,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         final tmp = <Job>[];
         for (final j in validJobs) {
           final hasGeo = j.lat != 0.0 && j.lng != 0.0;
-          if (!hasGeo) {
-            tmp.add(j);
-            continue;
-          }
+          if (!hasGeo) continue;
           final d = calculateDistance(
             currentLatitude,
             currentLongitude,
@@ -2677,11 +2680,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           ),
           child: const Row(
             children: [
-              Icon(
-                Icons.balance_rounded,
-                size: 18,
-                color: AppColors.primary,
-              ),
+              Icon(Icons.balance_rounded, size: 18, color: AppColors.primary),
               SizedBox(width: 8),
               Expanded(
                 child: Text(

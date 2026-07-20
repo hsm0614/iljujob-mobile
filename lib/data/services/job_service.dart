@@ -79,7 +79,12 @@ class JobService {
   //    - 이 클래스에서 날짜 파싱이 필요한 경우 top-level 유틸(_toYmd) 사용
 
   // ─── 1. 공고 리스트 조회 ─────────────────────────────
-  static Future<List<Job>> fetchJobs({int? clientId}) async {
+  static Future<List<Job>> fetchJobs({
+    int? clientId,
+    double? lat,
+    double? lng,
+    double? radiusKm,
+  }) async {
     final String base =
         (clientId != null)
             ? '$baseUrl/api/client/jobs'
@@ -90,6 +95,15 @@ class JobService {
       'page': '1',
       'size': '50',
       'order': 'publish_at_desc_id_desc',
+      if (clientId == null &&
+          lat != null &&
+          lng != null &&
+          lat != 0.0 &&
+          lng != 0.0) ...{
+        'lat': lat.toStringAsFixed(6),
+        'lng': lng.toStringAsFixed(6),
+        'radiusKm': (radiusKm ?? 30).toStringAsFixed(0),
+      },
       '_ts': DateTime.now().millisecondsSinceEpoch.toString(),
     };
 
