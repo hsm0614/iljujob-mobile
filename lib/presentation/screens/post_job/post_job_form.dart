@@ -4165,7 +4165,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                           ),
                         ),
                         child: const Text(
-                          '그냥 올리기',
+                          '무료로 올리기',
                           style: TextStyle(
                             color: Color(0xFF6B7280),
                             fontWeight: FontWeight.w600,
@@ -4190,7 +4190,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                           ),
                         ),
                         child: const Text(
-                          '지금 올리기 →',
+                          '즉시게시로 올리기',
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ),
