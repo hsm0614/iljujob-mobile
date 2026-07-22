@@ -127,6 +127,14 @@ const _qSubs = [
   '최저시급 10,320원 이상이어야 해요',
   '선택 사항이에요 · 건너뛰어도 돼요',
 ];
+const _jobPostStepEvents = [
+  'job_post_title_complete',
+  'job_post_category_complete',
+  'job_post_location_complete',
+  'job_post_schedule_complete',
+  'job_post_pay_complete',
+  'job_post_description_complete',
+];
 
 // ════════════════════════════════════════════════════════
 //  PostJobForm
@@ -275,6 +283,15 @@ class _PostJobFormState extends State<PostJobForm>
         'step_name': _qTitles[_q],
         'pay_type': _payType,
         'is_short_term': _isShortTerm ? 1 : 0,
+      },
+    );
+    ClientTrackingService.instance.track(
+      _jobPostStepEvents[_q],
+      properties: {
+        'step': _q,
+        'step_name': _qTitles[_q],
+        'pay_type': _payType,
+        'is_short_term': _isShortTerm,
       },
     );
 
@@ -974,6 +991,7 @@ class _PostJobFormState extends State<PostJobForm>
           suspendedReason: null,
         );
     if (!guardSuspended(context, susp)) return;
+    ClientTrackingService.instance.track('job_post_preview_view');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -1013,6 +1031,7 @@ class _PostJobFormState extends State<PostJobForm>
   }
 
   Future<void> _showPublishSheet() async {
+    ClientTrackingService.instance.track('job_post_publish_options_view');
     await _refreshPaidPassCount();
 
     // 근무지 위치 기반 오늘 가능 구직자 수
@@ -1051,14 +1070,23 @@ class _PostJobFormState extends State<PostJobForm>
             onPaidSubmit: (dt) {
               Navigator.pop(ctx);
               publishAt = dt;
+              ClientTrackingService.instance.track(
+                'job_post_paid_publish_start',
+                properties: {'pass_type': 'instant'},
+              );
               _submit(isPaid: true, passType: 'instant');
             },
             onUrgentSubmit: () {
               Navigator.pop(ctx);
+              ClientTrackingService.instance.track(
+                'job_post_paid_publish_start',
+                properties: {'pass_type': 'urgent'},
+              );
               _submit(isPaid: true, passType: 'urgent');
             },
             onBuyPass: () async {
               Navigator.pop(ctx);
+              ClientTrackingService.instance.track('job_post_payment_start');
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -1067,6 +1095,9 @@ class _PostJobFormState extends State<PostJobForm>
               );
               await _refreshPaidPassCount();
               if (result is Map && result['success'] == true && mounted) {
+                ClientTrackingService.instance.track(
+                  'job_post_payment_success',
+                );
                 _showPublishSheet();
               }
             },
