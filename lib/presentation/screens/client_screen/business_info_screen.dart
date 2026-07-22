@@ -46,7 +46,9 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
     super.dispose();
   }
 
-  // ── 온보딩 바텀시트 (추천인 코드 + 유입경로 통합) ────────────
+  // ── 온보딩 바텀시트 (추천인 코드) ────────────
+  //   유입경로 설문은 제거됨 — 가입 흐름의 마찰을 줄이기 위해(응답률도 낮았음).
+  //   유입경로가 필요하면 가입 이후 별도 채널(문자/알림)에서 보상과 함께 물을 것.
   Future<void> _maybeShowOnboardingSheet() async {
     final prefs = await SharedPreferences.getInstance();
     final already = prefs.getBool('onboarding_sheet_shown') ?? false;
@@ -55,7 +57,6 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
     await prefs.setBool('onboarding_sheet_shown', true);
     if (!mounted) return;
 
-    String? selectedSource;
     final referralCodeController = TextEditingController();
 
     await showModalBottomSheet(
@@ -116,71 +117,6 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
 
                       const SizedBox(height: 28),
 
-                      // ── 유입경로 ─────────────────────────────────────
-                      const Text(
-                        '어떻게 알바일주를 알게 되셨나요?',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        '선택 안 하셔도 괜찮아요.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF9CA3AF),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children:
-                            _kSourceOptions.map((option) {
-                              final selected = selectedSource == option;
-                              return GestureDetector(
-                                onTap:
-                                    () => setSheet(() {
-                                      selectedSource = selected ? null : option;
-                                    }),
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 150),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        selected
-                                            ? kBrandBlue
-                                            : const Color(0xFFF3F4F6),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(
-                                      color:
-                                          selected
-                                              ? kBrandBlue
-                                              : const Color(0xFFE5E7EB),
-                                    ),
-                                  ),
-                                  child: Text(
-                                    option,
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color:
-                                          selected
-                                              ? Colors.white
-                                              : const Color(0xFF374151),
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }).toList(),
-                      ),
-
-                      const SizedBox(height: 28),
-
                       // ── 확인 버튼 ────────────────────────────────────
                       SizedBox(
                         width: double.infinity,
@@ -189,7 +125,6 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                           onPressed: () async {
                             await _submitOnboarding(
                               referralCode: referralCodeController.text.trim(),
-                              source: selectedSource,
                             );
 
                             if (!ctx.mounted) return;
@@ -228,7 +163,6 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
   // ── 온보딩 제출 ───────────────────────────────────────────────
   Future<void> _submitOnboarding({
     required String referralCode,
-    required String? source,
   }) async {
     final prefs = await SharedPreferences.getInstance();
 
@@ -237,7 +171,6 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
 
     debugPrint('=== onboarding submit start ===');
     debugPrint('clientId=$clientId');
-    debugPrint('source=$source');
     debugPrint('referralCode=$referralCode');
     debugPrint('authToken exists=${authToken != null && authToken.isNotEmpty}');
 
@@ -245,27 +178,6 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
       _showSnackbar('회원 정보가 없어 저장할 수 없어요.');
       debugPrint('clientId is null -> stop');
       return;
-    }
-
-    // 유입경로 저장
-    if (source != null) {
-      try {
-        final res = await http.post(
-          Uri.parse('$baseUrl/api/client/referral'),
-          headers: {
-            'Content-Type': 'application/json',
-            if (authToken != null && authToken.isNotEmpty)
-              'Authorization': 'Bearer $authToken',
-          },
-          body: jsonEncode({'clientId': clientId, 'source': source}),
-        );
-
-        debugPrint('referral source status=${res.statusCode}');
-        debugPrint('referral source body=${res.body}');
-      } catch (e) {
-        debugPrint('referral source error=$e');
-        _showSnackbar('유입경로 저장 중 오류가 발생했어요.');
-      }
     }
 
     // 추천인 코드 적용
@@ -702,4 +614,3 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
 }
 
 // ── 상수 ──────────────────────────────────────────────────────
-const _kSourceOptions = ['인스타그램', '구글 검색', '네이버 검색', '지인 추천', '기타'];
