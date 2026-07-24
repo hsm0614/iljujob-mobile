@@ -249,6 +249,11 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
 
   void _openJobDetail(ChatRoomController ctrl) async {
     if (_navigatingToDetail) return;
+    // 공고 상세 fetch(loadJobInfo)가 아직 안 끝났으면 기다린다 — 설명 없이 열리는 것 방지
+    if (ctrl.jobSource['description'] == null) {
+      await ctrl.loadJobInfo();
+      if (!mounted) return;
+    }
     final map = ctrl.jobSource;
 
     try {
@@ -260,7 +265,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
       ).push(MaterialPageRoute(builder: (_) => JobDetailScreen(job: job)));
     } catch (e) {
       final rawId = map['id']?.toString();
-      if (rawId != null && rawId.isNotEmpty) {
+      if (rawId != null && rawId.isNotEmpty && mounted) {
         _navigatingToDetail = true;
         await Navigator.pushNamed(context, '/job-detail', arguments: rawId);
       } else {
@@ -304,6 +309,9 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
     final endTime = str(pick(['end_time', 'endTime']));
 
     return {
+      // 원본 필드 보존 — 아래 정규화 키만 덮어쓴다.
+      // (예전엔 화이트리스트라 description·pay_type·category·이미지 등이 통째로 유실됐다)
+      ...m,
       'id': idStr,
       'clientId': clientId,
       'client_id': clientId,
