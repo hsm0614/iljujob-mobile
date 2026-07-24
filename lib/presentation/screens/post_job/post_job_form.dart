@@ -4170,10 +4170,15 @@ class _PublishSheetState extends State<_PublishSheet> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  '즉시게시 이용권을 사용하면 지금 바로\n상단에 노출할 수 있어요.',
+                Text(
+                  // 이용권 보유 여부에 따라 "얼마 드는지"를 여기서 미리 밝힌다.
+                  widget.paidPassCount == -1
+                      ? '구독 혜택으로 지금 바로 상단에 노출할 수 있어요.\n이용권 차감 없이 진행됩니다.'
+                      : widget.paidPassCount > 0
+                      ? '보유 중인 즉시게시 이용권 ${widget.paidPassCount}개로\n지금 바로 상단에 노출할 수 있어요. 추가 결제 없어요.'
+                      : '즉시게시 이용권(₩4,900)을 구매하면 지금 바로\n상단에 노출할 수 있어요.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 13,
                     color: Color(0xFF6B7280),
                     height: 1.5,
@@ -4399,7 +4404,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                                         ? '무제한 (구독)'
                                         : widget.urgentPassCount > 0
                                         ? '${widget.urgentPassCount}회 보유'
-                                        : '이용권 없음',
+                                        : '₩7,900',
                                     style: const TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w700,
@@ -4413,8 +4418,8 @@ class _PublishSheetState extends State<_PublishSheet> {
                             Text(
                               (widget.urgentPassCount > 0 ||
                                       widget.urgentPassCount == -1)
-                                  ? '즉시 노출 · 반경 5km 알바생 최대 10명 · 무응답 100% 환급'
-                                  : '이용권을 구매하면 즉시 노출 + 알바생 직접 호출 가능',
+                                  ? '즉시 노출 · 반경 5km 알바생 최대 10명 · 무응답 100% 환급 · 추가 결제 없음'
+                                  : '₩7,900로 즉시 노출 + 반경 5km 알바생 직접 호출 · 무응답 100% 환급',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.white.withValues(alpha: 0.88),
@@ -4924,18 +4929,23 @@ class _CompareCard extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      const Text(
-                        '즉시게시 · ₩4,900',
-                        style: TextStyle(
+                      // 이용권이 있으면 가격을 보여주지 않는다 —
+                      // 실제로는 차감만 되는데 ₩4,900이 붙으면 "결제해야 하는 줄" 오해한다.
+                      Text(
+                        paidOk ? '즉시게시 · 이용권 사용' : '즉시게시 · ₩4,900',
+                        style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 2),
-                      const Text(
-                        '즉시 노출',
-                        style: TextStyle(fontSize: 10, color: Colors.white70),
+                      Text(
+                        paidOk ? '즉시 노출 · 추가 결제 없음' : '즉시 노출',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.white70,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
