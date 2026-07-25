@@ -472,9 +472,18 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           return;
         }
       }
-      // 여기까지 왔으면 denied — OS 팝업이 다시 안 뜨므로 설정으로 안내
+      // 여기까지 왔으면 denied — OS 팝업이 다시 안 뜨므로 설정으로 안내.
+      // 매 지원마다 띄우면 성가시니 7일에 한 번만.
+      final prefs = await SharedPreferences.getInstance();
+      final lastMs = prefs.getInt('notifSheetLastShownMs') ?? 0;
+      final weekMs = 7 * 24 * 60 * 60 * 1000;
+      if (DateTime.now().millisecondsSinceEpoch - lastMs < weekMs) return;
       if (!mounted) return;
       await _showEnableNotificationSheet();
+      await prefs.setInt(
+        'notifSheetLastShownMs',
+        DateTime.now().millisecondsSinceEpoch,
+      );
     } catch (_) {
       // 권한 조회 실패는 지원 흐름을 막지 않는다
     }
