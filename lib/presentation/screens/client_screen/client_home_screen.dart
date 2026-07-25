@@ -71,8 +71,10 @@ String publishRemainText(Job j) {
 
 class ClientHomeScreen extends StatefulWidget {
   final AiApi api;
+  // 미확인 지원자 배너 탭 시 지원자관리 탭으로 전환 (main_screen이 넘김)
+  final VoidCallback? onOpenApplicants;
 
-  const ClientHomeScreen({super.key, required this.api});
+  const ClientHomeScreen({super.key, required this.api, this.onOpenApplicants});
 
   @override
   State<ClientHomeScreen> createState() => _ClientHomeScreenState();
@@ -107,6 +109,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   bool _fabOpen = false; // 도구 FAB 확장 여부 (스피드다이얼)
 
   // Summary
+  int unansweredCount = 0;
   int todayCount = 0;
   int weekCount = 0;
   int monthCount = 0;
@@ -384,6 +387,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         final data = jsonDecode(response.body);
         if (!mounted) return;
         setState(() {
+          unansweredCount = data['unansweredApplicants'] ?? 0;
           todayCount = data['todayApplicants'] ?? 0;
           weekCount = data['weekApplicants'] ?? 0;
           monthCount = data['monthApplicants'] ?? 0;
@@ -989,6 +993,64 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           const SizedBox(width: 10),
           kpi('이번 달', monthCount, Icons.calendar_month_outlined),
         ],
+      ),
+    );
+  }
+
+  // 미확인 지원자 회수 배너 — 푸시를 못 받아도 앱만 열면 밀린 지원이 보인다.
+  Widget _buildUnansweredBanner() {
+    if (unansweredCount <= 0) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+      child: Material(
+        color: const Color(0xFFEFF5FF),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          onTap: widget.onOpenApplicants,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.lg),
+              border: Border.all(color: const Color(0xFFCFE0FF)),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.mark_chat_unread_outlined,
+                  size: 20,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: RichText(
+                    text: TextSpan(
+                      style: const TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF111827),
+                        height: 1.4,
+                      ),
+                      children: [
+                        const TextSpan(text: '아직 답장 안 한 지원자 '),
+                        TextSpan(
+                          text: '$unansweredCount명',
+                          style: const TextStyle(color: AppColors.primary),
+                        ),
+                        const TextSpan(text: '이 있어요'),
+                      ],
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: AppColors.textSecondary,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -2705,6 +2767,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _buildKpiRow()),
+            SliverToBoxAdapter(child: _buildUnansweredBanner()),
             const SliverToBoxAdapter(
               child: AdBannerWidget(
                 placement: 'app_home_owner',

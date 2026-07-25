@@ -447,7 +447,10 @@ class _ClientMainScreenState extends State<ClientMainScreen>
     return [
       const ApplicantManagementScreen(), // ← 교체
       const WorkerMapScreen(),
-      ClientHomeScreen(api: _api),
+      ClientHomeScreen(
+        api: _api,
+        onOpenApplicants: () => setState(() => _selectedIndex = 0),
+      ),
       ChatListScreen(onMessagesRead: _fetchUnreadCount),
       const ClientMyPageScreen(),
     ];
