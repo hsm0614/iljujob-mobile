@@ -1179,6 +1179,41 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
     if (mounted) setState(() => _urgentCallBusy = false);
   }
 
+  // 상대가 알림을 못 받는 상태 안내. 회색 톤으로 조용히 — 경고가 아니라 정보.
+  Widget _buildPeerUnreachableBanner(ChatRoomController ctrl) {
+    final peer = ctrl.userType == 'worker' ? '사장님' : '알바생';
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF4F6FA),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE5E8EB)),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.notifications_off_outlined,
+            size: 16,
+            color: Color(0xFF6B7280),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              '$peer이 알림을 꺼둔 상태라 확인이 늦을 수 있어요.',
+              style: const TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF6B7280),
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildUrgentCallBanner(ChatRoomController ctrl) {
     final isUrgent =
         widget.jobInfo['is_urgent_call'] == 1 ||
@@ -1621,6 +1656,9 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     (ctrl.status == 'cancelled' || ctrl.status == 'canceled'),
                 onPostJob: () => Navigator.pushNamed(context, '/post_job'),
               ),
+
+              // 상대가 알림을 못 받는 상태면 안내 — 답장해도 상대가 못 볼 수 있음
+              if (ctrl.peerReachable == false) _buildPeerUnreachableBanner(ctrl),
 
               // 긴급호출 수락/거절 배너 (알바생 전용)
               _buildUrgentCallBanner(ctrl),

@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:app_settings/app_settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:iljujob/data/services/chat_service.dart';
@@ -451,6 +453,111 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  // 지원 후 알림이 꺼져 있으면 사장님 답장을 못 받는다.
+  // 권한 상태를 확인하고, 꺼져 있으면 켜도록 안내한다.
+  Future<void> _ensureNotificationForReply() async {
+    try {
+      final s = await FirebaseMessaging.instance.getNotificationSettings();
+      final st = s.authorizationStatus;
+      // 이미 허용/임시허용이면 아무것도 안 함
+      if (st == AuthorizationStatus.authorized ||
+          st == AuthorizationStatus.provisional) {
+        return;
+      }
+      // notDetermined면 OS 권한 팝업이 뜬다(한 번). 그 뒤 상태 재확인.
+      if (st == AuthorizationStatus.notDetermined) {
+        final r = await FirebaseMessaging.instance.requestPermission();
+        if (r.authorizationStatus == AuthorizationStatus.authorized ||
+            r.authorizationStatus == AuthorizationStatus.provisional) {
+          return;
+        }
+      }
+      // 여기까지 왔으면 denied — OS 팝업이 다시 안 뜨므로 설정으로 안내
+      if (!mounted) return;
+      await _showEnableNotificationSheet();
+    } catch (_) {
+      // 권한 조회 실패는 지원 흐름을 막지 않는다
+    }
+  }
+
+  Future<void> _showEnableNotificationSheet() async {
+    if (!mounted) return;
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Icon(
+                Icons.notifications_active_outlined,
+                size: 40,
+                color: Color(0xFF3B8AFF),
+              ),
+              const SizedBox(height: 14),
+              const Text(
+                '알림을 켜면 사장님 답장을 바로 받아요',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF111827),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '지금은 알림이 꺼져 있어 사장님이 연락해도\n모르고 지나칠 수 있어요.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Color(0xFF6B7280),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  AppSettings.openAppSettings(type: AppSettingsType.notification);
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF3B8AFF),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  '알림 설정 열기',
+                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                ),
+              ),
+              const SizedBox(height: 6),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text(
+                  '나중에',
+                  style: TextStyle(
+                    color: Color(0xFF9CA3AF),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<bool> _showChatMoveNoticeDialog() async {
     if (!mounted) return false;
 
@@ -689,6 +796,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
         await _fetchApplicantCount();
         setState(() => hasApplied = true);
+
+        // 지원 직후 알림 권한 점검 — 꺼져 있으면 사장님 답장을 놓친다.
+        await _ensureNotificationForReply();
 
         final roomId = await startChatRoom(workerId, jobId, clientId);
         if (roomId != null) {

@@ -95,6 +95,10 @@ class ChatRoomController extends ChangeNotifier {
   String initiator = 'client';
   bool consentBusy = false;
 
+  // 상대가 채팅 알림을 받을 수 있는지(토큰·동의 기준). null=아직 모름.
+  // false면 "상대가 확인이 늦을 수 있어요" 안내를 띄운다.
+  bool? peerReachable;
+
   final _uuid = const Uuid();
 
   // ─────────────────────────────────────────────
@@ -619,6 +623,14 @@ class ChatRoomController extends ChangeNotifier {
       final int? cId = int.tryParse(
         (decoded['clientId'] ?? decoded['client_id'])?.toString() ?? '',
       );
+
+      // 상대편 도달 가능성: 내가 worker면 client 값을, client면 worker 값을 본다.
+      final notify = decoded['notify'] is Map ? decoded['notify'] as Map : null;
+      if (notify != null) {
+        peerReachable = userType == 'worker'
+            ? asBool(notify['clientReachable'])
+            : asBool(notify['workerReachable']);
+      }
 
       Map<String, dynamic> ji = {};
       if (decoded['job'] is Map) {
