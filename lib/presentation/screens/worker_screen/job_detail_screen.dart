@@ -203,9 +203,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   String _getCompanyName() {
+    // 회사명 → (없으면) 담당자명 → (없으면) 목록에서 온 company → 최후 문구.
+    // 담당자명은 가입 필수라 프로필만 로드되면 '회사 정보 없음'은 거의 안 뜬다.
     if (clientProfile != null) {
-      final name = clientProfile!['company_name'];
-      if (name != null && name.toString().trim().isNotEmpty) return name;
+      final company = clientProfile!['company_name']?.toString().trim() ?? '';
+      if (company.isNotEmpty) return company;
+
+      final manager = clientProfile!['manager_name']?.toString().trim() ?? '';
+      if (manager.isNotEmpty) return manager;
     }
 
     if (widget.job.company != null && widget.job.company!.trim().isNotEmpty) {
@@ -367,19 +372,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     if (widget.job.clientId == null) return;
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken');
-
+      // 인증 불필요 경로(getClientProfile). 예전 /api/client/profile은
+      // verifyToken이 걸려 구직자 토큰 만료/게스트면 401 → 회사명이 안 떴다.
       final url = Uri.parse(
-        '$baseUrl/api/client/profile?id=${widget.job.clientId}',
+        '$baseUrl/api/job/profile/${widget.job.clientId}',
       );
-      final res = await http.get(
-        url,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
+      final res = await http.get(url);
       if (res.statusCode == 200) {
         setState(() => clientProfile = jsonDecode(res.body));
       } else {
