@@ -60,3 +60,5 @@ app.*.map.json
 lib/config/ai_secrets.dart
 node_modules
 .claude/
+
+plugins/portone_flutter/**/.gradle/
