@@ -1,6 +1,7 @@
 // lib/presentation/screens/applicant_management_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -488,6 +489,16 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         setState(() => _phoneLoading.remove(applicant.applicationId));
       }
     }
+  }
+
+  Future<void> _copyApplicantPhone(String phone) async {
+    final text = phone.trim();
+    if (text.isEmpty) return;
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('연락처를 복사했어요.')));
   }
 
   Future<void> _showBulkMessageSheet(JobApplicantGroup group) async {
@@ -1266,6 +1277,32 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                                               ? const Color(0xFF9CA3AF)
                                               : _blue,
                                     ),
+                                  ),
+                                ),
+                              ] else ...[
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap:
+                                      () => _copyApplicantPhone(visiblePhone),
+                                  child: const Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.copy_rounded,
+                                        size: 13,
+                                        color: _blue,
+                                      ),
+                                      SizedBox(width: 3),
+                                      Text(
+                                        '복사',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w900,
+                                          color: _blue,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                               ],
