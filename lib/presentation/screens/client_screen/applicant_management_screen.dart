@@ -18,6 +18,7 @@ class ApplicantModel {
   final bool isCompleted;
   final int workerId;
   final String workerName;
+  final String workerPhoneMasked;
   final String? profileImageUrl;
   final int? birthYear;
   final String? gender;
@@ -30,6 +31,7 @@ class ApplicantModel {
     required this.isCompleted,
     required this.workerId,
     required this.workerName,
+    required this.workerPhoneMasked,
     this.profileImageUrl,
     this.birthYear,
     this.gender,
@@ -44,6 +46,7 @@ class ApplicantModel {
       isCompleted: j['is_completed'] == true || j['is_completed'] == 1,
       workerId: j['worker_id'] ?? 0,
       workerName: j['worker_name'] ?? '이름 없음',
+      workerPhoneMasked: j['worker_phone_masked']?.toString() ?? '',
       profileImageUrl: j['profile_image_url'],
       birthYear:
           j['birth_year'] != null ? int.tryParse('${j['birth_year']}') : null,
@@ -197,6 +200,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   int _currentPage = 1;
   final Map<int, bool> _expanded = {};
   final Map<int, Set<int>> _selectedByJob = {};
+  final Map<int, String> _visiblePhones = {};
+  final Set<int> _phoneLoading = {};
 
   @override
   void initState() {
@@ -218,7 +223,10 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       if (clientId == 0) throw Exception('로그인이 필요합니다.');
 
       final res = await http
-          .get(Uri.parse('$baseUrl/api/applicants/by-client/$clientId'))
+          .get(
+            Uri.parse('$baseUrl/api/applicants/by-client/$clientId'),
+            headers: {'Authorization': 'Bearer ${await _authToken()}'},
+          )
           .timeout(const Duration(seconds: 10));
 
       if (res.statusCode != 200) throw Exception('서버 오류 (${res.statusCode})');
@@ -353,6 +361,133 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   Future<String> _authToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('authToken') ?? '';
+  }
+
+  String _formatPhone(String raw) {
+    final digits = raw.replaceAll(RegExp(r'\D'), '');
+    if (digits.length == 11) {
+      return '${digits.substring(0, 3)}-${digits.substring(3, 7)}-${digits.substring(7)}';
+    }
+    if (digits.length == 10) {
+      return '${digits.substring(0, 3)}-${digits.substring(3, 6)}-${digits.substring(6)}';
+    }
+    return raw;
+  }
+
+  Future<void> _showApplicantPhone(ApplicantModel applicant) async {
+    if (applicant.applicationId <= 0 ||
+        _phoneLoading.contains(applicant.applicationId)) {
+      return;
+    }
+
+    final agreed = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '지원자 연락처 보기',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w900,
+                    color: Color(0xFF191F28),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  '채용 연락, 일정 조율, 출근확정, 분쟁 및 노쇼 확인 목적에 한해 이용해 주세요.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.45,
+                    color: Color(0xFF6B7280),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF4B5563),
+                          side: const BorderSide(color: Color(0xFFE5E8EB)),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text('취소'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _blue,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          '확인하고 보기',
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+    if (agreed != true) return;
+
+    setState(() => _phoneLoading.add(applicant.applicationId));
+    try {
+      final token = await _authToken();
+      final res = await http
+          .get(
+            Uri.parse(
+              '$baseUrl/api/applicants/contact/${applicant.applicationId}',
+            ),
+            headers: {'Authorization': 'Bearer $token'},
+          )
+          .timeout(const Duration(seconds: 10));
+      if (!mounted) return;
+      final body = jsonDecode(res.body) as Map<String, dynamic>;
+      if (res.statusCode != 200) {
+        throw Exception(body['message']?.toString() ?? '연락처 조회 실패');
+      }
+      final phone = body['worker_phone']?.toString() ?? '';
+      if (phone.isEmpty) throw Exception('등록된 연락처가 없습니다.');
+      setState(() {
+        _visiblePhones[applicant.applicationId] = _formatPhone(phone);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('연락처 조회 실패: $e')));
+    } finally {
+      if (mounted) {
+        setState(() => _phoneLoading.remove(applicant.applicationId));
+      }
+    }
   }
 
   Future<void> _showBulkMessageSheet(JobApplicantGroup group) async {
@@ -974,6 +1109,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     required bool isLast,
   }) {
     final selected = _isSelected(group, applicant);
+    final visiblePhone = _visiblePhones[applicant.applicationId];
+    final phoneLoading = _phoneLoading.contains(applicant.applicationId);
     final actionColor =
         applicant.isCompleted
             ? _green
@@ -1080,6 +1217,62 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                           ),
                         ],
                       ),
+                      if (applicant.workerPhoneMasked.isNotEmpty ||
+                          visiblePhone != null) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF8FAFC),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFE5E8EB)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.phone_iphone_rounded,
+                                size: 14,
+                                color: Color(0xFF6B7280),
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                visiblePhone ?? applicant.workerPhoneMasked,
+                                style: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF374151),
+                                ),
+                              ),
+                              if (visiblePhone == null) ...[
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap:
+                                      phoneLoading
+                                          ? null
+                                          : () =>
+                                              _showApplicantPhone(applicant),
+                                  child: Text(
+                                    phoneLoading ? '확인 중' : '연락처 보기',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w900,
+                                      color:
+                                          phoneLoading
+                                              ? const Color(0xFF9CA3AF)
+                                              : _blue,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
