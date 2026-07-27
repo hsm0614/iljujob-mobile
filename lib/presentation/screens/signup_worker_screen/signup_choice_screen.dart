@@ -12,8 +12,10 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'package:iljujob/config/constants.dart';
+import 'package:iljujob/main.dart';
 import 'package:iljujob/presentation/screens/signup_worker_screen/signup_worker_screen.dart';
 import 'package:iljujob/presentation/screens/AppleExtraInfoScreen.dart';
+
 const kBrand = Color(0xFF3B8AFF);
 
 class SignupChoiceScreen extends StatefulWidget {
@@ -24,7 +26,6 @@ class SignupChoiceScreen extends StatefulWidget {
 
 class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
   bool _loading = false;
-final bool _showProfileSetup = false;
   // final _google = GoogleSignIn(scopes: ['email', 'profile']); // ❌ 구글 비활성화
 
   ButtonStyle _primaryBtnStyle({Color? bg, Color? fg}) {
@@ -43,59 +44,66 @@ final bool _showProfileSetup = false;
   }
 
   Future<void> _saveAndGoHome(Map<String, dynamic> data) async {
-  if (data['success'] != true) {
-    _toast('로그인 실패: ${data['message'] ?? '알 수 없음'}');
-    return;
-  }
-
-  final prefs = await SharedPreferences.getInstance();
-
-  await prefs.setString('authToken', data['token'] ?? '');
-  await prefs.setString('refreshToken', data['refreshToken'] ?? '');
-  await prefs.setString('userType', 'worker');
-  await prefs.setInt('userId', data['workerId'] ?? 0);
-
-  // ⭐ 여기 추가 1: 온보딩은 본 걸로 처리
-  await prefs.setBool('hasSeenOnboarding', true);
-
-  // ⭐ 여기 추가 2: 서버에서 내려준 phone도 있으면 같이 저장
-  final profile = data['profile'];
-  if (profile is Map && profile['phone'] is String) {
-    await prefs.setString('userPhone', profile['phone']);
-  }
-
-  final isNewUser = data['isNewUser'] == true;
-  final provider = data['socialProvider'] ?? '';
-
-  if (!mounted) return;
-
-  if (isNewUser) {
-    if (provider == 'apple') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AppleProfileSetupScreen(workerId: data['workerId']),
-        ),
-      );
-    } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => Scaffold(
-            backgroundColor: const Color(0xFFF4F6FA),
-            appBar: AppBar(title: const Text('프로필 설정'), centerTitle: true, elevation: 0),
-            body: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: _buildProfileSetupWidget(),
-            ),
-          ),
-        ),
-      );
+    if (data['success'] != true) {
+      _toast('로그인 실패: ${data['message'] ?? '알 수 없음'}');
+      return;
     }
-  } else {
-    Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+
+    final prefs = await SharedPreferences.getInstance();
+
+    await prefs.setString('authToken', data['token'] ?? '');
+    await prefs.setString('refreshToken', data['refreshToken'] ?? '');
+    await prefs.setString('userType', 'worker');
+    await prefs.setInt('userId', data['workerId'] ?? 0);
+
+    // ⭐ 여기 추가 1: 온보딩은 본 걸로 처리
+    await prefs.setBool('hasSeenOnboarding', true);
+
+    // ⭐ 여기 추가 2: 서버에서 내려준 phone도 있으면 같이 저장
+    final profile = data['profile'];
+    if (profile is Map && profile['phone'] is String) {
+      await prefs.setString('userPhone', profile['phone']);
+    }
+
+    await sendFcmTokenUnified();
+
+    final isNewUser = data['isNewUser'] == true;
+    final provider = data['socialProvider'] ?? '';
+
+    if (!mounted) return;
+
+    if (isNewUser) {
+      if (provider == 'apple') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AppleProfileSetupScreen(workerId: data['workerId']),
+          ),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => Scaffold(
+                  backgroundColor: const Color(0xFFF4F6FA),
+                  appBar: AppBar(
+                    title: const Text('프로필 설정'),
+                    centerTitle: true,
+                    elevation: 0,
+                  ),
+                  body: SingleChildScrollView(
+                    padding: const EdgeInsets.all(20),
+                    child: _buildProfileSetupWidget(),
+                  ),
+                ),
+          ),
+        );
+      }
+    } else {
+      Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+    }
   }
-}
 
   // ───────────────────────────────────────────
   // Google (비활성화)
@@ -133,60 +141,66 @@ final bool _showProfileSetup = false;
   // Kakao
   // ───────────────────────────────────────────
   Future<void> _signInWithKakao() async {
-  if (_loading) return;
-  setState(() => _loading = true);
-  
-  try {
-    kakao.OAuthToken token;
-    final isInstalled = await kakao.isKakaoTalkInstalled();
-    
-    if (isInstalled) {
-      token = await kakao.UserApi.instance.loginWithKakaoTalk();
-    } else {
-      token = await kakao.UserApi.instance.loginWithKakaoAccount();
+    if (_loading) return;
+    setState(() => _loading = true);
+
+    try {
+      kakao.OAuthToken token;
+      final isInstalled = await kakao.isKakaoTalkInstalled();
+
+      if (isInstalled) {
+        token = await kakao.UserApi.instance.loginWithKakaoTalk();
+      } else {
+        token = await kakao.UserApi.instance.loginWithKakaoAccount();
+      }
+
+      debugPrint('✅ 카카오 토큰 획득 성공');
+      debugPrint('🔑 accessToken: ${token.accessToken.substring(0, 20)}...');
+
+      final res = await http.post(
+        Uri.parse('$baseUrl/api/worker/social/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'provider': 'kakao',
+          'accessToken': token.accessToken,
+        }),
+      );
+
+      debugPrint('📡 서버 응답: ${res.statusCode}');
+      debugPrint('📄 응답 내용: ${res.body}');
+
+      if (res.statusCode != 200) {
+        final errorData = jsonDecode(res.body);
+        _toast('로그인 실패: ${errorData['message'] ?? '알 수 없는 오류'}');
+        return;
+      }
+
+      final data = jsonDecode(res.body);
+      await _saveAndGoHome(data);
+    } catch (e, stackTrace) {
+      debugPrint('❌ 카카오 로그인 오류: $e');
+      debugPrint('Stack trace: $stackTrace');
+      _toast('로그인 중 오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
     }
-
-    debugPrint('✅ 카카오 토큰 획득 성공');
-    debugPrint('🔑 accessToken: ${token.accessToken.substring(0, 20)}...');
-
-    final res = await http.post(
-      Uri.parse('$baseUrl/api/worker/social/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'provider': 'kakao',
-        'accessToken': token.accessToken,
-      }),
-    );
-
-    debugPrint('📡 서버 응답: ${res.statusCode}');
-    debugPrint('📄 응답 내용: ${res.body}');
-
-    if (res.statusCode != 200) {
-      final errorData = jsonDecode(res.body);
-      _toast('로그인 실패: ${errorData['message'] ?? '알 수 없는 오류'}');
-      return;
-    }
-
-    final data = jsonDecode(res.body);
-    await _saveAndGoHome(data);
-    
-  } catch (e, stackTrace) {
-    debugPrint('❌ 카카오 로그인 오류: $e');
-    debugPrint('Stack trace: $stackTrace');
-    _toast('로그인 중 오류가 발생했습니다. 다시 시도해주세요.');
-  } finally {
-    if (mounted) setState(() => _loading = false);
   }
-}
+
   // ───────────────────────────────────────────
   // Apple (iOS만)
   // ───────────────────────────────────────────
   String _randomNonce([int length = 32]) {
-    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
+    const chars =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
     final rnd = Random.secure();
-    return List.generate(length, (_) => chars[rnd.nextInt(chars.length)]).join();
+    return List.generate(
+      length,
+      (_) => chars[rnd.nextInt(chars.length)],
+    ).join();
   }
-  String _sha256of(String input) => sha256.convert(utf8.encode(input)).toString();
+
+  String _sha256of(String input) =>
+      sha256.convert(utf8.encode(input)).toString();
 
   Future<void> _signInWithApple() async {
     if (!Platform.isIOS) {
@@ -200,7 +214,10 @@ final bool _showProfileSetup = false;
       final nonce = _sha256of(rawNonce);
 
       final credential = await SignInWithApple.getAppleIDCredential(
-        scopes: [AppleIDAuthorizationScopes.email, AppleIDAuthorizationScopes.fullName],
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
         nonce: nonce,
       );
 
@@ -210,9 +227,11 @@ final bool _showProfileSetup = false;
         return;
       }
 
-      final fullName = credential.givenName == null && credential.familyName == null
-          ? null
-          : '${credential.familyName ?? ''}${credential.givenName ?? ''}'.trim();
+      final fullName =
+          credential.givenName == null && credential.familyName == null
+              ? null
+              : '${credential.familyName ?? ''}${credential.givenName ?? ''}'
+                  .trim();
 
       final res = await http.post(
         Uri.parse('$baseUrl/api/worker/social/login'),
@@ -237,7 +256,10 @@ final bool _showProfileSetup = false;
   // Phone(PASS)
   // ───────────────────────────────────────────
   void _goPhoneSignup() {
-    Navigator.push(context, MaterialPageRoute(builder: (_) => const SignupWorkerScreen()));
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SignupWorkerScreen()),
+    );
   }
 
   @override
@@ -248,15 +270,18 @@ final bool _showProfileSetup = false;
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         backgroundColor: const Color(0xFFF4F6FA),
-        appBar: AppBar(title: const Text('가입 방법 선택'), centerTitle: true, elevation: 0),
+        appBar: AppBar(
+          title: const Text('가입 방법 선택'),
+          centerTitle: true,
+          elevation: 0,
+        ),
         body: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
-              
+
               child: Column(
-                
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   const Text(
@@ -280,7 +305,13 @@ final bool _showProfileSetup = false;
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: Offset(0, 6))],
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.06),
+                          blurRadius: 12,
+                          offset: Offset(0, 6),
+                        ),
+                      ],
                     ),
                     padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
                     child: Column(
@@ -291,11 +322,16 @@ final bool _showProfileSetup = false;
                           onPressed: _signInWithKakao,
                           icon: Image.asset(
                             'assets/icons/kakao.png',
-                            height: 20, width: 20,
-                            errorBuilder: (_, __, ___) => const Icon(Icons.bolt),
+                            height: 20,
+                            width: 20,
+                            errorBuilder:
+                                (_, __, ___) => const Icon(Icons.bolt),
                           ),
                           label: Text(_loading ? '처리 중...' : '카카오로 시작하기'),
-                          style: _primaryBtnStyle(bg: const Color(0xFFFFE812), fg: Colors.black87),
+                          style: _primaryBtnStyle(
+                            bg: const Color(0xFFFFE812),
+                            fg: Colors.black87,
+                          ),
                         ),
                         const SizedBox(height: 12),
 
@@ -317,7 +353,10 @@ final bool _showProfileSetup = false;
                             onPressed: _signInWithApple,
                             icon: const Icon(Icons.apple),
                             label: Text(_loading ? '처리 중...' : 'Apple로 시작하기'),
-                            style: _primaryBtnStyle(bg: Colors.black, fg: Colors.white),
+                            style: _primaryBtnStyle(
+                              bg: Colors.black,
+                              fg: Colors.white,
+                            ),
                           )
                         else
                           Padding(
@@ -329,7 +368,10 @@ final bool _showProfileSetup = false;
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Center(
-                                child: Text('Apple은 iOS에서만 제공됩니다', style: TextStyle(color: Color(0xFF6B7280))),
+                                child: Text(
+                                  'Apple은 iOS에서만 제공됩니다',
+                                  style: TextStyle(color: Color(0xFF6B7280)),
+                                ),
                               ),
                             ),
                           ),
@@ -363,201 +405,210 @@ final bool _showProfileSetup = false;
       ),
     );
   }
- Widget _buildProfileSetupWidget() {
-  final List<String> strengths = [];
-  final List<String> traits = [];
-  String? gender; // ⬅️ 성별 저장용
 
-  final strengthOptions = ['포장', '상하차', '물류', 'F&B', '사무보조', '기타'];
-  final traitOptions = ['꼼꼼해요', '책임감 있어요', '상냥해요', '빠릿해요', '체력이 좋아요', '성실해요'];
+  Widget _buildProfileSetupWidget() {
+    final List<String> strengths = [];
+    final List<String> traits = [];
+    String? gender; // ⬅️ 성별 저장용
 
-  return StatefulBuilder( // 👈 이게 포인트!
-    builder: (context, setState) {
-      return Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.06),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ─────────────────────────────
-            // 1) 성별 선택 영역
-            // ─────────────────────────────
-            const Text(
-              '성별',
-              style: TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 14,
+    final strengthOptions = ['포장', '상하차', '물류', 'F&B', '사무보조', '기타'];
+    final traitOptions = ['꼼꼼해요', '책임감 있어요', '상냥해요', '빠릿해요', '체력이 좋아요', '성실해요'];
+
+    return StatefulBuilder(
+      // 👈 이게 포인트!
+      builder: (context, setState) {
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
               ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 10,
-              children: [
-            ChoiceChip(
-  label: const Text('남자'),
-  selected: gender == '남성',
-  onSelected: (selected) {
-    setState(() {
-      gender = selected ? '남성' : null;
-    });
-  },
-),
-ChoiceChip(
-  label: const Text('여자'),
-  selected: gender == '여성',
-  onSelected: (selected) {
-    setState(() {
-      gender = selected ? '여성' : null;
-    });
-  },
-),
-ChoiceChip(
-  label: const Text('선택 안 함'),
-  selected: gender == '선택안함',
-  onSelected: (selected) {
-    setState(() {
-      gender = selected ? '선택안함' : null;
-    });
-  },
-),
-              ],
-            ),
-
-            const SizedBox(height: 24),
-
-            // ─────────────────────────────
-            // 2) 자신 있는 업무
-            // ─────────────────────────────
-            const Text(
-              '자신 있는 업무 (2개까지)',
-              style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF191F28)),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 10,
-              runSpacing: 8,
-              children: strengthOptions.map((item) {
-                final isSelected = strengths.contains(item);
-                return FilterChip(
-                  label: Text(item),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected && strengths.length < 2) {
-                        strengths.add(item);
-                      } else {
-                        strengths.remove(item);
-                      }
-                    });
-                  },
-                  selectedColor: kBrand.withOpacity(0.25),
-                );
-              }).toList(),
-            ),
-
-            const SizedBox(height: 20),
-
-            // ─────────────────────────────
-            // 3) 나를 표현하는 단어
-            // ─────────────────────────────
-            const Text(
-              '나를 표현하는 단어',
-              style: TextStyle(fontWeight: FontWeight.w800, color: Color(0xFF191F28)),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 10,
-              runSpacing: 8,
-              children: traitOptions.map((item) {
-                final isSelected = traits.contains(item);
-                return FilterChip(
-                  label: Text(item),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        traits.add(item);
-                      } else {
-                        traits.remove(item);
-                      }
-                    });
-                  },
-                  selectedColor: const Color(0xFF10B981).withOpacity(0.25),
-                );
-              }).toList(),
-            ),
-
-            const SizedBox(height: 24),
-
-            // ─────────────────────────────
-            // 4) 완료 버튼
-            // ─────────────────────────────
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () async {
-                  if (gender == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('성별을 선택해주세요.')),
-                    );
-                    return;
-                  }
-
-                  final prefs = await SharedPreferences.getInstance();
-                  final token = prefs.getString('authToken') ?? '';
-                  final workerId = prefs.getInt('userId');
-
-                  try {
-                    await http.post(
-                      Uri.parse('$baseUrl/api/worker/update-profile'),
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer $token',
-                      },
-                      body: jsonEncode({
-                        'workerId': workerId,
-                        'strengths': strengths,
-                        'traits': traits,
-                        'gender': gender, // ⬅️ 서버로 같이 전송
-                      }),
-                    );
-
-                    if (!context.mounted) return;
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      '/home',
-                      (_) => false,
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('프로필 저장 중 오류: $e')),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kBrand,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+            ],
+          ),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // ─────────────────────────────
+              // 1) 성별 선택 영역
+              // ─────────────────────────────
+              const Text(
+                '성별',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 10,
+                children: [
+                  ChoiceChip(
+                    label: const Text('남자'),
+                    selected: gender == '남성',
+                    onSelected: (selected) {
+                      setState(() {
+                        gender = selected ? '남성' : null;
+                      });
+                    },
                   ),
-                ),
-                child: const Text('완료하고 시작하기'),
+                  ChoiceChip(
+                    label: const Text('여자'),
+                    selected: gender == '여성',
+                    onSelected: (selected) {
+                      setState(() {
+                        gender = selected ? '여성' : null;
+                      });
+                    },
+                  ),
+                  ChoiceChip(
+                    label: const Text('선택 안 함'),
+                    selected: gender == '선택안함',
+                    onSelected: (selected) {
+                      setState(() {
+                        gender = selected ? '선택안함' : null;
+                      });
+                    },
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
+
+              const SizedBox(height: 24),
+
+              // ─────────────────────────────
+              // 2) 자신 있는 업무
+              // ─────────────────────────────
+              const Text(
+                '자신 있는 업무 (2개까지)',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF191F28),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                children:
+                    strengthOptions.map((item) {
+                      final isSelected = strengths.contains(item);
+                      return FilterChip(
+                        label: Text(item),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected && strengths.length < 2) {
+                              strengths.add(item);
+                            } else {
+                              strengths.remove(item);
+                            }
+                          });
+                        },
+                        selectedColor: kBrand.withOpacity(0.25),
+                      );
+                    }).toList(),
+              ),
+
+              const SizedBox(height: 20),
+
+              // ─────────────────────────────
+              // 3) 나를 표현하는 단어
+              // ─────────────────────────────
+              const Text(
+                '나를 표현하는 단어',
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: Color(0xFF191F28),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 10,
+                runSpacing: 8,
+                children:
+                    traitOptions.map((item) {
+                      final isSelected = traits.contains(item);
+                      return FilterChip(
+                        label: Text(item),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              traits.add(item);
+                            } else {
+                              traits.remove(item);
+                            }
+                          });
+                        },
+                        selectedColor: const Color(
+                          0xFF10B981,
+                        ).withOpacity(0.25),
+                      );
+                    }).toList(),
+              ),
+
+              const SizedBox(height: 24),
+
+              // ─────────────────────────────
+              // 4) 완료 버튼
+              // ─────────────────────────────
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    if (gender == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('성별을 선택해주세요.')),
+                      );
+                      return;
+                    }
+
+                    final prefs = await SharedPreferences.getInstance();
+                    final token = prefs.getString('authToken') ?? '';
+                    final workerId = prefs.getInt('userId');
+
+                    try {
+                      await http.post(
+                        Uri.parse('$baseUrl/api/worker/update-profile'),
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': 'Bearer $token',
+                        },
+                        body: jsonEncode({
+                          'workerId': workerId,
+                          'strengths': strengths,
+                          'traits': traits,
+                          'gender': gender, // ⬅️ 서버로 같이 전송
+                        }),
+                      );
+
+                      if (!context.mounted) return;
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        '/home',
+                        (_) => false,
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('프로필 저장 중 오류: $e')),
+                      );
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kBrand,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('완료하고 시작하기'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }

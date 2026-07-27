@@ -46,6 +46,7 @@ import 'package:iljujob/presentation/admin/admin_safe_company_screen.dart';
 import 'package:iljujob/presentation/admin/admin_report_screen.dart';
 import 'package:iljujob/presentation/admin/admin_event_write_screen.dart';
 import 'package:iljujob/data/services/job_service.dart';
+import 'package:iljujob/data/services/fcm_token_payload.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:iljujob/presentation/screens/mypagescreen/block_detail_screen.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -260,22 +261,23 @@ Future<void> sendFcmTokenUnified() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('userId');
     final userPhone = prefs.getString('userPhone');
-    final userType = prefs.getString('userType') ?? 'worker';
+    final userType = prefs.getString('userType');
 
-    if (userId == null && userPhone == null) {
-      debugPrint('⚠️ userId와 userPhone 모두 없음, FCM 전송 생략');
+    final payload = buildFcmTokenPayload(
+      userId: userId,
+      userPhone: userPhone,
+      userType: userType,
+      fcmToken: fcm,
+    );
+    if (payload == null) {
+      debugPrint('⚠️ FCM 전송 생략: 유효한 로그인 정보 없음');
       return;
     }
 
     await http.post(
       Uri.parse('$baseUrl/api/user/update-token'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        if (userId != null) 'userId': userId,
-        if (userPhone != null) 'userPhone': userPhone,
-        'userType': userType,
-        'fcmToken': fcm,
-      }),
+      body: jsonEncode(payload),
     );
   } catch (e) {
     debugPrint('❌ FCM 토큰 전송 실패: $e');
@@ -289,19 +291,21 @@ Future<void> _clearFcmToken() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('userId');
     final userPhone = prefs.getString('userPhone');
-    final userType = prefs.getString('userType') ?? 'worker';
+    final userType = prefs.getString('userType');
 
-    if (userId == null && userPhone == null) return;
+    final payload = buildFcmTokenPayload(
+      userId: userId,
+      userPhone: userPhone,
+      userType: userType,
+      fcmToken: null,
+      allowNullToken: true,
+    );
+    if (payload == null) return;
 
     await http.post(
       Uri.parse('$baseUrl/api/user/update-token'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        if (userId != null) 'userId': userId,
-        if (userPhone != null) 'userPhone': userPhone,
-        'userType': userType,
-        'fcmToken': null, // ✅ null → 서버에서 토큰 삭제
-      }),
+      body: jsonEncode(payload),
     );
     debugPrint('✅ FCM 토큰 서버에서 삭제 완료');
   } catch (e) {
@@ -536,8 +540,10 @@ Future<Widget?> _checkForceUpdate() async {
       final data = jsonDecode(resp.body);
       if (data['force_update'] == true) {
         return ForceUpdateScreen(
-          iosUrl: data['ios_url'] ?? 'https://apps.apple.com/kr/app/id6744899891',
-          androidUrl: data['android_url'] ??
+          iosUrl:
+              data['ios_url'] ?? 'https://apps.apple.com/kr/app/id6744899891',
+          androidUrl:
+              data['android_url'] ??
               'https://play.google.com/store/apps/details?id=com.iljujob',
         );
       }
@@ -639,7 +645,9 @@ void main() async {
 
   final forceUpdateScreen = await _checkForceUpdate();
 
-  runApp(MyApp(startScreen: forceUpdateScreen ?? startScreen, upgrader: upgrader));
+  runApp(
+    MyApp(startScreen: forceUpdateScreen ?? startScreen, upgrader: upgrader),
+  );
 
   WidgetsBinding.instance.addPostFrameCallback((_) async {
     await _maybeShowUpgradeDialog(upgrader);
