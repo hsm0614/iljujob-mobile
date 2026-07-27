@@ -395,8 +395,13 @@ Future<void> _handleLocalNotificationPayload(String? payload) async {
 
 Future<void> _handleNotificationData(Map<String, String> data) async {
   final type = data['type'];
-  if (type == 'new_nearby_job' || type == 'custom_matched_job') {
+  // nearby_job_alert도 공고 알림(서버가 jobId 포함) — 예전엔 new_nearby_job만 봐서 탭해도 안 열렸다
+  if (type == 'new_nearby_job' ||
+      type == 'custom_matched_job' ||
+      type == 'nearby_job_alert') {
     await _handleJobNotification(RemoteMessage(data: data));
+  } else if (type == 'inquiry') {
+    navigatorKey.currentState?.pushNamed('/inquiry');
   } else if (data['chatRoomId'] != null) {
     await _handleChatNotification(RemoteMessage(data: data));
   }
@@ -471,7 +476,9 @@ Future<void> _handleInitialMessage(
   final type = initialMessage.data['type'];
 
   WidgetsBinding.instance.addPostFrameCallback((_) async {
-    if (type == 'new_nearby_job' || type == 'custom_matched_job') {
+    if (type == 'new_nearby_job' ||
+        type == 'custom_matched_job' ||
+        type == 'nearby_job_alert') {
       final jobId = int.tryParse(initialMessage.data['jobId'] ?? '');
       if (jobId != null) {
         final token = prefs.getString('authToken') ?? '';
@@ -482,6 +489,8 @@ Future<void> _handleInitialMessage(
           );
         }
       }
+    } else if (type == 'inquiry') {
+      navigator.pushNamed('/inquiry');
     } else if (initialMessage.data['chatRoomId'] != null) {
       final data = initialMessage.data;
       final chatRoomId = int.tryParse(data['chatRoomId'] ?? '');
