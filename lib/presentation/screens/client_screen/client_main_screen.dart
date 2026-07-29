@@ -36,6 +36,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
   Timer? _unreadTimer;
   IO.Socket? socket;
   late final AiApi _api;
+  late final List<Widget> _cachedScreens;
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
   static const _promoEtagKey = 'promo_etag_client_v1';
@@ -48,6 +49,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
     WidgetsBinding.instance.addObserver(this);
 
     _selectedIndex = widget.initialTabIndex;
+    _cachedScreens = _buildScreens();
 
     _initialize();
     _startUnreadTimer();
@@ -541,7 +543,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _buildScreens()[_selectedIndex],
+      body: _cachedScreens[_selectedIndex],
       bottomNavigationBar: _buildBottomNav(),
     );
   }
