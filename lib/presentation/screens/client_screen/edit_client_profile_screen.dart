@@ -281,9 +281,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
   Future<void> _saveProfile() async {
     if (_saving) return;
 
-    final prefs = await SharedPreferences.getInstance();
-    final userPhone = prefs.getString('userPhone');
-    if (userPhone == null || userPhone.isEmpty) {
+    if (phone.isEmpty) {
       _showSnackbar('로그인 정보가 없습니다.');
       return;
     }
@@ -305,6 +303,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
     setState(() => _saving = true);
 
     try {
+      final prefs = await SharedPreferences.getInstance();
       final uri = Uri.parse('$baseUrl/api/client/upload-logo');
       final request = http.MultipartRequest('POST', uri);
 
@@ -313,7 +312,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         request.headers['Authorization'] = 'Bearer $token';
       }
 
-      request.fields['phone'] = userPhone;
+      request.fields['phone'] = phone;
       request.fields['manager_name'] = managerName;
       request.fields['company_name'] = companyName;
       request.fields['email'] = email;

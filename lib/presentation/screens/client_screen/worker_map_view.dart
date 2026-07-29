@@ -1138,6 +1138,26 @@ class _WorkerMapViewState extends State<WorkerMapView> {
           ..._buildJobCards(),
         ],
 
+        // ── 무료 공고 지도 노출 안내 ──────────────────────────────
+        Positioned(
+          top: topPad + 60,
+          left: 0,
+          right: 0,
+          child: Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1C1C1E).withValues(alpha: 0.72),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                '💡 무료 공고는 등록 후 12시간 뒤 지도에 표시됩니다',
+                style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ),
+
         // ── 상단 공고 칩 ──────────────────────────────────────────
         Positioned(
           top: topPad + 12,

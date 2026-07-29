@@ -223,12 +223,23 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       final clientId = prefs.getInt('userId') ?? 0;
       if (clientId == 0) throw Exception('로그인이 필요합니다.');
 
-      final res = await http
+      var res = await http
           .get(
             Uri.parse('$baseUrl/api/applicants/by-client/$clientId'),
             headers: {'Authorization': 'Bearer ${await _authToken()}'},
           )
           .timeout(const Duration(seconds: 10));
+
+      if (res.statusCode == 401) {
+        final refreshed = await _tryRefresh();
+        if (!refreshed) { _redirectToOnboarding(); return; }
+        res = await http
+            .get(
+              Uri.parse('$baseUrl/api/applicants/by-client/$clientId'),
+              headers: {'Authorization': 'Bearer ${await _authToken()}'},
+            )
+            .timeout(const Duration(seconds: 10));
+      }
 
       if (res.statusCode != 200) throw Exception('서버 오류 (${res.statusCode})');
 
@@ -362,6 +373,35 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   Future<String> _authToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('authToken') ?? '';
+  }
+
+  // 401 발생 시 refreshToken으로 accessToken 재발급. 성공 시 true.
+  Future<bool> _tryRefresh() async {
+    final prefs = await SharedPreferences.getInstance();
+    final refreshToken = prefs.getString('refreshToken');
+    if (refreshToken == null || refreshToken.isEmpty) return false;
+    try {
+      final res = await http
+          .post(
+            Uri.parse('$baseUrl/api/auth/refresh-token'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'refreshToken': refreshToken}),
+          )
+          .timeout(const Duration(seconds: 10));
+      if (res.statusCode == 200) {
+        final newToken = jsonDecode(res.body)['accessToken'];
+        if (newToken is String && newToken.isNotEmpty) {
+          await prefs.setString('authToken', newToken);
+          return true;
+        }
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  void _redirectToOnboarding() {
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil('/onboarding', (_) => false);
   }
 
   String _formatPhone(String raw) {
