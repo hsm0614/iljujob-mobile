@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:io';
@@ -1503,6 +1504,40 @@ class _PostJobFormState extends State<PostJobForm>
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       GestureDetector(
+        onTap: () async {
+          final job = await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const SelectPreviousJobScreen()),
+          );
+          if (job != null) _fillFromJob(job);
+        },
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: _bg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: _border),
+          ),
+          child: const Row(
+            children: [
+              Icon(Icons.history_rounded, size: 16, color: _label),
+              SizedBox(width: 8),
+              Text(
+                '이전 공고 불러오기',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: _sub,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              Spacer(),
+              Icon(Icons.chevron_right_rounded, size: 16, color: _label),
+            ],
+          ),
+        ),
+      ),
+      GestureDetector(
         onTap: _openAiWizard,
         child: Container(
           width: double.infinity,
@@ -1542,40 +1577,6 @@ class _PostJobFormState extends State<PostJobForm>
                 ),
               ),
               Icon(Icons.chevron_right_rounded, color: _blue),
-            ],
-          ),
-        ),
-      ),
-      GestureDetector(
-        onTap: () async {
-          final job = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SelectPreviousJobScreen()),
-          );
-          if (job != null) _fillFromJob(job);
-        },
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: _bg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _border),
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.history_rounded, size: 16, color: _label),
-              SizedBox(width: 8),
-              Text(
-                '이전 공고 불러오기',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: _sub,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Spacer(),
-              Icon(Icons.chevron_right_rounded, size: 16, color: _label),
             ],
           ),
         ),
@@ -2789,6 +2790,10 @@ class _PostJobFormState extends State<PostJobForm>
           TextField(
             controller: _payCtrl,
             keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              const _CommaNumberInputFormatter(),
+            ],
             decoration: InputDecoration(
               hintText:
                   _payType == '월급'
@@ -5044,4 +5049,28 @@ class _CompareRow extends StatelessWidget {
       ],
     ),
   );
+}
+
+class _CommaNumberInputFormatter extends TextInputFormatter {
+  const _CommaNumberInputFormatter();
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) {
+      return const TextEditingValue(
+        text: '',
+        selection: TextSelection.collapsed(offset: 0),
+      );
+    }
+
+    final formatted = NumberFormat('#,###').format(int.parse(digits));
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
 }

@@ -107,12 +107,76 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
   Future<void> _loadProfileInfo() async {
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
+
+    final cachedCompany = prefs.getString('companyName') ?? '';
+    final cachedManager = prefs.getString('userName') ?? '';
+    final cachedPhone = prefs.getString('userPhone') ?? '';
+    final cachedLogo = prefs.getString('logoUrl') ?? '';
+
     setState(() {
-      companyName = prefs.getString('companyName') ?? '회사명';
-      managerName = prefs.getString('userName') ?? '담당자명';
-      phoneNumber = prefs.getString('userPhone') ?? '전화번호';
-      logoUrl = prefs.getString('logoUrl') ?? '';
+      companyName = cachedCompany.isNotEmpty ? cachedCompany : '회사명';
+      managerName = cachedManager.isNotEmpty ? cachedManager : '담당자명';
+      phoneNumber = cachedPhone.isNotEmpty ? cachedPhone : '전화번호';
+      logoUrl = cachedLogo;
     });
+
+    final token = prefs.getString('authToken') ?? '';
+    final clientId = prefs.getInt('clientId') ?? prefs.getInt('userId');
+    if (token.isEmpty && clientId == null) return;
+
+    try {
+      final uri = Uri.parse(
+        '$baseUrl/api/client/profile',
+      ).replace(queryParameters: clientId != null ? {'id': '$clientId'} : null);
+      final res = await http
+          .get(
+            uri,
+            headers: token.isNotEmpty ? {'Authorization': 'Bearer $token'} : {},
+          )
+          .timeout(const Duration(seconds: 8));
+
+      if (res.statusCode != 200) return;
+      final raw = jsonDecode(res.body);
+      final data =
+          raw is Map<String, dynamic>
+              ? ((raw['data'] is Map<String, dynamic>)
+                  ? raw['data'] as Map<String, dynamic>
+                  : raw)
+              : <String, dynamic>{};
+
+      final freshCompany = data['company_name']?.toString().trim() ?? '';
+      final freshManager = data['manager_name']?.toString().trim() ?? '';
+      final freshPhone = data['phone']?.toString().trim() ?? '';
+      final freshLogo = data['logo_url']?.toString().trim() ?? '';
+
+      if (freshCompany.isNotEmpty) {
+        await prefs.setString('companyName', freshCompany);
+      }
+      if (freshManager.isNotEmpty) {
+        await prefs.setString('userName', freshManager);
+      }
+      if (freshPhone.isNotEmpty) {
+        await prefs.setString('userPhone', freshPhone);
+      }
+      if (freshLogo.isNotEmpty) {
+        await prefs.setString('logoUrl', freshLogo);
+      }
+
+      if (!mounted) return;
+      setState(() {
+        companyName =
+            freshCompany.isNotEmpty
+                ? freshCompany
+                : freshManager.isNotEmpty
+                ? freshManager
+                : companyName;
+        managerName = freshManager.isNotEmpty ? freshManager : managerName;
+        phoneNumber = freshPhone.isNotEmpty ? freshPhone : phoneNumber;
+        logoUrl = freshLogo.isNotEmpty ? freshLogo : logoUrl;
+      });
+    } catch (e) {
+      debugPrint('client my profile sync error: $e');
+    }
   }
 
   // =========================
