@@ -19,7 +19,6 @@ import 'package:time_picker_spinner/time_picker_spinner.dart';
 import 'package:iljujob/core/suspension.dart';
 import 'package:iljujob/core/suspension_guard.dart';
 import '../../../data/services/ai_job_description_service.dart';
-import 'package:iljujob/presentation/screens/post_job/ai_job_wizard.dart';
 import 'package:iljujob/presentation/screens/client_screen/wage_report_screen.dart';
 import 'package:iljujob/presentation/screens/purchase_screen.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -319,50 +318,6 @@ class _PostJobFormState extends State<PostJobForm>
     setState(() => _q--);
     _scheduleDraftSave();
     _fadeCtrl.forward();
-  }
-
-  void _openAiWizard() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder:
-            (_) => AiJobWizard(
-              companyName: companyName.isNotEmpty ? companyName : null,
-              managerName: managerName.isNotEmpty ? managerName : null,
-              managerPhone: managerPhone.isNotEmpty ? managerPhone : null,
-              onComplete: (result) {
-                setState(() {
-                  _title = result.title;
-                  _titleCtrl.text = result.title;
-                  _category = result.category;
-                  _majorCat = _majorOf(result.category);
-                  _location = result.location;
-                  _locationCity = result.locationCity;
-                  _lat = result.lat;
-                  _lng = result.lng;
-                  _startDate = result.startDate.toLocal();
-                  _endDate = result.endDate.toLocal();
-                  _startTime = result.startTime;
-                  _endTime = result.endTime;
-                  _isShortTerm = true;
-                  _pay = result.pay;
-                  _payType = result.payType;
-                  _payCtrl.text = NumberFormat('#,###').format(result.pay);
-                  _description = result.description;
-                  _descCtrl.text = result.description;
-                  _q = 6;
-                });
-                _validatePay();
-                _scheduleDraftSave();
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _showPublishSheet();
-                });
-              },
-              onSkip: () => Navigator.pop(context),
-            ),
-      ),
-    );
   }
 
   // ── 날짜 유틸 ──
@@ -1372,39 +1327,6 @@ class _PostJobFormState extends State<PostJobForm>
                     ),
                   ),
                   const Spacer(),
-                  GestureDetector(
-                    onTap: _openAiWizard,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 7,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEEF5FF),
-                        borderRadius: BorderRadius.circular(99),
-                        border: Border.all(
-                          color: _blue.withValues(alpha: 0.3),
-                          width: 1,
-                        ),
-                      ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.edit_note_rounded, size: 14, color: _blue),
-                          SizedBox(width: 4),
-                          Text(
-                            '작성 도움',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              color: _blue,
-                              letterSpacing: -0.2,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -1533,50 +1455,6 @@ class _PostJobFormState extends State<PostJobForm>
               ),
               Spacer(),
               Icon(Icons.chevron_right_rounded, size: 16, color: _label),
-            ],
-          ),
-        ),
-      ),
-      GestureDetector(
-        onTap: _openAiWizard,
-        child: Container(
-          width: double.infinity,
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFEEF5FF),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _blue.withValues(alpha: 0.22)),
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.edit_note_rounded, size: 24, color: _blue),
-              SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '처음이면 작성 도움으로 시작하세요',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        color: _text,
-                      ),
-                    ),
-                    SizedBox(height: 3),
-                    Text(
-                      '질문 몇 개로 제목부터 공고문까지 빠르게 정리',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: _label,
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right_rounded, color: _blue),
             ],
           ),
         ),
