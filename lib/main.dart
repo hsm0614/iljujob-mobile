@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -47,6 +46,7 @@ import 'package:iljujob/presentation/admin/admin_report_screen.dart';
 import 'package:iljujob/presentation/admin/admin_event_write_screen.dart';
 import 'package:iljujob/data/services/job_service.dart';
 import 'package:iljujob/data/services/fcm_token_payload.dart';
+import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:iljujob/presentation/screens/mypagescreen/block_detail_screen.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -204,31 +204,19 @@ Future<bool> _refreshAccessToken(SharedPreferences prefs) async {
 
   if (refreshToken == null || refreshToken.isEmpty) {
     debugPrint('❌ refreshToken 없음');
-    await prefs.clear();
+    await AuthenticatedHttpClient.clearSession();
     return false;
   }
 
-  try {
-    final dio = Dio();
-    final response = await dio.post(
-      '$baseUrl/api/auth/refresh-token',
-      data: {'refreshToken': refreshToken},
-      options: Options(headers: {'Authorization': null}),
-    );
-    final newAT = response.data['accessToken'] ?? response.data['token'];
-    if (response.statusCode == 200 && newAT is String && newAT.isNotEmpty) {
-      await prefs.setString('authToken', newAT);
-      debugPrint('✅ 토큰 갱신 성공');
-      return true;
-    } else {
-      await prefs.clear();
-      return false;
-    }
-  } catch (e) {
-    debugPrint('🔥 토큰 갱신 실패: $e');
-    await prefs.clear();
-    return false;
+  final refreshed = await AuthenticatedHttpClient.refreshAccessToken();
+  if (refreshed) {
+    debugPrint('✅ 토큰 갱신 성공');
+    return true;
   }
+
+  debugPrint('🔥 토큰 갱신 실패');
+  await AuthenticatedHttpClient.clearSession();
+  return false;
 }
 
 // ============================================================

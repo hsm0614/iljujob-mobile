@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../config/constants.dart';
+import '../../../data/services/authenticated_http_client.dart';
 import '../../../data/services/screen_analytics_service.dart';
 import '../../chat/chat_room_screen.dart'; // 경로 맞게 수정
 import '../../widgets/albailju_common.dart';
@@ -223,23 +224,9 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       final clientId = prefs.getInt('userId') ?? 0;
       if (clientId == 0) throw Exception('로그인이 필요합니다.');
 
-      var res = await http
-          .get(
-            Uri.parse('$baseUrl/api/applicants/by-client/$clientId'),
-            headers: {'Authorization': 'Bearer ${await _authToken()}'},
-          )
-          .timeout(const Duration(seconds: 10));
-
-      if (res.statusCode == 401) {
-        final refreshed = await _tryRefresh();
-        if (!refreshed) { _redirectToOnboarding(); return; }
-        res = await http
-            .get(
-              Uri.parse('$baseUrl/api/applicants/by-client/$clientId'),
-              headers: {'Authorization': 'Bearer ${await _authToken()}'},
-            )
-            .timeout(const Duration(seconds: 10));
-      }
+      final res = await AuthenticatedHttpClient.get(
+        Uri.parse('$baseUrl/api/applicants/by-client/$clientId'),
+      ).timeout(const Duration(seconds: 10));
 
       if (res.statusCode != 200) throw Exception('서버 오류 (${res.statusCode})');
 
@@ -259,6 +246,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         _currentPage = 1;
         _selectedByJob.clear();
       });
+    } on AuthSessionExpiredException {
+      _redirectToOnboarding();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -370,35 +359,6 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     });
   }
 
-  Future<String> _authToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('authToken') ?? '';
-  }
-
-  // 401 발생 시 refreshToken으로 accessToken 재발급. 성공 시 true.
-  Future<bool> _tryRefresh() async {
-    final prefs = await SharedPreferences.getInstance();
-    final refreshToken = prefs.getString('refreshToken');
-    if (refreshToken == null || refreshToken.isEmpty) return false;
-    try {
-      final res = await http
-          .post(
-            Uri.parse('$baseUrl/api/auth/refresh-token'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({'refreshToken': refreshToken}),
-          )
-          .timeout(const Duration(seconds: 10));
-      if (res.statusCode == 200) {
-        final newToken = jsonDecode(res.body)['accessToken'];
-        if (newToken is String && newToken.isNotEmpty) {
-          await prefs.setString('authToken', newToken);
-          return true;
-        }
-      }
-    } catch (_) {}
-    return false;
-  }
-
   void _redirectToOnboarding() {
     if (!mounted) return;
     Navigator.of(context).pushNamedAndRemoveUntil('/onboarding', (_) => false);
@@ -500,15 +460,9 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
 
     setState(() => _phoneLoading.add(applicant.applicationId));
     try {
-      final token = await _authToken();
-      final res = await http
-          .get(
-            Uri.parse(
-              '$baseUrl/api/applicants/contact/${applicant.applicationId}',
-            ),
-            headers: {'Authorization': 'Bearer $token'},
-          )
-          .timeout(const Duration(seconds: 10));
+      final res = await AuthenticatedHttpClient.get(
+        Uri.parse('$baseUrl/api/applicants/contact/${applicant.applicationId}'),
+      ).timeout(const Duration(seconds: 10));
       if (!mounted) return;
       final body = jsonDecode(res.body) as Map<String, dynamic>;
       if (res.statusCode != 200) {
@@ -519,6 +473,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       setState(() {
         _visiblePhones[applicant.applicationId] = _formatPhone(phone);
       });
+    } on AuthSessionExpiredException {
+      _redirectToOnboarding();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -654,22 +610,15 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final clientId = prefs.getInt('userId') ?? 0;
-      final token = await _authToken();
-      final res = await http
-          .post(
-            Uri.parse('$baseUrl/api/applicants/bulk-message'),
-            headers: {
-              'Content-Type': 'application/json',
-              if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode({
-              'jobId': group.jobId,
-              'clientId': clientId,
-              'workerIds': workerIds,
-              'message': message,
-            }),
-          )
-          .timeout(const Duration(seconds: 12));
+      final res = await AuthenticatedHttpClient.postJson(
+        Uri.parse('$baseUrl/api/applicants/bulk-message'),
+        body: {
+          'jobId': group.jobId,
+          'clientId': clientId,
+          'workerIds': workerIds,
+          'message': message,
+        },
+      ).timeout(const Duration(seconds: 12));
       if (!mounted) return;
       final body = jsonDecode(res.body) as Map<String, dynamic>;
       if (res.statusCode != 200) {
@@ -682,6 +631,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         ),
       );
       await _fetch();
+    } on AuthSessionExpiredException {
+      _redirectToOnboarding();
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(
