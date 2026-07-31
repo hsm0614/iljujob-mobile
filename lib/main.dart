@@ -169,17 +169,16 @@ void _setupWebViewPlatform() {
 
 Future<void> _hydrateUserInfo() async {
   final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString('authToken');
-  if (token == null || token.isEmpty || JwtDecoder.isExpired(token)) return;
+  final token = await AuthenticatedHttpClient.accessToken();
+  if (token.isEmpty || JwtDecoder.isExpired(token)) return;
 
   final userId = prefs.getInt('userId');
   final userPhone = prefs.getString('userPhone');
   if (userId != null && userPhone != null) return;
 
   try {
-    final resp = await http.get(
+    final resp = await AuthenticatedHttpClient.get(
       Uri.parse('$baseUrl/api/user/me'),
-      headers: {'Authorization': 'Bearer $token'},
     );
     if (resp.statusCode == 200) {
       final data = jsonDecode(resp.body);
@@ -195,7 +194,7 @@ Future<void> _hydrateUserInfo() async {
 }
 
 Future<bool> _refreshAccessToken(SharedPreferences prefs) async {
-  final token = prefs.getString('authToken') ?? '';
+  final token = await AuthenticatedHttpClient.accessToken();
   final refreshToken = prefs.getString('refreshToken');
 
   if (token.isEmpty || !JwtDecoder.isExpired(token)) return true;
@@ -405,8 +404,7 @@ Future<void> _handleJobNotification(RemoteMessage message) async {
   final jobId = int.tryParse(jobIdStr);
   if (jobId == null) return;
 
-  final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString('authToken') ?? '';
+  final token = await AuthenticatedHttpClient.accessToken();
   final job = await JobService.fetchJobByIdWithToken(jobId, token);
   if (job == null) return;
 
@@ -419,21 +417,14 @@ Future<void> _handleChatNotification(RemoteMessage message) async {
   final data = message.data;
   final chatRoomId = int.tryParse(data['chatRoomId'] ?? '');
 
-  final prefs = await SharedPreferences.getInstance();
-  final token = prefs.getString('authToken') ?? '';
-
   if (chatRoomId == null) {
     debugPrint('❌ chatRoomId 누락');
     return;
   }
 
   try {
-    final resp = await http.get(
+    final resp = await AuthenticatedHttpClient.get(
       Uri.parse('$baseUrl/api/chat/detail/$chatRoomId'),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
     );
 
     if (resp.statusCode == 200) {
@@ -605,7 +596,7 @@ void main() async {
   await _hydrateUserInfo();
 
   final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
-  final refreshedToken = prefs.getString('authToken') ?? '';
+  final refreshedToken = await AuthenticatedHttpClient.accessToken();
   final refreshedUserType = prefs.getString('userType') ?? 'worker';
   final refreshedUserPhone = prefs.getString('userPhone');
   final refreshedUserId = prefs.getInt('userId');
@@ -685,12 +676,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   Future<void> _recordAppOpen() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken') ?? '';
+      final token = await AuthenticatedHttpClient.accessToken();
       final userType = prefs.getString('userType') ?? '';
       if (token.isEmpty || userType != 'worker') return;
-      await http.post(
+      await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/worker/app-open'),
-        headers: {'Authorization': 'Bearer $token'},
       );
     } catch (_) {}
   }

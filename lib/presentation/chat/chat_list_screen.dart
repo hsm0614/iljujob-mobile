@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 
 import 'chat_room_screen.dart';
 import '../../config/constants.dart';
-import 'package:iljujob/utiles/auth_util.dart';
+import 'package:iljujob/data/services/authenticated_http_client.dart';
 import '../../data/models/banner_ad.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
@@ -415,10 +415,7 @@ class _ChatListScreenState extends State<ChatListScreen>
     final prefs = await SharedPreferences.getInstance();
 
     final userPhone = prefs.getString('userPhone') ?? '';
-    final token =
-        prefs.getString('accessToken') ?? prefs.getString('authToken') ?? '';
-
-    if (token.isEmpty) {
+    if (userPhone.isEmpty) {
       _showSnackbar('로그인이 필요합니다.');
       setState(() => isLoading = false);
       return;
@@ -429,10 +426,7 @@ class _ChatListScreenState extends State<ChatListScreen>
     );
 
     try {
-      final response = await http.get(
-        url,
-        headers: {'Authorization': 'Bearer $token'},
-      );
+      final response = await AuthenticatedHttpClient.get(url);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -443,10 +437,13 @@ class _ChatListScreenState extends State<ChatListScreen>
             return bTime.compareTo(aTime);
           });
         });
-      } else if (response.statusCode == 401) {
-        _showSnackbar('인증이 만료되었습니다. 다시 로그인해주세요.');
       } else {
         _showSnackbar('채팅방 목록 불러오기 실패 (${response.statusCode})');
+      }
+    } on AuthSessionExpiredException {
+      _showSnackbar('로그인이 필요합니다.');
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/onboarding', (_) => false);
       }
     } catch (e) {
       _showSnackbar('네트워크 오류 발생');
@@ -578,8 +575,7 @@ class _ChatListScreenState extends State<ChatListScreen>
     if (mounted) setState(() => _leavingRoomIds.add(roomId));
 
     try {
-      final headers = await authHeaders();
-      final response = await http.delete(url, headers: headers);
+      final response = await AuthenticatedHttpClient.delete(url);
 
       if (response.statusCode == 200 ||
           response.statusCode == 204 ||
@@ -592,13 +588,15 @@ class _ChatListScreenState extends State<ChatListScreen>
           );
         });
         widget.onMessagesRead?.call();
-      } else if (response.statusCode == 401) {
-        _showSnackbar('로그인이 필요합니다.');
-        if (mounted) Navigator.pushNamed(context, '/login');
       } else if (response.statusCode == 403) {
         _showSnackbar('권한이 없습니다.');
       } else {
         _showSnackbar('채팅방 나가기 실패 (${response.statusCode})');
+      }
+    } on AuthSessionExpiredException {
+      _showSnackbar('로그인이 필요합니다.');
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/onboarding', (_) => false);
       }
     } catch (e) {
       _showSnackbar('채팅방 나가기 중 오류가 발생했습니다.');
@@ -641,10 +639,8 @@ class _ChatListScreenState extends State<ChatListScreen>
 
     final prefs = await SharedPreferences.getInstance();
     final workerId = myId ?? prefs.getInt('userId');
-    final token =
-        prefs.getString('authToken') ?? prefs.getString('accessToken');
 
-    if (workerId == null || token == null) {
+    if (workerId == null) {
       _showSnackbar('로그인 정보가 없습니다. 다시 로그인해주세요.');
       return;
     }
@@ -652,13 +648,9 @@ class _ChatListScreenState extends State<ChatListScreen>
     final uri = Uri.parse('$baseUrl/api/applications/cancel');
 
     try {
-      final response = await http.post(
+      final response = await AuthenticatedHttpClient.postJson(
         uri,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({'jobId': jobId, 'workerId': workerId}),
+        body: {'jobId': jobId, 'workerId': workerId},
       );
 
       if (response.statusCode == 200) {
@@ -681,6 +673,11 @@ class _ChatListScreenState extends State<ChatListScreen>
           }
         } catch (_) {}
         _showSnackbar(message);
+      }
+    } on AuthSessionExpiredException {
+      _showSnackbar('로그인이 필요합니다.');
+      if (mounted) {
+        Navigator.pushNamedAndRemoveUntil(context, '/onboarding', (_) => false);
       }
     } catch (e) {
       _showSnackbar('지원 취소 중 오류가 발생했습니다: $e');

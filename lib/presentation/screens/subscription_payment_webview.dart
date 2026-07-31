@@ -5,22 +5,22 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'package:in_app_purchase_storekit/store_kit_wrappers.dart' as sk;
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 
 import '../../config/constants.dart';
+import '../../data/services/authenticated_http_client.dart';
 
 // ─────────────────────────────────────────────
 // 상수
 // ─────────────────────────────────────────────
-const _kIosProductId     = 'subscribe_1';
+const _kIosProductId = 'subscribe_1';
 const _kAndroidProductId = 'subscribe';
-const _kTimeoutSec       = 15;
-const _kMaxRetries       = 3;
-const _kRestoreWaitSec   = 8; // 복원 이벤트 대기 시간 (늘림)
-const _brandBlue         = Color(0xFF3B8AFF);
+const _kTimeoutSec = 15;
+const _kMaxRetries = 3;
+const _kRestoreWaitSec = 8; // 복원 이벤트 대기 시간 (늘림)
+const _brandBlue = Color(0xFF3B8AFF);
 
 class SubscribeScreen extends StatefulWidget {
   const SubscribeScreen({super.key});
@@ -33,9 +33,9 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
   final InAppPurchase _iap = InAppPurchase.instance;
 
   // ── 상태 ─────────────────────────────────────
-  bool _loading            = true;
-  bool _isProcessing       = false; // 구매 or 복원 진행 중
-  bool _isInitializing     = true;
+  bool _loading = true;
+  bool _isProcessing = false; // 구매 or 복원 진행 중
+  bool _isInitializing = true;
 
   // ── 상품 ─────────────────────────────────────
   List<ProductDetails> _products = [];
@@ -44,15 +44,15 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
   StreamSubscription<List<PurchaseDetails>>? _purchaseSub;
 
   // ── 중복 방지 ─────────────────────────────────
-  final Set<String> _processedKeys  = {}; // 이번 세션 처리된 구매
-  final Set<String> _verifyingKeys  = {}; // 현재 검증 중
+  final Set<String> _processedKeys = {}; // 이번 세션 처리된 구매
+  final Set<String> _verifyingKeys = {}; // 현재 검증 중
 
   // ── 유저 의도 플래그 ──────────────────────────
-  bool _intentBuy     = false;
+  bool _intentBuy = false;
   bool _intentRestore = false;
 
   // ── 인증 캐시 ─────────────────────────────────
-  int?    _userId;
+  int? _userId;
   String? _authToken;
 
   // ─────────────────────────────────────────────
@@ -94,9 +94,9 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
 
   Future<void> _loadCredentials() async {
     final sp = await SharedPreferences.getInstance();
-    _userId    = sp.getInt('userId');
-    _authToken = sp.getString('authToken');
-    if (_userId == null || _authToken == null) {
+    _userId = sp.getInt('userId');
+    _authToken = await AuthenticatedHttpClient.accessToken();
+    if (_userId == null || _authToken == null || _authToken!.isEmpty) {
       debugPrint('⚠️ 인증 정보 없음');
     }
   }
@@ -127,7 +127,7 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
       if (mounted) {
         setState(() {
           _products = response.productDetails;
-          _loading  = false;
+          _loading = false;
         });
       }
     } catch (e) {
@@ -279,9 +279,10 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
   // ─────────────────────────────────────────────
   Future<bool> _forceRefreshIOSReceipt() async {
     try {
-      final add = _iap.getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
+      final add =
+          _iap.getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
       final data = await add.refreshPurchaseVerificationData();
-      final ok   = (data?.serverVerificationData ?? '').isNotEmpty;
+      final ok = (data?.serverVerificationData ?? '').isNotEmpty;
       debugPrint('🧾 iOS receipt refresh: $ok');
       return ok;
     } catch (e) {
@@ -295,7 +296,8 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
   // ─────────────────────────────────────────────
   Future<String> _getIOSReceipt() async {
     try {
-      final add = _iap.getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
+      final add =
+          _iap.getPlatformAddition<InAppPurchaseStoreKitPlatformAddition>();
       final data = await add.refreshPurchaseVerificationData();
       final r = data?.serverVerificationData ?? '';
       if (r.isNotEmpty) return r;
@@ -311,8 +313,14 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
   // 구매 시작
   // ─────────────────────────────────────────────
   Future<void> _startPurchase(ProductDetails product) async {
-    if (_isProcessing) { _showMessage('이미 결제 처리 중입니다'); return; }
-    if (_userId == null || _authToken == null) { _showError('로그인이 필요합니다'); return; }
+    if (_isProcessing) {
+      _showMessage('이미 결제 처리 중입니다');
+      return;
+    }
+    if (_userId == null || _authToken == null) {
+      _showError('로그인이 필요합니다');
+      return;
+    }
 
     // iOS: 이미 구독 중인지 확인
     if (Platform.isIOS) {
@@ -329,7 +337,7 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
 
     setState(() {
       _isProcessing = true;
-      _intentBuy    = true;
+      _intentBuy = true;
     });
 
     try {
@@ -407,10 +415,13 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
   // 구매 복원
   // ─────────────────────────────────────────────
   Future<void> _restorePurchases() async {
-    if (_isProcessing) { _showMessage('이미 처리 중입니다'); return; }
+    if (_isProcessing) {
+      _showMessage('이미 처리 중입니다');
+      return;
+    }
 
     setState(() {
-      _isProcessing  = true;
+      _isProcessing = true;
       _intentRestore = true;
     });
 
@@ -443,7 +454,9 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
     } catch (e) {
       if (attempt < _kMaxRetries - 1) {
         final delay = Duration(seconds: (attempt + 1) * 2);
-        debugPrint('🔄 검증 재시도 ${attempt + 1}/$_kMaxRetries (${delay.inSeconds}초 후)');
+        debugPrint(
+          '🔄 검증 재시도 ${attempt + 1}/$_kMaxRetries (${delay.inSeconds}초 후)',
+        );
         await Future.delayed(delay);
         return _verifyWithRetry(p, attempt: attempt + 1);
       }
@@ -455,7 +468,9 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
   }
 
   Future<bool> _verifyOnServer(PurchaseDetails p) async {
-    if (_userId == null || _authToken == null) throw Exception('인증 정보 없음');
+    if (_userId == null || _authToken == null || _authToken!.isEmpty) {
+      throw Exception('인증 정보 없음');
+    }
 
     final platform = Platform.isIOS ? 'app_store' : 'google_play';
     final String token;
@@ -471,19 +486,15 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
 
     debugPrint('📤 서버 검증 요청: platform=$platform, productId=${p.productID}');
 
-    final resp = await http.post(
+    final resp = await AuthenticatedHttpClient.postJson(
       Uri.parse('$baseUrl/api/iap/verify'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_authToken',
-      },
-      body: jsonEncode({
-        'platform':   platform,
-        'productId':  p.productID,
+      body: {
+        'platform': platform,
+        'productId': p.productID,
         'purchaseId': p.purchaseID,
-        'token':      token,
-        'clientId':   _userId,
-      }),
+        'token': token,
+        'clientId': _userId,
+      },
     ).timeout(const Duration(seconds: _kTimeoutSec));
 
     if (resp.statusCode == 200) {
@@ -502,9 +513,8 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
   // ─────────────────────────────────────────────
   Future<bool> _checkActiveSubscription() async {
     try {
-      final resp = await http.get(
+      final resp = await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/iap/status?clientId=$_userId'),
-        headers: {'Authorization': 'Bearer $_authToken'},
       ).timeout(const Duration(seconds: 8));
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);
@@ -516,9 +526,8 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
 
   Future<void> _refreshStatus() async {
     try {
-      await http.get(
+      await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/iap/status?clientId=$_userId'),
-        headers: {'Authorization': 'Bearer $_authToken'},
       ).timeout(const Duration(seconds: 10));
       // TODO: Provider/Bloc으로 상태 전파
     } catch (e) {
@@ -534,7 +543,7 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
   Future<void> _clearFailedTransactions() async {
     try {
       final queue = sk.SKPaymentQueueWrapper();
-      final txs   = await queue.transactions();
+      final txs = await queue.transactions();
       for (final t in txs) {
         if (t.transactionState == sk.SKPaymentTransactionStateWrapper.failed) {
           await queue.finishTransaction(t);
@@ -558,7 +567,7 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
 
   void _resetState() {
     if (mounted) setState(() => _isProcessing = false);
-    _intentBuy     = false;
+    _intentBuy = false;
     _intentRestore = false;
   }
 
@@ -566,18 +575,22 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(msg), duration: const Duration(seconds: 3)));
+      ..showSnackBar(
+        SnackBar(content: Text(msg), duration: const Duration(seconds: 3)),
+      );
   }
 
   void _showError(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
       ..clearSnackBars()
-      ..showSnackBar(SnackBar(
-        content: Text(msg),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 4),
-      ));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
   }
 
   // ─────────────────────────────────────────────
@@ -616,84 +629,82 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
     );
   }
 
- Widget _buildAppBar() {
-  return SliverAppBar(
-    pinned: true,
-    expandedHeight: 190,
-    backgroundColor: _brandBlue,
-    title: const Text('구독하기'),
-    actions: [
-      IconButton(
-        icon: const Icon(Icons.restore),
-        onPressed: _isProcessing ? null : _restorePurchases,
-        tooltip: '구매 복원',
-      ),
-      IconButton(
-        icon: const Icon(Icons.refresh),
-        onPressed: _loading ? null : _loadProducts,
-        tooltip: '새로고침',
-      ),
-    ],
-    flexibleSpace: FlexibleSpaceBar(
-      background: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [_brandBlue, Color(0xFF6FB3FF)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+  Widget _buildAppBar() {
+    return SliverAppBar(
+      pinned: true,
+      expandedHeight: 190,
+      backgroundColor: _brandBlue,
+      title: const Text('구독하기'),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.restore),
+          onPressed: _isProcessing ? null : _restorePurchases,
+          tooltip: '구매 복원',
         ),
-        child: const SafeArea(
-          bottom: false,
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(20, 72, 20, 18),
-            child: Align(
-              alignment: Alignment.bottomLeft,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '오늘 채용, 오늘 끝!',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: _loading ? null : _loadProducts,
+          tooltip: '새로고침',
+        ),
+      ],
+      flexibleSpace: FlexibleSpaceBar(
+        background: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [_brandBlue, Color(0xFF6FB3FF)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+          child: const SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(20, 72, 20, 18),
+              child: Align(
+                alignment: Alignment.bottomLeft,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '오늘 채용, 오늘 끝!',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    '알바일주 구독',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.3,
+                    SizedBox(height: 6),
+                    Text(
+                      '알바일주 구독',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.3,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    '매달 유료 공고 이용권 지급 · AI 기능 활성화 · 채팅 빠른연결',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
+                    SizedBox(height: 6),
+                    Text(
+                      '매달 유료 공고 이용권 지급 · AI 기능 활성화 · 채팅 빠른연결',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: Colors.white, fontSize: 13),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
+
   Widget _buildBenefits() {
     return SliverToBoxAdapter(
       child: Padding(
@@ -705,8 +716,10 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('구독 혜택',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const Text(
+                  '구독 혜택',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
                 const SizedBox(height: 12),
                 _benefitRow(Icons.flash_on, '우선노출로 지원 속도 증가'),
                 const SizedBox(height: 8),
@@ -726,7 +739,12 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
       children: [
         Icon(icon, size: 18, color: _brandBlue),
         const SizedBox(width: 10),
-        Expanded(child: Text(text, style: const TextStyle(fontWeight: FontWeight.w500))),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+        ),
       ],
     );
   }
@@ -757,45 +775,76 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
                 children: [
                   if (highlight)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       margin: const EdgeInsets.only(right: 8),
                       decoration: BoxDecoration(
                         color: _brandBlue.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text('추천',
-                          style: TextStyle(color: _brandBlue, fontSize: 12, fontWeight: FontWeight.bold)),
+                      child: const Text(
+                        '추천',
+                        style: TextStyle(
+                          color: _brandBlue,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
                   Expanded(
-                    child: Text(product.title,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      product.title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
-              Text(product.description,
-                  style: TextStyle(color: const Color(0xFF6B7280), fontSize: 14)),
+              Text(
+                product.description,
+                style: TextStyle(color: const Color(0xFF6B7280), fontSize: 14),
+              ),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(product.price,
-                      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: _brandBlue)),
+                  Text(
+                    product.price,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: _brandBlue,
+                    ),
+                  ),
                   FilledButton(
-                    onPressed: _isProcessing ? null : () => _startPurchase(product),
+                    onPressed:
+                        _isProcessing ? null : () => _startPurchase(product),
                     style: FilledButton.styleFrom(
                       backgroundColor: _brandBlue,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
                     ),
-                    child: _isProcessing
-                        ? const SizedBox(
-                            width: 16, height: 16,
-                            child: CircularProgressIndicator(
+                    child:
+                        _isProcessing
+                            ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation(Colors.white)),
-                          )
-                        : const Text('구독하기'),
+                                valueColor: AlwaysStoppedAnimation(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                            : const Text('구독하기'),
                   ),
                 ],
               ),
@@ -812,15 +861,26 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.shopping_cart_outlined, size: 48, color: const Color(0xFFBCC0CB)),
+            Icon(
+              Icons.shopping_cart_outlined,
+              size: 48,
+              color: const Color(0xFFBCC0CB),
+            ),
             const SizedBox(height: 16),
-            Text('상품을 불러올 수 없습니다',
-                style: TextStyle(fontSize: 16, color: const Color(0xFF6B7280))),
+            Text(
+              '상품을 불러올 수 없습니다',
+              style: TextStyle(fontSize: 16, color: const Color(0xFF6B7280)),
+            ),
             const SizedBox(height: 8),
-            Text('네트워크 연결을 확인하고 다시 시도해주세요',
-                style: TextStyle(color: const Color(0xFF6B7280))),
+            Text(
+              '네트워크 연결을 확인하고 다시 시도해주세요',
+              style: TextStyle(color: const Color(0xFF6B7280)),
+            ),
             const SizedBox(height: 16),
-            ElevatedButton(onPressed: _loadProducts, child: const Text('다시 시도')),
+            ElevatedButton(
+              onPressed: _loadProducts,
+              child: const Text('다시 시도'),
+            ),
           ],
         ),
       ),
@@ -838,17 +898,24 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('구독 안내',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                const Text(
+                  '구독 안내',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
                 const SizedBox(height: 8),
                 ...[
                   '구독은 각 스토어 계정에 귀속되며, 기기 변경 시 "구매 복원"으로 혜택을 이어받을 수 있습니다.',
                   '결제/환불/해지 정책은 스토어 정책 및 알바일주 이용약관을 따릅니다.',
                   '구독은 자동 갱신되며, 언제든지 스토어에서 해지할 수 있습니다.',
-                ].map((t) => Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text('• $t', style: Theme.of(context).textTheme.bodySmall),
-                )),
+                ].map(
+                  (t) => Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Text(
+                      '• $t',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),

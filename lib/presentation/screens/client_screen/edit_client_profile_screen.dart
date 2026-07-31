@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../config/constants.dart';
+import '../../../data/services/authenticated_http_client.dart';
 
 // 유연한 키 대응
 T? pickFirstNonNull<T>(Map src, List<String> keys) {
@@ -81,8 +82,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
   void initState() {
     super.initState();
     () async {
-      final prefs = await SharedPreferences.getInstance();
-      _authHeaderToken = prefs.getString('authToken');
+      _authHeaderToken = await AuthenticatedHttpClient.accessToken();
       if (mounted) setState(() {});
     }();
     _loadProfile();
@@ -123,10 +123,8 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
     }
 
     try {
-      final token = prefs.getString('authToken') ?? '';
-      final resp = await http.get(
+      final resp = await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/client/profile?id=$clientId'),
-        headers: token.isNotEmpty ? {'Authorization': 'Bearer $token'} : {},
       );
 
       if (resp.statusCode == 200) {
@@ -303,49 +301,46 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
     setState(() => _saving = true);
 
     try {
-      final prefs = await SharedPreferences.getInstance();
       final uri = Uri.parse('$baseUrl/api/client/upload-logo');
-      final request = http.MultipartRequest('POST', uri);
-
-      final token = prefs.getString('authToken');
-      if (token != null && token.isNotEmpty) {
+      final streamed = await AuthenticatedHttpClient.sendMultipart((
+        token,
+      ) async {
+        final request = http.MultipartRequest('POST', uri);
         request.headers['Authorization'] = 'Bearer $token';
-      }
+        request.fields['phone'] = phone;
+        request.fields['manager_name'] = managerName;
+        request.fields['company_name'] = companyName;
+        request.fields['email'] = email;
+        request.fields['description'] = description;
 
-      request.fields['phone'] = phone;
-      request.fields['manager_name'] = managerName;
-      request.fields['company_name'] = companyName;
-      request.fields['email'] = email;
-      request.fields['description'] = description;
+        if (selectedLogoImage != null) {
+          request.files.add(
+            await http.MultipartFile.fromPath(
+              'logo',
+              selectedLogoImage!.path,
+              contentType: MediaType('image', 'jpeg'),
+            ),
+          );
+        }
 
-      if (selectedLogoImage != null) {
-        request.files.add(
-          await http.MultipartFile.fromPath(
-            'logo',
-            selectedLogoImage!.path,
-            contentType: MediaType('image', 'jpeg'),
-          ),
-        );
-      }
+        if (selectedCertificateFile != null &&
+            selectedCertificateFile!.path != null) {
+          final ext = (selectedCertificateFile!.extension ?? '').toLowerCase();
+          final isPdf = ext == 'pdf';
+          final mime =
+              isPdf ? 'application/pdf' : 'image/${ext.isEmpty ? 'jpeg' : ext}';
 
-      if (selectedCertificateFile != null &&
-          selectedCertificateFile!.path != null) {
-        final ext = (selectedCertificateFile!.extension ?? '').toLowerCase();
-        final isPdf = ext == 'pdf';
-        final mime =
-            isPdf ? 'application/pdf' : 'image/${ext.isEmpty ? 'jpeg' : ext}';
-
-        request.files.add(
-          http.MultipartFile.fromBytes(
-            'certificate',
-            File(selectedCertificateFile!.path!).readAsBytesSync(),
-            filename: selectedCertificateFile!.name,
-            contentType: MediaType.parse(mime),
-          ),
-        );
-      }
-
-      final streamed = await request.send();
+          request.files.add(
+            http.MultipartFile.fromBytes(
+              'certificate',
+              File(selectedCertificateFile!.path!).readAsBytesSync(),
+              filename: selectedCertificateFile!.name,
+              contentType: MediaType.parse(mime),
+            ),
+          );
+        }
+        return request;
+      });
       final body = await streamed.stream.bytesToString();
 
       if (!mounted) return;

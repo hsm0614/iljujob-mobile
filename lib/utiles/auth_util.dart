@@ -11,14 +11,12 @@ Future<String?> _getTokenCompat() async {
 
   // ✅ 읽을 때 자동 마이그레이션(accessToken에 통일 저장)
   await prefs.setString('accessToken', t);
+  await prefs.setString('authToken', t);
   return t;
 }
 
 Future<Map<String, String>> authHeaders() async {
   final t = await _getTokenCompat();
   if (t == null) throw Exception('NOT_AUTHENTICATED');
-  return {
-    'Authorization': 'Bearer $t',
-    'Content-Type': 'application/json',
-  };
+  return {'Authorization': 'Bearer $t', 'Content-Type': 'application/json'};
 }

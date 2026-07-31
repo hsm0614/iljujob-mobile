@@ -13,6 +13,7 @@ import 'package:uuid/uuid.dart';
 
 import '../../config/constants.dart';
 import '../../data/services/ai_api.dart';
+import '../../data/services/authenticated_http_client.dart';
 import '../../data/services/work_confirmation_service.dart';
 import 'chat_room_helpers.dart';
 
@@ -235,20 +236,6 @@ class ChatRoomController extends ChangeNotifier {
   // Auth 헬퍼
   // ─────────────────────────────────────────────
 
-  Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    final t = prefs.getString('authToken');
-    return (t == null || t.trim().isEmpty) ? null : t;
-  }
-
-  Future<Map<String, String>> _authHeaders({bool json = false}) async {
-    final token = await _getToken();
-    return {
-      if (json) 'Content-Type': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    };
-  }
-
   // ─────────────────────────────────────────────
   // 메시지 정규화 / 업서트
   // ─────────────────────────────────────────────
@@ -350,7 +337,7 @@ class ChatRoomController extends ChangeNotifier {
     if (_disposed) return;
     final prefs = await SharedPreferences.getInstance();
     final userPhone = prefs.getString('userPhone') ?? '';
-    final token = prefs.getString('authToken') ?? '';
+    final token = await AuthenticatedHttpClient.accessToken();
     final localUserType = prefs.getString('userType') ?? 'worker';
 
     socket?.clearListeners();
@@ -400,13 +387,9 @@ class ChatRoomController extends ChangeNotifier {
     socket!.on('receive_message', (data) async {
       if (_disposed) return;
       try {
-        await http.post(
+        await AuthenticatedHttpClient.postJson(
           Uri.parse('$baseUrl/api/chat/mark-read'),
-          headers: {
-            'Authorization': 'Bearer ${prefs.getString('authToken') ?? ''}',
-            'Content-Type': 'application/json',
-          },
-          body: jsonEncode({'roomId': chatRoomId, 'reader': localUserType}),
+          body: {'roomId': chatRoomId, 'reader': localUserType},
         );
       } catch (_) {}
       if (_disposed) return;
@@ -445,7 +428,7 @@ class ChatRoomController extends ChangeNotifier {
       '$baseUrl/api/chat/messages?roomId=$chatRoomId&reader=$userType',
     );
     try {
-      final resp = await http.get(url, headers: await _authHeaders());
+      final resp = await AuthenticatedHttpClient.get(url);
       if (_disposed) return;
 
       if (resp.statusCode != 200) {
@@ -585,14 +568,9 @@ class ChatRoomController extends ChangeNotifier {
 
   Future<void> fetchChatRoomDetail() async {
     if (_disposed) return;
-    final token = await _getToken();
     try {
-      final resp = await http.get(
+      final resp = await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/chat/detail/$chatRoomId'),
-        headers: {
-          if (token != null && token.isNotEmpty)
-            'Authorization': 'Bearer $token',
-        },
       );
       if (_disposed) return;
       if (resp.statusCode != 200) return;
@@ -627,9 +605,10 @@ class ChatRoomController extends ChangeNotifier {
       // 상대편 도달 가능성: 내가 worker면 client 값을, client면 worker 값을 본다.
       final notify = decoded['notify'] is Map ? decoded['notify'] as Map : null;
       if (notify != null) {
-        peerReachable = userType == 'worker'
-            ? asBool(notify['clientReachable'])
-            : asBool(notify['workerReachable']);
+        peerReachable =
+            userType == 'worker'
+                ? asBool(notify['clientReachable'])
+                : asBool(notify['workerReachable']);
       }
 
       Map<String, dynamic> ji = {};
@@ -687,9 +666,8 @@ class ChatRoomController extends ChangeNotifier {
     if (jobId == null) return;
 
     try {
-      final resp = await http.get(
+      final resp = await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/job/$jobId'),
-        headers: await _authHeaders(),
       );
       if (_disposed) return;
       if (resp.statusCode == 200) {
@@ -739,9 +717,8 @@ class ChatRoomController extends ChangeNotifier {
   Future<void> confirmHire() async {
     if (_disposed) return;
     try {
-      final resp = await http.post(
+      final resp = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/chat/confirm/$chatRoomId'),
-        headers: await _authHeaders(),
       );
       if (_disposed) return;
       if (resp.statusCode == 200) {
@@ -819,10 +796,9 @@ class ChatRoomController extends ChangeNotifier {
       return;
     }
     try {
-      final resp = await http.post(
+      final resp = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/chat/applications/complete'),
-        headers: await _authHeaders(json: true),
-        body: jsonEncode({'roomId': chatRoomId}),
+        body: {'roomId': chatRoomId},
       );
       if (_disposed) return;
       if (resp.statusCode == 200) {
@@ -887,12 +863,6 @@ class ChatRoomController extends ChangeNotifier {
 
   Future<bool> confirmStartWork() async {
     if (_disposed) return false;
-    final token = await _getToken();
-    if (token == null || token.isEmpty) {
-      onShowSnackbar?.call('로그인 정보가 없습니다.');
-      return false;
-    }
-
     final src = jobSource;
     final jobId = int.tryParse(
       (src['job_id'] ?? src['jobId'] ?? src['id'])?.toString() ?? '',
@@ -919,10 +889,9 @@ class ChatRoomController extends ChangeNotifier {
         if (applicationId != null) 'applicationId': applicationId,
         if (startAt != null) 'startAt': startAt,
       };
-      final resp = await http.post(
+      final resp = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/chat/confirm-work'),
-        headers: await _authHeaders(json: true),
-        body: jsonEncode(body),
+        body: body,
       );
       if (_disposed) return false;
       if (resp.statusCode == 200 || resp.statusCode == 409) {
@@ -958,13 +927,9 @@ class ChatRoomController extends ChangeNotifier {
 
   Future<void> fetchWorkState() async {
     if (_disposed) return;
-    final token = await _getToken();
-    if (token == null || token.isEmpty) return;
-
     try {
-      final resp = await http.get(
+      final resp = await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/chat/work-session-state?roomId=$chatRoomId'),
-        headers: {'Authorization': 'Bearer $token'},
       );
       if (_disposed) return;
       if (resp.statusCode != 200) return;
@@ -1011,10 +976,9 @@ class ChatRoomController extends ChangeNotifier {
     workLoading = true;
     _notify();
     try {
-      final resp = await http.post(
+      final resp = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/chat/cancel-work'),
-        headers: await _authHeaders(json: true),
-        body: jsonEncode({'roomId': chatRoomId}),
+        body: {'roomId': chatRoomId},
       );
       if (_disposed) return;
       if (resp.statusCode == 200) {
@@ -1051,9 +1015,8 @@ class ChatRoomController extends ChangeNotifier {
     if (jobId == null) return;
 
     try {
-      final resp = await http.get(
+      final resp = await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/attendance/checkin-status?jobId=$jobId'),
-        headers: await _authHeaders(),
       );
       if (_disposed) return;
       if (resp.statusCode != 200) return;
@@ -1176,15 +1139,9 @@ class ChatRoomController extends ChangeNotifier {
         return;
       }
 
-      final resp = await http.post(
+      final resp = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/attendance/checkin'),
-        headers: await _authHeaders(json: true),
-        body: jsonEncode({
-          'jobId': jobId,
-          'lat': myLat,
-          'lng': myLng,
-          'accuracy_m': myAcc,
-        }),
+        body: {'jobId': jobId, 'lat': myLat, 'lng': myLng, 'accuracy_m': myAcc},
       );
       if (_disposed) return;
 
@@ -1253,18 +1210,16 @@ class ChatRoomController extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     if (_disposed) return;
     final workerId = prefs.getInt('userId');
-    final token = prefs.getString('authToken') ?? '';
 
-    if (workerId == null || token.isEmpty) {
+    if (workerId == null) {
       onShowSnackbar?.call('로그인 정보가 없습니다. 다시 로그인해주세요.');
       return;
     }
 
     try {
-      final resp = await http.post(
+      final resp = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/applications/cancel'),
-        headers: await _authHeaders(json: true),
-        body: jsonEncode({'jobId': jobId, 'workerId': workerId}),
+        body: {'jobId': jobId, 'workerId': workerId},
       );
       if (_disposed) return;
 
@@ -1309,22 +1264,15 @@ class ChatRoomController extends ChangeNotifier {
     final jobId = int.tryParse(
       (src['job_id'] ?? src['jobId'] ?? src['id'])?.toString() ?? '',
     );
-    final token = await _getToken();
-    if (token == null || token.isEmpty) {
-      onShowSnackbar?.call('로그인이 필요해요.');
-      throw Exception('authToken missing');
-    }
-
-    final resp = await http.post(
+    final resp = await AuthenticatedHttpClient.postJson(
       Uri.parse('$baseUrl/api/chat/evaluate'),
-      headers: await _authHeaders(json: true),
-      body: jsonEncode({
+      body: {
         'targetId': targetId,
         'targetType': targetType,
         'isGood': isGood,
         'chatRoomId': chatRoomId,
         'jobId': jobId,
-      }),
+      },
     );
     if (_disposed) return;
 
@@ -1346,21 +1294,23 @@ class ChatRoomController extends ChangeNotifier {
 
   Future<void> sendImage(File imageFile) async {
     if (_disposed) return;
-    final token = await _getToken() ?? '';
     final sender = userType == 'worker' ? 'worker' : 'client';
 
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('$baseUrl/api/chat/upload-image'),
-    );
-    request.headers['Authorization'] = 'Bearer $token';
-    request.fields['roomId'] = chatRoomId.toString();
-    request.fields['sender'] = sender;
-    request.files.add(
-      await http.MultipartFile.fromPath('image', imageFile.path),
-    );
-
-    final streamedResp = await request.send();
+    final streamedResp = await AuthenticatedHttpClient.sendMultipart((
+      token,
+    ) async {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/api/chat/upload-image'),
+      );
+      request.headers['Authorization'] = 'Bearer $token';
+      request.fields['roomId'] = chatRoomId.toString();
+      request.fields['sender'] = sender;
+      request.files.add(
+        await http.MultipartFile.fromPath('image', imageFile.path),
+      );
+      return request;
+    });
     final resp = await http.Response.fromStream(streamedResp);
     if (_disposed) return;
 

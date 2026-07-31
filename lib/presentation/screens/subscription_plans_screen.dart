@@ -2,11 +2,9 @@
 //
 // 알바일주 구독 플랜 선택 화면 (라이트/스탠다드/프로)
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
 import 'package:intl/intl.dart';
@@ -14,58 +12,97 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../config/app_theme.dart';
 import '../../config/constants.dart';
+import '../../data/services/authenticated_http_client.dart';
 import '../../data/services/client_tracking_service.dart';
 import 'potrone_screen.dart';
 
 // ── IAP 상품 ID ──────────────────────────────────────
-const _kIosLite     = 'kr.co.iljujob.sub.lite';
+const _kIosLite = 'kr.co.iljujob.sub.lite';
 const _kIosStandard = 'kr.co.iljujob.sub.standard';
-const _kIosPro      = 'kr.co.iljujob.sub.pro';
-const _kAndLite     = 'sub-lite';
+const _kIosPro = 'kr.co.iljujob.sub.pro';
+const _kAndLite = 'sub-lite';
 const _kAndStandard = 'sub-standard';
-const _kAndPro      = 'sub-pro';
+const _kAndPro = 'sub-pro';
 
 // ── 플랜 정의 ─────────────────────────────────────────
 class _Plan {
   final String key;
   final String name;
-  final int    price;
-  final int    instantCredits;     // -1=무제한, N=횟수
-  final bool   unlimitedInstant;
-  final bool   unlimitedUrgent;
-  final bool   attendanceCare;
-  final bool   priorityCs;
-  final bool   recommended;
+  final int price;
+  final int instantCredits; // -1=무제한, N=횟수
+  final bool unlimitedInstant;
+  final bool unlimitedUrgent;
+  final bool attendanceCare;
+  final bool priorityCs;
+  final bool recommended;
   final String iosId;
   final String androidId;
   const _Plan({
-    required this.key, required this.name, required this.price,
+    required this.key,
+    required this.name,
+    required this.price,
     required this.instantCredits,
     this.unlimitedInstant = false,
-    this.unlimitedUrgent  = false,
-    required this.attendanceCare, required this.priorityCs,
-    required this.iosId, required this.androidId,
+    this.unlimitedUrgent = false,
+    required this.attendanceCare,
+    required this.priorityCs,
+    required this.iosId,
+    required this.androidId,
     this.recommended = false,
   });
 }
 
 const _plans = [
-  _Plan(key: 'lite',     name: '라이트',   price: 9900,  instantCredits: 3,  unlimitedInstant: false, unlimitedUrgent: false, attendanceCare: false, priorityCs: false, iosId: _kIosLite,     androidId: _kAndLite),
-  _Plan(key: 'standard', name: '스탠다드', price: 19900, instantCredits: -1, unlimitedInstant: true,  unlimitedUrgent: false, attendanceCare: true,  priorityCs: false, iosId: _kIosStandard, androidId: _kAndStandard, recommended: true),
-  _Plan(key: 'pro',      name: '프로',     price: 39900, instantCredits: -1, unlimitedInstant: true,  unlimitedUrgent: true,  attendanceCare: true,  priorityCs: true,  iosId: _kIosPro,      androidId: _kAndPro),
+  _Plan(
+    key: 'lite',
+    name: '라이트',
+    price: 9900,
+    instantCredits: 3,
+    unlimitedInstant: false,
+    unlimitedUrgent: false,
+    attendanceCare: false,
+    priorityCs: false,
+    iosId: _kIosLite,
+    androidId: _kAndLite,
+  ),
+  _Plan(
+    key: 'standard',
+    name: '스탠다드',
+    price: 19900,
+    instantCredits: -1,
+    unlimitedInstant: true,
+    unlimitedUrgent: false,
+    attendanceCare: true,
+    priorityCs: false,
+    iosId: _kIosStandard,
+    androidId: _kAndStandard,
+    recommended: true,
+  ),
+  _Plan(
+    key: 'pro',
+    name: '프로',
+    price: 39900,
+    instantCredits: -1,
+    unlimitedInstant: true,
+    unlimitedUrgent: true,
+    attendanceCare: true,
+    priorityCs: true,
+    iosId: _kIosPro,
+    androidId: _kAndPro,
+  ),
 ];
 
 class SubscriptionPlansScreen extends StatefulWidget {
   const SubscriptionPlansScreen({super.key});
   @override
-  State<SubscriptionPlansScreen> createState() => _SubscriptionPlansScreenState();
+  State<SubscriptionPlansScreen> createState() =>
+      _SubscriptionPlansScreenState();
 }
 
 class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
-  String  _selectedPlan = 'standard';
-  bool    _processing   = false;
-  int?    _userId;
-  String? _authToken;
+  String _selectedPlan = 'standard';
+  bool _processing = false;
+  int? _userId;
   String? _companyName;
   String? _companyPhone;
 
@@ -92,10 +129,9 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   Future<void> _loadUser() async {
     final p = await SharedPreferences.getInstance();
     setState(() {
-      _userId      = p.getInt('userId');
-      _authToken   = p.getString('authToken');
+      _userId = p.getInt('userId');
       _companyName = p.getString('companyName');
-      _companyPhone= p.getString('companyPhone');
+      _companyPhone = p.getString('companyPhone');
     });
   }
 
@@ -104,7 +140,10 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   Future<void> _purchase() async {
     if (_processing) return;
     final plan = _plan;
-    ClientTrackingService.instance.track('subscription_plan_tap', properties: {'plan': plan.key});
+    ClientTrackingService.instance.track(
+      'subscription_plan_tap',
+      properties: {'plan': plan.key},
+    );
 
     if (Platform.isIOS) {
       await _purchaseIos(plan);
@@ -130,7 +169,9 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       if (resp.productDetails.isEmpty) {
         throw Exception('상품 정보를 불러올 수 없습니다. (${plan.iosId})');
       }
-      await _iap.buyNonConsumable(purchaseParam: PurchaseParam(productDetails: resp.productDetails.first));
+      await _iap.buyNonConsumable(
+        purchaseParam: PurchaseParam(productDetails: resp.productDetails.first),
+      );
     } catch (e) {
       setState(() => _processing = false);
       _showError(e.toString());
@@ -141,7 +182,8 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
     for (final p in purchases) {
       if (_handledIds.contains(p.purchaseID)) continue;
 
-      if (p.status == PurchaseStatus.purchased || p.status == PurchaseStatus.restored) {
+      if (p.status == PurchaseStatus.purchased ||
+          p.status == PurchaseStatus.restored) {
         _handledIds.add(p.purchaseID ?? '');
         await _activateServer(p.verificationData.serverVerificationData);
         await _iap.completePurchase(p);
@@ -157,18 +199,19 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
 
   // ── Android: Portone ─────────────────────────────────
   Future<void> _purchaseAndroid(_Plan plan) async {
-    final name  = _companyName  ?? '알바일주';
+    final name = _companyName ?? '알바일주';
     final phone = _companyPhone ?? '';
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => PortonePaymentScreen(
-          count: 1,
-          companyName: name,
-          companyPhone: phone,
-          amount: plan.price,
-          productName: '알바일주 ${plan.name} 구독',
-        ),
+        builder:
+            (_) => PortonePaymentScreen(
+              count: 1,
+              companyName: name,
+              companyPhone: phone,
+              amount: plan.price,
+              productName: '알바일주 ${plan.name} 구독',
+            ),
       ),
     );
     if (result is Map && result['imp_uid'] != null) {
@@ -179,21 +222,16 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   Future<void> _activateServer(String? token) async {
     if (token == null) return;
     try {
-      final resp = await http.post(
+      final resp = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/subscription/activate'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${_authToken ?? ''}',
-        },
-        body: jsonEncode({
-          'clientId': _userId,
-          'plan': _selectedPlan,
-          'impUid': token,
-        }),
+        body: {'clientId': _userId, 'plan': _selectedPlan, 'impUid': token},
       );
       if (!mounted) return;
       if (resp.statusCode == 200) {
-        ClientTrackingService.instance.track('subscription_success', properties: {'plan': _selectedPlan});
+        ClientTrackingService.instance.track(
+          'subscription_success',
+          properties: {'plan': _selectedPlan},
+        );
         _showSuccess();
       } else {
         _showError('구독 활성화에 실패했어요. 고객센터에 문의해주세요.');
@@ -209,17 +247,29 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
     if (!mounted) return;
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('오류', style: TextStyle(fontWeight: FontWeight.w800)),
-        content: Text(msg),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('확인', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700)),
+      builder:
+          (_) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: const Text(
+              '오류',
+              style: TextStyle(fontWeight: FontWeight.w800),
+            ),
+            content: Text(msg),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  '확인',
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
@@ -242,17 +292,27 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 64, height: 64,
+                width: 64,
+                height: 64,
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.10),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.workspace_premium_rounded, size: 32, color: AppColors.primary),
+                child: const Icon(
+                  Icons.workspace_premium_rounded,
+                  size: 32,
+                  color: AppColors.primary,
+                ),
               ),
               const SizedBox(height: 16),
               const Text(
                 '구독이 시작되었어요!',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, fontFamily: 'Jalnan2TTF', color: Color(0xFF111827)),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Jalnan2TTF',
+                  color: Color(0xFF111827),
+                ),
               ),
               const SizedBox(height: 8),
               Text(
@@ -260,7 +320,11 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                     ? '${_plan.name} 플랜이 활성화되었습니다.\n즉시게시를 무제한으로 사용할 수 있어요.'
                     : '${_plan.name} 플랜 즉시게시 이용권 3개가\n계정에 지급되었습니다.',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                  height: 1.5,
+                ),
               ),
               const SizedBox(height: 28),
               SizedBox(
@@ -275,9 +339,14 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                   ),
-                  child: const Text('확인', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  child: const Text(
+                    '확인',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
                 ),
               ),
             ],
@@ -316,21 +385,31 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                     // 헤더
                     const Text(
                       '알바일주 구독으로\n더 빠르게 채용하세요',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, height: 1.3, color: Color(0xFF111827)),
+                      style: TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        height: 1.3,
+                        color: Color(0xFF111827),
+                      ),
                     ),
                     const SizedBox(height: 6),
                     const Text(
                       '미사용 크레딧은 1개월 이월됩니다',
-                      style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 24),
 
                     // 플랜 카드들
-                    ..._plans.map((plan) => _PlanCard(
-                      plan: plan,
-                      selected: plan.key == _selectedPlan,
-                      onTap: () => setState(() => _selectedPlan = plan.key),
-                    )),
+                    ..._plans.map(
+                      (plan) => _PlanCard(
+                        plan: plan,
+                        selected: plan.key == _selectedPlan,
+                        onTap: () => setState(() => _selectedPlan = plan.key),
+                      ),
+                    ),
 
                     const SizedBox(height: 20),
 
@@ -365,7 +444,11 @@ class _PlanCard extends StatelessWidget {
   final _Plan plan;
   final bool selected;
   final VoidCallback onTap;
-  const _PlanCard({required this.plan, required this.selected, required this.onTap});
+  const _PlanCard({
+    required this.plan,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -383,7 +466,16 @@ class _PlanCard extends StatelessWidget {
             color: selected ? color : AppColors.border,
             width: selected ? 2 : 1,
           ),
-          boxShadow: selected ? [BoxShadow(color: color.withValues(alpha: 0.15), blurRadius: 12, offset: const Offset(0, 4))] : [],
+          boxShadow:
+              selected
+                  ? [
+                    BoxShadow(
+                      color: color.withValues(alpha: 0.15),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                  : [],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -392,22 +484,53 @@ class _PlanCard extends StatelessWidget {
               children: [
                 // 선택 라디오
                 Container(
-                  width: 20, height: 20,
+                  width: 20,
+                  height: 20,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: selected ? color : Colors.transparent,
-                    border: Border.all(color: selected ? color : const Color(0xFFD1D5DB), width: 1.5),
+                    border: Border.all(
+                      color: selected ? color : const Color(0xFFD1D5DB),
+                      width: 1.5,
+                    ),
                   ),
-                  child: selected ? const Icon(Icons.circle, size: 10, color: Colors.white) : null,
+                  child:
+                      selected
+                          ? const Icon(
+                            Icons.circle,
+                            size: 10,
+                            color: Colors.white,
+                          )
+                          : null,
                 ),
                 const SizedBox(width: 10),
-                Text(plan.name, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: selected ? color : const Color(0xFF111827))),
+                Text(
+                  plan.name,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: selected ? color : const Color(0xFF111827),
+                  ),
+                ),
                 if (plan.recommended) ...[
                   const SizedBox(width: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(99)),
-                    child: const Text('추천', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: Colors.white)),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(99),
+                    ),
+                    child: const Text(
+                      '추천',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ],
                 const Spacer(),
@@ -416,11 +539,19 @@ class _PlanCard extends StatelessWidget {
                     children: [
                       TextSpan(
                         text: NumberFormat('#,###').format(plan.price),
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: selected ? color : const Color(0xFF111827)),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: selected ? color : const Color(0xFF111827),
+                        ),
                       ),
                       const TextSpan(
                         text: '원/월',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ],
                   ),
@@ -434,17 +565,40 @@ class _PlanCard extends StatelessWidget {
               children: [
                 _Chip(
                   icon: Icons.flash_on_rounded,
-                  label: plan.unlimitedInstant ? '즉시게시 무제한' : '즉시게시 ${plan.instantCredits}회',
+                  label:
+                      plan.unlimitedInstant
+                          ? '즉시게시 무제한'
+                          : '즉시게시 ${plan.instantCredits}회',
                   color: AppColors.primary,
                 ),
                 if (plan.unlimitedUrgent)
-                  _Chip(icon: Icons.bolt_rounded, label: '긴급호출 무제한', color: const Color(0xFFEF4444)),
-                _Chip(icon: Icons.auto_awesome_rounded, label: 'AI 기능 무제한', color: const Color(0xFF6C5CE7)),
-                _Chip(icon: Icons.workspace_premium_rounded, label: '구독 배지', color: const Color(0xFFFF9500)),
+                  _Chip(
+                    icon: Icons.bolt_rounded,
+                    label: '긴급호출 무제한',
+                    color: const Color(0xFFEF4444),
+                  ),
+                _Chip(
+                  icon: Icons.auto_awesome_rounded,
+                  label: 'AI 기능 무제한',
+                  color: const Color(0xFF6C5CE7),
+                ),
+                _Chip(
+                  icon: Icons.workspace_premium_rounded,
+                  label: '구독 배지',
+                  color: const Color(0xFFFF9500),
+                ),
                 if (plan.attendanceCare)
-                  _Chip(icon: Icons.verified_user_rounded, label: '출근 안심', color: const Color(0xFF22C55E)),
+                  _Chip(
+                    icon: Icons.verified_user_rounded,
+                    label: '출근 안심',
+                    color: const Color(0xFF22C55E),
+                  ),
                 if (plan.priorityCs)
-                  _Chip(icon: Icons.headset_mic_rounded, label: '우선 CS', color: const Color(0xFF6366F1)),
+                  _Chip(
+                    icon: Icons.headset_mic_rounded,
+                    label: '우선 CS',
+                    color: const Color(0xFF6366F1),
+                  ),
               ],
             ),
           ],
@@ -454,7 +608,7 @@ class _PlanCard extends StatelessWidget {
   }
 
   Color _planColor(String key) {
-    if (key == 'pro')      return const Color(0xFFFF9500);
+    if (key == 'pro') return const Color(0xFFFF9500);
     if (key == 'standard') return AppColors.primary;
     return const Color(0xFF6B7280);
   }
@@ -468,20 +622,27 @@ class _Chip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(99),
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(99),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 4),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: color,
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 12, color: color),
-            const SizedBox(width: 4),
-            Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
-          ],
-        ),
-      );
+      ],
+    ),
+  );
 }
 
 // ── 비교표 ────────────────────────────────────────────────
@@ -490,14 +651,14 @@ class _CompareTable extends StatelessWidget {
   const _CompareTable({required this.selectedPlan});
 
   static const _rows = [
-    ['즉시게시',    '3회/월',  '무제한', '무제한'],
-    ['긴급호출',    '단건 구매', '단건 구매', '무제한'],
-    ['AI 기능',    '포함', '포함', '포함'],
-    ['맞춤 인재',   '포함', '포함', '포함'],
+    ['즉시게시', '3회/월', '무제한', '무제한'],
+    ['긴급호출', '단건 구매', '단건 구매', '무제한'],
+    ['AI 기능', '포함', '포함', '포함'],
+    ['맞춤 인재', '포함', '포함', '포함'],
     ['임금 리포트', '포함', '포함', '포함'],
-    ['출근 안심',   '-',   '포함', '포함'],
-    ['구독 배지',   '포함', '포함', '포함'],
-    ['우선 CS',    '-',   '-',   '포함'],
+    ['출근 안심', '-', '포함', '포함'],
+    ['구독 배지', '포함', '포함', '포함'],
+    ['우선 CS', '-', '-', '포함'],
   ];
 
   @override
@@ -515,14 +676,49 @@ class _CompareTable extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: const BoxDecoration(
               color: AppColors.bgMuted,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg - 1)),
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(AppRadius.lg - 1),
+              ),
             ),
             child: const Row(
               children: [
                 Expanded(flex: 2, child: SizedBox()),
-                Expanded(child: Center(child: Text('라이트', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textSecondary)))),
-                Expanded(child: Center(child: Text('스탠다드', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary)))),
-                Expanded(child: Center(child: Text('프로', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: Color(0xFFFF9500))))),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      '라이트',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      '스탠다드',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: Center(
+                    child: Text(
+                      '프로',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFFFF9500),
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -531,9 +727,15 @@ class _CompareTable extends StatelessWidget {
             final row = e.value;
             return Container(
               decoration: BoxDecoration(
-                border: i < _rows.length - 1
-                    ? const Border(bottom: BorderSide(color: AppColors.border, width: 0.5))
-                    : null,
+                border:
+                    i < _rows.length - 1
+                        ? const Border(
+                          bottom: BorderSide(
+                            color: AppColors.border,
+                            width: 0.5,
+                          ),
+                        )
+                        : null,
               ),
               padding: const EdgeInsets.symmetric(vertical: 10),
               child: Row(
@@ -542,7 +744,14 @@ class _CompareTable extends StatelessWidget {
                     flex: 2,
                     child: Padding(
                       padding: const EdgeInsets.only(left: 14),
-                      child: Text(row[0], style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF374151))),
+                      child: Text(
+                        row[0],
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF374151),
+                        ),
+                      ),
                     ),
                   ),
                   ...List.generate(3, (col) {
@@ -550,9 +759,23 @@ class _CompareTable extends StatelessWidget {
                     final isNone = val == '-';
                     return Expanded(
                       child: Center(
-                        child: isNone
-                            ? const Text('-', style: TextStyle(fontSize: 12, color: AppColors.textDisabled))
-                            : Text(val, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF111827))),
+                        child:
+                            isNone
+                                ? const Text(
+                                  '-',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textDisabled,
+                                  ),
+                                )
+                                : Text(
+                                  val,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: Color(0xFF111827),
+                                  ),
+                                ),
                       ),
                     );
                   }),
@@ -571,7 +794,11 @@ class _Notice extends StatelessWidget {
   const _Notice();
   @override
   Widget build(BuildContext context) {
-    const style = TextStyle(fontSize: 11, color: AppColors.textSecondary, height: 1.6);
+    const style = TextStyle(
+      fontSize: 11,
+      color: AppColors.textSecondary,
+      height: 1.6,
+    );
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -581,7 +808,14 @@ class _Notice extends StatelessWidget {
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('유의사항', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+          Text(
+            '유의사항',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSecondary,
+            ),
+          ),
           SizedBox(height: 6),
           Text('• 구독은 30일 단위로 자동 갱신됩니다.', style: style),
           Text('• 라이트 플랜의 미사용 즉시게시 이용권은 1개월 이월됩니다.', style: style),
@@ -598,13 +832,22 @@ class _BottomCta extends StatelessWidget {
   final _Plan plan;
   final bool processing;
   final VoidCallback onPurchase;
-  const _BottomCta({required this.plan, required this.processing, required this.onPurchase});
+  const _BottomCta({
+    required this.plan,
+    required this.processing,
+    required this.onPurchase,
+  });
 
   @override
   Widget build(BuildContext context) {
     final color = _planColor(plan.key);
     return Container(
-      padding: EdgeInsets.fromLTRB(16, 12, 16, MediaQuery.of(context).padding.bottom + 12),
+      padding: EdgeInsets.fromLTRB(
+        16,
+        12,
+        16,
+        MediaQuery.of(context).padding.bottom + 12,
+      ),
       decoration: const BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: AppColors.border)),
@@ -618,22 +861,35 @@ class _BottomCta extends StatelessWidget {
             foregroundColor: Colors.white,
             disabledBackgroundColor: AppColors.bgMuted,
             elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
             padding: const EdgeInsets.symmetric(vertical: 14),
           ),
-          child: processing
-              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-              : Text(
-                  '${plan.name} 구독 시작 (${NumberFormat('#,###').format(plan.price)}원/월)',
-                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
-                ),
+          child:
+              processing
+                  ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                  : Text(
+                    '${plan.name} 구독 시작 (${NumberFormat('#,###').format(plan.price)}원/월)',
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
         ),
       ),
     );
   }
 
   Color _planColor(String key) {
-    if (key == 'pro')      return const Color(0xFFFF9500);
+    if (key == 'pro') return const Color(0xFFFF9500);
     if (key == 'standard') return AppColors.primary;
     return const Color(0xFF6B7280);
   }

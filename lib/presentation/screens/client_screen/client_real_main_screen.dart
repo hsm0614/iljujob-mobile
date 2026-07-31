@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
 import '../../../data/models/job.dart';
+import '../../../data/services/authenticated_http_client.dart';
 import '../../../data/services/job_service.dart';
 import '../worker_screen/job_detail_screen.dart';
 import '../../../data/services/screen_analytics_service.dart';
@@ -70,13 +71,6 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
   Future<void> _init() async {
     final inst = identityHashCode(this);
     final t0 = DateTime.now();
-
-    // 컨텍스트(로그인/토큰) 상태 확인
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final uid = prefs.getInt('userId');
-      final hasToken = (prefs.getString('authToken') ?? '').isNotEmpty;
-    } catch (e) {}
 
     final fLoc = _prepareLocation()
         .then(
@@ -260,14 +254,12 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
 
   Future<void> _fetchRemainingPass() async {
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken') ?? '';
     final clientId = prefs.getInt('userId');
     if (clientId == null) return;
 
     try {
-      final response = await http.get(
+      final response = await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/pass/remain?clientId=$clientId'),
-        headers: {'Authorization': 'Bearer $token'},
       );
 
       if (response.statusCode == 200) {

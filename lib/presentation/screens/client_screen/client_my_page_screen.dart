@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import '../../../config/constants.dart'; // baseUrl
 import '../../../data/services/ai_api.dart'; // fetchMySubscription()
+import '../../../data/services/authenticated_http_client.dart';
 import '../../../data/services/screen_analytics_service.dart';
 
 class ClientMyPageScreen extends StatefulWidget {
@@ -45,11 +46,6 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
       return '${p.substring(0, 3)}-${p.substring(3, 6)}-${p.substring(6)}';
     }
     return phone;
-  }
-
-  Future<String> _token() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('authToken') ?? '';
   }
 
   Future<String> _phoneRaw() async {
@@ -120,20 +116,16 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
       logoUrl = cachedLogo;
     });
 
-    final token = prefs.getString('authToken') ?? '';
     final clientId = prefs.getInt('clientId') ?? prefs.getInt('userId');
-    if (token.isEmpty && clientId == null) return;
+    if (clientId == null) return;
 
     try {
       final uri = Uri.parse(
         '$baseUrl/api/client/profile',
-      ).replace(queryParameters: clientId != null ? {'id': '$clientId'} : null);
-      final res = await http
-          .get(
-            uri,
-            headers: token.isNotEmpty ? {'Authorization': 'Bearer $token'} : {},
-          )
-          .timeout(const Duration(seconds: 8));
+      ).replace(queryParameters: {'id': '$clientId'});
+      final res = await AuthenticatedHttpClient.get(
+        uri,
+      ).timeout(const Duration(seconds: 8));
 
       if (res.statusCode != 200) return;
       final raw = jsonDecode(res.body);
@@ -261,9 +253,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
       return;
     }
 
-    final token = await _token();
-    final headers = <String, String>{};
-    if (token.isNotEmpty) headers['Authorization'] = 'Bearer $token';
+    final headers = await AuthenticatedHttpClient.authJsonHeaders();
 
     // 서버가 query로 phone을 요구하는 경우 대응
     final uriQuery = Uri.parse(
@@ -275,9 +265,9 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
 
     try {
       // 1) query 방식 먼저
-      var res = await http
-          .delete(uriQuery, headers: headers)
-          .timeout(const Duration(seconds: 8));
+      var res = await AuthenticatedHttpClient.delete(
+        uriQuery,
+      ).timeout(const Duration(seconds: 8));
 
       // 2) 안 되면 body 방식
       if (res.statusCode < 200 || res.statusCode >= 300) {

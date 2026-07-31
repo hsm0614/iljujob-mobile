@@ -4,9 +4,9 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/job.dart';
 import 'package:iljujob/config/constants.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
+import 'authenticated_http_client.dart';
 
 // ════════════════════════════════════════════════════════
 //  날짜/시간 유틸 (static 클래스 외부에 top-level로 정의)
@@ -114,21 +114,15 @@ class JobService {
       'Cache-Control': 'no-cache',
       'Pragma': 'no-cache',
     };
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken');
-      if (token != null && token.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $token';
-      }
-    } catch (_) {}
 
     if (kDebugMode) debugPrint('[API/jobs] GET $uri');
     final sw = Stopwatch()..start();
     http.Response response;
     try {
-      response = await http
-          .get(uri, headers: headers)
-          .timeout(const Duration(seconds: 8));
+      response = await AuthenticatedHttpClient.get(
+        uri,
+        headers: headers,
+      ).timeout(const Duration(seconds: 8));
     } on TimeoutException {
       throw Exception('공고 불러오기 타임아웃');
     } catch (e) {
@@ -235,78 +229,80 @@ class JobService {
   }) async {
     final uri = Uri.parse('$baseUrl/api/job/post_job');
 
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken') ?? '';
-    if (token.isEmpty) {
-      throw Exception('로그인이 필요합니다(토큰 없음)');
+    Future<http.MultipartRequest> buildRequest(String token) async {
+      if (token.isEmpty) {
+        throw const AuthSessionExpiredException();
+      }
+      final request =
+          http.MultipartRequest('POST', uri)
+            ..headers['Authorization'] = 'Bearer $token'
+            ..fields.addAll({
+              'title': title.trim(),
+              'category': category.trim(),
+              if (categoryMajor != null && categoryMajor.isNotEmpty)
+                'category_major': categoryMajor.trim(),
+              if (categorySub != null && categorySub.isNotEmpty)
+                'category_sub': categorySub.trim(),
+              'location': location.trim(),
+              'location_city': locationCity.trim(),
+              'start_date': startDate, // ✅ 이미 YYYY-MM-DD 로컬 기준
+              'end_date': endDate, // ✅ 이미 YYYY-MM-DD 로컬 기준
+              'start_time': startTime,
+              'end_time': endTime,
+              'pay_type': payType,
+              'pay': pay.toString(),
+              'description': description.trim(),
+              'client_id': clientId.toString(),
+              'is_same_day_pay': isSameDayPay ? '1' : '0',
+              if (weekdays != null && weekdays.isNotEmpty) 'weekdays': weekdays,
+              if (lat != null) 'lat': lat.toString(),
+              if (lng != null) 'lng': lng.toString(),
+              'is_agency': isAgency ? '1' : '0',
+              // 장기 공고 전용
+              'job_type': jobType,
+              if (jobType == 'long') 'is_always_open': isAlwaysOpen ? '1' : '0',
+              if (jobType == 'long' && workDaysPerWeek != null)
+                'work_days_per_week': workDaysPerWeek.toString(),
+              if (jobType == 'long' &&
+                  requiredCerts != null &&
+                  requiredCerts.isNotEmpty)
+                'required_certs': requiredCerts,
+              if (jobType == 'long' && welfare != null && welfare.isNotEmpty)
+                'welfare': welfare,
+              if (agencyPhone != null && agencyPhone.trim().isNotEmpty)
+                'agency_phone': agencyPhone.trim(),
+              if (agencyEmail != null && agencyEmail.trim().isNotEmpty)
+                'agency_email': agencyEmail.trim(),
+              if (agencyNote != null && agencyNote.trim().isNotEmpty)
+                'agency_note': agencyNote.trim(),
+              'external_apply_enabled':
+                  (isPaid && externalApplyEnabled) ? '1' : '0',
+              if (isPaid && externalApplyEnabled && externalApplyUrl != null)
+                'external_apply_url': externalApplyUrl.trim(),
+              if (isPaid && externalApplyEnabled)
+                'external_apply_label': externalApplyLabel.trim(),
+            });
+
+      // ✅ FIX: 예약 공개 시각은 UTC ISO 문자열로 전달 (서버에서 파싱)
+      if (publishAt != null && publishAt.isNotEmpty) {
+        request.fields['publish_at'] = publishAt;
+        if (kDebugMode) debugPrint('[JobService] 예약 공개 시각(UTC): $publishAt');
+      }
+
+      request.fields['is_paid'] = isPaid ? '1' : '0';
+      if (passType != null && passType.isNotEmpty) {
+        request.fields['pass_type'] = passType;
+      }
+
+      for (final f in images) {
+        request.files.add(
+          await http.MultipartFile.fromPath('images[]', f.path),
+        );
+      }
+      return request;
     }
 
-    final request =
-        http.MultipartRequest('POST', uri)
-          ..headers['Authorization'] = 'Bearer $token'
-          ..fields.addAll({
-            'title': title.trim(),
-            'category': category.trim(),
-            if (categoryMajor != null && categoryMajor.isNotEmpty)
-              'category_major': categoryMajor.trim(),
-            if (categorySub != null && categorySub.isNotEmpty)
-              'category_sub': categorySub.trim(),
-            'location': location.trim(),
-            'location_city': locationCity.trim(),
-            'start_date': startDate, // ✅ 이미 YYYY-MM-DD 로컬 기준
-            'end_date': endDate, // ✅ 이미 YYYY-MM-DD 로컬 기준
-            'start_time': startTime,
-            'end_time': endTime,
-            'pay_type': payType,
-            'pay': pay.toString(),
-            'description': description.trim(),
-            'client_id': clientId.toString(),
-            'is_same_day_pay': isSameDayPay ? '1' : '0',
-            if (weekdays != null && weekdays.isNotEmpty) 'weekdays': weekdays,
-            if (lat != null) 'lat': lat.toString(),
-            if (lng != null) 'lng': lng.toString(),
-            'is_agency': isAgency ? '1' : '0',
-            // 장기 공고 전용
-            'job_type': jobType,
-            if (jobType == 'long') 'is_always_open': isAlwaysOpen ? '1' : '0',
-            if (jobType == 'long' && workDaysPerWeek != null)
-              'work_days_per_week': workDaysPerWeek.toString(),
-            if (jobType == 'long' &&
-                requiredCerts != null &&
-                requiredCerts.isNotEmpty)
-              'required_certs': requiredCerts,
-            if (jobType == 'long' && welfare != null && welfare.isNotEmpty)
-              'welfare': welfare,
-            if (agencyPhone != null && agencyPhone.trim().isNotEmpty)
-              'agency_phone': agencyPhone.trim(),
-            if (agencyEmail != null && agencyEmail.trim().isNotEmpty)
-              'agency_email': agencyEmail.trim(),
-            if (agencyNote != null && agencyNote.trim().isNotEmpty)
-              'agency_note': agencyNote.trim(),
-            'external_apply_enabled':
-                (isPaid && externalApplyEnabled) ? '1' : '0',
-            if (isPaid && externalApplyEnabled && externalApplyUrl != null)
-              'external_apply_url': externalApplyUrl.trim(),
-            if (isPaid && externalApplyEnabled)
-              'external_apply_label': externalApplyLabel.trim(),
-          });
-
-    // ✅ FIX: 예약 공개 시각은 UTC ISO 문자열로 전달 (서버에서 파싱)
-    if (publishAt != null && publishAt.isNotEmpty) {
-      request.fields['publish_at'] = publishAt;
-      if (kDebugMode) debugPrint('[JobService] 예약 공개 시각(UTC): $publishAt');
-    }
-
-    request.fields['is_paid'] = isPaid ? '1' : '0';
-    if (passType != null && passType.isNotEmpty) {
-      request.fields['pass_type'] = passType;
-    }
-
-    for (final f in images) {
-      request.files.add(await http.MultipartFile.fromPath('images[]', f.path));
-    }
-
-    final resp = await request.send();
+    final resp = await AuthenticatedHttpClient.sendMultipart(buildRequest);
     final body = await resp.stream.bytesToString();
 
     if (resp.statusCode != 200) {
@@ -337,11 +333,7 @@ class JobService {
   // ─── 4. 공고 수정 (단순 JSON) ─────────────────────────
   static Future<void> updateJob(String id, Map<String, dynamic> data) async {
     final uri = Uri.parse('$baseUrl/api/job/$id');
-    final response = await http.put(
-      uri,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(data),
-    );
+    final response = await AuthenticatedHttpClient.putJson(uri, body: data);
 
     if (response.statusCode != 200) {
       throw Exception('공고 수정 실패');
@@ -350,14 +342,8 @@ class JobService {
 
   // ─── 5. 공고 삭제 ─────────────────────────────────────
   static Future<void> deleteJob(String jobId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken');
-
     final uri = Uri.parse('$baseUrl/api/job/delete/$jobId');
-    final response = await http.delete(
-      uri,
-      headers: {'Authorization': 'Bearer $token'},
-    );
+    final response = await AuthenticatedHttpClient.delete(uri);
 
     if (response.statusCode != 200) {
       throw Exception('공고 삭제 실패');
@@ -372,17 +358,6 @@ class JobService {
     List<String> deleteImageUrls = const [],
   }) async {
     final uri = Uri.parse('$baseUrl/api/job/update/$id');
-
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken') ?? '';
-    if (token.isEmpty) {
-      throw Exception('로그인이 필요합니다(토큰 없음)');
-    }
-
-    final req =
-        http.MultipartRequest('POST', uri)
-          ..headers['Authorization'] = 'Bearer $token'
-          ..headers['Accept'] = 'application/json';
 
     // ── 데이터 정규화 ────────────────────────────────────
     final normalized = Map<String, dynamic>.from(data);
@@ -456,21 +431,32 @@ class JobService {
       (k, v) => v == null || (v is String && v.trim().isEmpty),
     );
 
-    // 필드 채우기
-    normalized.forEach((k, v) => req.fields[k] = v.toString());
+    Future<http.MultipartRequest> buildRequest(String token) async {
+      if (token.isEmpty) {
+        throw const AuthSessionExpiredException();
+      }
+      final req =
+          http.MultipartRequest('POST', uri)
+            ..headers['Authorization'] = 'Bearer $token'
+            ..headers['Accept'] = 'application/json';
 
-    // 삭제할 기존 이미지 URL
-    for (final url in deleteImageUrls) {
-      if (url.trim().isEmpty) continue;
-      req.fields['delete_image_urls[]'] = url;
+      // 필드 채우기
+      normalized.forEach((k, v) => req.fields[k] = v.toString());
+
+      // 삭제할 기존 이미지 URL
+      for (final url in deleteImageUrls) {
+        if (url.trim().isEmpty) continue;
+        req.fields['delete_image_urls[]'] = url;
+      }
+
+      // 새 이미지
+      for (final f in newImages) {
+        req.files.add(await http.MultipartFile.fromPath('images[]', f.path));
+      }
+      return req;
     }
 
-    // 새 이미지
-    for (final f in newImages) {
-      req.files.add(await http.MultipartFile.fromPath('images[]', f.path));
-    }
-
-    final streamed = await req.send();
+    final streamed = await AuthenticatedHttpClient.sendMultipart(buildRequest);
     final resBody = await streamed.stream.bytesToString();
 
     if (streamed.statusCode != 200) {
@@ -517,14 +503,8 @@ class JobService {
 
   // ─── 9. 즉시 게시 ─────────────────────────────────────
   static Future<void> publishNow(int jobId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken') ?? '';
-
     final uri = Uri.parse('$baseUrl/api/job/$jobId/publish-now');
-    final resp = await http.post(
-      uri,
-      headers: {'Authorization': 'Bearer $token'},
-    );
+    final resp = await AuthenticatedHttpClient.postJson(uri);
 
     if (resp.statusCode == 402) {
       throw const NoPassException();

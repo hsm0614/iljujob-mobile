@@ -13,6 +13,7 @@ import 'package:iljujob/config/constants.dart';
 import '../../../data/models/job.dart';
 import '../../../data/models/banner_ad.dart';
 import '../../../data/services/job_service.dart';
+import '../../../data/services/authenticated_http_client.dart';
 import '../../../data/services/ai_api.dart';
 import 'package:iljujob/widget/recommended_workers_sheet.dart';
 import 'package:iljujob/presentation/screens/worker_screen/labor_consult_screen.dart';
@@ -350,14 +351,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
 
   // ======= Profile =======
   Future<void> _fetchClientProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken');
-    if (token == null || token.isEmpty) return;
-
     try {
-      final response = await http.get(
+      final response = await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/client/profile'),
-        headers: {'Authorization': 'Bearer $token'},
       );
       if (response.statusCode == 200) {
         final raw = jsonDecode(response.body);

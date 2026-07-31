@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:iljujob/config/constants.dart';
+import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/data/services/job_service.dart';
 import 'package:iljujob/utils/pay_display.dart';
 
@@ -126,7 +127,6 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final clientId = prefs.getInt('userId');
-      final token = prefs.getString('authToken') ?? '';
       if (clientId == null) return;
 
       // 무료 잔여
@@ -144,9 +144,8 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
       }
 
       // 이용권 잔여
-      final passRes = await http.get(
+      final passRes = await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/pass/remain?clientId=$clientId'),
-        headers: {if (token.isNotEmpty) 'Authorization': 'Bearer $token'},
       );
       if (passRes.statusCode == 200) {
         final d = jsonDecode(utf8.decode(passRes.bodyBytes));

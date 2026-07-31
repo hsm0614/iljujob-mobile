@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import '../../../config/constants.dart';
+import '../../../data/services/authenticated_http_client.dart';
 
 const kBrandBlue = Color(0xFF3B8AFF);
 
@@ -161,9 +162,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
   }
 
   // ── 온보딩 제출 ───────────────────────────────────────────────
-  Future<void> _submitOnboarding({
-    required String referralCode,
-  }) async {
+  Future<void> _submitOnboarding({required String referralCode}) async {
     final prefs = await SharedPreferences.getInstance();
 
     final clientId = prefs.getInt('userId') ?? prefs.getInt('clientId');
@@ -183,17 +182,9 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
     // 추천인 코드 적용
     if (referralCode.isNotEmpty) {
       try {
-        final res = await http.post(
+        final res = await AuthenticatedHttpClient.postJson(
           Uri.parse('$baseUrl/api/client/apply-referral'),
-          headers: {
-            'Content-Type': 'application/json',
-            if (authToken != null && authToken.isNotEmpty)
-              'Authorization': 'Bearer $authToken',
-          },
-          body: jsonEncode({
-            'clientId': clientId,
-            'referralCode': referralCode,
-          }),
+          body: {'clientId': clientId, 'referralCode': referralCode},
         );
 
         debugPrint('apply-referral status=${res.statusCode}');
@@ -318,16 +309,15 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
     });
 
     try {
-      final res = await http.post(
+      final res = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/client/update-bizinfo'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+        body: {
           'clientId': clientId,
           'bizNumber': biz,
           'companyName': storeName,
           'openDate': null,
           'address': null,
-        }),
+        },
       );
 
       final json = jsonDecode(res.body);

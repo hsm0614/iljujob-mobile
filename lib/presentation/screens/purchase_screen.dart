@@ -5,7 +5,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:iljujob/config/app_theme.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
@@ -13,6 +12,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
 
 import '../../config/constants.dart';
+import '../../data/services/authenticated_http_client.dart';
 import 'package:iljujob/presentation/screens/potrone_screen.dart';
 
 // ── 디자인 토큰 ──
@@ -137,7 +137,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   Future<void> _refreshPassCount() async {
     final prefs = await SharedPreferences.getInstance();
     final clientId = prefs.getInt('userId') ?? 0;
-    final res = await http.get(
+    final res = await AuthenticatedHttpClient.get(
       Uri.parse('$baseUrl/api/pass/remain?clientId=$clientId'),
     );
     if (res.statusCode == 200 && mounted) {
@@ -153,11 +153,8 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
 
   Future<void> _fetchNearbyCount() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken') ?? '';
-      final res = await http.get(
+      final res = await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/direct-message/nearby-count'),
-        headers: {'Authorization': 'Bearer $token'},
       );
       if (res.statusCode == 200 && mounted) {
         final data = jsonDecode(res.body);
@@ -221,18 +218,15 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final clientId = prefs.getInt('userId') ?? 0;
-    final res = await http.post(
+    final res = await AuthenticatedHttpClient.postJson(
       Uri.parse('$baseUrl/api/pass/verify-ios'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-      body: jsonEncode({
+      headers: {'Accept': 'application/json'},
+      body: {
         'clientId': clientId,
         'productId': productId,
         'transactionId': transactionId,
         'jwsTransaction': jwsTransaction,
-      }),
+      },
     );
     if (res.statusCode != 200) {
       String msg = '검증 실패';
@@ -384,16 +378,15 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
     final prefs = await SharedPreferences.getInstance();
     final clientId = prefs.getInt('userId') ?? 0;
     try {
-      final res = await http.post(
+      final res = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/pass/verify'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+        body: {
           'impUid': impUid,
           'clientId': clientId,
           'platform': 'android',
           'count': count,
           'passType': passType,
-        }),
+        },
       );
       Map<String, dynamic> data = {};
       try {
@@ -1003,7 +996,11 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                       color: const Color(0xFFFFEBEB),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.bolt_rounded, size: 16, color: _red),
+                    child: const Icon(
+                      Icons.bolt_rounded,
+                      size: 16,
+                      color: _red,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   const Expanded(
@@ -1021,12 +1018,19 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                         SizedBox(height: 2),
                         Text(
                           '반경 5km 알바생에게 직접 메시지 · 응답 0명이면 100% 환급',
-                          style: TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF6B7280),
+                          ),
                         ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.chevron_right_rounded, size: 18, color: _red),
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18,
+                    color: _red,
+                  ),
                 ],
               ),
             ),
@@ -1641,20 +1645,20 @@ class _MiniChip extends StatelessWidget {
   const _MiniChip(this.label);
   @override
   Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFEBEB),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(
-          label,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: Color(0xFFEF4444),
-          ),
-        ),
-      );
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    decoration: BoxDecoration(
+      color: const Color(0xFFFFEBEB),
+      borderRadius: BorderRadius.circular(6),
+    ),
+    child: Text(
+      label,
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: Color(0xFFEF4444),
+      ),
+    ),
+  );
 }
 
 class _BottomCta extends StatelessWidget {

@@ -19,6 +19,7 @@ import 'package:time_picker_spinner/time_picker_spinner.dart';
 import 'package:iljujob/core/suspension.dart';
 import 'package:iljujob/core/suspension_guard.dart';
 import '../../../data/services/ai_job_description_service.dart';
+import '../../../data/services/authenticated_http_client.dart';
 import 'package:iljujob/presentation/screens/client_screen/wage_report_screen.dart';
 import 'package:iljujob/presentation/screens/purchase_screen.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -374,18 +375,9 @@ class _PostJobFormState extends State<PostJobForm>
 
   Future<void> _checkProStatus() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken');
-      if (token == null || token.isEmpty) {
-        setState(() => _subscriptionPlan = null);
-        return;
-      }
-      final res = await http
-          .get(
-            Uri.parse('$baseUrl/api/subscription/status'),
-            headers: {'Authorization': 'Bearer $token'},
-          )
-          .timeout(const Duration(seconds: 10));
+      final res = await AuthenticatedHttpClient.get(
+        Uri.parse('$baseUrl/api/subscription/status'),
+      ).timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
         final d = jsonDecode(res.body);
         final plan = d['plan']?.toString();
@@ -404,22 +396,16 @@ class _PostJobFormState extends State<PostJobForm>
       setState(() => _passCountLoading = true);
       final prefs = await SharedPreferences.getInstance();
       final clientId = prefs.getInt('userId');
-      final token = prefs.getString('authToken') ?? '';
       if (clientId == null || clientId <= 0) {
         setState(() => _passCountLoading = false);
         return;
       }
-      final res = await http
-          .get(
-            Uri.parse(
-              '$baseUrl/api/pass/remain',
-            ).replace(queryParameters: {'clientId': '$clientId'}),
-            headers: {
-              'Accept': 'application/json',
-              if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-            },
-          )
-          .timeout(const Duration(seconds: 8));
+      final res = await AuthenticatedHttpClient.get(
+        Uri.parse(
+          '$baseUrl/api/pass/remain',
+        ).replace(queryParameters: {'clientId': '$clientId'}),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 8));
       if (!mounted) return;
       if (res.statusCode == 200) {
         final d = jsonDecode(utf8.decode(res.bodyBytes));
@@ -525,11 +511,8 @@ class _PostJobFormState extends State<PostJobForm>
   }
 
   Future<void> _fetchClientProfile(int clientId) async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken');
-    final res = await http.get(
+    final res = await AuthenticatedHttpClient.get(
       Uri.parse('$baseUrl/api/client/profile?id=$clientId'),
-      headers: {'Authorization': 'Bearer $token'},
     );
     if (res.statusCode == 200) {
       final d = json.decode(res.body);

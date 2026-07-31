@@ -3,12 +3,10 @@
 // 채팅방 화면 — build() 전담.
 // 모든 상태/로직은 ChatRoomController에 있음.
 
-import 'dart:convert';
 import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:iljujob/config/constants.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:image_picker/image_picker.dart';
@@ -17,6 +15,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:iljujob/data/models/job.dart';
+import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/presentation/widgets/albailju_common.dart';
 import 'package:iljujob/presentation/screens/worker_screen/job_detail_screen.dart';
@@ -1147,16 +1146,9 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
     if (logId == null || _urgentCallBusy) return;
     setState(() => _urgentCallBusy = true);
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token =
-          prefs.getString('authToken') ?? prefs.getString('accessToken') ?? '';
-      final resp = await http.patch(
+      final resp = await AuthenticatedHttpClient.patchJson(
         Uri.parse('$baseUrl/api/direct-message/$logId/respond'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({'status': status}),
+        body: {'status': status},
       );
       if (resp.statusCode == 200) {
         setState(() => _urgentCallStatus = status);
@@ -1658,7 +1650,8 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
               ),
 
               // 상대가 알림을 못 받는 상태면 안내 — 답장해도 상대가 못 볼 수 있음
-              if (ctrl.peerReachable == false) _buildPeerUnreachableBanner(ctrl),
+              if (ctrl.peerReachable == false)
+                _buildPeerUnreachableBanner(ctrl),
 
               // 긴급호출 수락/거절 배너 (알바생 전용)
               _buildUrgentCallBanner(ctrl),
@@ -1761,8 +1754,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                       minLines: 1,
                                       maxLines: 5,
                                       keyboardType: TextInputType.multiline,
-                                      textInputAction:
-                                          TextInputAction.newline,
+                                      textInputAction: TextInputAction.newline,
                                       onTapOutside:
                                           (_) =>
                                               FocusScope.of(context).unfocus(),

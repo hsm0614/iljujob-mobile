@@ -13,6 +13,7 @@ import 'client_home_screen.dart';
 import 'client_my_page_screen.dart';
 import '../../chat/chat_list_screen.dart';
 import '../../../config/constants.dart';
+import '../../../data/services/authenticated_http_client.dart';
 import 'worker_map_screen.dart';
 import '../../../data/services/ai_api.dart';
 import 'applicant_management_screen.dart';
@@ -402,17 +403,13 @@ class _ClientMainScreenState extends State<ClientMainScreen>
     if (userPhone.isEmpty) return;
 
     final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken') ?? '';
     final userId = prefs.getInt('userId')?.toString() ?? '';
     final url = Uri.parse(
       '$baseUrl/api/chat/unread-count?userId=$userId&userType=$userType',
     );
 
     try {
-      final response = await http.get(
-        url,
-        headers: {'Authorization': 'Bearer $token'},
-      );
+      final response = await AuthenticatedHttpClient.get(url);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

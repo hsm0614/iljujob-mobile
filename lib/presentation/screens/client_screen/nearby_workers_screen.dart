@@ -3,11 +3,10 @@
 // 긴급 호출: 사장님이 근무지 3km 내 구직자를 보고 직접 메시지 발송
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
+import '../../../data/services/authenticated_http_client.dart';
 import '../worker_screen/worker_profile_screen.dart';
 
 class NearbyWorkersScreen extends StatefulWidget {
@@ -40,22 +39,14 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
     _fetchWorkers();
   }
 
-  Future<String> _token() async {
-    final p = await SharedPreferences.getInstance();
-    return p.getString('authToken') ?? '';
-  }
-
   Future<void> _fetchWorkers() async {
     setState(() => _loading = true);
     try {
-      final resp = await http
-          .get(
-            Uri.parse(
-              '$baseUrl/api/direct-message/nearby-workers?jobId=${widget.jobId}',
-            ),
-            headers: {'Authorization': 'Bearer ${await _token()}'},
-          )
-          .timeout(const Duration(seconds: 10));
+      final resp = await AuthenticatedHttpClient.get(
+        Uri.parse(
+          '$baseUrl/api/direct-message/nearby-workers?jobId=${widget.jobId}',
+        ),
+      ).timeout(const Duration(seconds: 10));
       if (resp.statusCode == 200) {
         final body = jsonDecode(resp.body);
         setState(() {
@@ -78,18 +69,14 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
     if (messageText == null) return;
     setState(() => _sending = true);
     try {
-      final resp = await http.post(
+      final resp = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/direct-message/send'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ${await _token()}',
-        },
-        body: jsonEncode({
+        body: {
           'jobId': widget.jobId,
           'clientId': widget.clientId,
           'workerIds': _selected.toList(),
           if (messageText.trim().isNotEmpty) 'messageText': messageText.trim(),
-        }),
+        },
       );
       if (resp.statusCode == 200) {
         final result = jsonDecode(resp.body);

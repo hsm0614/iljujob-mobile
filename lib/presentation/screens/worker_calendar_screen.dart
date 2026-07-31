@@ -5,10 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import '../../config/constants.dart';
 import '../../data/models/job.dart';
+import '../../data/services/authenticated_http_client.dart';
 import '../../data/services/screen_analytics_service.dart';
 import '../widgets/albailju_common.dart';
 
@@ -434,8 +433,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
   // ──────────────────────────────────────────
   Future<String> _token() async {
     if (_cachedToken != null) return _cachedToken!;
-    final prefs = await SharedPreferences.getInstance();
-    _cachedToken = prefs.getString('authToken') ?? '';
+    _cachedToken = await AuthenticatedHttpClient.accessToken();
     return _cachedToken!;
   }
 
@@ -467,7 +465,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         return;
       }
 
-      final result = await _fetchMonthRaw(day, token: token);
+      final result = await _fetchMonthRaw(day);
       if (!mounted || generation != _fetchGeneration) return;
 
       _safeSetState(() {
@@ -482,19 +480,13 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     }
   }
 
-  Future<_FetchMonthResult> _fetchMonthRaw(
-    DateTime day, {
-    required String token,
-  }) async {
+  Future<_FetchMonthResult> _fetchMonthRaw(DateTime day) async {
     final uri = Uri.parse('$baseUrl/api/worker-sessions/month').replace(
       queryParameters: {'year': '${day.year}', 'month': '${day.month}'},
     );
 
     try {
-      final resp = await http.get(
-        uri,
-        headers: {'Authorization': 'Bearer $token'},
-      );
+      final resp = await AuthenticatedHttpClient.get(uri);
       if (resp.statusCode != 200) {
         return _FetchMonthResult(
           ok: false,
@@ -533,17 +525,9 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     required dynamic id,
     required Map<String, dynamic> body,
   }) async {
-    final token = await _token();
     final uri = Uri.parse('$baseUrl/api/worker-sessions/$source/$id');
     try {
-      final resp = await http.patch(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(body),
-      );
+      final resp = await AuthenticatedHttpClient.patchJson(uri, body: body);
       return _ApiResult(
         ok: resp.statusCode == 200,
         statusCode: resp.statusCode,
@@ -558,13 +542,9 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     required String source,
     required dynamic id,
   }) async {
-    final token = await _token();
     final uri = Uri.parse('$baseUrl/api/worker-sessions/$source/$id');
     try {
-      final resp = await http.delete(
-        uri,
-        headers: {'Authorization': 'Bearer $token'},
-      );
+      final resp = await AuthenticatedHttpClient.delete(uri);
       return _ApiResult(
         ok: resp.statusCode == 200 || resp.statusCode == 204,
         statusCode: resp.statusCode,
@@ -579,16 +559,9 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     required String source,
     required dynamic id,
   }) async {
-    final token = await _token();
     final uri = Uri.parse('$baseUrl/api/worker-sessions/$source/$id/complete');
     try {
-      final resp = await http.patch(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-      );
+      final resp = await AuthenticatedHttpClient.patchJson(uri);
       return _ApiResult(
         ok: resp.statusCode == 200 || resp.statusCode == 204,
         statusCode: resp.statusCode,
@@ -600,17 +573,9 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
   }
 
   Future<bool> _createManualSession(Map<String, dynamic> body) async {
-    final token = await _token();
     final uri = Uri.parse('$baseUrl/api/worker-sessions/manual');
     try {
-      final resp = await http.post(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
-        },
-        body: jsonEncode(body),
-      );
+      final resp = await AuthenticatedHttpClient.postJson(uri, body: body);
       return resp.statusCode == 200 || resp.statusCode == 201;
     } catch (_) {
       return false;
@@ -1508,10 +1473,8 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     if (jobId == null) return;
 
     try {
-      final token = await _token();
-      final resp = await http.get(
+      final resp = await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/job/$jobId'),
-        headers: {'Authorization': 'Bearer $token'},
       );
       if (!mounted) return;
       if (resp.statusCode == 200) {
