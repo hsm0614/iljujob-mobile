@@ -1,20 +1,17 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:iljujob/config/constants.dart';
+import 'package:iljujob/data/services/authenticated_http_client.dart';
 
 const kBrand = Color(0xFF3B8AFF);
 
 class AppleProfileSetupScreen extends StatefulWidget {
   final int workerId;
 
-  const AppleProfileSetupScreen({
-    super.key,
-    required this.workerId,
-  });
+  const AppleProfileSetupScreen({super.key, required this.workerId});
 
   @override
   State<AppleProfileSetupScreen> createState() =>
@@ -38,14 +35,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
 
   bool _loading = false;
 
-  final List<String> strengthOptions = [
-    '포장',
-    '상하차',
-    '물류',
-    'F&B',
-    '사무보조',
-    '기타',
-  ];
+  final List<String> strengthOptions = ['포장', '상하차', '물류', 'F&B', '사무보조', '기타'];
 
   final List<String> traitOptions = [
     '꼼꼼해요',
@@ -68,9 +58,9 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     if (_gender == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('성별을 선택해주세요.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('성별을 선택해주세요.')));
       return;
     }
 
@@ -80,17 +70,12 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
 
     if (birthYear == null || birthYear < 1960 || birthYear > nowYear) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('올바른 출생년도를 입력해주세요. (1960 ~ $nowYear)'),
-        ),
+        SnackBar(content: Text('올바른 출생년도를 입력해주세요. (1960 ~ $nowYear)')),
       );
       return;
     }
 
     setState(() => _loading = true);
-
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('authToken') ?? '';
 
     // 전화번호 정제
     final rawPhone = _phoneCtrl.text.trim();
@@ -100,13 +85,10 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
     }
 
     try {
-      final res = await http.post(
+      final prefs = await SharedPreferences.getInstance();
+      final res = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/worker/update-apple-profile'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
+        body: {
           'workerId': widget.workerId,
           'name': _nameCtrl.text.trim(),
           'phone': cleanPhone,
@@ -116,7 +98,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
           'gender': _gender,
           // 🔥 출생년도도 같이 전송 (서버에서 birth_year로 매핑하면 됨)
           'birthYear': birthYear,
-        }),
+        },
       );
 
       final data = jsonDecode(res.body);
@@ -140,9 +122,9 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('요청 중 오류가 발생했습니다: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('요청 중 오류가 발생했습니다: $e')));
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -180,10 +162,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(18),
                         gradient: LinearGradient(
-                          colors: [
-                            kBrand.withOpacity(0.15),
-                            Colors.white,
-                          ],
+                          colors: [kBrand.withOpacity(0.15), Colors.white],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -204,8 +183,8 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                     TextFormField(
                       controller: _nameCtrl,
                       decoration: _inputDecoration('이름', '홍길동'),
-                      validator: (v) =>
-                          v == null || v.isEmpty ? '이름을 입력해주세요' : null,
+                      validator:
+                          (v) => v == null || v.isEmpty ? '이름을 입력해주세요' : null,
                     ),
                     const SizedBox(height: 16),
 
@@ -214,8 +193,8 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                       controller: _phoneCtrl,
                       keyboardType: TextInputType.phone,
                       decoration: _inputDecoration('전화번호', '01012345678'),
-                      validator: (v) =>
-                          v == null || v.isEmpty ? '전화번호를 입력해주세요' : null,
+                      validator:
+                          (v) => v == null || v.isEmpty ? '전화번호를 입력해주세요' : null,
                     ),
                     const SizedBox(height: 16),
 
@@ -231,9 +210,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                         }
                         final year = int.tryParse(v);
                         final nowYear = DateTime.now().year;
-                        if (year == null ||
-                            year < 1960 ||
-                            year > nowYear) {
+                        if (year == null || year < 1960 || year > nowYear) {
                           return '올바른 출생년도를 입력해주세요. (1960 ~ $nowYear)';
                         }
                         return null;
@@ -257,7 +234,10 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                           selectedColor: kBrand.withOpacity(0.2),
                           backgroundColor: const Color(0xFFE5E8EB),
                           labelStyle: TextStyle(
-                            color: _gender == '남성' ? kBrand : const Color(0xFF191F28),
+                            color:
+                                _gender == '남성'
+                                    ? kBrand
+                                    : const Color(0xFF191F28),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -272,7 +252,10 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                           selectedColor: kBrand.withOpacity(0.2),
                           backgroundColor: const Color(0xFFE5E8EB),
                           labelStyle: TextStyle(
-                            color: _gender == '여성' ? kBrand : const Color(0xFF191F28),
+                            color:
+                                _gender == '여성'
+                                    ? kBrand
+                                    : const Color(0xFF191F28),
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -285,30 +268,34 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                     Wrap(
                       spacing: 10,
                       runSpacing: 10,
-                      children: strengthOptions.map((item) {
-                        final isSelected = _strengths.contains(item);
-                        return ChoiceChip(
-                          label: Text(item),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            setState(() {
-                              if (selected && !_strengths.contains(item)) {
-                                if (_strengths.length < 2) {
-                                  _strengths.add(item);
-                                }
-                              } else {
-                                _strengths.remove(item);
-                              }
-                            });
-                          },
-                          selectedColor: kBrand.withOpacity(0.2),
-                          backgroundColor: const Color(0xFFE5E8EB),
-                          labelStyle: TextStyle(
-                            color: isSelected ? kBrand : const Color(0xFF191F28),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        );
-                      }).toList(),
+                      children:
+                          strengthOptions.map((item) {
+                            final isSelected = _strengths.contains(item);
+                            return ChoiceChip(
+                              label: Text(item),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                setState(() {
+                                  if (selected && !_strengths.contains(item)) {
+                                    if (_strengths.length < 2) {
+                                      _strengths.add(item);
+                                    }
+                                  } else {
+                                    _strengths.remove(item);
+                                  }
+                                });
+                              },
+                              selectedColor: kBrand.withOpacity(0.2),
+                              backgroundColor: const Color(0xFFE5E8EB),
+                              labelStyle: TextStyle(
+                                color:
+                                    isSelected
+                                        ? kBrand
+                                        : const Color(0xFF191F28),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            );
+                          }).toList(),
                     ),
                     const SizedBox(height: 28),
 
@@ -317,33 +304,36 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                     Wrap(
                       spacing: 10,
                       runSpacing: 10,
-                      children: traitOptions.map((item) {
-                        final isSelected = _traits.contains(item);
-                        return FilterChip(
-                          label: Text(item),
-                          selected: isSelected,
-                          onSelected: (selected) {
-                            setState(() {
-                              if (selected) {
-                                if (!_traits.contains(item)) {
-                                  _traits.add(item);
-                                }
-                              } else {
-                                _traits.remove(item);
-                              }
-                            });
-                          },
-                          selectedColor:
-                              const Color(0xFF10B981).withOpacity(0.25),
-                          backgroundColor: const Color(0xFFE5E8EB),
-                          labelStyle: TextStyle(
-                            color: isSelected
-                                ? const Color(0xFF047857)
-                                : const Color(0xFF191F28),
-                            fontWeight: FontWeight.w600,
-                          ),
-                        );
-                      }).toList(),
+                      children:
+                          traitOptions.map((item) {
+                            final isSelected = _traits.contains(item);
+                            return FilterChip(
+                              label: Text(item),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                setState(() {
+                                  if (selected) {
+                                    if (!_traits.contains(item)) {
+                                      _traits.add(item);
+                                    }
+                                  } else {
+                                    _traits.remove(item);
+                                  }
+                                });
+                              },
+                              selectedColor: const Color(
+                                0xFF10B981,
+                              ).withOpacity(0.25),
+                              backgroundColor: const Color(0xFFE5E8EB),
+                              labelStyle: TextStyle(
+                                color:
+                                    isSelected
+                                        ? const Color(0xFF047857)
+                                        : const Color(0xFF191F28),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            );
+                          }).toList(),
                     ),
                     const SizedBox(height: 40),
 
@@ -400,18 +390,14 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
       floatingLabelBehavior: FloatingLabelBehavior.auto,
       filled: true,
       fillColor: Colors.white,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(
-          color: kBrand.withOpacity(0.8),
-          width: 1.5,
-        ),
+        borderSide: BorderSide(color: kBrand.withOpacity(0.8), width: 1.5),
       ),
     );
   }
@@ -421,10 +407,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(
         text,
-        style: const TextStyle(
-          fontSize: 15,
-          fontWeight: FontWeight.w800,
-        ),
+        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
       ),
     );
   }

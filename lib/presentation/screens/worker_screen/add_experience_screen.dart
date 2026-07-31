@@ -1,10 +1,11 @@
 // 📄 add_experience_screen.dart (드롭인 교체)
 
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
+
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../config/constants.dart';
+import '../../../data/services/authenticated_http_client.dart';
 import 'package:flutter/services.dart';
 
 class AddExperienceScreen extends StatefulWidget {
@@ -237,28 +238,26 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
 
       final res =
           _isEdit
-              ? await http.put(
+              ? await AuthenticatedHttpClient.putJson(
                 Uri.parse(
                   '$baseUrl/api/worker/experience/${widget.initial!['id']}',
                 ),
-                headers: {'Content-Type': 'application/json'},
-                body: jsonEncode({
+                body: {
                   'place': placeController.text.trim(),
                   'description': descriptionController.text.trim(),
                   'year': selectedYear,
                   'duration': selectedDuration,
-                }),
+                },
               )
-              : await http.post(
+              : await AuthenticatedHttpClient.postJson(
                 Uri.parse('$baseUrl/api/worker/add-experience'),
-                headers: {'Content-Type': 'application/json'},
-                body: jsonEncode({
+                body: {
                   'workerId': workerId,
                   'place': placeController.text.trim(),
                   'description': descriptionController.text.trim(),
                   'year': selectedYear,
                   'duration': selectedDuration,
-                }),
+                },
               );
 
       if (res.statusCode == 200) {

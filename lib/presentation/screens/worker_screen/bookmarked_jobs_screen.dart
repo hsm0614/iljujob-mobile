@@ -2,16 +2,18 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../data/models/job.dart';
+import '../../../data/services/authenticated_http_client.dart';
 import '../../../data/services/job_service.dart';
 import 'job_detail_screen.dart';
 import 'package:iljujob/utils/pay_display.dart';
-const kBrand  = Color(0xFF3B8AFF);
+
+const kBrand = Color(0xFF3B8AFF);
 const kBorder = Color(0xFFE2E7EF);
-const kBg     = Color(0xFFF7F9FC);
+const kBg = Color(0xFFF7F9FC);
+
 /// ------------------------------------------------------------
 /// BookmarkedJobsScreen (refactor)
 /// - 안정적인 로딩/에러/빈 상태 처리
@@ -38,7 +40,10 @@ class _BookmarkedJobsScreenState extends State<BookmarkedJobsScreen> {
   String _searchQuery = '';
 
   // 환경에 맞게 교체하세요.
-  static const String baseUrl = String.fromEnvironment('BASE_URL', defaultValue: 'https://albailju.co.kr');
+  static const String baseUrl = String.fromEnvironment(
+    'BASE_URL',
+    defaultValue: 'https://albailju.co.kr',
+  );
 
   @override
   void initState() {
@@ -83,13 +88,18 @@ class _BookmarkedJobsScreenState extends State<BookmarkedJobsScreen> {
       } catch (e) {
         // 2) Fallback: 서버에서 직접 호출 (/api/bookmark/list?userId=.. 가 공고 배열 반환)
         final uri = Uri.parse('$baseUrl/api/bookmark/list?userId=$userId');
-        final resp = await http.get(uri);
+        final resp = await AuthenticatedHttpClient.get(uri);
         if (resp.statusCode != 200) {
-          throw Exception('bookmark list http ${resp.statusCode}: ${resp.body}');
+          throw Exception(
+            'bookmark list http ${resp.statusCode}: ${resp.body}',
+          );
         }
         final raw = jsonDecode(resp.body);
         if (raw is! List) throw Exception('unexpected payload: ${resp.body}');
-        jobs = raw.map<Job>((e) => Job.fromJson(e as Map<String, dynamic>)).toList();
+        jobs =
+            raw
+                .map<Job>((e) => Job.fromJson(e as Map<String, dynamic>))
+                .toList();
       }
 
       if (!mounted) return;
@@ -112,18 +122,16 @@ class _BookmarkedJobsScreenState extends State<BookmarkedJobsScreen> {
     try {
       final userId = await _getUserId();
       if (userId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('로그인 정보가 없습니다.')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('로그인 정보가 없습니다.')));
         return;
       }
 
-      final body = jsonEncode({'userId': userId, 'jobId': job.id});
       final uri = Uri.parse('$baseUrl/api/bookmark/remove');
-      final resp = await http.post(
+      final resp = await AuthenticatedHttpClient.postJson(
         uri,
-        headers: {'Content-Type': 'application/json'},
-        body: body,
+        body: {'userId': userId, 'jobId': job.id},
       );
 
       if (resp.statusCode == 200) {
@@ -131,10 +139,14 @@ class _BookmarkedJobsScreenState extends State<BookmarkedJobsScreen> {
         try {
           final j = jsonDecode(resp.body);
           if (j is Map && j['bookmarks'] is List) {
-            final ids = (j['bookmarks'] as List).map((e) => e.toString()).toSet();
+            final ids =
+                (j['bookmarks'] as List).map((e) => e.toString()).toSet();
             if (!mounted) return;
             setState(() {
-              _bookmarkedJobs = _bookmarkedJobs.where((it) => ids.contains(it.id.toString())).toList();
+              _bookmarkedJobs =
+                  _bookmarkedJobs
+                      .where((it) => ids.contains(it.id.toString()))
+                      .toList();
             });
           } else {
             if (!mounted) return;
@@ -149,18 +161,18 @@ class _BookmarkedJobsScreenState extends State<BookmarkedJobsScreen> {
           });
         }
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('찜 삭제: ${job.title}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('찜 삭제: ${job.title}')));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('삭제 실패: ${resp.statusCode}')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('삭제 실패: ${resp.statusCode}')));
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('삭제 중 오류: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('삭제 중 오류: $e')));
     }
   }
 
@@ -169,7 +181,8 @@ class _BookmarkedJobsScreenState extends State<BookmarkedJobsScreen> {
     final lower = q.toLowerCase();
 
     return _bookmarkedJobs.where((job) {
-      final statusOk = _filterStatus == '전체' ||
+      final statusOk =
+          _filterStatus == '전체' ||
           (_filterStatus == '공고중' && job.status == 'active') ||
           (_filterStatus == '마감' && job.status != 'active');
 
@@ -185,126 +198,146 @@ class _BookmarkedJobsScreenState extends State<BookmarkedJobsScreen> {
     await _loadBookmarkedJobs();
   }
 
-@override
-Widget build(BuildContext context) {
-  return Scaffold(
-    backgroundColor: kBg,
-    appBar: AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      title: const Text('내가 찜한 공고'),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.refresh),
-          onPressed: _loadBookmarkedJobs,
-          tooltip: '새로고침',
-        ),
-      ],
-    ),
-    body: Column(
-      children: [
-        _buildSearchAndFilter(),
-        const Divider(height: 1),
-        Expanded(
-          child: _isLoading
-              ? const _Loading()
-              : _isError
-                  ? _Error(onRetry: _loadBookmarkedJobs)
-                  : RefreshIndicator(
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: kBg,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        title: const Text('내가 찜한 공고'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadBookmarkedJobs,
+            tooltip: '새로고침',
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          _buildSearchAndFilter(),
+          const Divider(height: 1),
+          Expanded(
+            child:
+                _isLoading
+                    ? const _Loading()
+                    : _isError
+                    ? _Error(onRetry: _loadBookmarkedJobs)
+                    : RefreshIndicator(
                       onRefresh: _onRefresh,
-                      child: _filteredJobs.isEmpty
-                          ? const _Empty()
-                          : ListView.separated(
-                              padding: const EdgeInsets.fromLTRB(12, 10, 12, 16),
-                              itemCount: _filteredJobs.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 10),
-                              itemBuilder: (context, index) {
-                                final job = _filteredJobs[index];
-                                return _JobTile(
-                                  job: job,
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => JobDetailScreen(job: job),
-                                      ),
-                                    );
-                                  },
-                                  onDelete: () => _removeBookmark(job),
-                                );
-                              },
-                            ),
+                      child:
+                          _filteredJobs.isEmpty
+                              ? const _Empty()
+                              : ListView.separated(
+                                padding: const EdgeInsets.fromLTRB(
+                                  12,
+                                  10,
+                                  12,
+                                  16,
+                                ),
+                                itemCount: _filteredJobs.length,
+                                separatorBuilder:
+                                    (_, __) => const SizedBox(height: 10),
+                                itemBuilder: (context, index) {
+                                  final job = _filteredJobs[index];
+                                  return _JobTile(
+                                    job: job,
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder:
+                                              (_) => JobDetailScreen(job: job),
+                                        ),
+                                      );
+                                    },
+                                    onDelete: () => _removeBookmark(job),
+                                  );
+                                },
+                              ),
                     ),
-        ),
-      ],
-    ),
-  );
-}
+          ),
+        ],
+      ),
+    );
+  }
 
   Widget _buildSearchAndFilter() {
-  InputDecoration deco(String hint) => InputDecoration(
-        hintText: hint,
-        prefixIcon: const Icon(Icons.search),
-        isDense: true,
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: kBorder),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: kBorder),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: kBrand, width: 1.6),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      );
+    InputDecoration deco(String hint) => InputDecoration(
+      hintText: hint,
+      prefixIcon: const Icon(Icons.search),
+      isDense: true,
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: kBorder),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: kBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: kBrand, width: 1.6),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+    );
 
-  return Padding(
-    padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-    child: Column(
-      children: [
-        TextField(
-          controller: _searchCtrl,
-          onChanged: (val) => _debouncer(() => setState(() => _searchQuery = val)),
-          decoration: deco('제목/지역/분야 검색'),
-        ),
-        const SizedBox(height: 12),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: ['전체', '공고중', '마감'].map((status) {
-              final selected = _filterStatus == status;
-              return FilterChip(
-                label: Text(
-                  status,
-                  style: TextStyle(
-                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                    color: selected ? kBrand : Colors.black87,
-                  ),
-                ),
-                selected: selected,
-                onSelected: (_) => setState(() => _filterStatus = status),
-                showCheckmark: true,
-                checkmarkColor: kBrand,
-                backgroundColor: Colors.white,
-                selectedColor: kBrand.withOpacity(0.12),
-                side: BorderSide(color: selected ? kBrand : kBorder, width: 1.2),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              );
-            }).toList(),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+      child: Column(
+        children: [
+          TextField(
+            controller: _searchCtrl,
+            onChanged:
+                (val) => _debouncer(() => setState(() => _searchQuery = val)),
+            decoration: deco('제목/지역/분야 검색'),
           ),
-        ),
-      ],
-    ),
-  );
-}
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children:
+                  ['전체', '공고중', '마감'].map((status) {
+                    final selected = _filterStatus == status;
+                    return FilterChip(
+                      label: Text(
+                        status,
+                        style: TextStyle(
+                          fontWeight:
+                              selected ? FontWeight.w700 : FontWeight.w500,
+                          color: selected ? kBrand : Colors.black87,
+                        ),
+                      ),
+                      selected: selected,
+                      onSelected: (_) => setState(() => _filterStatus = status),
+                      showCheckmark: true,
+                      checkmarkColor: kBrand,
+                      backgroundColor: Colors.white,
+                      selectedColor: kBrand.withOpacity(0.12),
+                      side: BorderSide(
+                        color: selected ? kBrand : kBorder,
+                        width: 1.2,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                    );
+                  }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _JobTile extends StatelessWidget {
@@ -312,11 +345,7 @@ class _JobTile extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onDelete;
 
-  const _JobTile({
-    required this.job,
-    this.onTap,
-    this.onDelete,
-  });
+  const _JobTile({required this.job, this.onTap, this.onDelete});
 
   @override
   Widget build(BuildContext context) {
@@ -369,7 +398,11 @@ class _JobTile extends StatelessWidget {
                     // 위치
                     Row(
                       children: [
-                        const Icon(Icons.place_outlined, size: 16, color: Colors.black54),
+                        const Icon(
+                          Icons.place_outlined,
+                          size: 16,
+                          color: Colors.black54,
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -386,10 +419,16 @@ class _JobTile extends StatelessWidget {
                     // 날짜
                     Row(
                       children: [
-                        const Icon(Icons.schedule_outlined, size: 16, color: Colors.black54),
+                        const Icon(
+                          Icons.schedule_outlined,
+                          size: 16,
+                          color: Colors.black54,
+                        ),
                         const SizedBox(width: 4),
-                        Text(_formatDateRange(job),
-                            style: const TextStyle(color: Colors.black87)),
+                        Text(
+                          _formatDateRange(job),
+                          style: const TextStyle(color: Colors.black87),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 6),
@@ -399,7 +438,9 @@ class _JobTile extends StatelessWidget {
                       spacing: 10,
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
-                        _pill(formatJobPay(job.pay, job.payType, includeType: true)),
+                        _pill(
+                          formatJobPay(job.pay, job.payType, includeType: true),
+                        ),
                         Text(
                           '등록일 ${_formatDate(job.createdAt)}',
                           style: const TextStyle(color: Color(0xFF6B7280)),
@@ -426,7 +467,10 @@ class _JobTile extends StatelessWidget {
                     },
                   ),
                   IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                    icon: const Icon(
+                      Icons.delete_outline,
+                      color: Colors.redAccent,
+                    ),
                     tooltip: '찜 삭제',
                     onPressed: onDelete,
                   ),
@@ -477,7 +521,7 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg  = isActive ? kBrand.withOpacity(0.12) : Colors.grey.shade300;
+    final bg = isActive ? kBrand.withOpacity(0.12) : Colors.grey.shade300;
     final txt = isActive ? kBrand : Colors.grey.shade800;
     final icn = isActive ? Icons.flash_on : Icons.pause_circle_outline;
 
@@ -519,15 +563,9 @@ class _Empty extends StatelessWidget {
           children: const [
             Icon(Icons.bookmark_border, size: 42, color: Colors.black38),
             SizedBox(height: 10),
-            Text(
-              '찜한 공고가 없습니다.',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
+            Text('찜한 공고가 없습니다.', style: TextStyle(fontWeight: FontWeight.w700)),
             SizedBox(height: 4),
-            Text(
-              '마음에 드는 공고를 찜해 보세요.',
-              style: TextStyle(color: Colors.black54),
-            ),
+            Text('마음에 드는 공고를 찜해 보세요.', style: TextStyle(color: Colors.black54)),
           ],
         ),
       ),
@@ -542,6 +580,7 @@ class _Loading extends StatelessWidget {
     return const Center(child: CircularProgressIndicator());
   }
 }
+
 class _Error extends StatelessWidget {
   final VoidCallback onRetry;
   const _Error({required this.onRetry});
@@ -576,5 +615,6 @@ class _Debouncer {
     _timer?.cancel();
     _timer = Timer(delay, action);
   }
+
   void dispose() => _timer?.cancel();
 }

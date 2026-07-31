@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../config/constants.dart';
+import 'authenticated_http_client.dart';
 
 class ScreenAnalyticsService {
   ScreenAnalyticsService._();
@@ -24,8 +25,7 @@ class ScreenAnalyticsService {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token =
-          prefs.getString('authToken') ?? prefs.getString('accessToken') ?? '';
+      final token = await AuthenticatedHttpClient.accessToken();
       final userType = prefs.getString('userType') ?? 'unknown';
       if (token.isEmpty) return;
 

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'dart:async'; // TimeoutException
 import '../../../config/constants.dart'; // baseUrl
+import '../../../data/services/authenticated_http_client.dart';
 import '../../../data/services/screen_analytics_service.dart';
 import 'edit_worker_profile_screen.dart';
 
@@ -86,11 +87,6 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
 
   String _formatMoney(int v) => '${_moneyFmt.format(v)}원';
 
-  Future<String> _token() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString('authToken') ?? '';
-  }
-
   Future<int?> _userId() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getInt('userId');
@@ -146,24 +142,20 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
 
   Future<void> _refreshProfileFromServer() async {
     try {
-      final token = await _token();
       final uid = await _userId();
 
       http.Response res;
 
-      if (token.isNotEmpty) {
-        res = await http.get(
+      try {
+        res = await AuthenticatedHttpClient.get(
           Uri.parse('$baseUrl/api/worker/profile'),
-          headers: {'Authorization': 'Bearer $token'},
-        );
+        ).timeout(const Duration(seconds: 8));
+      } on AuthSessionExpiredException {
+        if (uid == null) rethrow;
+        res = await http.get(Uri.parse('$baseUrl/api/worker/profile?id=$uid'));
+      }
 
-        if (res.statusCode != 200 && uid != null) {
-          res = await http.get(
-            Uri.parse('$baseUrl/api/worker/profile?id=$uid'),
-          );
-        }
-      } else {
-        if (uid == null) return;
+      if (res.statusCode != 200 && uid != null) {
         res = await http.get(Uri.parse('$baseUrl/api/worker/profile?id=$uid'));
       }
 
@@ -229,21 +221,20 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
 
     http.Response? res;
     try {
-      final token = await _token();
       final uid = await _userId();
 
-      Uri? uri;
-      if (token.isNotEmpty) {
-        uri = Uri.parse('$baseUrl/api/worker/settlement-summary');
+      try {
+        res = await AuthenticatedHttpClient.get(
+          Uri.parse('$baseUrl/api/worker/settlement-summary'),
+        ).timeout(const Duration(seconds: 8));
+      } on AuthSessionExpiredException {
+        if (uid == null) {
+          debugPrint('❌ settlement-summary: no token & no userId');
+          return;
+        }
         res = await http
-            .get(uri, headers: {'Authorization': 'Bearer $token'})
+            .get(Uri.parse('$baseUrl/api/worker/settlement-summary?id=$uid'))
             .timeout(const Duration(seconds: 8));
-      } else if (uid != null) {
-        uri = Uri.parse('$baseUrl/api/worker/settlement-summary?id=$uid');
-        res = await http.get(uri).timeout(const Duration(seconds: 8));
-      } else {
-        debugPrint('❌ settlement-summary: no token & no userId');
-        return;
       }
 
       if (res.statusCode != 200) return;
@@ -396,21 +387,9 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
     final uri = Uri.parse('$baseUrl/api/worker/profile?id=$uid');
 
     try {
-      final token = await _token();
-
-      http.Response res;
-      if (token.isNotEmpty) {
-        res = await http
-            .delete(uri, headers: {'Authorization': 'Bearer $token'})
-            .timeout(const Duration(seconds: 8));
-
-        // 토큰 방식 막혀있으면(서버 구현차이) id 방식 재시도
-        if (res.statusCode == 401 || res.statusCode == 403) {
-          res = await http.delete(uri).timeout(const Duration(seconds: 8));
-        }
-      } else {
-        res = await http.delete(uri).timeout(const Duration(seconds: 8));
-      }
+      final res = await AuthenticatedHttpClient.delete(
+        uri,
+      ).timeout(const Duration(seconds: 8));
 
       if (res.statusCode != 200) {
         if (!mounted) return;

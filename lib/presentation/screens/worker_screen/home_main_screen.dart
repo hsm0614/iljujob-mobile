@@ -20,6 +20,7 @@ import 'package:iljujob/data/services/chat_service.dart';
 import 'package:iljujob/presentation/chat/chat_room_screen.dart';
 import 'package:iljujob/presentation/screens/worker_screen/labor_consult_screen.dart';
 import 'package:iljujob/data/services/ai_labor_service.dart';
+import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
 import 'package:iljujob/utils/pay_display.dart';
@@ -1306,10 +1307,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     setState(() => _quickApplyingJobId = jobIdInt);
 
     try {
-      final resp = await http.post(
+      final resp = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/job/apply'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'workerId': workerId, 'jobId': jobIdInt}),
+        body: {'workerId': workerId, 'jobId': jobIdInt},
       );
       if (!mounted) return;
 
@@ -3610,17 +3610,13 @@ class _AiRecommendStripState extends State<_AiRecommendStrip> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final workerId = prefs.getInt('userId');
-      final token = prefs.getString('authToken') ?? '';
       if (workerId == null) {
         if (mounted) setState(() => _loading = false);
         return;
       }
-      final resp = await http
-          .get(
-            Uri.parse('$baseUrl/api/rank/jobs?workerId=$workerId&limit=8'),
-            headers: {if (token.isNotEmpty) 'Authorization': 'Bearer $token'},
-          )
-          .timeout(const Duration(seconds: 6));
+      final resp = await AuthenticatedHttpClient.get(
+        Uri.parse('$baseUrl/api/rank/jobs?workerId=$workerId&limit=8'),
+      ).timeout(const Duration(seconds: 6));
       if (!mounted) return;
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body);

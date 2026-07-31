@@ -4,9 +4,8 @@
 //
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iljujob/config/constants.dart';
+import 'package:iljujob/data/services/authenticated_http_client.dart';
 
 /// 공고 상세에서 호출: showModalBottomSheet
 class AiInterviewPrepSheet extends StatefulWidget {
@@ -50,25 +49,16 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
     });
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken') ?? '';
-
-      final resp = await http
-          .post(
-            Uri.parse('$baseUrl/api/ai/interview-prep'),
-            headers: {
-              'Content-Type': 'application/json',
-              if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode({
-              'jobTitle': widget.jobTitle,
-              'category': widget.category,
-              'location': widget.location,
-              'payType': widget.payType,
-              'pay': widget.pay,
-            }),
-          )
-          .timeout(const Duration(seconds: 25));
+      final resp = await AuthenticatedHttpClient.postJson(
+        Uri.parse('$baseUrl/api/ai/interview-prep'),
+        body: {
+          'jobTitle': widget.jobTitle,
+          'category': widget.category,
+          'location': widget.location,
+          'payType': widget.payType,
+          'pay': widget.pay,
+        },
+      ).timeout(const Duration(seconds: 25));
 
       if (!mounted) return;
 
@@ -122,7 +112,8 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPad = MediaQuery.of(context).viewInsets.bottom +
+    final bottomPad =
+        MediaQuery.of(context).viewInsets.bottom +
         MediaQuery.of(context).padding.bottom;
 
     final maxH = MediaQuery.of(context).size.height * 0.85;
@@ -136,189 +127,218 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
         ),
         padding: EdgeInsets.fromLTRB(20, 8, 20, 20 + bottomPad),
         child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 핸들
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(99),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 핸들
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(99),
+                  ),
                 ),
               ),
-            ),
 
-            // 헤더
-            Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF3B8AFF), Color(0xFF6C63FF)],
+              // 헤더
+              Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF3B8AFF), Color(0xFF6C63FF)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
+                    child: const Icon(
+                      Icons.auto_awesome_rounded,
+                      size: 20,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'AI 면접 준비 도우미',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      Text(
+                        widget.jobTitle,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              if (_loading) ...[
+                const Center(
+                  child: Column(
+                    children: [
+                      SizedBox(height: 24),
+                      SizedBox(
+                        width: 40,
+                        height: 40,
+                        child: CircularProgressIndicator(
+                          color: Color(0xFF3B8AFF),
+                          strokeWidth: 3,
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'AI가 면접 준비 가이드를 만들고 있어요...',
+                        style: TextStyle(color: Colors.black54, fontSize: 13),
+                      ),
+                      SizedBox(height: 6),
+                      Text(
+                        '보통 5~10초 걸려요',
+                        style: TextStyle(
+                          color: Color(0xFF6B7280),
+                          fontSize: 11,
+                        ),
+                      ),
+                      SizedBox(height: 24),
+                    ],
+                  ),
+                ),
+              ] else if (_error != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color:
+                        _isDailyLimit
+                            ? Colors.orange.shade50
+                            : Colors.red.shade50,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.auto_awesome_rounded,
-                      size: 20, color: Colors.white),
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('AI 면접 준비 도우미',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w800)),
-                    Text(
-                      widget.jobTitle,
-                      style: TextStyle(
-                          fontSize: 12, color: Colors.grey.shade500),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            if (_loading) ...[
-              const Center(
-                child: Column(
-                  children: [
-                    SizedBox(height: 24),
-                    SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF3B8AFF),
-                        strokeWidth: 3,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        _isDailyLimit
+                            ? Icons.access_time_rounded
+                            : Icons.error_outline,
+                        color:
+                            _isDailyLimit
+                                ? Colors.orange.shade400
+                                : Colors.red.shade400,
+                        size: 20,
                       ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: TextStyle(
+                            color:
+                                _isDailyLimit
+                                    ? Colors.orange.shade700
+                                    : Colors.red.shade600,
+                            fontSize: 13,
+                            height: 1.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (!_isDailyLimit) ...[
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _generate,
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('다시 시도'),
                     ),
-                    SizedBox(height: 16),
-                    Text('AI가 면접 준비 가이드를 만들고 있어요...',
-                        style: TextStyle(color: Colors.black54, fontSize: 13)),
-                    SizedBox(height: 6),
-                    Text('보통 5~10초 걸려요',
-                        style: TextStyle(color: Color(0xFF6B7280), fontSize: 11)),
-                    SizedBox(height: 24),
-                  ],
+                  ),
+                ],
+              ] else ...[
+                // 결과
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF5F8FF),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFF3B8AFF).withOpacity(0.15),
+                    ),
+                  ),
+                  child: Text(
+                    _result ?? '',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      height: 1.65,
+                      color: Color(0xFF1E2A3A),
+                    ),
+                  ),
                 ),
-              ),
-            ] else if (_error != null) ...[
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: _isDailyLimit
-                      ? Colors.orange.shade50
-                      : Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 14),
+                // 면책 안내
+                Row(
                   children: [
                     Icon(
-                      _isDailyLimit
-                          ? Icons.access_time_rounded
-                          : Icons.error_outline,
-                      color: _isDailyLimit
-                          ? Colors.orange.shade400
-                          : Colors.red.shade400,
-                      size: 20,
+                      Icons.info_outline,
+                      size: 13,
+                      color: Colors.grey.shade400,
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 5),
                     Expanded(
                       child: Text(
-                        _error!,
+                        'AI가 생성한 내용이에요. 실제 면접과 다를 수 있어요.',
                         style: TextStyle(
-                          color: _isDailyLimit
-                              ? Colors.orange.shade700
-                              : Colors.red.shade600,
-                          fontSize: 13,
-                          height: 1.5,
+                          fontSize: 11,
+                          color: Colors.grey.shade400,
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              if (!_isDailyLimit) ...[
                 const SizedBox(height: 16),
+                // 다시 생성 버튼
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     onPressed: _generate,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('다시 시도'),
+                    icon: const Icon(Icons.refresh_rounded, size: 16),
+                    label: const Text(
+                      '다시 생성',
+                      style: TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFF3B8AFF),
+                      side: BorderSide(
+                        color: const Color(0xFF3B8AFF).withOpacity(0.4),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                 ),
               ],
-            ] else ...[
-              // 결과
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F8FF),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                      color: const Color(0xFF3B8AFF).withOpacity(0.15)),
-                ),
-                child: Text(
-                  _result ?? '',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.65,
-                    color: Color(0xFF1E2A3A),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 14),
-              // 면책 안내
-              Row(
-                children: [
-                  Icon(Icons.info_outline,
-                      size: 13, color: Colors.grey.shade400),
-                  const SizedBox(width: 5),
-                  Expanded(
-                    child: Text(
-                      'AI가 생성한 내용이에요. 실제 면접과 다를 수 있어요.',
-                      style: TextStyle(
-                          fontSize: 11, color: Colors.grey.shade400),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              // 다시 생성 버튼
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: _generate,
-                  icon: const Icon(Icons.refresh_rounded, size: 16),
-                  label: const Text('다시 생성',
-                      style: TextStyle(fontWeight: FontWeight.w700)),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF3B8AFF),
-                    side: BorderSide(
-                        color: const Color(0xFF3B8AFF).withOpacity(0.4)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-              ),
             ],
-          ],
+          ),
         ),
       ),
-    ),
     );
   }
 }

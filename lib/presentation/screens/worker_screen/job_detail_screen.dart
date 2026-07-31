@@ -24,6 +24,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/data/services/log_service.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
+import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
 import 'ai_interview_prep_sheet.dart';
 import 'package:iljujob/utils/pay_display.dart';
@@ -374,9 +375,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     try {
       // 인증 불필요 경로(getClientProfile). 예전 /api/client/profile은
       // verifyToken이 걸려 구직자 토큰 만료/게스트면 401 → 회사명이 안 떴다.
-      final url = Uri.parse(
-        '$baseUrl/api/job/profile/${widget.job.clientId}',
-      );
+      final url = Uri.parse('$baseUrl/api/job/profile/${widget.job.clientId}');
       final res = await http.get(url);
       if (res.statusCode == 200) {
         setState(() => clientProfile = jsonDecode(res.body));
@@ -495,73 +494,79 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Icon(
-                Icons.notifications_active_outlined,
-                size: 40,
-                color: Color(0xFF3B8AFF),
-              ),
-              const SizedBox(height: 14),
-              const Text(
-                '알림을 켜면 사장님 답장을 바로 받아요',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w800,
-                  color: Color(0xFF111827),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                '지금은 알림이 꺼져 있어 사장님이 연락해도\n모르고 지나칠 수 있어요.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF6B7280),
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  AppSettings.openAppSettings(type: AppSettingsType.notification);
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B8AFF),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+      builder:
+          (ctx) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Icon(
+                    Icons.notifications_active_outlined,
+                    size: 40,
+                    color: Color(0xFF3B8AFF),
                   ),
-                ),
-                child: const Text(
-                  '알림 설정 열기',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
-                ),
-              ),
-              const SizedBox(height: 6),
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text(
-                  '나중에',
-                  style: TextStyle(
-                    color: Color(0xFF9CA3AF),
-                    fontWeight: FontWeight.w600,
+                  const SizedBox(height: 14),
+                  const Text(
+                    '알림을 켜면 사장님 답장을 바로 받아요',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w800,
+                      color: Color(0xFF111827),
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '지금은 알림이 꺼져 있어 사장님이 연락해도\n모르고 지나칠 수 있어요.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Color(0xFF6B7280),
+                      height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      AppSettings.openAppSettings(
+                        type: AppSettingsType.notification,
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF3B8AFF),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      '알림 설정 열기',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text(
+                      '나중에',
+                      style: TextStyle(
+                        color: Color(0xFF9CA3AF),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 
@@ -765,13 +770,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     final applyUrl = Uri.parse('$baseUrl/api/job/apply');
 
     try {
-      final response = await http.post(
+      final response = await AuthenticatedHttpClient.postJson(
         applyUrl,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+        body: {
           'workerId': workerId,
           'jobId': widget.job.id, // int로 직접 전달
-        }),
+        },
       );
 
       // 2-1) 서버가 정지 계정으로 막을 경우(권장: 423 Locked 또는 403)
@@ -886,17 +890,16 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     final userType = prefs.getString('userType');
 
     try {
-      final response = await http.post(
+      final response = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/report/job'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+        body: {
           'jobId': jobId,
           'userId': userId,
           if (userType != null && userType.isNotEmpty) 'userType': userType,
           'userPhone': userPhone,
           'reasonCategory': category,
           'reasonDetail': detail,
-        }),
+        },
       );
 
       if (response.statusCode == 200) {

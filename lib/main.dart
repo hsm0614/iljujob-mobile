@@ -464,7 +464,7 @@ Future<void> _handleInitialMessage(
         type == 'nearby_job_alert') {
       final jobId = int.tryParse(initialMessage.data['jobId'] ?? '');
       if (jobId != null) {
-        final token = prefs.getString('authToken') ?? '';
+        final token = await AuthenticatedHttpClient.accessToken();
         final job = await JobService.fetchJobByIdWithToken(jobId, token);
         if (job != null) {
           navigator.push(

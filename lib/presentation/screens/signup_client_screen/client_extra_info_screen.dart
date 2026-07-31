@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iljujob/config/constants.dart';
+import 'package:iljujob/data/services/authenticated_http_client.dart';
 
 const kBrand = Color(0xFF3B8AFF);
 
@@ -34,18 +34,10 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
     setState(() => _isLoading = true);
     try {
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken') ?? '';
 
-      final res = await http.post(
+      final res = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/client/update-manager'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'clientId': widget.clientId,
-          'manager':  manager,
-        }),
+        body: {'clientId': widget.clientId, 'manager': manager},
       );
 
       final data = jsonDecode(res.body);
@@ -149,21 +141,27 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                         fillColor: const Color(0xFFF4F6FA),
                         prefixIcon: const Icon(Icons.person_outline),
                         contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 14),
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              const BorderSide(color: Color(0xFFE5E7EB)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFE5E7EB),
+                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              const BorderSide(color: Color(0xFFE5E7EB)),
+                          borderSide: const BorderSide(
+                            color: Color(0xFFE5E7EB),
+                          ),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide:
-                              const BorderSide(color: kBrand, width: 1.5),
+                          borderSide: const BorderSide(
+                            color: kBrand,
+                            width: 1.5,
+                          ),
                         ),
                       ),
                     ),
@@ -182,22 +180,28 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                     minimumSize: const Size.fromHeight(54),
                   ),
                   onPressed: _isLoading ? null : _submit,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2, color: Colors.white),
-                        )
-                      : const Text(
-                          '완료하고 시작하기',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w700),
-                        ),
+                  child:
+                      _isLoading
+                          ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                          : const Text(
+                            '완료하고 시작하기',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
                 ),
               ),
             ],

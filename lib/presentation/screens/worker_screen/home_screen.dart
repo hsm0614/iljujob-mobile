@@ -14,6 +14,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:iljujob/data/services/promo_service.dart';
 import 'package:iljujob/data/models/promo_model.dart';
 import 'package:iljujob/data/services/ai_api.dart';
+import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/widget/recommended_section.dart';
 import '../worker_calendar_screen.dart';
 import 'package:iljujob/config/app_theme.dart';
@@ -288,15 +289,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final prefs = await SharedPreferences.getInstance();
     userPhone = prefs.getString('userPhone') ?? '';
     userType = prefs.getString('userType') ?? 'worker';
-    final token = prefs.getString('authToken') ?? '';
+    final token = await AuthenticatedHttpClient.accessToken();
     if (userPhone.isEmpty || userType.isEmpty || token.isEmpty) return;
     final userId = prefs.getInt('userId')?.toString() ?? '';
     try {
-      final response = await http.get(
+      final response = await AuthenticatedHttpClient.get(
         Uri.parse(
           '$baseUrl/api/chat/unread-count?userId=$userId&userType=$userType',
         ),
-        headers: {'Authorization': 'Bearer $token'},
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

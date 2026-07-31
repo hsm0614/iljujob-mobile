@@ -4,10 +4,10 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../config/constants.dart';
 import '../models/ad_banner.dart';
+import 'authenticated_http_client.dart';
 
 class AdBannerService {
   static final AdBannerService _instance = AdBannerService._();
@@ -15,11 +15,10 @@ class AdBannerService {
   AdBannerService._();
 
   Future<Map<String, String>> _headers() async {
-    final sp = await SharedPreferences.getInstance();
-    final token = sp.getString('authToken');
+    final token = await AuthenticatedHttpClient.accessToken();
     return {
       'Content-Type': 'application/json',
-      if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+      if (token.isNotEmpty) 'Authorization': 'Bearer $token',
     };
   }
 
@@ -33,8 +32,9 @@ class AdBannerService {
   /// 활성 배너 목록 조회. 실패 시 빈 리스트 (배너 영역은 접힘)
   Future<List<AdBanner>> fetchBanners(String placement) async {
     try {
-      final uri = Uri.parse('$baseUrl/api/banners')
-          .replace(queryParameters: {'placement': placement});
+      final uri = Uri.parse(
+        '$baseUrl/api/banners',
+      ).replace(queryParameters: {'placement': placement});
       final resp = await http
           .get(uri, headers: await _headers())
           .timeout(const Duration(seconds: 5));
@@ -60,7 +60,10 @@ class AdBannerService {
   }
 
   Future<void> _sendEvent(
-      int bannerId, String eventType, String placement) async {
+    int bannerId,
+    String eventType,
+    String placement,
+  ) async {
     try {
       final uri = Uri.parse('$baseUrl/api/banners/$bannerId/event');
       await http

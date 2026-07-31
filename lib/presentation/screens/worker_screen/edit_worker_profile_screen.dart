@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../config/constants.dart';
+import '../../../data/services/authenticated_http_client.dart';
 import 'package:iljujob/presentation/screens/worker_screen/add_experience_screen.dart';
 
 // =====================
@@ -260,7 +261,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
   Future<void> _loadProfile() async {
     if (_workerId == null) return;
     try {
-      final res = await http.get(
+      final res = await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/worker/profile?id=$_workerId'),
       );
       if (res.statusCode != 200) {
@@ -297,7 +298,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
   Future<void> _fetchExperiences() async {
     if (_workerId == null) return;
     try {
-      final res = await http.get(
+      final res = await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/worker/experiences?workerId=$_workerId'),
       );
       if (res.statusCode != 200) return;
@@ -315,7 +316,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
   Future<void> _fetchLicenses() async {
     if (_workerId == null) return;
     try {
-      final res = await http.get(
+      final res = await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/worker/licenses?workerId=$_workerId'),
       );
       if (res.statusCode != 200) return;
@@ -336,24 +337,26 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
   }) async {
     if (_selectedImage == null) return null;
 
-    final req = http.MultipartRequest(
-      'POST',
-      Uri.parse('$baseUrl/api/worker/upload-profile-image'),
-    );
-    req.fields['id'] = workerId.toString();
-    req.fields['name'] = _nameCtrl.text.trim();
-    req.fields['birth_year'] = birthDigits;
-    req.fields['desired_work'] = _selectedWorks.join(',');
-    req.fields['strengths'] = _selectedStrengths.join(',');
-    req.fields['available_days'] = _selectedDays.join(',');
-    req.fields['available_times'] = _selectedTimes.join(',');
-    req.fields['introduction'] = _introductionCtrl.text.trim();
-    req.fields['experience'] = _experienceCtrl.text.trim();
-    req.files.add(
-      await http.MultipartFile.fromPath('image', _selectedImage!.path),
-    );
-
-    final response = await req.send();
+    final response = await AuthenticatedHttpClient.sendMultipart((token) async {
+      final req = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/api/worker/upload-profile-image'),
+      );
+      req.headers['Authorization'] = 'Bearer $token';
+      req.fields['id'] = workerId.toString();
+      req.fields['name'] = _nameCtrl.text.trim();
+      req.fields['birth_year'] = birthDigits;
+      req.fields['desired_work'] = _selectedWorks.join(',');
+      req.fields['strengths'] = _selectedStrengths.join(',');
+      req.fields['available_days'] = _selectedDays.join(',');
+      req.fields['available_times'] = _selectedTimes.join(',');
+      req.fields['introduction'] = _introductionCtrl.text.trim();
+      req.fields['experience'] = _experienceCtrl.text.trim();
+      req.files.add(
+        await http.MultipartFile.fromPath('image', _selectedImage!.path),
+      );
+      return req;
+    });
     final body = await response.stream.bytesToString();
 
     if (response.statusCode != 200) {
@@ -385,10 +388,9 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
       'resume_consent': _resumeConsent ? 1 : 0,
     };
 
-    final res = await http.post(
+    final res = await AuthenticatedHttpClient.postJson(
       Uri.parse('$baseUrl/api/worker/update-profile'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(payload),
+      body: payload,
     );
 
     if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -469,7 +471,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
     setState(() => _deletingExperienceIds.add(exp.id));
 
     try {
-      final resp = await http.delete(
+      final resp = await AuthenticatedHttpClient.delete(
         Uri.parse('$baseUrl/api/worker/experience/${exp.id}'),
       );
       if (!mounted) return;
@@ -504,7 +506,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
     setState(() => _deletingLicenseIds.add(item.id));
 
     try {
-      final res = await http.delete(
+      final res = await AuthenticatedHttpClient.delete(
         Uri.parse('$baseUrl/api/worker/licenses/${item.id}'),
       );
       if (!mounted) return;
@@ -675,34 +677,26 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                                       try {
                                         final response =
                                             isEdit
-                                                ? await http.put(
+                                                ? await AuthenticatedHttpClient.putJson(
                                                   Uri.parse(
                                                     '$baseUrl/api/worker/licenses/${edit.id}',
                                                   ),
-                                                  headers: {
-                                                    'Content-Type':
-                                                        'application/json',
-                                                  },
-                                                  body: jsonEncode({
+                                                  body: {
                                                     'name': name.trim(),
                                                     'issued_at':
                                                         issuedAt.trim(),
-                                                  }),
+                                                  },
                                                 )
-                                                : await http.post(
+                                                : await AuthenticatedHttpClient.postJson(
                                                   Uri.parse(
                                                     '$baseUrl/api/worker/licenses',
                                                   ),
-                                                  headers: {
-                                                    'Content-Type':
-                                                        'application/json',
-                                                  },
-                                                  body: jsonEncode({
+                                                  body: {
                                                     'worker_id': _workerId,
                                                     'name': name.trim(),
                                                     'issued_at':
                                                         issuedAt.trim(),
-                                                  }),
+                                                  },
                                                 );
                                         if (response.statusCode == 200) {
                                           // ✅ pop 먼저, fetch는 sheet 완전히 닫힌 후
@@ -1188,7 +1182,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
     if (!yes || !mounted) return;
 
     try {
-      final res = await http.delete(
+      final res = await AuthenticatedHttpClient.delete(
         Uri.parse('$baseUrl/api/worker/profile?id=$_workerId'),
       );
       if (res.statusCode == 200) {

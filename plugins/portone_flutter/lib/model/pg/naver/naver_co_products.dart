@@ -1,5 +1,6 @@
-import 'package:portone_flutter/model/pg/naver/naver_products.dart';
 import 'package:json_annotation/json_annotation.dart';
+
+import 'naver_products.dart';
 
 part 'naver_co_products.g.dart';
 
@@ -67,11 +68,7 @@ class NaverCoOptionItem {
   String? label;
   String? value;
 
-  NaverCoOptionItem({
-    this.code,
-    this.label,
-    this.value,
-  });
+  NaverCoOptionItem({this.code, this.label, this.value});
 
   factory NaverCoOptionItem.fromJson(Map<String, dynamic> json) =>
       _$NaverCoOptionItemFromJson(json);
@@ -86,12 +83,7 @@ class NaverCoSupplement {
   int? price;
   int? quantity;
 
-  NaverCoSupplement({
-    this.id,
-    this.name,
-    this.price,
-    this.quantity,
-  });
+  NaverCoSupplement({this.id, this.name, this.price, this.quantity});
 
   factory NaverCoSupplement.fromJson(Map<String, dynamic> json) =>
       _$NaverCoSupplementFromJson(json);
@@ -146,10 +138,7 @@ class NaverCoFeeRangeByQty {
   int? from;
   int? surcharge;
 
-  NaverCoFeeRangeByQty({
-    this.from,
-    this.surcharge,
-  });
+  NaverCoFeeRangeByQty({this.from, this.surcharge});
 
   factory NaverCoFeeRangeByQty.fromJson(Map<String, dynamic> json) =>
       _$NaverCoFeeRangeByQtyFromJson(json);
@@ -162,10 +151,7 @@ class NaverCoFeeAreaByQty {
   List<String>? from;
   int? surcharge;
 
-  NaverCoFeeAreaByQty({
-    this.from,
-    this.surcharge,
-  });
+  NaverCoFeeAreaByQty({this.from, this.surcharge});
 
   factory NaverCoFeeAreaByQty.fromJson(Map<String, dynamic> json) =>
       _$NaverCoFeeAreaByQtyFromJson(json);

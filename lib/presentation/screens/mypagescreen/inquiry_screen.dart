@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:iljujob/config/constants.dart';
+import 'package:iljujob/data/services/authenticated_http_client.dart';
 
 class InquiryScreen extends StatefulWidget {
   const InquiryScreen({super.key});
@@ -105,14 +106,12 @@ class _InquiryScreenState extends State<InquiryScreen> {
     final userPhone = prefs.getString('userPhone') ?? '';
     final userId = prefs.getInt('userId'); // 신규 구조 호환
     final userType = prefs.getString('userType');
-    final token = prefs.getString('authToken');
 
     try {
       final ok = await _sendInquiry(
         userPhone: userPhone,
         userId: userId,
         userType: userType,
-        token: token,
         inquiryType: _selectedType,
         title: _titleController.text.trim(),
         content: _contentController.text.trim(),
@@ -150,7 +149,6 @@ class _InquiryScreenState extends State<InquiryScreen> {
     required String userPhone,
     required int? userId,
     required String? userType,
-    required String? token,
     required String inquiryType,
     required String title,
     required String content,
@@ -158,29 +156,31 @@ class _InquiryScreenState extends State<InquiryScreen> {
   }) async {
     final uri = Uri.parse('$baseUrl/api/inquiry');
 
-    final req =
-        http.MultipartRequest('POST', uri)
-          ..fields['inquiryType'] = inquiryType
-          ..fields['title'] = title
-          ..fields['content'] = content;
+    Future<http.MultipartRequest> buildRequest(String token) async {
+      final req =
+          http.MultipartRequest('POST', uri)
+            ..fields['inquiryType'] = inquiryType
+            ..fields['title'] = title
+            ..fields['content'] = content;
 
-    // ── 백엔드 호환: id 우선, 없으면 phone
-    if (userId != null) req.fields['userId'] = userId.toString();
-    if (userType != null && userType.isNotEmpty) {
-      req.fields['userType'] = userType;
+      // ── 백엔드 호환: id 우선, 없으면 phone
+      if (userId != null) req.fields['userId'] = userId.toString();
+      if (userType != null && userType.isNotEmpty) {
+        req.fields['userType'] = userType;
+      }
+      if (userPhone.isNotEmpty) req.fields['userPhone'] = userPhone;
+
+      if (token.isNotEmpty) {
+        req.headers['Authorization'] = 'Bearer $token';
+      }
+
+      for (final x in images) {
+        req.files.add(await http.MultipartFile.fromPath('images', x.path));
+      }
+      return req;
     }
-    if (userPhone.isNotEmpty) req.fields['userPhone'] = userPhone;
 
-    // ── 인증(있으면)
-    if (token != null && token.isNotEmpty) {
-      req.headers['Authorization'] = 'Bearer $token';
-    }
-
-    for (final x in images) {
-      req.files.add(await http.MultipartFile.fromPath('images', x.path));
-    }
-
-    final resp = await req.send();
+    final resp = await AuthenticatedHttpClient.sendMultipart(buildRequest);
     return resp.statusCode == 200;
   }
 
@@ -189,7 +189,6 @@ class _InquiryScreenState extends State<InquiryScreen> {
     final userId = prefs.getInt('userId');
     final userPhone = prefs.getString('userPhone') ?? '';
     final userType = prefs.getString('userType');
-    final token = prefs.getString('authToken');
 
     Uri uri;
     if (userId != null) {
@@ -206,12 +205,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
       );
     }
 
-    final headers = <String, String>{};
-    if (token != null && token.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $token';
-    }
-
-    final res = await http.get(uri, headers: headers);
+    final res = await AuthenticatedHttpClient.get(uri);
     if (res.statusCode == 200) {
       final List data = jsonDecode(res.body);
       return data.cast<Map<String, dynamic>>();

@@ -12,6 +12,7 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'package:iljujob/config/constants.dart';
+import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/main.dart';
 import 'package:iljujob/presentation/screens/signup_worker_screen/signup_worker_screen.dart';
 import 'package:iljujob/presentation/screens/AppleExtraInfoScreen.dart';
@@ -565,22 +566,17 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                     }
 
                     final prefs = await SharedPreferences.getInstance();
-                    final token = prefs.getString('authToken') ?? '';
                     final workerId = prefs.getInt('userId');
 
                     try {
-                      await http.post(
+                      await AuthenticatedHttpClient.postJson(
                         Uri.parse('$baseUrl/api/worker/update-profile'),
-                        headers: {
-                          'Content-Type': 'application/json',
-                          'Authorization': 'Bearer $token',
-                        },
-                        body: jsonEncode({
+                        body: {
                           'workerId': workerId,
                           'strengths': strengths,
                           'traits': traits,
                           'gender': gender, // ⬅️ 서버로 같이 전송
-                        }),
+                        },
                       );
 
                       if (!context.mounted) return;

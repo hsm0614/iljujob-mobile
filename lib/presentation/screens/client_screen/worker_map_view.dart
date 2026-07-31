@@ -10,6 +10,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:iljujob/config/constants.dart';
+import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/presentation/chat/chat_room_screen.dart';
 import '../worker_screen/worker_profile_screen.dart';
 import 'nearby_workers_screen.dart';
@@ -230,7 +231,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   Future<void> _init() async {
     final prefs = await SharedPreferences.getInstance();
     _clientId = prefs.getInt('userId');
-    _authToken = prefs.getString('authToken') ?? '';
+    _authToken = await AuthenticatedHttpClient.accessToken();
     await Future.wait([_fetchJobs(), _fetchSubscription()]);
   }
 
@@ -242,9 +243,9 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   // ── 구독 + 이용권 상태 ────────────────────────────────────────
   Future<void> _fetchSubscription() async {
     try {
-      final res = await http
-          .get(Uri.parse('$baseUrl/api/subscription/status'), headers: _auth)
-          .timeout(const Duration(seconds: 6));
+      final res = await AuthenticatedHttpClient.get(
+        Uri.parse('$baseUrl/api/subscription/status'),
+      ).timeout(const Duration(seconds: 6));
       if (res.statusCode == 200 && mounted) {
         final d = jsonDecode(res.body) as Map<String, dynamic>;
         setState(() {
@@ -266,12 +267,9 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     if (mounted) setState(() => _loading = true);
     debugPrint('[MAP][JOBS] 요청 시작 clientId=$_clientId');
     try {
-      final res = await http
-          .get(
-            Uri.parse('$baseUrl/api/job/my-jobs?clientId=$_clientId&limit=50'),
-            headers: _auth,
-          )
-          .timeout(const Duration(seconds: 10));
+      final res = await AuthenticatedHttpClient.get(
+        Uri.parse('$baseUrl/api/job/my-jobs?clientId=$_clientId&limit=50'),
+      ).timeout(const Duration(seconds: 10));
       debugPrint('[MAP][JOBS] 응답 status=${res.statusCode}');
       if (!mounted) return;
       if (res.statusCode == 200) {
@@ -1152,7 +1150,11 @@ class _WorkerMapViewState extends State<WorkerMapView> {
               ),
               child: const Text(
                 '💡 무료 공고는 등록 후 12시간 뒤 지도에 표시됩니다',
-                style: TextStyle(fontSize: 11, color: Colors.white, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),

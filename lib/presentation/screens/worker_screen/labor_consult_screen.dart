@@ -4,10 +4,9 @@
 import 'package:flutter/material.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iljujob/config/constants.dart';
+import 'package:iljujob/data/services/authenticated_http_client.dart';
 
 const _blue = AppColors.primary;
 const _bg = AppColors.bgPage;
@@ -80,9 +79,6 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
     _scrollToBottom();
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('authToken') ?? '';
-
       // 최근 대화 히스토리 (최대 6개)
       final history =
           _messages
@@ -100,16 +96,10 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
               )
               .toList();
 
-      final resp = await http
-          .post(
-            Uri.parse('$baseUrl/api/ai/labor-consult'),
-            headers: {
-              'Content-Type': 'application/json',
-              if (token.isNotEmpty) 'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode({'question': text, 'history': history}),
-          )
-          .timeout(const Duration(seconds: 20));
+      final resp = await AuthenticatedHttpClient.postJson(
+        Uri.parse('$baseUrl/api/ai/labor-consult'),
+        body: {'question': text, 'history': history},
+      ).timeout(const Duration(seconds: 20));
 
       final data = jsonDecode(utf8.decode(resp.bodyBytes));
       if (data['ok'] == true) {
