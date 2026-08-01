@@ -7,6 +7,7 @@ import 'package:iljujob/main.dart';
 import 'package:iljujob/presentation/screens/TermsDetailScreen.dart';
 import 'package:iljujob/presentation/screens/webview_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 const kBrand = Color(0xFF3B8AFF);
 
 class SignupClientScreen extends StatefulWidget {
@@ -305,6 +306,9 @@ final response = await http.post(
           isAdmin: isAdmin,
         );
         await sendFcmTokenUnified();
+        // 구글애즈 앱 캠페인 전환 신호(보조). 기본 전환은 job_post_complete지만,
+        // 사장님 가입 자체도 설치보다는 훨씬 나은 신호다.
+        FirebaseAnalytics.instance.logEvent(name: 'sign_up_client');
         if (!mounted) return;
         Navigator.pushNamedAndRemoveUntil(
           context,

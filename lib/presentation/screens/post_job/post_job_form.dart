@@ -780,6 +780,13 @@ class _PostJobFormState extends State<PostJobForm>
         'job_post_complete',
         properties: {'type': postType, 'job_id': jobId},
       );
+      // 위 track()은 우리 DB에만 쌓여서 구글이 못 본다. 구글애즈 앱 캠페인이
+      // '설치'가 아니라 '공고 등록'을 최적화하려면 Firebase로도 나가야 한다.
+      // (이게 없어서 11개월간 인앱 액션 0 → 설치만 최적화 → 구직자를 샀다)
+      FirebaseAnalytics.instance.logEvent(
+        name: 'job_post_complete',
+        parameters: {'type': postType, 'job_id': jobId ?? 0},
+      );
       final isUrgent = passType == 'urgent';
       final isDelayed = !isPaid && result['status'] == 'reserved';
       final eta = DateTime.now().add(const Duration(hours: 12));
