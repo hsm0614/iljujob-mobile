@@ -28,6 +28,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../../data/services/client_tracking_service.dart';
 import 'post_job_controller.dart' show getCurrentLocation;
 import 'package:iljujob/utils/pay_display.dart';
+import 'package:iljujob/utils/date_ymd.dart';
 
 // 2026년 적용 최저시급
 const int minWagePerHour = 10320;
@@ -334,12 +335,8 @@ class _PostJobFormState extends State<PostJobForm>
       DateFormat('yyyy-MM-dd').format(_weekStart(DateTime.now()));
   DateTime _nextWeekStart() =>
       _weekStart(DateTime.now()).add(const Duration(days: 7));
-  // 날짜를 "YYYY-MM-DD" 문자열로 변환 (로컬 날짜 기준)
-  String _dateToYmd(DateTime d) {
-    return '${d.year.toString().padLeft(4, '0')}-'
-        '${d.month.toString().padLeft(2, '0')}-'
-        '${d.day.toString().padLeft(2, '0')}';
-  }
+  // 날짜를 "YYYY-MM-DD" 문자열로 변환 (로컬 날짜 기준) → utils/date_ymd.dart
+  String _dateToYmd(DateTime d) => toYmd(d);
 
   Future<void> _loadSuspension() async {
     try {
@@ -1433,7 +1430,10 @@ class _PostJobFormState extends State<PostJobForm>
   Widget _buildQ0() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      GestureDetector(
+      Semantics(
+        button: true,
+        label: '이전 공고 불러오기',
+        child: GestureDetector(
         onTap: () async {
           final job = await Navigator.push(
             context,
@@ -1465,6 +1465,7 @@ class _PostJobFormState extends State<PostJobForm>
               Icon(Icons.chevron_right_rounded, size: 16, color: _label),
             ],
           ),
+        ),
         ),
       ),
       TextField(
@@ -1536,7 +1537,14 @@ class _PostJobFormState extends State<PostJobForm>
               _allCats.map((cat) {
                 final isSel = selectedMajor == cat.name;
                 final isOpen = _majorCat == cat.name;
-                return GestureDetector(
+                return Semantics(
+                  button: true,
+                  selected: isSel,
+                  label:
+                      isSel && _category != cat.name
+                          ? '${cat.name}, $_category 선택됨'
+                          : cat.name,
+                  child: GestureDetector(
                   onTap: () {
                     final opening = !isOpen;
                     setState(() => _majorCat = isOpen ? '' : cat.name);
@@ -1628,8 +1636,9 @@ class _PostJobFormState extends State<PostJobForm>
                             ),
                             child: Text(
                               _category,
+                              // 9px → 11px (최소 가독 크기)
                               style: const TextStyle(
-                                fontSize: 9,
+                                fontSize: 11,
                                 color: Colors.white,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -1640,6 +1649,7 @@ class _PostJobFormState extends State<PostJobForm>
                         ],
                       ],
                     ),
+                  ),
                   ),
                 );
               }).toList(),
@@ -1682,12 +1692,23 @@ class _PostJobFormState extends State<PostJobForm>
                                   ),
                                 ),
                                 const Spacer(),
-                                GestureDetector(
-                                  onTap: () => setState(() => _majorCat = ''),
-                                  child: const Icon(
-                                    Icons.close_rounded,
-                                    size: 16,
-                                    color: _label,
+                                Semantics(
+                                  button: true,
+                                  label: '$_majorCat 세부 직종 목록 닫기',
+                                  child: GestureDetector(
+                                    behavior: HitTestBehavior.opaque,
+                                    onTap: () => setState(() => _majorCat = ''),
+                                    child: const SizedBox(
+                                      width: 44,
+                                      height: 44,
+                                      child: Center(
+                                        child: Icon(
+                                          Icons.close_rounded,
+                                          size: 16,
+                                          color: _label,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -1699,7 +1720,11 @@ class _PostJobFormState extends State<PostJobForm>
                               children:
                                   cat.sub.map((s) {
                                     final sel = _category == s;
-                                    return GestureDetector(
+                                    return Semantics(
+                                      button: true,
+                                      selected: sel,
+                                      label: s,
+                                      child: GestureDetector(
                                       onTap: () {
                                         setState(() {
                                           _category = s;
@@ -1756,6 +1781,7 @@ class _PostJobFormState extends State<PostJobForm>
                                             color: sel ? Colors.white : _sub,
                                           ),
                                         ),
+                                      ),
                                       ),
                                     );
                                   }).toList(),
@@ -1861,26 +1887,31 @@ class _PostJobFormState extends State<PostJobForm>
     Widget chip(String label, DateTime date) {
       final sel = isSameDay(_startDate, date);
       return Expanded(
-        child: GestureDetector(
-          onTap:
-              () => setState(() {
-                _startDate = date;
-                _endDate = date;
-              }),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: sel ? _blue : _bg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: sel ? _blue : _border),
-            ),
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: sel ? Colors.white : _text,
+        child: Semantics(
+          button: true,
+          selected: sel,
+          label: '$label 근무',
+          child: GestureDetector(
+            onTap:
+                () => setState(() {
+                  _startDate = date;
+                  _endDate = date;
+                }),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: sel ? _blue : _bg,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: sel ? _blue : _border),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: sel ? Colors.white : _text,
+                ),
               ),
             ),
           ),
@@ -1903,7 +1934,13 @@ class _PostJobFormState extends State<PostJobForm>
   Widget _buildQ2() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      GestureDetector(
+      Semantics(
+        button: true,
+        label:
+            _location.isNotEmpty
+                ? '근무지 주소 $_location, 변경하려면 두 번 탭'
+                : '근무지 주소 검색',
+        child: GestureDetector(
         onTap: () async {
           await Navigator.push(
             context,
@@ -1977,6 +2014,7 @@ class _PostJobFormState extends State<PostJobForm>
             ],
           ),
         ),
+        ),
       ),
       const SizedBox(height: 10),
       _gpsButton(),
@@ -2030,7 +2068,13 @@ class _PostJobFormState extends State<PostJobForm>
         if (_isShortTerm) ...[
           _quickDateChips(today),
           const SizedBox(height: 12),
-          GestureDetector(
+          Semantics(
+            button: true,
+            label:
+                _startDate != null
+                    ? '근무 날짜 ${df.format(_startDate!)}, 변경하려면 두 번 탭'
+                    : '근무 날짜 선택',
+            child: GestureDetector(
             onTap: () async {
               DateTime focused = _startDate ?? today;
               DateTime? selected = _startDate;
@@ -2213,6 +2257,7 @@ class _PostJobFormState extends State<PostJobForm>
               ),
             ),
           ),
+          ),
         ] else ...[
           Row(
             children: [
@@ -2243,7 +2288,11 @@ class _PostJobFormState extends State<PostJobForm>
               children:
                   days.map((d) {
                     final sel = _weekdays.contains(d);
-                    return GestureDetector(
+                    return Semantics(
+                      button: true,
+                      selected: sel,
+                      label: '$d요일',
+                      child: GestureDetector(
                       onTap:
                           () => setState(() {
                             sel ? _weekdays.remove(d) : _weekdays.add(d);
@@ -2267,6 +2316,7 @@ class _PostJobFormState extends State<PostJobForm>
                             ),
                           ),
                         ),
+                      ),
                       ),
                     );
                   }).toList(),
@@ -2620,32 +2670,37 @@ class _PostJobFormState extends State<PostJobForm>
           children:
               payTypes.map((t) {
                 final sel = _payType == t;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _payType = t;
-                      _pay = 0;
-                      _payCtrl.clear();
-                    });
-                    _validatePay();
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 160),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: sel ? _blue : _bg,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: sel ? _blue : _border),
-                    ),
-                    child: Text(
-                      t,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: sel ? Colors.white : _sub,
+                return Semantics(
+                  button: true,
+                  selected: sel,
+                  label: t,
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _payType = t;
+                        _pay = 0;
+                        _payCtrl.clear();
+                      });
+                      _validatePay();
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 160),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: sel ? _blue : _bg,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: sel ? _blue : _border),
+                      ),
+                      child: Text(
+                        t,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: sel ? Colors.white : _sub,
+                        ),
                       ),
                     ),
                   ),
@@ -2738,7 +2793,13 @@ class _PostJobFormState extends State<PostJobForm>
         // ── 임금 AI 리포트 버튼
         if (_category.isNotEmpty) ...[
           const SizedBox(height: 10),
-          GestureDetector(
+          Semantics(
+            button: true,
+            label:
+                _subscriptionPlan != null
+                    ? '이 업종 임금 AI 리포트 보기'
+                    : '이 업종 임금 AI 리포트 보기, 구독자 전용',
+            child: GestureDetector(
             onTap: () {
               if (_subscriptionPlan != null) {
                 Navigator.push(
@@ -2889,10 +2950,11 @@ class _PostJobFormState extends State<PostJobForm>
                     '이 업종 임금 AI 리포트 보기',
                     style: TextStyle(
                       fontSize: 12,
+                      // #9CA3AF는 이 배경에서 2.5:1 — AA 미달
                       color:
                           _subscriptionPlan != null
                               ? const Color(0xFF2563EB)
-                              : const Color(0xFF9CA3AF),
+                              : AppColors.textSecondary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -2903,11 +2965,12 @@ class _PostJobFormState extends State<PostJobForm>
                     color:
                         _subscriptionPlan != null
                             ? const Color(0xFF2563EB)
-                            : const Color(0xFF9CA3AF),
+                            : AppColors.textSecondary,
                   ),
                 ],
               ),
             ),
+          ),
           ),
         ],
 
@@ -2919,7 +2982,10 @@ class _PostJobFormState extends State<PostJobForm>
           const SizedBox(height: 20),
           const Divider(color: _border),
           const SizedBox(height: 16),
-          GestureDetector(
+          Semantics(
+            toggled: _isSameDayPay,
+            label: '당일지급, 근무 당일 현금 지급',
+            child: GestureDetector(
             onTap: () => setState(() => _isSameDayPay = !_isSameDayPay),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 160),
@@ -2972,6 +3038,7 @@ class _PostJobFormState extends State<PostJobForm>
               ),
             ),
           ),
+          ),
         ],
       ],
     );
@@ -2983,7 +3050,11 @@ class _PostJobFormState extends State<PostJobForm>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GestureDetector(
+        Semantics(
+          button: true,
+          enabled: !_isAIGenerating,
+          label: _isAIGenerating ? '공고문 생성 중' : '공고문 작성 도움 받기',
+          child: GestureDetector(
           onTap:
               _isAIGenerating
                   ? null
@@ -3094,6 +3165,7 @@ class _PostJobFormState extends State<PostJobForm>
                     ),
           ),
         ),
+        ),
         Container(
           decoration: BoxDecoration(
             color: _bg,
@@ -3150,7 +3222,11 @@ class _PostJobFormState extends State<PostJobForm>
                   ],
                 ),
               ),
-              GestureDetector(
+              Semantics(
+                toggled: _isAlwaysOpen,
+                label: '상시모집, 종료일 없이 계속 모집',
+                child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
                 onTap: () => setState(() => _isAlwaysOpen = !_isAlwaysOpen),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
@@ -3177,6 +3253,7 @@ class _PostJobFormState extends State<PostJobForm>
                     ),
                   ),
                 ),
+              ),
               ),
             ],
           ),
@@ -3270,7 +3347,7 @@ class _PostJobFormState extends State<PostJobForm>
               ),
               child: const Text(
                 '선택',
-                style: TextStyle(fontSize: 10, color: _label),
+                style: TextStyle(fontSize: 11, color: _label),
               ),
             ),
             const Spacer(),
@@ -3572,50 +3649,54 @@ class _TimeInputCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasValue = value.isNotEmpty;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-        decoration: BoxDecoration(
-          color: hasValue ? const Color(0xFFEEF5FF) : _bg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: hasValue ? _blue : _border),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.schedule_rounded,
-              size: 18,
-              color: hasValue ? _blue : _label,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 11,
-                      color: _text,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    hasValue ? value : '입력',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 15,
-                      color: hasValue ? _text : _label,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                ],
+    return Semantics(
+      button: true,
+      label: hasValue ? '$label $value, 변경하려면 두 번 탭' : '$label 입력',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          decoration: BoxDecoration(
+            color: hasValue ? const Color(0xFFEEF5FF) : _bg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: hasValue ? _blue : _border),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.schedule_rounded,
+                size: 18,
+                color: hasValue ? _blue : _label,
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: _text,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      hasValue ? value : '입력',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: hasValue ? _text : _label,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -3629,9 +3710,13 @@ class _ToggleBtn extends StatelessWidget {
   const _ToggleBtn(this.label, this.selected, this.onTap);
   @override
   Widget build(BuildContext context) => Expanded(
-    child: GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
+    child: Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
         decoration: BoxDecoration(
@@ -3642,12 +3727,13 @@ class _ToggleBtn extends StatelessWidget {
             width: selected ? 1.5 : 1,
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            color: selected ? _blue : _sub,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: selected ? _blue : _sub,
+            ),
           ),
         ),
       ),
@@ -3662,22 +3748,27 @@ class _SmallToggle extends StatelessWidget {
   const _SmallToggle(this.label, this.selected, this.onTap);
   @override
   Widget build(BuildContext context) => Expanded(
-    child: GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: selected ? _blue : _bg,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: selected ? _blue : _border),
-        ),
-        child: Center(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: selected ? Colors.white : _sub,
+    child: Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: selected ? _blue : _bg,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: selected ? _blue : _border),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: selected ? Colors.white : _sub,
+              ),
             ),
           ),
         ),
@@ -3700,18 +3791,34 @@ class _ImgThumb extends StatelessWidget {
         margin: const EdgeInsets.only(right: 8),
         child: ClipRRect(borderRadius: BorderRadius.circular(10), child: img),
       ),
+      // 탭 영역 44×44 확보. Stack이 clipBehavior:none이라 바깥으로 빼면 히트테스트가
+      // 안 먹으므로, 히트박스는 썸네일 안쪽(right:8 = 이미지 우측 끝)에 둔다.
       Positioned(
-        right: 2,
-        top: -6,
-        child: GestureDetector(
-          onTap: onRemove,
-          child: Container(
-            padding: const EdgeInsets.all(3),
-            decoration: const BoxDecoration(
-              color: Colors.black54,
-              shape: BoxShape.circle,
+        right: 8,
+        top: 0,
+        child: Semantics(
+          button: true,
+          label: '사진 삭제',
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onRemove,
+            child: const SizedBox(
+              width: 44,
+              height: 44,
+              child: Align(
+                alignment: Alignment.topRight,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: Colors.black54,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(Icons.close, size: 14, color: Colors.white),
+                  ),
+                ),
+              ),
             ),
-            child: const Icon(Icons.close, size: 12, color: Colors.white),
           ),
         ),
       ),
@@ -3847,7 +3954,11 @@ class _LaborNoticeState extends State<_LaborNotice> {
     ),
     child: Column(
       children: [
-        GestureDetector(
+        Semantics(
+          button: true,
+          expanded: _open,
+          label: '공고 등록 시 알바 준수사항에 동의합니다, 자세히 보기',
+          child: GestureDetector(
           onTap: () => setState(() => _open = !_open),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -3869,6 +3980,7 @@ class _LaborNoticeState extends State<_LaborNotice> {
               ],
             ),
           ),
+        ),
         ),
         if (_open) ...[
           const Divider(height: 1, color: _border),
@@ -4221,7 +4333,16 @@ class _PublishSheetState extends State<_PublishSheet> {
             const SizedBox(height: 20),
             if (!_confirming) ...[
               // ── 긴급호출 (최우선 CTA)
-              GestureDetector(
+              Semantics(
+                button: true,
+                label:
+                    widget.passCountFailed
+                        ? '긴급 호출, 이용권 확인 실패. 다시 시도'
+                        : (widget.urgentPassCount > 0 ||
+                            widget.urgentPassCount == -1)
+                        ? '긴급 호출로 등록하기, 이용권 사용'
+                        : '긴급 호출로 등록하기, 7900원',
+                child: GestureDetector(
                 onTap:
                     widget.passCountFailed
                         ? widget.onRetryPassCount
@@ -4342,18 +4463,19 @@ class _PublishSheetState extends State<_PublishSheet> {
                   ),
                 ),
               ),
+              ),
               const SizedBox(height: 16),
-              Row(
+              const Row(
                 children: [
-                  const Expanded(child: Divider(color: _border)),
+                  Expanded(child: Divider(color: _border)),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       '또는 일반 등록',
-                      style: const TextStyle(fontSize: 12, color: _sub),
+                      style: TextStyle(fontSize: 12, color: _sub),
                     ),
                   ),
-                  const Expanded(child: Divider(color: _border)),
+                  Expanded(child: Divider(color: _border)),
                 ],
               ),
               const SizedBox(height: 16),
@@ -4383,30 +4505,40 @@ class _PublishSheetState extends State<_PublishSheet> {
                 Row(
                   children: [
                     Expanded(
-                      child: GestureDetector(
-                        onTap:
-                            () => setState(() {
-                              _isScheduled = false;
-                              _scheduledDate = null;
-                              _scheduledTime = null;
-                            }),
-                        child: _pubOpt(
-                          Icons.flash_on_rounded,
-                          '즉시 공개',
-                          '지금 바로 노출',
-                          !_isScheduled,
+                      child: Semantics(
+                        button: true,
+                        selected: !_isScheduled,
+                        label: '즉시 공개, 지금 바로 노출',
+                        child: GestureDetector(
+                          onTap:
+                              () => setState(() {
+                                _isScheduled = false;
+                                _scheduledDate = null;
+                                _scheduledTime = null;
+                              }),
+                          child: _pubOpt(
+                            Icons.flash_on_rounded,
+                            '즉시 공개',
+                            '지금 바로 노출',
+                            !_isScheduled,
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
-                      child: GestureDetector(
-                        onTap: () => setState(() => _isScheduled = true),
-                        child: _pubOpt(
-                          Icons.schedule_rounded,
-                          '예약 공개',
-                          '날짜·시간 지정',
-                          _isScheduled,
+                      child: Semantics(
+                        button: true,
+                        selected: _isScheduled,
+                        label: '예약 공개, 날짜와 시간 지정',
+                        child: GestureDetector(
+                          onTap: () => setState(() => _isScheduled = true),
+                          child: _pubOpt(
+                            Icons.schedule_rounded,
+                            '예약 공개',
+                            '날짜·시간 지정',
+                            _isScheduled,
+                          ),
                         ),
                       ),
                     ),
@@ -4567,7 +4699,13 @@ class _PublishSheetState extends State<_PublishSheet> {
         ),
       );
 
-  Widget _dateBtn(BuildContext context) => GestureDetector(
+  Widget _dateBtn(BuildContext context) => Semantics(
+    button: true,
+    label:
+        _scheduledDate != null
+            ? '공개 날짜 ${DateFormat('M월 d일', 'ko_KR').format(_scheduledDate!)}, 변경하려면 두 번 탭'
+            : '공개 날짜 선택',
+    child: GestureDetector(
     onTap: () async {
       final p = await showDatePicker(
         context: context,
@@ -4608,9 +4746,16 @@ class _PublishSheetState extends State<_PublishSheet> {
         ],
       ),
     ),
+    ),
   );
 
-  Widget _timeBtn(BuildContext context) => GestureDetector(
+  Widget _timeBtn(BuildContext context) => Semantics(
+    button: true,
+    label:
+        _scheduledTime != null
+            ? '공개 시각 ${_scheduledTime!.hour}시 ${_scheduledTime!.minute}분, 변경하려면 두 번 탭'
+            : '공개 시각 선택',
+    child: GestureDetector(
     onTap: () async {
       final p = await showTimePicker(
         context: context,
@@ -4647,6 +4792,7 @@ class _PublishSheetState extends State<_PublishSheet> {
           ),
         ],
       ),
+    ),
     ),
   );
 }
@@ -4727,7 +4873,7 @@ class _CompareCard extends StatelessWidget {
                           child: const Text(
                             '즉시게시',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
@@ -4750,7 +4896,7 @@ class _CompareCard extends StatelessWidget {
                           child: const Text(
                             '긴급호출',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
@@ -4778,7 +4924,10 @@ class _CompareCard extends StatelessWidget {
         Row(
           children: [
             Expanded(
-              child: GestureDetector(
+              child: Semantics(
+                button: true,
+                label: '무료 등록, 12시간 후 노출',
+                child: GestureDetector(
                 onTap: onFreeTap,
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -4822,10 +4971,19 @@ class _CompareCard extends StatelessWidget {
                   ),
                 ),
               ),
+              ),
             ),
             const SizedBox(width: 10),
             Expanded(
-              child: GestureDetector(
+              child: Semantics(
+                button: true,
+                label:
+                    passCountFailed
+                        ? '즉시게시, 이용권 확인 실패. 다시 시도'
+                        : paidOk
+                        ? '즉시게시로 등록, 이용권 사용'
+                        : '즉시게시로 등록, 4900원',
+                child: GestureDetector(
                 onTap: onPaidTap,
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 14),
@@ -4880,6 +5038,7 @@ class _CompareCard extends StatelessWidget {
                     ],
                   ),
                 ),
+              ),
               ),
             ),
           ],

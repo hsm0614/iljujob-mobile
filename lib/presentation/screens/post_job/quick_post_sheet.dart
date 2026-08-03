@@ -9,6 +9,7 @@ import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/data/services/job_service.dart';
 import 'package:iljujob/utils/pay_display.dart';
+import 'package:iljujob/utils/date_ymd.dart';
 
 // ════════════════════════════════════════════════════════
 //  디자인 토큰 (post_job_form.dart와 동일)
@@ -353,8 +354,9 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
         category: j['category'] ?? '',
         location: j['location'] ?? '',
         locationCity: j['location_city'] ?? '',
-        startDate: startDate!.toIso8601String().split('T')[0],
-        endDate: endDate!.toIso8601String().split('T')[0],
+        // toIso8601String()은 UTC로 변환 후 자르므로 KST 자정 근처에 하루 밀린다.
+        startDate: toYmd(startDate!),
+        endDate: toYmd(endDate!),
         startTime: j['start_time'] ?? '',
         endTime: j['end_time'] ?? '',
         payType: payType,
