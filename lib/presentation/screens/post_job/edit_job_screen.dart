@@ -4,46 +4,20 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kpostal/kpostal.dart';
 import 'package:intl/intl.dart';
-import 'package:table_calendar/table_calendar.dart';
 import 'package:flutter_time_picker_spinner/flutter_time_picker_spinner.dart';
 
 import 'package:iljujob/data/services/job_service.dart';
 import 'package:iljujob/utils/pay_display.dart';
+import 'package:iljujob/config/app_theme.dart';
+import 'package:iljujob/config/job_categories.dart';
+import 'package:iljujob/widget/picker_sheets.dart';
 
 /// ------------------------------------------------------------
 /// Time helpers (UTC/KST-safe, self-contained for this screen)
 /// ------------------------------------------------------------
 class _Tx {
   static final _ymd = DateFormat('yyyy-MM-dd');
-  static final _hm = DateFormat('HH:mm');
 
-  /// 문자열을 UTC DateTime으로 파싱
-  static DateTime? parseUtcFlexible(dynamic v) {
-    if (v == null) return null;
-    final s0 = v.toString().trim();
-    if (s0.isEmpty) return null;
-
-    // epoch (sec/ms)
-    if (RegExp(r'^\d+$').hasMatch(s0)) {
-      final n = int.tryParse(s0);
-      if (n == null) return null;
-      final isMs = s0.length >= 13;
-      final dt =
-          isMs
-              ? DateTime.fromMillisecondsSinceEpoch(n, isUtc: true)
-              : DateTime.fromMillisecondsSinceEpoch(n * 1000, isUtc: true);
-      return dt.toUtc();
-    }
-
-    // ISO with Z/offset
-    if (RegExp(r'(?:[zZ]|[+\-]\d{2}:\d{2})$').hasMatch(s0)) {
-      return DateTime.tryParse(s0)?.toUtc();
-    }
-
-    // plain -> assume UTC (Z)
-    final base = s0.contains('T') ? s0 : s0.replaceFirst(' ', 'T');
-    return DateTime.tryParse('${base}Z')?.toUtc();
-  }
 
   /// UTC -> KST
   static DateTime? toKst(DateTime? utc) =>
@@ -55,26 +29,10 @@ class _Tx {
     return (k == null) ? '' : _ymd.format(k);
   }
 
-  /// yyyy-MM-dd(KST 의미) + HH:mm -> UTC
-  static DateTime? buildUtcFromKst(String? ymd, String? hhmm) {
-    if (ymd == null || ymd.isEmpty || hhmm == null || hhmm.isEmpty) return null;
-    final ym = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(ymd);
-    final tm = RegExp(r'^(\d{2}):(\d{2})$').firstMatch(hhmm);
-    if (ym == null || tm == null) return null;
-    final y = int.parse(ym.group(1)!);
-    final mo = int.parse(ym.group(2)!);
-    final d = int.parse(ym.group(3)!);
-    final h = int.parse(tm.group(1)!);
-    final m = int.parse(tm.group(2)!);
-    // KST 시각을 만든 뒤 9시간 빼서 UTC로
-    return DateTime.utc(y, mo, d, h, m).subtract(const Duration(hours: 9));
-  }
 
   /// UI 표기
   static String formatKstDate(DateTime? utc) =>
       utc == null ? '' : _ymd.format(toKst(utc)!);
-  static String formatKstTime(DateTime? utc) =>
-      utc == null ? '' : _hm.format(toKst(utc)!);
 
   /// TimeOfDay <-> "HH:mm"
   static String fmtHmOf(TimeOfDay? t) =>
@@ -185,15 +143,15 @@ class _EditJobScreenState extends State<EditJobScreen> {
       final job = await JobService.fetchJobById(jobId);
 
       setState(() {
-        _title.text = (job.title ?? '').toString();
+        _title.text = job.title.toString();
         _desc.text = (job.description ?? '').toString();
 
-        category = (job.category ?? '제조').toString();
-        payType = (job.payType ?? '일급').toString();
+        category = job.category.toString();
+        payType = job.payType.toString();
         _pay.text =
-            isNegotiablePayType(payType) ? '' : (job.pay ?? '').toString();
+            isNegotiablePayType(payType) ? '' : job.pay.toString();
 
-        location = (job.location ?? '').toString();
+        location = job.location.toString();
         _location.text = location;
 
         // Short-term vs weekdays (weekdays field can be String or null)
@@ -214,7 +172,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
         startTime = _Tx.parseHm(job.startTime);
         endTime = _Tx.parseHm(job.endTime);
 
-        existingImageUrls = job.imageUrls ?? [];
+        existingImageUrls = job.imageUrls;
         isLoading = false;
       });
 
@@ -256,145 +214,26 @@ class _EditJobScreenState extends State<EditJobScreen> {
     return d;
   }
 
-  void _showDatePickerBottomSheet({
+  // 공용 시트 사용. 이전엔 이 화면만의 복붙본이었고, 게다가 색 의미가
+  // 등록 화면과 반대였다 (파란 원 = 오늘 / 검정 원 = 선택).
+  Future<void> _showDatePickerBottomSheet({
     required DateTime? initialDateKst,
     DateTime? minDateKst,
     DateTime? maxDateKst,
     required void Function(DateTime pickedKst0) onSelected,
-  }) {
+  }) async {
     final first = _d0(minDateKst ?? _today0);
     final last = _d0(maxDateKst ?? _today0.add(const Duration(days: 365)));
-
-    DateTime selectedDate = _clampDate(
-      _d0(initialDateKst ?? _today0),
-      first,
-      last,
+    final picked = await pickDateSheet(
+      context,
+      title: '날짜 선택',
+      initial: _clampDate(_d0(initialDateKst ?? _today0), first, last),
+      firstDate: first,
+      lastDate: last,
     );
-    DateTime focusedDay = selectedDate;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            final safePad = MediaQuery.of(context).padding.bottom;
-            final kbPad = MediaQuery.of(context).viewInsets.bottom;
-            final bottomPad = (kbPad > 0 ? kbPad : safePad) + 8;
-
-            return ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(context).size.height * 0.8 - safePad,
-              ),
-              child: Column(
-                children: [
-                  // 핸들 + 타이틀
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Center(
-                            child: Container(
-                              width: 44,
-                              height: 5,
-                              decoration: BoxDecoration(
-                                color: const Color(0x1F000000),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    '날짜 선택',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 10),
-
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-                      child: TableCalendar(
-                        locale: 'ko_KR',
-                        focusedDay: focusedDay,
-                        firstDay: first,
-                        lastDay: last,
-                        selectedDayPredicate:
-                            (day) => isSameDay(day, selectedDate),
-                        onDaySelected: (day, f) {
-                          setModalState(() {
-                            selectedDate = _d0(day);
-                            focusedDay = day;
-                          });
-                        },
-                        onPageChanged:
-                            (f) => setModalState(() => focusedDay = f),
-                        headerStyle: const HeaderStyle(
-                          formatButtonVisible: false,
-                        ),
-                        calendarStyle: const CalendarStyle(
-                          todayDecoration: BoxDecoration(
-                            color: brandBlue,
-                            shape: BoxShape.circle,
-                          ),
-                          selectedDecoration: BoxDecoration(
-                            color: Color(0xFF191F28),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  SafeArea(
-                    top: false,
-                    minimum: EdgeInsets.fromLTRB(16, 8, 16, bottomPad),
-                    child: SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          onSelected(selectedDate);
-                          Navigator.pop(context);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: brandBlue,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          elevation: 2,
-                        ),
-                        child: const Text(
-                          '선택 완료',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
+    if (picked != null) onSelected(_d0(picked));
   }
+
 
   void _openStartDatePicker() {
     final min = _today0;
@@ -578,7 +417,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                           const SizedBox(height: 6),
                           Text(
                             '총 근무시간 ${durationLabel(duration)}',
-                            style: const TextStyle(color: Color(0xFF6B7280)),
+                            style: const TextStyle(color: AppColors.textSecondary),
                           ),
                         ],
                       ),
@@ -612,7 +451,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                   minutesInterval: 10,
                                   normalTextStyle: const TextStyle(
                                     fontSize: 16,
-                                    color: Color(0xFF9CA3AF),
+                                    color: AppColors.textSecondary,
                                   ),
                                   highlightedTextStyle: const TextStyle(
                                     fontSize: 18,
@@ -649,7 +488,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                   minutesInterval: 10,
                                   normalTextStyle: const TextStyle(
                                     fontSize: 16,
-                                    color: Color(0xFF9CA3AF),
+                                    color: AppColors.textSecondary,
                                   ),
                                   highlightedTextStyle: const TextStyle(
                                     fontSize: 18,
@@ -783,6 +622,29 @@ class _EditJobScreenState extends State<EditJobScreen> {
       return;
     }
 
+    // 시급·월급은 근무시간과 무관하게 바로 검증된다 (등록 화면과 동일 산식).
+    if (payType == '시급') {
+      setState(
+        () =>
+            _payWarning =
+                payVal >= minWagePerHour
+                    ? null
+                    : '최저시급 미달 · 최소 ${_moneyFmt.format(minWagePerHour)}원 이상',
+      );
+      return;
+    }
+    if (payType == '월급') {
+      const minMonthly = 2156880; // 10,320 × 209h
+      setState(
+        () =>
+            _payWarning =
+                payVal >= minMonthly
+                    ? null
+                    : '최저임금 미달 · 최소 ${_moneyFmt.format(minMonthly)}원 이상',
+      );
+      return;
+    }
+
     if (startTime == null || endTime == null) {
       setState(() => _payWarning = null);
       return;
@@ -830,19 +692,84 @@ class _EditJobScreenState extends State<EditJobScreen> {
   }
 
   // ===================== Submit =====================
+  /// 프로젝트 규칙: 사용자 확인 모달은 AlertDialog 대신 바텀시트.
   void _showError(String msg) {
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       builder:
-          (_) => AlertDialog(
-            title: const Text('오류'),
-            content: Text(msg),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('확인'),
-              ),
-            ],
+          (ctx) => Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: EdgeInsets.fromLTRB(
+              24,
+              20,
+              24,
+              MediaQuery.of(ctx).padding.bottom + 24,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE5E7EB),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: const BoxDecoration(
+                    color: AppColors.warningLight,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.error_outline_rounded,
+                    size: 26,
+                    color: AppColors.warningDark,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  msg,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: brandBlue,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      '확인',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w700,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
     );
   }
@@ -866,10 +793,11 @@ class _EditJobScreenState extends State<EditJobScreen> {
       // 간단 우선순위 스크롤
       if (_title.text.trim().isEmpty) {
         _scrollToKey(_titleKey);
-      } else if (_location.text.trim().isEmpty)
+      } else if (_location.text.trim().isEmpty) {
         _scrollToKey(_locationKey);
-      else if (!isNegotiablePayType(payType) && _pay.text.trim().isEmpty)
+      } else if (!isNegotiablePayType(payType) && _pay.text.trim().isEmpty) {
         _scrollToKey(_payKey);
+      }
       return;
     }
 
@@ -921,8 +849,10 @@ class _EditJobScreenState extends State<EditJobScreen> {
       ).showSnackBar(const SnackBar(content: Text('공고 수정 완료')));
       Navigator.pop(context);
     } catch (e) {
+      // 원시 예외 문자열은 사장님에게 의미가 없다. 로그로만 남긴다.
+      debugPrint('❌ 공고 수정 실패: $e');
       if (!mounted) return;
-      _showError('수정 실패: $e');
+      _showError('공고를 수정하지 못했어요.\n잠시 후 다시 시도해주세요.');
     }
   }
 
@@ -979,7 +909,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                       subtitle,
                       style: const TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF6B7280),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -1030,37 +960,46 @@ class _EditJobScreenState extends State<EditJobScreen> {
   }) {
     return Row(
       children: [
-        _toggleChip(
-          label: left,
-          selected: value == true,
-          onTap: () => onChanged(true),
+        Expanded(
+          child: _toggleChip(
+            label: left,
+            selected: value == true,
+            onTap: () => onChanged(true),
+          ),
         ),
         const SizedBox(width: 10),
-        _toggleChip(
-          label: right,
-          selected: value == false,
-          onTap: () => onChanged(false),
+        Expanded(
+          child: _toggleChip(
+            label: right,
+            selected: value == false,
+            onTap: () => onChanged(false),
+          ),
         ),
       ],
     );
   }
 
+  /// Expanded를 여기서 반환하면 Wrap 안에서 쓸 때
+  /// "Incorrect use of ParentDataWidget"으로 터진다. 감싸는 쪽에서 처리한다.
   Widget _toggleChip({
     required String label,
     required bool selected,
     required VoidCallback onTap,
   }) {
-    return Expanded(
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 12),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected ? brandBlue : Colors.white,
             border: Border.all(
-              color: selected ? brandBlue : const Color(0xFFE0E0E0),
+              color: selected ? brandBlue : AppColors.border,
             ),
             borderRadius: BorderRadius.circular(999),
           ),
@@ -1068,7 +1007,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
             label,
             style: TextStyle(
               fontWeight: FontWeight.w800,
-              color: selected ? Colors.white : const Color(0xFF191F28),
+              color: selected ? Colors.white : AppColors.textPrimary,
             ),
           ),
         ),
@@ -1079,7 +1018,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
   Widget _deleteBadge() => Container(
     padding: const EdgeInsets.all(4),
     decoration: const BoxDecoration(
-      color: Color(0xFF6B7280),
+      color: AppColors.textSecondary,
       shape: BoxShape.circle,
     ),
     child: const Icon(Icons.close, color: Colors.white, size: 16),
@@ -1099,7 +1038,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
           '사진은 선택 사항이에요.\n현장 사진/근무복/약도 등을 올리면 지원율이 올라갑니다.',
           style: TextStyle(
             fontSize: 12,
-            color: Color(0xFF6B7280),
+            color: AppColors.textSecondary,
             height: 1.35,
           ),
         ),
@@ -1152,22 +1091,36 @@ class _EditJobScreenState extends State<EditJobScreen> {
                               fit: BoxFit.cover,
                             ),
                   ),
+                  // Stack이 clipBehavior:none이라 바깥(-6)에 두면 그려지긴 해도
+                  // 히트테스트가 안 먹는다. 44×44 탭 영역을 안쪽에 배치한다.
                   Positioned(
-                    right: -6,
-                    top: -6,
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          if (isExisting) {
-                            final url = existingImageUrls[i];
-                            _toDeleteUrls.add(url);
-                            existingImageUrls.removeAt(i);
-                          } else {
-                            newImages.removeAt(i - existingImageUrls.length);
-                          }
-                        });
-                      },
-                      child: _deleteBadge(),
+                    right: 0,
+                    top: 0,
+                    child: Semantics(
+                      button: true,
+                      label: '사진 삭제',
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () {
+                          setState(() {
+                            if (isExisting) {
+                              final url = existingImageUrls[i];
+                              _toDeleteUrls.add(url);
+                              existingImageUrls.removeAt(i);
+                            } else {
+                              newImages.removeAt(i - existingImageUrls.length);
+                            }
+                          });
+                        },
+                        child: SizedBox(
+                          width: 44,
+                          height: 44,
+                          child: Align(
+                            alignment: Alignment.topRight,
+                            child: _deleteBadge(),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -1215,7 +1168,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
           ),
           child: const Text(
             '날짜는 KST(UTC+9) 자정 기준으로 저장됩니다.',
-            style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
         ),
       ],
@@ -1249,12 +1202,12 @@ class _EditJobScreenState extends State<EditJobScreen> {
                   fontWeight: FontWeight.w700,
                   color:
                       value == null
-                          ? const Color(0xFF9CA3AF)
-                          : const Color(0xFF191F28),
+                          ? AppColors.textSecondary
+                          : AppColors.textPrimary,
                 ),
               ),
             ),
-            const Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
+            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
           ],
         ),
       ),
@@ -1323,7 +1276,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                 children: [
                   const Text(
                     '근무 시간',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -1331,7 +1284,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: has ? Colors.black : const Color(0xFF9CA3AF),
+                      color: has ? Colors.black : AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -1353,7 +1306,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                 ),
               ),
             const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, color: Color(0xFF9CA3AF)),
+            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
           ],
         ),
       ),
@@ -1361,63 +1314,56 @@ class _EditJobScreenState extends State<EditJobScreen> {
   }
 
   Widget _payTypeRow() {
+    // 등록 화면과 동일한 집합이어야 한다. 예전엔 일급/주급/협의 3개뿐이라
+    // 시급·월급으로 등록한 공고를 열면 어느 칩도 선택되지 않았다.
+    const types = ['시급', '일급', '주급', '월급', '협의'];
     return Wrap(
       spacing: 10,
       runSpacing: 8,
-      children: [
-        _toggleChip(
-          label: '일급',
-          selected: payType == '일급',
-          onTap: () {
-            setState(() {
-              payType = '일급';
-              _pay.clear();
-            });
-            _validatePay();
-          },
-        ),
-        _toggleChip(
-          label: '주급',
-          selected: payType == '주급',
-          onTap: () {
-            setState(() {
-              payType = '주급';
-              _pay.clear();
-            });
-            _validatePay();
-          },
-        ),
-        _toggleChip(
-          label: '협의',
-          selected: payType == '협의',
-          onTap: () {
-            setState(() {
-              payType = '협의';
-              _pay.clear();
-            });
-            _validatePay();
-          },
-        ),
-      ],
+      children:
+          types
+              .map(
+                (t) => _toggleChip(
+                  label: t,
+                  selected: payType == t,
+                  onTap: () {
+                    setState(() {
+                      payType = t;
+                      _pay.clear();
+                    });
+                    _validatePay();
+                  },
+                ),
+              )
+              .toList(),
     );
   }
 
   Widget _categoryDropdown() {
-    final categories = ['제조', '물류', '서비스', '건설', '사무', '청소', '기타'];
+    // 등록 화면과 반드시 같은 목록을 써야 한다. 예전엔 여기가
+    // ['제조','물류','서비스','건설','사무','청소','기타'] 7개였는데
+    // 등록 화면의 세부직종 53개와 교집합이 0이라, 지금 방식으로 올린 공고를
+    // 수정하려 하면 DropdownButtonFormField가 value를 못 찾아 죽었다.
+    final options = [...allSubCategories];
+    // 구버전 값('제조' 등)으로 저장된 공고도 열려야 하므로 목록에 없으면 앞에 붙인다.
+    if (category.trim().isNotEmpty && !options.contains(category)) {
+      options.insert(0, category);
+    }
 
     return DropdownButtonFormField<String>(
-      initialValue: category.isNotEmpty ? category : null,
+      initialValue: category.trim().isEmpty ? null : category,
       isExpanded: true,
       icon: const Icon(Icons.keyboard_arrow_down_rounded),
       borderRadius: BorderRadius.circular(16),
       dropdownColor: Colors.white,
       menuMaxHeight: 340,
       elevation: 6,
-      style: const TextStyle(fontSize: 14, color: Color(0xFF191F28)),
+      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
       decoration: _inputDeco('하는 일', hint: '업종을 선택하세요'),
       validator: (_) => category.trim().isEmpty ? '업종을 선택하세요' : null,
       items:
-          categories.map((c) {
+          options.map((c) {
+            final major = majorOfCategory(c);
             return DropdownMenuItem<String>(
               value: c,
               child: Row(
@@ -1431,7 +1377,12 @@ class _EditJobScreenState extends State<EditJobScreen> {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  Text(c),
+                  Expanded(
+                    child: Text(
+                      major.isEmpty ? c : '$c  ·  $major',
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
                 ],
               ),
             );

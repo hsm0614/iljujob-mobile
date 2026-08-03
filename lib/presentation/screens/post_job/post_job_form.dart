@@ -30,6 +30,7 @@ import 'post_job_controller.dart' show getCurrentLocation;
 import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/utils/date_ymd.dart';
 import 'package:iljujob/widget/picker_sheets.dart';
+import 'package:iljujob/config/job_categories.dart';
 
 // 2026년 적용 최저시급
 const int minWagePerHour = 10320;
@@ -48,72 +49,7 @@ const _sub = AppColors.textSecondary;
 // ════════════════════════════════════════════════════════
 //  업종 데이터
 // ════════════════════════════════════════════════════════
-class _CatData {
-  final IconData icon;
-  final String name;
-  final List<String> sub;
-  const _CatData({required this.icon, required this.name, required this.sub});
-}
 
-const _allCats = [
-  _CatData(
-    icon: Icons.restaurant_outlined,
-    name: '음식점·카페',
-    sub: ['홀서빙', '주방보조', '배달', '카페·바리스타', '패스트푸드', '포장·설거지'],
-  ),
-  _CatData(
-    icon: Icons.storefront_outlined,
-    name: '편의점·마트',
-    sub: ['편의점', '슈퍼·마트', '창고정리', '재고관리', '계산원'],
-  ),
-  _CatData(
-    icon: Icons.inventory_2_outlined,
-    name: '물류·배송',
-    sub: ['배송기사', '상하차', '물류센터', '포장', '택배분류', '입출고'],
-  ),
-  _CatData(
-    icon: Icons.factory_outlined,
-    name: '제조·공장',
-    sub: ['생산·조립', '검품·포장', '식품제조', '기계조작', '단순노무'],
-  ),
-  _CatData(
-    icon: Icons.memory_outlined,
-    name: '반도체·전자생산',
-    sub: ['반도체 생산', '전자부품 조립', 'PCB·SMT', '품질검사', '클린룸', '장비오퍼레이터'],
-  ),
-  _CatData(
-    icon: Icons.construction_outlined,
-    name: '건설·현장',
-    sub: ['건설일용', '인테리어', '청소·마감', '자재운반', '도장·도배'],
-  ),
-  _CatData(
-    icon: Icons.desktop_windows_outlined,
-    name: '사무·행정',
-    sub: ['사무보조', '데이터입력', '고객응대', '텔레마케터', '회계보조'],
-  ),
-  _CatData(
-    icon: Icons.cleaning_services_outlined,
-    name: '청소·시설관리',
-    sub: ['건물청소', '시설관리', '환경미화', '방역·소독', '세탁·세차'],
-  ),
-  _CatData(
-    icon: Icons.shopping_bag_outlined,
-    name: '서비스·판매',
-    sub: ['매장판매', '시식·홍보', '전단지', '주차관리', '안내·접수'],
-  ),
-  _CatData(
-    icon: Icons.event_outlined,
-    name: '이벤트·행사',
-    sub: ['행사스태프', '진행보조', '설치·철거', '모델·도우미', '공연스태프'],
-  ),
-];
-
-String _majorOf(String val) {
-  for (final c in _allCats) {
-    if (c.name == val || c.sub.contains(val)) return c.name;
-  }
-  return '';
-}
 
 const _qTitles = [
   '어떤 일인가요?',
@@ -484,7 +420,7 @@ class _PostJobFormState extends State<PostJobForm>
         _title = job.title;
         _titleCtrl.text = job.title;
         _category = job.category;
-        _majorCat = _majorOf(job.category);
+        _majorCat = majorOfCategory(job.category);
         _location = job.location;
         _locationCity = job.locationCity;
         _lat = job.lat;
@@ -813,7 +749,7 @@ class _PostJobFormState extends State<PostJobForm>
       final result = await JobService.postJobWithImages(
         title: _title.trim(),
         category: _category,
-        categoryMajor: _majorOf(_category),
+        categoryMajor: majorOfCategory(_category),
         categorySub: _category,
         location: _location,
         locationCity: _locationCity,
@@ -1133,7 +1069,7 @@ class _PostJobFormState extends State<PostJobForm>
       _title = job['title'] ?? '';
       _titleCtrl.text = _title;
       _category = job['category'] ?? '';
-      _majorCat = _majorOf(_category);
+      _majorCat = majorOfCategory(_category);
       _location = job['location'] ?? '';
       _locationCity = job['location_city'] ?? '';
       _lat = (job['lat'] ?? 0.0) as double;
@@ -1241,7 +1177,7 @@ class _PostJobFormState extends State<PostJobForm>
         _title = d['title']?.toString() ?? '';
         _titleCtrl.text = _title;
         _category = d['category']?.toString() ?? '';
-        _majorCat = d['majorCat']?.toString() ?? _majorOf(_category);
+        _majorCat = d['majorCat']?.toString() ?? majorOfCategory(_category);
         _location = d['location']?.toString() ?? '';
         _locationCity = d['locationCity']?.toString() ?? '';
         _lat = (d['lat'] as num?)?.toDouble() ?? 0;
@@ -1641,7 +1577,7 @@ class _PostJobFormState extends State<PostJobForm>
   // Q1: 업종
   Widget _buildQ1() {
     String? majorOf(String val) {
-      for (final c in _allCats) {
+      for (final c in jobCategories) {
         if (c.name == val || c.sub.contains(val)) return c.name;
       }
       return null;
@@ -1659,7 +1595,7 @@ class _PostJobFormState extends State<PostJobForm>
           mainAxisSpacing: 8,
           childAspectRatio: 1.05,
           children:
-              _allCats.map((cat) {
+              jobCategories.map((cat) {
                 final isSel = selectedMajor == cat.name;
                 final isOpen = _majorCat == cat.name;
                 return Semantics(
@@ -1801,7 +1737,7 @@ class _PostJobFormState extends State<PostJobForm>
                   ? const SizedBox.shrink()
                   : Builder(
                     builder: (_) {
-                      final cat = _allCats.firstWhere(
+                      final cat = jobCategories.firstWhere(
                         (c) => c.name == _majorCat,
                       );
                       return Container(
