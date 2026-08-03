@@ -209,6 +209,27 @@ class _PostJobFormState extends State<PostJobForm>
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fadeAnim;
   final ScrollController _contentScrollCtrl = ScrollController();
+
+  /// 비활성 상태에서 "뭐가 남았는지"를 버튼 라벨로 알려준다.
+  /// 버튼을 숨기면 화면에 CTA가 아예 없어 다음 행동을 못 찾는다.
+  String get _nextLabel {
+    if (_canNext) return '다음';
+    switch (_q) {
+      case 0:
+        return '공고 제목을 입력해주세요';
+      case 1:
+        return '업종을 선택해주세요';
+      case 2:
+        return '근무지를 입력해주세요';
+      case 3:
+        return '근무 날짜와 시간을 입력해주세요';
+      case 4:
+        return _payWarning != null ? '급여를 확인해주세요' : '급여를 입력해주세요';
+      default:
+        return '다음';
+    }
+  }
+
   bool get _canNext {
     switch (_q) {
       case 0:
@@ -1013,9 +1034,13 @@ class _PostJobFormState extends State<PostJobForm>
                       ? (_endDate != null ? _dateToYmd(_endDate!) : null)
                       : null,
               weekdays: _isShortTerm ? [] : _weekdays,
+              // 23:00~00:00 을 '오후 11:00 ~ 오전 12:00'으로만 쓰면 자정인지
+              // 정오인지 구분이 안 된다. 시간 설정 시트와 동일하게 '익일'을 붙인다.
               workingTime:
                   (_startTime != null && _endTime != null)
-                      ? '${_startTime!.format(context)} ~ ${_endTime!.format(context)}'
+                      ? '${_startTime!.format(context)} ~ '
+                          '${_toMin(_endTime!) <= _toMin(_startTime!) ? '익일 ' : ''}'
+                          '${_endTime!.format(context)}'
                       : '시간 미정',
               payType: _payType,
               pay: isNegotiablePayType(_payType) ? 0 : _pay,
@@ -1608,7 +1633,7 @@ class _PostJobFormState extends State<PostJobForm>
         ),
       ),
       const SizedBox(height: 24),
-      if (_title.isNotEmpty) _NextBtn(onTap: _nextQ),
+      _NextBtn(onTap: _canNext ? _nextQ : null, label: _nextLabel),
     ],
   );
 
@@ -1648,14 +1673,28 @@ class _PostJobFormState extends State<PostJobForm>
                     final opening = !isOpen;
                     setState(() => _majorCat = isOpen ? '' : cat.name);
                     if (opening) {
-                      Future.delayed(const Duration(milliseconds: 280), () {
-                        if (_contentScrollCtrl.hasClients) {
-                          _contentScrollCtrl.animateTo(
-                            _contentScrollCtrl.position.maxScrollExtent,
-                            duration: const Duration(milliseconds: 320),
-                            curve: Curves.easeOutCubic,
-                          );
-                        }
+                      // AnimatedSize(220ms)가 끝난 뒤에 스크롤해야 한다.
+                      // 확장 도중에 maxScrollExtent를 읽으면 그 시점의 짧은
+                      // 높이를 기준으로 잡아서 세부직종 칩이 잘린 채 멈춘다.
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        if (!mounted || !_contentScrollCtrl.hasClients) return;
+                        _contentScrollCtrl
+                            .animateTo(
+                              _contentScrollCtrl.position.maxScrollExtent,
+                              duration: const Duration(milliseconds: 320),
+                              curve: Curves.easeOutCubic,
+                            )
+                            .then((_) {
+                              // 애니메이션 중 레이아웃이 더 자랐으면 한 번 더.
+                              if (!mounted || !_contentScrollCtrl.hasClients) {
+                                return;
+                              }
+                              final max =
+                                  _contentScrollCtrl.position.maxScrollExtent;
+                              if (_contentScrollCtrl.offset < max - 1) {
+                                _contentScrollCtrl.jumpTo(max);
+                              }
+                            });
                       });
                     }
                   },
@@ -1892,7 +1931,7 @@ class _PostJobFormState extends State<PostJobForm>
                   ),
         ),
         const SizedBox(height: 16),
-        if (_category.isNotEmpty) _NextBtn(onTap: _nextQ),
+        _NextBtn(onTap: _canNext ? _nextQ : null, label: _nextLabel),
       ],
     );
   }
@@ -2086,12 +2125,14 @@ class _PostJobFormState extends State<PostJobForm>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    // 폼 레이블은 검정 계열 (디자인 가이드).
+                    // _blue는 #EEF5FF 위에서 3.05:1로 AA도 미달.
+                    const Text(
                       '근무지 주소',
                       style: TextStyle(
                         fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: _location.isNotEmpty ? _blue : _label,
+                        fontWeight: FontWeight.w700,
+                        color: _text,
                       ),
                     ),
                     const SizedBox(height: 3),
@@ -2118,7 +2159,7 @@ class _PostJobFormState extends State<PostJobForm>
       const SizedBox(height: 10),
       _gpsButton(),
       const SizedBox(height: 24),
-      if (_location.isNotEmpty) _NextBtn(onTap: _nextQ),
+      _NextBtn(onTap: _canNext ? _nextQ : null, label: _nextLabel),
     ],
   );
 
@@ -2488,19 +2529,22 @@ class _PostJobFormState extends State<PostJobForm>
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
-              '근무시간 ${fmtTime(_startTime)} ~ ${fmtTime(_endTime)} · 총 ${_workMins() ~/ 60}시간${_workMins() % 60 == 0 ? '' : ' ${_workMins() % 60}분'}',
+              '근무시간 ${fmtTime(_startTime)} ~ '
+              '${_toMin(_endTime!) <= _toMin(_startTime!) ? '익일 ' : ''}'
+              '${fmtTime(_endTime)} · 총 ${_workMins() ~/ 60}시간${_workMins() % 60 == 0 ? '' : ' ${_workMins() % 60}분'}',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              // _blue는 이 연한 파랑 위에서 3.1:1 — 12px 텍스트엔 AA 미달
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
-                color: _blue,
+                color: Color(0xFF1D4ED8),
               ),
             ),
           ),
         ],
         const SizedBox(height: 24),
-        if (_canNext) _NextBtn(onTap: _nextQ),
+        _NextBtn(onTap: _canNext ? _nextQ : null, label: _nextLabel),
       ],
     );
   }
@@ -2644,9 +2688,11 @@ class _PostJobFormState extends State<PostJobForm>
                                     key: const ValueKey('s'),
                                     is24HourMode: false,
                                     minutesInterval: 10,
+                                    // #9CA3AF는 흰 배경 2.54:1 — AA 미달.
+                                    // 스크롤로 골라야 하는 숫자라 읽혀야 한다.
                                     normalTextStyle: const TextStyle(
                                       fontSize: 16,
-                                      color: Color(0xFF9CA3AF),
+                                      color: AppColors.textSecondary,
                                     ),
                                     highlightedTextStyle: const TextStyle(
                                       fontSize: 18,
@@ -2689,9 +2735,11 @@ class _PostJobFormState extends State<PostJobForm>
                                     key: const ValueKey('e'),
                                     is24HourMode: false,
                                     minutesInterval: 10,
+                                    // #9CA3AF는 흰 배경 2.54:1 — AA 미달.
+                                    // 스크롤로 골라야 하는 숫자라 읽혀야 한다.
                                     normalTextStyle: const TextStyle(
                                       fontSize: 16,
-                                      color: Color(0xFF9CA3AF),
+                                      color: AppColors.textSecondary,
                                     ),
                                     highlightedTextStyle: const TextStyle(
                                       fontSize: 18,
@@ -2924,7 +2972,7 @@ class _PostJobFormState extends State<PostJobForm>
           ),
         ],
         const SizedBox(height: 12),
-        if (_canNext) _NextBtn(onTap: _nextQ),
+        _NextBtn(onTap: _canNext ? _nextQ : null, label: _nextLabel),
 
         // ── 임금 AI 리포트 버튼
         if (_category.isNotEmpty) ...[
@@ -3153,13 +3201,19 @@ class _PostJobFormState extends State<PostJobForm>
                     ],
                   ),
                   const Spacer(),
+                  // 꺼진 상태를 꽉 찬 회색 원으로 두면 체크박스가 아니라
+                  // 비활성 점이나 로딩 인디케이터로 읽힌다. 빈 원 + 테두리로.
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 160),
                     width: 24,
                     height: 24,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: _isSameDayPay ? _blue : _border,
+                      color: _isSameDayPay ? _blue : Colors.white,
+                      border: Border.all(
+                        color: _isSameDayPay ? _blue : AppColors.textTertiary,
+                        width: 1.5,
+                      ),
                     ),
                     child:
                         _isSameDayPay
@@ -3246,9 +3300,13 @@ class _PostJobFormState extends State<PostJobForm>
                           color: Colors.white,
                         ),
                         const SizedBox(width: 10),
+                        // 트레일링에 버튼+배지가 붙어 폭이 좁다. 줄바꿈을 막지
+                        // 않으면 '공고문 작성 도 / 움'으로 단어가 쪼개진다.
                         const Expanded(
                           child: Text(
                             '공고문 작성 도움',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w800,
@@ -3256,6 +3314,7 @@ class _PostJobFormState extends State<PostJobForm>
                             ),
                           ),
                         ),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,

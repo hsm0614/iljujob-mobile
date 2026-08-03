@@ -155,6 +155,10 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
       } catch (_) {}
       if (s != null && e != null) {
         final fmt = DateFormat('yyyy.MM.dd (E)', 'ko_KR');
+        // 하루짜리 공고에 '8/3 ~ 8/3'은 같은 날짜를 두 번 읽게 만든다.
+        if (s.year == e.year && s.month == e.month && s.day == e.day) {
+          return fmt.format(s);
+        }
         return '${fmt.format(s)} ~ ${fmt.format(e)}';
       }
       return '${widget.startDate} ~ ${widget.endDate}';
@@ -288,10 +292,11 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                         ),
                         child: const Text(
                           '내 근처 단기 알바',
+                          // _kBrand는 #E7F0FF 위에서 3.05:1 — AA 미달
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: _kBrand,
+                            color: Color(0xFF1D4ED8),
                           ),
                         ),
                       ),
@@ -1090,12 +1095,14 @@ class _AiInsightCardState extends State<_AiInsightCard> {
           style: const TextStyle(fontSize: 12, color: _kLabel),
         ),
       ),
+      // 12px 값 텍스트라 3:1(UI 컴포넌트)이 아니라 4.5:1이 기준이다.
+      // _kBrand(#3B8AFF)는 흰 배경에서 3.35:1이므로 진한 파랑으로 대체한다.
       Text(
         value,
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: valueColor,
+          color: valueColor == _kBrand ? const Color(0xFF1D4ED8) : valueColor,
         ),
       ),
     ],
