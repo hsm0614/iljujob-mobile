@@ -16,7 +16,8 @@ import 'package:iljujob/utils/pay_display.dart';
 const _blue = AppColors.primary;
 const _bg = AppColors.bgPage;
 const _border = AppColors.border;
-const _label = AppColors.textTertiary;
+// textTertiary(#9CA3AF)는 _bg 위 2.35:1로 WCAG AA 미달이라 승격.
+const _label = AppColors.textSecondary;
 const _text = AppColors.textPrimary;
 const _sub = AppColors.textSecondary;
 const int _minWage = 10320;
@@ -88,6 +89,8 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
   int _freeRemaining = 0;
   int _paidPassCount = 0;
   bool _passLoading = false;
+  // 조회 실패와 "0개/한도 소진"은 다른 상태다. 섞으면 잔여가 있는 사장님을 막는다.
+  bool _countsFailed = false;
 
   final _payCtrl = TextEditingController();
 
@@ -123,11 +126,17 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
   }
 
   Future<void> _loadCounts() async {
-    setState(() => _passLoading = true);
+    setState(() {
+      _passLoading = true;
+      _countsFailed = false;
+    });
     try {
       final prefs = await SharedPreferences.getInstance();
       final clientId = prefs.getInt('userId');
-      if (clientId == null) return;
+      if (clientId == null) {
+        if (mounted) setState(() => _countsFailed = true);
+        return;
+      }
 
       // 무료 잔여
       final freeRes = await http.get(
@@ -141,6 +150,8 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
             _freeRemaining = (d['remaining'] ?? 0) as int;
           });
         }
+      } else if (mounted) {
+        setState(() => _countsFailed = true);
       }
 
       // 이용권 잔여
@@ -152,8 +163,12 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
         final remain =
             int.tryParse('${d['remaining'] ?? d['remain'] ?? 0}') ?? 0;
         if (mounted) setState(() => _paidPassCount = remain);
+      } else if (mounted) {
+        setState(() => _countsFailed = true);
       }
     } catch (_) {
+      // 실패를 "한도 소진"으로 두면 잔여가 있는 사장님의 등록을 막게 된다.
+      if (mounted) setState(() => _countsFailed = true);
     } finally {
       if (mounted) setState(() => _passLoading = false);
     }
@@ -411,10 +426,11 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
             children: [
               const Text(
                 '등록 방식 선택',
+                // 제목에 브랜드 블루 금지 (디자인 가이드)
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: _blue,
+                  color: _text,
                 ),
               ),
               const SizedBox(height: 6),
@@ -428,11 +444,17 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                 icon: Icons.access_time_rounded,
                 title: '일반 등록',
                 desc: '등록 후 12시간 후 노출',
-                badge: _freeRemaining > 0 ? '월 $_freeRemaining회 남음' : '한도 소진',
-                badgeOk: _freeRemaining > 0,
+                badge:
+                    _countsFailed
+                        ? '확인 실패'
+                        : _freeRemaining > 0
+                        ? '월 $_freeRemaining회 남음'
+                        : '한도 소진',
+                badgeOk: !_countsFailed && _freeRemaining > 0,
                 onTap: () {
                   Navigator.pop(ctx);
-                  if (_freeRemaining <= 0) {
+                  // 조회 실패 시엔 막지 않고 서버 판단에 맡긴다.
+                  if (!_countsFailed && _freeRemaining <= 0) {
                     _showSnack('이번 달 일반 등록 한도를 모두 사용했어요');
                     return;
                   }
@@ -448,10 +470,12 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                 badge:
                     _passLoading
                         ? '조회중…'
+                        : _countsFailed
+                        ? '확인 실패'
                         : _paidPassCount > 0
                         ? '이용권 $_paidPassCount개'
                         : '₩4,900',
-                badgeOk: _paidPassCount > 0,
+                badgeOk: !_countsFailed && _paidPassCount > 0,
                 onTap: () {
                   Navigator.pop(ctx);
                   _submit(isPaid: true, passType: 'instant');

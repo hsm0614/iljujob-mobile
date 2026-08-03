@@ -11,7 +11,8 @@ const _kBrand = AppColors.primary;
 const _kBg = AppColors.bgPage;
 const _kBorder = AppColors.border;
 const _kText = AppColors.textPrimary;
-const _kLabel = AppColors.textTertiary;
+// textTertiary(#9CA3AF)는 _kBg 위 2.35:1로 WCAG AA 미달이라 승격.
+const _kLabel = AppColors.textSecondary;
 
 class JobPreviewDetailScreen extends StatefulWidget {
   final String title;
@@ -195,16 +196,17 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
             margin: const EdgeInsets.only(right: 16),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.12),
+              color: AppColors.warningLight,
               borderRadius: BorderRadius.circular(99),
-              border: Border.all(color: Colors.orange.withOpacity(0.4)),
+              border: Border.all(color: AppColors.warningBorder),
             ),
             child: const Text(
               '미리보기',
+              // Colors.orange는 흰 배경에서 2.15:1 — AA 미달
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: Colors.orange,
+                color: AppColors.warningDark,
               ),
             ),
           ),
@@ -418,26 +420,25 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.orange.withOpacity(0.06),
+                        color: AppColors.warningLight,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: Colors.orange.withOpacity(0.3),
-                        ),
+                        border: Border.all(color: AppColors.warningBorder),
                       ),
                       child: const Row(
                         children: [
                           Icon(
                             Icons.info_outline_rounded,
                             size: 16,
-                            color: AppColors.warning,
+                            color: AppColors.warningDark,
                           ),
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
                               '공고 설명이 비어 있어요. 등록 전에 작성하는 걸 추천해요.',
+                              // Colors.orange는 2.15:1 — AA 미달
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Colors.orange,
+                                color: AppColors.warningDark,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -950,12 +951,13 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                   const SizedBox(height: 12),
                 ],
 
-                // ③ 부스터 vs 무료 예상 차이
+                // ③ 유료 등록 시 차이 — 값은 등록방식 시트의 비교표와 반드시 일치해야 함
+                //    (즉시게시 = 즉시 노출·상단 고정 없음 / 긴급호출 = 24시간 상단 고정)
                 _insightRow(
                   icon: Icons.vertical_align_top_rounded,
-                  label: '부스터 등록 시',
-                  value: '72시간 상단 노출',
-                  valueColor: const Color(0xFF6C5CE7),
+                  label: '즉시게시로 등록 시',
+                  value: '12시간 대기 없이 즉시 노출',
+                  valueColor: _kBrand,
                 ),
               ],
             ),
