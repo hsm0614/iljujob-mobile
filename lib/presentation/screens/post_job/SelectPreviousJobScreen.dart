@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import '../../../config/constants.dart';
-import 'quick_post_sheet.dart'; // 추가
+import 'package:iljujob/config/app_theme.dart';
+import 'quick_post_sheet.dart';
 
 class SelectPreviousJobScreen extends StatefulWidget {
   // quickMode 파라미터 추가
@@ -22,13 +23,14 @@ class SelectPreviousJobScreen extends StatefulWidget {
 }
 
 class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
-  // ===== Brand (알바일주 톤) =====
-  static const Color brandBlue = Color(0xFF3B8AFF);
-  static const Color brandBlueDark = Color(0xFF1675F4);
-  static const Color bg = Color(0xFFF6F8FC);
-  static const Color textDark = Color(0xFF0C1F35);
-  static const Color textMute = Color(0xFF7A8596);
-  static const Color border = Color(0xFFE7ECF3);
+  // 자체 팔레트를 쓰면 화면 전환 시 배경·텍스트가 미세하게 어긋난다.
+  // 디자인 토큰(AppColors)만 사용한다.
+  static const Color brandBlue = AppColors.primary;
+  static const Color brandBlueDark = AppColors.primaryDark;
+  static const Color bg = AppColors.bgPage;
+  static const Color textDark = AppColors.textPrimary;
+  static const Color textMute = AppColors.textSecondary;
+  static const Color border = AppColors.border;
 
   List<dynamic> myJobs = [];
   bool isLoading = true;
@@ -291,10 +293,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                       width: 34,
                       height: 34,
                       decoration: BoxDecoration(
-                        color:
-                            widget.quickMode
-                                ? const Color(0xFFEEF5FF)
-                                : const Color(0xFFEFF5FF),
+                        color: AppColors.primaryLight,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: const Color(0xFFDCEAFF)),
                       ),

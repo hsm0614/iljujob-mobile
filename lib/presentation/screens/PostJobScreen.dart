@@ -13,19 +13,17 @@ class PostJobScreen extends StatefulWidget {
 class _PostJobScreenState extends State<PostJobScreen> {
   bool _submitted = false;
 
-  Future<bool> _onWillPop() async {
-    if (_submitted) return true;
+  Future<void> _onPopInvoked(bool didPop) async {
+    if (didPop || !mounted) return;
 
-    if (!mounted) return true;
-
-    final result = await showModalBottomSheet<bool>(
+    final leave = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => const _LeaveConfirmSheet(),
     );
 
-    return result ?? false;
+    if (leave == true && mounted) Navigator.of(context).pop();
   }
 
   @override
@@ -36,8 +34,10 @@ class _PostJobScreenState extends State<PostJobScreen> {
     final bool isRepost = args?['isRepost'] ?? false;
     final Job? existingJob = args?['existingJob'];
 
-    return WillPopScope(
-      onWillPop: _onWillPop,
+    return PopScope(
+      // 제출 완료 후엔 확인 없이 그냥 나간다.
+      canPop: _submitted,
+      onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop),
       child: Scaffold(
         backgroundColor: AppColors.bgPage,
         appBar: AppBar(

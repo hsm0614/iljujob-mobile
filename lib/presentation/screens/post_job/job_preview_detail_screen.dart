@@ -189,7 +189,8 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0.5,
-        foregroundColor: _kBrand,
+        // 제목에 브랜드 블루 금지 (디자인 가이드)
+        foregroundColor: _kText,
         title: const Text('공고 미리보기'),
         actions: [
           Container(
@@ -627,10 +628,11 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                       SizedBox(width: 6),
                       Text(
                         '등록 전 확인해주세요',
+                        // 섹션 헤더에 브랜드 블루 금지 (디자인 가이드)
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: _kBrand,
+                          color: _kText,
                         ),
                       ),
                     ],
@@ -654,9 +656,10 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                           const SizedBox(width: 6),
                           Text(
                             t,
+                            // _kBrand는 #E7F0FF 위에서 2.95:1 — AA 미달
                             style: const TextStyle(
                               fontSize: 12,
-                              color: _kBrand,
+                              color: _kText,
                             ),
                           ),
                         ],

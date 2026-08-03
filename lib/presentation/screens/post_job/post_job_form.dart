@@ -128,7 +128,7 @@ const _qSubs = [
   '근무지 주소를 검색해주세요',
   '근무 날짜와 시간을 한 번에 입력해주세요',
   '최저시급 10,320원 이상이어야 해요',
-  '선택 사항이에요 · 건너뛰어도 돼요',
+  '선택 사항이에요 · 다음은 미리보기예요',
 ];
 const _jobPostStepEvents = [
   'job_post_title_complete',
@@ -178,7 +178,6 @@ class _PostJobFormState extends State<PostJobForm>
   bool _isSameDayPay = false;
   // 장기 공고 전용
   bool _isAlwaysOpen = false;
-  int? _workDaysPerWeek;
   final _requiredCertsCtrl = TextEditingController();
   final _welfareCtrl = TextEditingController();
   String _description = '';
@@ -195,11 +194,7 @@ class _PostJobFormState extends State<PostJobForm>
   String companyName = '', managerName = '', managerPhone = '';
   DateTime? publishAt;
   bool _isAIGenerating = false, _isSubmitting = false;
-  bool _passCountLoading = false, _suspLoaded = false;
-  // 조회 실패와 "이용권 0개"는 다른 상태다. 섞으면 보유자에게 구매를 유도하게 된다.
-  bool _passCountFailed = false;
-  int _paidPassCount = 0;
-  int _urgentPassCount = 0;
+  bool _suspLoaded = false;
   // AI 할당량: -1=무제한(pro), 0=소진, N=잔여
   String? _subscriptionPlan;
   int _aiQuotaRemaining = 0;
@@ -251,12 +246,10 @@ class _PostJobFormState extends State<PostJobForm>
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _fadeCtrl.forward();
     _loadInitialData();
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _refreshPaidPassCount(),
-    );
     _loadSuspension();
-    _checkProStatus();
-    _loadAiQuota();
+    // _loadAiQuota()는 _subscriptionPlan을 읽으므로 반드시 구독 조회 뒤에.
+    // 병렬로 두면 구독자가 '주 1회'로 계산되는 경합이 있었다.
+    _checkProStatus().then((_) => _loadAiQuota());
   }
 
   @override
@@ -273,6 +266,8 @@ class _PostJobFormState extends State<PostJobForm>
     _negoCtrl.dispose();
     _externalApplyUrlCtrl.dispose();
     _payCtrl.dispose();
+    _requiredCertsCtrl.dispose();
+    _welfareCtrl.dispose();
     super.dispose();
   }
 
@@ -391,46 +386,31 @@ class _PostJobFormState extends State<PostJobForm>
     }
   }
 
-  Future<void> _refreshPaidPassCount() async {
+  /// 이용권 잔여 조회. 실패하면 null을 돌려준다.
+  /// 실패를 0개로 뭉개면 이용권 보유자에게 결제 화면을 띄우게 되므로 구분해야 한다.
+  Future<({int instant, int urgent})?> _fetchPassCounts() async {
     try {
-      setState(() {
-        _passCountLoading = true;
-        _passCountFailed = false;
-      });
       final prefs = await SharedPreferences.getInstance();
       final clientId = prefs.getInt('userId');
-      if (clientId == null || clientId <= 0) {
-        setState(() {
-          _passCountLoading = false;
-          _passCountFailed = true;
-        });
-        return;
-      }
+      if (clientId == null || clientId <= 0) return null;
       final res = await AuthenticatedHttpClient.get(
         Uri.parse(
           '$baseUrl/api/pass/remain',
         ).replace(queryParameters: {'clientId': '$clientId'}),
         headers: {'Accept': 'application/json'},
       ).timeout(const Duration(seconds: 8));
-      if (!mounted) return;
-      if (res.statusCode == 200) {
-        final d = jsonDecode(utf8.decode(res.bodyBytes));
-        setState(() {
-          _paidPassCount =
-              int.tryParse(
-                '${d['instant'] ?? d['remaining'] ?? d['remain'] ?? 0}',
-              ) ??
-              0;
-          _urgentPassCount = int.tryParse('${d['urgent'] ?? 0}') ?? 0;
-        });
-      } else {
-        setState(() => _passCountFailed = true);
-      }
+      if (res.statusCode != 200) return null;
+      final d = jsonDecode(utf8.decode(res.bodyBytes));
+      return (
+        instant:
+            int.tryParse(
+              '${d['instant'] ?? d['remaining'] ?? d['remain'] ?? 0}',
+            ) ??
+            0,
+        urgent: int.tryParse('${d['urgent'] ?? 0}') ?? 0,
+      );
     } catch (_) {
-      // 실패를 0개로 두면 이용권 보유자에게 결제 화면을 띄우게 된다.
-      if (mounted) setState(() => _passCountFailed = true);
-    } finally {
-      if (mounted) setState(() => _passCountLoading = false);
+      return null;
     }
   }
 
@@ -680,18 +660,80 @@ class _PostJobFormState extends State<PostJobForm>
     );
   }
 
-  void _showError(String msg) => showDialog(
+  /// 프로젝트 규칙: 사용자 확인 모달은 AlertDialog 대신 바텀시트.
+  void _showError(String msg) => showModalBottomSheet(
     context: context,
+    backgroundColor: Colors.transparent,
     builder:
-        (_) => AlertDialog(
-          title: const Text('오류'),
-          content: Text(msg),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('확인'),
-            ),
-          ],
+        (ctx) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.fromLTRB(
+            24,
+            20,
+            24,
+            MediaQuery.of(ctx).padding.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE5E7EB),
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                width: 52,
+                height: 52,
+                decoration: const BoxDecoration(
+                  color: AppColors.warningLight,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.error_outline_rounded,
+                  size: 26,
+                  color: AppColors.warningDark,
+                ),
+              ),
+              const SizedBox(height: 14),
+              Text(
+                msg,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: _text,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _blue,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    '확인',
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
   );
 
@@ -774,7 +816,7 @@ class _PostJobFormState extends State<PostJobForm>
         // 장기 공고 전용
         jobType: _isShortTerm ? 'short' : 'long',
         isAlwaysOpen: !_isShortTerm && _isAlwaysOpen,
-        workDaysPerWeek: !_isShortTerm ? _workDaysPerWeek : null,
+        // workDaysPerWeek: 입력 UI가 제거되어 항상 null이었음. 필드까지 정리함.
         requiredCerts: !_isShortTerm ? _requiredCertsCtrl.text.trim() : null,
         welfare: !_isShortTerm ? _welfareCtrl.text.trim() : null,
         externalApplyEnabled: isPaid && _externalApplyEnabled,
@@ -932,7 +974,9 @@ class _PostJobFormState extends State<PostJobForm>
             ),
       );
     } catch (e) {
-      _showError('서버 오류: $e');
+      // 원시 예외 문자열은 사장님에게 아무 의미가 없다. 로그로만 남긴다.
+      debugPrint('❌ 공고 등록 실패: $e');
+      _showError('공고를 등록하지 못했어요.\n잠시 후 다시 시도해주세요.');
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -988,17 +1032,9 @@ class _PostJobFormState extends State<PostJobForm>
 
   Future<void> _showPublishSheet() async {
     ClientTrackingService.instance.track('job_post_publish_options_view');
-    await _refreshPaidPassCount();
 
-    // 근무지 위치 기반 오늘 가능 구직자 수
-    int availableCount = 0;
-    if (_lat != 0 && _lng != 0) {
-      availableCount = await JobService.fetchAvailableWorkersCount(
-        lat: _lat,
-        lng: _lng,
-      ).catchError((_) => 0);
-    }
-
+    // 조회를 시트 앞에서 await하면 최대 8초+ 먹통이 된다(C2).
+    // 시트를 먼저 띄우고 조회는 시트가 직접 하도록 넘긴다.
     if (!mounted) return;
     showModalBottomSheet(
       context: context,
@@ -1010,16 +1046,16 @@ class _PostJobFormState extends State<PostJobForm>
       backgroundColor: Colors.white,
       builder:
           (ctx) => _PublishSheet(
-            paidPassCount: _paidPassCount,
-            urgentPassCount: _urgentPassCount,
-            passCountLoading: _passCountLoading,
-            passCountFailed: _passCountFailed,
-            availableWorkersCount: availableCount,
+            fetchPassCounts: _fetchPassCounts,
+            fetchWorkerCount:
+                () =>
+                    (_lat != 0 && _lng != 0)
+                        ? JobService.fetchAvailableWorkersCount(
+                          lat: _lat,
+                          lng: _lng,
+                        )
+                        : Future.value(0),
             externalApplyEnabled: _externalApplyEnabled,
-            onRetryPassCount: () {
-              Navigator.pop(ctx);
-              _showPublishSheet();
-            },
             onFreeSubmit: () {
               Navigator.pop(ctx);
               if (_externalApplyEnabled) {
@@ -1054,7 +1090,7 @@ class _PostJobFormState extends State<PostJobForm>
                   builder: (_) => const PurchasePassScreen(fromPostJob: true),
                 ),
               );
-              await _refreshPaidPassCount();
+              // 시트를 다시 열면 _PublishSheet.initState가 잔여를 재조회한다.
               if (result is Map && result['success'] == true && mounted) {
                 ClientTrackingService.instance.track(
                   'job_post_payment_success',
@@ -1159,6 +1195,9 @@ class _PostJobFormState extends State<PostJobForm>
         'description': _description,
         'externalApplyEnabled': _externalApplyEnabled,
         'externalApplyUrl': _externalApplyUrlCtrl.text.trim(),
+        'isAlwaysOpen': _isAlwaysOpen,
+        'requiredCerts': _requiredCertsCtrl.text.trim(),
+        'welfare': _welfareCtrl.text.trim(),
       }),
     );
   }
@@ -1198,6 +1237,9 @@ class _PostJobFormState extends State<PostJobForm>
         _descCtrl.text = _description;
         _externalApplyEnabled = d['externalApplyEnabled'] as bool? ?? false;
         _externalApplyUrlCtrl.text = d['externalApplyUrl']?.toString() ?? '';
+        _isAlwaysOpen = d['isAlwaysOpen'] as bool? ?? false;
+        _requiredCertsCtrl.text = d['requiredCerts']?.toString() ?? '';
+        _welfareCtrl.text = d['welfare']?.toString() ?? '';
       });
       _validatePay();
     } catch (_) {
@@ -1316,7 +1358,60 @@ class _PostJobFormState extends State<PostJobForm>
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: Colors.white,
-      body: SafeArea(
+      body: Stack(
+        children: [
+          _buildBody(),
+          // 등록 시트를 닫은 뒤 이미지 업로드 포함 수 초가 걸린다.
+          // 피드백이 없으면 실패한 줄 알고 뒤로 가버린다(C1).
+          if (_isSubmitting) _submittingOverlay(),
+        ],
+      ),
+    );
+  }
+
+  Widget _submittingOverlay() => Positioned.fill(
+    child: AbsorbPointer(
+      child: ColoredBox(
+        color: Colors.black.withValues(alpha: 0.35),
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                ),
+                SizedBox(height: 14),
+                Text(
+                  '공고를 등록하고 있어요',
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: _text,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '사진이 있으면 조금 걸릴 수 있어요',
+                  style: TextStyle(fontSize: 12, color: _sub),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Widget _buildBody() {
+    return SafeArea(
         child: Column(
           children: [
             Padding(
@@ -1339,8 +1434,11 @@ class _PostJobFormState extends State<PostJobForm>
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(99),
+                // 입력 6단계 뒤에도 미리보기·등록방식 2화면이 더 있다.
+                // 분모를 6으로 두면 마지막 입력에서 100%가 되어, 결제 결정이
+                // 남은 지점에서 "다 끝났다"는 신호를 준다(목표 경사 붕괴).
                 child: LinearProgressIndicator(
-                  value: (_q + 1) / _totalQ,
+                  value: (_q + 1) / (_totalQ + 2),
                   minHeight: 4,
                   backgroundColor: _border,
                   valueColor: const AlwaysStoppedAnimation<Color>(_blue),
@@ -1403,7 +1501,6 @@ class _PostJobFormState extends State<PostJobForm>
             ),
           ],
         ),
-      ),
     );
   }
 
@@ -1472,6 +1569,8 @@ class _PostJobFormState extends State<PostJobForm>
         controller: _titleCtrl,
         autofocus: false,
         textInputAction: TextInputAction.done,
+        // 목록에서 잘리지 않는 길이. 카운터로 남은 글자를 보여준다.
+        maxLength: 40,
         onChanged: (v) {
           setState(() => _title = v.trim());
           _scheduleDraftSave();
@@ -2449,17 +2548,45 @@ class _PostJobFormState extends State<PostJobForm>
                 child: Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                       child: Column(
                         children: [
-                          const Text(
-                            '근무 시간 설정',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          // enableDrag:false라 닫기 버튼이 없으면 탈출구가
+                          // 시스템 뒤로가기뿐이다.
+                          Row(
+                            children: [
+                              const SizedBox(width: 44),
+                              const Expanded(
+                                child: Text(
+                                  '근무 시간 설정',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: _text,
+                                  ),
+                                ),
+                              ),
+                              Semantics(
+                                button: true,
+                                label: '닫기',
+                                child: GestureDetector(
+                                  behavior: HitTestBehavior.opaque,
+                                  onTap: () => Navigator.pop(ctx),
+                                  child: const SizedBox(
+                                    width: 44,
+                                    height: 44,
+                                    child: Icon(
+                                      Icons.close_rounded,
+                                      size: 20,
+                                      color: _label,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 4),
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.all(12),
@@ -2769,18 +2896,27 @@ class _PostJobFormState extends State<PostJobForm>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.red.shade50,
+              color: const Color(0xFFFEF2F2),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.red.shade200),
+              border: Border.all(color: const Color(0xFFFECACA)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.error_outline, size: 16, color: Colors.red),
+                // Colors.red는 red.shade50 위에서 3.22:1 — AA 미달.
+                const Icon(
+                  Icons.error_outline,
+                  size: 16,
+                  color: AppColors.error,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     _payWarning!,
-                    style: const TextStyle(fontSize: 12, color: Colors.red),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.error,
+                    ),
                   ),
                 ),
               ],
@@ -3259,8 +3395,6 @@ class _PostJobFormState extends State<PostJobForm>
           ),
           const SizedBox(height: 16),
 
-          // 주 N일 근무
-          const SizedBox(height: 16),
           // 자격요건
           const Text(
             '자격요건 (선택)',
@@ -3280,6 +3414,7 @@ class _PostJobFormState extends State<PostJobForm>
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
             child: TextField(
               controller: _requiredCertsCtrl,
+              onChanged: (_) => _scheduleDraftSave(),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -3288,7 +3423,7 @@ class _PostJobFormState extends State<PostJobForm>
               decoration: const InputDecoration(
                 border: InputBorder.none,
                 hintText: '예) 건설업 이수증, 현장 경력 1개월',
-                hintStyle: TextStyle(fontSize: 13, color: Color(0xFFBCC0C8)),
+                hintStyle: TextStyle(fontSize: 13, color: _label),
               ),
             ),
           ),
@@ -3312,6 +3447,7 @@ class _PostJobFormState extends State<PostJobForm>
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
             child: TextField(
               controller: _welfareCtrl,
+              onChanged: (_) => _scheduleDraftSave(),
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -3320,7 +3456,7 @@ class _PostJobFormState extends State<PostJobForm>
               decoration: const InputDecoration(
                 border: InputBorder.none,
                 hintText: '예) 4대보험, 안전장구류 지급, 식대 별도',
-                hintStyle: TextStyle(fontSize: 13, color: Color(0xFFBCC0C8)),
+                hintStyle: TextStyle(fontSize: 13, color: _label),
               ),
             ),
           ),
@@ -3612,7 +3748,7 @@ class _PostJobFormState extends State<PostJobForm>
 //  공통 위젯
 // ════════════════════════════════════════════════════════
 class _NextBtn extends StatelessWidget {
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
   final String label;
   const _NextBtn({required this.onTap, this.label = '다음'});
   @override
@@ -3623,6 +3759,9 @@ class _NextBtn extends StatelessWidget {
       style: ElevatedButton.styleFrom(
         backgroundColor: _blue,
         foregroundColor: Colors.white,
+        // onTap이 null이면 눌리지 않는다는 게 보여야 한다.
+        disabledBackgroundColor: _border,
+        disabledForegroundColor: _label,
         padding: const EdgeInsets.symmetric(vertical: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         elevation: 0,
@@ -3651,7 +3790,7 @@ class _TimeInputCard extends StatelessWidget {
     final hasValue = value.isNotEmpty;
     return Semantics(
       button: true,
-      label: hasValue ? '$label $value, 변경하려면 두 번 탭' : '$label 입력',
+      label: hasValue ? "$label $value, 변경하려면 두 번 탭" : "$label 입력",
       child: GestureDetector(
         onTap: onTap,
         child: Container(
@@ -4061,29 +4200,22 @@ class _LaborNoticeState extends State<_LaborNotice> {
 //  등록 방식 바텀시트
 // ════════════════════════════════════════════════════════
 class _PublishSheet extends StatefulWidget {
-  final int paidPassCount;
-  final int urgentPassCount;
-  final bool passCountLoading;
-  final bool passCountFailed;
-  final int availableWorkersCount;
+  /// 이용권 잔여 조회. null이면 조회 실패(= "0개"와 구분해야 함).
+  final Future<({int instant, int urgent})?> Function() fetchPassCounts;
+  final Future<int> Function() fetchWorkerCount;
   final VoidCallback onFreeSubmit;
   final void Function(DateTime?) onPaidSubmit;
   final VoidCallback onUrgentSubmit;
   final VoidCallback onBuyPass;
-  final VoidCallback onRetryPassCount;
   final bool externalApplyEnabled;
   const _PublishSheet({
-    required this.paidPassCount,
-    required this.passCountLoading,
+    required this.fetchPassCounts,
+    required this.fetchWorkerCount,
     required this.onFreeSubmit,
     required this.onPaidSubmit,
     required this.onUrgentSubmit,
     required this.onBuyPass,
-    required this.onRetryPassCount,
-    this.passCountFailed = false,
     this.externalApplyEnabled = false,
-    this.urgentPassCount = 0,
-    this.availableWorkersCount = 0,
   });
   @override
   State<_PublishSheet> createState() => _PublishSheetState();
@@ -4096,7 +4228,44 @@ class _PublishSheetState extends State<_PublishSheet> {
   TimeOfDay? _scheduledTime;
   bool _confirming = false;
 
+  // 시트가 조회를 소유한다. 부모에서 await하면 시트가 뜨기까지 최대 8초+ 걸린다.
+  int _paidPassCount = 0;
+  int _urgentPassCount = 0;
+  int _availableWorkersCount = 0;
+  bool _passCountLoading = true;
+  bool _passCountFailed = false;
+
   final ScrollController _scrollCtrl = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCounts();
+    widget
+        .fetchWorkerCount()
+        .then((c) {
+          if (mounted) setState(() => _availableWorkersCount = c);
+        })
+        .catchError((_) {});
+  }
+
+  Future<void> _loadCounts() async {
+    setState(() {
+      _passCountLoading = true;
+      _passCountFailed = false;
+    });
+    final r = await widget.fetchPassCounts();
+    if (!mounted) return;
+    setState(() {
+      _passCountLoading = false;
+      if (r == null) {
+        _passCountFailed = true;
+      } else {
+        _paidPassCount = r.instant;
+        _urgentPassCount = r.urgent;
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -4104,12 +4273,14 @@ class _PublishSheetState extends State<_PublishSheet> {
     super.dispose();
   }
 
-  bool get _paidOk => widget.paidPassCount > 0 || widget.paidPassCount == -1;
+  bool get _paidOk =>
+      !_passCountFailed && (_paidPassCount > 0 || _paidPassCount == -1);
 
   void _selectInstant() {
-    // 조회 실패 상태에서는 결제로 보내지 않는다 — 이미 보유 중일 수 있다.
-    if (widget.passCountFailed) {
-      widget.onRetryPassCount();
+    // 조회 중이거나 실패했으면 결제로 보내지 않는다 — 이미 보유 중일 수 있다.
+    if (_passCountLoading) return;
+    if (_passCountFailed) {
+      _loadCounts();
       return;
     }
     if (!_paidOk) {
@@ -4180,10 +4351,10 @@ class _PublishSheetState extends State<_PublishSheet> {
                 const SizedBox(height: 6),
                 Text(
                   // 이용권 보유 여부에 따라 "얼마 드는지"를 여기서 미리 밝힌다.
-                  widget.paidPassCount == -1
+                  _paidPassCount == -1
                       ? '구독 혜택으로 지금 바로 상단에 노출할 수 있어요.\n이용권 차감 없이 진행됩니다.'
-                      : widget.paidPassCount > 0
-                      ? '보유 중인 즉시게시 이용권 ${widget.paidPassCount}개로\n지금 바로 상단에 노출할 수 있어요. 추가 결제 없어요.'
+                      : _paidPassCount > 0
+                      ? '보유 중인 즉시게시 이용권 ${_paidPassCount}개로\n지금 바로 상단에 노출할 수 있어요. 추가 결제 없어요.'
                       : '즉시게시 이용권(₩4,900)을 구매하면 지금 바로\n상단에 노출할 수 있어요.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
@@ -4297,7 +4468,7 @@ class _PublishSheetState extends State<_PublishSheet> {
               ),
             ),
             const SizedBox(height: 20),
-            if (widget.availableWorkersCount > 0) ...[
+            if (_availableWorkersCount > 0) ...[
               const SizedBox(height: 14),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -4318,7 +4489,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      '근무지 반경 5km 내 오늘 가능한 알바생 ${widget.availableWorkersCount}명',
+                      '근무지 반경 5km 내 오늘 가능한 알바생 ${_availableWorkersCount}명',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -4336,18 +4507,18 @@ class _PublishSheetState extends State<_PublishSheet> {
               Semantics(
                 button: true,
                 label:
-                    widget.passCountFailed
+                    _passCountFailed
                         ? '긴급 호출, 이용권 확인 실패. 다시 시도'
-                        : (widget.urgentPassCount > 0 ||
-                            widget.urgentPassCount == -1)
+                        : (_urgentPassCount > 0 ||
+                            _urgentPassCount == -1)
                         ? '긴급 호출로 등록하기, 이용권 사용'
                         : '긴급 호출로 등록하기, 7900원',
                 child: GestureDetector(
                 onTap:
-                    widget.passCountFailed
-                        ? widget.onRetryPassCount
-                        : (widget.urgentPassCount > 0 ||
-                            widget.urgentPassCount == -1)
+                    _passCountFailed
+                        ? _loadCounts
+                        : (_urgentPassCount > 0 ||
+                            _urgentPassCount == -1)
                         ? widget.onUrgentSubmit
                         : widget.onBuyPass,
                 child: Container(
@@ -4359,8 +4530,8 @@ class _PublishSheetState extends State<_PublishSheet> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors:
-                          (widget.urgentPassCount > 0 ||
-                                  widget.urgentPassCount == -1)
+                          (_urgentPassCount > 0 ||
+                                  _urgentPassCount == -1)
                               ? [
                                 const Color(0xFFEF4444),
                                 const Color(0xFFDC2626),
@@ -4421,12 +4592,12 @@ class _PublishSheetState extends State<_PublishSheet> {
                                     borderRadius: BorderRadius.circular(99),
                                   ),
                                   child: Text(
-                                    widget.passCountFailed
+                                    _passCountFailed
                                         ? '확인 필요'
-                                        : widget.urgentPassCount == -1
+                                        : _urgentPassCount == -1
                                         ? '무제한 (구독)'
-                                        : widget.urgentPassCount > 0
-                                        ? '${widget.urgentPassCount}회 보유'
+                                        : _urgentPassCount > 0
+                                        ? '${_urgentPassCount}회 보유'
                                         : '₩7,900',
                                     style: const TextStyle(
                                       fontSize: 11,
@@ -4439,10 +4610,10 @@ class _PublishSheetState extends State<_PublishSheet> {
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              widget.passCountFailed
+                              _passCountFailed
                                   ? '보유 이용권을 확인하지 못했어요. 탭해서 다시 시도해주세요.'
-                                  : (widget.urgentPassCount > 0 ||
-                                      widget.urgentPassCount == -1)
+                                  : (_urgentPassCount > 0 ||
+                                      _urgentPassCount == -1)
                                   ? '즉시 노출 · 반경 5km 알바생 최대 10명 · 무응답 100% 환급 · 추가 결제 없음'
                                   : '₩7,900로 즉시 노출 + 반경 5km 알바생 직접 호출 · 무응답 100% 환급',
                               style: TextStyle(
@@ -4480,9 +4651,9 @@ class _PublishSheetState extends State<_PublishSheet> {
               ),
               const SizedBox(height: 16),
               _CompareCard(
-                paidPassCount: widget.paidPassCount,
-                passCountLoading: widget.passCountLoading,
-                passCountFailed: widget.passCountFailed,
+                paidPassCount: _paidPassCount,
+                passCountLoading: _passCountLoading,
+                passCountFailed: _passCountFailed,
                 onFreeTap: _showFreeUpsell,
                 onPaidTap: _selectInstant,
               ),
@@ -4559,7 +4730,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                   onTap:
                       _canConfirm
                           ? () => setState(() => _confirming = true)
-                          : () {},
+                          : null,
                   label:
                       _isScheduled &&
                               (_scheduledDate == null || _scheduledTime == null)
@@ -4574,7 +4745,7 @@ class _PublishSheetState extends State<_PublishSheet> {
               const Icon(Icons.flash_on_rounded, size: 36, color: _blue),
               const SizedBox(height: 12),
               Text(
-                widget.paidPassCount == -1 ? '즉시게시로 등록할까요?' : '이용권 1회 차감',
+                _paidPassCount == -1 ? '즉시게시로 등록할까요?' : '이용권 1회 차감',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -4582,7 +4753,7 @@ class _PublishSheetState extends State<_PublishSheet> {
               ),
               const SizedBox(height: 8),
               Text(
-                widget.paidPassCount == -1
+                _paidPassCount == -1
                     ? '구독 혜택으로 즉시 노출됩니다.\n이용권 차감 없이 진행됩니다.'
                     : '이 공고를 등록하면 보유 이용권이\n1회 차감됩니다. 진행하시겠어요?',
                 textAlign: TextAlign.center,

@@ -378,17 +378,97 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
       if (!mounted) return;
       Navigator.pop(context);
 
+      // 스낵바 한 줄로 끝내면 같은 성취인데 본 폼과 기억이 달라진다(피크-엔드).
       final isDelayed = !isPaid && result['status'] == 'reserved';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            isDelayed ? '공고가 등록되었어요. 12시간 후 노출됩니다.' : '공고가 즉시 노출됩니다!',
-          ),
-          backgroundColor:
-              isDelayed ? const Color(0xFF6B7280) : const Color(0xFF22C55E),
+      final eta = DateTime.now().add(const Duration(hours: 12));
+      await showModalBottomSheet(
+        context: context,
+        isDismissible: false,
+        enableDrag: false,
+        useSafeArea: true,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
+        builder:
+            (sheetCtx) => Padding(
+              padding: EdgeInsets.fromLTRB(
+                28,
+                32,
+                28,
+                MediaQuery.of(sheetCtx).padding.bottom + 24,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 68,
+                    height: 68,
+                    decoration: BoxDecoration(
+                      color:
+                          isDelayed
+                              ? AppColors.warningLight
+                              : AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Icon(
+                      isDelayed
+                          ? Icons.schedule_rounded
+                          : Icons.check_circle_rounded,
+                      size: 38,
+                      color: isDelayed ? AppColors.warningDark : _blue,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    '공고 등록 완료!',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                      color: _text,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    isDelayed
+                        ? '오늘 ${eta.hour.toString().padLeft(2, '0')}:${eta.minute.toString().padLeft(2, '0')} 이후 구직자에게 노출됩니다.\n그 전까지 언제든 수정할 수 있어요.'
+                        : '지금 바로 구직자에게 노출됩니다.',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: _sub,
+                      height: 1.55,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(sheetCtx),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _blue,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 15),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                      child: const Text(
+                        '내 공고 보러가기',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
       );
 
+      if (!mounted) return;
       if (userType == 'client') {
         Navigator.pushNamedAndRemoveUntil(
           context,
