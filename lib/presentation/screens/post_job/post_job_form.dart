@@ -29,6 +29,7 @@ import '../../../data/services/client_tracking_service.dart';
 import 'post_job_controller.dart' show getCurrentLocation;
 import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/utils/date_ymd.dart';
+import 'package:iljujob/widget/picker_sheets.dart';
 
 // 2026년 적용 최저시급
 const int minWagePerHour = 10320;
@@ -2216,130 +2217,12 @@ class _PostJobFormState extends State<PostJobForm>
                     : '근무 날짜 선택',
             child: GestureDetector(
             onTap: () async {
-              DateTime focused = _startDate ?? today;
-              DateTime? selected = _startDate;
-              final picked = await showModalBottomSheet<DateTime>(
-                context: context,
-                backgroundColor: Colors.white,
-                shape: const RoundedRectangleBorder(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-                ),
-                isScrollControlled: true,
-                builder: (ctx) {
-                  return StatefulBuilder(
-                    builder:
-                        (ctx, set) => SafeArea(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const SizedBox(height: 12),
-                              Container(
-                                width: 40,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: Colors.black12,
-                                  borderRadius: BorderRadius.circular(99),
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                '근무 날짜 선택',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  color: _text,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              TableCalendar(
-                                locale: 'ko_KR',
-                                focusedDay: focused,
-                                firstDay: today,
-                                lastDay: today.add(const Duration(days: 365)),
-                                selectedDayPredicate:
-                                    (d) => isSameDay(d, selected),
-                                onDaySelected:
-                                    (d, f) => set(() {
-                                      selected = DateTime(
-                                        d.year,
-                                        d.month,
-                                        d.day,
-                                      );
-                                      focused = d;
-                                    }),
-                                onPageChanged: (f) => set(() => focused = f),
-                                calendarStyle: const CalendarStyle(
-                                  todayDecoration: BoxDecoration(
-                                    color: Color(0xFFCCDEFF),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  todayTextStyle: TextStyle(
-                                    color: _blue,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                  selectedDecoration: BoxDecoration(
-                                    color: _blue,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  selectedTextStyle: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                  weekendTextStyle: TextStyle(
-                                    color: Color(0xFFEF4444),
-                                  ),
-                                ),
-                                headerStyle: const HeaderStyle(
-                                  formatButtonVisible: false,
-                                  titleCentered: true,
-                                  titleTextStyle: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    color: _text,
-                                  ),
-                                ),
-                              ),
-                              Padding(
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  8,
-                                  16,
-                                  16,
-                                ),
-                                child: SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton(
-                                    onPressed:
-                                        selected == null
-                                            ? null
-                                            : () =>
-                                                Navigator.pop(ctx, selected),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: _blue,
-                                      foregroundColor: Colors.white,
-                                      disabledBackgroundColor: _border,
-                                      padding: const EdgeInsets.symmetric(
-                                        vertical: 14,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                    child: const Text(
-                                      '선택 완료',
-                                      style: TextStyle(
-                                        fontSize: 15,
-                                        fontWeight: FontWeight.w700,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                  );
-                },
+              final picked = await pickDateSheet(
+                context,
+                title: '근무 날짜 선택',
+                initial: _startDate,
+                firstDate: today,
+                lastDate: today.add(const Duration(days: 365)),
               );
               if (picked != null) {
                 setState(() {
@@ -4937,12 +4820,15 @@ class _PublishSheetState extends State<_PublishSheet> {
             : '공개 날짜 선택',
     child: GestureDetector(
     onTap: () async {
-      final p = await showDatePicker(
-        context: context,
-        initialDate:
-            _scheduledDate ?? DateTime.now().add(const Duration(days: 1)),
-        firstDate: DateTime.now(),
-        lastDate: DateTime(2100),
+      // 같은 퍼널의 근무 날짜와 동일한 바텀시트를 쓴다.
+      // Material 다이얼로그를 섞으면 인터랙션을 두 번 배워야 한다.
+      final now = DateTime.now();
+      final p = await pickDateSheet(
+        context,
+        title: '공개 날짜 선택',
+        initial: _scheduledDate ?? now.add(const Duration(days: 1)),
+        firstDate: DateTime(now.year, now.month, now.day),
+        lastDate: now.add(const Duration(days: 365)),
       );
       if (p != null) setState(() => _scheduledDate = p);
     },
@@ -4987,9 +4873,11 @@ class _PublishSheetState extends State<_PublishSheet> {
             : '공개 시각 선택',
     child: GestureDetector(
     onTap: () async {
-      final p = await showTimePicker(
-        context: context,
-        initialTime: _scheduledTime ?? const TimeOfDay(hour: 9, minute: 0),
+      // 근무 시간 시트와 동일한 스피너. Material 다이얼로그 혼용 제거.
+      final p = await pickTimeSheet(
+        context,
+        title: '공개 시각 선택',
+        initial: _scheduledTime,
       );
       if (p != null) setState(() => _scheduledTime = p);
     },

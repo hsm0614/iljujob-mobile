@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'package:table_calendar/table_calendar.dart';
+import 'package:iljujob/widget/picker_sheets.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/data/services/job_service.dart';
@@ -176,119 +176,30 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
   }
 
   // ─── 날짜 피커 ───
-  void _pickDate({required bool isStart}) {
-    final today = DateTime.now();
+  // 공용 시트 사용. 이전엔 본 폼과 색 의미가 반대였다
+  // (본 폼: 파란 원 = 선택 / 여기: 파란 원 = 오늘, 검정 = 선택).
+  Future<void> _pickDate({required bool isStart}) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     final minDate = isStart ? today : (startDate ?? today);
-    DateTime selected = isStart ? (startDate ?? today) : (endDate ?? minDate);
-    if (selected.isBefore(minDate)) selected = minDate;
-    DateTime focused = selected;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder:
-          (_) => StatefulBuilder(
-            builder: (ctx, set) {
-              final safePad = MediaQuery.of(ctx).padding.bottom;
-              return ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(ctx).size.height * 0.75,
-                ),
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                        child: Column(
-                          children: [
-                            Text(
-                              isStart ? '시작일 선택' : '종료일 선택',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            TableCalendar(
-                              locale: 'ko_KR',
-                              focusedDay: focused,
-                              firstDay: minDate,
-                              lastDay: today.add(const Duration(days: 365)),
-                              selectedDayPredicate:
-                                  (d) => isSameDay(d, selected),
-                              onDaySelected:
-                                  (d, f) => set(() {
-                                    selected = DateTime(d.year, d.month, d.day);
-                                    focused = d;
-                                  }),
-                              onPageChanged: (f) => set(() => focused = f),
-                              calendarStyle: const CalendarStyle(
-                                todayDecoration: BoxDecoration(
-                                  color: _blue,
-                                  shape: BoxShape.circle,
-                                ),
-                                selectedDecoration: BoxDecoration(
-                                  color: Color(0xFF191F28),
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              headerStyle: const HeaderStyle(
-                                formatButtonVisible: false,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    SafeArea(
-                      top: false,
-                      minimum: EdgeInsets.fromLTRB(16, 8, 16, safePad + 8),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              if (isStart) {
-                                startDate = selected;
-                                if (endDate != null &&
-                                    endDate!.isBefore(selected)) {
-                                  endDate = selected;
-                                }
-                              } else {
-                                endDate = selected;
-                              }
-                            });
-                            Navigator.pop(ctx);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: _blue,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            '선택 완료',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
+    final picked = await pickDateSheet(
+      context,
+      title: isStart ? '시작일 선택' : '종료일 선택',
+      initial: isStart ? (startDate ?? today) : (endDate ?? minDate),
+      firstDate: minDate,
+      lastDate: today.add(const Duration(days: 365)),
     );
+    if (picked == null || !mounted) return;
+    setState(() {
+      if (isStart) {
+        startDate = picked;
+        if (endDate != null && endDate!.isBefore(picked)) endDate = picked;
+      } else {
+        endDate = picked;
+      }
+    });
   }
+
 
   // ─── 급여 검증 ───
   void _validatePay() {
