@@ -1998,6 +1998,16 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     // 원인별 빈 상태: 검색어 때문인지, 주변에 공고가 없는 건지 구분해서 처방
     final hasQuery = searchQuery.trim().isNotEmpty;
 
+    // 활성 구직자의 86%가 5km 내 공고 0개를 본다(로드맵 실측).
+    // 앱에서 가장 많이 노출되는 화면인데 지금까지 계측이 없었다.
+    // build 중이므로 프레임 이후에 보낸다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScreenAnalyticsService.instance.logEvent(
+        'worker_empty_jobs_shown',
+        params: {'cause': hasQuery ? 'search' : 'no_nearby_jobs'},
+      );
+    });
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 32),

@@ -7,6 +7,7 @@ import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/main.dart'; // ✅ sendFcmTokenUnified 사용을 위해
 import 'package:iljujob/presentation/screens/webview_screen.dart';
 import 'package:iljujob/presentation/screens/TermsDetailScreen.dart';
+import 'package:iljujob/data/services/screen_analytics_service.dart';
 
 const kBrand = Color(0xFF3B8AFF);
 
@@ -174,6 +175,10 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
         if (!mounted) return;
         Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       } else {
+        // 사장님은 sign_up_client이 있는데 구직자는 가입 계측이 없었다.
+        // 구직자 퍼널의 출발점이라 이게 없으면 이탈률 분모를 못 잡는다.
+        ScreenAnalyticsService.instance.logEvent('worker_signup_complete');
+
         // ✅ 신규 회원 → 다음 단계
         await Future.delayed(const Duration(milliseconds: 300));
         if (!mounted) return;

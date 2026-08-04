@@ -745,6 +745,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   Future<void> _applyToJob() async {
+    // 퍼널: 지원 의도 → 성공/실패. 셋을 다 찍어야 어디서 깨지는지 보인다.
+    ScreenAnalyticsService.instance.logEvent(
+      'worker_apply_tap',
+      params: {'job_id': widget.job.id, 'category': widget.job.category},
+    );
     // 0) 정지(차단) 가드: _suspension이 없다면 기본값(정상)으로 판단
     final s =
         _suspension ??
@@ -753,7 +758,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           suspendedUntil: null,
           suspendedReason: null,
         );
-    if (!guardSuspended(context, s)) return; // 정지면 토스트 띄우고 중단
+    if (!guardSuspended(context, s)) {
+      ScreenAnalyticsService.instance.logEvent(
+        'worker_apply_fail',
+        params: {'reason': 'suspended'},
+      );
+      return; // 정지면 토스트 띄우고 중단
+    }
 
     // 1) 기본 검증
     final prefs = await SharedPreferences.getInstance();
@@ -788,12 +799,20 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             msg = data['message']?.toString() ?? msg;
           }
         } catch (_) {}
+        ScreenAnalyticsService.instance.logEvent(
+          'worker_apply_fail',
+          params: {'reason': 'blocked', 'status': response.statusCode},
+        );
         _showSnack('❌ $msg');
         return;
       }
 
       // 2-2) 정상 처리
       if (response.statusCode == 200) {
+        ScreenAnalyticsService.instance.logEvent(
+          'worker_apply_complete',
+          params: {'job_id': widget.job.id, 'category': widget.job.category},
+        );
         _showSnack('✅ 지원 완료');
 
         // ✅ apply 로그 추가
