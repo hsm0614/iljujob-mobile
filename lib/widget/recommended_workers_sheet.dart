@@ -37,6 +37,8 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
   final Set<int> _inviting = {};
   final Map<int, InviteState> _inviteState = {};
   final Map<int, int> _roomIdByWorker = {};
+  final Map<int, String> _initiatedBy = {}; // 'worker'=지원함 / 'client'=초대수락
+  String _query = '';
 
   @override
   void initState() {
@@ -50,6 +52,7 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
   void _applyServerInviteStates(List<Map<String, dynamic>> items) {
     final nextState = <int, InviteState>{};
     final nextRoom = <int, int>{};
+    final nextBy = <int, String>{};
     for (final m in items) {
       final wid = _toDouble(m['workerId']).toInt();
       if (wid == 0) continue;
@@ -60,6 +63,8 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
       };
       final rid = m['roomId'];
       if (rid is num) nextRoom[wid] = rid.toInt();
+      final by = m['initiatedBy']?.toString();
+      if (by != null && by.isNotEmpty) nextBy[wid] = by;
     }
     _inviteState
       ..clear()
@@ -67,6 +72,21 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
     _roomIdByWorker
       ..clear()
       ..addAll(nextRoom);
+    _initiatedBy
+      ..clear()
+      ..addAll(nextBy);
+  }
+
+  /// 검색어로 걸러낸 후보. 이름·거리·활동등급 어디로든 찾을 수 있게 한다.
+  List<Map<String, dynamic>> get _visibleItems {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return _items;
+    return _items.where((it) {
+      final wid = _toDouble(it['workerId']).toInt();
+      final name = (_profiles[wid]?['name'] ?? '').toString().toLowerCase();
+      final reasons = (it['reasons'] as List?)?.join(' ').toLowerCase() ?? '';
+      return name.contains(q) || reasons.contains(q) || wid.toString() == q;
+    }).toList();
   }
 
   Future<void> _load() async {
@@ -181,6 +201,17 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
               ],
             ),
           ),
+          const SizedBox(height: 10),
+
+          // ── 검색 ──
+          if (!_loading && _items.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: _CandidateSearchField(
+                onChanged: (q) => setState(() => _query = q),
+              ),
+            ),
+
           const SizedBox(height: 4),
           const Divider(height: 16),
 
@@ -192,15 +223,17 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
                     ? _ErrorView(message: _error!, onRetry: _load)
                     : _items.isEmpty
                         ? const _EmptyView()
+                        : _visibleItems.isEmpty
+                        ? _NoSearchResult(query: _query)
                         : RefreshIndicator(
                             onRefresh: _load,
                             child: ListView.separated(
                               padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
-                              itemCount: _items.length,
+                              itemCount: _visibleItems.length,
                               separatorBuilder: (_, __) =>
                                   const SizedBox(height: 10),
                               itemBuilder: (_, i) {
-                                final it = _items[i];
+                                final it = _visibleItems[i];
                                 final workerId =
                                     _toDouble(it['workerId']).toInt();
                                 final profile = _profiles[workerId];
@@ -214,6 +247,7 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
                                   profile: profile,
                                   isBusy: busy,
                                   inviteState: state,
+                                  initiatedBy: _initiatedBy[workerId],
                                   onInvite: _inviteWorker,
                                   onOpenChat: roomId == null
                                       ? null
@@ -392,6 +426,8 @@ class _WorkerCard extends StatelessWidget {
   final VoidCallback onViewProfile;
   final bool isBusy;
   final InviteState inviteState;
+  /// 채팅방을 누가 열었나. 'worker'=구직자가 지원함 / 'client'=초대를 수락함
+  final String? initiatedBy;
 
   const _WorkerCard({
     required this.data,
@@ -401,6 +437,7 @@ class _WorkerCard extends StatelessWidget {
     this.onOpenChat,
     this.isBusy = false,
     this.inviteState = InviteState.idle,
+    this.initiatedBy,
   });
 
   @override
@@ -615,6 +652,34 @@ class _WorkerCard extends StatelessWidget {
             ],
           ),
 
+          // ── 대화 상태 안내 ──
+          // "왜 이 사람만 바로 채팅이 열리지?"에 대한 답을 카드에서 바로 보여준다.
+          if (inviteState == InviteState.active) ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Icon(
+                  initiatedBy == 'worker'
+                      ? Icons.how_to_reg_rounded
+                      : Icons.mark_chat_read_rounded,
+                  size: 14,
+                  color: const Color(0xFF22C55E),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  initiatedBy == 'worker'
+                      ? '이 공고에 지원해서 대화가 열려 있어요'
+                      : '보낸 초대를 수락해서 대화가 열려 있어요',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF22C55E),
+                  ),
+                ),
+              ],
+            ),
+          ],
+
           // ── 이유 태그 ──
           if (reasons.isNotEmpty) ...[
             const SizedBox(height: 10),
@@ -733,6 +798,95 @@ class _WorkersSkeleton extends StatelessWidget {
       ),
     );
   }
+}
+
+// ── 후보 검색 ─────────────────────────────────────────────────
+class _CandidateSearchField extends StatefulWidget {
+  final ValueChanged<String> onChanged;
+  const _CandidateSearchField({required this.onChanged});
+
+  @override
+  State<_CandidateSearchField> createState() => _CandidateSearchFieldState();
+}
+
+class _CandidateSearchFieldState extends State<_CandidateSearchField> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF3F4F6),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.search, size: 18, color: AppColors.textTertiary),
+          const SizedBox(width: 8),
+          Expanded(
+            child: TextField(
+              controller: _controller,
+              onChanged: widget.onChanged,
+              textInputAction: TextInputAction.search,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textPrimary,
+              ),
+              decoration: const InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: '이름으로 찾기',
+                hintStyle: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textTertiary,
+                ),
+              ),
+            ),
+          ),
+          if (_controller.text.isNotEmpty)
+            GestureDetector(
+              onTap: () {
+                _controller.clear();
+                widget.onChanged('');
+                setState(() {});
+              },
+              child: const Icon(Icons.close_rounded,
+                  size: 18, color: AppColors.textTertiary),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── 검색 결과 없음 ────────────────────────────────────────────
+class _NoSearchResult extends StatelessWidget {
+  final String query;
+  const _NoSearchResult({required this.query});
+
+  @override
+  Widget build(BuildContext context) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(
+            "'$query'와 일치하는 인재가 없어요",
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ),
+      );
 }
 
 // ── 빈 화면 ──────────────────────────────────────────────────
