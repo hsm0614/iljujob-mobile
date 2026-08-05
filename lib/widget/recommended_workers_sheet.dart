@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iljujob/config/app_theme.dart';
 import '../../data/services/ai_api.dart';
 import '../../data/services/client_tracking_service.dart';
@@ -45,39 +44,29 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
     _load();
   }
 
-  String _inviteKey(int jobId, int workerId) =>
-      'inviteState_${jobId}_$workerId';
-  String _roomKey(int jobId, int workerId) => 'chatRoom_${jobId}_$workerId';
-
-  Future<void> _persistInviteState(int workerId, InviteState state,
-      {int? roomId}) async {
-    final sp = await SharedPreferences.getInstance();
-    await sp.setString(_inviteKey(widget.jobId, workerId), state.name);
-    if (roomId != null) {
-      await sp.setInt(_roomKey(widget.jobId, workerId), roomId);
-    }
-  }
-
-  Future<void> _restoreInviteStates(Iterable<int> workerIds) async {
-    final sp = await SharedPreferences.getInstance();
+  // 초대 상태는 서버(/api/target/workers 의 inviteState)가 진실이다.
+  // 예전엔 SharedPreferences 에만 들고 있어서, 구직자가 수락해도 이 화면은
+  // '수락 대기중'에 머물렀다(문의 2026-07-31). 기기를 바꾸면 통째로 사라지기도 했다.
+  void _applyServerInviteStates(List<Map<String, dynamic>> items) {
     final nextState = <int, InviteState>{};
     final nextRoom = <int, int>{};
-    for (final wid in workerIds) {
-      final s = sp.getString(_inviteKey(widget.jobId, wid));
-      if (s != null) {
-        nextState[wid] = InviteState.values.firstWhere(
-          (e) => e.name == s,
-          orElse: () => InviteState.idle,
-        );
-        final rid = sp.getInt(_roomKey(widget.jobId, wid));
-        if (rid != null) nextRoom[wid] = rid;
-      }
+    for (final m in items) {
+      final wid = _toDouble(m['workerId']).toInt();
+      if (wid == 0) continue;
+      nextState[wid] = switch (m['inviteState']?.toString()) {
+        'active' => InviteState.active,
+        'pending' => InviteState.pending,
+        _ => InviteState.idle,
+      };
+      final rid = m['roomId'];
+      if (rid is num) nextRoom[wid] = rid.toInt();
     }
-    if (!mounted) return;
-    setState(() {
-      _inviteState.addAll(nextState);
-      _roomIdByWorker.addAll(nextRoom);
-    });
+    _inviteState
+      ..clear()
+      ..addAll(nextState);
+    _roomIdByWorker
+      ..clear()
+      ..addAll(nextRoom);
   }
 
   Future<void> _load() async {
@@ -102,11 +91,10 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
         _items = items;
         _profiles = brief;
         _loading = false;
+        _applyServerInviteStates(items);
       });
       ClientTrackingService.instance.track('candidates_sheet_open',
           properties: {'job_id': widget.jobId, 'count': items.length});
-
-      await _restoreInviteStates(ids);
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -292,13 +280,11 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
 
       if (status == 'pending') {
         setState(() => _inviteState[workerId] = InviteState.pending);
-        await _persistInviteState(workerId, InviteState.pending, roomId: roomId);
         ClientTrackingService.instance.track('candidate_invite_sent',
             properties: {'job_id': widget.jobId, 'worker_id': workerId});
         _showSnack('초대를 전송했어요. 구직자의 수락을 기다리는 중이에요.');
       } else if (status == 'active') {
         setState(() => _inviteState[workerId] = InviteState.active);
-        await _persistInviteState(workerId, InviteState.active, roomId: roomId);
         if (roomId != null) _openChatRoom(roomId, workerId);
       }
     } catch (e) {
