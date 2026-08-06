@@ -8,9 +8,7 @@ import 'dart:async'; // TimeoutException
 import '../../../config/constants.dart'; // baseUrl
 import '../../../data/services/authenticated_http_client.dart';
 import '../../../data/services/screen_analytics_service.dart';
-import '../../../data/models/partner_recruit_post.dart'; // ⚠️ 임시 진입점용
 import 'edit_worker_profile_screen.dart';
-import 'partner_recruit_detail_screen.dart'; // ⚠️ 임시 진입점용
 
 class WorkerMyPageScreen extends StatefulWidget {
   const WorkerMyPageScreen({super.key});
@@ -575,20 +573,6 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
                       icon: Icons.support_agent_rounded,
                       label: '고객센터',
                       onTap: () => Navigator.pushNamed(context, '/support'),
-                    ),
-                    // ⚠️ 임시 진입점 — 파트너 채용공고 화면 테스트용.
-                    //    실제 진입점(공고목록 상단 카드 등) 결정되면 이 _ItemTile 삭제.
-                    _ItemTile(
-                      icon: Icons.business_center_outlined,
-                      label: '[테스트] 파트너 채용공고',
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const PartnerRecruitDetailScreen(
-                            post: PartnerRecruitPost.wonderLotte,
-                          ),
-                        ),
-                      ),
                     ),
                   ],
                 ),

@@ -24,6 +24,8 @@ import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
 import 'package:iljujob/utils/pay_display.dart';
+import 'package:iljujob/data/models/partner_recruit_post.dart';
+import 'package:iljujob/presentation/screens/worker_screen/partner_recruit_detail_screen.dart';
 
 class HomeMainScreen extends StatefulWidget {
   final VoidCallback? onAiRecommend;
@@ -1829,6 +1831,15 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     ),
                   ),
                 ),
+              // ── 파트너 채용공고 (제휴) — 목록 최상단 고정 ──────────
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                sliver: SliverToBoxAdapter(
+                  child: _buildPartnerRecruitCard(
+                    PartnerRecruitPost.wonderLotte,
+                  ),
+                ),
+              ),
               if (isLoading)
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1861,6 +1872,116 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// 파트너 채용공고 카드 (제휴 광고). 일반 공고 카드와 헷갈리지 않게
+  /// '광고' 표기 + 파란 테두리로 구분한다.
+  Widget _buildPartnerRecruitCard(PartnerRecruitPost post) {
+    return GestureDetector(
+      onTap:
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder:
+                  (_) => PartnerRecruitDetailScreen(
+                    post: post,
+                    placement: 'app_home_worker',
+                  ),
+            ),
+          ),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+        decoration: BoxDecoration(
+          color: AppColors.bgCard,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          border: Border.all(color: AppColors.primaryMid),
+          boxShadow: AppShadows.card,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.bgMuted,
+                          borderRadius: BorderRadius.circular(AppRadius.xs),
+                        ),
+                        child: const Text(
+                          '광고',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textTertiary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      const Text(
+                        '파트너 채용',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    post.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    post.summary.map((e) => e.value).take(3).join(' · '),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  if (post.benefits.items.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      '알바일주 특별 혜택 · ${post.benefits.items.first.title}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 14,
+              color: AppColors.textTertiary,
+            ),
+          ],
         ),
       ),
     );
