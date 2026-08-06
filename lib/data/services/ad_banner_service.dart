@@ -59,6 +59,24 @@ class AdBannerService {
     unawaited(_sendEvent(bannerId, eventType, placement));
   }
 
+  /// 파트너 채용공고 '지원하기' 클릭 (landing_cta) — 배너 CTA와 같은 리포트에서 집계됨.
+  /// 정산 대사 근거라 외부 링크 열기 전에 짧게 기다린다(실패해도 화면은 계속 진행).
+  Future<void> logPartnerCta(String partnerCode, {String? placement}) async {
+    try {
+      await http
+          .post(
+            Uri.parse('$baseUrl/api/banners/partner-cta'),
+            headers: await _headers(),
+            body: jsonEncode({
+              'partner_code': partnerCode,
+              'placement': placement,
+              'platform': _platform,
+            }),
+          )
+          .timeout(const Duration(milliseconds: 1500));
+    } catch (_) {}
+  }
+
   Future<void> _sendEvent(
     int bannerId,
     String eventType,
