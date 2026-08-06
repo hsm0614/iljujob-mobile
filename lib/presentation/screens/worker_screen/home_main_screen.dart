@@ -2026,7 +2026,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             ),
           ),
       child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+        padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
         decoration: BoxDecoration(
           color: AppColors.bgCard,
           borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -2084,37 +2084,27 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 5),
                   Text(
                     post.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: 14.5,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
                       height: 1.3,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    post.summary.map((e) => e.value).take(3).join(' · '),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
+                  // 요약(업종·경력·근무지)은 상세화면에 있다. 카드엔 누를 이유 한 줄만.
                   if (post.benefits.items.isNotEmpty) ...[
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 3),
                     Text(
-                      '알바일주 특별 혜택 · ${post.benefits.items.first.title}',
+                      '재택근무 · ${post.benefits.items.first.title}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary,
                       ),
@@ -2997,7 +2987,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     // 전부 상단 위치줄·뱃지·AI 요약에 이미 있는 내용이라 카드만 길어졌다.
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -3022,7 +3012,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               ),
             ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+            padding: const EdgeInsets.fromLTRB(14, 13, 14, 12),
             child: GestureDetector(
               onTap: () => _openJobDetail(job),
               behavior: HitTestBehavior.opaque,
@@ -3070,7 +3060,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                         ),
                     ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
 
                   // ── 제목 + 썸네일 ────────────────────────────────
                   Row(
@@ -3083,7 +3073,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                             Text(
                               job.title,
                               style: const TextStyle(
-                                fontSize: 16,
+                                fontSize: 15,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textPrimary,
                                 height: 1.3,
@@ -3105,8 +3095,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                   raw.startsWith('http') ? raw : '$baseUrl$raw';
                               return Image.network(
                                 url,
-                                width: 72,
-                                height: 72,
+                                width: 62,
+                                height: 62,
                                 fit: BoxFit.cover,
                                 errorBuilder:
                                     (_, __, ___) => const SizedBox.shrink(),
@@ -3117,7 +3107,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                       ],
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
 
                   // ── 급여 (히어로 숫자) ──────────────────────────
                   Row(
@@ -3129,7 +3119,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                       Text(
                         formattedPay,
                         style: TextStyle(
-                          fontSize: isNegotiablePay ? 15 : 21,
+                          fontSize: isNegotiablePay ? 14 : 19,
                           fontWeight:
                               isNegotiablePay
                                   ? FontWeight.w600
@@ -3214,7 +3204,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     ),
                   ],
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
 
                   // ── 액션 버튼 행 ────────────────────────────────
                   Row(
@@ -3231,7 +3221,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                       // 지원하기
                       Expanded(
                         child: SizedBox(
-                          height: 38,
+                          height: 36,
                           child: ElevatedButton(
                             onPressed:
                                 isApplied || isApplyingNow
