@@ -12,8 +12,6 @@ import 'package:iljujob/config/constants.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'dart:async';
-import '../../../data/models/banner_ad.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:iljujob/data/services/log_service.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
 import 'package:iljujob/data/services/chat_service.dart';
@@ -67,11 +65,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   String selectedPayType = 'all';
   int _jobsReqSeq = 0;
   bool _isLoadingJobs = false;
-  List<BannerAd> bannerAds = [];
-  int _currentBannerIndex = 0;
-  Timer? _bannerTimer;
-  PageController? _pageController;
-  bool _isBannerHidden = false;
   bool _distanceExpanded = false;
 
   bool _genderHintDismissed = false;
@@ -105,9 +98,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   void initState() {
     super.initState();
     ScreenAnalyticsService.instance.logScreenView('worker_home');
-    _pageController = PageController(initialPage: 0);
-    _loadBannerAds();
-    _startBannerAutoSlide();
     _requestNotificationPermission();
     _loadGenderHintDismissed();
     _loadPartnerCardHidden();
@@ -137,8 +127,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   void dispose() {
     _shimmerCtrl.dispose();
     _debounce?.cancel();
-    _bannerTimer?.cancel();
-    _pageController?.dispose();
     _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
@@ -197,70 +185,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     } finally {
       _isApplying = false;
     }
-  }
-
-  Future<void> _recordBannerClick(int bannerId) async {
-    try {
-      await http.post(
-        Uri.parse('$baseUrl/api/banners/click'),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"bannerId": bannerId}),
-      );
-    } catch (e) {
-      debugPrint('배너 클릭 기록 실패: $e');
-    }
-  }
-
-  Future<void> _recordBannerImpression(int bannerId) async {
-    try {
-      await http.post(
-        Uri.parse('$baseUrl/api/banners/impression'),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"bannerId": bannerId}),
-      );
-    } catch (e) {
-      debugPrint('배너 노출 기록 실패: $e');
-    }
-  }
-
-  Future<void> _loadBannerAds() async {
-    try {
-      final uri = Uri.parse(
-        '$baseUrl/api/banners',
-      ).replace(queryParameters: {'audience': 'worker', 'placement': 'home'});
-      final response = await http.get(uri);
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        if (!mounted) return;
-        setState(() {
-          bannerAds = data.map((json) => BannerAd.fromJson(json)).toList();
-          if (_currentBannerIndex >= bannerAds.length) _currentBannerIndex = 0;
-        });
-        if (bannerAds.isNotEmpty) {
-          final id = int.tryParse(bannerAds[_currentBannerIndex].id.toString());
-          if (id != null) _recordBannerImpression(id);
-        }
-        if (bannerAds.length > 1) _startBannerAutoSlide();
-      }
-    } catch (e) {
-      debugPrint('배너 로드 예외: $e');
-    }
-  }
-
-  void _startBannerAutoSlide() {
-    if (bannerAds.length <= 1) return;
-    if (_bannerTimer != null && _bannerTimer!.isActive) return;
-
-    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
-      if (!mounted || bannerAds.isEmpty || _pageController == null) return;
-      if (!_pageController!.hasClients) return;
-      final nextPage = (_currentBannerIndex + 1) % bannerAds.length;
-      _pageController!.animateToPage(
-        nextPage,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
-    });
   }
 
   Future<void> _loadWorkerProfileBrief() async {
@@ -879,6 +803,59 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       filteredJobs = tempJobs;
       _itemsToShow = 10;
     });
+  }
+
+  /// 지금 걸려 있는 필터를 칩으로. 탭하면 그 필터만 해제된다.
+  /// 거리·정렬은 각각 전용 UI가 따로 있어 제외한다.
+  List<Widget> get _activeFilterChips {
+    Widget chip(String label, VoidCallback onRemove) => GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () {
+        onRemove();
+        _applyFiltersThrottled();
+      },
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(10, 5, 7, 5),
+        decoration: BoxDecoration(
+          color: AppColors.primaryLight,
+          borderRadius: BorderRadius.circular(AppRadius.full),
+          border: Border.all(color: AppColors.primaryMid),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primaryDark,
+              ),
+            ),
+            const SizedBox(width: 3),
+            const Icon(
+              Icons.close_rounded,
+              size: 14,
+              color: AppColors.primaryDark,
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return [
+      if (searchQuery.trim().isNotEmpty)
+        chip('"${searchQuery.trim()}"', () {
+          _searchController.clear();
+          setState(() => searchQuery = '');
+        }),
+      if (selectedCategory != '전체')
+        chip(selectedCategory, () => setState(() => selectedCategory = '전체')),
+      if (selectedPayType != 'all')
+        chip(selectedPayType == 'daily' ? '일급' : '주급', () {
+          setState(() => selectedPayType = 'all');
+        }),
+    ];
   }
 
   void _openFilterSheet() {
@@ -1587,6 +1564,18 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     color: AppColors.textSecondary,
                   ),
                 ),
+                const SizedBox(height: 8),
+                // 취소 경로를 여기서 알려준다. 이 시트를 지나면 목록의
+                // 실행취소 스낵바가 안 뜨고, 취소 방법이 어디에도 안내되지 않았다.
+                const Text(
+                  '잘못 지원했다면 [내 활동]에서 취소할 수 있어요.',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.4,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textTertiary,
+                  ),
+                ),
                 const SizedBox(height: 14),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -1842,10 +1831,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               ),
               // AI 추천 스트립은 공고 리스트 중간(4번째 뒤)으로 이동 — 상단은 공고가 주인공
               // 노무상담 진입점은 마이페이지 > 고객센터로 이동
-              if (!_isBannerHidden && bannerAds.isNotEmpty) ...[
-                const SliverToBoxAdapter(child: SizedBox(height: 8)),
-                SliverToBoxAdapter(child: _buildBannerSlider()),
-              ],
               const SliverToBoxAdapter(child: SizedBox(height: 8)),
               SliverToBoxAdapter(
                 child: Padding(
@@ -1863,6 +1848,20 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   sliver: SliverToBoxAdapter(
                     child: _buildPartnerRecruitCard(
                       PartnerRecruitPost.wonderLotte,
+                    ),
+                  ),
+                ),
+              // ── 적용 중인 필터 ───────────────────────────────────
+              // 필터를 걸어둔 걸 잊으면 "공고가 없다"로 오해한다.
+              // 화면에 보이고, 여기서 바로 뗄 수 있어야 한다.
+              if (_activeFilterChips.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  sliver: SliverToBoxAdapter(
+                    child: Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: _activeFilterChips,
                     ),
                   ),
                 ),
@@ -3517,170 +3516,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     return '${d.month.toString().padLeft(2, '0')}.${d.day.toString().padLeft(2, '0')}';
   }
 
-  Widget _buildBannerSlider() {
-    if (_isBannerHidden || bannerAds.isEmpty) return const SizedBox.shrink();
-
-    final canNav = bannerAds.length > 1;
-
-    void goTo(int index) {
-      if (!mounted || _pageController == null || !_pageController!.hasClients) {
-        return;
-      }
-      final len = bannerAds.length;
-      final safe = ((index % len) + len) % len;
-      _pageController!.animateToPage(
-        safe,
-        duration: const Duration(milliseconds: 420),
-        curve: Curves.easeOutCubic,
-      );
-    }
-
-    Widget circleBtn(IconData icon, VoidCallback onTap) => ClipOval(
-      child: Material(
-        color: Colors.black.withValues(alpha: 0.22),
-        child: InkWell(
-          onTap: onTap,
-          child: SizedBox(
-            width: 30,
-            height: 30,
-            child: Icon(icon, size: 18, color: Colors.white),
-          ),
-        ),
-      ),
-    );
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: AspectRatio(
-        aspectRatio: 4 / 1,
-        child: Stack(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              child: PageView.builder(
-                controller: _pageController,
-                itemCount: bannerAds.length,
-                onPageChanged: (index) {
-                  if (!mounted) return;
-                  setState(() => _currentBannerIndex = index);
-                  final id = int.tryParse(bannerAds[index].id.toString());
-                  if (id != null) _recordBannerImpression(id);
-                },
-                itemBuilder: (context, index) {
-                  final banner = bannerAds[index];
-                  return GestureDetector(
-                    onTap: () => _onBannerTap(banner),
-                    child: DecoratedBox(
-                      decoration: const BoxDecoration(color: AppColors.bgMuted),
-                      child: Image.network(
-                        '$baseUrl${banner.imageUrl}',
-                        fit: BoxFit.contain,
-                        alignment: Alignment.center,
-                        filterQuality: FilterQuality.high,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          );
-                        },
-                        errorBuilder:
-                            (context, error, stackTrace) => const Center(
-                              child: Icon(
-                                Icons.error_outline,
-                                color: AppColors.textTertiary,
-                              ),
-                            ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            if (canNav) ...[
-              Positioned(
-                left: 8,
-                top: 0,
-                bottom: 0,
-                child: Center(
-                  child: circleBtn(
-                    Icons.chevron_left,
-                    () => goTo(_currentBannerIndex - 1),
-                  ),
-                ),
-              ),
-              Positioned(
-                right: 8,
-                top: 0,
-                bottom: 0,
-                child: Center(
-                  child: circleBtn(
-                    Icons.chevron_right,
-                    () => goTo(_currentBannerIndex + 1),
-                  ),
-                ),
-              ),
-            ],
-            Positioned(
-              top: 6,
-              right: 6,
-              child: GestureDetector(
-                onTap: () => setState(() => _isBannerHidden = true),
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.22),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.close, size: 14, color: Colors.white),
-                ),
-              ),
-            ),
-            Positioned(
-              bottom: 6,
-              left: 0,
-              right: 0,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(
-                  bannerAds.length,
-                  (i) => AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    width: _currentBannerIndex == i ? 18 : 6,
-                    height: 6,
-                    margin: const EdgeInsets.symmetric(horizontal: 3),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(AppRadius.full),
-                      color:
-                          _currentBannerIndex == i
-                              ? Colors.white
-                              : Colors.white.withValues(alpha: 0.45),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _onBannerTap(BannerAd banner) async {
-    if (banner.linkUrl == null || banner.linkUrl!.isEmpty) return;
-    final bannerId = int.tryParse(banner.id.toString());
-    if (bannerId != null) _recordBannerClick(bannerId);
-    final Uri url = Uri.parse(banner.linkUrl!);
-    try {
-      await launchUrl(url, mode: LaunchMode.platformDefault);
-    } catch (e) {
-      debugPrint('링크 열기 오류: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('링크 열기 실패: $e')));
-      }
-    }
-  }
 }
 
 class _BookmarkButton extends StatelessWidget {
