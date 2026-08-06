@@ -747,9 +747,22 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     bool isPinned(Job j) =>
         j.pinnedUntil != null && j.pinnedUntil!.isAfter(nowUtc);
 
-    int payValue(Job j) {
-      final onlyNum = j.pay.replaceAll(_reNonDigit, '');
-      return int.tryParse(onlyNum) ?? 0;
+    // 급여 정렬용 시급 환산.
+    // 예전엔 문자열의 숫자만 비교해서 월급 390만원이 시급 11,000원보다
+    // 항상 위로 왔다 — 급여순 정렬이 사실상 '월급 공고 먼저'였다.
+    int hourlyPayValue(Job j) {
+      final n = int.tryParse(j.pay.replaceAll(_reNonDigit, '')) ?? 0;
+      if (n <= 0) return 0;
+      switch (j.payType) {
+        case '일급':
+          return n ~/ 8; // 1일 8시간
+        case '주급':
+          return n ~/ 40; // 주 5일 x 8시간
+        case '월급':
+          return n ~/ 209; // 법정 월 소정근로시간
+        default:
+          return n; // 시급
+      }
     }
 
     tempJobs =
@@ -766,7 +779,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       tempJobs =
           tempJobs.where((job) {
             final hasGeo = job.lat != 0.0 && job.lng != 0.0;
-            if (!hasGeo) return false;
+            // 좌표 없는 공고를 여기서 버리면 사장님이 올린 공고가
+            // 아무에게도 안 보인다. 거리로 거르지 않고 목록 뒤로 보낸다.
+            if (!hasGeo) return true;
             final distance = calculateDistance(
               currentLatitude,
               currentLongitude,
@@ -798,11 +813,13 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     if (searchQuery.isNotEmpty) {
       tempJobs =
           tempJobs
-              .where(
-                (job) =>
-                    job.title.contains(searchQuery) ||
-                    job.location.contains(searchQuery),
-              )
+              .where((job) {
+                final q = searchQuery.trim();
+                return job.title.contains(q) ||
+                    job.location.contains(q) ||
+                    job.category.contains(q) ||
+                    (job.description?.contains(q) ?? false);
+              })
               .toList();
     }
 
@@ -817,29 +834,27 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
     switch (sortType) {
       case '거리순':
+        // 좌표 없는 공고는 거리를 알 수 없으므로 항상 뒤로
+        double distOf(Job j) =>
+            (j.lat == 0.0 && j.lng == 0.0)
+                ? double.infinity
+                : calculateDistance(
+                  currentLatitude,
+                  currentLongitude,
+                  j.lat,
+                  j.lng,
+                );
         tempJobs.sort((a, b) {
           final c = cmpPinned(a, b);
           if (c != 0) return c;
-          final distA = calculateDistance(
-            currentLatitude,
-            currentLongitude,
-            a.lat,
-            a.lng,
-          );
-          final distB = calculateDistance(
-            currentLatitude,
-            currentLongitude,
-            b.lat,
-            b.lng,
-          );
-          return distA.compareTo(distB);
+          return distOf(a).compareTo(distOf(b));
         });
         break;
       case '급여 높은 순':
         tempJobs.sort((a, b) {
           final c = cmpPinned(a, b);
           if (c != 0) return c;
-          return payValue(b).compareTo(payValue(a));
+          return hourlyPayValue(b).compareTo(hourlyPayValue(a));
         });
         break;
       case '최신순':
@@ -1314,6 +1329,72 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     return 'AI 추천$pct · $reasonText';
   }
 
+  /// 지원 완료 안내 + 되돌리기.
+  /// 목록에서 한 번 누르면 바로 지원되므로, 잘못 눌렀을 때 빠져나갈 길이 필요하다
+  /// (지원 후 취소는 활동점수 페널티로 이어진다).
+  void _showApplySnack(
+    String message, {
+    required int jobId,
+    required int workerId,
+  }) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Expanded(child: Text(message)),
+            ],
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 6),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+          ),
+          action: SnackBarAction(
+            label: '실행취소',
+            textColor: Colors.white,
+            onPressed: () => _cancelApply(jobId: jobId, workerId: workerId),
+          ),
+        ),
+      );
+  }
+
+  Future<void> _cancelApply({
+    required int jobId,
+    required int workerId,
+  }) async {
+    try {
+      final resp = await AuthenticatedHttpClient.postJson(
+        Uri.parse('$baseUrl/api/job/cancel'),
+        body: {'jobId': jobId, 'workerId': workerId},
+      );
+      if (!mounted) return;
+
+      if (resp.statusCode == 200) {
+        setState(() => appliedJobIds.remove(jobId));
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('지원을 취소했습니다.')));
+      } else {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            const SnackBar(content: Text('지원 취소에 실패했어요. 내 활동에서 취소해 주세요.')),
+          );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('네트워크 오류로 취소하지 못했어요.')));
+    }
+  }
+
   // 공고 상세와 동일한 지원 및 채팅방 생성 흐름
   Future<void> _applyDirectly(Job job) async {
     final jobIdInt = int.tryParse(job.id.toString());
@@ -1392,43 +1473,19 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               ),
             );
           } else {
-            // 나중에 보기 → 스낵바만
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Row(
-                  children: [
-                    Icon(Icons.check_circle, color: Colors.white, size: 20),
-                    SizedBox(width: 8),
-                    Text('지원이 완료되었습니다. 채팅 탭에서 대화를 이어가세요.'),
-                  ],
-                ),
-                backgroundColor: AppColors.primary,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-              ),
+            // 나중에 보기 → 목록에 남으므로 되돌릴 기회를 준다
+            _showApplySnack(
+              '지원이 완료되었습니다. 채팅 탭에서 대화를 이어가세요.',
+              jobId: jobIdInt,
+              workerId: workerId,
             );
           }
         } else {
-          // 채팅방 생성 실패 — 지원은 됐으니 스낵바만
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Text('지원이 완료되었습니다. 담당자 연락을 기다려주세요.'),
-                ],
-              ),
-              backgroundColor: AppColors.primary,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-            ),
+          // 채팅방 생성 실패 — 지원은 됐으니 안내 + 되돌리기
+          _showApplySnack(
+            '지원이 완료되었습니다. 담당자 연락을 기다려주세요.',
+            jobId: jobIdInt,
+            workerId: workerId,
           );
         }
       } else if (resp.statusCode == 409) {
@@ -1844,6 +1901,37 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                           ),
                         ),
                         const Spacer(),
+                        // 정렬 기준 — 지금 무슨 순서로 보고 있는지 화면에 없으면
+                        // "왜 먼 공고가 위에 있지?"가 된다. 탭하면 필터 시트.
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: _openFilterSheet,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                              vertical: 2,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  sortType,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ),
+                                const Icon(
+                                  Icons.keyboard_arrow_down_rounded,
+                                  size: 16,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
                         // 뷰 전환 (컴팩트/일반)
                         GestureDetector(
                           onTap:
@@ -3005,29 +3093,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 6),
-                            // 메타 정보
-                            Wrap(
-                              spacing: 8,
-                              runSpacing: 2,
-                              children: [
-                                if (job.startDate != null &&
-                                    job.endDate != null)
-                                  _metaChip(
-                                    Icons.calendar_today_outlined,
-                                    '${_formatDate(job.startDate!)} ~ ${_formatDate(job.endDate!)}',
-                                  ),
-                                // 시간 미입력 공고는 "~"만 노출되던 문제 — 값 있을 때만 표시
-                                if (job.workingHours
-                                    .replaceAll('~', '')
-                                    .trim()
-                                    .isNotEmpty)
-                                  _metaChip(
-                                    Icons.schedule_outlined,
-                                    job.workingHours,
-                                  ),
-                              ],
-                            ),
                           ],
                         ),
                       ),
@@ -3091,6 +3156,24 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                           ),
                         ),
                       ],
+                    ],
+                  ),
+
+                  // ── 근무 일정 ────────────────────────────────────
+                  // 알바생 판단 순서(얼마 → 언제 → 어디)에 맞춰 급여 아래에 둔다.
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 2,
+                    children: [
+                      if (job.startDate != null && job.endDate != null)
+                        _metaChip(
+                          Icons.calendar_today_outlined,
+                          '${_formatDate(job.startDate!)} ~ ${_formatDate(job.endDate!)}',
+                        ),
+                      // 시간 미입력 공고는 "~"만 노출되던 문제 — 값 있을 때만 표시
+                      if (job.workingHours.replaceAll('~', '').trim().isNotEmpty)
+                        _metaChip(Icons.schedule_outlined, job.workingHours),
                     ],
                   ),
 
