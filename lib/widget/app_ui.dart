@@ -1,6 +1,74 @@
 import 'package:flutter/material.dart';
 import 'package:iljujob/config/app_theme.dart';
 
+/// 공고 신호 뱃지. 색 의미가 고정돼 있다 (DESIGN.md — The Two-Signal Rule):
+///   time  = 시간이 급함 (긴급·마감임박)
+///   trust = 검증된 상대 (안심기업)
+///   money = 돈이 빨리 들어옴 (당일지급)
+///   plain = 분류 (장기 등) — 색 없음
+///
+/// 화면마다 직접 그리다 보니 상세화면은 `Colors.green`, 목록은 토큰을 쓰는 식으로
+/// 갈라졌다. 뱃지를 새로 만들지 말고 이걸 쓴다.
+enum JobSignal { time, trust, money, plain }
+
+class JobSignalBadge extends StatelessWidget {
+  final String label;
+  final JobSignal signal;
+  final IconData? icon;
+
+  /// 알약형(상세화면) / 사각형(목록 카드)
+  final bool pill;
+
+  const JobSignalBadge({
+    super.key,
+    required this.label,
+    this.signal = JobSignal.plain,
+    this.icon,
+    this.pill = false,
+  });
+
+  Color get _color => switch (signal) {
+    JobSignal.time => AppColors.badgeUrgent,
+    JobSignal.trust => AppColors.badgeSafe,
+    JobSignal.money => AppColors.badgeSameDay,
+    JobSignal.plain => AppColors.textSecondary,
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: pill ? 10 : 7,
+        vertical: pill ? 4 : 3,
+      ),
+      decoration: BoxDecoration(
+        color: _color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(
+          pill ? AppRadius.full : AppRadius.xs,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: pill ? 14 : 12, color: _color),
+            const SizedBox(width: 4),
+          ],
+          Text(
+            label,
+            style: TextStyle(
+              color: _color,
+              fontSize: pill ? 12 : 10.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class AppPrimaryButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final String label;

@@ -22,6 +22,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:flutter/services.dart'; // Clipboard
 import 'package:url_launcher/url_launcher.dart';
 import 'package:iljujob/config/app_theme.dart';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:iljujob/data/services/log_service.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
@@ -1478,11 +1479,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   background: AppColors.bgMuted,
                   foreground: AppColors.textSecondary,
                 ),
+              // 당일지급은 '돈' 신호 — 초록 계열이 맞다 (DESIGN.md The Two-Signal Rule).
+              // 주황은 시간이 급하다는 뜻이라 여기 쓰면 의미가 어긋난다.
               if (widget.job.isSameDayPay == true)
                 _headerTag(
                   '당일지급',
-                  background: Colors.orange.withValues(alpha: 0.12),
-                  foreground: Colors.orange,
+                  background: AppColors.badgeSameDay.withValues(alpha: 0.12),
+                  foreground: AppColors.badgeSameDay,
                 ),
             ],
           ),
@@ -2122,30 +2125,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 8,
-                                vertical: 4,
+                                vertical: 0,
                               ),
-                              decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(999),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: const [
-                                  Icon(
-                                    Icons.verified,
-                                    size: 14,
-                                    color: Colors.green,
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    '안심기업',
-                                    style: TextStyle(
-                                      color: Colors.green,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
+                              child: const JobSignalBadge(
+                                label: '안심기업',
+                                signal: JobSignal.trust,
+                                icon: Icons.verified,
+                                pill: true,
                               ),
                             ),
                             const SizedBox(width: 8),

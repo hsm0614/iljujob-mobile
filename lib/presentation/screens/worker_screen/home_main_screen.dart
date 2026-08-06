@@ -21,6 +21,7 @@ import 'package:iljujob/presentation/chat/chat_room_screen.dart';
 import 'package:iljujob/data/services/ai_labor_service.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/config/app_theme.dart';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/data/models/partner_recruit_post.dart';
@@ -2976,19 +2977,19 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     // 다 붙은 뱃지는 안 붙은 것과 같다.
     final List<Widget> opBadges = [];
     if (job.isUrgent) {
-      opBadges.add(_buildBadge('⚡ 긴급', color: AppColors.badgeUrgent));
+      opBadges.add(const JobSignalBadge(label: '⚡ 긴급', signal: JobSignal.time));
     }
     if (isUrgent) {
-      opBadges.add(_buildBadge('마감임박', color: AppColors.badgeUrgent));
+      opBadges.add(const JobSignalBadge(label: '마감임박', signal: JobSignal.time));
     }
     // 급여 형태(일급/주급/월급)는 가격 옆 칩으로만 표시 — 상단 뱃지 중복 제거
     if (job.isSameDayPay == true) {
-      opBadges.add(_buildBadge('당일지급', color: AppColors.badgeSameDay));
+      opBadges.add(const JobSignalBadge(label: '당일지급', signal: JobSignal.money));
     } else if (job.isCertifiedCompany == true) {
-      opBadges.add(_buildBadge('안심기업', color: AppColors.badgeSafe));
+      opBadges.add(const JobSignalBadge(label: '안심기업', signal: JobSignal.trust));
     }
     if (job.jobType == 'long') {
-      opBadges.add(_buildBadge('장기', color: AppColors.textSecondary));
+      opBadges.add(const JobSignalBadge(label: '장기'));
     }
 
     final displayBadges = opBadges.take(2).toList();
@@ -3417,25 +3418,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           ],
         ),
       ],
-    );
-  }
-
-  Widget _buildBadge(String label, {Color color = AppColors.badgeDaily}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(AppRadius.xs),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: color,
-          fontSize: 10.5,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.2,
-        ),
-      ),
     );
   }
 
