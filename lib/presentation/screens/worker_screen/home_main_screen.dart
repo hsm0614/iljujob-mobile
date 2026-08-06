@@ -67,6 +67,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   bool _isLoadingJobs = false;
   bool _distanceExpanded = false;
 
+  // 검색창은 기본 접힘. 검색어가 있으면 목록 위 필터 칩으로 보인다.
+  bool _searchExpanded = false;
+  final FocusNode _searchFocus = FocusNode();
+
   bool _genderHintDismissed = false;
   static const _kGenderHintKey = 'gender_hint_dismissed';
 
@@ -129,6 +133,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     _debounce?.cancel();
     _scrollController.dispose();
     _searchController.dispose();
+    _searchFocus.dispose();
     super.dispose();
   }
 
@@ -2387,6 +2392,27 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     );
   }
 
+  /// 접으면 검색어도 함께 지운다. 접힌 채로 검색이 걸려 있으면
+  /// "왜 공고가 이것뿐이지"가 된다 (필터 칩이 있지만 안전하게 초기화).
+  void _toggleSearch() {
+    if (_searchExpanded) {
+      _searchController.clear();
+      setState(() {
+        searchQuery = '';
+        _searchExpanded = false;
+      });
+      _applyFiltersThrottled();
+    } else {
+      setState(() => _searchExpanded = true);
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _searchFocus.requestFocus(),
+      );
+    }
+  }
+
+  /// 검색창은 기본으로 접혀 있다. 공고가 몇 개뿐인 지면에서 상단 56pt를
+  /// 상시 점유할 만큼 자주 쓰이지 않는다. 검색어가 걸려 있으면 목록 위
+  /// 필터 칩(_activeFilterChips)에 그대로 보인다.
   Widget _buildSearchField() {
     return Container(
       height: 46,
@@ -2398,6 +2424,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       ),
       child: TextField(
         controller: _searchController,
+        focusNode: _searchFocus,
+        textInputAction: TextInputAction.search,
         onChanged: (value) {
           searchQuery = value;
           _runDebounced(_applyFiltersThrottled);
@@ -3315,12 +3343,48 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   Widget _buildTopControlRow(int nearbyCount) {
     return Column(
       children: [
-        // 1행: 검색창
-        _buildSearchField(),
-        const SizedBox(height: 8),
-        // 2행: AI검색 | 위치 | 필터
+        // 검색창은 펼쳤을 때만 (기본 접힘 — 아래 돋보기 버튼으로 연다)
+        if (_searchExpanded) ...[
+          _buildSearchField(),
+          const SizedBox(height: 8),
+        ],
+        // 검색 | AI검색 | 위치 | 필터
         Row(
           children: [
+            SizedBox(
+              width: 36,
+              height: 36,
+              child: Material(
+                color: _searchExpanded ? AppColors.primaryLight : AppColors.bgCard,
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  onTap: _toggleSearch,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
+                      border: Border.all(
+                        color:
+                            _searchExpanded
+                                ? AppColors.primaryMid
+                                : AppColors.border,
+                      ),
+                    ),
+                    child: Icon(
+                      _searchExpanded
+                          ? Icons.close_rounded
+                          : Icons.search_rounded,
+                      size: 17,
+                      color:
+                          _searchExpanded
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
             // AI 자연어 검색 (톤 다운 — 채운 파랑은 지원하기 CTA 전용)
             Material(
               color: AppColors.primaryLight,
