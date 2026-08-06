@@ -79,10 +79,6 @@ class PartnerRecruitPost {
   final String applyUrl;
   final String applyLabel;
 
-  /// 목록 카드에 한 줄로 노출할 클릭 이유. 카드는 좁으므로 요약을 나열하지 않고
-  /// 이 한 줄만 쓴다 (상세는 화면에서 본다).
-  final String cardHook;
-
   const PartnerRecruitPost({
     required this.partnerCode,
     required this.title,
@@ -92,14 +88,12 @@ class PartnerRecruitPost {
     required this.benefits,
     required this.applyUrl,
     this.applyLabel = '지원하기',
-    required this.cardHook,
   });
 
   /// 롯데손해보험 '스마트플래너' — 원더 제휴 (본문은 기획서 PDF 원문 그대로)
   static const wonderLotte = PartnerRecruitPost(
     partnerCode: 'wonder_lotte',
     title: "롯데손해보험 '스마트플래너' 모집",
-    cardHook: '재택근무 · 신세계백화점상품권 10만원',
     summary: [
       PartnerRecruitSummaryItem('업종', '금융/보험'),
       PartnerRecruitSummaryItem('경력', '무관'),

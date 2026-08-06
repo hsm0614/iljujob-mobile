@@ -84,6 +84,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   // AI 추천 스트립을 공고 리스트 N번째 뒤에 삽입
   static const _aiStripAfter = 4;
 
+  // 광고 밀도 규칙: 보여줄 공고가 이보다 적으면 파트너 카드를 숨긴다.
+  // 공고 5개에 광고 2개(배너+카드) 같은 상태를 막는 장치 —
+  // 공고가 적은 지역에서 "일자리는 없고 광고만 있는 앱"으로 읽히면
+  // 광고 지면 가치 자체가 무너진다.
+  static const _minJobsForPartnerCard = 8;
 
   double? _distanceKmFromUser(Job job) {
     if (currentLatitude == 0.0 ||
@@ -1280,33 +1285,38 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     final reasons = job.matchReasons;
     if ((score == null || score < 0.6) && reasons.isEmpty) return null;
 
+    // 명사구로 이어붙인다. 이전에는 '~고' + '잘 맞아요'를 조합해서
+    // '의미유사'가 섞이면 "업무가 잘 맞아요 시급이 높고 잘 맞아요"처럼 문장이 깨졌다.
     final parts = <String>[];
     for (final r in reasons.take(2)) {
       switch (r) {
         case '가까움':
-          parts.add('가깝고');
+          parts.add('가까움');
           break;
         case '시간대겹침':
-          parts.add('시간대가 맞고');
+          parts.add('시간대 맞음');
           break;
         case '시급상위':
-          parts.add('시급이 높고');
+          parts.add('시급 높음');
           break;
         case '당일지급':
-          parts.add('당일 지급이고');
+          parts.add('당일지급');
           break;
         case '완료이력좋음':
-          parts.add('완료 이력이 좋고');
+          parts.add('이력 좋음');
           break;
         case '의미유사':
-          parts.add('업무가 잘 맞아요');
+          parts.add('업무 적합');
           break;
       }
     }
 
-    final pct = score != null ? ' ${(score * 100).round()}%' : '';
-    final reasonText = parts.isEmpty ? '잘 맞는 공고예요' : '${parts.join(' ')} 잘 맞아요';
-    return 'AI$pct · $reasonText';
+    // 점수는 높을 때만 노출. 52% 같은 낮은 숫자를 그대로 보여주면
+    // 추천이 아니라 "안 맞는다"는 신호로 읽혀 신뢰를 깎는다.
+    final pct =
+        (score != null && score >= 0.7) ? ' ${(score * 100).round()}%' : '';
+    final reasonText = parts.isEmpty ? '잘 맞는 공고예요' : parts.join(' · ');
+    return 'AI 추천$pct · $reasonText';
   }
 
   // 공고 상세와 동일한 지원 및 채팅방 생성 흐름
@@ -1794,7 +1804,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               // ── 파트너 채용공고 (제휴) ────────────────────────────
               // '전체 공고' 헤더 위에 둔다. 헤더 아래면 카운트(N개)에 포함된
               // 일반 공고로 오인된다.
-              if (!_partnerCardHidden)
+              if (!_partnerCardHidden &&
+                  filteredJobs.length >= _minJobsForPartnerCard)
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   sliver: SliverToBoxAdapter(
@@ -2003,19 +2014,30 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                       height: 1.3,
                     ),
                   ),
-                  // 요약(업종·경력·근무지)은 상세화면에 있다. 카드는 클릭 이유
-                  // 한 줄만 — 배너와 나란히 서므로 덩치를 줄인다.
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 4),
                   Text(
-                    post.cardHook,
+                    post.summary.map((e) => e.value).take(3).join(' · '),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.textSecondary,
                     ),
                   ),
+                  if (post.benefits.items.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      '알바일주 특별 혜택 · ${post.benefits.items.first.title}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -2891,18 +2913,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
     final displayBadges = opBadges.take(2).toList();
     final aiSummary = _buildAiSummary(job);
-    final decisionSignals =
-        <Widget>[
-          if (distanceText != null)
-            _jobSignalPill(Icons.near_me_rounded, '${distanceText}km'),
-          if (job.isSameDayPay == true)
-            _jobSignalPill(Icons.payments_rounded, '당일지급'),
-          if (job.isUrgent) _jobSignalPill(Icons.flash_on_rounded, '긴급'),
-          if (job.isCertifiedCompany == true)
-            _jobSignalPill(Icons.verified_rounded, '안심기업'),
-          if (job.matchReasons.isNotEmpty)
-            _jobSignalPill(Icons.auto_awesome_rounded, job.matchReasons.first),
-        ].take(4).toList();
+    // 칩 줄(거리·당일지급·긴급·안심기업·매칭이유)은 제거했다 —
+    // 전부 상단 위치줄·뱃지·AI 요약에 이미 있는 내용이라 카드만 길어졌다.
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -3126,11 +3138,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     ),
                   ],
 
-                  if (decisionSignals.isNotEmpty) ...[
-                    const SizedBox(height: 9),
-                    Wrap(spacing: 6, runSpacing: 6, children: decisionSignals),
-                  ],
-
                   const SizedBox(height: 12),
 
                   // ── 액션 버튼 행 ────────────────────────────────
@@ -3144,36 +3151,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                         onTap: () => _toggleBookmark(job.id.toString()),
                       ),
                       const SizedBox(width: 8),
-                      // 자세히
-                      Expanded(
-                        child: SizedBox(
-                          height: 38,
-                          child: OutlinedButton(
-                            onPressed: () => _openJobDetail(job),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppColors.border),
-                              foregroundColor: AppColors.textSecondary,
-                              padding: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.sm,
-                                ),
-                              ),
-                            ),
-                            child: const Text(
-                              '자세히',
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 6),
+                      // '자세히' 버튼은 없앴다 — 카드 전체 탭이 이미 상세로 간다.
                       // 지원하기
                       Expanded(
-                        flex: 2,
                         child: SizedBox(
                           height: 38,
                           child: ElevatedButton(
@@ -3240,32 +3220,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   ),
                 ],
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _jobSignalPill(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.bgMuted,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.borderSub),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: AppColors.textSecondary),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textSecondary,
             ),
           ),
         ],
