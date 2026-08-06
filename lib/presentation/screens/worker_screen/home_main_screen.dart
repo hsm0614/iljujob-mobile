@@ -3124,12 +3124,20 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     crossAxisAlignment: CrossAxisAlignment.baseline,
                     textBaseline: TextBaseline.alphabetic,
                     children: [
+                      // '협의'는 숫자가 아니라 히어로 대접을 하지 않는다.
+                      // 제목 바로 아래에 크고 굵게 놓으면 제목 2행처럼 읽힌다.
                       Text(
                         formattedPay,
                         style: TextStyle(
-                          fontSize: isNegotiablePay ? 19 : 21,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
+                          fontSize: isNegotiablePay ? 15 : 21,
+                          fontWeight:
+                              isNegotiablePay
+                                  ? FontWeight.w600
+                                  : FontWeight.w800,
+                          color:
+                              isNegotiablePay
+                                  ? AppColors.textSecondary
+                                  : AppColors.textPrimary,
                           height: 1.1,
                         ),
                       ),
