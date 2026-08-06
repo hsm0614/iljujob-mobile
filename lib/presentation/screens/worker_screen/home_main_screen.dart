@@ -84,6 +84,12 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   // AI 추천 스트립을 공고 리스트 N번째 뒤에 삽입
   static const _aiStripAfter = 4;
 
+  // 광고 밀도 규칙: 보여줄 공고가 이보다 적으면 파트너 카드를 숨긴다.
+  // 공고 5개에 광고 2개(배너+카드) 같은 상태를 막는 장치 —
+  // 공고가 적은 지역에서 "일자리는 없고 광고만 있는 앱"으로 읽히면
+  // 광고 지면 가치 자체가 무너진다.
+  static const _minJobsForPartnerCard = 8;
+
   double? _distanceKmFromUser(Job job) {
     if (currentLatitude == 0.0 ||
         currentLongitude == 0.0 ||
@@ -1793,7 +1799,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               // ── 파트너 채용공고 (제휴) ────────────────────────────
               // '전체 공고' 헤더 위에 둔다. 헤더 아래면 카운트(N개)에 포함된
               // 일반 공고로 오인된다.
-              if (!_partnerCardHidden)
+              if (!_partnerCardHidden &&
+                  filteredJobs.length >= _minJobsForPartnerCard)
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   sliver: SliverToBoxAdapter(
