@@ -9,6 +9,7 @@ import '../../../config/constants.dart'; // baseUrl
 import '../../../data/services/authenticated_http_client.dart';
 import '../../../data/services/screen_analytics_service.dart';
 import 'edit_worker_profile_screen.dart';
+import 'labor_consult_screen.dart';
 
 class WorkerMyPageScreen extends StatefulWidget {
   const WorkerMyPageScreen({super.key});
@@ -573,6 +574,17 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
                       icon: Icons.support_agent_rounded,
                       label: '고객센터',
                       onTap: () => Navigator.pushNamed(context, '/support'),
+                    ),
+                    // 홈 상단에서 이동 — 첫 화면은 공고가 주인공
+                    _ItemTile(
+                      icon: Icons.balance_rounded,
+                      label: 'AI 노무 상담',
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const LaborConsultScreen(),
+                        ),
+                      ),
                     ),
                   ],
                 ),

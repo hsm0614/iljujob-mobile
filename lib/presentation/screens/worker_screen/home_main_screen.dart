@@ -18,7 +18,6 @@ import 'package:iljujob/data/services/log_service.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
 import 'package:iljujob/data/services/chat_service.dart';
 import 'package:iljujob/presentation/chat/chat_room_screen.dart';
-import 'package:iljujob/presentation/screens/worker_screen/labor_consult_screen.dart';
 import 'package:iljujob/data/services/ai_labor_service.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/config/app_theme.dart';
@@ -77,6 +76,14 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   bool _genderHintDismissed = false;
   static const _kGenderHintKey = 'gender_hint_dismissed';
 
+  // 파트너 채용공고 카드: 닫으면 7일간 숨김 (광고 피로도 완화)
+  bool _partnerCardHidden = false;
+  static const _kPartnerCardHiddenUntilKey = 'partner_card_hidden_until';
+  static const _partnerCardHideDays = 7;
+
+  // AI 추천 스트립을 공고 리스트 N번째 뒤에 삽입
+  static const _aiStripAfter = 4;
+
   double? _distanceKmFromUser(Job job) {
     if (currentLatitude == 0.0 ||
         currentLongitude == 0.0 ||
@@ -101,6 +108,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     _startBannerAutoSlide();
     _requestNotificationPermission();
     _loadGenderHintDismissed();
+    _loadPartnerCardHidden();
     _loadAvailableTodayStatus();
     _loadWorkerProfileBrief();
     _loadBookmarks()
@@ -147,6 +155,25 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     await prefs.setBool(_kGenderHintKey, true);
     if (!mounted) return;
     setState(() => _genderHintDismissed = true);
+  }
+
+  Future<void> _loadPartnerCardHidden() async {
+    final prefs = await SharedPreferences.getInstance();
+    final until = prefs.getInt(_kPartnerCardHiddenUntilKey) ?? 0;
+    if (!mounted) return;
+    setState(() {
+      _partnerCardHidden = DateTime.now().millisecondsSinceEpoch < until;
+    });
+  }
+
+  Future<void> _dismissPartnerCard() async {
+    final prefs = await SharedPreferences.getInstance();
+    final until = DateTime.now().add(
+      const Duration(days: _partnerCardHideDays),
+    );
+    await prefs.setInt(_kPartnerCardHiddenUntilKey, until.millisecondsSinceEpoch);
+    if (!mounted) return;
+    setState(() => _partnerCardHidden = true);
   }
 
   Timer? _debounce;
@@ -1749,17 +1776,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               const SliverToBoxAdapter(
                 child: AdBannerWidget(placement: 'app_home_worker'),
               ),
-              SliverToBoxAdapter(
-                child: _AiRecommendStrip(
-                  onJobTap:
-                      (job) => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => JobDetailScreen(job: job),
-                        ),
-                      ),
-                ),
-              ),
+              // AI 추천 스트립은 공고 리스트 중간(4번째 뒤)으로 이동 — 상단은 공고가 주인공
+              // 노무상담 진입점은 마이페이지 > 고객센터로 이동
               if (!_isBannerHidden && bannerAds.isNotEmpty) ...[
                 const SliverToBoxAdapter(child: SizedBox(height: 8)),
                 SliverToBoxAdapter(child: _buildBannerSlider()),
@@ -1768,17 +1786,22 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildLaborConsultEntry(),
-                ),
-              ),
-              const SliverToBoxAdapter(child: SizedBox(height: 8)),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: _buildDistanceSlider(),
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 8)),
+              // ── 파트너 채용공고 (제휴) ────────────────────────────
+              // '전체 공고' 헤더 위에 둔다. 헤더 아래면 카운트(N개)에 포함된
+              // 일반 공고로 오인된다.
+              if (!_partnerCardHidden)
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+                  sliver: SliverToBoxAdapter(
+                    child: _buildPartnerRecruitCard(
+                      PartnerRecruitPost.wonderLotte,
+                    ),
+                  ),
+                ),
               // ── 섹션 헤더 ─────────────────────────────────────────
               if (!isLoading && filteredJobs.isNotEmpty)
                 SliverPadding(
@@ -1832,14 +1855,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   ),
                 ),
               // ── 파트너 채용공고 (제휴) — 목록 최상단 고정 ──────────
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                sliver: SliverToBoxAdapter(
-                  child: _buildPartnerRecruitCard(
-                    PartnerRecruitPost.wonderLotte,
-                  ),
-                ),
-              ),
               if (isLoading)
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -1853,19 +1868,43 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               else
                 SliverPadding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  sliver: SliverList.builder(
-                    itemCount:
-                        (_itemsToShow < filteredJobs.length)
-                            ? _itemsToShow
-                            : filteredJobs.length,
-                    itemBuilder: (context, index) {
-                      final job = filteredJobs[index];
-                      return compactView
-                          ? GestureDetector(
-                            onTap: () => _openJobDetail(job),
-                            child: _buildCompactJobCard(job),
-                          )
-                          : _buildJobCard(job);
+                  sliver: Builder(
+                    builder: (_) {
+                      final visibleCount =
+                          (_itemsToShow < filteredJobs.length)
+                              ? _itemsToShow
+                              : filteredJobs.length;
+                      // AI 추천 스트립을 4번째 공고 뒤에 끼워넣는다 (상단 다이어트).
+                      // 공고가 4개 미만이면 삽입하지 않는다.
+                      final stripAt = visibleCount > _aiStripAfter ? _aiStripAfter : -1;
+                      return SliverList.builder(
+                        itemCount: visibleCount + (stripAt >= 0 ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (stripAt >= 0 && index == stripAt) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 4),
+                              child: _AiRecommendStrip(
+                                onJobTap:
+                                    (job) => Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => JobDetailScreen(job: job),
+                                      ),
+                                    ),
+                              ),
+                            );
+                          }
+                          final jobIndex =
+                              (stripAt >= 0 && index > stripAt) ? index - 1 : index;
+                          final job = filteredJobs[jobIndex];
+                          return compactView
+                              ? GestureDetector(
+                                onTap: () => _openJobDetail(job),
+                                child: _buildCompactJobCard(job),
+                              )
+                              : _buildJobCard(job);
+                        },
+                      );
                     },
                   ),
                 ),
@@ -1933,6 +1972,20 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color: AppColors.primary,
+                        ),
+                      ),
+                      const Spacer(),
+                      // 닫기 — 7일간 숨김
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: _dismissPartnerCard,
+                        child: const Padding(
+                          padding: EdgeInsets.only(left: 8, bottom: 4),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 16,
+                            color: AppColors.textTertiary,
+                          ),
                         ),
                       ),
                     ],
@@ -2789,52 +2842,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildLaborConsultEntry() {
-    // 한 줄 슬림 배너 — 첫 화면은 공고가 주인공 (컨트롤 영역 다이어트)
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        onTap:
-            () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const LaborConsultScreen()),
-            ),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.borderSub),
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.balance_rounded, size: 18, color: AppColors.primary),
-              SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  '근로 조건이 헷갈릴 때, AI 노무 상담',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                size: 20,
-                color: AppColors.textTertiary,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 
