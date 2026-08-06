@@ -2963,25 +2963,20 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     final bool isPinned =
         job.pinnedUntil != null && job.pinnedUntil!.isAfter(nowUtc);
 
-    final postedAt = job.publishAt ?? job.createdAt;
-    final bool isNew =
-        postedAt != null && nowUtc.difference(postedAt).inHours < 24;
-
     final bool isUrgent =
         job.endDate != null &&
         !job.endDate!.isBefore(nowUtc) &&
         job.endDate!.difference(nowUtc).inDays <= 2;
 
+    // 뱃지 색은 두 갈래만 쓴다.
+    //   주황 = 시간이 급함 (긴급·마감임박)
+    //   초록 = 돈·신뢰 보증 (당일지급·안심기업)
+    //   그 외(장기)는 중립 — 예전엔 5색이 한 화면에서 경쟁했다.
+    // '신규'는 뺐다: 24시간 이내면 붙어서 거의 모든 공고에 달렸고,
+    // 다 붙은 뱃지는 안 붙은 것과 같다.
     final List<Widget> opBadges = [];
-    // 긴급 호출 배지 (최우선 표시)
     if (job.isUrgent) {
-      opBadges.add(_buildBadge('⚡ 긴급', color: AppColors.badgeNew));
-    }
-    if (job.jobType == 'long') {
-      opBadges.add(_buildBadge('장기', color: AppColors.badgeLong));
-    }
-    if (isNew) {
-      opBadges.add(_buildBadge('신규', color: AppColors.badgeNew));
+      opBadges.add(_buildBadge('⚡ 긴급', color: AppColors.badgeUrgent));
     }
     if (isUrgent) {
       opBadges.add(_buildBadge('마감임박', color: AppColors.badgeUrgent));
@@ -2991,6 +2986,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       opBadges.add(_buildBadge('당일지급', color: AppColors.badgeSameDay));
     } else if (job.isCertifiedCompany == true) {
       opBadges.add(_buildBadge('안심기업', color: AppColors.badgeSafe));
+    }
+    if (job.jobType == 'long') {
+      opBadges.add(_buildBadge('장기', color: AppColors.textSecondary));
     }
 
     final displayBadges = opBadges.take(2).toList();
@@ -3129,21 +3127,22 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                       Text(
                         formattedPay,
                         style: TextStyle(
-                          fontSize: isNegotiablePay ? 19 : 22,
-                          fontWeight: FontWeight.w900,
+                          fontSize: isNegotiablePay ? 19 : 21,
+                          fontWeight: FontWeight.w800,
                           color: AppColors.textPrimary,
                           height: 1.1,
                         ),
                       ),
                       if (job.payType.isNotEmpty && !isNegotiablePay) ...[
                         const SizedBox(width: 6),
+                        // 급여 형태는 정보지 액션이 아니다 — 파랑은 지원하기 버튼 전용
                         Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 6,
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.primaryLight,
+                            color: AppColors.bgMuted,
                             borderRadius: BorderRadius.circular(AppRadius.xs),
                           ),
                           child: Text(
@@ -3151,7 +3150,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                             style: const TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.primary,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ),
@@ -3178,40 +3177,32 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   ),
 
                   // ── 매칭 요약 ────────────────────────────────────
+                  // 배경 박스를 없앴다 — 파란 덩어리가 카드마다 셋(급여칩·AI박스·버튼)
+                  // 겹쳐 시선을 분산시켰다. 아이콘 하나로 출처만 남긴다.
                   if (aiSummary != null) ...[
                     const SizedBox(height: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLight,
-                        borderRadius: BorderRadius.circular(AppRadius.xs),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(
-                            Icons.recommend_outlined,
-                            size: 11,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: Text(
-                              aiSummary,
-                              style: const TextStyle(
-                                fontSize: 11.5,
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.recommend_outlined,
+                          size: 12,
+                          color: AppColors.textTertiary,
+                        ),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            aiSummary,
+                            style: const TextStyle(
+                              fontSize: 11.5,
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w600,
                             ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ],
 
