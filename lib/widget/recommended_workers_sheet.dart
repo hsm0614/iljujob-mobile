@@ -48,7 +48,7 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
 
   // 초대 상태는 서버(/api/target/workers 의 inviteState)가 진실이다.
   // 예전엔 SharedPreferences 에만 들고 있어서, 구직자가 수락해도 이 화면은
-  // '수락 대기중'에 머물렀다(문의 2026-07-31). 기기를 바꾸면 통째로 사라지기도 했다.
+  // '수락 대기중'에 머물렀다(문의 2026-08-07). 기기를 바꾸면 통째로 사라지기도 했다.
   void _applyServerInviteStates(List<Map<String, dynamic>> items) {
     final nextState = <int, InviteState>{};
     final nextRoom = <int, int>{};
