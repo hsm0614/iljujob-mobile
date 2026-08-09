@@ -223,14 +223,7 @@ class _PartnerRecruitDetailScreenState
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              for (final logo in benefits.logos) ...[
-                _logo(logo),
-                const SizedBox(width: 10),
-              ],
-            ],
-          ),
+          _logoLockup(benefits.logos),
           const SizedBox(height: 14),
           _heading(benefits.heading),
           const SizedBox(height: 12),
@@ -260,35 +253,73 @@ class _PartnerRecruitDetailScreenState
   }
 
   /// 로고 슬롯. 파트너 로고는 파트너 제공 자산만 쓴다(임의 제작 금지).
-  /// 자산이 없는 키는 텍스트로 자리만 잡는다.
-  static const _logoAssets = {
-    'albailju': 'assets/logo.png',
-    'wonder': 'assets/partners/wonder_logo.png',
-  };
+  /// 자산이 없는 키는 회색 자리표시자로 둔다.
+  /// 실제로 번들에 들어 있는 것만 적는다. 없는 경로를 적어두면
+  /// errorBuilder로 늦게 떨어져 자리표시자가 한 프레임 늦게 뜬다.
+  /// 원더 로고 수령 시: assets/images/에 넣고 pubspec 등록 후 여기 한 줄 추가.
+  static const _logoAssets = {'albailju': 'assets/images/logo_mark.png'};
+
+  static const _logoLabels = {'albailju': '알바일주', 'wonder': 'wonder'};
+
+  /// 제휴 락업 — 로고 사이에 ×를 두어 "함께한다"를 시각적으로 말한다.
+  /// (NAVER CLOVA × COMPANY LOGO 형태)
+  Widget _logoLockup(List<String> logos) {
+    final items = <Widget>[];
+    for (var i = 0; i < logos.length; i++) {
+      if (i > 0) {
+        items.add(
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12),
+            child: Icon(
+              Icons.close_rounded,
+              size: 16,
+              color: AppColors.textTertiary,
+            ),
+          ),
+        );
+      }
+      items.add(_logo(logos[i]));
+    }
+
+    return Center(
+      child: Row(mainAxisSize: MainAxisSize.min, children: items),
+    );
+  }
 
   Widget _logo(String key) {
     final asset = _logoAssets[key];
-    if (asset != null) {
-      return Image.asset(asset, height: 28, errorBuilder: (_, __, ___) => _logoFallback(key));
-    }
-    return _logoFallback(key);
+    if (asset == null) return _logoFallback(key);
+
+    // 심볼형 로고는 앱 아이콘처럼 모서리를 둥글게 잘라 락업 안에서 정돈되게
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Image.asset(
+        asset,
+        height: 34,
+        width: 34,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _logoFallback(key),
+      ),
+    );
   }
 
   Widget _logoFallback(String key) {
     return Container(
-      height: 28,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      height: 34,
+      constraints: const BoxConstraints(minWidth: 80),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: AppColors.bgMuted,
-        borderRadius: BorderRadius.circular(AppRadius.xs),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(
-        key,
+        _logoLabels[key] ?? key,
         style: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: AppColors.textSecondary,
+          color: AppColors.textTertiary,
+          letterSpacing: 0.2,
         ),
       ),
     );

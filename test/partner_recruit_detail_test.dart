@@ -36,6 +36,18 @@ void main() {
     expect(sizeOf('위촉직'), sizeOf('원하는 시간에 활동하며, 활동한 만큼 소득을 만들 수 있는 대표적인 트렌디한 N잡입니다.') - 1);
   });
 
+  testWidgets('혜택부는 로고 × 로고 락업으로 렌더된다', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: PartnerRecruitDetailScreen(post: post)),
+    );
+
+    await tester.scrollUntilVisible(find.text("'알바일주' 특별 혜택"), 400);
+
+    // 알바일주 심볼 이미지 + × 구분자 + 원더 자리표시자
+    expect(find.byIcon(Icons.close_rounded), findsWidgets);
+    expect(find.text('wonder'), findsOneWidget); // 자산 수령 전 자리표시자
+  });
+
   test('트래킹·딥링크 키가 스펙과 일치한다', () {
     expect(post.partnerCode, 'wonder_lotte'); // ad_banners.partner_code와 동일해야 집계됨
     expect(post.applyUrl, 'https://abr.ge/n9w3st');

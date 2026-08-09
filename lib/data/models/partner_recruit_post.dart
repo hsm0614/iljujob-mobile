@@ -55,7 +55,9 @@ class PartnerRecruitBenefitItem {
 class PartnerRecruitBenefits {
   final String heading;
 
-  /// 로고 자산 키. 'albailju' = assets/logo.png, 'wonder' = 원더 제공 자산(미수령 시 자리만)
+  /// 제휴 락업에 쓸 로고 키. 화면이 키 사이에 ×를 넣어 렌더한다.
+  /// 'albailju' = assets/images/logo_mark.png (웹 favicon과 동일 심볼)
+  /// 'wonder' = 원더 제공 자산 (미수령 시 회색 자리표시자)
   final List<String> logos;
   final List<PartnerRecruitBenefitItem> items;
 
