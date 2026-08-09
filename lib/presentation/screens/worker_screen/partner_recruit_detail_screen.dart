@@ -259,13 +259,24 @@ class _PartnerRecruitDetailScreenState
     );
   }
 
-  /// 로고 슬롯. 원더 로고는 원더 제공 자산 — 미수령이라 지금은 텍스트 플레이스홀더
+  /// 로고 슬롯. 파트너 로고는 파트너 제공 자산만 쓴다(임의 제작 금지).
+  /// 자산이 없는 키는 텍스트로 자리만 잡는다.
+  static const _logoAssets = {
+    'albailju': 'assets/logo.png',
+    'wonder': 'assets/partners/wonder_logo.png',
+  };
+
   Widget _logo(String key) {
-    if (key == 'albailju') {
-      return Image.asset('assets/logo.png', height: 24);
+    final asset = _logoAssets[key];
+    if (asset != null) {
+      return Image.asset(asset, height: 28, errorBuilder: (_, __, ___) => _logoFallback(key));
     }
+    return _logoFallback(key);
+  }
+
+  Widget _logoFallback(String key) {
     return Container(
-      height: 24,
+      height: 28,
       padding: const EdgeInsets.symmetric(horizontal: 10),
       alignment: Alignment.center,
       decoration: BoxDecoration(
@@ -273,7 +284,7 @@ class _PartnerRecruitDetailScreenState
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: Text(
-        key == 'wonder' ? 'wonder' : key,
+        key,
         style: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,

@@ -46,6 +46,7 @@ flutter:
     - assets/terms/location_terms.txt
     - assets/images/noshow_banner.png
     - assets/logo.png            # 파트너 채용공고 혜택부 로고
+    - assets/partners/wonder_logo.png  # 원더 제공 자산 (앱 logo 남색_텍스트조합)
     - assets/policies/wage_policy.md
     - assets/policies/labor_policy.md
     - assets/policies/equality_policy.md
