@@ -79,6 +79,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
   // 파트너 채용공고 카드: 닫으면 7일간 숨김 (광고 피로도 완화)
   bool _partnerCardHidden = false;
+
+  /// 어드민 '광고 배너(제휴)'의 `app_partner_recruit` 행이 활성인지.
+  /// 계약 종료·사고 시 앱 배포 없이 즉시 내리기 위한 스위치.
+  /// 기본 false — 서버 확인 전이나 조회 실패 시엔 노출하지 않는다(안전한 기본값).
+  bool _partnerAdActive = false;
   static const _kPartnerCardHiddenUntilKey = 'partner_card_hidden_until';
   static const _partnerCardHideDays = 7;
 
@@ -108,6 +113,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     _requestNotificationPermission();
     _loadGenderHintDismissed();
     _loadPartnerCardHidden();
+    _loadPartnerAdActive();
     _loadAvailableTodayStatus();
     _loadWorkerProfileBrief();
     _loadBookmarks()
@@ -153,6 +159,17 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     await prefs.setBool(_kGenderHintKey, true);
     if (!mounted) return;
     setState(() => _genderHintDismissed = true);
+  }
+
+  /// 어드민 토글·노출기간을 서버에서 확인한다.
+  /// `GET /api/banners?placement=`는 is_active=1 + start_at/end_at 범위만 돌려주므로
+  /// 행이 하나라도 오면 활성, 비었으면 비활성이다.
+  Future<void> _loadPartnerAdActive() async {
+    final rows = await AdBannerService.instance.fetchBanners(
+      'app_partner_recruit',
+    );
+    if (!mounted) return;
+    setState(() => _partnerAdActive = rows.isNotEmpty);
   }
 
   Future<void> _loadPartnerCardHidden() async {
@@ -1850,7 +1867,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               // ── 파트너 채용공고 (제휴) ────────────────────────────
               // '전체 공고' 헤더 위에 둔다. 헤더 아래면 카운트(N개)에 포함된
               // 일반 공고로 오인된다.
-              if (!_partnerCardHidden)
+              if (_partnerAdActive && !_partnerCardHidden)
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                   sliver: SliverToBoxAdapter(
