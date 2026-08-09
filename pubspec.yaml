@@ -46,6 +46,7 @@ flutter:
     - assets/terms/location_terms.txt
     - assets/images/noshow_banner.png
     - assets/images/logo_mark.png   # 알바일주 심볼 (파트너 락업용, 웹 favicon과 동일)
+    - assets/images/wonder_logo.png # 원더 제공 자산 (앱 logo 남색_텍스트조합)
     - assets/partners/wonder_logo.png  # 원더 제공 자산 (앱 logo 남색_텍스트조합)
     - assets/policies/wage_policy.md
     - assets/policies/labor_policy.md

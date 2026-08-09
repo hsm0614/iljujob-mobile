@@ -43,9 +43,17 @@ void main() {
 
     await tester.scrollUntilVisible(find.text("'알바일주' 특별 혜택"), 400);
 
-    // 알바일주 심볼 이미지 + × 구분자 + 원더 자리표시자
+    // 알바일주 심볼 × 원더 로고 (둘 다 실제 이미지, 자리표시자 아님)
     expect(find.byIcon(Icons.close_rounded), findsWidgets);
-    expect(find.text('wonder'), findsOneWidget); // 자산 수령 전 자리표시자
+    expect(find.text('wonder'), findsNothing);
+
+    final logos =
+        tester
+            .widgetList<Image>(find.byType(Image))
+            .map((w) => (w.image as AssetImage).assetName)
+            .toList();
+    expect(logos, contains('assets/images/logo_mark.png'));
+    expect(logos, contains('assets/images/wonder_logo.png'));
   });
 
   test('트래킹·딥링크 키가 스펙과 일치한다', () {

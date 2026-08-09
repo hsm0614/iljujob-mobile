@@ -256,8 +256,11 @@ class _PartnerRecruitDetailScreenState
   /// 자산이 없는 키는 회색 자리표시자로 둔다.
   /// 실제로 번들에 들어 있는 것만 적는다. 없는 경로를 적어두면
   /// errorBuilder로 늦게 떨어져 자리표시자가 한 프레임 늦게 뜬다.
-  /// 원더 로고 수령 시: assets/images/에 넣고 pubspec 등록 후 여기 한 줄 추가.
-  static const _logoAssets = {'albailju': 'assets/images/logo_mark.png'};
+  /// 원더 로고 = 원더 제공 자산('앱 logo 남색_텍스트조합'). 임의 제작·변형 금지.
+  static const _logoAssets = {
+    'albailju': 'assets/images/logo_mark.png',
+    'wonder': 'assets/images/wonder_logo.png',
+  };
 
   static const _logoLabels = {'albailju': '알바일주', 'wonder': 'wonder'};
 
