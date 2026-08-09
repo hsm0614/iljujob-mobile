@@ -59,9 +59,41 @@ class AdBannerService {
     unawaited(_sendEvent(bannerId, eventType, placement));
   }
 
-  /// 파트너 채용공고 '지원하기' 클릭 (landing_cta) — 배너 CTA와 같은 리포트에서 집계됨.
+  // 같은 파트너·이벤트의 impression 중복 전송 방지 (배너와 동일하게 3분)
+  static final Map<String, DateTime> _lastPartnerImpression = {};
+  static const _impressionDedupe = Duration(minutes: 3);
+
+  /// 파트너 채용공고 노출(impression) — 목록에서 카드가 실제로 보였을 때.
+  /// 스크롤로 오갈 때마다 쌓이지 않게 3분 디듀프. fire-and-forget.
+  void logPartnerImpression(String partnerCode, {String? placement}) {
+    final key = '$partnerCode:${placement ?? ''}';
+    final last = _lastPartnerImpression[key];
+    final now = DateTime.now();
+    if (last != null && now.difference(last) < _impressionDedupe) return;
+    _lastPartnerImpression[key] = now;
+
+    unawaited(
+      _sendPartnerEvent(partnerCode, 'impression', placement, wait: false),
+    );
+  }
+
+  /// 파트너 채용공고 카드 탭(click) — 상세화면 진입. fire-and-forget.
+  void logPartnerClick(String partnerCode, {String? placement}) {
+    unawaited(_sendPartnerEvent(partnerCode, 'click', placement, wait: false));
+  }
+
+  /// 파트너 채용공고 '지원하기' 클릭(landing_cta) — 배너 CTA와 같은 리포트에서 집계됨.
   /// 정산 대사 근거라 외부 링크 열기 전에 짧게 기다린다(실패해도 화면은 계속 진행).
-  Future<void> logPartnerCta(String partnerCode, {String? placement}) async {
+  Future<void> logPartnerCta(String partnerCode, {String? placement}) {
+    return _sendPartnerEvent(partnerCode, 'landing_cta', placement, wait: true);
+  }
+
+  Future<void> _sendPartnerEvent(
+    String partnerCode,
+    String eventType,
+    String? placement, {
+    required bool wait,
+  }) async {
     try {
       await http
           .post(
@@ -69,11 +101,12 @@ class AdBannerService {
             headers: await _headers(),
             body: jsonEncode({
               'partner_code': partnerCode,
+              'event_type': eventType,
               'placement': placement,
               'platform': _platform,
             }),
           )
-          .timeout(const Duration(milliseconds: 1500));
+          .timeout(Duration(milliseconds: wait ? 1500 : 5000));
     } catch (_) {}
   }
 

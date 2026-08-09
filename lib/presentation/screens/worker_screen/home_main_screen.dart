@@ -19,8 +19,11 @@ import 'package:iljujob/presentation/chat/chat_room_screen.dart';
 import 'package:iljujob/data/services/ai_labor_service.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/config/app_theme.dart';
+import 'package:visibility_detector/visibility_detector.dart';
+
 import 'package:iljujob/widget/app_ui.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
+import 'package:iljujob/data/services/ad_banner_service.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/data/models/partner_recruit_post.dart';
 import 'package:iljujob/presentation/screens/worker_screen/partner_recruit_detail_screen.dart';
@@ -2018,9 +2021,23 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   /// 파트너 채용공고 카드 (제휴 광고). 일반 공고 카드와 헷갈리지 않게
   /// '광고' 표기 + 파란 테두리로 구분한다.
   Widget _buildPartnerRecruitCard(PartnerRecruitPost post) {
-    return GestureDetector(
-      onTap:
-          () => Navigator.push(
+    // 배너와 같은 3단 집계: 노출(50% 이상 보였을 때) → 카드 탭 → 지원하기
+    return VisibilityDetector(
+      key: Key('partner_card_${post.partnerCode}'),
+      onVisibilityChanged: (info) {
+        if (info.visibleFraction < 0.5) return;
+        AdBannerService.instance.logPartnerImpression(
+          post.partnerCode,
+          placement: 'app_home_worker',
+        );
+      },
+      child: GestureDetector(
+        onTap: () {
+          AdBannerService.instance.logPartnerClick(
+            post.partnerCode,
+            placement: 'app_home_worker',
+          );
+          Navigator.push(
             context,
             MaterialPageRoute(
               builder:
@@ -2029,7 +2046,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     placement: 'app_home_worker',
                   ),
             ),
-          ),
+          );
+        },
       child: Container(
         padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
         decoration: BoxDecoration(
@@ -2124,6 +2142,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               color: AppColors.textTertiary,
             ),
           ],
+        ),
         ),
       ),
     );
