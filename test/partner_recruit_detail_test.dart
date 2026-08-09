@@ -53,7 +53,7 @@ void main() {
             .map((w) => (w.image as AssetImage).assetName)
             .toList();
     expect(logos, contains('assets/images/logo_mark.png'));
-    expect(logos, contains('assets/images/wonder_logo.png'));
+    expect(logos, contains('assets/partners/wonder_logo.png'));
   });
 
   test('트래킹·딥링크 키가 스펙과 일치한다', () {

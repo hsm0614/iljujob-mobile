@@ -259,7 +259,7 @@ class _PartnerRecruitDetailScreenState
   /// 원더 로고 = 원더 제공 자산('앱 logo 남색_텍스트조합'). 임의 제작·변형 금지.
   static const _logoAssets = {
     'albailju': 'assets/images/logo_mark.png',
-    'wonder': 'assets/images/wonder_logo.png',
+    'wonder': 'assets/partners/wonder_logo.png',
   };
 
   static const _logoLabels = {'albailju': '알바일주', 'wonder': 'wonder'};
