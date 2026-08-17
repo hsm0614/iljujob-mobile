@@ -47,6 +47,7 @@ import 'package:iljujob/presentation/admin/admin_event_write_screen.dart';
 import 'package:iljujob/data/services/job_service.dart';
 import 'package:iljujob/data/services/fcm_token_payload.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
+import 'package:iljujob/data/services/screen_analytics_service.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:iljujob/presentation/screens/mypagescreen/block_detail_screen.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -446,12 +447,35 @@ Future<void> _handleChatNotification(RemoteMessage message) async {
   }
 }
 
+/// 푸시 오픈 계측.
+/// 서버는 발송만 기록하고 있어서 "어떤 캠페인이 실제로 앱을 열게 했나"를 알 수 없었다.
+/// campaign 이 없는 트랜잭션 푸시(채팅 등)는 type 으로 대신 집계한다.
+void _logPushOpen(Map<String, dynamic> data, String openedFrom) {
+  final campaign = data['campaign']?.toString();
+  final type = data['type']?.toString();
+  if ((campaign == null || campaign.isEmpty) && (type == null || type.isEmpty)) {
+    return;
+  }
+  ScreenAnalyticsService.instance.logEvent(
+    'push_open',
+    params: {
+      'campaign': (campaign != null && campaign.isNotEmpty) ? campaign : type,
+      if (type != null) 'push_type': type,
+      if (data['jobId'] != null) 'job_id': data['jobId'].toString(),
+      'opened_from': openedFrom,
+    },
+  );
+}
+
 Future<void> _handleInitialMessage(
   SharedPreferences prefs,
   String userType,
 ) async {
   final initialMessage = await FirebaseMessaging.instance.getInitialMessage();
   if (initialMessage == null) return;
+
+  // 앱이 완전히 꺼진 상태에서 푸시로 켠 경우
+  _logPushOpen(initialMessage.data, 'terminated');
 
   final navigator = navigatorKey.currentState;
   if (navigator == null) return;
@@ -609,6 +633,8 @@ void main() async {
   });
 
   FirebaseMessaging.onMessageOpenedApp.listen((message) async {
+    // 백그라운드에 있던 앱을 푸시로 되살린 경우
+    _logPushOpen(message.data, 'background');
     await _handleNotificationData(
       message.data.map((key, value) => MapEntry(key, value.toString())),
     );
