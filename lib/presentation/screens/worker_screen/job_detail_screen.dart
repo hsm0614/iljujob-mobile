@@ -131,13 +131,18 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     super.initState();
     ScreenAnalyticsService.instance.logScreenView('job_detail');
     _loadUserType();
-    _checkAlreadyApplied();
     _initializePage();
     _incrementViewCount();
     _loadReviewSummary();
-    _checkBlockStatus();
 
-    _loadSuspension(); // ← 추가: 정지 상태 로드
+    // 공고 상세를 본 사람의 82%가 지원하지 않는데, 그 중 몇 명이 애초에
+    // 지원 버튼을 누를 수 없는 상태(마감·기지원·차단·정지)였는지 알 수가 없었다.
+    // 세 로드가 끝나야 버튼 상태가 정해지므로 그 뒤에 찍는다.
+    Future.wait([
+      _checkAlreadyApplied(),
+      _checkBlockStatus(),
+      _loadSuspension(),
+    ]).whenComplete(_logDetailView);
     _loadLocationContext();
     final jobId = int.tryParse(widget.job.id.toString());
     if (jobId != null) {
@@ -298,6 +303,38 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     } else {
       await launchUrl(web, mode: LaunchMode.externalApplication);
     }
+  }
+
+  /// 상세 진입 시 지원 버튼이 실제로 눌릴 수 있는 상태였는지 기록한다.
+  /// `_buildApplyBar` 의 `isButtonDisabled` 와 같은 조건을 쓴다 — 어긋나면 지표가 거짓말이 된다.
+  void _logDetailView() {
+    if (!mounted) return;
+    final isSuspended = _suspension?.isSuspended ?? false;
+    final hasExternalApply = widget.job.hasExternalApply;
+
+    final String buttonState;
+    if (isClosed) {
+      buttonState = 'closed';
+    } else if (hasExternalApply) {
+      buttonState = 'external';
+    } else if (hasApplied) {
+      buttonState = 'already_applied';
+    } else if (isBlocked) {
+      buttonState = 'blocked';
+    } else if (isSuspended) {
+      buttonState = 'suspended';
+    } else {
+      buttonState = 'enabled';
+    }
+
+    ScreenAnalyticsService.instance.logEvent(
+      'worker_job_detail_view',
+      params: {
+        'job_id': widget.job.id,
+        'category': widget.job.category,
+        'button_state': buttonState,
+      },
+    );
   }
 
   Future<void> _checkBlockStatus() async {

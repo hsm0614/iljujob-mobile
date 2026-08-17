@@ -46,10 +46,30 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
     '성실해요',
   ];
 
+  bool _signupCompleted = false;
+
   @override
   void initState() {
     super.initState();
+    // 구직자 가입 퍼널의 분모. 이게 없어 "가입→첫 지원 8%"가 어디서 깨지는지 못 봤다.
+    ScreenAnalyticsService.instance.logEvent('worker_signup_start');
     _getCurrentLocation();
+  }
+
+  @override
+  void dispose() {
+    // 사장님 job_post_abandon 과 같은 패턴. 완료 없이 화면을 떠난 지점을 남긴다.
+    if (!_signupCompleted) {
+      ScreenAnalyticsService.instance.logEvent(
+        'worker_signup_abandon',
+        params: {'step': _currentPage},
+      );
+    }
+    _pageController.dispose();
+    _phoneController.dispose();
+    _nameController.dispose();
+    _birthController.dispose();
+    super.dispose();
   }
 
   @override
@@ -175,9 +195,10 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
         if (!mounted) return;
         Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
       } else {
-        // 사장님은 sign_up_client이 있는데 구직자는 가입 계측이 없었다.
-        // 구직자 퍼널의 출발점이라 이게 없으면 이탈률 분모를 못 잡는다.
-        ScreenAnalyticsService.instance.logEvent('worker_signup_complete');
+        // ⚠️ 여기는 전화 인증 성공 지점이지 가입 완료가 아니다.
+        //    예전엔 worker_signup_complete 로 찍혀 있어 퍼널이 거꾸로 읽혔다.
+        ScreenAnalyticsService.instance.logEvent('worker_signup_step_complete',
+            params: {'step': 0, 'name': 'phone_verified'});
 
         // ✅ 신규 회원 → 다음 단계
         await Future.delayed(const Duration(milliseconds: 300));
@@ -355,6 +376,8 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
       final data = jsonDecode(response.body);
 
       if (data['success']) {
+        _signupCompleted = true;
+        ScreenAnalyticsService.instance.logEvent('worker_signup_complete');
         final prefs = await SharedPreferences.getInstance();
         await _saveAuthCommon(
           prefs: prefs,
@@ -831,6 +854,10 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                   onPressed: _isLoading
                       ? null
                       : () {
+                          ScreenAnalyticsService.instance.logEvent(
+                            'worker_signup_step_complete',
+                            params: {'step': 1, 'name': 'profile'},
+                          );
                           _pageController.nextPage(
                             duration: const Duration(milliseconds: 300),
                             curve: Curves.easeInOut,

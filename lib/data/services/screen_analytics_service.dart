@@ -83,23 +83,83 @@ class ScreenAnalyticsService {
 
     try {
       final token = await AuthenticatedHttpClient.accessToken();
-      if (token.isEmpty) return;
-      await http
-          .post(
-            Uri.parse('$baseUrl/api/tracking/event'),
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer $token',
-            },
-            body: jsonEncode({
-              'event_type': eventName,
-              if (params != null) 'properties': params,
-              'platform': _platform,
-            }),
-          )
-          .timeout(const Duration(seconds: 3));
+
+      // 토큰이 없으면 그냥 버리고 있었다. 그런데 가입 퍼널(worker_signup_*)은
+      // 전부 계정이 생기기 전에 일어나서 30일간 서버에 2건밖에 안 쌓였다.
+      // 큐에 담아두고 로그인 후 첫 이벤트에서 함께 올린다.
+      // (GA4 쪽은 위에서 이미 토큰 없이 전송되므로 영향 없음)
+      if (token.isEmpty) {
+        await _enqueue(eventName, params);
+        return;
+      }
+
+      await _flushQueue(token);
+      await _post(token, eventName, params, null);
     } catch (_) {
       // 계측 실패는 조용히 넘긴다.
+    }
+  }
+
+  Future<void> _post(
+    String token,
+    String eventName,
+    Map<String, Object?>? params,
+    String? occurredAt,
+  ) async {
+    await http
+        .post(
+          Uri.parse('$baseUrl/api/tracking/event'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+          },
+          body: jsonEncode({
+            'event_type': eventName,
+            if (params != null) 'properties': params,
+            'platform': _platform,
+            if (occurredAt != null) 'occurred_at': occurredAt,
+          }),
+        )
+        .timeout(const Duration(seconds: 3));
+  }
+
+  // ── 로그인 이전 이벤트 큐 ──────────────────────────────
+  // 무한정 쌓이면 안 되므로 상한을 둔다. 넘치면 오래된 것부터 버린다.
+  static const _queueKey = 'analytics_pending_events';
+  static const _queueMax = 50;
+
+  Future<void> _enqueue(String eventName, Map<String, Object?>? params) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_queueKey) ?? [];
+    list.add(jsonEncode({
+      'event_type': eventName,
+      if (params != null) 'properties': params,
+      // 실제 발생 시각. 나중에 올리므로 서버 수신 시각과 다르다.
+      'occurred_at': DateTime.now().toUtc().toIso8601String(),
+    }));
+    if (list.length > _queueMax) {
+      list.removeRange(0, list.length - _queueMax);
+    }
+    await prefs.setStringList(_queueKey, list);
+  }
+
+  Future<void> _flushQueue(String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    final list = prefs.getStringList(_queueKey) ?? [];
+    if (list.isEmpty) return;
+
+    // 먼저 비우고 보낸다. 전송 실패로 큐가 영원히 안 비는 상황을 막는다.
+    await prefs.remove(_queueKey);
+    for (final raw in list) {
+      try {
+        final e = jsonDecode(raw) as Map<String, dynamic>;
+        await _post(
+          token,
+          e['event_type'] as String,
+          (e['properties'] as Map?)?.cast<String, Object?>(),
+          e['occurred_at'] as String?,
+        );
+      } catch (_) {}
     }
   }
 

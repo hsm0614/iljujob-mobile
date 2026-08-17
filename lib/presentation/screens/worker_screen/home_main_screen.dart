@@ -27,6 +27,7 @@ import 'package:iljujob/data/services/ad_banner_service.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/data/models/partner_recruit_post.dart';
 import 'package:iljujob/presentation/screens/worker_screen/partner_recruit_detail_screen.dart';
+import 'package:iljujob/data/services/notificaion_service.dart';
 
 class HomeMainScreen extends StatefulWidget {
   final VoidCallback? onAiRecommend;
@@ -60,6 +61,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   double currentLatitude = 0.0;
   double currentLongitude = 0.0;
   double selectedDistance = 30;
+  // 슬라이더 상한이 30km 라 "거리를 넓혀보라"는 안내로는 빠져나갈 수 없다.
+  // 빈 화면에서 전국 보기를 선택하면 거리 필터 자체를 끈다.
+  bool _ignoreDistance = false;
   int _itemsToShow = 10;
   bool isLoading = true;
   bool compactView = false;
@@ -642,7 +646,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             j.lat,
             j.lng,
           );
-          if (d <= selectedDistance) tmp.add(j);
+          if (_ignoreDistance || d <= selectedDistance) tmp.add(j);
         }
         filtered = tmp;
       }
@@ -738,7 +742,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               job.lat,
               job.lng,
             );
-            return distance <= selectedDistance;
+            return _ignoreDistance || distance <= selectedDistance;
           }).toList();
     }
 
@@ -2293,17 +2297,45 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     );
   }
 
+  /// 빈 화면에서 유일하게 재방문 이유를 만드는 액션.
+  /// 새 테이블 없이 기존 notification_settings(match_alert·push_consent)를 켠다.
+  Future<void> _enableJobAlerts() async {
+    ScreenAnalyticsService.instance.logEvent('worker_empty_alert_optin');
+    final ok = await NotificationService.updateSettings({
+      'matchAlert': true,
+      'pushConsent': true,
+    });
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? '새 공고가 올라오면 알려드릴게요.'
+              : '알림 설정에 실패했어요. 잠시 후 다시 시도해주세요.',
+        ),
+      ),
+    );
+  }
+
   Widget _buildEmptyJobsView() {
     // 원인별 빈 상태: 검색어 때문인지, 주변에 공고가 없는 건지 구분해서 처방
     final hasQuery = searchQuery.trim().isNotEmpty;
 
-    // 활성 구직자의 86%가 5km 내 공고 0개를 본다(로드맵 실측).
-    // 앱에서 가장 많이 노출되는 화면인데 지금까지 계측이 없었다.
+    // 위치 권한이 없으면 좌표가 0으로 떨어진다. 권한이 멀쩡한 사람에게
+    // "위치 권한 설정" 버튼을 계속 보여주고 있었다 — 원인이 아닌 경우가 대부분이다.
+    final noLocation = currentLatitude == 0.0 && currentLongitude == 0.0;
+
+    // 30일간 283명에게 5,090회(인당 18회) 노출됐다.
     // build 중이므로 프레임 이후에 보낸다.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ScreenAnalyticsService.instance.logEvent(
         'worker_empty_jobs_shown',
-        params: {'cause': hasQuery ? 'search' : 'no_nearby_jobs'},
+        params: {
+          'cause': hasQuery ? 'search' : 'no_nearby_jobs',
+          // 어떤 출구를 줬는지 함께 남겨야 개선 효과를 볼 수 있다
+          'nationwide': _ignoreDistance,
+          'no_location': noLocation,
+        },
       );
     });
 
@@ -2347,7 +2379,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             Text(
               hasQuery
                   ? '검색어를 바꾸거나 지우면\n주변 공고를 다시 볼 수 있어요.'
-                  : '거리 범위를 조금 늘리거나,\n위치 권한을 켜면 더 많은 공고를 찾을 수 있어요.',
+                  // 거리 슬라이더 상한이 30km 라 "넓혀보라"는 안내는 실행 불가능했다.
+                  // 이미 전국을 보고 있는데도 0건이면 그 사실을 그대로 말한다.
+                  : _ignoreDistance
+                      ? '지금은 등록된 공고가 없어요.\n새 공고가 올라오면 가장 먼저 알려드릴게요.'
+                      : '설정한 거리 안에는 공고가 없어요.\n전국 공고를 보거나 알림을 받아보세요.',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 13,
@@ -2360,6 +2396,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             SizedBox(
               width: double.infinity,
               height: 46,
+              // 기존 「내 주변 다시 찾기」는 같은 조건으로 재조회라 결과가 절대 안 바뀌었다.
+              // 결과를 실제로 바꾸는 액션(전국 보기)으로 교체한다.
               child: ElevatedButton.icon(
                 onPressed:
                     hasQuery
@@ -2368,13 +2406,30 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                           setState(() => searchQuery = '');
                           _applyFiltersThrottled();
                         }
-                        : () async => _init(),
+                        : _ignoreDistance
+                            ? () async => _init()
+                            : () {
+                              ScreenAnalyticsService.instance.logEvent(
+                                'worker_empty_go_nationwide',
+                                params: {'from_km': selectedDistance},
+                              );
+                              setState(() => _ignoreDistance = true);
+                              _applyFiltersThrottled();
+                            },
                 icon: Icon(
-                  hasQuery ? Icons.backspace_outlined : Icons.refresh_rounded,
+                  hasQuery
+                      ? Icons.backspace_outlined
+                      : _ignoreDistance
+                          ? Icons.refresh_rounded
+                          : Icons.public_rounded,
                   size: 18,
                 ),
                 label: Text(
-                  hasQuery ? '검색어 지우기' : '내 주변 다시 찾기',
+                  hasQuery
+                      ? '검색어 지우기'
+                      : _ignoreDistance
+                          ? '새로고침'
+                          : '전국 공고 보기',
                   style: const TextStyle(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w700,
@@ -2395,16 +2450,23 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               SizedBox(
                 width: double.infinity,
                 height: 46,
+                // 위치 권한 버튼은 실제로 권한이 없을 때만 의미가 있다.
+                // 권한이 멀쩡한 사람에게 띄우면 눌러도 아무것도 안 바뀐다.
+                // 그 외에는 재방문 이유를 만드는 유일한 훅인 알림 신청을 준다.
                 child: OutlinedButton.icon(
-                  onPressed: () async => Geolocator.openAppSettings(),
-                  icon: const Icon(
-                    Icons.settings_rounded,
+                  onPressed: noLocation
+                      ? () async => Geolocator.openAppSettings()
+                      : _enableJobAlerts,
+                  icon: Icon(
+                    noLocation
+                        ? Icons.settings_rounded
+                        : Icons.notifications_active_outlined,
                     size: 18,
                     color: AppColors.primary,
                   ),
-                  label: const Text(
-                    '위치 권한 설정',
-                    style: TextStyle(
+                  label: Text(
+                    noLocation ? '위치 권한 설정' : '새 공고 뜨면 알림 받기',
+                    style: const TextStyle(
                       fontSize: 14.5,
                       fontWeight: FontWeight.w700,
                       color: AppColors.primary,
@@ -2904,7 +2966,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 ),
               ),
               Text(
-                '${selectedDistance.toStringAsFixed(0)}km',
+                _ignoreDistance ? '전국' : '${selectedDistance.toStringAsFixed(0)}km',
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
@@ -2938,7 +3000,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               child: const Text('접기'),
             ),
             Text(
-              '${selectedDistance.toStringAsFixed(0)}km',
+              _ignoreDistance ? '전국' : '${selectedDistance.toStringAsFixed(0)}km',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -2952,7 +3014,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           max: 30,
           divisions: 29,
           value: selectedDistance,
-          onChanged: (value) => setState(() => selectedDistance = value),
+          onChanged: (value) => setState(() {
+            selectedDistance = value;
+            _ignoreDistance = false;   // 직접 거리를 고르면 전국 모드는 해제
+          }),
           onChangeEnd: (value) async {
             if (currentLatitude == 0.0 || currentLongitude == 0.0) {
               await _init();
