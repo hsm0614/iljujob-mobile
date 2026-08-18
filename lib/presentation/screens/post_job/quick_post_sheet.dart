@@ -390,7 +390,11 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
         Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
       }
     } catch (e) {
-      if (mounted) _showSnack('오류: $e');
+      if (mounted) {
+        _showSnack(
+          e is JobPostException ? e.message : '공고를 등록하지 못했어요. 잠시 후 다시 시도해주세요.',
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }

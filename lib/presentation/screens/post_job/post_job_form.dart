@@ -933,8 +933,14 @@ class _PostJobFormState extends State<PostJobForm>
       );
     } catch (e) {
       // 원시 예외 문자열은 사장님에게 아무 의미가 없다. 로그로만 남긴다.
+      // 단, 서버가 code 를 실어 보낸 사유(긴급호출 후보 부족·이용권 없음 등)는
+      // 그대로 보여줘야 사장님이 일반/즉시 게시로 갈아탈 수 있다.
       debugPrint('❌ 공고 등록 실패: $e');
-      _showError('공고를 등록하지 못했어요.\n잠시 후 다시 시도해주세요.');
+      _showError(
+        e is JobPostException
+            ? e.message
+            : '공고를 등록하지 못했어요.\n잠시 후 다시 시도해주세요.',
+      );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }

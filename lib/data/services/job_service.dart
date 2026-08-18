@@ -8,6 +8,17 @@ import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'authenticated_http_client.dart';
 
+/// 서버가 code 를 실어 보낸 4xx — 사장님에게 그대로 보여줘야 하는 사유다.
+/// (긴급호출 후보 부족, 이용권 없음, 최저시급 미달 …)
+/// code 없는 4xx/5xx 는 개발용 문구라 이 예외로 만들지 않는다.
+class JobPostException implements Exception {
+  final String code;
+  final String message;
+  const JobPostException(this.code, this.message);
+  @override
+  String toString() => 'JobPostException($code): $message';
+}
+
 // ════════════════════════════════════════════════════════
 //  날짜/시간 유틸 (static 클래스 외부에 top-level로 정의)
 // ════════════════════════════════════════════════════════
@@ -307,6 +318,18 @@ class JobService {
 
     if (resp.statusCode != 200) {
       debugPrint('❌ POST /post_job 실패: ${resp.statusCode} | $body');
+      try {
+        final j = jsonDecode(body) as Map<String, dynamic>;
+        final code = j['code'];
+        final msg = j['message'];
+        if (code is String && code.isNotEmpty && msg is String && msg.isNotEmpty) {
+          throw JobPostException(code, msg);
+        }
+      } on JobPostException {
+        rethrow;
+      } catch (_) {
+        // 본문이 JSON 이 아니거나 code 가 없으면 아래 일반 예외로 떨어진다.
+      }
       throw Exception('HTTP_${resp.statusCode}: $body');
     }
 
@@ -518,7 +541,7 @@ class JobService {
   static Future<int> fetchAvailableWorkersCount({
     required double lat,
     required double lng,
-    int radiusM = 3000,
+    int radiusM = 5000,
   }) async {
     final uri = Uri.parse('$baseUrl/api/job/available-workers-count').replace(
       queryParameters: {
