@@ -4116,6 +4116,8 @@ class _PublishSheetState extends State<_PublishSheet> {
   int _paidPassCount = 0;
   int _urgentPassCount = 0;
   int _availableWorkersCount = 0;
+  // 긴급호출 상품 스펙(10명 발송)과 같은 값. 미달이어도 등록은 막지 않는다.
+  static const int _urgentMinCandidates = 10;
   bool _passCountLoading = true;
   bool _passCountFailed = false;
 
@@ -4372,13 +4374,19 @@ class _PublishSheetState extends State<_PublishSheet> {
                       color: Color(0xFFFF9500),
                     ),
                     const SizedBox(width: 6),
-                    Text(
-                      '근무지 반경 5km 내 오늘 가능한 알바생 ${_availableWorkersCount}명',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        // #FF9500는 이 배경에서 2.01:1 — AA 미달
-                        color: AppColors.warningDark,
+                    Flexible(
+                      child: Text(
+                        // 후보가 얇으면 등록은 시키되(서버 게이트 없음) 기대치는 낮춘다.
+                        _availableWorkersCount < _urgentMinCandidates
+                            ? '근무지 반경 5km 내 활동 중인 알바생 ${_availableWorkersCount}명 — '
+                                '긴급 호출 발송 인원이 적어요'
+                            : '근무지 반경 5km 내 활동 중인 알바생 ${_availableWorkersCount}명',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          // #FF9500는 이 배경에서 2.01:1 — AA 미달
+                          color: AppColors.warningDark,
+                        ),
                       ),
                     ),
                   ],
