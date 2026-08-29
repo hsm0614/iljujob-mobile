@@ -55,6 +55,7 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 import 'package:iljujob/presentation/screens/potrone_screen.dart';
 import 'package:iljujob/data/services/dio_client.dart';
+import 'package:iljujob/data/services/feature_flag_service.dart';
 import 'package:upgrader/upgrader.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -649,6 +650,10 @@ void main() async {
   );
 
   final forceUpdateScreen = await _checkForceUpdate();
+
+  // 2.0 피처 플래그 — 캐시를 먼저 올리고 백그라운드로 갱신.
+  // 실패해도 전부 off이므로 1.0 동작에 영향 없다.
+  await FeatureFlags.instance.init();
 
   runApp(
     MyApp(startScreen: forceUpdateScreen ?? startScreen, upgrader: upgrader),
