@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:iljujob/widget/picker_sheets.dart';
+import 'package:iljujob/widget/free_limit_sheet.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/data/services/job_service.dart';
@@ -391,9 +392,17 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
       }
     } catch (e) {
       if (mounted) {
-        _showSnack(
-          e is JobPostException ? e.message : '공고를 등록하지 못했어요. 잠시 후 다시 시도해주세요.',
-        );
+        // 무료 한도 소진은 실패가 아니라 결제 안내다. 재등록 경로가
+        // 헤비 유저가 한도에 부딪히는 자리라 스낵바로 흘리면 안 된다.
+        if (e is JobPostException && e.code == 'FREE_LIMIT_REACHED') {
+          showFreeLimitSheet(context, e.message);
+        } else {
+          _showSnack(
+            e is JobPostException
+                ? e.message
+                : '공고를 등록하지 못했어요. 잠시 후 다시 시도해주세요.',
+          );
+        }
       }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);

@@ -30,6 +30,7 @@ import 'post_job_controller.dart' show getCurrentLocation;
 import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/utils/date_ymd.dart';
 import 'package:iljujob/widget/picker_sheets.dart';
+import 'package:iljujob/widget/free_limit_sheet.dart';
 import 'package:iljujob/config/job_categories.dart';
 
 // 2026년 적용 최저시급
@@ -936,11 +937,17 @@ class _PostJobFormState extends State<PostJobForm>
       // 단, 서버가 code 를 실어 보낸 사유(긴급호출 후보 부족·이용권 없음 등)는
       // 그대로 보여줘야 사장님이 일반/즉시 게시로 갈아탈 수 있다.
       debugPrint('❌ 공고 등록 실패: $e');
-      _showError(
-        e is JobPostException
-            ? e.message
-            : '공고를 등록하지 못했어요.\n잠시 후 다시 시도해주세요.',
-      );
+      // 무료 한도 소진은 "실패"가 아니라 결제 안내다. 앞단(_PublishSheet)에서
+      // 이미 막지만, 다른 기기에서 동시에 올렸거나 조회가 실패한 경우가 남는다.
+      if (e is JobPostException && e.code == 'FREE_LIMIT_REACHED') {
+        showFreeLimitSheet(context, e.message);
+      } else {
+        _showError(
+          e is JobPostException
+              ? e.message
+              : '공고를 등록하지 못했어요.\n잠시 후 다시 시도해주세요.',
+        );
+      }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -1015,6 +1022,7 @@ class _PostJobFormState extends State<PostJobForm>
       builder:
           (ctx) => _PublishSheet(
             fetchPassCounts: _fetchPassCounts,
+            fetchFreeQuota: JobService.fetchFreeQuota,
             fetchWorkerCount:
                 () =>
                     (_lat != 0 && _lng != 0)
@@ -4086,6 +4094,8 @@ class _LaborNoticeState extends State<_LaborNotice> {
 class _PublishSheet extends StatefulWidget {
   /// 이용권 잔여 조회. null이면 조회 실패(= "0개"와 구분해야 함).
   final Future<({int instant, int urgent})?> Function() fetchPassCounts;
+  /// 이번 달 무료 잔여. null이면 조회 실패 — 막지 않고 서버 판정에 맡긴다.
+  final Future<({int limit, int used, int remaining})?> Function() fetchFreeQuota;
   final Future<int> Function() fetchWorkerCount;
   final VoidCallback onFreeSubmit;
   final void Function(DateTime?) onPaidSubmit;
@@ -4094,6 +4104,7 @@ class _PublishSheet extends StatefulWidget {
   final bool externalApplyEnabled;
   const _PublishSheet({
     required this.fetchPassCounts,
+    required this.fetchFreeQuota,
     required this.fetchWorkerCount,
     required this.onFreeSubmit,
     required this.onPaidSubmit,
@@ -4121,6 +4132,10 @@ class _PublishSheetState extends State<_PublishSheet> {
   bool _passCountLoading = true;
   bool _passCountFailed = false;
 
+  // 무료 월 한도. null = 조회 실패(막지 않는다). 서버가 최종 판정한다.
+  ({int limit, int used, int remaining})? _freeQuota;
+  bool get _freeExhausted => (_freeQuota?.remaining ?? 1) <= 0;
+
   final ScrollController _scrollCtrl = ScrollController();
 
   @override
@@ -4141,8 +4156,10 @@ class _PublishSheetState extends State<_PublishSheet> {
       _passCountFailed = false;
     });
     final r = await widget.fetchPassCounts();
+    final q = await widget.fetchFreeQuota();
     if (!mounted) return;
     setState(() {
+      _freeQuota = q;
       _passCountLoading = false;
       if (r == null) {
         _passCountFailed = true;
@@ -4219,16 +4236,21 @@ class _PublishSheetState extends State<_PublishSheet> {
                     color: const Color(0xFFFFF7ED),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
-                    Icons.schedule_rounded,
+                  child: Icon(
+                    _freeExhausted
+                        ? Icons.lock_outline_rounded
+                        : Icons.schedule_rounded,
                     size: 26,
-                    color: Color(0xFFFF9500),
+                    color: const Color(0xFFFF9500),
                   ),
                 ),
                 const SizedBox(height: 14),
-                const Text(
-                  '무료 게시는 12시간 뒤에 노출돼요',
-                  style: TextStyle(
+                Text(
+                  _freeExhausted
+                      ? '이번 달 무료 등록을 다 쓰셨어요'
+                      : '무료 게시는 12시간 뒤에 노출돼요',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
                     color: Color(0xFF111827),
@@ -4237,7 +4259,13 @@ class _PublishSheetState extends State<_PublishSheet> {
                 const SizedBox(height: 6),
                 Text(
                   // 이용권 보유 여부에 따라 "얼마 드는지"를 여기서 미리 밝힌다.
-                  _paidPassCount == -1
+                  _freeExhausted
+                      ? (_paidPassCount == -1
+                          ? '구독 혜택으로 지금 바로 올릴 수 있어요.\n이용권 차감 없이 진행됩니다.'
+                          : _paidPassCount > 0
+                          ? '보유 중인 즉시게시 이용권 ${_paidPassCount}개로\n지금 바로 올릴 수 있어요. 추가 결제 없어요.'
+                          : '무료 등록은 매월 1일에 ${_freeQuota?.limit ?? 3}건으로 다시 채워져요.\n지금 올리시려면 즉시게시(₩4,900)를 이용해 주세요.')
+                      : _paidPassCount == -1
                       ? '구독 혜택으로 지금 바로 상단에 노출할 수 있어요.\n이용권 차감 없이 진행됩니다.'
                       : _paidPassCount > 0
                       ? '보유 중인 즉시게시 이용권 ${_paidPassCount}개로\n지금 바로 상단에 노출할 수 있어요. 추가 결제 없어요.'
@@ -4256,6 +4284,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                       child: OutlinedButton(
                         onPressed: () {
                           Navigator.pop(ctx);
+                          if (_freeExhausted) return; // 한도 소진 — 등록시키지 않는다
                           widget.onFreeSubmit();
                         },
                         style: OutlinedButton.styleFrom(
@@ -4265,9 +4294,9 @@ class _PublishSheetState extends State<_PublishSheet> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          '무료로 올리기',
-                          style: TextStyle(
+                        child: Text(
+                          _freeExhausted ? '닫기' : '무료로 올리기',
+                          style: const TextStyle(
                             color: Color(0xFF6B7280),
                             fontWeight: FontWeight.w600,
                           ),
