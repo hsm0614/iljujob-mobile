@@ -7,6 +7,7 @@ import 'package:iljujob/config/constants.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:async';
 import 'authenticated_http_client.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// 서버가 code 를 실어 보낸 4xx — 사장님에게 그대로 보여줘야 하는 사유다.
 /// (긴급호출 후보 부족, 이용권 없음, 최저시급 미달 …)
@@ -555,6 +556,30 @@ class JobService {
       return (jsonDecode(resp.body)['count'] as num).toInt();
     }
     return 0;
+  }
+
+  /// 이번 달 무료 등록 잔여. 조회 실패 시 null — "0건 남음"과 구분해야 한다.
+  /// null 이면 막지 않는다(서버가 최종 판정한다).
+  static Future<({int limit, int used, int remaining})?> fetchFreeQuota() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final clientId = prefs.getInt('userId');
+      if (clientId == null || clientId <= 0) return null;
+      final res = await AuthenticatedHttpClient.get(
+        Uri.parse('$baseUrl/api/job/free-post-usage')
+            .replace(queryParameters: {'clientId': '$clientId'}),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 6));
+      if (res.statusCode != 200) return null;
+      final d = jsonDecode(utf8.decode(res.bodyBytes)) as Map<String, dynamic>;
+      return (
+        limit: int.tryParse('${d['limit'] ?? 0}') ?? 0,
+        used: int.tryParse('${d['used'] ?? 0}') ?? 0,
+        remaining: int.tryParse('${d['remaining'] ?? 0}') ?? 0,
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   // ─── 내부 헬퍼 (공통 fetch) ───────────────────────────
