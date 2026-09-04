@@ -576,7 +576,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
       if (workerId != null && userType == 'worker') {
         try {
-          final aiRes = await http
+          final aiRes = await AuthenticatedHttpClient
               .get(
                 Uri.parse(
                   '$baseUrl/api/rank/jobs?workerId=$workerId&lat=$currentLatitude&lng=$currentLongitude&limit=100',
