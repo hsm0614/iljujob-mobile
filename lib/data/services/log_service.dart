@@ -22,13 +22,17 @@ class LogService {
       final prefs    = await SharedPreferences.getInstance();
       final workerId = prefs.getInt('userId');
       final userType = prefs.getString('userType');
+      final token    = prefs.getString('authToken');
 
       // 워커만 로그 수집
-      if (workerId == null || userType != 'worker') return;
+      if (workerId == null || userType != 'worker' || token == null || token.isEmpty) return;
 
       await http.post(
         Uri.parse('$baseUrl/api/log/event'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
         body: jsonEncode({
           'worker_id':  workerId,
           'event_type': eventType,
