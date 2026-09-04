@@ -449,7 +449,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
               _OptionCard(
                 icon: Icons.access_time_rounded,
                 title: '일반 등록',
-                desc: '등록 후 12시간 후 노출',
+                desc: '바로 노출 · 3일간',
                 badge:
                     _countsFailed
                         ? '확인 실패'
@@ -472,7 +472,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
               _OptionCard(
                 icon: Icons.bolt_rounded,
                 title: '즉시 게시',
-                desc: '12시간 대기 없이 즉시 노출',
+                desc: '7일간 노출 · 알바생 알림',
                 badge:
                     _passLoading
                         ? '조회중…'
