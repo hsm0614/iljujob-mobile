@@ -22,7 +22,12 @@ android {
     defaultConfig {
         applicationId "kr.co.iljujob"
         minSdkVersion flutter.minSdkVersion
-        targetSdk 35
+        // Google Play 정책: 2026-11-01부터 API 36(Android 16) 이상 필수.
+        // compileSdk 가 이미 36이라 툴체인 변경은 없다.
+        // ⚠️ Android 16은 edge-to-edge 를 강제한다(opt-out 플래그 무시).
+        //    앱은 SafeArea 를 쓰고 opt-out 을 선언한 적이 없어 대응돼 있을 가능성이 높지만,
+        //    상태바·내비바 겹침은 실기기로 화면별 확인이 필요하다.
+        targetSdk 36
         versionCode flutter.versionCode.toInteger()
         versionName flutter.versionName
         multiDexEnabled true
