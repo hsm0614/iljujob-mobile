@@ -4248,7 +4248,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                 Text(
                   _freeExhausted
                       ? '이번 달 무료 등록을 다 쓰셨어요'
-                      : '무료 게시는 12시간 뒤에 노출돼요',
+                      : '무료 게시는 3일간 노출돼요',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 17,
@@ -4268,8 +4268,8 @@ class _PublishSheetState extends State<_PublishSheet> {
                       : _paidPassCount == -1
                       ? '구독 혜택으로 지금 바로 상단에 노출할 수 있어요.\n이용권 차감 없이 진행됩니다.'
                       : _paidPassCount > 0
-                      ? '보유 중인 즉시게시 이용권 ${_paidPassCount}개로\n지금 바로 상단에 노출할 수 있어요. 추가 결제 없어요.'
-                      : '즉시게시 이용권(₩4,900)을 구매하면 지금 바로\n상단에 노출할 수 있어요.',
+                      ? '보유 중인 즉시게시 이용권 ${_paidPassCount}개로\n7일간 상단에 노출할 수 있어요. 추가 결제 없어요.'
+                      : '즉시게시 이용권(₩4,900)을 쓰면 3일이 아니라\n7일간, 상단에 노출돼요.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 13,
@@ -4900,7 +4900,7 @@ class _PublishSheetState extends State<_PublishSheet> {
 class _CompareConfig {
   // [항목, 기본, 즉시게시, 긴급호출, 강조여부]
   static const rows = [
-    ['노출 시점', '12시간 후', '즉시 노출', '즉시 노출', '1'],
+    ['노출 기간', '3일', '7일', '7일', '1'],
     ['상단 고정', '없음', '없음', '24시간 고정', '1'],
     ['긴급 호출', '불가', '불가', '최대 10명', '1'],
     ['무응답 환급', '-', '-', '100% 자동', '1'],
@@ -5023,7 +5023,7 @@ class _CompareCard extends StatelessWidget {
             Expanded(
               child: Semantics(
                 button: true,
-                label: '무료 등록, 12시간 후 노출',
+                label: '무료 등록, 3일간 노출',
                 child: GestureDetector(
                 onTap: onFreeTap,
                 child: Container(
@@ -5050,16 +5050,17 @@ class _CompareCard extends StatelessWidget {
                           Icon(
                             Icons.schedule_rounded,
                             size: 11,
-                            color: AppColors.warningDark,
+                            color: AppColors.textSecondary,
                           ),
                           SizedBox(width: 3),
                           Text(
-                            '12시간 후 노출',
-                            // #FF9500는 흰 배경에서 2.20:1 — AA 미달
+                            // 지연이 없어졌으니 더 이상 '경고'가 아니다.
+                            // 주황은 시간 급함에만 쓴다(DESIGN.md Two-Signal).
+                            '3일간 노출',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.warningDark,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],

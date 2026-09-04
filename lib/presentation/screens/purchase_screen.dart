@@ -682,7 +682,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     _BenefitRow(
                       icon: Icons.bolt_rounded,
                       iconColor: _blue,
-                      text: '12시간 대기 없이 즉시 노출',
+                      text: '7일간 노출 (무료는 3일)',
                     ),
                     SizedBox(height: 10),
                     _BenefitRow(
