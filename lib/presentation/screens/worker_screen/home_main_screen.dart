@@ -28,6 +28,7 @@ import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/data/models/partner_recruit_post.dart';
 import 'package:iljujob/presentation/screens/worker_screen/partner_recruit_detail_screen.dart';
 import 'package:iljujob/data/services/notificaion_service.dart';
+import 'package:iljujob/utils/job_fetch_scope.dart';
 
 class HomeMainScreen extends StatefulWidget {
   final VoidCallback? onAiRecommend;
@@ -559,12 +560,17 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     final req = ++_jobsReqSeq;
 
     try {
-      final hasLocation = currentLatitude != 0.0 && currentLongitude != 0.0;
+      final scope = JobFetchScope.fromSelection(
+        latitude: currentLatitude,
+        longitude: currentLongitude,
+        radiusKm: selectedDistance,
+        nationwide: _ignoreDistance,
+      );
       final jobs = await JobService.fetchJobs(
         clientId: null,
-        lat: hasLocation ? currentLatitude : null,
-        lng: hasLocation ? currentLongitude : null,
-        radiusKm: selectedDistance,
+        lat: scope.latitude,
+        lng: scope.longitude,
+        radiusKm: scope.radiusKm,
       );
       if (req != _jobsReqSeq || !mounted) return;
 
@@ -2407,14 +2413,17 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                           _applyFiltersThrottled();
                         }
                         : _ignoreDistance
-                            ? () async => _init()
-                            : () {
+                            ? () async {
+                              await _init();
+                              await _loadJobs();
+                            }
+                            : () async {
                               ScreenAnalyticsService.instance.logEvent(
                                 'worker_empty_go_nationwide',
                                 params: {'from_km': selectedDistance},
                               );
                               setState(() => _ignoreDistance = true);
-                              _applyFiltersThrottled();
+                              await _loadJobs();
                             },
                 icon: Icon(
                   hasQuery
