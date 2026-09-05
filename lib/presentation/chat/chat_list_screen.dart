@@ -461,6 +461,10 @@ class _ChatListScreenState extends State<ChatListScreen>
       return;
     }
     final title = (chat['job_title'] ?? '이 채팅방').toString();
+    final leaveDescription =
+        userType == 'worker'
+            ? '채팅 목록에서 사라지고, 확정되지 않은 지원은 취소됩니다.\n사장님에게 나갔다는 안내가 전달됩니다.'
+            : '내 채팅 목록에서만 사라집니다.\n구직자에게 채팅이 종료됐다는 안내가 전달됩니다.';
 
     final confirm = await showModalBottomSheet<bool>(
       context: context,
@@ -511,7 +515,7 @@ class _ChatListScreenState extends State<ChatListScreen>
               ),
               const SizedBox(height: 8),
               Text(
-                '$title\n채팅 목록에서 사라지고 새 메시지 알림을 받지 않습니다.\n상대방의 채팅 내역은 삭제되지 않습니다.',
+                '$title\n$leaveDescription',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 13.5,
