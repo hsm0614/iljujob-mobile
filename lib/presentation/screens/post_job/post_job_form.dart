@@ -31,6 +31,7 @@ import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/utils/date_ymd.dart';
 import 'package:iljujob/widget/picker_sheets.dart';
 import 'package:iljujob/widget/free_limit_sheet.dart';
+import 'package:iljujob/utils/nationwide_hint.dart';
 import 'package:iljujob/config/job_categories.dart';
 
 // 2026년 적용 최저시급
@@ -116,6 +117,8 @@ class _PostJobFormState extends State<PostJobForm>
   bool _isSameDayPay = false;
   // 장기 공고 전용
   bool _isAlwaysOpen = false;
+  // 전국 노출 — 숙식·셔틀 제공 공고에만 뜬다. 켜면 거리 필터를 넘어 노출된다.
+  bool _isNationwide = false;
   final _requiredCertsCtrl = TextEditingController();
   final _welfareCtrl = TextEditingController();
   String _description = '';
@@ -772,6 +775,7 @@ class _PostJobFormState extends State<PostJobForm>
         isPaid: isPaid,
         passType: passType,
         isAgency: clientId == 1,
+        isNationwide: _isNationwide,
         // 장기 공고 전용
         jobType: _isShortTerm ? 'short' : 'long',
         isAlwaysOpen: !_isShortTerm && _isAlwaysOpen,
@@ -1023,6 +1027,18 @@ class _PostJobFormState extends State<PostJobForm>
           (ctx) => _PublishSheet(
             fetchPassCounts: _fetchPassCounts,
             fetchFreeQuota: JobService.fetchFreeQuota,
+            nationwideHint: hasNationwideHint(
+              _titleCtrl.text,
+              _descCtrl.text,
+            ),
+            nationwideOn: _isNationwide,
+            onNationwideChanged: (v) {
+              setState(() => _isNationwide = v);
+              ClientTrackingService.instance.track(
+                'job_post_nationwide_toggle',
+                properties: {'on': v},
+              );
+            },
             fetchReachableWorkerCount:
                 () =>
                     (_lat != 0 && _lng != 0)
@@ -4107,6 +4123,10 @@ class _PublishSheet extends StatefulWidget {
   final Future<({int limit, int used, int remaining})?> Function() fetchFreeQuota;
   final Future<int> Function() fetchReachableWorkerCount;
   final Future<int> Function() fetchUrgentWorkerCount;
+  /// 숙식·기숙사·셔틀 키워드가 잡혔을 때만 전국 노출 카드를 띄운다.
+  final bool nationwideHint;
+  final bool nationwideOn;
+  final ValueChanged<bool> onNationwideChanged;
   final VoidCallback onFreeSubmit;
   final void Function(DateTime?) onPaidSubmit;
   final VoidCallback onUrgentSubmit;
@@ -4117,6 +4137,9 @@ class _PublishSheet extends StatefulWidget {
     required this.fetchFreeQuota,
     required this.fetchReachableWorkerCount,
     required this.fetchUrgentWorkerCount,
+    required this.nationwideHint,
+    required this.nationwideOn,
+    required this.onNationwideChanged,
     required this.onFreeSubmit,
     required this.onPaidSubmit,
     required this.onUrgentSubmit,
@@ -4445,6 +4468,69 @@ class _PublishSheetState extends State<_PublishSheet> {
                       ),
                     ),
                   ],
+                ),
+              ),
+            ],
+            if (widget.nationwideHint) ...[
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: () => widget.onNationwideChanged(!widget.nationwideOn),
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: widget.nationwideOn
+                        ? AppColors.primaryLight
+                        : const Color(0xFFF8F9FB),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: widget.nationwideOn
+                          ? AppColors.primary
+                          : const Color(0xFFE5E7EB),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.public_rounded,
+                        size: 20,
+                        color: widget.nationwideOn
+                            ? AppColors.primary
+                            : AppColors.textTertiary,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '전국에 노출하기',
+                              style: AppTextStyles.body2.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              '숙식·셔틀을 제공하는 공고라 거리와 상관없이 보여드려요',
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        widget.nationwideOn
+                            ? Icons.check_circle_rounded
+                            : Icons.circle_outlined,
+                        size: 22,
+                        color: widget.nationwideOn
+                            ? AppColors.primary
+                            : const Color(0xFFD1D5DB),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],

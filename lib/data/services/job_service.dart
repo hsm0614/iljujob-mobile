@@ -238,6 +238,7 @@ class JobService {
     String? requiredCerts,
     String? welfare,
     String? passType, // 'instant' | 'urgent'
+    bool isNationwide = false,
   }) async {
     final uri = Uri.parse('$baseUrl/api/job/post_job');
 
@@ -270,6 +271,7 @@ class JobService {
               if (lat != null) 'lat': lat.toString(),
               if (lng != null) 'lng': lng.toString(),
               'is_agency': isAgency ? '1' : '0',
+              'is_nationwide': isNationwide ? '1' : '0',
               // 장기 공고 전용
               'job_type': jobType,
               if (jobType == 'long') 'is_always_open': isAlwaysOpen ? '1' : '0',
