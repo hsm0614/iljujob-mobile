@@ -90,6 +90,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
   String? _payWarning;
   int _freeRemaining = 0;
   int _paidPassCount = 0;
+  int? _reachableWorkersCount;
   bool _passLoading = false;
   // 조회 실패와 "0개/한도 소진"은 다른 상태다. 섞으면 잔여가 있는 사장님을 막는다.
   bool _countsFailed = false;
@@ -119,6 +120,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
     _payCtrl.text = pay > 0 ? _fmt.format(pay) : '';
 
     _loadCounts();
+    _loadReachableWorkers();
   }
 
   @override
@@ -174,6 +176,21 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
     } finally {
       if (mounted) setState(() => _passLoading = false);
     }
+  }
+
+  Future<void> _loadReachableWorkers() async {
+    final lat = (widget.job['lat'] as num?)?.toDouble() ?? 0;
+    final lng = (widget.job['lng'] as num?)?.toDouble() ?? 0;
+    if (lat == 0 || lng == 0) return;
+
+    try {
+      final count = await JobService.fetchAvailableWorkersCount(
+        lat: lat,
+        lng: lng,
+        radiusM: 30000,
+      );
+      if (mounted) setState(() => _reachableWorkersCount = count);
+    } catch (_) {}
   }
 
   // ─── 날짜 피커 ───
@@ -444,6 +461,41 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                 '동일한 공고를 새 날짜·급여로 재등록해요',
                 style: TextStyle(fontSize: 13, color: _sub),
               ),
+              if (_reachableWorkersCount != null) ...[
+                const SizedBox(height: 14),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.people_alt_rounded,
+                        size: 16,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _reachableWorkersCount == 0
+                              ? '근무지 30km 내 최근 활동 구직자가 아직 없어요'
+                              : '근무지 30km 내 최근 활동 구직자 $_reachableWorkersCount명',
+                          style: AppTextStyles.body2.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
 
               _OptionCard(

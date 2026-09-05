@@ -28,7 +28,6 @@ import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/data/models/partner_recruit_post.dart';
 import 'package:iljujob/presentation/screens/worker_screen/partner_recruit_detail_screen.dart';
 import 'package:iljujob/data/services/notificaion_service.dart';
-import 'package:iljujob/utils/job_fetch_scope.dart';
 
 class HomeMainScreen extends StatefulWidget {
   final VoidCallback? onAiRecommend;
@@ -62,9 +61,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   double currentLatitude = 0.0;
   double currentLongitude = 0.0;
   double selectedDistance = 30;
-  // 슬라이더 상한이 30km 라 "거리를 넓혀보라"는 안내로는 빠져나갈 수 없다.
-  // 빈 화면에서 전국 보기를 선택하면 거리 필터 자체를 끈다.
-  bool _ignoreDistance = false;
   int _itemsToShow = 10;
   bool isLoading = true;
   bool compactView = false;
@@ -560,17 +556,12 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     final req = ++_jobsReqSeq;
 
     try {
-      final scope = JobFetchScope.fromSelection(
-        latitude: currentLatitude,
-        longitude: currentLongitude,
-        radiusKm: selectedDistance,
-        nationwide: _ignoreDistance,
-      );
+      final hasLocation = currentLatitude != 0.0 && currentLongitude != 0.0;
       final jobs = await JobService.fetchJobs(
         clientId: null,
-        lat: scope.latitude,
-        lng: scope.longitude,
-        radiusKm: scope.radiusKm,
+        lat: hasLocation ? currentLatitude : null,
+        lng: hasLocation ? currentLongitude : null,
+        radiusKm: selectedDistance,
       );
       if (req != _jobsReqSeq || !mounted) return;
 
@@ -652,7 +643,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             j.lat,
             j.lng,
           );
-          if (_ignoreDistance || d <= selectedDistance) tmp.add(j);
+          if (d <= selectedDistance) tmp.add(j);
         }
         filtered = tmp;
       }
@@ -748,7 +739,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               job.lat,
               job.lng,
             );
-            return _ignoreDistance || distance <= selectedDistance;
+            return distance <= selectedDistance;
           }).toList();
     }
 
@@ -2338,8 +2329,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         'worker_empty_jobs_shown',
         params: {
           'cause': hasQuery ? 'search' : 'no_nearby_jobs',
-          // 어떤 출구를 줬는지 함께 남겨야 개선 효과를 볼 수 있다
-          'nationwide': _ignoreDistance,
           'no_location': noLocation,
         },
       );
@@ -2385,11 +2374,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             Text(
               hasQuery
                   ? '검색어를 바꾸거나 지우면\n주변 공고를 다시 볼 수 있어요.'
-                  // 거리 슬라이더 상한이 30km 라 "넓혀보라"는 안내는 실행 불가능했다.
-                  // 이미 전국을 보고 있는데도 0건이면 그 사실을 그대로 말한다.
-                  : _ignoreDistance
-                      ? '지금은 등록된 공고가 없어요.\n새 공고가 올라오면 가장 먼저 알려드릴게요.'
-                      : '설정한 거리 안에는 공고가 없어요.\n전국 공고를 보거나 알림을 받아보세요.',
+                  : '설정한 거리 안에는 공고가 없어요.\n새 공고 알림을 켜두고 다시 확인해보세요.',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 13,
@@ -2402,8 +2387,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             SizedBox(
               width: double.infinity,
               height: 46,
-              // 기존 「내 주변 다시 찾기」는 같은 조건으로 재조회라 결과가 절대 안 바뀌었다.
-              // 결과를 실제로 바꾸는 액션(전국 보기)으로 교체한다.
               child: ElevatedButton.icon(
                 onPressed:
                     hasQuery
@@ -2412,33 +2395,16 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                           setState(() => searchQuery = '');
                           _applyFiltersThrottled();
                         }
-                        : _ignoreDistance
-                            ? () async {
-                              await _init();
-                              await _loadJobs();
-                            }
-                            : () async {
-                              ScreenAnalyticsService.instance.logEvent(
-                                'worker_empty_go_nationwide',
-                                params: {'from_km': selectedDistance},
-                              );
-                              setState(() => _ignoreDistance = true);
-                              await _loadJobs();
-                            },
+                        : () async {
+                          await _init();
+                          await _loadJobs();
+                        },
                 icon: Icon(
-                  hasQuery
-                      ? Icons.backspace_outlined
-                      : _ignoreDistance
-                          ? Icons.refresh_rounded
-                          : Icons.public_rounded,
+                  hasQuery ? Icons.backspace_outlined : Icons.refresh_rounded,
                   size: 18,
                 ),
                 label: Text(
-                  hasQuery
-                      ? '검색어 지우기'
-                      : _ignoreDistance
-                          ? '새로고침'
-                          : '전국 공고 보기',
+                  hasQuery ? '검색어 지우기' : '새로고침',
                   style: const TextStyle(
                     fontSize: 14.5,
                     fontWeight: FontWeight.w700,
@@ -2975,7 +2941,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 ),
               ),
               Text(
-                _ignoreDistance ? '전국' : '${selectedDistance.toStringAsFixed(0)}km',
+                '${selectedDistance.toStringAsFixed(0)}km',
                 style: const TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w800,
@@ -3009,7 +2975,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               child: const Text('접기'),
             ),
             Text(
-              _ignoreDistance ? '전국' : '${selectedDistance.toStringAsFixed(0)}km',
+              '${selectedDistance.toStringAsFixed(0)}km',
               style: const TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
@@ -3025,7 +2991,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           value: selectedDistance,
           onChanged: (value) => setState(() {
             selectedDistance = value;
-            _ignoreDistance = false;   // 직접 거리를 고르면 전국 모드는 해제
           }),
           onChangeEnd: (value) async {
             if (currentLatitude == 0.0 || currentLongitude == 0.0) {

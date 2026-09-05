@@ -1023,7 +1023,16 @@ class _PostJobFormState extends State<PostJobForm>
           (ctx) => _PublishSheet(
             fetchPassCounts: _fetchPassCounts,
             fetchFreeQuota: JobService.fetchFreeQuota,
-            fetchWorkerCount:
+            fetchReachableWorkerCount:
+                () =>
+                    (_lat != 0 && _lng != 0)
+                        ? JobService.fetchAvailableWorkersCount(
+                          lat: _lat,
+                          lng: _lng,
+                          radiusM: 30000,
+                        )
+                        : Future.value(0),
+            fetchUrgentWorkerCount:
                 () =>
                     (_lat != 0 && _lng != 0)
                         ? JobService.fetchAvailableWorkersCount(
@@ -4096,7 +4105,8 @@ class _PublishSheet extends StatefulWidget {
   final Future<({int instant, int urgent})?> Function() fetchPassCounts;
   /// 이번 달 무료 잔여. null이면 조회 실패 — 막지 않고 서버 판정에 맡긴다.
   final Future<({int limit, int used, int remaining})?> Function() fetchFreeQuota;
-  final Future<int> Function() fetchWorkerCount;
+  final Future<int> Function() fetchReachableWorkerCount;
+  final Future<int> Function() fetchUrgentWorkerCount;
   final VoidCallback onFreeSubmit;
   final void Function(DateTime?) onPaidSubmit;
   final VoidCallback onUrgentSubmit;
@@ -4105,7 +4115,8 @@ class _PublishSheet extends StatefulWidget {
   const _PublishSheet({
     required this.fetchPassCounts,
     required this.fetchFreeQuota,
-    required this.fetchWorkerCount,
+    required this.fetchReachableWorkerCount,
+    required this.fetchUrgentWorkerCount,
     required this.onFreeSubmit,
     required this.onPaidSubmit,
     required this.onUrgentSubmit,
@@ -4126,9 +4137,8 @@ class _PublishSheetState extends State<_PublishSheet> {
   // 시트가 조회를 소유한다. 부모에서 await하면 시트가 뜨기까지 최대 8초+ 걸린다.
   int _paidPassCount = 0;
   int _urgentPassCount = 0;
-  int _availableWorkersCount = 0;
-  // 긴급호출 상품 스펙(10명 발송)과 같은 값. 미달이어도 등록은 막지 않는다.
-  static const int _urgentMinCandidates = 10;
+  int? _reachableWorkersCount;
+  int? _urgentWorkersCount;
   bool _passCountLoading = true;
   bool _passCountFailed = false;
 
@@ -4143,9 +4153,15 @@ class _PublishSheetState extends State<_PublishSheet> {
     super.initState();
     _loadCounts();
     widget
-        .fetchWorkerCount()
+        .fetchReachableWorkerCount()
         .then((c) {
-          if (mounted) setState(() => _availableWorkersCount = c);
+          if (mounted) setState(() => _reachableWorkersCount = c);
+        })
+        .catchError((_) {});
+    widget
+        .fetchUrgentWorkerCount()
+        .then((c) {
+          if (mounted) setState(() => _urgentWorkersCount = c);
         })
         .catchError((_) {});
   }
@@ -4178,6 +4194,20 @@ class _PublishSheetState extends State<_PublishSheet> {
 
   bool get _paidOk =>
       !_passCountFailed && (_paidPassCount > 0 || _paidPassCount == -1);
+
+  String get _urgentBenefitText {
+    if (_passCountFailed) {
+      return '보유 이용권을 확인하지 못했어요. 탭해서 다시 시도해주세요.';
+    }
+
+    final candidateText = _urgentWorkersCount == null
+        ? '반경 5km 알바생 최대 10명 직접 호출'
+        : '반경 5km 활동 구직자 $_urgentWorkersCount명 · 최대 10명 직접 호출';
+    final owned = _urgentPassCount > 0 || _urgentPassCount == -1;
+    return owned
+        ? '$candidateText · 무응답 100% 환급 · 추가 결제 없음'
+        : '$candidateText · 무응답 100% 환급';
+  }
 
   void _selectInstant() {
     // 조회 중이거나 실패했으면 결제로 보내지 않는다 — 이미 보유 중일 수 있다.
@@ -4383,7 +4413,7 @@ class _PublishSheetState extends State<_PublishSheet> {
               ),
             ),
             const SizedBox(height: 20),
-            if (_availableWorkersCount > 0) ...[
+            if (_reachableWorkersCount != null) ...[
               const SizedBox(height: 14),
               Container(
                 padding: const EdgeInsets.symmetric(
@@ -4391,7 +4421,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF3E0),
+                  color: AppColors.primaryLight,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -4400,21 +4430,17 @@ class _PublishSheetState extends State<_PublishSheet> {
                     const Icon(
                       Icons.people_alt_rounded,
                       size: 16,
-                      color: Color(0xFFFF9500),
+                      color: AppColors.primary,
                     ),
                     const SizedBox(width: 6),
                     Flexible(
                       child: Text(
-                        // 후보가 얇으면 등록은 시키되(서버 게이트 없음) 기대치는 낮춘다.
-                        _availableWorkersCount < _urgentMinCandidates
-                            ? '근무지 반경 5km 내 활동 중인 알바생 ${_availableWorkersCount}명 — '
-                                '긴급 호출 발송 인원이 적어요'
-                            : '근무지 반경 5km 내 활동 중인 알바생 ${_availableWorkersCount}명',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        _reachableWorkersCount == 0
+                            ? '근무지 30km 내 최근 활동 구직자가 아직 없어요'
+                            : '근무지 30km 내 최근 활동 구직자 $_reachableWorkersCount명',
+                        style: AppTextStyles.body2.copyWith(
                           fontWeight: FontWeight.w700,
-                          // #FF9500는 이 배경에서 2.01:1 — AA 미달
-                          color: AppColors.warningDark,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -4531,12 +4557,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                             ),
                             const SizedBox(height: 3),
                             Text(
-                              _passCountFailed
-                                  ? '보유 이용권을 확인하지 못했어요. 탭해서 다시 시도해주세요.'
-                                  : (_urgentPassCount > 0 ||
-                                      _urgentPassCount == -1)
-                                  ? '즉시 노출 · 반경 5km 알바생 최대 10명 · 무응답 100% 환급 · 추가 결제 없음'
-                                  : '₩7,900로 즉시 노출 + 반경 5km 알바생 직접 호출 · 무응답 100% 환급',
+                              _urgentBenefitText,
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.white.withValues(alpha: 0.88),
