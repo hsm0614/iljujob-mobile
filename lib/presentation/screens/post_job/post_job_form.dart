@@ -217,7 +217,19 @@ class _PostJobFormState extends State<PostJobForm>
   @override
   void dispose() {
     if (!_submitted) {
-      ClientTrackingService.instance.track('job_post_abandon');
+      // 어느 단계에서 나갔는지 남긴다. 이게 없어서 8월 이탈 91건의
+      // 원인을 하나도 몰랐다 (properties 가 전부 NULL 이었다).
+      // ⚠️ 컨트롤러 dispose 보다 먼저 읽어야 한다 — 아래에서 dispose 된다.
+      ClientTrackingService.instance.track(
+        'job_post_abandon',
+        properties: {
+          'step': _q,
+          'step_name': _q < _qTitles.length ? _qTitles[_q] : null,
+          'has_title': _titleCtrl.text.trim().isNotEmpty,
+          'has_pay': _payCtrl.text.trim().isNotEmpty,
+          'is_repost': widget.isRepost,
+        },
+      );
     }
     _draftSaveTimer?.cancel();
     _saveDraft();
