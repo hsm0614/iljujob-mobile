@@ -353,6 +353,9 @@ class ChatRoomController extends ChangeNotifier {
       'reconnectionDelay': 800,
       'reconnectionDelayMax': 5000,
       'timeout': 5000,
+      // 서버가 handshake에서 JWT를 요구한다. extraHeaders는 전송 방식에 따라
+      // 안 실릴 수 있어 auth로도 같이 보낸다(서버가 둘 다 읽는다).
+      'auth': {'token': token},
       'extraHeaders': {'Authorization': 'Bearer $token'},
     });
 

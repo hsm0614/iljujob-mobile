@@ -1,7 +1,7 @@
 // lib/data/services/chat_service.dart
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:iljujob/config/constants.dart';
+import 'authenticated_http_client.dart';
 
 Future<int?> startChatRoom(
   int workerId,
@@ -12,14 +12,10 @@ async {
   final url = Uri.parse('$baseUrl/api/job/start-chat');
 
   try {
-    final response = await http.post(
+    // 서버가 /api/job/start-chat에 본인 검증을 건다 — 토큰 없이 부르면 401이다
+    final response = await AuthenticatedHttpClient.postJson(
       url,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'workerId': workerId,
-        'jobId': jobId,
-        'clientId': clientId,
-      }),
+      body: {'workerId': workerId, 'jobId': jobId, 'clientId': clientId},
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {

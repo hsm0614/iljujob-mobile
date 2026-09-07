@@ -266,11 +266,17 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  void _initSocket() {
+  Future<void> _initSocket() async {
     if (socket != null && socket!.connected) return;
+    // 서버가 handshake에서 JWT를 요구한다. 없으면 연결이 거부되고
+    // 무한 재연결만 돈다.
+    final token = await AuthenticatedHttpClient.accessToken();
+    if (token.isEmpty) return;
     socket = IO.io(baseUrl, <String, dynamic>{
       'transports': ['websocket'],
       'autoConnect': true,
+      'auth': {'token': token},
+      'extraHeaders': {'Authorization': 'Bearer $token'},
     });
     socket!.onConnect(
       (_) => socket!.emit('register_user', {'userPhone': userPhone}),

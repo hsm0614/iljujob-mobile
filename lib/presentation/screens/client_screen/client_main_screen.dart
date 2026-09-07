@@ -362,7 +362,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
     }
   }
 
-  void _initSocket() {
+  Future<void> _initSocket() async {
     try {
       if (socket != null) {
         if (socket!.connected) {
@@ -373,10 +373,15 @@ class _ClientMainScreenState extends State<ClientMainScreen>
         return;
       }
 
+      // 서버가 handshake에서 JWT를 요구한다. 없으면 연결이 거부된다.
+      final socketToken = await AuthenticatedHttpClient.accessToken();
+      if (socketToken.isEmpty) return;
       socket = IO.io(baseUrl, <String, dynamic>{
         'transports': ['websocket'],
         'autoConnect': false,
         'reconnection': true,
+        'auth': {'token': socketToken},
+        'extraHeaders': {'Authorization': 'Bearer $socketToken'},
       });
 
       socket!.onConnect((_) {

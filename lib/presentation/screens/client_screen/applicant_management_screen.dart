@@ -304,7 +304,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     JobApplicantGroup group,
   ) async {
     try {
-      final res = await http.get(
+      // 서버가 /api/chat/get-room에 참여자 검증을 건다 — 맨몸 http.get이면 401이다
+      final res = await AuthenticatedHttpClient.get(
         Uri.parse(
           '$baseUrl/api/chat/get-room?jobId=${group.jobId}&workerId=${applicant.workerId}',
         ),
