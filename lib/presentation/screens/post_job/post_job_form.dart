@@ -2132,9 +2132,14 @@ class _PostJobFormState extends State<PostJobForm>
           style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _text),
         ),
         const SizedBox(height: 4),
+        // 여기서 무료/유료로 막지 않는다 — 결제 선택은 맨 마지막 발행 시트라
+        // 순서가 안 맞고, 입력 단계에서 결제 얘기를 꺼내면 이탈만 난다.
+        // 입력·저장은 전부 받고 노출만 서버가 조절한다. 즉시게시로 전환하면
+        // 추가한 근무지가 그대로 살아난다.
         const Text(
-          '근무지가 여러 곳이면 추가하세요. 각 지역 구직자 모두에게 노출됩니다.',
-          style: TextStyle(fontSize: 13, color: _label),
+          '근무지가 여러 곳이면 추가하세요. 각 지역 구직자에게 노출됩니다.\n'
+          '무료 공고는 2곳까지, 즉시게시·긴급호출은 5곳까지 노출돼요.',
+          style: TextStyle(fontSize: 13, height: 1.45, color: _label),
         ),
         const SizedBox(height: 10),
         for (int i = 0; i < _extraLocations.length; i++)
