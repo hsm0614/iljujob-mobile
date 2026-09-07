@@ -60,6 +60,10 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
     await prefs.setInt('userId', data['clientId'] ?? 0);
     await prefs.setInt('clientId', data['clientId'] ?? 0);
     await prefs.setBool('hasSeenOnboarding', true);
+    // 채팅 목록 등 일부 화면이 userPhone으로 신원을 잡는다.
+    // 소셜 경로만 이걸 안 채워서 카카오 로그인 사장님의 채팅이 비어 보였다.
+    final phone = data['phone']?.toString() ?? '';
+    if (phone.isNotEmpty) await prefs.setString('userPhone', phone);
 
     if (data['manager'] != null && (data['manager'] as String).isNotEmpty) {
       await prefs.setString('userName', data['manager']);

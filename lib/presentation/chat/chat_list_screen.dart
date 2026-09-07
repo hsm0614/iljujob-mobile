@@ -414,15 +414,22 @@ class _ChatListScreenState extends State<ChatListScreen>
     setState(() => isLoading = true);
     final prefs = await SharedPreferences.getInstance();
 
+    // ⚠️ userPhone으로 막지 않는다. 서버는 토큰의 id를 우선으로 신원을 정하고,
+    // 카카오/애플로 로그인한 사장님은 prefs에 userPhone이 없다 — 여기서 막으면
+    // 채팅방이 멀쩡히 있는데도 목록이 영영 비어 보인다(2026-09-07 client 643).
     final userPhone = prefs.getString('userPhone') ?? '';
-    if (userPhone.isEmpty) {
+    final userId = prefs.getInt('userId');
+    if (userPhone.isEmpty && userId == null) {
       _showSnackbar('로그인이 필요합니다.');
       setState(() => isLoading = false);
       return;
     }
 
     final url = Uri.parse(
-      '$baseUrl/api/chat/list?userPhone=$userPhone&userType=$userType',
+      '$baseUrl/api/chat/list'
+      '?userType=$userType'
+      '${userId != null ? '&userId=$userId' : ''}'
+      '${userPhone.isNotEmpty ? '&userPhone=$userPhone' : ''}',
     );
 
     try {
