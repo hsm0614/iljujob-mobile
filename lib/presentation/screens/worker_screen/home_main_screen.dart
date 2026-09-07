@@ -747,8 +747,16 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           tempJobs
               .where((job) {
                 final q = searchQuery.trim();
+                // 추가 근무지도 검색 대상. '고양'으로 찾는데 대표 주소가
+                // 수원이라 안 나오면 다중 근무지 공고는 검색으로 못 만난다.
                 return job.title.contains(q) ||
                     job.location.contains(q) ||
+                    job.locationCity.contains(q) ||
+                    job.locations.any(
+                      (l) =>
+                          l.address.contains(q) ||
+                          (l.locationCity?.contains(q) ?? false),
+                    ) ||
                     job.category.contains(q) ||
                     (job.description?.contains(q) ?? false);
               })
