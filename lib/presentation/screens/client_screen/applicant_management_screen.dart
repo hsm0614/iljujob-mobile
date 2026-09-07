@@ -249,7 +249,12 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       if (clientId == 0) throw Exception('로그인이 필요합니다.');
 
       final res = await AuthenticatedHttpClient.get(
-        Uri.parse('$baseUrl/api/applicants/by-client/$clientId'),
+        // 취소 지원자는 명시적으로 요청할 때만 내려온다. 구버전 앱은 이 값을
+        // 안 보내서 취소 건을 아예 못 받는다 — is_canceled를 모르는 구버전이
+        // 취소자를 정상 지원자로 표시하는 걸 막기 위한 장치다.
+        Uri.parse(
+          '$baseUrl/api/applicants/by-client/$clientId?includeCanceled=1',
+        ),
       ).timeout(const Duration(seconds: 10));
 
       if (res.statusCode != 200) throw Exception('서버 오류 (${res.statusCode})');
