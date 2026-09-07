@@ -26,6 +26,11 @@ class ApplicantModel {
   final String? gender;
   final int? activityScore;
 
+  /// 구직자가 지원을 취소한 건. 목록에서 지우지 않고 회색으로 남긴다 —
+  /// 조용히 사라지면 사장님은 지원자가 왔다 간 사실 자체를 모른다.
+  final bool isCanceled;
+  final DateTime? canceledAt;
+
   ApplicantModel({
     required this.applicationId,
     required this.appliedAt,
@@ -38,6 +43,8 @@ class ApplicantModel {
     this.birthYear,
     this.gender,
     this.activityScore,
+    this.isCanceled = false,
+    this.canceledAt,
   });
 
   factory ApplicantModel.fromJson(Map<String, dynamic> j) {
@@ -57,6 +64,11 @@ class ApplicantModel {
           j['activity_score'] != null
               ? int.tryParse('${j['activity_score']}') ?? 0
               : 0,
+      isCanceled: j['is_canceled'] == true || j['is_canceled'] == 1,
+      canceledAt:
+          j['canceled_at'] != null
+              ? DateTime.tryParse('${j['canceled_at']}')
+              : null,
     );
   }
 
@@ -101,7 +113,7 @@ class ApplicantModel {
     }
   }
 
-  bool get isNew => !isConfirmed;
+  bool get isNew => !isConfirmed && !isCanceled;
   int get age => birthYear != null ? DateTime.now().year - birthYear! : 0;
   String get genderLabel =>
       gender == 'male'
@@ -111,6 +123,7 @@ class ApplicantModel {
           : '';
 
   String get statusLabel {
+    if (isCanceled) return '지원 취소';
     if (isCompleted) return '근무 완료';
     if (isConfirmed) return '출근 확정';
     return '처리 필요';
@@ -123,6 +136,7 @@ class ApplicantModel {
   }
 
   int get sortWeight {
+    if (isCanceled) return 4; // 취소는 항상 맨 아래
     if (isCompleted) return 3;
     if (isConfirmed) return 2;
     return 1;
@@ -166,11 +180,17 @@ class JobApplicantGroup {
     );
   }
 
-  int get newCount => applicants.where((a) => a.isNew).length;
+  /// 취소를 뺀 지원자. 모든 숫자는 이걸 기준으로 센다 —
+  /// '3명'에 취소가 섞이면 사장님이 채용 가능 인원을 잘못 읽는다.
+  List<ApplicantModel> get activeApplicants =>
+      applicants.where((a) => !a.isCanceled).toList();
+
+  int get newCount => activeApplicants.where((a) => a.isNew).length;
   int get pendingCount =>
-      applicants.where((a) => !a.isConfirmed && !a.isCompleted).length;
+      activeApplicants.where((a) => !a.isConfirmed && !a.isCompleted).length;
   int get confirmedCount =>
-      applicants.where((a) => a.isConfirmed && !a.isCompleted).length;
+      activeApplicants.where((a) => a.isConfirmed && !a.isCompleted).length;
+  int get canceledCount => applicants.length - activeApplicants.length;
 }
 
 // ─── 상수 ────────────────────────────────────────────────────────
@@ -179,6 +199,10 @@ const _blue = Color(0xFF3B8AFF);
 const _blueBg = Color(0xFFE8F0FF);
 const _green = Color(0xFF0F766E);
 const _greenBg = Color(0xFFE8F7EF);
+const _signalTime = Color(0xFFEA8035); // 시간이 급함
+const _signalTimeBg = Color(0xFFFDF1E7);
+const _ink = Color(0xFF191F28);
+const _inkSecondary = Color(0xFF6B7280);
 const int _jobsPerPage = 5;
 const int _applicantsPreview = 3;
 
@@ -348,7 +372,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   void _toggleAllApplicants(JobApplicantGroup group) {
     setState(() {
       final selected = _selectedSet(group.jobId);
-      final ids = group.applicants.map((a) => a.workerId).toSet();
+      final ids = group.activeApplicants.map((a) => a.workerId).toSet();
       if (selected.length == ids.length) {
         selected.clear();
       } else {
@@ -693,33 +717,26 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       0,
       (s, g) => s + g.applicants.where((a) => a.isCompleted).length,
     );
+    // 숫자는 전부 잉크색. 파랑은 누를 수 있는 것에만 쓰고(CTA Blue Rule),
+    // 초록 계열은 돈·신뢰 신호 전용이다(Two-Signal Rule) — '완료' 같은
+    // 분류에 쓰면 한 화면에서 색끼리 경쟁해 전부 무시된다.
     return Row(
       children: [
-        _summaryCard(
-          '전체',
-          '$_totalCount명',
-          const Color(0xFF191F28),
-          Colors.white,
-        ),
+        _summaryCard('전체', '$_totalCount명'),
         const SizedBox(width: 10),
-        _summaryCard('미확인', '$_unreadCount명', _blue, _blueBg),
+        _summaryCard('미확인', '$_unreadCount명'),
         const SizedBox(width: 10),
-        _summaryCard('완료', '$completedCount명', _green, _greenBg),
+        _summaryCard('완료', '$completedCount명'),
       ],
     );
   }
 
-  Widget _summaryCard(
-    String label,
-    String value,
-    Color textColor,
-    Color bgColor,
-  ) {
+  Widget _summaryCard(String label, String value) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: bgColor,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: const Color(0xFFE5E8EB)),
         ),
@@ -727,10 +744,10 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
           children: [
             Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: textColor,
+                color: Color(0xFF191F28),
               ),
             ),
             const SizedBox(height: 4),
@@ -862,7 +879,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     final hasNew = group.newCount > 0;
     final selectedCount = _selectedSet(group.jobId).length;
     final allSelected =
-        group.applicants.isNotEmpty && selectedCount == group.applicants.length;
+        group.activeApplicants.isNotEmpty &&
+        selectedCount == group.activeApplicants.length;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
@@ -910,7 +928,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                           Icon(
                             Icons.location_on_rounded,
                             size: 12,
-                            color: const Color(0xFF9CA3AF),
+                            color: _inkSecondary,
                           ),
                           const SizedBox(width: 2),
                           Flexible(
@@ -918,9 +936,9 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                               group.locationCity!,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 12,
-                                color: const Color(0xFF9CA3AF),
+                                color: _inkSecondary,
                               ),
                             ),
                           ),
@@ -930,16 +948,16 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                           Icon(
                             Icons.calendar_today_rounded,
                             size: 12,
-                            color: const Color(0xFF9CA3AF),
+                            color: _inkSecondary,
                           ),
                           const SizedBox(width: 2),
                           Text(
                             group.startDate!.length >= 10
                                 ? group.startDate!.substring(0, 10)
                                 : group.startDate!,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 12,
-                              color: const Color(0xFF9CA3AF),
+                              color: _inkSecondary,
                             ),
                           ),
                         ],
@@ -955,41 +973,38 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   horizontal: 10,
                   vertical: 5,
                 ),
+                // 인원수만. '신규 N'은 아래 '처리 필요 N명' 칩과 정의가 사실상
+                // 같아서 둘 다 붙이면 같은 정보를 두 번 말한다(Everyone-Has-It Rule).
                 decoration: BoxDecoration(
-                  color:
-                      group.applicants.isEmpty
-                          ? const Color(0xFFF4F6FA)
-                          : (hasNew ? _blueBg : const Color(0xFFF0FFF4)),
+                  color: const Color(0xFFF2F4F8),
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
-                  group.applicants.isEmpty
-                      ? '0명'
-                      : '${group.applicants.length}명${hasNew ? ' · 신규 ${group.newCount}' : ''}',
-                  style: TextStyle(
+                  '${group.activeApplicants.length}명',
+                  style: const TextStyle(
                     fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color:
-                        group.applicants.isEmpty
-                            ? Colors.grey
-                            : (hasNew ? _blue : _green),
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF6B7280),
                   ),
                 ),
               ),
             ],
           ),
-          if (group.applicants.isNotEmpty) ...[
+          // 취소만 남은 공고엔 선택·메시지가 의미 없다
+          if (group.activeApplicants.isNotEmpty) ...[
             const SizedBox(height: 10),
             Wrap(
               spacing: 6,
               runSpacing: 6,
               children: [
+                // 뱃지 색은 두 갈래뿐이다 — 주황=시간이 급함, 초록계열=돈·신뢰.
+                // 파랑은 누를 수 있는 것 전용이라 정보 칩에는 쓰지 않는다.
                 if (group.pendingCount > 0)
                   _headerSignalChip(
                     icon: Icons.priority_high_rounded,
                     label: '처리 필요 ${group.pendingCount}명',
-                    color: _blue,
-                    background: _blueBg,
+                    color: _signalTime,
+                    background: _signalTimeBg,
                   ),
                 if (group.confirmedCount > 0)
                   _headerSignalChip(
@@ -1105,11 +1120,76 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
 
   // ─── 지원자 행 ───────────────────────────────────────────────────
 
+  /// 취소한 지원자. 목록에서 지우지 않고 회색으로 남긴다 — 조용히 사라지면
+  /// 사장님은 지원자가 왔다 간 사실 자체를 모른다(채팅방만 남아 더 헷갈린다).
+  /// 선택·연락처·채팅 액션은 전부 뺀다. 더 이상 진행할 게 없는 상대다.
+  Widget _buildCanceledApplicantRow(
+    ApplicantModel applicant, {
+    required bool isLast,
+  }) {
+    final when = applicant.canceledAt;
+    final subtitle = [
+      if (applicant.age > 0) '${applicant.age}세',
+      if (applicant.genderLabel.isNotEmpty) applicant.genderLabel,
+      when != null ? '${_timeAgo(when)} 취소' : '지원 취소',
+    ].join(' · ');
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          child: Row(
+            children: [
+              // 체크박스 자리를 비워 활성 지원자와 세로선을 맞춘다
+              const SizedBox(width: 34),
+              Opacity(opacity: 0.45, child: _buildAvatar(applicant)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      applicant.workerName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: _inkSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(fontSize: 12, color: _inkSecondary),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              _statusChip(applicant),
+            ],
+          ),
+        ),
+        if (!isLast)
+          const Divider(
+            height: 1,
+            thickness: 0.5,
+            indent: 46,
+            color: Color(0xFFF4F6FA),
+          ),
+      ],
+    );
+  }
+
   Widget _buildApplicantRow(
     ApplicantModel applicant,
     JobApplicantGroup group, {
     required bool isLast,
   }) {
+    if (applicant.isCanceled) {
+      return _buildCanceledApplicantRow(applicant, isLast: isLast);
+    }
     final selected = _isSelected(group, applicant);
     final visiblePhone = _visiblePhones[applicant.applicationId];
     final phoneLoading = _phoneLoading.contains(applicant.applicationId);
@@ -1204,21 +1284,13 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                         ].join(' · '),
                         style: const TextStyle(
                           fontSize: 12,
-                          color: Color(0xFF9CA3AF),
+                          color: _inkSecondary,
                         ),
                       ),
                       const SizedBox(height: 7),
-                      Wrap(
-                        spacing: 5,
-                        runSpacing: 5,
-                        children: [
-                          _activityGradeBadge(applicant),
-                          _miniInfoChip(
-                            Icons.schedule_rounded,
-                            _timeAgo(applicant.appliedAt),
-                          ),
-                        ],
-                      ),
+                      // 지원 시각은 바로 위 메타줄에 이미 있다. 같은 값을 칩으로
+                      // 한 번 더 붙이면 화면만 시끄러워진다.
+                      _activityGradeBadge(applicant),
                       if (applicant.workerPhoneMasked.isNotEmpty ||
                           visiblePhone != null) ...[
                         const SizedBox(height: 8),
@@ -1315,7 +1387,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: actionColor,
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     applicant.actionLabel,
@@ -1481,7 +1553,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
           Text(
             '${applicant.activityGrade} · ${applicant.safeActivityScore}점',
             style: TextStyle(
-              fontSize: 10.5,
+              fontSize: 11,
               fontWeight: FontWeight.w800,
               color: applicant.activityGradeColor,
             ),
@@ -1492,6 +1564,9 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   }
 
   Widget _statusChip(ApplicantModel applicant) {
+    if (applicant.isCanceled) {
+      return _chip(applicant.statusLabel, const Color(0xFFF1F3F5), _inkSecondary);
+    }
     if (applicant.isCompleted) {
       return _chip(
         applicant.statusLabel,
@@ -1507,7 +1582,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       );
     }
     if (applicant.isNew) return _chip(applicant.statusLabel, _blueBg, _blue);
-    return _chip('확인', const Color(0xFFF1F3F5), const Color(0xFF9CA3AF));
+    return _chip('확인', const Color(0xFFF1F3F5), _inkSecondary);
   }
 
   Widget _chip(String label, Color bg, Color fg) {
@@ -1520,7 +1595,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 10.5,
+          fontSize: 11,
           color: fg,
           fontWeight: FontWeight.w800,
         ),
@@ -1543,7 +1618,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
           Text(
             label,
             style: const TextStyle(
-              fontSize: 10.5,
+              fontSize: 11,
               color: Color(0xFF6B7280),
               fontWeight: FontWeight.w700,
             ),
