@@ -239,6 +239,7 @@ class JobService {
     String? welfare,
     String? passType, // 'instant' | 'urgent'
     bool isNationwide = false,
+    List<JobLocation> locations = const [],
   }) async {
     final uri = Uri.parse('$baseUrl/api/job/post_job');
 
@@ -272,6 +273,11 @@ class JobService {
               if (lng != null) 'lng': lng.toString(),
               'is_agency': isAgency ? '1' : '0',
               'is_nationwide': isNationwide ? '1' : '0',
+              // 추가 근무지. 서버가 job_locations로 저장해 각 지역 목록에 노출한다.
+              if (locations.isNotEmpty)
+                'locations': jsonEncode(
+                  locations.map((l) => l.toJson()).toList(),
+                ),
               // 장기 공고 전용
               'job_type': jobType,
               if (jobType == 'long') 'is_always_open': isAlwaysOpen ? '1' : '0',

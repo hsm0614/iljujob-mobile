@@ -1942,6 +1942,66 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           ),
         ),
 
+        // 근무지가 여러 곳인 공고. 아래 지도·길찾기·주소복사는 전부 대표 근무지
+        // 기준이라, 나머지를 안 보여주면 구직자가 다른 지점으로 갈 수 있다.
+        if (widget.job.locations.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFFE5E8EB)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '이 공고는 근무지가 ${widget.job.geoPoints.length}곳이에요',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF191F28),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                for (final loc in widget.job.geoPoints)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 6),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(top: 2),
+                          child: Icon(
+                            Icons.place_outlined,
+                            size: 14,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            loc.address,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF6B7280),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                const Text(
+                  '어느 지점인지는 사장님과 대화하면서 정해요.',
+                  style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+                ),
+              ],
+            ),
+          ),
+        ],
+
         const SizedBox(height: 10),
 
         // ✅ 액션 버튼들 (길찾기 / 주소복사)

@@ -3,7 +3,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/models/job.dart';
 import '../../../data/services/job_service.dart';
-import 'dart:math';
 import 'package:intl/intl.dart';
 import 'job_detail_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -92,19 +91,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   static const _aiStripAfter = 4;
 
 
+  // 근무지가 여러 곳이면 가장 가까운 곳까지의 거리. 필터가 '고양으로 통과'시킨
+  // 공고에 대표좌표(수원) 거리를 표시하면 목록과 카드가 서로 다른 말을 한다.
   double? _distanceKmFromUser(Job job) {
-    if (currentLatitude == 0.0 ||
-        currentLongitude == 0.0 ||
-        job.lat == 0.0 ||
-        job.lng == 0.0) {
-      return null;
-    }
-    return calculateDistance(
-      currentLatitude,
-      currentLongitude,
-      job.lat,
-      job.lng,
-    );
+    if (currentLatitude == 0.0 || currentLongitude == 0.0) return null;
+    return job.distanceKmFrom(currentLatitude, currentLongitude);
   }
 
   @override
@@ -633,19 +624,16 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
       List<Job> filtered = validJobs;
       if (currentLatitude != 0.0 && currentLongitude != 0.0) {
-        final tmp = <Job>[];
-        for (final j in validJobs) {
-          final hasGeo = j.lat != 0.0 && j.lng != 0.0;
-          if (!hasGeo) continue;
-          final d = calculateDistance(
-            currentLatitude,
-            currentLongitude,
-            j.lat,
-            j.lng,
-          );
-          if (d <= selectedDistance) tmp.add(j);
-        }
-        filtered = tmp;
+        // 근무지가 여러 곳인 공고는 하나만 반경 안이어도 통과한다.
+        // 전국 공고·좌표 없는 공고도 여기서 버리지 않는다 — Job.withinRadiusKm이
+        // 목록·필터 양쪽에서 같은 판단을 하도록 모아뒀다.
+        filtered = validJobs
+            .where((j) => j.withinRadiusKm(
+                  currentLatitude,
+                  currentLongitude,
+                  selectedDistance,
+                ))
+            .toList();
       }
 
       int idAsInt(String s) => int.tryParse(s) ?? 0;
@@ -727,20 +715,13 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         }).toList();
 
     if (currentLatitude != 0.0 && currentLongitude != 0.0) {
-      tempJobs =
-          tempJobs.where((job) {
-            final hasGeo = job.lat != 0.0 && job.lng != 0.0;
-            // 좌표 없는 공고를 여기서 버리면 사장님이 올린 공고가
-            // 아무에게도 안 보인다. 거리로 거르지 않고 목록 뒤로 보낸다.
-            if (!hasGeo) return true;
-            final distance = calculateDistance(
-              currentLatitude,
-              currentLongitude,
-              job.lat,
-              job.lng,
-            );
-            return distance <= selectedDistance;
-          }).toList();
+      tempJobs = tempJobs
+          .where((job) => job.withinRadiusKm(
+                currentLatitude,
+                currentLongitude,
+                selectedDistance,
+              ))
+          .toList();
     }
 
     if (selectedPayType != 'all') {
@@ -787,14 +768,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       case '거리순':
         // 좌표 없는 공고는 거리를 알 수 없으므로 항상 뒤로
         double distOf(Job j) =>
-            (j.lat == 0.0 && j.lng == 0.0)
-                ? double.infinity
-                : calculateDistance(
-                  currentLatitude,
-                  currentLongitude,
-                  j.lat,
-                  j.lng,
-                );
+            j.distanceKmFrom(currentLatitude, currentLongitude) ??
+            double.infinity;
         tempJobs.sort((a, b) {
           final c = cmpPinned(a, b);
           if (c != 0) return c;
@@ -1268,22 +1243,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       ),
     );
   }
-
-  double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
-    const earthRadius = 6371;
-    final dLat = _deg2rad(lat2 - lat1);
-    final dLon = _deg2rad(lon2 - lon1);
-    final a =
-        sin(dLat / 2) * sin(dLat / 2) +
-        cos(_deg2rad(lat1)) *
-            cos(_deg2rad(lat2)) *
-            sin(dLon / 2) *
-            sin(dLon / 2);
-    final c = 2 * atan2(sqrt(a), sqrt(1 - a));
-    return earthRadius * c;
-  }
-
-  double _deg2rad(double deg) => deg * (pi / 180);
 
   String _trimProvince(String raw) {
     if (raw.isEmpty) return raw;
@@ -3040,7 +2999,18 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     final isApplyingNow = _quickApplyingJobId == jobIdInt;
 
     final distanceKm = _distanceKmFromUser(job);
-    final baseLocation = _trimProvince(job.location);
+
+    // 근무지가 여러 곳이면 '가장 가까운 곳'을 보여준다. 대표 주소를 쓰면
+    // "수원 · 12km"처럼 주소와 거리가 서로 다른 지점을 가리킨다.
+    final nearest =
+        (currentLatitude == 0.0 || currentLongitude == 0.0)
+            ? null
+            : job.nearestFrom(currentLatitude, currentLongitude);
+    final baseLocation = _trimProvince(nearest?.address ?? job.location);
+    final extraCount = job.geoPoints.length - 1;
+    final String placeText =
+        extraCount > 0 ? '$baseLocation 외 $extraCount곳' : baseLocation;
+
     final String? distanceText =
         distanceKm == null
             ? null
@@ -3049,8 +3019,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 : distanceKm.toStringAsFixed(0));
     final String locationLine =
         distanceText == null
-            ? baseLocation
-            : '$baseLocation · ${distanceText}km';
+            ? placeText
+            : '$placeText · ${distanceText}km';
 
     final nowUtc = DateTime.now().toUtc();
     final bool isPinned =

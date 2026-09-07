@@ -105,6 +105,11 @@ class _PostJobFormState extends State<PostJobForm>
   String _majorCat = '';
   String _location = '', _locationCity = '';
   double _lat = 0, _lng = 0;
+
+  // 추가 근무지. 한 공고를 여러 지역에 노출한다(예: 스타필드 고양·수원·제주).
+  // 주 근무지(_location/_lat/_lng)는 여기 포함하지 않는다 — 서버도 같은 구분이다.
+  final List<JobLocation> _extraLocations = [];
+  static const _maxExtraLocations = 4; // 주 근무지 포함 5곳
   bool _gpsLoading = false;
   bool _isShortTerm = true;
   DateTime? _startDate, _endDate;
@@ -441,6 +446,9 @@ class _PostJobFormState extends State<PostJobForm>
         _locationCity = job.locationCity;
         _lat = job.lat;
         _lng = job.lng;
+        _extraLocations
+          ..clear()
+          ..addAll(job.locations);
         _pay = int.tryParse(job.pay) ?? 0;
         _payType = job.payType;
         _payCtrl.text = NumberFormat('#,###').format(_pay);
@@ -788,6 +796,7 @@ class _PostJobFormState extends State<PostJobForm>
         passType: passType,
         isAgency: clientId == 1,
         isNationwide: _isNationwide,
+        locations: _extraLocations,
         // 장기 공고 전용
         jobType: _isShortTerm ? 'short' : 'long',
         isAlwaysOpen: !_isShortTerm && _isAlwaysOpen,
@@ -1125,6 +1134,13 @@ class _PostJobFormState extends State<PostJobForm>
       _locationCity = job['location_city'] ?? '';
       _lat = (job['lat'] ?? 0.0) as double;
       _lng = (job['lng'] ?? 0.0) as double;
+      _extraLocations
+        ..clear()
+        ..addAll(
+          (job['locations'] as List? ?? const [])
+              .whereType<Map>()
+              .map((e) => JobLocation.fromJson(Map<String, dynamic>.from(e))),
+        );
       _pay = int.tryParse(job['pay']?.toString() ?? '') ?? 0;
       _payType = job['pay_type'] ?? '일급';
       _payCtrl.text = _pay > 0 ? NumberFormat('#,###').format(_pay) : '';
@@ -1194,6 +1210,7 @@ class _PostJobFormState extends State<PostJobForm>
         'locationCity': _locationCity,
         'lat': _lat,
         'lng': _lng,
+        'locations': _extraLocations.map((l) => l.toJson()).toList(),
         'isShortTerm': _isShortTerm,
         'startDate': _startDate?.toIso8601String(),
         'endDate': _endDate?.toIso8601String(),
@@ -2056,6 +2073,126 @@ class _PostJobFormState extends State<PostJobForm>
     );
   }
 
+  /// 주소 검색 → 좌표까지. 취소하면 null.
+  /// 주 근무지와 추가 근무지가 같은 경로를 쓰도록 모아둔다.
+  Future<JobLocation?> _searchAddress() async {
+    JobLocation? picked;
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => KpostalView(
+          useLocalServer: false,
+          callback: (result) async {
+            double lat = 0, lng = 0;
+            try {
+              final locs = await locationFromAddress(result.address);
+              if (locs.isNotEmpty) {
+                lat = locs.first.latitude;
+                lng = locs.first.longitude;
+              }
+            } catch (_) {}
+            picked = JobLocation(
+              address: result.address,
+              locationCity: _extractCity(result.address),
+              lat: lat,
+              lng: lng,
+            );
+          },
+        ),
+      ),
+    );
+    return picked;
+  }
+
+  Future<void> _addExtraLocation() async {
+    if (_extraLocations.length >= _maxExtraLocations) return;
+    final picked = await _searchAddress();
+    if (picked == null || !mounted) return;
+
+    // 좌표를 못 얻으면 거리 필터에 안 걸려서 추가해도 노출되지 않는다
+    if (!picked.hasGeo) {
+      _showError('이 주소의 좌표를 찾지 못했어요. 다른 주소로 검색해주세요.');
+      return;
+    }
+    if (_extraLocations.any((l) => l.address == picked.address) ||
+        picked.address == _location) {
+      _showError('이미 추가된 근무지예요.');
+      return;
+    }
+    setState(() => _extraLocations.add(picked));
+  }
+
+  Widget _buildExtraLocations() {
+    final canAdd = _extraLocations.length < _maxExtraLocations;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '추가 근무지',
+          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _text),
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          '근무지가 여러 곳이면 추가하세요. 각 지역 구직자 모두에게 노출됩니다.',
+          style: TextStyle(fontSize: 13, color: _label),
+        ),
+        const SizedBox(height: 10),
+        for (int i = 0; i < _extraLocations.length; i++)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _border),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.place_outlined, size: 18, color: _label),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _extraLocations[i].address,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: _text,
+                      ),
+                    ),
+                  ),
+                  Semantics(
+                    button: true,
+                    label: '${_extraLocations[i].address} 삭제',
+                    child: IconButton(
+                      icon: const Icon(Icons.close_rounded, size: 20, color: _label),
+                      onPressed: () => setState(() => _extraLocations.removeAt(i)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        SizedBox(
+          width: double.infinity,
+          height: 36,
+          child: OutlinedButton.icon(
+            onPressed: canAdd ? _addExtraLocation : null,
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: Text(canAdd ? '근무지 추가' : '최대 ${_maxExtraLocations + 1}곳까지 가능해요'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: _label,
+              backgroundColor: Colors.white,
+              side: const BorderSide(color: _border),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   // Q2: 근무지
   Widget _buildQ2() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -2068,30 +2205,14 @@ class _PostJobFormState extends State<PostJobForm>
                 : '근무지 주소 검색',
         child: GestureDetector(
         onTap: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (_) => KpostalView(
-                    useLocalServer: false,
-                    callback: (result) async {
-                      setState(() {
-                        _location = result.address;
-                        _locationCity = _extractCity(result.address);
-                      });
-                      try {
-                        final locs = await locationFromAddress(result.address);
-                        if (locs.isNotEmpty) {
-                          setState(() {
-                            _lat = locs.first.latitude;
-                            _lng = locs.first.longitude;
-                          });
-                        }
-                      } catch (_) {}
-                    },
-                  ),
-            ),
-          );
+          final picked = await _searchAddress();
+          if (picked == null || !mounted) return;
+          setState(() {
+            _location = picked.address;
+            _locationCity = picked.locationCity ?? '';
+            _lat = picked.lat;
+            _lng = picked.lng;
+          });
         },
         child: Container(
           width: double.infinity,
@@ -2146,6 +2267,10 @@ class _PostJobFormState extends State<PostJobForm>
       ),
       const SizedBox(height: 10),
       _gpsButton(),
+      if (_location.isNotEmpty) ...[
+        const SizedBox(height: 24),
+        _buildExtraLocations(),
+      ],
       const SizedBox(height: 24),
       _NextBtn(onTap: _canNext ? _nextQ : null, label: _nextLabel),
     ],

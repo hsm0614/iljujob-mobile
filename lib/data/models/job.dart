@@ -1,5 +1,6 @@
 // lib/models/job.dart
 import 'dart:convert'; // jsonDecode용
+import 'dart:math' as math;
 
 // ---------- 파서들: 모두 UTC 반환 ----------
 DateTime? _parseToUtcAssumingKST(dynamic v) {
@@ -119,6 +120,60 @@ List<String> _parseImageUrlsFromJson(Map<String, dynamic> json) {
 }
 
 // ---------- 모델 ----------
+
+/// 공고의 추가 근무지. 한 공고가 여러 지역에서 사람을 뽑는 경우
+/// (예: 스타필드 고양·수원·제주) 서버가 job_locations로 내려준다.
+class JobLocation {
+  final String address;
+  final String? locationCity;
+  final double lat;
+  final double lng;
+
+  const JobLocation({
+    required this.address,
+    this.locationCity,
+    required this.lat,
+    required this.lng,
+  });
+
+  static double _toDouble(dynamic v) {
+    if (v is double) return v;
+    if (v is int) return v.toDouble();
+    if (v is String) return double.tryParse(v) ?? 0.0;
+    return 0.0;
+  }
+
+  factory JobLocation.fromJson(Map<String, dynamic> j) => JobLocation(
+    address: j['address']?.toString() ?? '',
+    locationCity: j['location_city']?.toString(),
+    lat: _toDouble(j['lat']),
+    lng: _toDouble(j['lng']),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'address': address,
+    'location_city': locationCity,
+    'lat': lat,
+    'lng': lng,
+  };
+
+  bool get hasGeo => lat != 0.0 && lng != 0.0;
+}
+
+/// 하버사인 거리(km). 화면마다 따로 갖고 있던 계산을 여기로 모은다 —
+/// 목록 필터와 카드 표시가 다른 식을 쓰면 "3km인데 목록에 없다"가 생긴다.
+double haversineKm(double lat1, double lng1, double lat2, double lng2) {
+  const r = 6371.0;
+  double rad(double d) => d * math.pi / 180.0;
+  final dLat = rad(lat2 - lat1);
+  final dLng = rad(lng2 - lng1);
+  final a =
+      math.sin(dLat / 2) * math.sin(dLat / 2) +
+      math.cos(rad(lat1)) * math.cos(rad(lat2)) *
+          math.sin(dLng / 2) * math.sin(dLng / 2);
+  return r * 2 * math.asin(math.min(1.0, math.sqrt(a)));
+}
+
 class Job {
   final String id;
   final String? userNumber;
@@ -144,6 +199,12 @@ class Job {
   final String? weekdays;
   final double lat;
   final double lng;
+
+  /// 추가 근무지. 비어 있으면 lat/lng 하나짜리 기존 공고다.
+  final List<JobLocation> locations;
+
+  /// 전국 공고 — 거리 필터를 통과시킨다.
+  final bool isNationwide;
   final List<String> imageUrls;
   final String status;
   final int? chatRoomId;
@@ -193,6 +254,8 @@ class Job {
     this.weekdays,
     required this.lat,
     required this.lng,
+    this.locations = const [],
+    this.isNationwide = false,
     this.imageUrls = const [],
     required this.status,
     this.chatRoomId,
@@ -295,6 +358,17 @@ class Job {
             if (v is String) return double.tryParse(v) ?? 0.0;
             return 0.0;
           })(),
+      locations:
+          (json['locations'] as List?)
+              ?.whereType<Map>()
+              .map((e) => JobLocation.fromJson(Map<String, dynamic>.from(e)))
+              .where((l) => l.hasGeo)
+              .toList() ??
+          const [],
+      isNationwide:
+          json['is_nationwide'] == 1 ||
+          json['is_nationwide'] == true ||
+          json['is_nationwide'] == '1',
 
       // 🔥 여기만 변경됨: 배열 + 단일 URL 모두 처리
       imageUrls: _parseImageUrlsFromJson(json),
@@ -380,6 +454,57 @@ class Job {
     );
   }
   // Job 클래스 안에 추가 (toJson 위에)
+  /// 대표 좌표 + 추가 근무지 전부. 좌표 없는 건 뺀다.
+  List<JobLocation> get geoPoints => [
+    if (lat != 0.0 && lng != 0.0)
+      JobLocation(address: location, locationCity: locationCity, lat: lat, lng: lng),
+    ...locations.where((l) => l.hasGeo),
+  ];
+
+  /// 가장 가까운 근무지. 좌표가 하나도 없으면 null.
+  JobLocation? nearestFrom(double fromLat, double fromLng) {
+    JobLocation? best;
+    double bestD = double.infinity;
+    for (final p in geoPoints) {
+      final d = haversineKm(fromLat, fromLng, p.lat, p.lng);
+      if (d < bestD) {
+        bestD = d;
+        best = p;
+      }
+    }
+    return best;
+  }
+
+  /// 근무지 중 가장 가까운 거리(km). 좌표가 하나도 없으면 null.
+  double? distanceKmFrom(double fromLat, double fromLng) {
+    final nearest = nearestFrom(fromLat, fromLng);
+    if (nearest == null) return null;
+    return haversineKm(fromLat, fromLng, nearest.lat, nearest.lng);
+  }
+
+  /// 목록 거리 필터. 근무지가 여러 곳이면 하나만 반경 안에 있어도 통과다.
+  ///
+  /// 전국 공고와 좌표 없는 공고는 거르지 않는다 — 여기서 버리면 사장님이
+  /// 올린 공고가 아무에게도 안 보인다.
+  bool withinRadiusKm(double fromLat, double fromLng, double radiusKm) {
+    if (isNationwide) return true;
+    final d = distanceKmFrom(fromLat, fromLng);
+    if (d == null) return true;
+    return d <= radiusKm;
+  }
+
+  /// 근무지 지역 라벨. 여러 곳이면 '고양 · 수원 · 제주'.
+  String get regionLabel {
+    if (isNationwide) return '전국';
+    final cities = <String>[];
+    for (final c in [locationCity, ...locations.map((l) => l.locationCity ?? '')]) {
+      final v = c.trim();
+      if (v.isNotEmpty && !cities.contains(v)) cities.add(v);
+    }
+    if (cities.isEmpty) return locationCity;
+    return cities.join(' · ');
+  }
+
   Job copyWith({double? matchScore, List<String>? matchReasons}) {
     return Job(
       id: id,
@@ -403,6 +528,8 @@ class Job {
       weekdays: weekdays,
       lat: lat,
       lng: lng,
+      locations: locations,
+      isNationwide: isNationwide,
       imageUrls: imageUrls,
       status: status,
       chatRoomId: chatRoomId,
@@ -449,6 +576,8 @@ class Job {
       'weekdays': weekdays,
       'lat': lat,
       'lng': lng,
+      'locations': locations.map((l) => l.toJson()).toList(),
+      'is_nationwide': isNationwide ? 1 : 0,
       'image_urls': imageUrls,
       'status': status,
       'chat_room_id': chatRoomId,
