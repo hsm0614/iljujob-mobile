@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:iljujob/config/constants.dart';
@@ -348,6 +349,21 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
     try {
       setState(() => _isLoading = true);
 
+      // 가입 요청에 FCM 토큰을 같이 싣는다.
+      // 아래 sendFcmTokenUnified()는 가입 INSERT와 같은 순간에 부딪히면 서버가
+      // '유저 없음'으로 건너뛰는데 앱이 재시도를 안 해, 그 사용자는 푸시를 영영
+      // 못 받았다(신규 구직자의 약 3분의 1). 사장님 가입은 원래 이 방식이다.
+      //
+      // ⚠️ getToken()은 iOS에서 APNS 미준비 시 던진다. 가입 자체가 실패하면
+      //    훨씬 큰 손해라 실패해도 null로 넘기고 진행한다. 권한 미허용이면
+      //    아래 sendFcmTokenUnified()가 권한을 물어보고 저장한다.
+      String? fcmToken;
+      try {
+        fcmToken = await FirebaseMessaging.instance.getToken();
+      } catch (_) {
+        fcmToken = null;
+      }
+
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -370,6 +386,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
           'emailConsent': _agreedMarketing ? false : false,
           'lat': _currentPosition?.latitude,
           'lng': _currentPosition?.longitude,
+          'fcmToken': fcmToken,
         }),
       );
 
