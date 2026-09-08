@@ -1319,12 +1319,18 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                                 color: Color(0xFF6B7280),
                               ),
                               const SizedBox(width: 5),
-                              Text(
-                                visiblePhone ?? applicant.workerPhoneMasked,
-                                style: const TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w800,
-                                  color: Color(0xFF374151),
+                              // 좁은 화면에서 번호가 '연락처 보기'를 밀어내 28px 넘쳤다.
+                              // 번호만 줄어들게 두고 버튼은 온전히 남긴다.
+                              Flexible(
+                                child: Text(
+                                  visiblePhone ?? applicant.workerPhoneMasked,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xFF374151),
+                                  ),
                                 ),
                               ),
                               if (visiblePhone == null) ...[
