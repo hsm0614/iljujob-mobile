@@ -376,7 +376,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     if (clientId == 0) return;
 
     try {
-      final response = await http.get(
+      final response = await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/client/summary?clientId=$clientId'),
       );
       if (response.statusCode == 200) {
@@ -408,7 +408,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         return;
       }
 
-      final response = await http.get(
+      final response = await AuthenticatedHttpClient.get(
         Uri.parse(
           '$baseUrl/api/job/my-jobs?clientId=$clientId&page=$targetPage&limit=$pageSize',
         ),

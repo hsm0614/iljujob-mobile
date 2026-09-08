@@ -7,7 +7,6 @@ import '../../../data/services/job_service.dart';
 import '../worker_screen/job_detail_screen.dart';
 import '../../../data/services/screen_analytics_service.dart';
 import 'worker_map_screen.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../config/constants.dart';
 import 'package:geolocator/geolocator.dart';
@@ -724,7 +723,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
                 }
 
                 try {
-                  final response = await http.get(
+                  final response = await AuthenticatedHttpClient.get(
                     Uri.parse(
                       '$baseUrl/api/client/business-info-status?clientId=$clientId',
                     ),

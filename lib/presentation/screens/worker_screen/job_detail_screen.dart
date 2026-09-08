@@ -390,10 +390,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     if (userId == null || jobId == null) return;
 
     try {
-      final response = await http.post(
+      final response = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/job/check-applied'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'workerId': userId, 'jobId': jobId}),
+        body: {'workerId': userId, 'jobId': jobId},
       );
 
       if (!mounted) return;
@@ -1560,14 +1559,20 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             children: [
               Text(
                 postedLabel,
-                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(width: 6),
               Text(
                 postedUtc != null
                     ? DateFormat('yyyy-MM-dd HH:mm').format(postedUtc.toLocal())
                     : '-',
-                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -2182,10 +2187,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    border: Border.all(
-                      color: AppColors.border,
-                      width: 2,
-                    ),
+                    border: Border.all(color: AppColors.border, width: 2),
                   ),
                   child: CircleAvatar(
                     radius: 26,
