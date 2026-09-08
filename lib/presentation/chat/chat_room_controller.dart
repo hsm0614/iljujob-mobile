@@ -794,10 +794,6 @@ class ChatRoomController extends ChangeNotifier {
 
   Future<void> markJobAsCompleted() async {
     if (_disposed) return;
-    if (socket == null || !socket!.connected) {
-      onShowSnackbar?.call('소켓 연결이 안되어 있습니다.');
-      return;
-    }
     try {
       final resp = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/chat/applications/complete'),

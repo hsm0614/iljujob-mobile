@@ -473,7 +473,8 @@ class JobService {
             ..headers['Accept'] = 'application/json';
 
       // 필드 채우기
-      normalized.forEach((k, v) => req.fields[k] = v.toString());
+      normalized.forEach((k, v) => req.fields[k] =
+          (v is List || v is Map) ? jsonEncode(v) : v.toString());
 
       // 삭제할 기존 이미지 URL
       for (final url in deleteImageUrls) {
