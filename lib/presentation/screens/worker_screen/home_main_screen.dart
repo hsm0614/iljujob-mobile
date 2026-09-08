@@ -27,6 +27,7 @@ import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/data/models/partner_recruit_post.dart';
 import 'package:iljujob/presentation/screens/worker_screen/partner_recruit_detail_screen.dart';
 import 'package:iljujob/data/services/notificaion_service.dart';
+import '../../../config/messages.dart';
 
 class HomeMainScreen extends StatefulWidget {
   final VoidCallback? onAiRecommend;
@@ -89,7 +90,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
   // AI 추천 스트립을 공고 리스트 N번째 뒤에 삽입
   static const _aiStripAfter = 4;
-
 
   // 근무지가 여러 곳이면 가장 가까운 곳까지의 거리. 필터가 '고양으로 통과'시킨
   // 공고에 대표좌표(수원) 거리를 표시하면 목록과 카드가 서로 다른 말을 한다.
@@ -178,7 +178,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     final until = DateTime.now().add(
       const Duration(days: _partnerCardHideDays),
     );
-    await prefs.setInt(_kPartnerCardHiddenUntilKey, until.millisecondsSinceEpoch);
+    await prefs.setInt(
+      _kPartnerCardHiddenUntilKey,
+      until.millisecondsSinceEpoch,
+    );
     if (!mounted) return;
     setState(() => _partnerCardHidden = true);
   }
@@ -443,10 +446,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     final userId = prefs.getInt('userId');
     if (userId == null) return;
     try {
-      await http.patch(
+      await AuthenticatedHttpClient.patchJson(
         Uri.parse('$baseUrl/api/worker/update-location'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'userId': userId, 'lat': lat, 'lng': lng}),
+        body: {'userId': userId, 'lat': lat, 'lng': lng},
       );
     } catch (e) {
       debugPrint('위치 저장 예외: $e');
@@ -463,10 +465,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     final url = Uri.parse('$baseUrl/api/bookmark/$endpoint');
 
     try {
-      final resp = await http.post(
+      final resp = await AuthenticatedHttpClient.postJson(
         url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'worker_id': userId, 'job_id': jobId}),
+        body: {'worker_id': userId, 'job_id': jobId},
       );
 
       if (resp.statusCode == 200) {
@@ -564,13 +565,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
       if (workerId != null && userType == 'worker') {
         try {
-          final aiRes = await AuthenticatedHttpClient
-              .get(
-                Uri.parse(
-                  '$baseUrl/api/rank/jobs?workerId=$workerId&lat=$currentLatitude&lng=$currentLongitude&limit=100',
-                ),
-              )
-              .timeout(const Duration(seconds: 6));
+          final aiRes = await AuthenticatedHttpClient.get(
+            Uri.parse(
+              '$baseUrl/api/rank/jobs?workerId=$workerId&lat=$currentLatitude&lng=$currentLongitude&limit=100',
+            ),
+          ).timeout(const Duration(seconds: 6));
 
           if (aiRes.statusCode == 200) {
             final data = jsonDecode(aiRes.body);
@@ -627,13 +626,16 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         // 근무지가 여러 곳인 공고는 하나만 반경 안이어도 통과한다.
         // 전국 공고·좌표 없는 공고도 여기서 버리지 않는다 — Job.withinRadiusKm이
         // 목록·필터 양쪽에서 같은 판단을 하도록 모아뒀다.
-        filtered = validJobs
-            .where((j) => j.withinRadiusKm(
-                  currentLatitude,
-                  currentLongitude,
-                  selectedDistance,
-                ))
-            .toList();
+        filtered =
+            validJobs
+                .where(
+                  (j) => j.withinRadiusKm(
+                    currentLatitude,
+                    currentLongitude,
+                    selectedDistance,
+                  ),
+                )
+                .toList();
       }
 
       int idAsInt(String s) => int.tryParse(s) ?? 0;
@@ -715,13 +717,16 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         }).toList();
 
     if (currentLatitude != 0.0 && currentLongitude != 0.0) {
-      tempJobs = tempJobs
-          .where((job) => job.withinRadiusKm(
-                currentLatitude,
-                currentLongitude,
-                selectedDistance,
-              ))
-          .toList();
+      tempJobs =
+          tempJobs
+              .where(
+                (job) => job.withinRadiusKm(
+                  currentLatitude,
+                  currentLongitude,
+                  selectedDistance,
+                ),
+              )
+              .toList();
     }
 
     if (selectedPayType != 'all') {
@@ -744,23 +749,21 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
     if (searchQuery.isNotEmpty) {
       tempJobs =
-          tempJobs
-              .where((job) {
-                final q = searchQuery.trim();
-                // 추가 근무지도 검색 대상. '고양'으로 찾는데 대표 주소가
-                // 수원이라 안 나오면 다중 근무지 공고는 검색으로 못 만난다.
-                return job.title.contains(q) ||
-                    job.location.contains(q) ||
-                    job.locationCity.contains(q) ||
-                    job.locations.any(
-                      (l) =>
-                          l.address.contains(q) ||
-                          (l.locationCity?.contains(q) ?? false),
-                    ) ||
-                    job.category.contains(q) ||
-                    (job.description?.contains(q) ?? false);
-              })
-              .toList();
+          tempJobs.where((job) {
+            final q = searchQuery.trim();
+            // 추가 근무지도 검색 대상. '고양'으로 찾는데 대표 주소가
+            // 수원이라 안 나오면 다중 근무지 공고는 검색으로 못 만난다.
+            return job.title.contains(q) ||
+                job.location.contains(q) ||
+                job.locationCity.contains(q) ||
+                job.locations.any(
+                  (l) =>
+                      l.address.contains(q) ||
+                      (l.locationCity?.contains(q) ?? false),
+                ) ||
+                job.category.contains(q) ||
+                (job.description?.contains(q) ?? false);
+          }).toList();
     }
 
     int cmpPinned(Job a, Job b) {
@@ -1335,10 +1338,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       );
   }
 
-  Future<void> _cancelApply({
-    required int jobId,
-    required int workerId,
-  }) async {
+  Future<void> _cancelApply({required int jobId, required int workerId}) async {
     try {
       final resp = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/job/cancel'),
@@ -1379,7 +1379,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('로그인이 필요해요.')));
+      ).showSnackBar(const SnackBar(content: Text(Msg.loginRequired)));
       return;
     }
 
@@ -1480,7 +1480,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('네트워크 오류가 발생했어요.')));
+        ).showSnackBar(const SnackBar(content: Text(Msg.network)));
       }
     } finally {
       if (mounted) setState(() => _quickApplyingJobId = null);
@@ -1963,7 +1963,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                               : filteredJobs.length;
                       // AI 추천 스트립을 4번째 공고 뒤에 끼워넣는다 (상단 다이어트).
                       // 공고가 4개 미만이면 삽입하지 않는다.
-                      final stripAt = visibleCount > _aiStripAfter ? _aiStripAfter : -1;
+                      final stripAt =
+                          visibleCount > _aiStripAfter ? _aiStripAfter : -1;
                       return SliverList.builder(
                         itemCount: visibleCount + (stripAt >= 0 ? 1 : 0),
                         itemBuilder: (context, index) {
@@ -1975,14 +1976,17 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                     (job) => Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (_) => JobDetailScreen(job: job),
+                                        builder:
+                                            (_) => JobDetailScreen(job: job),
                                       ),
                                     ),
                               ),
                             );
                           }
                           final jobIndex =
-                              (stripAt >= 0 && index > stripAt) ? index - 1 : index;
+                              (stripAt >= 0 && index > stripAt)
+                                  ? index - 1
+                                  : index;
                           final job = filteredJobs[jobIndex];
                           return compactView
                               ? GestureDetector(
@@ -2033,101 +2037,101 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             ),
           );
         },
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
-        decoration: BoxDecoration(
-          color: AppColors.bgCard,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.primaryMid),
-          boxShadow: AppShadows.card,
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.bgMuted,
-                          borderRadius: BorderRadius.circular(AppRadius.xs),
-                        ),
-                        child: const Text(
-                          '광고',
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textTertiary,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+          decoration: BoxDecoration(
+            color: AppColors.bgCard,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.primaryMid),
+            boxShadow: AppShadows.card,
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.bgMuted,
+                            borderRadius: BorderRadius.circular(AppRadius.xs),
+                          ),
+                          child: const Text(
+                            '광고',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textTertiary,
+                            ),
                           ),
                         ),
+                        const SizedBox(width: 6),
+                        const Text(
+                          '파트너 채용',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                        const Spacer(),
+                        // 닫기 — 7일간 숨김
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: _dismissPartnerCard,
+                          child: const Padding(
+                            padding: EdgeInsets.only(left: 8, bottom: 4),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 16,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      post.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 14.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                        height: 1.3,
                       ),
-                      const SizedBox(width: 6),
-                      const Text(
-                        '파트너 채용',
-                        style: TextStyle(
-                          fontSize: 11,
+                    ),
+                    // 요약(업종·경력·근무지)은 상세화면에 있다. 카드엔 누를 이유 한 줄만.
+                    if (post.benefits.items.isNotEmpty) ...[
+                      const SizedBox(height: 3),
+                      Text(
+                        '재택근무 · ${post.benefits.items.first.title}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11.5,
                           fontWeight: FontWeight.w700,
                           color: AppColors.primary,
                         ),
                       ),
-                      const Spacer(),
-                      // 닫기 — 7일간 숨김
-                      GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: _dismissPartnerCard,
-                        child: const Padding(
-                          padding: EdgeInsets.only(left: 8, bottom: 4),
-                          child: Icon(
-                            Icons.close_rounded,
-                            size: 16,
-                            color: AppColors.textTertiary,
-                          ),
-                        ),
-                      ),
                     ],
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    post.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                      height: 1.3,
-                    ),
-                  ),
-                  // 요약(업종·경력·근무지)은 상세화면에 있다. 카드엔 누를 이유 한 줄만.
-                  if (post.benefits.items.isNotEmpty) ...[
-                    const SizedBox(height: 3),
-                    Text(
-                      '재택근무 · ${post.benefits.items.first.title}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
-                    ),
                   ],
-                ],
+                ),
               ),
-            ),
-            const Icon(
-              Icons.arrow_forward_ios,
-              size: 14,
-              color: AppColors.textTertiary,
-            ),
-          ],
-        ),
+              const Icon(
+                Icons.arrow_forward_ios,
+                size: 14,
+                color: AppColors.textTertiary,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -2273,9 +2277,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          ok
-              ? '새 공고가 올라오면 알려드릴게요.'
-              : '알림 설정에 실패했어요. 잠시 후 다시 시도해주세요.',
+          ok ? '새 공고가 올라오면 알려드릴게요.' : '알림 설정에 실패했어요. 잠시 후 다시 시도해주세요.',
         ),
       ),
     );
@@ -2396,9 +2398,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 // 권한이 멀쩡한 사람에게 띄우면 눌러도 아무것도 안 바뀐다.
                 // 그 외에는 재방문 이유를 만드는 유일한 훅인 알림 신청을 준다.
                 child: OutlinedButton.icon(
-                  onPressed: noLocation
-                      ? () async => Geolocator.openAppSettings()
-                      : _enableJobAlerts,
+                  onPressed:
+                      noLocation
+                          ? () async => Geolocator.openAppSettings()
+                          : _enableJobAlerts,
                   icon: Icon(
                     noLocation
                         ? Icons.settings_rounded
@@ -2956,9 +2959,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           max: 30,
           divisions: 29,
           value: selectedDistance,
-          onChanged: (value) => setState(() {
-            selectedDistance = value;
-          }),
+          onChanged:
+              (value) => setState(() {
+                selectedDistance = value;
+              }),
           onChangeEnd: (value) async {
             if (currentLatitude == 0.0 || currentLongitude == 0.0) {
               await _init();
@@ -3026,9 +3030,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 ? distanceKm.toStringAsFixed(1)
                 : distanceKm.toStringAsFixed(0));
     final String locationLine =
-        distanceText == null
-            ? placeText
-            : '$placeText · ${distanceText}km';
+        distanceText == null ? placeText : '$placeText · ${distanceText}km';
 
     final nowUtc = DateTime.now().toUtc();
     final bool isPinned =
@@ -3054,9 +3056,13 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     }
     // 급여 형태(일급/주급/월급)는 가격 옆 칩으로만 표시 — 상단 뱃지 중복 제거
     if (job.isSameDayPay == true) {
-      opBadges.add(const JobSignalBadge(label: '당일지급', signal: JobSignal.money));
+      opBadges.add(
+        const JobSignalBadge(label: '당일지급', signal: JobSignal.money),
+      );
     } else if (job.isCertifiedCompany == true) {
-      opBadges.add(const JobSignalBadge(label: '안심기업', signal: JobSignal.trust));
+      opBadges.add(
+        const JobSignalBadge(label: '안심기업', signal: JobSignal.trust),
+      );
     }
     if (job.jobType == 'long') {
       opBadges.add(const JobSignalBadge(label: '장기'));
@@ -3250,7 +3256,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                           '${_formatDate(job.startDate!)} ~ ${_formatDate(job.endDate!)}',
                         ),
                       // 시간 미입력 공고는 "~"만 노출되던 문제 — 값 있을 때만 표시
-                      if (job.workingHours.replaceAll('~', '').trim().isNotEmpty)
+                      if (job.workingHours
+                          .replaceAll('~', '')
+                          .trim()
+                          .isNotEmpty)
                         _metaChip(Icons.schedule_outlined, job.workingHours),
                     ],
                   ),
@@ -3408,7 +3417,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               width: 36,
               height: 36,
               child: Material(
-                color: _searchExpanded ? AppColors.primaryLight : AppColors.bgCard,
+                color:
+                    _searchExpanded ? AppColors.primaryLight : AppColors.bgCard,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -3630,7 +3640,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     final d = date.toLocal();
     return '${d.month.toString().padLeft(2, '0')}.${d.day.toString().padLeft(2, '0')}';
   }
-
 }
 
 class _BookmarkButton extends StatelessWidget {

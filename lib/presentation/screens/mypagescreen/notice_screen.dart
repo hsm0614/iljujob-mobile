@@ -5,6 +5,7 @@ import '../../../data/services/notice_service.dart';
 import '../../../data/models/notice.dart';
 import 'notice_detail_screen.dart';
 import 'notice_create_screen.dart';
+import '../../../config/app_theme.dart';
 
 class NoticeListScreen extends StatefulWidget {
   const NoticeListScreen({super.key});
@@ -14,7 +15,7 @@ class NoticeListScreen extends StatefulWidget {
 }
 
 class _NoticeListScreenState extends State<NoticeListScreen> {
-  static const brandBlue = Color(0xFF3B8AFF);
+  static const brandBlue = AppColors.primary;
   static const brandBlueLight = Color(0xFF6EB6FF);
 
   List<Notice> _notices = [];
@@ -89,7 +90,7 @@ class _NoticeListScreenState extends State<NoticeListScreen> {
     });
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: AppColors.bgPage,
       body: RefreshIndicator(
         onRefresh: _loadData,
         color: brandBlue,
@@ -247,7 +248,7 @@ class _NoticeCard extends StatelessWidget {
                 ),
                 child: Icon(
                   pinned ? Icons.push_pin : Icons.campaign,
-                  color: const Color(0xFF3B8AFF),
+                  color: AppColors.primary,
                 ),
               ),
               const SizedBox(width: 12),
@@ -261,13 +262,13 @@ class _NoticeCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF3B8AFF).withOpacity(0.12),
+                          color: AppColors.primary.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: const Text(
                           '중요',
                           style: TextStyle(
-                            color: Color(0xFF3B8AFF),
+                            color: AppColors.primary,
                             fontWeight: FontWeight.w900,
                             fontSize: 11.5,
                           ),

@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../config/constants.dart';
+import '../../../config/app_theme.dart';
 
 class ReportHistoryScreen extends StatefulWidget {
   const ReportHistoryScreen({super.key});
@@ -80,7 +81,7 @@ String url = selectedType == 'job'
           const Divider(),
           Expanded(
             child: filtered.isEmpty
-                ? const Center(child: Text('📭 신고 내역이 없습니다.', style: TextStyle(color: Color(0xFF6B7280))))
+                ? const Center(child: Text('📭 신고 내역이 없습니다.', style: TextStyle(color: AppColors.textSecondary)))
                 : ListView.builder(
                     itemCount: filtered.length,
                     itemBuilder: (context, index) => _buildReportCard(filtered[index]),
@@ -102,7 +103,7 @@ String url = selectedType == 'job'
           _loadReports();
         },
         style: ElevatedButton.styleFrom(
-          backgroundColor: isSelected ? const Color(0xFF3B8AFF) : const Color(0xFFD1D5DB),
+          backgroundColor: isSelected ? AppColors.primary : AppColors.textDisabled,
           foregroundColor: isSelected ? Colors.white : Colors.black,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
@@ -136,14 +137,14 @@ Widget _buildReportCard(Map<String, dynamic> report) {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('📌 $targetInfo'),
+              Text(targetInfo),
               _buildStatusBadge(status),
             ],
           ),
           const SizedBox(height: 6),
           Text('📝 사유: $reasonCategory${reasonDetail != null && reasonDetail.isNotEmpty ? ' - $reasonDetail' : ''}'),
           const SizedBox(height: 6),
-          Text('⏰ 날짜: $createdAt', style: const TextStyle(color: Color(0xFF6B7280), fontSize: 12)),
+          Text('⏰ 날짜: $createdAt', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
         ],
       ),
     ),

@@ -462,7 +462,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              color: const Color(0xFFEEF5FF),
+              color: AppColors.primaryLight,
               child: const Row(
                 children: [
                   Icon(Icons.info_outline, size: 14, color: Color(0xFF3182F6)),

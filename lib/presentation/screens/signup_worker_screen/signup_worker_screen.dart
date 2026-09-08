@@ -9,8 +9,10 @@ import 'package:iljujob/main.dart'; // ✅ sendFcmTokenUnified 사용을 위해
 import 'package:iljujob/presentation/screens/webview_screen.dart';
 import 'package:iljujob/presentation/screens/TermsDetailScreen.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
+import '../../../config/messages.dart';
+import '../../../config/app_theme.dart';
 
-const kBrand = Color(0xFF3B8AFF);
+const kBrand = AppColors.primary;
 
 class SignupWorkerScreen extends StatefulWidget {
   const SignupWorkerScreen({super.key});
@@ -36,6 +38,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
   bool _agreedMarketing = false;
   bool _agreedLocation = false;
   Position? _currentPosition;
+  String? _identityVerificationToken;
 
   final List<String> strengthOptions = ['포장', '상하차', '물류', 'F&B', '사무보조', '기타'];
   final List<String> traitOptions = [
@@ -159,7 +162,10 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'phone': phone}),
+        body: jsonEncode({
+          'phone': phone,
+          'verificationToken': _identityVerificationToken,
+        }),
       );
 
       final data = jsonDecode(response.body);
@@ -198,8 +204,10 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
       } else {
         // ⚠️ 여기는 전화 인증 성공 지점이지 가입 완료가 아니다.
         //    예전엔 worker_signup_complete 로 찍혀 있어 퍼널이 거꾸로 읽혔다.
-        ScreenAnalyticsService.instance.logEvent('worker_signup_step_complete',
-            params: {'step': 0, 'name': 'phone_verified'});
+        ScreenAnalyticsService.instance.logEvent(
+          'worker_signup_step_complete',
+          params: {'step': 0, 'name': 'phone_verified'},
+        );
 
         // ✅ 신규 회원 → 다음 단계
         await Future.delayed(const Duration(milliseconds: 300));
@@ -214,7 +222,8 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
         });
       }
     } catch (e) {
-      if (mounted) _showSnackbar('서버 오류: $e');
+      debugPrint('서버 오류: $e');
+      if (mounted) _showSnackbar(Msg.server);
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -226,20 +235,6 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
   // 본인인증 시작
   // ============================================================
   Future<void> _startWebViewCertification() async {
-    final rawPhone = _phoneController.text.replaceAll('-', '');
-    const bypassPhone = '01046533004';
-
-    // 테스트 계정 우회
-    if (rawPhone == bypassPhone) {
-      _phoneController.text = bypassPhone;
-      _birthYear = '19910101';
-      _birthController.text = _birthYear;
-      _nameController.text = '테스트사용자';
-      _gender = '남성';
-      await _checkPhoneThenProceed();
-      return;
-    }
-
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/api/worker/danal-certification-url'),
@@ -279,7 +274,8 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
       }
     } catch (e) {
       print('❌ 본인인증 시작 실패: $e');
-      _showSnackbar('본인인증 시작 실패: $e');
+      debugPrint('본인인증 시작 실패: $e');
+      _showSnackbar(Msg.verifyFailed);
     }
   }
 
@@ -297,6 +293,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
       final data = jsonDecode(response.body);
 
       if (data['success'] == true && data['status'] == 'VERIFIED') {
+        _identityVerificationToken = data['verificationToken']?.toString();
         final name = data['name']?.toString() ?? '';
         final gender = data['gender']?.toString() ?? '';
         final timestamp = data['birth'];
@@ -304,16 +301,21 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
         final prefs = await SharedPreferences.getInstance();
 
         // 전화번호 저장
-        final receivedPhone = data['phone']?.toString() ?? _phoneController.text.trim();
+        final receivedPhone =
+            data['phone']?.toString() ?? _phoneController.text.trim();
         if (receivedPhone.isNotEmpty) {
           await prefs.setString('userPhone', receivedPhone);
         }
 
         // 생년월일 처리
         if (timestamp != null) {
-          final dateUtc = DateTime.fromMillisecondsSinceEpoch(timestamp * 1000, isUtc: true);
+          final dateUtc = DateTime.fromMillisecondsSinceEpoch(
+            timestamp * 1000,
+            isUtc: true,
+          );
           final localDate = dateUtc.toLocal();
-          _birthYear = "${localDate.year}${localDate.month.toString().padLeft(2, '0')}${localDate.day.toString().padLeft(2, '0')}";
+          _birthYear =
+              "${localDate.year}${localDate.month.toString().padLeft(2, '0')}${localDate.day.toString().padLeft(2, '0')}";
           _birthController.text = _birthYear;
         }
 
@@ -332,7 +334,8 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
     } catch (e) {
       print('❌ 서버 확인 중 오류 발생: $e');
       if (!mounted) return;
-      _showSnackbar('서버 오류: $e');
+      debugPrint('서버 오류: $e');
+      _showSnackbar(Msg.server);
     }
   }
 
@@ -387,6 +390,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
           'lat': _currentPosition?.latitude,
           'lng': _currentPosition?.longitude,
           'fcmToken': fcmToken,
+          'verificationToken': _identityVerificationToken,
         }),
       );
 
@@ -412,7 +416,8 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
         _showSnackbar('회원가입 실패: ${data['message']}');
       }
     } catch (e) {
-      _showSnackbar('회원가입 실패: $e');
+      debugPrint('회원가입 실패: $e');
+      _showSnackbar(Msg.signupFailed);
     } finally {
       setState(() => _isLoading = false);
     }
@@ -421,10 +426,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
   // ============================================================
   // UI 헬퍼
   // ============================================================
-  InputDecoration _inputDecoration({
-    required String hint,
-    IconData? icon,
-  }) {
+  InputDecoration _inputDecoration({required String hint, IconData? icon}) {
     return InputDecoration(
       hintText: hint,
       isDense: true,
@@ -434,11 +436,11 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+        borderSide: const BorderSide(color: AppColors.border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+        borderSide: const BorderSide(color: AppColors.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -466,7 +468,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
           style: const TextStyle(
             fontWeight: FontWeight.w700,
             fontSize: 14.5,
-            color: Color(0xFF111827),
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -476,9 +478,9 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
   }
 
   void _showSnackbar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   // ============================================================
@@ -491,179 +493,196 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => StatefulBuilder(
-        builder: (context, setModalState) => Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // 전체 동의
-              CheckboxListTile(
-                value: _agreedTerms && _agreedPrivacy && _agreedMarketing && _agreedLocation,
-                onChanged: (val) {
-                  final newValue = val ?? false;
-                  setState(() {
-                    _agreedTerms = newValue;
-                    _agreedPrivacy = newValue;
-                    _agreedMarketing = newValue;
-                    _agreedLocation = newValue;
-                  });
-                  setModalState(() {});
-                },
-                title: const Text('전체 동의하기'),
-              ),
-              const Divider(),
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setModalState) => Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 전체 동의
+                      CheckboxListTile(
+                        value:
+                            _agreedTerms &&
+                            _agreedPrivacy &&
+                            _agreedMarketing &&
+                            _agreedLocation,
+                        onChanged: (val) {
+                          final newValue = val ?? false;
+                          setState(() {
+                            _agreedTerms = newValue;
+                            _agreedPrivacy = newValue;
+                            _agreedMarketing = newValue;
+                            _agreedLocation = newValue;
+                          });
+                          setModalState(() {});
+                        },
+                        title: const Text('전체 동의하기'),
+                      ),
+                      const Divider(),
 
-              // [필수] 서비스 이용약관
-              Row(
-                children: [
-                  Checkbox(
-                    value: _agreedTerms,
-                    onChanged: (val) {
-                      setState(() => _agreedTerms = val ?? false);
-                      setModalState(() {});
-                    },
-                  ),
-                  const Expanded(
-                    child: Text('[필수] 서비스 이용약관 및 커뮤니티 정책 동의'),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const TermsDetailScreen(
-                            filePath: 'assets/terms/terms_of_service.txt',
-                            title: '서비스 이용약관',
-                          ),
-                        ),
-                      );
-                    },
-                    child: const Text('보기'),
-                  ),
-                ],
-              ),
-
-              // [필수] 개인정보 수집
-              Row(
-                children: [
-                  Checkbox(
-                    value: _agreedPrivacy,
-                    onChanged: (val) {
-                      setState(() => _agreedPrivacy = val ?? false);
-                      setModalState(() {});
-                    },
-                  ),
-                  const Expanded(child: Text('[필수] 개인정보 수집 및 이용 동의')),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const TermsDetailScreen(
-                            filePath: 'assets/terms/privacy_policy.txt',
-                            title: '개인정보 처리방침',
-                          ),
-                        ),
-                      );
-                    },
-                    child: const Text('보기'),
-                  ),
-                ],
-              ),
-
-              // [필수] 위치기반서비스
-              Row(
-                children: [
-                  Checkbox(
-                    value: _agreedLocation,
-                    onChanged: (val) {
-                      setState(() => _agreedLocation = val ?? false);
-                      setModalState(() {});
-                    },
-                  ),
-                  const Expanded(child: Text('[필수] 위치기반서비스 이용 동의')),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const TermsDetailScreen(
-                            filePath: 'assets/terms/location_terms.txt',
-                            title: '위치기반서비스 이용약관',
-                          ),
-                        ),
-                      );
-                    },
-                    child: const Text('보기'),
-                  ),
-                ],
-              ),
-
-              // [선택] 마케팅
-              Row(
-                children: [
-                  Checkbox(
-                    value: _agreedMarketing,
-                    onChanged: (val) {
-                      setState(() => _agreedMarketing = val ?? false);
-                      setModalState(() {});
-                    },
-                  ),
-                  const Expanded(child: Text('[선택] 마케팅 정보 수신 동의')),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const TermsDetailScreen(
-                            filePath: 'assets/terms/marketing_terms.txt',
-                            title: '마케팅 수신 동의',
-                          ),
-                        ),
-                      );
-                    },
-                    child: const Text('보기'),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // 가입 버튼
-              SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () {
-                              Navigator.pop(context);
-                              _submitSignupData();
+                      // [필수] 서비스 이용약관
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _agreedTerms,
+                            onChanged: (val) {
+                              setState(() => _agreedTerms = val ?? false);
+                              setModalState(() {});
                             },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF3B8AFF),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        textStyle: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          ),
+                          const Expanded(
+                            child: Text('[필수] 서비스 이용약관 및 커뮤니티 정책 동의'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (_) => const TermsDetailScreen(
+                                        filePath:
+                                            'assets/terms/terms_of_service.txt',
+                                        title: '서비스 이용약관',
+                                      ),
+                                ),
+                              );
+                            },
+                            child: const Text('보기'),
+                          ),
+                        ],
+                      ),
+
+                      // [필수] 개인정보 수집
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _agreedPrivacy,
+                            onChanged: (val) {
+                              setState(() => _agreedPrivacy = val ?? false);
+                              setModalState(() {});
+                            },
+                          ),
+                          const Expanded(child: Text('[필수] 개인정보 수집 및 이용 동의')),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (_) => const TermsDetailScreen(
+                                        filePath:
+                                            'assets/terms/privacy_policy.txt',
+                                        title: '개인정보 처리방침',
+                                      ),
+                                ),
+                              );
+                            },
+                            child: const Text('보기'),
+                          ),
+                        ],
+                      ),
+
+                      // [필수] 위치기반서비스
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _agreedLocation,
+                            onChanged: (val) {
+                              setState(() => _agreedLocation = val ?? false);
+                              setModalState(() {});
+                            },
+                          ),
+                          const Expanded(child: Text('[필수] 위치기반서비스 이용 동의')),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (_) => const TermsDetailScreen(
+                                        filePath:
+                                            'assets/terms/location_terms.txt',
+                                        title: '위치기반서비스 이용약관',
+                                      ),
+                                ),
+                              );
+                            },
+                            child: const Text('보기'),
+                          ),
+                        ],
+                      ),
+
+                      // [선택] 마케팅
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _agreedMarketing,
+                            onChanged: (val) {
+                              setState(() => _agreedMarketing = val ?? false);
+                              setModalState(() {});
+                            },
+                          ),
+                          const Expanded(child: Text('[선택] 마케팅 정보 수신 동의')),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder:
+                                      (_) => const TermsDetailScreen(
+                                        filePath:
+                                            'assets/terms/marketing_terms.txt',
+                                        title: '마케팅 수신 동의',
+                                      ),
+                                ),
+                              );
+                            },
+                            child: const Text('보기'),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      // 가입 버튼
+                      SafeArea(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton(
+                              onPressed:
+                                  _isLoading
+                                      ? null
+                                      : () {
+                                        Navigator.pop(context);
+                                        _submitSignupData();
+                                      },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.primary,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                ),
+                                textStyle: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Text('동의하고 가입하기'),
+                            ),
+                          ),
                         ),
                       ),
-                      child: const Text('동의하고 가입하기'),
-                    ),
+                    ],
                   ),
                 ),
-              ),
-            ],
           ),
-        ),
-      ),
     );
   }
 
@@ -694,12 +713,19 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               const SizedBox(height: 16),
               const Text(
                 '알바일주 가입을 환영합니다',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF191F28)),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
               ),
               const SizedBox(height: 8),
               const Text(
                 '전화번호 인증만으로 바로 시작할 수 있어요.',
-                style: TextStyle(fontSize: 13.5, color: Color(0xFF6B7280)),
+                style: TextStyle(
+                  fontSize: 13.5,
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: 18),
               Container(
@@ -733,28 +759,32 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                 child: ElevatedButton(
                   style: _primaryBtnStyle(enabled: !_isLoading),
                   onPressed: _isLoading ? null : _startWebViewCertification,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
+                  child:
+                      _isLoading
+                          ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                          : const Text(
+                            '본인인증 하기',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        )
-                      : const Text(
-                          '본인인증 하기',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
                 ),
               ),
               const SizedBox(height: 12),
               const Text(
                 '인증 후 기존 회원이라면 자동 로그인, 신규 회원이면 다음 단계로 이어집니다.',
-                style: TextStyle(fontSize: 12.5, color: Color(0xFF6B7280)),
+                style: TextStyle(
+                  fontSize: 12.5,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),
@@ -775,12 +805,19 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               const SizedBox(height: 16),
               const Text(
                 '기본 정보를 입력해주세요',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Color(0xFF191F28)),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                ),
               ),
               const SizedBox(height: 12),
               const Text(
                 '이름과 성별, 출생년도를 정확히 입력해 주세요.',
-                style: TextStyle(fontSize: 13.5, color: Color(0xFF6B7280)),
+                style: TextStyle(
+                  fontSize: 13.5,
+                  color: AppColors.textSecondary,
+                ),
               ),
               const SizedBox(height: 18),
               Container(
@@ -833,7 +870,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                             ),
                             activeColor: kBrand,
                           ),
-                          const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                          const Divider(height: 1, color: AppColors.border),
                           RadioListTile<String>(
                             value: '여성',
                             groupValue: _gender,
@@ -868,35 +905,37 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: _primaryBtnStyle(enabled: !_isLoading),
-                  onPressed: _isLoading
-                      ? null
-                      : () {
-                          ScreenAnalyticsService.instance.logEvent(
-                            'worker_signup_step_complete',
-                            params: {'step': 1, 'name': 'profile'},
-                          );
-                          _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                          setState(() => _currentPage = 2);
-                        },
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
+                  onPressed:
+                      _isLoading
+                          ? null
+                          : () {
+                            ScreenAnalyticsService.instance.logEvent(
+                              'worker_signup_step_complete',
+                              params: {'step': 1, 'name': 'profile'},
+                            );
+                            _pageController.nextPage(
+                              duration: const Duration(milliseconds: 300),
+                              curve: Curves.easeInOut,
+                            );
+                            setState(() => _currentPage = 2);
+                          },
+                  child:
+                      _isLoading
+                          ? const SizedBox(
+                            height: 22,
+                            width: 22,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                          : const Text(
+                            '다음',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        )
-                      : const Text(
-                          '다음',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -942,41 +981,42 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                       Wrap(
                         spacing: 10,
                         runSpacing: 8,
-                        children: strengthOptions.map((item) {
-                          final isSelected = _strengths.contains(item);
-                          return FilterChip(
-                            label: Text(
-                              item,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? Colors.white
-                                    : const Color(0xFF111827),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              setState(() {
-                                if (selected && _strengths.length < 2) {
-                                  _strengths.add(item);
-                                } else {
-                                  _strengths.remove(item);
-                                }
-                              });
-                            },
-                            selectedColor: kBrand,
-                            checkmarkColor: Colors.white,
-                            backgroundColor: const Color(0xFFF3F4F6),
-                            shape: StadiumBorder(
-                              side: BorderSide(
-                                color: isSelected
-                                    ? kBrand
-                                    : const Color(0xFFE5E7EB),
-                                width: 1,
-                              ),
-                            ),
-                          );
-                        }).toList(),
+                        children:
+                            strengthOptions.map((item) {
+                              final isSelected = _strengths.contains(item);
+                              return FilterChip(
+                                label: Text(
+                                  item,
+                                  style: TextStyle(
+                                    color:
+                                        isSelected
+                                            ? Colors.white
+                                            : AppColors.textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  setState(() {
+                                    if (selected && _strengths.length < 2) {
+                                      _strengths.add(item);
+                                    } else {
+                                      _strengths.remove(item);
+                                    }
+                                  });
+                                },
+                                selectedColor: kBrand,
+                                checkmarkColor: Colors.white,
+                                backgroundColor: const Color(0xFFF3F4F6),
+                                shape: StadiumBorder(
+                                  side: BorderSide(
+                                    color:
+                                        isSelected ? kBrand : AppColors.border,
+                                    width: 1,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                       ),
                     ],
                   ),
@@ -1008,41 +1048,44 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                       Wrap(
                         spacing: 10,
                         runSpacing: 8,
-                        children: traitOptions.map((item) {
-                          final isSelected = _traits.contains(item);
-                          return FilterChip(
-                            label: Text(
-                              item,
-                              style: TextStyle(
-                                color: isSelected
-                                    ? Colors.white
-                                    : const Color(0xFF111827),
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            selected: isSelected,
-                            onSelected: (selected) {
-                              setState(() {
-                                if (selected) {
-                                  _traits.add(item);
-                                } else {
-                                  _traits.remove(item);
-                                }
-                              });
-                            },
-                            selectedColor: const Color(0xFF10B981),
-                            checkmarkColor: Colors.white,
-                            backgroundColor: const Color(0xFFF3F4F6),
-                            shape: StadiumBorder(
-                              side: BorderSide(
-                                color: isSelected
-                                    ? const Color(0xFF10B981)
-                                    : const Color(0xFFE5E7EB),
-                                width: 1,
-                              ),
-                            ),
-                          );
-                        }).toList(),
+                        children:
+                            traitOptions.map((item) {
+                              final isSelected = _traits.contains(item);
+                              return FilterChip(
+                                label: Text(
+                                  item,
+                                  style: TextStyle(
+                                    color:
+                                        isSelected
+                                            ? Colors.white
+                                            : AppColors.textPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                selected: isSelected,
+                                onSelected: (selected) {
+                                  setState(() {
+                                    if (selected) {
+                                      _traits.add(item);
+                                    } else {
+                                      _traits.remove(item);
+                                    }
+                                  });
+                                },
+                                selectedColor: AppColors.success,
+                                checkmarkColor: Colors.white,
+                                backgroundColor: const Color(0xFFF3F4F6),
+                                shape: StadiumBorder(
+                                  side: BorderSide(
+                                    color:
+                                        isSelected
+                                            ? AppColors.success
+                                            : AppColors.border,
+                                    width: 1,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
                       ),
                     ],
                   ),
@@ -1053,22 +1096,23 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                   child: ElevatedButton(
                     style: _primaryBtnStyle(enabled: !_isLoading),
                     onPressed: _isLoading ? null : _nextPage,
-                    child: _isLoading
-                        ? const SizedBox(
-                            height: 22,
-                            width: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
+                    child:
+                        _isLoading
+                            ? const SizedBox(
+                              height: 22,
+                              width: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                            : const Text(
+                              '가입 완료',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
                             ),
-                          )
-                        : const Text(
-                            '가입 완료',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
                   ),
                 ),
               ],

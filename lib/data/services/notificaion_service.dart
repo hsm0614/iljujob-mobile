@@ -1,8 +1,8 @@
 // 📁 lib/data/services/notificaion_service.dart
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../config/constants.dart';
+import 'authenticated_http_client.dart';
 
 class NotificationService {
   /// 알림 설정 불러오기
@@ -14,8 +14,10 @@ class NotificationService {
     if (userId == null || userType == null) return null;
 
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/api/notification-settings?userId=$userId&userType=$userType'),
+      final response = await AuthenticatedHttpClient.get(
+        Uri.parse(
+          '$baseUrl/api/notification-settings?userId=$userId&userType=$userType',
+        ),
       );
 
       if (response.statusCode == 200) {
@@ -39,14 +41,9 @@ class NotificationService {
     if (userId == null || userType == null) return false;
 
     try {
-      final response = await http.post(
+      final response = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/notification-settings/update'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'userId': userId,
-          'userType': userType,
-          ...settings,
-        }),
+        body: {'userId': userId, 'userType': userType, ...settings},
       );
 
       return response.statusCode == 200;

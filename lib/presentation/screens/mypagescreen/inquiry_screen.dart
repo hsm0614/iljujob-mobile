@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
+import '../../../config/messages.dart';
+import '../../../config/app_theme.dart';
 
 class InquiryScreen extends StatefulWidget {
   const InquiryScreen({super.key});
@@ -139,7 +141,8 @@ class _InquiryScreenState extends State<InquiryScreen> {
         _showSnack('문의 전송에 실패했습니다. 잠시 후 다시 시도해주세요.');
       }
     } catch (e) {
-      _showSnack('오류 발생: $e');
+      debugPrint('오류 발생: $e');
+      _showSnack(Msg.server);
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -271,7 +274,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF3B8AFF), Color(0xFF7CC7FF), Colors.white],
+              colors: [AppColors.primary, Color(0xFF7CC7FF), Colors.white],
               stops: [0, .25, .25],
             ),
           ),
@@ -458,7 +461,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
               return const Center(child: CircularProgressIndicator());
             }
             if (snap.hasError) {
-              return Center(child: Text('❌ 오류 발생: ${snap.error}'));
+              return Center(child: Text(Msg.server));
             }
             final data = snap.data ?? [];
             if (data.isEmpty) {
@@ -492,7 +495,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
                       children: [
                         const CircleAvatar(
                           radius: 20,
-                          backgroundColor: Color(0xFF3B8AFF),
+                          backgroundColor: AppColors.primary,
                           child: Icon(
                             Icons.question_answer_rounded,
                             color: Colors.white,
@@ -606,10 +609,10 @@ class _InquiryScreenState extends State<InquiryScreen> {
                         width: double.infinity,
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF3B8AFF).withOpacity(.05),
+                          color: AppColors.primary.withOpacity(.05),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: const Color(0xFF3B8AFF).withOpacity(.2),
+                            color: AppColors.primary.withOpacity(.2),
                           ),
                         ),
                         child: Text(answer),
@@ -673,11 +676,11 @@ class _PillTabBar extends StatelessWidget {
           ),
         ],
         indicator: BoxDecoration(
-          color: const Color(0xFF3B8AFF),
+          color: AppColors.primary,
           borderRadius: BorderRadius.circular(26),
         ),
         labelColor: Colors.white,
-        unselectedLabelColor: const Color(0xFF3B8AFF),
+        unselectedLabelColor: AppColors.primary,
         indicatorSize: TabBarIndicatorSize.tab,
         splashBorderRadius: BorderRadius.circular(26),
         labelPadding: const EdgeInsets.symmetric(
@@ -745,8 +748,8 @@ class _StatusBadge extends StatelessWidget {
         fg = const Color(0xFFB45309);
         break;
       default:
-        bg = const Color(0xFF3B8AFF).withOpacity(.12);
-        fg = const Color(0xFF3B8AFF);
+        bg = AppColors.primary.withOpacity(.12);
+        fg = AppColors.primary;
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),

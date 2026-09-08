@@ -104,7 +104,7 @@ class _LeaveConfirmSheet extends StatelessWidget {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: const Color(0xFFE5E7EB),
+              color: AppColors.border,
               borderRadius: BorderRadius.circular(999),
             ),
           ),
@@ -133,7 +133,7 @@ class _LeaveConfirmSheet extends StatelessWidget {
               fontSize: 18,
               fontWeight: FontWeight.w800,
               fontFamily: 'Jalnan2TTF',
-              color: Color(0xFF111827),
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 8),
@@ -176,7 +176,7 @@ class _LeaveConfirmSheet extends StatelessWidget {
             child: TextButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF6B7280),
+                foregroundColor: AppColors.textSecondary,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),

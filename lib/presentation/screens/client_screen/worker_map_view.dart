@@ -14,12 +14,13 @@ import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/presentation/chat/chat_room_screen.dart';
 import '../worker_screen/worker_profile_screen.dart';
 import 'nearby_workers_screen.dart';
+import '../../../config/app_theme.dart';
 
 // ── 디자인 토큰 ───────────────────────────────────────────────────
-const _primary = Color(0xFF3B8AFF);
-const _border = Color(0xFFE5E8EB);
-const _textMain = Color(0xFF191F28);
-const _textSub = Color(0xFF6B7280);
+const _primary = AppColors.primary;
+const _border = AppColors.border;
+const _textMain = AppColors.textPrimary;
+const _textSub = AppColors.textSecondary;
 const _red = Color(0xFFFF3B30);
 const _green = Color(0xFF22C55E);
 const _purple = Color(0xFF8B5CF6);
@@ -916,7 +917,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       'S' => const Color(0xFFFF6B00),
       'A' => _primary,
       'B' => _green,
-      _ => const Color(0xFF9CA3AF),
+      _ => AppColors.textTertiary,
     };
     showModalBottomSheet(
       context: context,
@@ -2049,7 +2050,7 @@ class _Btn extends StatelessWidget {
   Widget build(BuildContext context) {
     final dis = onTap == null;
     final bg =
-        filled ? (dis ? const Color(0xFFD1D5DB) : color) : Colors.transparent;
+        filled ? (dis ? AppColors.textDisabled : color) : Colors.transparent;
     final fg = filled ? Colors.white : (dis ? _textSub : color);
     return GestureDetector(
       onTap: onTap,
@@ -2194,9 +2195,9 @@ class _WorkerDot extends StatelessWidget {
 
   Color get _color {
     if (worker.activityScore >= 100) return const Color(0xFFFF6B00); // S
-    if (worker.activityScore >= 70) return const Color(0xFF3B8AFF); // A
+    if (worker.activityScore >= 70) return AppColors.primary; // A
     if (worker.activityScore >= 40) return const Color(0xFF22C55E); // B
-    return const Color(0xFF9CA3AF); // C/NEW
+    return AppColors.textTertiary; // C/NEW
   }
 
   String get _grade {

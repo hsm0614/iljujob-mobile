@@ -13,8 +13,9 @@ import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 import 'package:iljujob/presentation/screens/signup_client_screen/signup_client_screen.dart';
 import 'package:iljujob/presentation/screens/signup_client_screen/client_extra_info_screen.dart';
+import '../../../config/app_theme.dart';
 
-const kBrand = Color(0xFF3B8AFF);
+const kBrand = AppColors.primary;
 
 class SignupClientChoiceScreen extends StatefulWidget {
   const SignupClientChoiceScreen({super.key});
@@ -207,7 +208,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF4F6FA),
+        backgroundColor: AppColors.bgPage,
         appBar: AppBar(
           title: const Text('가입 방법 선택'),
           centerTitle: true,
@@ -226,14 +227,14 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF191F28),
+                      color: AppColors.textPrimary,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   const Text(
                     '카카오/애플로 간편하게 가입하고\n바로 공고를 올려보세요.',
-                    style: TextStyle(fontSize: 13.5, color: Color(0xFF6B7280)),
+                    style: TextStyle(fontSize: 13.5, color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -290,7 +291,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                             child: const Center(
                               child: Text(
                                 'Apple은 iOS에서만 제공됩니다',
-                                style: TextStyle(color: Color(0xFF6B7280)),
+                                style: TextStyle(color: AppColors.textSecondary),
                               ),
                             ),
                           ),
@@ -313,7 +314,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                   const SizedBox(height: 20),
                   const Text(
                     '※ 공고 등록 후 지원자와 채팅으로 바로 연결됩니다.',
-                    style: TextStyle(fontSize: 12.5, color: Color(0xFF6B7280)),
+                    style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                 ],

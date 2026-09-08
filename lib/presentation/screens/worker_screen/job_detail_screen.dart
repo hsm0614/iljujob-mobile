@@ -29,8 +29,9 @@ import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
 import 'ai_interview_prep_sheet.dart';
 import 'package:iljujob/utils/pay_display.dart';
+import '../../../config/messages.dart';
 
-const kBrand = Color(0xFF3B8AFF);
+const kBrand = AppColors.primary;
 
 class JobDetailScreen extends StatefulWidget {
   final Job job;
@@ -543,7 +544,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   const Icon(
                     Icons.notifications_active_outlined,
                     size: 40,
-                    color: Color(0xFF3B8AFF),
+                    color: AppColors.primary,
                   ),
                   const SizedBox(height: 14),
                   const Text(
@@ -552,7 +553,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF111827),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -561,7 +562,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF6B7280),
+                      color: AppColors.textSecondary,
                       height: 1.5,
                     ),
                   ),
@@ -574,7 +575,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3B8AFF),
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -596,7 +597,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     child: const Text(
                       '나중에',
                       style: TextStyle(
-                        color: Color(0xFF9CA3AF),
+                        color: AppColors.textTertiary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -641,7 +642,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFD1D5DB),
+                      color: AppColors.textDisabled,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -729,7 +730,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       child: OutlinedButton(
                         style: OutlinedButton.styleFrom(
                           minimumSize: const Size.fromHeight(46),
-                          side: BorderSide(color: const Color(0xFFD1D5DB)),
+                          side: BorderSide(color: AppColors.textDisabled),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(999),
                           ),
@@ -741,7 +742,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                           '나중에 보기',
                           style: TextStyle(
                             fontSize: 14,
-                            color: Color(0xFF191F28),
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -811,7 +812,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     final String jobId = widget.job.id.toString();
 
     if (workerId == null || clientId == null || jobId.isEmpty) {
-      _showSnack('❗ 로그인 또는 채용공고 정보가 올바르지 않습니다.');
+      _showSnack(Msg.loginRequired);
       return;
     }
 
@@ -841,7 +842,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           'worker_apply_fail',
           params: {'reason': 'blocked', 'status': response.statusCode},
         );
-        _showSnack('❌ $msg');
+        _showSnack(msg);
         return;
       }
 
@@ -851,7 +852,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           'worker_apply_complete',
           params: {'job_id': widget.job.id, 'category': widget.job.category},
         );
-        _showSnack('✅ 지원 완료');
+        _showSnack(Msg.applyDone);
 
         // ✅ apply 로그 추가
         final jobIdInt = int.tryParse(widget.job.id.toString());
@@ -907,17 +908,18 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             ),
           );
         } else {
-          _showSnack('❌ 채팅방 생성 실패');
+          _showSnack(Msg.chatCreateFailed);
         }
       } else if (response.statusCode == 409) {
-        _showSnack('⚠️ 이미 지원했습니다');
+        _showSnack(Msg.applyDuplicate);
         setState(() => hasApplied = true);
       } else {
-        _showSnack('❌ 오류 발생: ${response.body}');
+        debugPrint('지원 실패: ${response.body}');
+        _showSnack(Msg.applyFailed);
       }
     } catch (e) {
       print('❌ 지원 중 예외: $e');
-      _showSnack('❌ 네트워크 오류가 발생했습니다');
+      _showSnack(Msg.network);
     }
   }
 
@@ -964,7 +966,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           const SnackBar(content: Text('신고가 접수되었습니다. 신고 내용은 24시간 이내 조치됩니다.')),
         );
       } else {
-        _showSnack('신고 전송 실패: ${response.body}');
+        debugPrint('신고 전송 실패: ${response.body}');
+        _showSnack(Msg.server);
       }
     } catch (e) {
       print('❌ 예외 발생: $e');
@@ -1047,8 +1050,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     },
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(horizontal: 14),
-                      side: const BorderSide(color: Color(0xFF3B8AFF)),
-                      foregroundColor: const Color(0xFF3B8AFF),
+                      side: const BorderSide(color: AppColors.primary),
+                      foregroundColor: AppColors.primary,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -1125,7 +1128,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   Icon(
                     Icons.open_in_new_rounded,
                     size: 14,
-                    color: Color(0xFF6B7280),
+                    color: AppColors.textSecondary,
                   ),
                   SizedBox(width: 4),
                   Text(
@@ -1133,7 +1136,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF6B7280),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
@@ -1184,7 +1187,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           Icon(
             icon,
             size: 17,
-            color: isButtonDisabled ? const Color(0xFF6B7280) : kBrand,
+            color: isButtonDisabled ? AppColors.textSecondary : kBrand,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -1310,7 +1313,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               tags.entries.take(5).map((entry) {
                 return Chip(
                   label: Text('${entry.key} (${entry.value})'),
-                  backgroundColor: const Color(0xFFE5E8EB),
+                  backgroundColor: AppColors.border,
                   labelStyle: const TextStyle(fontSize: 13),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -1557,14 +1560,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             children: [
               Text(
                 postedLabel,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
               const SizedBox(width: 6),
               Text(
                 postedUtc != null
                     ? DateFormat('yyyy-MM-dd HH:mm').format(postedUtc.toLocal())
                     : '-',
-                style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ],
           ),
@@ -1616,14 +1619,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F6FA),
+        color: AppColors.bgPage,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFE5E8EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: const Color(0xFF6B7280)),
+          Icon(icon, size: 13, color: AppColors.textSecondary),
           const SizedBox(width: 4),
           Text(
             text,
@@ -1652,7 +1655,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E8EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1693,7 +1696,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E8EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1746,7 +1749,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               _verticalDivider(),
               _statItem(
                 icon: Icons.group,
-                iconColor: const Color(0xFF3B8AFF),
+                iconColor: AppColors.primary,
                 label: '지원',
                 valueText: _formatCount(applicantCount),
                 emphasize: true,
@@ -1763,7 +1766,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 Icon(
                   Icons.local_offer_outlined,
                   size: 16,
-                  color: Color(0xFF6B7280),
+                  color: AppColors.textSecondary,
                 ),
                 SizedBox(width: 6),
                 Text(
@@ -1788,9 +1791,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF4F6FA),
+                        color: AppColors.bgPage,
                         borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: const Color(0xFFE5E8EB)),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: Text(
                         t,
@@ -1832,7 +1835,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           const SizedBox(height: 2),
           Text(
             label,
-            style: TextStyle(fontSize: 11, color: const Color(0xFF6B7280)),
+            style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -1844,7 +1847,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       width: 1,
       height: 40,
       margin: const EdgeInsets.symmetric(horizontal: 8),
-      color: const Color(0xFFE5E8EB),
+      color: AppColors.border,
     );
   }
 
@@ -1880,7 +1883,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         const SizedBox(height: 6),
         const Text(
           '정확한 위치는 사장님과 대화하면서 한 번 더 확인해보는 게 좋아요 😊',
-          style: TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+          style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 10),
 
@@ -1891,7 +1894,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE5E8EB)),
+            border: Border.all(color: AppColors.border),
           ),
           child: Row(
             children: [
@@ -1926,7 +1929,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       distanceText().isNotEmpty ? distanceText() : ' ',
                       style: const TextStyle(
                         fontSize: 12,
-                        color: Color(0xFF6B7280),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ],
@@ -1952,7 +1955,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFE5E8EB)),
+              border: Border.all(color: AppColors.border),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1962,7 +1965,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF191F28),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1977,7 +1980,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                           child: Icon(
                             Icons.place_outlined,
                             size: 14,
-                            color: Color(0xFF6B7280),
+                            color: AppColors.textSecondary,
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -1986,7 +1989,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                             loc.address,
                             style: const TextStyle(
                               fontSize: 13,
-                              color: Color(0xFF6B7280),
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ),
@@ -1995,7 +1998,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ),
                 const Text(
                   '어느 지점인지는 사장님과 대화하면서 정해요.',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF9CA3AF)),
+                  style: TextStyle(fontSize: 11, color: AppColors.textTertiary),
                 ),
               ],
             ),
@@ -2011,7 +2014,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(44),
-                  side: BorderSide(color: const Color(0xFFD1D5DB)),
+                  side: BorderSide(color: AppColors.textDisabled),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -2031,7 +2034,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(44),
-                  side: BorderSide(color: const Color(0xFFD1D5DB)),
+                  side: BorderSide(color: AppColors.textDisabled),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -2040,12 +2043,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 icon: const Icon(
                   Icons.copy_rounded,
                   size: 18,
-                  color: Color(0xFF191F28),
+                  color: AppColors.textPrimary,
                 ),
                 label: const Text(
                   '주소 복사',
                   style: TextStyle(
-                    color: Color(0xFF191F28),
+                    color: AppColors.textPrimary,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
@@ -2075,7 +2078,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             height: 200,
             width: double.infinity,
             decoration: BoxDecoration(
-              border: Border.all(color: const Color(0xFFD1D5DB)),
+              border: Border.all(color: AppColors.textDisabled),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Stack(
@@ -2119,7 +2122,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                             address.isNotEmpty ? address : '위치: $coordText',
                             style: const TextStyle(
                               fontSize: 13,
-                              color: Color(0xFF191F28),
+                              color: AppColors.textPrimary,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -2157,7 +2160,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE5E8EB)),
+          border: Border.all(color: AppColors.border),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.03),
@@ -2180,7 +2183,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color(0xFFE5E8EB),
+                      color: AppColors.border,
                       width: 2,
                     ),
                   ),
@@ -2239,7 +2242,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                                   widget.job.locationCity,
                               style: const TextStyle(
                                 fontSize: 13,
-                                color: Color(0xFF6B7280),
+                                color: AppColors.textSecondary,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -2259,9 +2262,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF4F6FA),
+                      color: AppColors.bgPage,
                       borderRadius: BorderRadius.circular(999),
-                      border: Border.all(color: const Color(0xFFD1D5DB)),
+                      border: Border.all(color: AppColors.textDisabled),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -2270,7 +2273,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                           '사업자 정보',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF191F28),
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         SizedBox(width: 6),
@@ -2299,7 +2302,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE5E8EB)),
+                      border: Border.all(color: AppColors.border),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     child: InkWell(
@@ -2324,13 +2327,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFEEF5FF),
+                              color: AppColors.primaryLight,
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(
                               Icons.assignment_outlined,
                               size: 24,
-                              color: Color(0xFF3B8AFF),
+                              color: AppColors.primary,
                             ),
                           ),
                           const SizedBox(height: 10),
@@ -2346,7 +2349,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                             '등록한 공고',
                             style: TextStyle(
                               fontSize: 12,
-                              color: const Color(0xFF6B7280),
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],
@@ -2361,7 +2364,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: const Color(0xFFE5E8EB)),
+                      border: Border.all(color: AppColors.border),
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     child: Column(
@@ -2392,7 +2395,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                           '채용 확정',
                           style: TextStyle(
                             fontSize: 12,
-                            color: const Color(0xFF6B7280),
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ],
@@ -2449,7 +2452,7 @@ class _ImagesCarousel extends StatelessWidget {
               width: double.infinity,
               height: 200,
               decoration: BoxDecoration(
-                color: const Color(0xFFE5E8EB),
+                color: AppColors.border,
                 image: DecorationImage(
                   image: NetworkImage(fullUrl),
                   fit: BoxFit.cover,
@@ -2594,7 +2597,7 @@ class _AgencyApplyBar extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border(top: BorderSide(color: const Color(0xFFE5E8EB))),
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
       child: Column(
@@ -2642,7 +2645,7 @@ class _AgencyApplyBar extends StatelessWidget {
                 child: OutlinedButton.icon(
                   style: OutlinedButton.styleFrom(
                     minimumSize: const Size.fromHeight(46),
-                    side: BorderSide(color: const Color(0xFFD1D5DB)),
+                    side: BorderSide(color: AppColors.textDisabled),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -2659,8 +2662,8 @@ class _AgencyApplyBar extends StatelessWidget {
                       fontWeight: FontWeight.w900,
                       color:
                           _hasPhone
-                              ? const Color(0xFF111827)
-                              : const Color(0xFF9CA3AF),
+                              ? AppColors.textPrimary
+                              : AppColors.textTertiary,
                     ),
                   ),
                 ),
@@ -2670,7 +2673,7 @@ class _AgencyApplyBar extends StatelessWidget {
                 child: ElevatedButton.icon(
                   style: ElevatedButton.styleFrom(
                     backgroundColor:
-                        _hasEmail ? kBrand : const Color(0xFFD1D5DB),
+                        _hasEmail ? kBrand : AppColors.textDisabled,
                     minimumSize: const Size.fromHeight(46),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -2681,13 +2684,13 @@ class _AgencyApplyBar extends StatelessWidget {
                   icon: Icon(
                     Icons.email_outlined,
                     size: 18,
-                    color: _hasEmail ? Colors.white : const Color(0xFF9CA3AF),
+                    color: _hasEmail ? Colors.white : AppColors.textTertiary,
                   ),
                   label: Text(
                     _hasEmail ? '이메일 지원' : '이메일 없음',
                     style: TextStyle(
                       fontWeight: FontWeight.w900,
-                      color: _hasEmail ? Colors.white : const Color(0xFF6B7280),
+                      color: _hasEmail ? Colors.white : AppColors.textSecondary,
                     ),
                   ),
                 ),
@@ -2715,9 +2718,9 @@ class _AgencyApplyBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F6FA),
+        color: AppColors.bgPage,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Text(
         '$k: $v',

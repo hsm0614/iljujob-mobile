@@ -4,6 +4,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
 import '../../config/constants.dart';
+import '../../data/services/authenticated_http_client.dart';
+import '../../config/app_theme.dart';
 
 class ReviewScreen extends StatefulWidget {
   final int jobId;
@@ -35,7 +37,8 @@ class ReviewScreenRouter extends StatelessWidget {
 
     final map = Map<String, dynamic>.from(args);
 
-    int parseInt(dynamic v) => v is int ? v : int.tryParse(v?.toString() ?? '') ?? 0;
+    int parseInt(dynamic v) =>
+        v is int ? v : int.tryParse(v?.toString() ?? '') ?? 0;
 
     final jobId = parseInt(map['jobId']);
     final clientId = parseInt(map['clientId']);
@@ -56,7 +59,7 @@ class ReviewScreenRouter extends StatelessWidget {
 }
 
 class _ReviewScreenState extends State<ReviewScreen> {
-  static const kBrandBlue = Color(0xFF3B8AFF);
+  static const kBrandBlue = AppColors.primary;
 
   int satisfaction = 0; // 1,2,3
   String duration = '';
@@ -105,9 +108,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
         final data = jsonDecode(resp.body);
         if (data is Map && data['hasReviewed'] == true) {
           Navigator.pop(context);
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('이미 이 공고에 리뷰를 남기셨어요.')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('이미 이 공고에 리뷰를 남기셨어요.')));
         }
       }
     } catch (_) {}
@@ -124,9 +127,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
     if (!mounted) return;
     if (workerId == 0) {
       setState(() => isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('로그인 정보를 확인할 수 없습니다.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('로그인 정보를 확인할 수 없습니다.')));
       return;
     }
 
@@ -142,10 +145,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
     };
 
     try {
-      final resp = await http.post(
+      final resp = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/review/submit'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(body),
+        body: body,
       );
 
       if (!mounted) return;
@@ -153,9 +155,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
 
       if (resp.statusCode == 200) {
         Navigator.pop(context, 'reviewed');
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('후기가 등록되었습니다!')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('후기가 등록되었습니다!')));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('후기 등록 실패 (${resp.statusCode})')),
@@ -164,9 +166,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => isSubmitting = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('네트워크 오류: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('네트워크 오류: $e')));
     }
   }
 
@@ -178,7 +180,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
       behavior: HitTestBehavior.translucent,
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF4F6FA),
+        backgroundColor: AppColors.bgPage,
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0.5,
@@ -276,34 +278,50 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: isSubmitting ? null : () => Navigator.pop(context),
+                        onPressed:
+                            isSubmitting ? null : () => Navigator.pop(context),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                          side: const BorderSide(color: Color(0xFFE5E7EB)),
-                          foregroundColor: const Color(0xFF191F28),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          side: const BorderSide(color: AppColors.border),
+                          foregroundColor: AppColors.textPrimary,
                         ),
-                        child: const Text('나중에', style: TextStyle(fontWeight: FontWeight.w700)),
+                        child: const Text(
+                          '나중에',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: (_isValid && !isSubmitting) ? _submitReview : null,
+                        onPressed:
+                            (_isValid && !isSubmitting) ? _submitReview : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: kBrandBlue,
                           disabledBackgroundColor: const Color(0xFFB7C7FF),
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
                           elevation: 0,
                         ),
-                        child: isSubmitting
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Text('작성 완료', style: TextStyle(fontWeight: FontWeight.w800)),
+                        child:
+                            isSubmitting
+                                ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                                : const Text(
+                                  '작성 완료',
+                                  style: TextStyle(fontWeight: FontWeight.w800),
+                                ),
                       ),
                     ),
                   ],
@@ -367,14 +385,20 @@ class _JobHeaderCard extends StatelessWidget {
                   title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   company,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(color: Color(0xFF6B7280), fontWeight: FontWeight.w600),
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ],
             ),
@@ -390,11 +414,7 @@ class _SectionCard extends StatelessWidget {
   final String? subTitle;
   final Widget child;
 
-  const _SectionCard({
-    required this.title,
-    this.subTitle,
-    required this.child,
-  });
+  const _SectionCard({required this.title, this.subTitle, required this.child});
 
   @override
   Widget build(BuildContext context) {
@@ -415,10 +435,19 @@ class _SectionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900)),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+          ),
           if (subTitle != null) ...[
             const SizedBox(height: 6),
-            Text(subTitle!, style: const TextStyle(color: Color(0xFF6B7280), fontWeight: FontWeight.w600)),
+            Text(
+              subTitle!,
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
           const SizedBox(height: 12),
           child,
@@ -449,39 +478,40 @@ class _SatisfactionRow extends StatelessWidget {
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children: items.map((e) {
-        final selected = value == e.$3;
-        return InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () => onChanged(e.$3),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-            child: Column(
-              children: [
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 160),
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: selected ? brand : const Color(0xFFE5E7EB),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(e.$2, style: const TextStyle(fontSize: 26)),
+      children:
+          items.map((e) {
+            final selected = value == e.$3;
+            return InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: () => onChanged(e.$3),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                child: Column(
+                  children: [
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 160),
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: selected ? brand : AppColors.border,
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(e.$2, style: const TextStyle(fontSize: 26)),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      e.$1,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: selected ? brand : AppColors.textPrimary,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  e.$1,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w800,
-                    color: selected ? brand : const Color(0xFF191F28),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      }).toList(),
+              ),
+            );
+          }).toList(),
     );
   }
 }
@@ -504,22 +534,30 @@ class _ChoiceWrap extends StatelessWidget {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children: options.map((opt) {
-        final selected = value == opt;
-        return ChoiceChip(
-          label: Text(opt),
-          selected: selected,
-          onSelected: (_) => onChanged(opt),
-          selectedColor: brand.withOpacity(0.14),
-          labelStyle: TextStyle(
-            fontWeight: FontWeight.w800,
-            color: selected ? brand : const Color(0xFF191F28),
-          ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-          side: BorderSide(color: selected ? brand.withOpacity(0.35) : const Color(0xFFE5E7EB)),
-          backgroundColor: const Color(0xFFF3F5F9),
-        );
-      }).toList(),
+      children:
+          options.map((opt) {
+            final selected = value == opt;
+            return ChoiceChip(
+              label: Text(opt),
+              selected: selected,
+              onSelected: (_) => onChanged(opt),
+              selectedColor: brand.withOpacity(0.14),
+              labelStyle: TextStyle(
+                fontWeight: FontWeight.w800,
+                color: selected ? brand : AppColors.textPrimary,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
+              ),
+              side: BorderSide(
+                color:
+                    selected
+                        ? brand.withOpacity(0.35)
+                        : AppColors.border,
+              ),
+              backgroundColor: const Color(0xFFF3F5F9),
+            );
+          }).toList(),
     );
   }
 }
@@ -544,9 +582,10 @@ class _TagGroups extends StatelessWidget {
     };
 
     Widget chips(List<String> tags) => Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: tags.map((t) {
+      spacing: 8,
+      runSpacing: 8,
+      children:
+          tags.map((t) {
             final isOn = selected.contains(t);
             return FilterChip(
               label: Text(t),
@@ -555,31 +594,39 @@ class _TagGroups extends StatelessWidget {
               selectedColor: brand.withOpacity(0.14),
               labelStyle: TextStyle(
                 fontWeight: FontWeight.w800,
-                color: isOn ? brand : const Color(0xFF191F28),
+                color: isOn ? brand : AppColors.textPrimary,
               ),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
-              side: BorderSide(color: isOn ? brand.withOpacity(0.35) : const Color(0xFFE5E7EB)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
+              ),
+              side: BorderSide(
+                color: isOn ? brand.withOpacity(0.35) : AppColors.border,
+              ),
               backgroundColor: const Color(0xFFF3F5F9),
               showCheckmark: false,
             );
           }).toList(),
-        );
+    );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: groups.entries.map((entry) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('• ${entry.key}', style: const TextStyle(fontWeight: FontWeight.w900)),
-              const SizedBox(height: 10),
-              chips(entry.value),
-            ],
-          ),
-        );
-      }).toList(),
+      children:
+          groups.entries.map((entry) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '• ${entry.key}',
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 10),
+                  chips(entry.value),
+                ],
+              ),
+            );
+          }).toList(),
     );
   }
 }

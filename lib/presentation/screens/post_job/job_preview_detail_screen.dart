@@ -312,7 +312,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE5E8EB),
+                          color: AppColors.border,
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Text(
@@ -1030,7 +1030,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                                         ? Colors.red.shade50
                                         : tip.impact == 'high'
                                         ? const Color(0xFFFFF8E1)
-                                        : const Color(0xFFF4F6FA),
+                                        : AppColors.bgPage,
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                   color:

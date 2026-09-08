@@ -1024,7 +1024,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       style: const TextStyle(
                         fontSize: 13.5,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF111827),
+                        color: AppColors.textPrimary,
                         height: 1.4,
                       ),
                       children: [
@@ -2067,24 +2067,24 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   if (reserved && job.isPaid)
                     _badge(
                       publishRemainText(job),
-                      color: const Color(0xFF6B7280),
+                      color: AppColors.textSecondary,
                       icon: Icons.schedule_outlined,
                     ),
                   if (pinned) ...[
                     _badge(
                       '상단 고정',
-                      color: const Color(0xFF6B7280),
+                      color: AppColors.textSecondary,
                       icon: Icons.push_pin_outlined,
                     ),
                     _badge(
                       pinnedRemainText(job),
-                      color: const Color(0xFF6B7280),
+                      color: AppColors.textSecondary,
                     ),
                   ],
                   if (isClosed)
                     _badge(
                       '마감',
-                      color: const Color(0xFF9CA3AF),
+                      color: AppColors.textTertiary,
                       icon: Icons.stop_circle_outlined,
                     ),
                   if (job.expiresAt != null && !isClosed)
@@ -2300,24 +2300,24 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       if (reserved && job.isPaid)
                         _badge(
                           publishRemainText(job),
-                          color: const Color(0xFF6B7280),
+                          color: AppColors.textSecondary,
                           icon: Icons.schedule_outlined,
                         ),
                       if (pinned) ...[
                         _badge(
                           '상단 고정',
-                          color: const Color(0xFF6B7280),
+                          color: AppColors.textSecondary,
                           icon: Icons.push_pin_outlined,
                         ),
                         _badge(
                           pinnedRemainText(job),
-                          color: const Color(0xFF6B7280),
+                          color: AppColors.textSecondary,
                         ),
                       ],
                       if (isClosed)
                         _badge(
                           '마감',
-                          color: const Color(0xFF9CA3AF),
+                          color: AppColors.textTertiary,
                           icon: Icons.stop_circle_outlined,
                         ),
                       if (isClosed && job.zeroApplicantRefunded)

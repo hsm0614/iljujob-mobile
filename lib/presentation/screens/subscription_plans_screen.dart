@@ -15,6 +15,7 @@ import '../../config/constants.dart';
 import '../../data/services/authenticated_http_client.dart';
 import '../../data/services/client_tracking_service.dart';
 import 'potrone_screen.dart';
+import '../../config/messages.dart';
 
 // ── IAP 상품 ID ──────────────────────────────────────
 const _kIosLite = 'kr.co.iljujob.sub.lite';
@@ -185,8 +186,12 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       if (p.status == PurchaseStatus.purchased ||
           p.status == PurchaseStatus.restored) {
         _handledIds.add(p.purchaseID ?? '');
-        await _activateServer(p.verificationData.serverVerificationData);
-        await _iap.completePurchase(p);
+        final activated = await _activateIosOnServer(p);
+        if (activated) {
+          await _iap.completePurchase(p);
+        } else {
+          _handledIds.remove(p.purchaseID ?? '');
+        }
       } else if (p.status == PurchaseStatus.error) {
         setState(() => _processing = false);
         _showError('결제 중 오류가 발생했어요.');
@@ -219,25 +224,62 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
     }
   }
 
-  Future<void> _activateServer(String? token) async {
-    if (token == null) return;
+  Future<bool> _activateIosOnServer(PurchaseDetails purchase) async {
+    final token = purchase.verificationData.serverVerificationData;
+    if (token.isEmpty) return false;
     try {
       final resp = await AuthenticatedHttpClient.postJson(
-        Uri.parse('$baseUrl/api/subscription/activate'),
-        body: {'clientId': _userId, 'plan': _selectedPlan, 'impUid': token},
+        Uri.parse('$baseUrl/api/iap/verify'),
+        body: {
+          'platform': 'app_store',
+          'productId': purchase.productID,
+          'purchaseId': purchase.purchaseID,
+          'token': token,
+          'clientId': _userId,
+          'isReactivation': purchase.status == PurchaseStatus.restored,
+        },
       );
-      if (!mounted) return;
+      if (!mounted) return resp.statusCode == 200;
       if (resp.statusCode == 200) {
         ClientTrackingService.instance.track(
           'subscription_success',
           properties: {'plan': _selectedPlan},
         );
         _showSuccess();
+        return true;
+      }
+      _showError('구독 검증에 실패했어요. 결제는 다시 확인됩니다.');
+      return false;
+    } catch (_) {
+      if (mounted) _showError('서버 연결 오류가 발생했어요. 결제는 다시 확인됩니다.');
+      return false;
+    } finally {
+      if (mounted) setState(() => _processing = false);
+    }
+  }
+
+  Future<bool> _activateServer(String? token) async {
+    if (token == null) return false;
+    try {
+      final resp = await AuthenticatedHttpClient.postJson(
+        Uri.parse('$baseUrl/api/subscription/activate'),
+        body: {'clientId': _userId, 'plan': _selectedPlan, 'impUid': token},
+      );
+      if (!mounted) return false;
+      if (resp.statusCode == 200) {
+        ClientTrackingService.instance.track(
+          'subscription_success',
+          properties: {'plan': _selectedPlan},
+        );
+        _showSuccess();
+        return true;
       } else {
         _showError('구독 활성화에 실패했어요. 고객센터에 문의해주세요.');
+        return false;
       }
     } catch (_) {
-      if (mounted) _showError('서버 연결 오류가 발생했어요.');
+      if (mounted) _showError(Msg.server);
+      return false;
     } finally {
       if (mounted) setState(() => _processing = false);
     }
@@ -311,7 +353,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                   fontSize: 20,
                   fontWeight: FontWeight.w800,
                   fontFamily: 'Jalnan2TTF',
-                  color: Color(0xFF111827),
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -389,7 +431,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
                         height: 1.3,
-                        color: Color(0xFF111827),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -490,7 +532,7 @@ class _PlanCard extends StatelessWidget {
                     shape: BoxShape.circle,
                     color: selected ? color : Colors.transparent,
                     border: Border.all(
-                      color: selected ? color : const Color(0xFFD1D5DB),
+                      color: selected ? color : AppColors.textDisabled,
                       width: 1.5,
                     ),
                   ),
@@ -509,7 +551,7 @@ class _PlanCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
-                    color: selected ? color : const Color(0xFF111827),
+                    color: selected ? color : AppColors.textPrimary,
                   ),
                 ),
                 if (plan.recommended) ...[
@@ -542,7 +584,7 @@ class _PlanCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
-                          color: selected ? color : const Color(0xFF111827),
+                          color: selected ? color : AppColors.textPrimary,
                         ),
                       ),
                       const TextSpan(
@@ -610,7 +652,7 @@ class _PlanCard extends StatelessWidget {
   Color _planColor(String key) {
     if (key == 'pro') return const Color(0xFFFF9500);
     if (key == 'standard') return AppColors.primary;
-    return const Color(0xFF6B7280);
+    return AppColors.textSecondary;
   }
 }
 
@@ -773,7 +815,7 @@ class _CompareTable extends StatelessWidget {
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF111827),
+                                    color: AppColors.textPrimary,
                                   ),
                                 ),
                       ),
@@ -891,6 +933,6 @@ class _BottomCta extends StatelessWidget {
   Color _planColor(String key) {
     if (key == 'pro') return const Color(0xFFFF9500);
     if (key == 'standard') return AppColors.primary;
-    return const Color(0xFF6B7280);
+    return AppColors.textSecondary;
   }
 }

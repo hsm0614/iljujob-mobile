@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:iljujob/config/app_theme.dart';
 import '../../data/services/ai_api.dart';
 import '../../data/services/client_tracking_service.dart';
+import '../config/messages.dart';
 
 enum _Sort { recommend, distance }
 
@@ -165,7 +166,7 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF111827),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 if (!_loading && _items.isNotEmpty) ...[
@@ -323,7 +324,7 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
       }
     } catch (e) {
       if (!mounted) return;
-      _showSnack('네트워크 오류가 발생했어요.');
+      _showSnack(Msg.network);
     } finally {
       if (mounted) setState(() => _inviting.remove(workerId));
     }
@@ -402,19 +403,19 @@ Color _gradeColor(String grade) {
     case 'S':
       return const Color(0xFFFF6B00);
     case 'A':
-      return const Color(0xFF3B8AFF);
+      return AppColors.primary;
     case 'B':
       return const Color(0xFF22C55E);
     default:
-      return const Color(0xFF9CA3AF);
+      return AppColors.textTertiary;
   }
 }
 
 Color _matchColor(double pct) {
   if (pct >= 80) return const Color(0xFF22C55E);
-  if (pct >= 60) return const Color(0xFF3B8AFF);
+  if (pct >= 60) return AppColors.primary;
   if (pct >= 40) return const Color(0xFFFF9500);
-  return const Color(0xFF9CA3AF);
+  return AppColors.textTertiary;
 }
 
 // ── 인재 카드 ─────────────────────────────────────────────────
@@ -587,7 +588,7 @@ class _WorkerCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF111827),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     if (subParts.isNotEmpty)
@@ -692,7 +693,7 @@ class _WorkerCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEEF5FF),
+                        color: AppColors.primaryLight,
                         borderRadius: BorderRadius.circular(99),
                       ),
                       child: Text(
@@ -914,7 +915,7 @@ class _EmptyView extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF111827),
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),

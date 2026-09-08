@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback, rootBundle;
+import '../../../config/app_theme.dart';
 
 class SupportScreen extends StatelessWidget {
   const SupportScreen({super.key});
@@ -25,7 +26,7 @@ class SupportScreen extends StatelessWidget {
 
           _SupportItemCard(
             icon: Icons.question_answer_rounded,
-            iconBg: const Color(0xFF3B8AFF),
+            iconBg: AppColors.primary,
             title: 'FAQ (자주 묻는 질문)',
             subtitle: '자주 찾는 답변을 한곳에 모았어요',
             onTap: () {

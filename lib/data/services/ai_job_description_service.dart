@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart'; // StatefulWidget 사용을 위해 필요
 import '../../config/constants.dart';
 import 'authenticated_http_client.dart';
+import '../../config/app_theme.dart';
 
 class AIJobDescriptionService {
   static Future<String> generateJobDescription({
@@ -266,12 +267,12 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF3B8AFF).withOpacity(0.1),
+                      color: AppColors.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
                       Icons.auto_awesome,
-                      color: Color(0xFF3B8AFF),
+                      color: AppColors.primary,
                       size: 24,
                     ),
                   ),
@@ -325,13 +326,13 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                           decoration: BoxDecoration(
                             color:
                                 isSelected
-                                    ? const Color(0xFF3B8AFF)
+                                    ? AppColors.primary
                                     : Colors.grey.shade100,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color:
                                   isSelected
-                                      ? const Color(0xFF3B8AFF)
+                                      ? AppColors.primary
                                       : Colors.grey.shade300,
                             ),
                           ),
@@ -379,7 +380,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                           : const Icon(Icons.auto_awesome),
                   label: Text(isGenerating ? 'AI 생성 중...' : '공고문 생성하기'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3B8AFF),
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
@@ -503,7 +504,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                             (suggestion) => Padding(
                               padding: const EdgeInsets.only(bottom: 4),
                               child: Text(
-                                '💡 $suggestion',
+                                '$suggestion',
                                 style: TextStyle(
                                   fontSize: 11,
                                   color: Colors.orange.shade600,
@@ -625,7 +626,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                   width: 40,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE5E7EB),
+                    color: AppColors.border,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -640,7 +641,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                 ),
                 child: const Icon(
                   Icons.workspace_premium_rounded,
-                  color: Color(0xFF3B8AFF),
+                  color: AppColors.primary,
                   size: 30,
                 ),
               ),
@@ -650,7 +651,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w900,
-                  color: Color(0xFF191F28),
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -659,7 +660,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF6B7280),
+                  color: AppColors.textSecondary,
                   height: 1.5,
                 ),
               ),
@@ -672,7 +673,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                     Navigator.pushNamed(ctx, '/subscribe');
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3B8AFF),
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(

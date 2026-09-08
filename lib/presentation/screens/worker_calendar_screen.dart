@@ -10,16 +10,18 @@ import '../../data/models/job.dart';
 import '../../data/services/authenticated_http_client.dart';
 import '../../data/services/screen_analytics_service.dart';
 import '../widgets/albailju_common.dart';
+import '../../config/messages.dart';
+import '../../config/app_theme.dart';
 
 // =====================
 // 색상 팔레트
 // =====================
-const kBrandBlue = Color(0xFF3B8AFF);
-const kBg = Color(0xFFF4F6FA);
+const kBrandBlue = AppColors.primary;
+const kBg = AppColors.bgPage;
 const kCard = Colors.white;
-const kBorder = Color(0xFFE5E7EB);
-const kMuted = Color(0xFF6B7280);
-const kText = Color(0xFF111827);
+const kBorder = AppColors.border;
+const kMuted = AppColors.textSecondary;
+const kText = AppColors.textPrimary;
 
 // =====================
 // 상태 상수
@@ -66,7 +68,7 @@ Future<DateTime?> showCalendarBottomPicker(
                       width: 42,
                       height: 5,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE5E7EB),
+                        color: AppColors.border,
                         borderRadius: BorderRadius.circular(999),
                       ),
                     ),
@@ -591,16 +593,16 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
   Future<void> _markCompleted(Map<String, dynamic> it) async {
     if (_actionInProgress) return;
     if (_isCancelled(it)) {
-      _snack('취소된 일정은 완료 처리 대신 삭제만 할 수 있어요 🗑️');
+      _snack('취소된 일정은 완료 처리 대신 삭제만 할 수 있어요 🗑');
       return;
     }
     final id = _idOf(it);
     if (id == null) {
-      _snack('id가 없어서 완료 처리가 안돼요 🥲');
+      _snack('id가 없어서 완료 처리가 안돼요');
       return;
     }
     if ((it['status'] ?? '').toString() == _kCompleted) {
-      _snack('이미 완료된 일정이에요 ✅');
+      _snack('이미 완료된 일정이에요');
       return;
     }
 
@@ -609,7 +611,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     try {
       final r1 = await _completeBySource(source: source, id: id);
       if (r1.ok) {
-        _snack('완료 처리됐어요 ✅');
+        _snack('완료 처리됐어요');
         await _fetchMonth(_focusedDay);
         return;
       }
@@ -620,10 +622,10 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         body: {'status': _kCompleted},
       );
       if (r2.ok) {
-        _snack('완료 처리됐어요 ✅');
+        _snack('완료 처리됐어요');
         await _fetchMonth(_focusedDay);
       } else {
-        _snack('완료 처리가 실패했어요 🥲');
+        _snack('완료 처리가 실패했어요');
       }
     } finally {
       _actionInProgress = false;
@@ -634,7 +636,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     if (_actionInProgress) return;
     final id = _idOf(it);
     if (id == null) {
-      _snack('id가 없어서 처리가 안돼요 🥲');
+      _snack('id가 없어서 처리가 안돼요');
       return;
     }
 
@@ -654,7 +656,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     try {
       final result = await _deleteBySource(source: source, id: id);
       if (result.ok) {
-        _snack('삭제됐어요 🗑️');
+        _snack('삭제됐어요 🗑');
         await _fetchMonth(_focusedDay);
       } else {
         _snack(
@@ -674,7 +676,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
   }) async {
     final token = await _token();
     if (token.isEmpty) {
-      _snack('로그인이 필요해요 🙏');
+      _snack(Msg.loginRequired);
       return;
     }
     if (item != null && _isJobSource(item)) {
@@ -727,7 +729,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
               final source = _sourceOf(item);
               final id = _idOf(item);
               if (id == null) {
-                _snack('id가 없어서 저장이 안돼요 🥲');
+                _snack('id가 없어서 저장이 안돼요');
                 return false;
               }
 
@@ -740,7 +742,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                 id: id,
                 body: payload,
               );
-              if (!r.ok) _snack('저장이 실패했어요 🥲');
+              if (!r.ok) _snack('저장이 실패했어요');
               return r.ok;
             },
             onSaveBatch:
@@ -770,7 +772,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                       if (sure != true) return false;
 
                       final r = await _deleteBySource(source: source, id: id);
-                      if (!r.ok) _snack('삭제가 실패했어요 🥲');
+                      if (!r.ok) _snack('삭제가 실패했어요');
                       return r.ok;
                     }
                     : null,
@@ -780,7 +782,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     if (saved == true) {
       await _fetchMonth(_focusedDay);
       if (mounted && batchCreatedCount > 1) {
-        _snack('$batchCreatedCount개 일정이 추가됐어요 ✅');
+        _snack('$batchCreatedCount개 일정이 추가됐어요');
       }
     }
   }
@@ -964,7 +966,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
               child: LinearProgressIndicator(
                 value: completionRate / 100,
                 minHeight: 8,
-                backgroundColor: const Color(0xFFE5E7EB),
+                backgroundColor: AppColors.border,
                 valueColor: AlwaysStoppedAnimation<Color>(
                   overdue > 0 ? const Color(0xFFF97316) : kBrandBlue,
                 ),
@@ -974,7 +976,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F6FA),
+                color: AppColors.bgPage,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: kBorder),
               ),
@@ -1181,7 +1183,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         '날짜를 선택하면\n일정을 확인할 수 있어요 📅',
         textAlign: TextAlign.center,
         style: TextStyle(
-          color: Color(0xFF6B7280),
+          color: AppColors.textSecondary,
           height: 1.5,
           fontWeight: FontWeight.w700,
         ),
@@ -1199,7 +1201,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
           '$title\n등록된 일정이 없어요 🙂\n오른쪽 아래 + 로 추가해봐요',
           textAlign: TextAlign.center,
           style: const TextStyle(
-            color: Color(0xFF6B7280),
+            color: AppColors.textSecondary,
             height: 1.35,
             fontWeight: FontWeight.w700,
           ),
@@ -1262,14 +1264,14 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         completed
             ? const Color(0xFF166534)
             : cancelled
-            ? const Color(0xFF6B7280)
+            ? AppColors.textSecondary
             : kBrandBlue;
 
     return Opacity(
       opacity: cancelled ? 0.68 : 1.0,
       child: Container(
         decoration: BoxDecoration(
-          color: const Color(0xFFF4F6FA),
+          color: AppColors.bgPage,
           borderRadius: BorderRadius.circular(18),
           border: Border.all(color: kBorder),
           boxShadow: [
@@ -1363,7 +1365,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                                 _pill(
                                   label: isConfirmation ? '채팅확정' : '공고',
                                   bg: const Color(0xFFF3F4F6),
-                                  fg: const Color(0xFF6B7280),
+                                  fg: AppColors.textSecondary,
                                 ),
                               ],
                               const SizedBox(width: 8),
@@ -1421,7 +1423,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                   _actionBtn(
                     icon: Icons.delete_outline_rounded,
                     label: '삭제',
-                    color: const Color(0xFFDC2626),
+                    color: AppColors.error,
                     onTap: () => _deleteSession(it),
                   ),
                 ],
@@ -1536,7 +1538,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                   width: 40,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE5E7EB),
+                    color: AppColors.border,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -1804,7 +1806,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color:
-              strong ? kBrandBlue.withOpacity(0.10) : const Color(0xFFF4F6FA),
+              strong ? kBrandBlue.withOpacity(0.10) : AppColors.bgPage,
           borderRadius: BorderRadius.circular(14),
           border:
               strong ? Border.all(color: kBrandBlue.withOpacity(0.18)) : null,
@@ -1886,7 +1888,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
       builder: (sheetCtx) {
         // ✅ builder 전용 context 사용
         final safeBottom = MediaQuery.of(sheetCtx).viewPadding.bottom;
-        final Color accent = danger ? const Color(0xFFDC2626) : kBrandBlue;
+        final Color accent = danger ? AppColors.error : kBrandBlue;
         final Color accentBg =
             danger ? const Color(0xFFFFE4E6) : kBrandBlue.withOpacity(0.10);
 
@@ -1900,7 +1902,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
+                border: Border.all(color: AppColors.border),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.12),
@@ -1917,7 +1919,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                     width: 42,
                     height: 5,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE5E7EB),
+                      color: AppColors.border,
                       borderRadius: BorderRadius.circular(999),
                     ),
                   ),
@@ -1945,7 +1947,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                       fontFamily: 'Jalnan2TTF',
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF111827),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 8),
@@ -1956,7 +1958,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                       fontSize: 13,
                       height: 1.35,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF6B7280),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -1965,13 +1967,13 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                       Expanded(
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF111827),
-                            side: const BorderSide(color: Color(0xFFE5E7EB)),
+                            foregroundColor: AppColors.textPrimary,
+                            side: const BorderSide(color: AppColors.border),
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(16),
                             ),
-                            backgroundColor: const Color(0xFFF4F6FA),
+                            backgroundColor: AppColors.bgPage,
                           ),
                           onPressed:
                               () =>
@@ -2272,7 +2274,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
         setState(() => _saving = false);
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('저장이 실패했어요 🥲')));
+        ).showSnackBar(const SnackBar(content: Text('저장이 실패했어요')));
       }
     } catch (e) {
       if (!mounted) return;
@@ -2328,7 +2330,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                       width: 42,
                       height: 5,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFE5E7EB),
+                        color: AppColors.border,
                         borderRadius: BorderRadius.circular(999),
                       ),
                     ),
@@ -2602,7 +2604,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                                           context,
                                         ).showSnackBar(
                                           const SnackBar(
-                                            content: Text('삭제가 실패했어요 🥲'),
+                                            content: Text('삭제가 실패했어요'),
                                           ),
                                         );
                                       }
@@ -2667,9 +2669,9 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F6FA),
+        color: AppColors.bgPage,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: child,
     );
@@ -2701,7 +2703,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: const TextStyle(
-              color: Color(0xFF9CA3AF),
+              color: AppColors.textTertiary,
               fontWeight: FontWeight.w700,
             ),
             filled: true,
@@ -2758,7 +2760,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
               ),
             ),
             const SizedBox(width: 6),
-            const Icon(Icons.chevron_right_rounded, color: Color(0xFF9CA3AF)),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary),
           ],
         ),
       ),

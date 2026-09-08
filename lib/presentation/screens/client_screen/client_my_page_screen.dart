@@ -8,6 +8,7 @@ import '../../../config/constants.dart'; // baseUrl
 import '../../../data/services/ai_api.dart'; // fetchMySubscription()
 import '../../../data/services/authenticated_http_client.dart';
 import '../../../data/services/screen_analytics_service.dart';
+import '../../../config/app_theme.dart';
 
 class ClientMyPageScreen extends StatefulWidget {
   const ClientMyPageScreen({super.key});
@@ -17,7 +18,7 @@ class ClientMyPageScreen extends StatefulWidget {
 
 class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
   // ===== Branding =====
-  static const Color brandBlue = Color(0xFF3B8AFF);
+  static const Color brandBlue = AppColors.primary;
   static const Color brandBlueLight = Color(0xFF6EB6FF);
 
   // ===== Profile State =====
@@ -188,7 +189,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
             title: '로그아웃할까요?',
             message: '로그아웃하면 다시 로그인해야 해요.',
             confirmText: '로그아웃',
-            confirmColor: const Color(0xFFDC2626),
+            confirmColor: AppColors.error,
             icon: Icons.logout_rounded,
           ),
     );
@@ -218,7 +219,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
             title: '정말 탈퇴할까요?',
             message: '탈퇴하면 계정 정보가 삭제되고 복구가 어려워요.',
             confirmText: '탈퇴하기',
-            confirmColor: const Color(0xFFDC2626),
+            confirmColor: AppColors.error,
             icon: Icons.person_off_rounded,
           ),
     );
@@ -311,7 +312,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: AppColors.bgPage,
       body: RefreshIndicator(
         onRefresh: _refreshAll,
         color: brandBlue,
@@ -330,7 +331,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFF3B8AFF), Color(0xFF6EB6FF)],
+                      colors: [AppColors.primary, Color(0xFF6EB6FF)],
                     ),
                   ),
                   child: SafeArea(
@@ -495,12 +496,12 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
                       label: '로그아웃',
                       labelStyle: const TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFFDC2626),
+                        color: AppColors.error,
                       ),
                       trailing: const Icon(
                         Icons.logout,
                         size: 18,
-                        color: Color(0xFFDC2626),
+                        color: AppColors.error,
                       ),
                       onTap: _confirmLogout,
                     ),
@@ -509,12 +510,12 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
                       label: '회원 탈퇴',
                       labelStyle: const TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFFDC2626),
+                        color: AppColors.error,
                       ),
                       trailing: const Icon(
                         Icons.delete_forever,
                         size: 18,
-                        color: Color(0xFFDC2626),
+                        color: AppColors.error,
                       ),
                       onTap: _confirmWithdraw,
                     ),
@@ -583,7 +584,7 @@ class _ProfileCard extends StatelessWidget {
                         : const Icon(
                           Icons.business,
                           size: 30,
-                          color: Color(0xFF6B7280),
+                          color: AppColors.textSecondary,
                         ),
               ),
               Positioned(
@@ -741,12 +742,12 @@ class _TwoLine extends StatelessWidget {
         children: [
           TextSpan(
             text: '$subtitle: ',
-            style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13),
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
           ),
           TextSpan(
             text: title,
             style: const TextStyle(
-              color: Color(0xFF191F28),
+              color: AppColors.textPrimary,
               fontWeight: FontWeight.w700,
               fontSize: 15,
             ),
@@ -783,7 +784,7 @@ class _ChipText extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, size: 14, color: const Color(0xFF3B8AFF)),
+            Icon(icon, size: 14, color: AppColors.primary),
             const SizedBox(width: 6),
             if (ensureVisible)
               Expanded(
@@ -850,7 +851,7 @@ class _SectionCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF191F28),
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
@@ -895,7 +896,7 @@ class _ItemTile extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10),
         child: ListTile(
-          leading: Icon(icon, size: 22, color: const Color(0xFF3B8AFF)),
+          leading: Icon(icon, size: 22, color: AppColors.primary),
           title: Text(
             label,
             style:
@@ -907,7 +908,7 @@ class _ItemTile extends StatelessWidget {
               const Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
-                color: Color(0xFF9CA3AF),
+                color: AppColors.textTertiary,
               ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 6,
@@ -973,13 +974,13 @@ class _BizInfoItem extends StatelessWidget {
             width: 110,
             child: Text(
               k,
-              style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13.5),
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13.5),
             ),
           ),
           Expanded(
             child: Text(
               v,
-              style: const TextStyle(fontSize: 13.5, color: Color(0xFF191F28)),
+              style: const TextStyle(fontSize: 13.5, color: AppColors.textPrimary),
             ),
           ),
         ],
@@ -1004,7 +1005,7 @@ class _StatusPill extends StatelessWidget {
         style: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: Color(0xFF3B8AFF),
+          color: AppColors.primary,
         ),
       ),
     );
@@ -1050,7 +1051,7 @@ class _ConfirmSheet extends StatelessWidget {
             width: 42,
             height: 5,
             decoration: BoxDecoration(
-              color: const Color(0xFFE5E7EB),
+              color: AppColors.border,
               borderRadius: BorderRadius.circular(999),
             ),
           ),
@@ -1075,7 +1076,7 @@ class _ConfirmSheet extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 12.5,
-              color: Color(0xFF6B7280),
+              color: AppColors.textSecondary,
               height: 1.35,
             ),
           ),
@@ -1086,8 +1087,8 @@ class _ConfirmSheet extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context, false),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF111827),
-                    side: const BorderSide(color: Color(0xFFE5E7EB)),
+                    foregroundColor: AppColors.textPrimary,
+                    side: const BorderSide(color: AppColors.border),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),

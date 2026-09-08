@@ -665,7 +665,7 @@ class _PostJobFormState extends State<PostJobForm>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE5E7EB),
+                  color: AppColors.border,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
@@ -857,7 +857,7 @@ class _PostJobFormState extends State<PostJobForm>
                               ? const Color(0xFFFFEBEB)
                               : isDelayed
                               ? const Color(0xFFFFF3E0)
-                              : const Color(0xFFEEF5FF),
+                              : AppColors.primaryLight,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Icon(
@@ -1499,7 +1499,9 @@ class _PostJobFormState extends State<PostJobForm>
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          '${_q + 1}/$_totalQ',
+                          // 진행바 분모와 같아야 한다. 6으로 두면 마지막 입력에서
+                          // 바는 75%인데 텍스트만 6/6이라 서로 다른 말을 한다.
+                          '${_q + 1}/${_totalQ + 2}',
                           style: const TextStyle(
                             fontSize: 12,
                             color: _label,
@@ -1710,7 +1712,7 @@ class _PostJobFormState extends State<PostJobForm>
                           isSel
                               ? _blue
                               : isOpen
-                              ? const Color(0xFFEEF5FF)
+                              ? AppColors.primaryLight
                               : const Color(0xFFF5F6F8),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
@@ -2223,7 +2225,7 @@ class _PostJobFormState extends State<PostJobForm>
           width: double.infinity,
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: _location.isNotEmpty ? const Color(0xFFEEF5FF) : _bg,
+            color: _location.isNotEmpty ? AppColors.primaryLight : _bg,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: _location.isNotEmpty ? _blue : _border),
           ),
@@ -2351,7 +2353,7 @@ class _PostJobFormState extends State<PostJobForm>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
               decoration: BoxDecoration(
-                color: _startDate != null ? const Color(0xFFEEF5FF) : _bg,
+                color: _startDate != null ? AppColors.primaryLight : _bg,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: _startDate != null ? _blue : _border),
               ),
@@ -3021,7 +3023,7 @@ class _PostJobFormState extends State<PostJobForm>
                                 width: 40,
                                 height: 4,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFE5E7EB),
+                                  color: AppColors.border,
                                   borderRadius: BorderRadius.circular(2),
                                 ),
                               ),
@@ -3029,7 +3031,7 @@ class _PostJobFormState extends State<PostJobForm>
                             const SizedBox(height: 20),
                             const Icon(
                               Icons.analytics_rounded,
-                              color: Color(0xFF3B8AFF),
+                              color: AppColors.primary,
                               size: 32,
                             ),
                             const SizedBox(height: 12),
@@ -3038,7 +3040,7 @@ class _PostJobFormState extends State<PostJobForm>
                               style: TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 16,
-                                color: Color(0xFF191F28),
+                                color: AppColors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -3047,7 +3049,7 @@ class _PostJobFormState extends State<PostJobForm>
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 13,
-                                color: Color(0xFF6B7280),
+                                color: AppColors.textSecondary,
                                 height: 1.5,
                               ),
                             ),
@@ -3063,7 +3065,7 @@ class _PostJobFormState extends State<PostJobForm>
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF3B8AFF),
+                                  backgroundColor: AppColors.primary,
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 14,
                                   ),
@@ -3089,7 +3091,7 @@ class _PostJobFormState extends State<PostJobForm>
                                 child: const Text(
                                   '닫기',
                                   style: TextStyle(
-                                    color: Color(0xFF6B7280),
+                                    color: AppColors.textSecondary,
                                     fontSize: 14,
                                   ),
                                 ),
@@ -3113,7 +3115,7 @@ class _PostJobFormState extends State<PostJobForm>
                   color:
                       _subscriptionPlan != null
                           ? const Color(0xFF93C5FD)
-                          : const Color(0xFFD1D5DB),
+                          : AppColors.textDisabled,
                 ),
               ),
               child: Row(
@@ -3127,7 +3129,7 @@ class _PostJobFormState extends State<PostJobForm>
                     color:
                         _subscriptionPlan != null
                             ? const Color(0xFF2563EB)
-                            : const Color(0xFF9CA3AF),
+                            : AppColors.textTertiary,
                   ),
                   const SizedBox(width: 6),
                   Text(
@@ -3175,7 +3177,7 @@ class _PostJobFormState extends State<PostJobForm>
               duration: const Duration(milliseconds: 160),
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: _isSameDayPay ? const Color(0xFFEEF5FF) : _bg,
+                color: _isSameDayPay ? AppColors.primaryLight : _bg,
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(color: _isSameDayPay ? _blue : _border),
               ),
@@ -3661,7 +3663,7 @@ class _PostJobFormState extends State<PostJobForm>
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE5E7EB),
+                      color: AppColors.border,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -3669,7 +3671,7 @@ class _PostJobFormState extends State<PostJobForm>
                 const SizedBox(height: 20),
                 const Icon(
                   Icons.auto_awesome,
-                  color: Color(0xFF3B8AFF),
+                  color: AppColors.primary,
                   size: 32,
                 ),
                 const SizedBox(height: 12),
@@ -3678,7 +3680,7 @@ class _PostJobFormState extends State<PostJobForm>
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 16,
-                    color: Color(0xFF191F28),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -3686,7 +3688,7 @@ class _PostJobFormState extends State<PostJobForm>
                   resetInfo,
                   style: const TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF6B7280),
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -3705,7 +3707,7 @@ class _PostJobFormState extends State<PostJobForm>
                       Navigator.pushNamed(context, '/subscription/manage');
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3B8AFF),
+                      backgroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -3728,7 +3730,7 @@ class _PostJobFormState extends State<PostJobForm>
                     onPressed: () => Navigator.pop(context),
                     child: const Text(
                       '닫기',
-                      style: TextStyle(color: Color(0xFF6B7280), fontSize: 14),
+                      style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
                     ),
                   ),
                 ),
@@ -3855,7 +3857,7 @@ class _TimeInputCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           decoration: BoxDecoration(
-            color: hasValue ? const Color(0xFFEEF5FF) : _bg,
+            color: hasValue ? AppColors.primaryLight : _bg,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: hasValue ? _blue : _border),
           ),
@@ -3918,7 +3920,7 @@ class _ToggleBtn extends StatelessWidget {
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFFEEF5FF) : _bg,
+          color: selected ? AppColors.primaryLight : _bg,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: selected ? _blue : _border,
@@ -4043,7 +4045,7 @@ class _ExternalApplyOption extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: enabled ? const Color(0xFFEEF5FF) : _bg,
+        color: enabled ? AppColors.primaryLight : _bg,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: enabled ? _blue : _border),
       ),
@@ -4419,7 +4421,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE5E7EB),
+                    color: AppColors.border,
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
@@ -4448,7 +4450,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF111827),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -4468,7 +4470,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF6B7280),
+                    color: AppColors.textSecondary,
                     height: 1.5,
                   ),
                 ),
@@ -4484,7 +4486,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                         },
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: const BorderSide(color: Color(0xFFE5E7EB)),
+                          side: const BorderSide(color: AppColors.border),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -4492,7 +4494,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                         child: Text(
                           _freeExhausted ? '닫기' : '무료로 올리기',
                           style: const TextStyle(
-                            color: Color(0xFF6B7280),
+                            color: AppColors.textSecondary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -4627,7 +4629,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                     border: Border.all(
                       color: widget.nationwideOn
                           ? AppColors.primary
-                          : const Color(0xFFE5E7EB),
+                          : AppColors.border,
                     ),
                   ),
                   child: Row(
@@ -4669,7 +4671,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                         size: 22,
                         color: widget.nationwideOn
                             ? AppColors.primary
-                            : const Color(0xFFD1D5DB),
+                            : AppColors.textDisabled,
                       ),
                     ],
                   ),
@@ -4709,7 +4711,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                                   _urgentPassCount == -1)
                               ? [
                                 const Color(0xFFEF4444),
-                                const Color(0xFFDC2626),
+                                AppColors.error,
                               ]
                               : [
                                 const Color(0xFFF87171),
@@ -4938,7 +4940,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEEF5FF),
+                    color: AppColors.primaryLight,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: const Color(0xFFD8E8FF)),
                   ),
@@ -5005,7 +5007,7 @@ class _PublishSheetState extends State<_PublishSheet> {
         duration: const Duration(milliseconds: 160),
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
         decoration: BoxDecoration(
-          color: sel ? const Color(0xFFEEF5FF) : _bg,
+          color: sel ? AppColors.primaryLight : _bg,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: sel ? _blue : _border,
@@ -5063,7 +5065,7 @@ class _PublishSheetState extends State<_PublishSheet> {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
-        color: _scheduledDate != null ? const Color(0xFFEEF5FF) : _bg,
+        color: _scheduledDate != null ? AppColors.primaryLight : _bg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _scheduledDate != null ? _blue : _border),
       ),
@@ -5112,7 +5114,7 @@ class _PublishSheetState extends State<_PublishSheet> {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
-        color: _scheduledTime != null ? const Color(0xFFEEF5FF) : _bg,
+        color: _scheduledTime != null ? AppColors.primaryLight : _bg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _scheduledTime != null ? _blue : _border),
       ),

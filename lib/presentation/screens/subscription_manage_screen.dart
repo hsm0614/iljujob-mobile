@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../config/constants.dart';
 import '../../data/services/ai_api.dart';
 import '../widgets/albailju_common.dart';
+import '../../config/app_theme.dart';
 
 const _kProductId = 'subscribe';
 const _kAndroidPackage = 'kr.co.iljujob';
@@ -14,31 +15,31 @@ const _kAndroidPackage = 'kr.co.iljujob';
 // ─── 플랜별 혜택 정의 ────────────────────────────────────────────
 const _planBenefits = {
   'lite': [
-    _Benefit(Icons.flash_on_rounded, '즉시게시 3회/월', Color(0xFF3B8AFF)),
+    _Benefit(Icons.flash_on_rounded, '즉시게시 3회/월', AppColors.primary),
     _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', Color(0xFF6C5CE7)),
-    _Benefit(Icons.verified_rounded, '구독 배지 표시', Color(0xFF3B8AFF)),
+    _Benefit(Icons.verified_rounded, '구독 배지 표시', AppColors.primary),
   ],
   'standard': [
-    _Benefit(Icons.flash_on_rounded, '즉시게시 무제한', Color(0xFF3B8AFF)),
+    _Benefit(Icons.flash_on_rounded, '즉시게시 무제한', AppColors.primary),
     _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', Color(0xFF6C5CE7)),
-    _Benefit(Icons.verified_user_rounded, '출근 안심 포함', Color(0xFF10B981)),
-    _Benefit(Icons.verified_rounded, '구독 배지 표시', Color(0xFF3B8AFF)),
+    _Benefit(Icons.verified_user_rounded, '출근 안심 포함', AppColors.success),
+    _Benefit(Icons.verified_rounded, '구독 배지 표시', AppColors.primary),
   ],
   'pro': [
-    _Benefit(Icons.flash_on_rounded, '즉시게시 무제한', Color(0xFF3B8AFF)),
+    _Benefit(Icons.flash_on_rounded, '즉시게시 무제한', AppColors.primary),
     _Benefit(Icons.bolt_rounded, '긴급호출 무제한 (반경 5km, 10명)', Color(0xFFEF4444)),
     _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', Color(0xFF6C5CE7)),
-    _Benefit(Icons.verified_user_rounded, '출근 안심 포함', Color(0xFF10B981)),
+    _Benefit(Icons.verified_user_rounded, '출근 안심 포함', AppColors.success),
     _Benefit(Icons.headset_mic_rounded, '우선 CS 지원', Color(0xFFFFB300)),
-    _Benefit(Icons.verified_rounded, '구독 배지 표시', Color(0xFF3B8AFF)),
+    _Benefit(Icons.verified_rounded, '구독 배지 표시', AppColors.primary),
   ],
 };
 
 const _defaultBenefits = [
-  _Benefit(Icons.flash_on_rounded, '즉시게시 이용권 (라이트 3회 / 스탠다드·프로 무제한)', Color(0xFF3B8AFF)),
+  _Benefit(Icons.flash_on_rounded, '즉시게시 이용권 (라이트 3회 / 스탠다드·프로 무제한)', AppColors.primary),
   _Benefit(Icons.bolt_rounded, '긴급호출 무제한 (프로 전용)', Color(0xFFEF4444)),
   _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', Color(0xFF6C5CE7)),
-  _Benefit(Icons.verified_rounded, '구독 배지 표시', Color(0xFF3B8AFF)),
+  _Benefit(Icons.verified_rounded, '구독 배지 표시', AppColors.primary),
 ];
 
 class _Benefit {
@@ -168,7 +169,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: AppColors.bgPage,
       appBar: AlbailjuAppBar(
         title: '구독 관리',
         brand: true,
@@ -182,7 +183,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
       body:
           _loading
               ? const Center(
-                child: CircularProgressIndicator(color: Color(0xFF3B8AFF)),
+                child: CircularProgressIndicator(color: AppColors.primary),
               )
               : RefreshIndicator(
                 onRefresh: _refresh,
@@ -225,7 +226,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
                         height: 52,
                         child: FilledButton.icon(
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF3B8AFF),
+                            backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(14),
@@ -284,15 +285,15 @@ class _StatusCard extends StatelessWidget {
         gradient: LinearGradient(
           colors:
               active
-                  ? [const Color(0xFF3B8AFF), const Color(0xFF1A6FFF)]
-                  : [const Color(0xFF9CA3AF), const Color(0xFF6B7280)],
+                  ? [AppColors.primary, const Color(0xFF1A6FFF)]
+                  : [AppColors.textTertiary, AppColors.textSecondary],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: (active ? const Color(0xFF3B8AFF) : const Color(0xFF9CA3AF))
+            color: (active ? AppColors.primary : AppColors.textTertiary)
                 .withValues(alpha: 0.3),
             blurRadius: 16,
             offset: const Offset(0, 6),
@@ -422,7 +423,7 @@ class _BenefitSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E8EB)),
+        border: Border.all(color: AppColors.border),
       ),
       padding: const EdgeInsets.all(18),
       child: Column(
@@ -432,7 +433,7 @@ class _BenefitSection extends StatelessWidget {
             children: [
               const Icon(
                 Icons.workspace_premium_rounded,
-                color: Color(0xFF3B8AFF),
+                color: AppColors.primary,
                 size: 18,
               ),
               const SizedBox(width: 8),
@@ -441,7 +442,7 @@ class _BenefitSection extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF191F28),
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
@@ -483,7 +484,7 @@ class _BenefitRow extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          const Icon(Icons.check_rounded, size: 16, color: Color(0xFF10B981)),
+          const Icon(Icons.check_rounded, size: 16, color: AppColors.success),
         ],
       ),
     );
@@ -502,7 +503,7 @@ class _ManageSection extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E8EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         children: [
@@ -542,7 +543,7 @@ class _ManageSection extends StatelessWidget {
               color: const Color(0xFFE8F0FF),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, color: const Color(0xFF3B8AFF), size: 20),
+            child: Icon(icon, color: AppColors.primary, size: 20),
           ),
           title: Text(
             title,
@@ -550,11 +551,11 @@ class _ManageSection extends StatelessWidget {
           ),
           subtitle: Text(
             subtitle,
-            style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
           ),
           trailing: const Icon(
             Icons.chevron_right_rounded,
-            color: Color(0xFF9CA3AF),
+            color: AppColors.textTertiary,
           ),
           onTap: onTap,
           contentPadding: const EdgeInsets.symmetric(
@@ -563,7 +564,7 @@ class _ManageSection extends StatelessWidget {
           ),
         ),
         if (showDivider)
-          const Divider(height: 1, indent: 64, color: Color(0xFFF4F6FA)),
+          const Divider(height: 1, indent: 64, color: AppColors.bgPage),
       ],
     );
   }
@@ -580,7 +581,7 @@ class _PolicySection extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E8EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -589,12 +590,12 @@ class _PolicySection extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: const Color(0xFFF4F6FA),
+              color: AppColors.bgPage,
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Icon(
               Icons.description_outlined,
-              color: Color(0xFF6B7280),
+              color: AppColors.textSecondary,
               size: 20,
             ),
           ),
@@ -610,7 +611,7 @@ class _PolicySection extends StatelessWidget {
               '• 결제 영수증은 스토어 구매 내역에서 확인하세요.',
               style: TextStyle(
                 fontSize: 13,
-                color: Color(0xFF6B7280),
+                color: AppColors.textSecondary,
                 height: 1.6,
               ),
             ),
@@ -624,8 +625,8 @@ class _PolicySection extends StatelessWidget {
                   label: const Text('구독 관리 열기'),
                   onPressed: onOpenStore,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF3B8AFF),
-                    side: const BorderSide(color: Color(0xFF3B8AFF)),
+                    foregroundColor: AppColors.primary,
+                    side: const BorderSide(color: AppColors.primary),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -654,8 +655,8 @@ class _PolicySection extends StatelessWidget {
                     launchUrl(uri);
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF6B7280),
-                    side: const BorderSide(color: Color(0xFFD1D5DB)),
+                    foregroundColor: AppColors.textSecondary,
+                    side: const BorderSide(color: AppColors.textDisabled),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),

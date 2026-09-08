@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
+import '../../../config/messages.dart';
 
 const _blue = AppColors.primary;
 const _bg = AppColors.bgPage;
@@ -111,7 +112,7 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
         _showError(data['message'] ?? '오류가 발생했어요.');
       }
     } catch (e) {
-      _showError('네트워크 오류가 발생했어요.');
+      _showError(Msg.network);
     } finally {
       setState(() => _loading = false);
       _scrollToBottom();
@@ -171,7 +172,7 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF191F28),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 Text(
@@ -280,7 +281,7 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     height: 1.55,
-                    color: msg.isUser ? Colors.white : const Color(0xFF191F28),
+                    color: msg.isUser ? Colors.white : AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -359,7 +360,7 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
                           decoration: BoxDecoration(
                             color: _bg,
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFFE5E8EB)),
+                            border: Border.all(color: AppColors.border),
                           ),
                           child: Text(
                             q,
@@ -384,7 +385,7 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
       child: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
-          border: Border(top: BorderSide(color: Color(0xFFE5E8EB))),
+          border: Border(top: BorderSide(color: AppColors.border)),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(

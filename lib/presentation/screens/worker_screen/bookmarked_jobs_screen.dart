@@ -9,8 +9,9 @@ import '../../../data/services/authenticated_http_client.dart';
 import '../../../data/services/job_service.dart';
 import 'job_detail_screen.dart';
 import 'package:iljujob/utils/pay_display.dart';
+import '../../../config/app_theme.dart';
 
-const kBrand = Color(0xFF3B8AFF);
+const kBrand = AppColors.primary;
 const kBorder = Color(0xFFE2E7EF);
 const kBg = Color(0xFFF7F9FC);
 
@@ -443,7 +444,7 @@ class _JobTile extends StatelessWidget {
                         ),
                         Text(
                           '등록일 ${_formatDate(job.createdAt)}',
-                          style: const TextStyle(color: Color(0xFF6B7280)),
+                          style: const TextStyle(color: AppColors.textSecondary),
                         ),
                       ],
                     ),

@@ -89,6 +89,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   // 사용자 정보
   String managerName = '';
   String companyName = '';
+  String companyPhone = '';
   final formatter = NumberFormat('#,###');
 
   // 즉시 게시 선택
@@ -169,6 +170,8 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
     setState(() {
       managerName = prefs.getString('userName') ?? '';
       companyName = prefs.getString('companyName') ?? '';
+      companyPhone =
+          prefs.getString('companyPhone') ?? prefs.getString('userPhone') ?? '';
     });
   }
 
@@ -719,7 +722,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                               (_) => PortonePaymentScreen(
                                 count: count,
                                 companyName: companyName,
-                                companyPhone: managerName,
+                                companyPhone: companyPhone,
                                 amount: price,
                               ),
                         ),
@@ -911,7 +914,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
               _BuyButton(
                 label: '₩7,900 결제하기',
                 isPurchasing: _isPurchasing,
-                gradient: const [Color(0xFFEF4444), Color(0xFFDC2626)],
+                gradient: const [Color(0xFFEF4444), AppColors.error],
                 onTap: () async {
                   Navigator.pop(ctx);
                   if (Platform.isIOS) {
@@ -926,7 +929,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                               (_) => PortonePaymentScreen(
                                 count: 1,
                                 companyName: companyName,
-                                companyPhone: managerName,
+                                companyPhone: companyPhone,
                                 amount: 7900,
                                 productName: '알바일주 긴급 호출 이용권',
                               ),
@@ -1020,7 +1023,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                           '반경 5km 알바생에게 직접 메시지 · 응답 0명이면 100% 환급',
                           style: TextStyle(
                             fontSize: 11,
-                            color: Color(0xFF6B7280),
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ],
@@ -1379,7 +1382,7 @@ class _UrgentTab extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1389,7 +1392,7 @@ class _UrgentTab extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF191F28),
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -1397,7 +1400,7 @@ class _UrgentTab extends StatelessWidget {
                         '알바생이 갑자기 결근하거나 급하게 인력이 필요할 때 사용하는 기능이에요. 공고 위치 기준 반경 5km 내 활동 중인 알바생에게 사장님이 직접 인앱 메시지를 보낼 수 있어요.',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF6B7280),
+                          color: AppColors.textSecondary,
                           height: 1.55,
                         ),
                       ),
@@ -1421,7 +1424,7 @@ class _UrgentTab extends StatelessWidget {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                      colors: [Color(0xFFEF4444), AppColors.error],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),

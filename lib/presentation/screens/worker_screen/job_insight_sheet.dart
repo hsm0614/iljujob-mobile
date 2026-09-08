@@ -107,7 +107,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                         ),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: const Text('✨', style: TextStyle(fontSize: 18)),
+                      child: Icon(Icons.auto_awesome, size: 18),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -165,7 +165,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
               ),
               borderRadius: BorderRadius.circular(16),
             ),
-            child: const Text('✨', style: TextStyle(fontSize: 32)),
+            child: Icon(Icons.auto_awesome, size: 32),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -206,7 +206,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
       children: [
         const Icon(Icons.error_outline, size: 40, color: Colors.grey),
         const SizedBox(height: 12),
-        Text(_error!, style: const TextStyle(color: Color(0xFF6B7280))),
+        Text(_error!, style: const TextStyle(color: AppColors.textSecondary)),
         const SizedBox(height: 16),
         TextButton(onPressed: _load, child: const Text('다시 시도')),
       ],
@@ -437,7 +437,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFFEEF5FF), Color(0xFFF3EEFF)],
+                colors: [AppColors.primaryLight, Color(0xFFF3EEFF)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),

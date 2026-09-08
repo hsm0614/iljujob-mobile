@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../data/services/ai_labor_service.dart';
+import '../../../config/app_theme.dart';
 
 class WageReportScreen extends StatefulWidget {
   final String category;
@@ -63,7 +64,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: AppColors.bgPage,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -96,7 +97,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
           Text(
             _error!,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Color(0xFF6B7280)),
+            style: const TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 16),
           ElevatedButton(onPressed: _load, child: const Text('다시 시도')),
@@ -121,7 +122,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
               ),
               child: const Icon(
                 Icons.workspace_premium_rounded,
-                color: Color(0xFF3B8AFF),
+                color: AppColors.primary,
                 size: 32,
               ),
             ),
@@ -131,7 +132,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
               style: TextStyle(
                 fontSize: 17,
                 fontWeight: FontWeight.w900,
-                color: Color(0xFF191F28),
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
@@ -140,7 +141,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF6B7280),
+                color: AppColors.textSecondary,
                 height: 1.5,
               ),
             ),
@@ -150,7 +151,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
               child: ElevatedButton(
                 onPressed: () => Navigator.pushNamed(context, '/subscribe'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF3B8AFF),
+                  backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
@@ -244,7 +245,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
                   const SizedBox(width: 8),
                   const Text(
                     'Gemini AI 리포트',
-                    style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                   ),
                 ],
               ),
@@ -269,7 +270,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
           Center(
             child: Text(
               '* 알바일주 DB 기반 분석 · ${r.cached ? '캐시' : '실시간'} · 2026년 최저임금 10,320원 기준',
-              style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
           ),
@@ -299,7 +300,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
           '시장 급여 분포',
           style: TextStyle(
             fontSize: 12,
-            color: Color(0xFF6B7280),
+            color: AppColors.textSecondary,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -361,11 +362,11 @@ class _WageReportScreenState extends State<WageReportScreen> {
           children: [
             Text(
               '${_fmt.format(r.minHourly)}원',
-              style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280)),
+              style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
             ),
             Text(
               '${_fmt.format(r.maxHourly)}원',
-              style: const TextStyle(fontSize: 10, color: Color(0xFF6B7280)),
+              style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -434,7 +435,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
                   const SizedBox(height: 2),
                   Text(
                     '추천 시급으로 올리면 지원자 +${r.applyRateUplift}% 예상',
-                    style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                   ),
                 ],
               ],
@@ -518,7 +519,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
             ),
           ),
           const SizedBox(height: 2),
-          Text(label, style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280))),
+          Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
         ],
       ),
     );
@@ -533,11 +534,11 @@ class _WageReportScreenState extends State<WageReportScreen> {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF111827),
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 2),
-        Text(sub, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+        Text(sub, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
       ],
     );
   }

@@ -10,6 +10,7 @@ import '../../../data/services/authenticated_http_client.dart';
 import '../../../data/services/screen_analytics_service.dart';
 import '../../chat/chat_room_screen.dart'; // 경로 맞게 수정
 import '../../widgets/albailju_common.dart';
+import '../../../config/app_theme.dart';
 
 // ─── 모델 ────────────────────────────────────────────────────────
 
@@ -88,13 +89,13 @@ class ApplicantModel {
       case 'S':
         return const Color(0xFFFF6B00);
       case 'A':
-        return const Color(0xFF3B8AFF);
+        return AppColors.primary;
       case 'B':
         return const Color(0xFF0F766E);
       case 'C':
-        return const Color(0xFF6B7280);
+        return AppColors.textSecondary;
       default:
-        return const Color(0xFF9CA3AF);
+        return AppColors.textTertiary;
     }
   }
 
@@ -109,7 +110,7 @@ class ApplicantModel {
       case 'C':
         return const Color(0xFFF1F3F5);
       default:
-        return const Color(0xFFF4F6FA);
+        return AppColors.bgPage;
     }
   }
 
@@ -194,15 +195,15 @@ class JobApplicantGroup {
 }
 
 // ─── 상수 ────────────────────────────────────────────────────────
-const kBrandBlue = Color(0xFF3B8AFF);
-const _blue = Color(0xFF3B8AFF);
+const kBrandBlue = AppColors.primary;
+const _blue = AppColors.primary;
 const _blueBg = Color(0xFFE8F0FF);
 const _green = Color(0xFF0F766E);
 const _greenBg = Color(0xFFE8F7EF);
 const _signalTime = Color(0xFFEA8035); // 시간이 급함
 const _signalTimeBg = Color(0xFFFDF1E7);
-const _ink = Color(0xFF191F28);
-const _inkSecondary = Color(0xFF6B7280);
+const _ink = AppColors.textPrimary;
+const _inkSecondary = AppColors.textSecondary;
 const int _jobsPerPage = 5;
 const int _applicantsPreview = 3;
 
@@ -430,7 +431,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w900,
-                    color: Color(0xFF191F28),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -439,7 +440,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   style: TextStyle(
                     fontSize: 13,
                     height: 1.45,
-                    color: Color(0xFF6B7280),
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -450,7 +451,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                         onPressed: () => Navigator.pop(ctx, false),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFF4B5563),
-                          side: const BorderSide(color: Color(0xFFE5E8EB)),
+                          side: const BorderSide(color: AppColors.border),
                           padding: const EdgeInsets.symmetric(vertical: 13),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -559,7 +560,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF191F28),
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ),
@@ -570,7 +571,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 group.jobTitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 14),
               TextField(
@@ -584,11 +585,11 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   fillColor: const Color(0xFFF8F9FB),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE5E8EB)),
+                    borderSide: const BorderSide(color: AppColors.border),
                   ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFFE5E8EB)),
+                    borderSide: const BorderSide(color: AppColors.border),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -676,7 +677,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: AppColors.bgPage,
       appBar: AlbailjuAppBar(
         title: '지원자 관리',
         brand: true,
@@ -744,7 +745,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE5E8EB)),
+          border: Border.all(color: AppColors.border),
         ),
         child: Column(
           children: [
@@ -753,13 +754,13 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF191F28),
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               label,
-              style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -782,7 +783,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E8EB)),
+        border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.04),
@@ -807,7 +808,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                     Icon(
                       Icons.inbox_rounded,
                       size: 28,
-                      color: const Color(0xFFD1D5DB),
+                      color: AppColors.textDisabled,
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -842,12 +843,12 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF4F6FA),
+                    color: AppColors.bgPage,
                     borderRadius: const BorderRadius.vertical(
                       bottom: Radius.circular(18),
                     ),
                     border: Border(
-                      top: BorderSide(color: const Color(0xFFF4F6FA)),
+                      top: BorderSide(color: AppColors.bgPage),
                     ),
                   ),
                   child: Row(
@@ -893,7 +894,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       decoration: BoxDecoration(
         color: hasNew ? const Color(0xFFF0F5FF) : const Color(0xFFFAFAFA),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
-        border: Border(bottom: BorderSide(color: const Color(0xFFF4F6FA))),
+        border: Border(bottom: BorderSide(color: AppColors.bgPage)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -922,7 +923,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF191F28),
+                        color: AppColors.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -982,7 +983,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 // 인원수만. '신규 N'은 아래 '처리 필요 N명' 칩과 정의가 사실상
                 // 같아서 둘 다 붙이면 같은 정보를 두 번 말한다(Everyone-Has-It Rule).
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF2F4F8),
+                  color: AppColors.bgMuted,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -990,7 +991,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF6B7280),
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ),
@@ -1066,15 +1067,15 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   ? color
                   : enabled
                   ? Colors.white
-                  : const Color(0xFFF4F6FA),
+                  : AppColors.bgPage,
           borderRadius: BorderRadius.circular(999),
           border: Border.all(
             color:
                 selected && enabled
                     ? color
                     : enabled
-                    ? const Color(0xFFD1D5DB)
-                    : const Color(0xFFF4F6FA),
+                    ? AppColors.textDisabled
+                    : AppColors.bgPage,
           ),
         ),
         child: Text(
@@ -1086,8 +1087,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 selected && enabled
                     ? Colors.white
                     : enabled
-                    ? const Color(0xFF6B7280)
-                    : const Color(0xFF9CA3AF),
+                    ? AppColors.textSecondary
+                    : AppColors.textTertiary,
           ),
         ),
       ),
@@ -1182,7 +1183,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
             height: 1,
             thickness: 0.5,
             indent: 46,
-            color: Color(0xFFF4F6FA),
+            color: AppColors.bgPage,
           ),
       ],
     );
@@ -1228,7 +1229,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                               ? _blue
                               : applicant.isNew
                               ? _blue
-                              : const Color(0xFFD1D5DB),
+                              : AppColors.textDisabled,
                       width: 1.5,
                     ),
                   ),
@@ -1266,7 +1267,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFF191F28),
+                                color: AppColors.textPrimary,
                               ),
                             ),
                           ),
@@ -1274,7 +1275,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                           const Icon(
                             Icons.chevron_right_rounded,
                             size: 16,
-                            color: Color(0xFF9CA3AF),
+                            color: AppColors.textTertiary,
                           ),
                           const Spacer(),
                           _statusChip(applicant),
@@ -1308,7 +1309,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                           decoration: BoxDecoration(
                             color: const Color(0xFFF8FAFC),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFE5E8EB)),
+                            border: Border.all(color: AppColors.border),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -1316,7 +1317,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                               const Icon(
                                 Icons.phone_iphone_rounded,
                                 size: 14,
-                                color: Color(0xFF6B7280),
+                                color: AppColors.textSecondary,
                               ),
                               const SizedBox(width: 5),
                               // 좁은 화면에서 번호가 '연락처 보기'를 밀어내 28px 넘쳤다.
@@ -1349,7 +1350,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                                       fontWeight: FontWeight.w900,
                                       color:
                                           phoneLoading
-                                              ? const Color(0xFF9CA3AF)
+                                              ? AppColors.textTertiary
                                               : _blue,
                                     ),
                                   ),
@@ -1420,7 +1421,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
             height: 1,
             thickness: 0.5,
             indent: 46,
-            color: const Color(0xFFF4F6FA),
+            color: AppColors.bgPage,
           ),
       ],
     );
@@ -1454,7 +1455,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   color: isSelected ? _blue : Colors.transparent,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: isSelected ? _blue : const Color(0xFFD1D5DB),
+                    color: isSelected ? _blue : AppColors.textDisabled,
                   ),
                 ),
                 child: Center(
@@ -1464,7 +1465,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color:
-                          isSelected ? Colors.white : const Color(0xFF6B7280),
+                          isSelected ? Colors.white : AppColors.textSecondary,
                     ),
                   ),
                 ),
@@ -1493,12 +1494,12 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         height: 36,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFD1D5DB)),
+          border: Border.all(color: AppColors.textDisabled),
         ),
         child: Icon(
           icon,
           size: 20,
-          color: active ? const Color(0xFF6B7280) : const Color(0xFFD1D5DB),
+          color: active ? AppColors.textSecondary : AppColors.textDisabled,
         ),
       ),
     );
@@ -1619,19 +1620,19 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F6FA),
+        color: AppColors.bgPage,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 11, color: const Color(0xFF6B7280)),
+          Icon(icon, size: 11, color: AppColors.textSecondary),
           const SizedBox(width: 3),
           Text(
             label,
             style: const TextStyle(
               fontSize: 11,
-              color: Color(0xFF6B7280),
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -1653,12 +1654,12 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
           const SizedBox(height: 16),
           const Text(
             '아직 지원자가 없어요',
-            style: TextStyle(fontSize: 16, color: Color(0xFF9CA3AF)),
+            style: TextStyle(fontSize: 16, color: AppColors.textTertiary),
           ),
           const SizedBox(height: 8),
           const Text(
             '공고를 올리면 알바생들이 지원할 거예요!',
-            style: TextStyle(fontSize: 13, color: Color(0xFF9CA3AF)),
+            style: TextStyle(fontSize: 13, color: AppColors.textTertiary),
           ),
           const SizedBox(height: 24),
           TextButton(onPressed: _fetch, child: const Text('새로고침')),
@@ -1676,7 +1677,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
           const SizedBox(height: 12),
           Text(
             _error ?? '알 수 없는 오류',
-            style: const TextStyle(color: Color(0xFF6B7280)),
+            style: const TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 16),
           ElevatedButton(onPressed: _fetch, child: const Text('다시 시도')),

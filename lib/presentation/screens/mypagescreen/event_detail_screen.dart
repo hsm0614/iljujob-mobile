@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iljujob/config/constants.dart';
+import '../../../config/app_theme.dart';
 
 class EventDetailScreen extends StatelessWidget {
   final Map<String, dynamic> event;
@@ -36,7 +37,7 @@ class EventDetailScreen extends StatelessWidget {
             if (startDate.isNotEmpty && endDate.isNotEmpty)
               Text(
                 '📅 기간: $startDate ~ $endDate',
-                style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+                style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
             const SizedBox(height: 16),
 

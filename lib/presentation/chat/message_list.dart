@@ -323,7 +323,7 @@ class _MessageBubble extends StatelessWidget {
                       targetName,
                       style: const TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF6B7280),
+                        color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -391,7 +391,7 @@ class _MessageBubble extends StatelessWidget {
                                   color:
                                       isMe
                                           ? Colors.white
-                                          : const Color(0xFF111827),
+                                          : AppColors.textPrimary,
                                 ),
                               ),
                     ),
@@ -448,7 +448,7 @@ class _MessageBubble extends StatelessWidget {
                                 DateFormat('a h:mm', 'ko_KR').format(when),
                                 style: const TextStyle(
                                   fontSize: 10,
-                                  color: Color(0xFF6B7280),
+                                  color: AppColors.textSecondary,
                                 ),
                               ),
                               if (isMe) ...[
@@ -596,7 +596,7 @@ class _HireNudgeBubble extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: onConfirmHire,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF3B8AFF),
+                    backgroundColor: AppColors.primary,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(999),

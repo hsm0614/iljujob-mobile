@@ -3,6 +3,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../config/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../data/services/authenticated_http_client.dart';
+import '../../../config/messages.dart';
+import '../../../config/app_theme.dart';
 
 class WorkerProfileScreen extends StatefulWidget {
   final int workerId;
@@ -144,14 +147,13 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                   final prefs = await SharedPreferences.getInstance();
                   final userId = prefs.getInt('userId') ?? 0;
 
-                  final response = await http.post(
+                  final response = await AuthenticatedHttpClient.postJson(
                     Uri.parse('$baseUrl/api/user-block/block'),
-                    headers: {'Content-Type': 'application/json'},
-                    body: jsonEncode({
+                    body: {
                       'userId': userId,
                       'targetId': targetId,
                       'targetType': targetType, // 'worker'
-                    }),
+                    },
                   );
 
                   if (response.statusCode == 200) {
@@ -161,7 +163,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('차단 실패: ${response.body}')),
+                      SnackBar(content: Text(Msg.server)),
                     );
                   }
                 },
@@ -222,7 +224,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                 const SizedBox(height: 8),
                 const Text(
                   '※ 신고된 내용은 운영 정책에 따라 24시간 이내에 조치됩니다.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -244,10 +246,9 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                   final reporterId = prefs.getInt('userId') ?? 0;
                   final reporterType = prefs.getString('userType');
 
-                  final response = await http.post(
+                  final response = await AuthenticatedHttpClient.postJson(
                     Uri.parse('$baseUrl/api/user-report'),
-                    headers: {'Content-Type': 'application/json'},
-                    body: jsonEncode({
+                    body: {
                       'reporterId': reporterId,
                       if (reporterType != null && reporterType.isNotEmpty)
                         'reporterType': reporterType,
@@ -255,7 +256,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                       'targetType': targetType,
                       'reasonCategory': selectedReason,
                       'reasonDetail': reasonController.text.trim(),
-                    }),
+                    },
                   );
 
                   Navigator.pop(context);
@@ -266,7 +267,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('신고 실패: ${response.body}')),
+                      SnackBar(content: Text(Msg.server)),
                     );
                   }
                 },
@@ -352,7 +353,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                           : '이 알바생은 이력서 열람에 동의하지 않았습니다.\n기본 정보만 확인할 수 있어요.',
                       style: TextStyle(
                         fontSize: 12,
-                        color: const Color(0xFF6B7280),
+                        color: AppColors.textSecondary,
                       ),
                     ),
 
@@ -411,7 +412,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
           Icons.check_circle,
           '알바 완료',
           '${profile!['completed_count'] ?? 0}',
-          const Color(0xFF3B8AFF),
+          AppColors.primary,
         ),
         _squareStatCard(
           Icons.thermostat_rounded,
@@ -442,7 +443,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E8EB)),
+        border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: .03),
@@ -580,7 +581,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                       if ((exp['description'] ?? '').toString().isNotEmpty)
                         Text(
                           exp['description'],
-                          style: const TextStyle(color: Color(0xFF191F28)),
+                          style: const TextStyle(color: AppColors.textPrimary),
                         ),
                     ],
                   ),
@@ -610,7 +611,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                   .map(
                     (lic) => Chip(
                       label: Text('${lic['name']} (${lic['issued_at']})'),
-                      backgroundColor: const Color(0xFFEEF5FF),
+                      backgroundColor: AppColors.primaryLight,
                     ),
                   )
                   .toList(),
@@ -646,7 +647,7 @@ class _SectionTitle extends StatelessWidget {
           child: Divider(
             height: 1,
             thickness: 1,
-            color: const Color(0xFFD1D5DB),
+            color: AppColors.textDisabled,
           ),
         ),
       ],

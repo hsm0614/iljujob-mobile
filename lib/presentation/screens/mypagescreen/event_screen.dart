@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'event_detail_screen.dart';
 import '../../../config/constants.dart'; // baseUrl
+import '../../../config/app_theme.dart';
 
 class EventScreen extends StatefulWidget {
   const EventScreen({super.key});
@@ -89,7 +90,7 @@ class _EventScreenState extends State<EventScreen> {
   }
 
   String _badgeText(Map e) => _isOngoing(e) ? '진행중' : '종료';
-  Color _badgeColor(Map e) => _isOngoing(e) ? const Color(0xFF3B8AFF) : Colors.grey;
+  Color _badgeColor(Map e) => _isOngoing(e) ? AppColors.primary : Colors.grey;
 
   @override
   Widget build(BuildContext context) {
@@ -103,10 +104,10 @@ class _EventScreenState extends State<EventScreen> {
     }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6FA),
+      backgroundColor: AppColors.bgPage,
       body: RefreshIndicator(
         onRefresh: _fetchEvents,
-        color: const Color(0xFF3B8AFF),
+        color: AppColors.primary,
         child: CustomScrollView(
           slivers: [
             // 헤더
@@ -122,7 +123,7 @@ class _EventScreenState extends State<EventScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF3B8AFF), Color(0xFF6EB6FF)],
+          colors: [AppColors.primary, Color(0xFF6EB6FF)],
         ),
       ),
       child: SafeArea(

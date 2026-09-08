@@ -11,6 +11,8 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../config/constants.dart';
 import '../../../data/services/authenticated_http_client.dart';
+import '../../../config/messages.dart';
+import '../../../config/app_theme.dart';
 
 // 유연한 키 대응
 T? pickFirstNonNull<T>(Map src, List<String> keys) {
@@ -31,8 +33,8 @@ class EditClientProfileScreen extends StatefulWidget {
 
 class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
   // ---- 스타일
-  static const kBrand = Color(0xFF3B8AFF);
-  static const kBg = Color(0xFFF4F6FA);
+  static const kBrand = AppColors.primary;
+  static const kBg = AppColors.bgPage;
 
   final picker = ImagePicker();
 
@@ -169,7 +171,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         if (mounted) setState(() => isLoading = false);
       }
     } catch (e) {
-      _showSnackbar('네트워크 오류가 발생했습니다.');
+      _showSnackbar(Msg.network);
       if (mounted) setState(() => isLoading = false);
     }
   }
@@ -358,7 +360,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       }
     } catch (e) {
       debugPrint('save error: $e');
-      if (mounted) _showSnackbar('네트워크 오류가 발생했습니다.');
+      if (mounted) _showSnackbar(Msg.network);
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -381,7 +383,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
             title: '저장하지 않고 나갈까요?',
             message: '변경 사항이 저장되지 않습니다.',
             confirmText: '나가기',
-            confirmColor: const Color(0xFFDC2626),
+            confirmColor: AppColors.error,
             icon: Icons.warning_amber_rounded,
           ),
     );
@@ -652,7 +654,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                   ),
                   child: const Text(
                     '파일을 불러오지 못했습니다.',
-                    style: TextStyle(color: Color(0xFF6B7280)),
+                    style: TextStyle(color: AppColors.textSecondary),
                   ),
                 ),
           ),
@@ -664,12 +666,12 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         decoration: BoxDecoration(
           color: const Color(0xFFF3F4F6),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE5E7EB)),
+          border: Border.all(color: AppColors.border),
         ),
         alignment: Alignment.center,
         child: const Text(
           '아직 업로드된 파일이 없습니다.',
-          style: TextStyle(color: Color(0xFF6B7280)),
+          style: TextStyle(color: AppColors.textSecondary),
         ),
       );
     }
@@ -932,7 +934,7 @@ class _SheetHeader extends StatelessWidget {
           width: 42,
           height: 5,
           decoration: BoxDecoration(
-            color: const Color(0xFFE5E7EB),
+            color: AppColors.border,
             borderRadius: BorderRadius.circular(999),
           ),
         ),
@@ -1004,7 +1006,7 @@ class _ConfirmSheet extends StatelessWidget {
             width: 42,
             height: 5,
             decoration: BoxDecoration(
-              color: const Color(0xFFE5E7EB),
+              color: AppColors.border,
               borderRadius: BorderRadius.circular(999),
             ),
           ),
@@ -1029,7 +1031,7 @@ class _ConfirmSheet extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 12.5,
-              color: Color(0xFF6B7280),
+              color: AppColors.textSecondary,
               height: 1.35,
             ),
           ),
@@ -1040,8 +1042,8 @@ class _ConfirmSheet extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context, false),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF111827),
-                    side: const BorderSide(color: Color(0xFFE5E7EB)),
+                    foregroundColor: AppColors.textPrimary,
+                    side: const BorderSide(color: AppColors.border),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),

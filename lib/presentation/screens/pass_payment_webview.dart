@@ -466,7 +466,7 @@ Future.delayed(const Duration(seconds: 2), () async {
 
       if (res.statusCode == 200) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ 이용권이 정상 지급되었습니다')));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('이용권을 지급했어요.')));
           Navigator.pop(context, impUid);
         }
       } else {

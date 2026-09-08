@@ -13,15 +13,16 @@ import '../../../config/constants.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:async';
 import 'package:iljujob/utils/pay_display.dart';
+import '../../../config/app_theme.dart';
 
-const kBrandBlue = Color(0xFF3B8AFF);
+const kBrandBlue = AppColors.primary;
 const kTextPrimary = Colors.black87;
 const kTextSecondary = Colors.black54;
 
 class ClientRealMainScreen extends StatefulWidget {
   const ClientRealMainScreen({super.key});
 
-  static const Color kBrandBlue = Color(0xFF3B8AFF);
+  static const Color kBrandBlue = AppColors.primary;
   static const Color kTextPrimary = Colors.black87;
   static const Color kTextSecondary = Colors.black54;
   @override

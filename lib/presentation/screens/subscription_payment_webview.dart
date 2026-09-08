@@ -11,6 +11,8 @@ import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 
 import '../../config/constants.dart';
 import '../../data/services/authenticated_http_client.dart';
+import '../../config/messages.dart';
+import '../../config/app_theme.dart';
 
 // ─────────────────────────────────────────────
 // 상수
@@ -20,7 +22,7 @@ const _kAndroidProductId = 'subscribe';
 const _kTimeoutSec = 15;
 const _kMaxRetries = 3;
 const _kRestoreWaitSec = 8; // 복원 이벤트 대기 시간 (늘림)
-const _brandBlue = Color(0xFF3B8AFF);
+const _brandBlue = AppColors.primary;
 
 class SubscribeScreen extends StatefulWidget {
   const SubscribeScreen({super.key});
@@ -318,7 +320,7 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
       return;
     }
     if (_userId == null || _authToken == null) {
-      _showError('로그인이 필요합니다');
+      _showError(Msg.loginRequired);
       return;
     }
 
@@ -807,7 +809,7 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
               const SizedBox(height: 8),
               Text(
                 product.description,
-                style: TextStyle(color: const Color(0xFF6B7280), fontSize: 14),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
               ),
               const SizedBox(height: 12),
               Row(
@@ -869,12 +871,12 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
             const SizedBox(height: 16),
             Text(
               '상품을 불러올 수 없습니다',
-              style: TextStyle(fontSize: 16, color: const Color(0xFF6B7280)),
+              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 8),
             Text(
               '네트워크 연결을 확인하고 다시 시도해주세요',
-              style: TextStyle(color: const Color(0xFF6B7280)),
+              style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 16),
             ElevatedButton(

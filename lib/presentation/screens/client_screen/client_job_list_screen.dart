@@ -4,6 +4,7 @@ import 'package:iljujob/data/models/job.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import '../worker_screen/job_detail_screen.dart';
+import '../../../config/app_theme.dart';
 
 class ClientJobListScreen extends StatefulWidget {
   final int clientId;
@@ -157,7 +158,7 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
                               formatJobPay(job.pay, job.payType),
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF3B8AFF),
+                                color: AppColors.primary,
                               ),
                             ),
                             if (!isNegotiablePayType(job.payType))

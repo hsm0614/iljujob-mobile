@@ -63,7 +63,7 @@ class EditJobScreen extends StatefulWidget {
 
 class _EditJobScreenState extends State<EditJobScreen> {
   // ===== Brand =====
-  static const Color brandBlue = Color(0xFF3B8AFF);
+  static const Color brandBlue = AppColors.primary;
   static const Color cardBg = Color(0xFFF7F9FF);
   static const int minWagePerHour = 10320; // 2026년 적용
 
@@ -716,7 +716,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE5E7EB),
+                    color: AppColors.border,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -930,7 +930,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
       labelText: label,
       hintText: hint,
       filled: true,
-      fillColor: const Color(0xFFF4F6FA),
+      fillColor: AppColors.bgPage,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       suffixIcon: suffix,
       enabledBorder: OutlineInputBorder(
@@ -1556,7 +1556,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                   width: double.infinity,
                                   padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFFEEF5FF),
+                                    color: AppColors.primaryLight,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
                                       color: const Color(0xFFD6E7FF),

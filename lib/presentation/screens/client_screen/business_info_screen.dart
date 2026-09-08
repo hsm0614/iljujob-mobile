@@ -7,8 +7,9 @@ import 'dart:convert';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import '../../../config/constants.dart';
 import '../../../data/services/authenticated_http_client.dart';
+import '../../../config/app_theme.dart';
 
-const kBrandBlue = Color(0xFF3B8AFF);
+const kBrandBlue = AppColors.primary;
 
 class ClientBusinessInfoScreen extends StatefulWidget {
   const ClientBusinessInfoScreen({super.key});
@@ -87,7 +88,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                           height: 4,
                           margin: const EdgeInsets.only(bottom: 20),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE5E7EB),
+                            color: AppColors.border,
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -106,7 +107,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                         '없으시면 비워두셔도 돼요.',
                         style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF9CA3AF),
+                          color: AppColors.textTertiary,
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -148,7 +149,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                           child: const Text(
                             '건너뛰기',
                             style: TextStyle(
-                              color: Color(0xFF9CA3AF),
+                              color: AppColors.textTertiary,
                               fontSize: 13,
                             ),
                           ),
@@ -396,12 +397,12 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                 const SizedBox(height: 8),
                 const Text(
                   '휴업/폐업 여부만 간단히 체크해요.',
-                  style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+                  style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 6),
                 const Text(
                   '사업자등록번호가 없으시면\nhsm@outfind.co.kr 로 문의해주세요.',
-                  style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 12),
 
@@ -414,9 +415,9 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                       vertical: 10,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF4F6FA),
+                      color: AppColors.bgPage,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFE5E8EB)),
+                      border: Border.all(color: AppColors.border),
                     ),
                     child: Row(
                       children: [
@@ -570,7 +571,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
   InputDecoration _sheetInputDecoration(String hint) {
     return InputDecoration(
       hintText: hint,
-      hintStyle: const TextStyle(color: Color(0xFFD1D5DB)),
+      hintStyle: const TextStyle(color: AppColors.textDisabled),
       filled: true,
       fillColor: const Color(0xFFF6F8FA),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),

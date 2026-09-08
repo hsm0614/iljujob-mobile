@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
+import '../../../config/app_theme.dart';
 
 /// 공고 상세에서 호출: showModalBottomSheet
 class AiInterviewPrepSheet extends StatefulWidget {
@@ -152,7 +153,7 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                     height: 40,
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF3B8AFF), Color(0xFF6C63FF)],
+                        colors: [AppColors.primary, Color(0xFF6C63FF)],
                       ),
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -197,7 +198,7 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                         width: 40,
                         height: 40,
                         child: CircularProgressIndicator(
-                          color: Color(0xFF3B8AFF),
+                          color: AppColors.primary,
                           strokeWidth: 3,
                         ),
                       ),
@@ -210,7 +211,7 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                       Text(
                         '보통 5~10초 걸려요',
                         style: TextStyle(
-                          color: Color(0xFF6B7280),
+                          color: AppColors.textSecondary,
                           fontSize: 11,
                         ),
                       ),
@@ -278,7 +279,7 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                     color: const Color(0xFFF5F8FF),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: const Color(0xFF3B8AFF).withOpacity(0.15),
+                      color: AppColors.primary.withOpacity(0.15),
                     ),
                   ),
                   child: Text(
@@ -323,9 +324,9 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                       style: TextStyle(fontWeight: FontWeight.w700),
                     ),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF3B8AFF),
+                      foregroundColor: AppColors.primary,
                       side: BorderSide(
-                        color: const Color(0xFF3B8AFF).withOpacity(0.4),
+                        color: AppColors.primary.withOpacity(0.4),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(

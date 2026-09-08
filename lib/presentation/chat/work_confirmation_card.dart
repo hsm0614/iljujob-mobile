@@ -43,7 +43,7 @@ class WorkConfirmationCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
@@ -78,7 +78,7 @@ class WorkConfirmationCard extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF111827),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const Spacer(),
@@ -148,8 +148,8 @@ class WorkConfirmationCard extends StatelessWidget {
                     child: OutlinedButton(
                       onPressed: onReject,
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: const Color(0xFF6B7280),
-                        side: const BorderSide(color: Color(0xFFE5E7EB)),
+                        foregroundColor: AppColors.textSecondary,
+                        side: const BorderSide(color: AppColors.border),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
@@ -252,7 +252,7 @@ class WorkConfirmationCard extends StatelessWidget {
     'day_of_confirmed' => AppColors.primary,
     'checked_in' || 'completed' => const Color(0xFF22C55E),
     'cancelled' || 'no_show' => const Color(0xFFEF4444),
-    _ => const Color(0xFF6B7280),
+    _ => AppColors.textSecondary,
   };
 }
 
@@ -271,18 +271,18 @@ class _Row extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(
     children: [
-      Icon(icon, size: 14, color: const Color(0xFF9CA3AF)),
+      Icon(icon, size: 14, color: AppColors.textTertiary),
       const SizedBox(width: 6),
       Text(
         '$label  ',
-        style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF)),
+        style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
       ),
       Text(
         value,
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: valueColor ?? const Color(0xFF111827),
+          color: valueColor ?? AppColors.textPrimary,
         ),
       ),
     ],
@@ -540,7 +540,7 @@ class _ProposeWorkConfirmationSheetState
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w800,
-                              color: Color(0xFF111827),
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           SizedBox(height: 2),
@@ -548,7 +548,7 @@ class _ProposeWorkConfirmationSheetState
                             '알바생이 수락하면 근무가 확정돼요',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Color(0xFF6B7280),
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],
@@ -702,11 +702,11 @@ class _ProposeWorkConfirmationSheetState
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                        borderSide: const BorderSide(color: AppColors.border),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+                        borderSide: const BorderSide(color: AppColors.border),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -764,7 +764,7 @@ class _ProposeWorkConfirmationSheetState
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        disabledBackgroundColor: const Color(0xFFE5E7EB),
+                        disabledBackgroundColor: AppColors.border,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -839,7 +839,7 @@ class _Tile extends StatelessWidget {
         border: Border.all(
           color:
               isEmpty
-                  ? const Color(0xFFE5E7EB)
+                  ? AppColors.border
                   : AppColors.primary.withValues(alpha: 0.4),
         ),
       ),
@@ -848,7 +848,7 @@ class _Tile extends StatelessWidget {
           Icon(
             icon,
             size: 16,
-            color: isEmpty ? const Color(0xFF9CA3AF) : AppColors.primary,
+            color: isEmpty ? AppColors.textTertiary : AppColors.primary,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -858,7 +858,7 @@ class _Tile extends StatelessWidget {
                 fontSize: 13,
                 fontWeight: isEmpty ? FontWeight.w400 : FontWeight.w600,
                 color:
-                    isEmpty ? const Color(0xFF9CA3AF) : const Color(0xFF111827),
+                    isEmpty ? AppColors.textTertiary : AppColors.textPrimary,
               ),
               overflow: TextOverflow.ellipsis,
             ),

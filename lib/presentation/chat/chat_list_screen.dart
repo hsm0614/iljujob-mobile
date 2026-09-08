@@ -16,6 +16,7 @@ import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
+import '../../config/messages.dart';
 
 class ChatListScreen extends StatefulWidget {
   final VoidCallback? onMessagesRead;
@@ -420,7 +421,7 @@ class _ChatListScreenState extends State<ChatListScreen>
     final userPhone = prefs.getString('userPhone') ?? '';
     final userId = prefs.getInt('userId');
     if (userPhone.isEmpty && userId == null) {
-      _showSnackbar('로그인이 필요합니다.');
+      _showSnackbar(Msg.loginRequired);
       setState(() => isLoading = false);
       return;
     }
@@ -448,12 +449,12 @@ class _ChatListScreenState extends State<ChatListScreen>
         _showSnackbar('채팅방 목록 불러오기 실패 (${response.statusCode})');
       }
     } on AuthSessionExpiredException {
-      _showSnackbar('로그인이 필요합니다.');
+      _showSnackbar(Msg.loginRequired);
       if (mounted) {
         Navigator.pushNamedAndRemoveUntil(context, '/onboarding', (_) => false);
       }
     } catch (e) {
-      _showSnackbar('네트워크 오류 발생');
+      _showSnackbar(Msg.network);
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -492,7 +493,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE5E7EB),
+                  color: AppColors.border,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
@@ -517,7 +518,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
                   fontFamily: 'Jalnan2TTF',
-                  color: Color(0xFF111827),
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
@@ -526,7 +527,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 13.5,
-                  color: Color(0xFF6B7280),
+                  color: AppColors.textSecondary,
                   height: 1.5,
                 ),
               ),
@@ -555,7 +556,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                 child: TextButton(
                   onPressed: () => Navigator.of(context).pop(false),
                   style: TextButton.styleFrom(
-                    foregroundColor: const Color(0xFF6B7280),
+                    foregroundColor: AppColors.textSecondary,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -605,7 +606,7 @@ class _ChatListScreenState extends State<ChatListScreen>
         _showSnackbar('채팅방 나가기 실패 (${response.statusCode})');
       }
     } on AuthSessionExpiredException {
-      _showSnackbar('로그인이 필요합니다.');
+      _showSnackbar(Msg.loginRequired);
       if (mounted) {
         Navigator.pushNamedAndRemoveUntil(context, '/onboarding', (_) => false);
       }
@@ -686,12 +687,13 @@ class _ChatListScreenState extends State<ChatListScreen>
         _showSnackbar(message);
       }
     } on AuthSessionExpiredException {
-      _showSnackbar('로그인이 필요합니다.');
+      _showSnackbar(Msg.loginRequired);
       if (mounted) {
         Navigator.pushNamedAndRemoveUntil(context, '/onboarding', (_) => false);
       }
     } catch (e) {
-      _showSnackbar('지원 취소 중 오류가 발생했습니다: $e');
+      debugPrint('지원 취소 중 오류가 발생했습니다: $e');
+      _showSnackbar(Msg.applyCancelFailed);
     }
   }
 

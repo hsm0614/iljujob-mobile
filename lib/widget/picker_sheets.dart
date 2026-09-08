@@ -20,7 +20,7 @@ Widget _grip() => Container(
   width: 40,
   height: 4,
   decoration: BoxDecoration(
-    color: const Color(0xFFE5E7EB),
+    color: AppColors.border,
     borderRadius: BorderRadius.circular(999),
   ),
 );

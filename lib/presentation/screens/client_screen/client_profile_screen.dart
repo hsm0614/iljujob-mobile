@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import '../../../config/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../data/services/authenticated_http_client.dart';
+import '../../../config/messages.dart';
+import '../../../config/app_theme.dart';
 
 class ClientProfileScreen extends StatefulWidget {
   final int clientId; // <-- 반드시 int PK!
@@ -28,17 +30,19 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
       '$baseUrl/api/client/public-profile?id=${widget.clientId}',
     );
     try {
-      final response = await http.get(url);
+      final response = await AuthenticatedHttpClient.get(url);
       if (response.statusCode == 200) {
         setState(() {
           profile = jsonDecode(response.body);
           isLoading = false;
         });
       } else {
-        _showError('불러오기 실패: ${response.body}');
+        debugPrint('불러오기 실패: ${response.body}');
+        _showError(Msg.server);
       }
     } catch (e) {
-      _showError('네트워크 오류: $e');
+      debugPrint('네트워크 오류: $e');
+      _showError(Msg.network);
     }
   }
 
@@ -51,7 +55,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
     );
 
     try {
-      final response = await http.get(url);
+      final response = await AuthenticatedHttpClient.get(url);
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         setState(() {
@@ -71,14 +75,13 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
       '$baseUrl/api/user-block/${isBlocked ? 'unblock' : 'block'}',
     );
     try {
-      final response = await http.post(
+      final response = await AuthenticatedHttpClient.postJson(
         url,
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+        body: {
           'userId': userId,
           'targetId': widget.clientId,
           'targetType': 'client',
-        }),
+        },
       );
 
       if (response.statusCode == 200) {
@@ -91,10 +94,12 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
           ),
         );
       } else {
-        _showError('차단 요청 실패: ${response.body}');
+        debugPrint('차단 요청 실패: ${response.body}');
+        _showError(Msg.server);
       }
     } catch (e) {
-      _showError('네트워크 오류: $e');
+      debugPrint('네트워크 오류: $e');
+      _showError(Msg.network);
     }
   }
 
@@ -150,7 +155,10 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                 const SizedBox(height: 8),
                 const Text(
                   '※ 신고된 내용은 검토 후 24시간 이내에 조치됩니다.',
-                  style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -176,10 +184,9 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                   final reporterId = prefs.getInt('userId') ?? 0;
                   final reporterType = prefs.getString('userType');
 
-                  final response = await http.post(
+                  final response = await AuthenticatedHttpClient.postJson(
                     Uri.parse('$baseUrl/api/user-report'),
-                    headers: {'Content-Type': 'application/json'},
-                    body: jsonEncode({
+                    body: {
                       'reporterId': reporterId,
                       if (reporterType != null && reporterType.isNotEmpty)
                         'reporterType': reporterType,
@@ -187,7 +194,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                       'targetType': targetType,
                       'reasonCategory': selectedReason,
                       'reasonDetail': memoController.text.trim(),
-                    }),
+                    },
                   );
 
                   if (response.statusCode == 200) {
@@ -197,9 +204,9 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                       ),
                     );
                   } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('신고 실패: ${response.body}')),
-                    );
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text(Msg.server)));
                   }
                 },
                 child: const Text('신고'),
@@ -433,7 +440,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
 
   Widget _tinyMuted(String text) => Text(
     text,
-    style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
   );
 
   Widget _statsCard() {
@@ -508,7 +515,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                   title,
                   style: const TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF6B7280),
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 2),

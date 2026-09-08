@@ -67,7 +67,7 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
     'accepted' => const Color(0xFF22C55E),
     'rejected' || 'no_response' => const Color(0xFFEF4444),
     'time_adjusted' => const Color(0xFFFF9500),
-    _ => const Color(0xFF9CA3AF),
+    _ => AppColors.textTertiary,
   };
 
   String _grade(int score) {
@@ -82,8 +82,8 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
     if (score >= 100) return const Color(0xFFAB47BC);
     if (score >= 70) return const Color(0xFFEF4444);
     if (score >= 40) return AppColors.primary;
-    if (score >= 20) return const Color(0xFF6B7280);
-    return const Color(0xFF9CA3AF);
+    if (score >= 20) return AppColors.textSecondary;
+    return AppColors.textTertiary;
   }
 
   String _relTime(String? raw) {

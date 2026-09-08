@@ -389,7 +389,7 @@ class _ClientActions extends StatelessWidget {
           child: const Text(
             '✔ 알바 완료됨',
             style: TextStyle(
-              color: Color(0xFF6B7280),
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
@@ -485,7 +485,7 @@ class _WorkerActions extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: (!canBook || workLoading) ? null : onAddToCalendar,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B8AFF),
+              backgroundColor: AppColors.primary,
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(999),
@@ -535,8 +535,8 @@ class _WorkerActions extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: workLoading ? null : onCancelWorkSession,
               style: OutlinedButton.styleFrom(
-                foregroundColor: const Color(0xFFDC2626),
-                side: const BorderSide(color: Color(0xFFDC2626)),
+                foregroundColor: AppColors.error,
+                side: const BorderSide(color: AppColors.error),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(999),
                 ),
@@ -547,7 +547,7 @@ class _WorkerActions extends StatelessWidget {
               ),
               icon:
                   workLoading
-                      ? _loadingDot(const Color(0xFFDC2626))
+                      ? _loadingDot(AppColors.error)
                       : const Icon(Icons.event_busy_rounded, size: 16),
               label: const Text(
                 '일정 취소',
@@ -575,7 +575,7 @@ class _WorkerActions extends StatelessWidget {
         ElevatedButton.icon(
           onPressed: checkinLoading ? null : onCheckin,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF10B981),
+            backgroundColor: AppColors.success,
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(999),
@@ -620,8 +620,8 @@ class _WorkerActions extends StatelessWidget {
         OutlinedButton.icon(
           onPressed: (workLoading || _isCancelled) ? null : onCancelApplication,
           style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFFDC2626),
-            side: const BorderSide(color: Color(0xFFDC2626)),
+            foregroundColor: AppColors.error,
+            side: const BorderSide(color: AppColors.error),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(999),
             ),
@@ -703,7 +703,7 @@ class _InfoDivider extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     width: 1,
     height: 14,
-    color: const Color(0xFFD1D5DB),
+    color: AppColors.textDisabled,
     margin: const EdgeInsets.symmetric(horizontal: 4),
   );
 }
@@ -725,20 +725,20 @@ class _Pill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: bg ?? const Color(0xFFEEF5FF),
+        color: bg ?? AppColors.primaryLight,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: fg ?? const Color(0xFF1D68E5)),
+          Icon(icon, size: 14, color: fg ?? AppColors.primaryDark),
           const SizedBox(width: 6),
           Text(
             text,
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: fg ?? const Color(0xFF1D68E5),
+              color: fg ?? AppColors.primaryDark,
             ),
           ),
         ],
@@ -769,7 +769,7 @@ class _ActionButton extends StatelessWidget {
     final disabled = onPressed == null;
     return ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
-        backgroundColor: disabled ? const Color(0xFFE5E7EB) : color,
+        backgroundColor: disabled ? AppColors.border : color,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
@@ -779,12 +779,12 @@ class _ActionButton extends StatelessWidget {
       icon: Icon(
         icon,
         size: 15,
-        color: disabled ? const Color(0xFF9CA3AF) : Colors.white,
+        color: disabled ? AppColors.textTertiary : Colors.white,
       ),
       label: Text(
         text,
         style: TextStyle(
-          color: disabled ? const Color(0xFF9CA3AF) : Colors.white,
+          color: disabled ? AppColors.textTertiary : Colors.white,
           fontWeight: FontWeight.w700,
           fontSize: 13,
           letterSpacing: -0.3,
@@ -843,7 +843,7 @@ class ChatRoomConsentBanner extends StatelessWidget {
           TextButton(
             onPressed: busy ? null : onReject,
             style: TextButton.styleFrom(
-              foregroundColor: const Color(0xFFDC2626),
+              foregroundColor: AppColors.error,
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -971,7 +971,7 @@ class ChatRoomCancelledBanner extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              backgroundColor: const Color(0xFF3B8AFF),
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(999),

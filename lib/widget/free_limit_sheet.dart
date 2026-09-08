@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:iljujob/data/services/client_tracking_service.dart';
 import 'package:iljujob/presentation/screens/purchase_screen.dart';
+import '../config/app_theme.dart';
 
 /// 무료 월 한도 소진 안내.
 ///
 /// 막다른 길로 두지 않고 이용권 구매로 이어준다. 공고 등록(post_job_form)과
 /// 재등록(quick_post_sheet) 두 경로에서 같은 화면을 쓴다.
 Future<void> showFreeLimitSheet(BuildContext context, String message) {
-  const blue = Color(0xFF3B8AFF);
+  const blue = AppColors.primary;
 
   return showModalBottomSheet<void>(
     context: context,
@@ -45,7 +46,7 @@ Future<void> showFreeLimitSheet(BuildContext context, String message) {
             style: TextStyle(
               fontSize: 17,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF111827),
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
@@ -54,7 +55,7 @@ Future<void> showFreeLimitSheet(BuildContext context, String message) {
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 13,
-              color: Color(0xFF6B7280),
+              color: AppColors.textSecondary,
               height: 1.5,
             ),
           ),
@@ -66,7 +67,7 @@ Future<void> showFreeLimitSheet(BuildContext context, String message) {
                   onPressed: () => Navigator.pop(ctx),
                   style: OutlinedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: Color(0xFFE5E7EB)),
+                    side: const BorderSide(color: AppColors.border),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -74,7 +75,7 @@ Future<void> showFreeLimitSheet(BuildContext context, String message) {
                   child: const Text(
                     '닫기',
                     style: TextStyle(
-                      color: Color(0xFF6B7280),
+                      color: AppColors.textSecondary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

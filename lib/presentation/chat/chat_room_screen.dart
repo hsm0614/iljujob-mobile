@@ -508,13 +508,13 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                       width: 56,
                       height: 56,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF3B8AFF).withValues(alpha: 0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
                         Icons.rate_review_rounded,
                         size: 28,
-                        color: Color(0xFF3B8AFF),
+                        color: AppColors.primary,
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -529,7 +529,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     const SizedBox(height: 6),
                     const Text(
                       '솔직한 평가가 더 나은 매칭을 만들어요',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
                     ),
                     const SizedBox(height: 20),
 
@@ -561,7 +561,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                         fontWeight: FontWeight.w700,
                         color:
                             isGood
-                                ? const Color(0xFF10B981)
+                                ? AppColors.success
                                 : const Color(0xFFEF4444),
                       ),
                     ),
@@ -591,7 +591,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                   color:
                                       active
                                           ? (isGood
-                                              ? const Color(0xFF3B8AFF)
+                                              ? AppColors.primary
                                               : const Color(0xFFEF4444))
                                           : const Color(0xFFF3F4F6),
                                   borderRadius: BorderRadius.circular(99),
@@ -604,7 +604,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                     color:
                                         active
                                             ? Colors.white
-                                            : const Color(0xFF6B7280),
+                                            : AppColors.textSecondary,
                                   ),
                                 ),
                               ),
@@ -627,7 +627,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                         child: ElevatedButton(
                           onPressed: submit,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF3B8AFF),
+                            backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
@@ -650,7 +650,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                       child: const Text(
                         '나중에 할게요',
                         style: TextStyle(
-                          color: Color(0xFF6B7280),
+                          color: AppColors.textSecondary,
                           fontSize: 13,
                         ),
                       ),
@@ -700,12 +700,12 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                         width: 44,
                         height: 44,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF3B8AFF).withValues(alpha: 0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
                           Icons.calendar_today_rounded,
-                          color: Color(0xFF3B8AFF),
+                          color: AppColors.primary,
                           size: 22,
                         ),
                       ),
@@ -726,7 +726,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                               '앱 내 캘린더에서 근무 일정을 확인해요',
                               style: TextStyle(
                                 fontSize: 12,
-                                color: Color(0xFF6B7280),
+                                color: AppColors.textSecondary,
                               ),
                             ),
                           ],
@@ -738,7 +738,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF4F6FA),
+                      color: AppColors.bgPage,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Column(
@@ -780,8 +780,8 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                         child: OutlinedButton(
                           onPressed: () => Navigator.of(ctx).pop(),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF6B7280),
-                            side: const BorderSide(color: Color(0xFFE5E7EB)),
+                            foregroundColor: AppColors.textSecondary,
+                            side: const BorderSide(color: AppColors.border),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -801,7 +801,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                             _addToCalendar(conf);
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF3B8AFF),
+                            backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
@@ -892,7 +892,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                       Expanded(
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Color(0xFFE5E7EB)),
+                            side: const BorderSide(color: AppColors.border),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(999),
                             ),
@@ -911,7 +911,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                       Expanded(
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF3B8AFF),
+                            backgroundColor: AppColors.primary,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(999),
@@ -962,14 +962,14 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
             ),
             content: const Text(
               '해당 알바생이 출근하지 않았나요?\n노쇼 처리 시 알바생 신뢰도 점수가 크게 감소합니다.',
-              style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
                 child: const Text(
                   '취소',
-                  style: TextStyle(color: Color(0xFF6B7280)),
+                  style: TextStyle(color: AppColors.textSecondary),
                 ),
               ),
               TextButton(
@@ -1016,7 +1016,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFE5E7EB),
+                      color: AppColors.border,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -1047,7 +1047,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
                               fontSize: 16,
-                              color: Color(0xFF191F28),
+                              color: AppColors.textPrimary,
                             ),
                           ),
                           SizedBox(height: 2),
@@ -1055,7 +1055,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                             '즉시게시 이용권 1개가 자동 환급됩니다.',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Color(0xFF6B7280),
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],
@@ -1082,7 +1082,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
+                        colors: [Color(0xFFEF4444), AppColors.error],
                       ),
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
@@ -1124,7 +1124,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     child: const Text(
                       '나중에 하기',
                       style: TextStyle(
-                        color: Color(0xFF6B7280),
+                        color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
                         fontSize: 14,
                       ),
@@ -1163,7 +1163,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
               backgroundColor:
                   status == 'accepted'
                       ? const Color(0xFF22C55E)
-                      : const Color(0xFF6B7280),
+                      : AppColors.textSecondary,
             ),
           );
       }
@@ -1178,16 +1178,16 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
       margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F6FA),
+        color: AppColors.bgPage,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE5E8EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
           const Icon(
             Icons.notifications_off_outlined,
             size: 16,
-            color: Color(0xFF6B7280),
+            color: AppColors.textSecondary,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -1196,7 +1196,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
               style: const TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF6B7280),
+                color: AppColors.textSecondary,
                 height: 1.4,
               ),
             ),
@@ -1250,11 +1250,11 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         ),
         child: const Row(
           children: [
-            Icon(Icons.block_rounded, color: Color(0xFF9CA3AF), size: 18),
+            Icon(Icons.block_rounded, color: AppColors.textTertiary, size: 18),
             SizedBox(width: 8),
             Text(
               '긴급호출을 거절했어요.',
-              style: TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -1427,7 +1427,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF3B8AFF),
+                        color: AppColors.primary,
                       ),
                     ),
                   ),
@@ -1439,7 +1439,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                 style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF111827),
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),
@@ -1455,7 +1455,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     const TextSpan(
                       text: '자기소개와 장점',
                       style: TextStyle(
-                        color: Color(0xFF3B8AFF),
+                        color: AppColors.primary,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -1469,12 +1469,12 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                   const Icon(
                     Icons.bolt_rounded,
                     size: 14,
-                    color: Color(0xFF9CA3AF),
+                    color: AppColors.textTertiary,
                   ),
                   const SizedBox(width: 4),
                   const Text(
                     '알바일주 데이터 기준',
-                    style: TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+                    style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
                   ),
                   const Spacer(),
                   TextButton.icon(
@@ -1489,7 +1489,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                       ),
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      backgroundColor: const Color(0xFF3B8AFF),
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(999),
@@ -1847,7 +1847,7 @@ class _CalRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(
     children: [
-      Icon(icon, size: 14, color: const Color(0xFF3B8AFF)),
+      Icon(icon, size: 14, color: AppColors.primary),
       const SizedBox(width: 8),
       Expanded(
         child: Text(

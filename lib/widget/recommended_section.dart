@@ -4,6 +4,7 @@ import 'package:lottie/lottie.dart';
 
 import '../../data/services/ai_api.dart';
 import 'package:iljujob/data/models/job.dart';
+import '../config/app_theme.dart';
 
 class RecommendedSection extends StatefulWidget {
   final AiApi api;
@@ -167,7 +168,7 @@ class _RecommendedSectionState extends State<RecommendedSection> {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.auto_awesome, size: 18, color: Color(0xFF3B8AFF)),
+                  Icon(Icons.auto_awesome, size: 18, color: AppColors.primary),
                   SizedBox(width: 8),
                   Text(
                     '아직 추천 공고가 없어요',
@@ -190,8 +191,8 @@ class _RecommendedSectionState extends State<RecommendedSection> {
                     icon: const Icon(Icons.refresh_rounded, size: 18),
                     label: const Text('다시 불러오기'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF3B8AFF),
-                      side: BorderSide(color: const Color(0xFF3B8AFF).withOpacity(.35)),
+                      foregroundColor: AppColors.primary,
+                      side: BorderSide(color: AppColors.primary.withOpacity(.35)),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
@@ -283,7 +284,7 @@ class _AiJobCard extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE5E7EB)),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -362,7 +363,7 @@ class _ReasonChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFEAF2FF),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFF3B8AFF).withOpacity(.22)),
+        border: Border.all(color: AppColors.primary.withOpacity(.22)),
       ),
       child: Text(
         text,

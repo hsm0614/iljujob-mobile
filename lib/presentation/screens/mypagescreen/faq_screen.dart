@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../../config/app_theme.dart';
 
 class FaqScreen extends StatelessWidget {
   const FaqScreen({super.key});
 
-  static const _brand = Color(0xFF3B8AFF);
+  static const _brand = AppColors.primary;
 
   // ▶ 데이터
   static const List<Map<String, String>> commonFaq = [
@@ -56,7 +57,7 @@ class FaqScreen extends StatelessWidget {
           decoration: const BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter, end: Alignment.bottomCenter,
-              colors: [Color(0xFF3B8AFF), Color(0xFF7CC7FF), Colors.white],
+              colors: [AppColors.primary, Color(0xFF7CC7FF), Colors.white],
               stops: [0, .25, .25],
             ),
           ),
@@ -109,11 +110,11 @@ class _FancyTabBar extends StatelessWidget {
         tabs: tabs,
         isScrollable: false,
         indicator: BoxDecoration(
-          color: const Color(0xFF3B8AFF),
+          color: AppColors.primary,
           borderRadius: BorderRadius.circular(26),
         ),
         labelColor: Colors.white,
-        unselectedLabelColor: const Color(0xFF3B8AFF),
+        unselectedLabelColor: AppColors.primary,
         indicatorSize: TabBarIndicatorSize.tab,
         splashBorderRadius: BorderRadius.circular(26),
         labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0), // 세로 여백 0으로
@@ -188,7 +189,7 @@ Widget build(BuildContext context) {
             // 헤더
             Row(
               children: [
-                Icon(widget.titleIcon, color: const Color(0xFF6B7280)),
+                Icon(widget.titleIcon, color: AppColors.textSecondary),
                 const SizedBox(width: 8),
                 Text('FAQ', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
                 const SizedBox(width: 8),
@@ -285,7 +286,7 @@ class _FaqCardState extends State<_FaqCard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: open ? const Color(0xFF3B8AFF) : const Color(0x1F000000), width: 1),
+        border: Border.all(color: open ? AppColors.primary : const Color(0x1F000000), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(open ? .08 : .04),
@@ -302,8 +303,8 @@ class _FaqCardState extends State<_FaqCard> {
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           leading: CircleAvatar(
             radius: 16,
-            backgroundColor: const Color(0xFF3B8AFF).withOpacity(.12),
-            child: const Icon(Icons.help_outline_rounded, color: Color(0xFF3B8AFF), size: 18),
+            backgroundColor: AppColors.primary.withOpacity(.12),
+            child: const Icon(Icons.help_outline_rounded, color: AppColors.primary, size: 18),
           ),
           trailing: AnimatedRotation(
             turns: open ? .5 : 0,
@@ -345,11 +346,11 @@ class _Empty extends StatelessWidget {
       alignment: Alignment.center,
       child: Column(
         children: [
-          const Icon(Icons.search_off_rounded, size: 44, color: Color(0xFF9CA3AF)),
+          const Icon(Icons.search_off_rounded, size: 44, color: AppColors.textTertiary),
           const SizedBox(height: 8),
           const Text('검색 결과가 없어요', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: 6),
-          Text('‘$q’와(과) 관련된 질문을 찾지 못했어요.', style: const TextStyle(color: Color(0xFF6B7280))),
+          Text('‘$q’와(과) 관련된 질문을 찾지 못했어요.', style: const TextStyle(color: AppColors.textSecondary)),
         ],
       ),
     );
@@ -373,13 +374,13 @@ class _SupportCTA extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFF3B8AFF).withOpacity(.08),
+        color: AppColors.primary.withOpacity(.08),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF3B8AFF).withOpacity(.2)),
+        border: Border.all(color: AppColors.primary.withOpacity(.2)),
       ),
       child: Row(
         children: [
-          const Icon(Icons.support_agent_rounded, color: Color(0xFF3B8AFF)),
+          const Icon(Icons.support_agent_rounded, color: AppColors.primary),
           const SizedBox(width: 10),
           const Expanded(
             child: Text(

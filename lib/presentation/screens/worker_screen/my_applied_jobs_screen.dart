@@ -13,8 +13,9 @@ import '../../../data/services/authenticated_http_client.dart';
 import 'job_detail_screen.dart';
 import '../../chat/chat_room_screen.dart';
 import 'package:iljujob/utils/pay_display.dart';
+import '../../../config/messages.dart';
 
-const kBrandBlue = Color(0xFF3B8AFF);
+const kBrandBlue = AppColors.primary;
 
 class MyAppliedJobsScreen extends StatefulWidget {
   const MyAppliedJobsScreen({super.key});
@@ -139,7 +140,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
     final workerId = prefs.getInt('userId');
 
     if (workerId == null) {
-      _showErrorSnackbar('로그인이 필요합니다. 다시 로그인해주세요.');
+      _showErrorSnackbar(Msg.loginExpired);
       appliedJobs = [];
       return;
     }
@@ -233,7 +234,8 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
         _showErrorSnackbar('찜 해제에 실패했습니다. (${res.statusCode})');
       }
     } catch (e) {
-      _showErrorSnackbar('찜 해제 중 오류가 발생했습니다: $e');
+      debugPrint('찜 해제 중 오류가 발생했습니다: $e');
+      _showErrorSnackbar(Msg.bookmarkFailed);
     }
   }
 
@@ -369,7 +371,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE5E7EB),
+                    color: AppColors.border,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -513,7 +515,8 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
         _showErrorSnackbar('지원 취소에 실패했습니다. (${res.statusCode})');
       }
     } catch (e) {
-      _showErrorSnackbar('지원 취소 중 오류가 발생했습니다: $e');
+      debugPrint('지원 취소 중 오류가 발생했습니다: $e');
+      _showErrorSnackbar(Msg.applyCancelFailed);
     }
   }
 
@@ -541,7 +544,8 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
         _showErrorSnackbar('채팅방 정보 요청 실패 (${res.statusCode})');
       }
     } catch (e) {
-      _showErrorSnackbar('네트워크 오류: $e');
+      debugPrint('네트워크 오류: $e');
+      _showErrorSnackbar(Msg.network);
     }
   }
 
@@ -555,9 +559,9 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
       child: Container(
         height: 44,
         decoration: BoxDecoration(
-          color: const Color(0xFFF4F6FA),
+          color: AppColors.bgPage,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE5E8EB)),
+          border: Border.all(color: AppColors.border),
           boxShadow: const [
             BoxShadow(
               color: Color(0x08000000),
@@ -574,7 +578,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
           decoration: const InputDecoration(
             prefixIcon: Icon(
               Icons.search_rounded,
-              color: Color(0xFF9CA3AF),
+              color: AppColors.textTertiary,
               size: 20,
             ),
             hintText: '제목 또는 지역으로 검색',
@@ -615,8 +619,8 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                             selected ? FontWeight.w700 : FontWeight.w500,
                         color:
                             selected
-                                ? const Color(0xFF191F28)
-                                : const Color(0xFF9CA3AF),
+                                ? AppColors.textPrimary
+                                : AppColors.textTertiary,
                       ),
                     ),
                     const SizedBox(width: 5),
@@ -636,7 +640,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
                           color:
-                              selected ? Colors.white : const Color(0xFF9CA3AF),
+                              selected ? Colors.white : AppColors.textTertiary,
                         ),
                       ),
                     ),
@@ -684,7 +688,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
             color: selected ? kBrandBlue : Colors.white,
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: selected ? kBrandBlue : const Color(0xFFE5E8EB),
+              color: selected ? kBrandBlue : AppColors.border,
             ),
             boxShadow:
                 selected
@@ -702,7 +706,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : const Color(0xFF6B7280),
+              color: selected ? Colors.white : AppColors.textSecondary,
             ),
           ),
         ),
@@ -783,7 +787,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                       style: const TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFF191F28),
+                        color: AppColors.textPrimary,
                         height: 1.1,
                       ),
                     ),
@@ -821,14 +825,14 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
           item(
             label: '출근 확정',
             count: _activityCount('confirmed'),
-            color: const Color(0xFF10B981),
+            color: AppColors.success,
             icon: Icons.verified_rounded,
           ),
           const SizedBox(width: 8),
           item(
             label: '마감',
             count: _activityCount('closed'),
-            color: const Color(0xFF9CA3AF),
+            color: AppColors.textTertiary,
             icon: Icons.flag_rounded,
           ),
         ],
@@ -844,11 +848,11 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
   }
 
   Color _statusColor(Job job) {
-    if (job.status == 'deleted') return const Color(0xFF9CA3AF);
-    if (job.status == 'active') return const Color(0xFF3B8AFF);
+    if (job.status == 'deleted') return AppColors.textTertiary;
+    if (job.status == 'active') return AppColors.primary;
     if (job.status == 'hired' || job.status == 'confirmed')
-      return const Color(0xFF10B981);
-    return const Color(0xFF9CA3AF);
+      return AppColors.success;
+    return AppColors.textTertiary;
   }
 
   Widget _emptyView({required bool forBookmark}) {
@@ -875,7 +879,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
-                color: const Color(0xFF6B7280),
+                color: AppColors.textSecondary,
                 height: 1.4,
               ),
             ),
@@ -989,7 +993,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               fontSize: 12.5,
-                              color: Color(0xFF6B7280),
+                              color: AppColors.textSecondary,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -1032,7 +1036,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                       '$start ~ $end  ·  ${job.workingHours}',
                       style: const TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF6B7280),
+                        color: AppColors.textSecondary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -1043,7 +1047,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                         '${formatJobPay(job.pay, job.payType, includeType: true)}${bookmarkedTab ? '' : '   ·   지원일 $appliedAt'}',
                         style: const TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF191F28),
+                          color: AppColors.textPrimary,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -1131,7 +1135,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                   ] else ...[
                     IconButton(
                       icon: const Icon(Icons.chat_bubble_outline, size: 20),
-                      color: const Color(0xFF3B8AFF),
+                      color: AppColors.primary,
                       tooltip: '채팅하기',
                       onPressed: () => _openChatRoom(job),
                     ),
@@ -1162,7 +1166,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF4F6FA),
+        backgroundColor: AppColors.bgPage,
         appBar: PreferredSize(
           preferredSize: const Size.fromHeight(88),
           child: Container(
@@ -1170,7 +1174,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF3B8AFF), Color(0xFF1D68E5)],
+                colors: [AppColors.primary, AppColors.primaryDark],
               ),
             ),
             child: SafeArea(

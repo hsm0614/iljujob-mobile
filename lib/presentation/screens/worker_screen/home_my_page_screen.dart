@@ -10,6 +10,7 @@ import '../../../data/services/authenticated_http_client.dart';
 import '../../../data/services/screen_analytics_service.dart';
 import 'edit_worker_profile_screen.dart';
 import 'labor_consult_screen.dart';
+import '../../../config/app_theme.dart';
 
 class WorkerMyPageScreen extends StatefulWidget {
   const WorkerMyPageScreen({super.key});
@@ -20,9 +21,9 @@ class WorkerMyPageScreen extends StatefulWidget {
 
 class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
   // ===== Brand =====
-  static const Color kBrandBlue = Color(0xFF3B8AFF);
+  static const Color kBrandBlue = AppColors.primary;
   static const Color kBrandBlueLight = Color(0xFF6EB6FF);
-  static const Color kBg = Color(0xFFF4F6FA);
+  static const Color kBg = AppColors.bgPage;
 
   // ===== Profile State =====
   bool _loading = true;
@@ -339,7 +340,7 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
             title: '로그아웃할까요?',
             message: '로그아웃하면 다시 로그인해야 해요.',
             confirmText: '로그아웃',
-            confirmColor: const Color(0xFFDC2626),
+            confirmColor: AppColors.error,
             icon: Icons.logout_rounded,
           ),
     );
@@ -369,7 +370,7 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
             title: '정말 탈퇴할까요?',
             message: '탈퇴하면 계정 정보가 삭제되고 복구가 어려워요.',
             confirmText: '탈퇴하기',
-            confirmColor: Color(0xFFDC2626),
+            confirmColor: AppColors.error,
             icon: Icons.person_off_rounded,
           ),
     );
@@ -622,12 +623,12 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
                       label: '로그아웃',
                       labelStyle: const TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFFDC2626),
+                        color: AppColors.error,
                       ),
                       trailing: const Icon(
                         Icons.logout,
                         size: 18,
-                        color: Color(0xFFDC2626),
+                        color: AppColors.error,
                       ),
                       onTap: _confirmLogout,
                     ),
@@ -636,12 +637,12 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
                       label: '회원 탈퇴',
                       labelStyle: const TextStyle(
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFFDC2626),
+                        color: AppColors.error,
                       ),
                       trailing: const Icon(
                         Icons.delete_forever,
                         size: 18,
-                        color: Color(0xFFDC2626),
+                        color: AppColors.error,
                       ),
                       onTap: _confirmWithdraw,
                     ),
@@ -717,7 +718,7 @@ class _WorkerProfileCard extends StatelessWidget {
                             ? const Icon(
                               Icons.account_circle,
                               size: 30,
-                              color: Color(0xFF6B7280),
+                              color: AppColors.textSecondary,
                             )
                             : null,
                   ),
@@ -764,7 +765,7 @@ class _WorkerProfileCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        color: Color(0xFF191F28),
+                        color: AppColors.textPrimary,
                         fontWeight: FontWeight.w900,
                         fontSize: 15,
                       ),
@@ -773,7 +774,7 @@ class _WorkerProfileCard extends StatelessWidget {
                     _Pill(
                       icon: Icons.call_rounded,
                       text: loading ? '잠시만요' : phoneText,
-                      color: const Color(0xFF3B8AFF),
+                      color: AppColors.primary,
                       bg: const Color(0xFFF1F6FF),
                     ),
                   ],
@@ -786,7 +787,7 @@ class _WorkerProfileCard extends StatelessWidget {
                 label: const Text('프로필 수정'),
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFFEAF2FF),
-                  foregroundColor: const Color(0xFF3B8AFF),
+                  foregroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 10,
@@ -813,7 +814,7 @@ class _WorkerProfileCard extends StatelessWidget {
                   title: '정산 완료',
                   value: loadingSettle ? '불러오는 중…' : settledText,
                   icon: Icons.check_circle_rounded,
-                  accent: const Color(0xFF3B8AFF),
+                  accent: AppColors.primary,
                   bg: const Color(0xFFEAF2FF),
                 ),
               ),
@@ -823,7 +824,7 @@ class _WorkerProfileCard extends StatelessWidget {
                   title: '정산 예정',
                   value: loadingSettle ? '불러오는 중…' : pendingText,
                   icon: Icons.schedule_rounded,
-                  accent: const Color(0xFF3B8AFF),
+                  accent: AppColors.primary,
                   bg: const Color(0xFFF1F6FF),
                 ),
               ),
@@ -997,7 +998,7 @@ class _SectionCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF191F28),
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
@@ -1042,7 +1043,7 @@ class _ItemTile extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 10),
         child: ListTile(
-          leading: Icon(icon, size: 22, color: const Color(0xFF3B8AFF)),
+          leading: Icon(icon, size: 22, color: AppColors.primary),
           title: Text(
             label,
             style:
@@ -1054,7 +1055,7 @@ class _ItemTile extends StatelessWidget {
               const Icon(
                 Icons.arrow_forward_ios,
                 size: 16,
-                color: Color(0xFF9CA3AF),
+                color: AppColors.textTertiary,
               ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 6,
@@ -1142,13 +1143,13 @@ class _BizInfoItem extends StatelessWidget {
             width: 110,
             child: Text(
               k,
-              style: const TextStyle(color: Color(0xFF6B7280), fontSize: 13.5),
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13.5),
             ),
           ),
           Expanded(
             child: Text(
               v,
-              style: const TextStyle(fontSize: 13.5, color: Color(0xFF191F28)),
+              style: const TextStyle(fontSize: 13.5, color: AppColors.textPrimary),
             ),
           ),
         ],
@@ -1189,7 +1190,7 @@ class _ConfirmSheet extends StatelessWidget {
             width: 42,
             height: 5,
             decoration: BoxDecoration(
-              color: const Color(0xFFE5E7EB),
+              color: AppColors.border,
               borderRadius: BorderRadius.circular(999),
             ),
           ),
@@ -1214,7 +1215,7 @@ class _ConfirmSheet extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 12.5,
-              color: Color(0xFF6B7280),
+              color: AppColors.textSecondary,
               height: 1.35,
             ),
           ),
@@ -1225,8 +1226,8 @@ class _ConfirmSheet extends StatelessWidget {
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(context, false),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFF111827),
-                    side: const BorderSide(color: Color(0xFFE5E7EB)),
+                    foregroundColor: AppColors.textPrimary,
+                    side: const BorderSide(color: AppColors.border),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -1302,13 +1303,13 @@ class _TrustScoreCardState extends State<_TrustScoreCard> {
       case 'S':
         return const Color(0xFFFF6B00);
       case 'A':
-        return const Color(0xFF3B8AFF);
+        return AppColors.primary;
       case 'B':
-        return const Color(0xFF10B981);
+        return AppColors.success;
       case 'C':
-        return const Color(0xFF6B7280);
+        return AppColors.textSecondary;
       default:
-        return const Color(0xFF9CA3AF);
+        return AppColors.textTertiary;
     }
   }
 
@@ -1412,7 +1413,7 @@ class _TrustScoreCardState extends State<_TrustScoreCard> {
                                 '내 신뢰도',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: Color(0xFF9CA3AF),
+                                  color: AppColors.textTertiary,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -1426,7 +1427,7 @@ class _TrustScoreCardState extends State<_TrustScoreCard> {
                                     style: const TextStyle(
                                       fontSize: 22,
                                       fontWeight: FontWeight.w900,
-                                      color: Color(0xFF111827),
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                   const SizedBox(width: 6),
@@ -1452,7 +1453,7 @@ class _TrustScoreCardState extends State<_TrustScoreCard> {
                             _expanded
                                 ? Icons.keyboard_arrow_up_rounded
                                 : Icons.keyboard_arrow_down_rounded,
-                            color: const Color(0xFF6B7280),
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ],
@@ -1481,7 +1482,7 @@ class _TrustScoreCardState extends State<_TrustScoreCard> {
                                   child: LinearProgressIndicator(
                                     value: progress,
                                     minHeight: 6,
-                                    backgroundColor: const Color(0xFFE5E7EB),
+                                    backgroundColor: AppColors.border,
                                     valueColor: AlwaysStoppedAnimation<Color>(
                                       _gradeColor,
                                     ),
@@ -1494,7 +1495,7 @@ class _TrustScoreCardState extends State<_TrustScoreCard> {
                                 style: const TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w700,
-                                  color: Color(0xFF9CA3AF),
+                                  color: AppColors.textTertiary,
                                 ),
                               ),
                             ],
@@ -1506,7 +1507,7 @@ class _TrustScoreCardState extends State<_TrustScoreCard> {
                                 : '$nextGrade 등급까지 $remaining점 남았어요',
                             style: const TextStyle(
                               fontSize: 11,
-                              color: Color(0xFF6B7280),
+                              color: AppColors.textSecondary,
                             ),
                           ),
                           const SizedBox(height: 14),
@@ -1520,7 +1521,7 @@ class _TrustScoreCardState extends State<_TrustScoreCard> {
                                 label: '접속',
                                 score: widget.loginScore,
                                 icon: Icons.wifi_rounded,
-                                color: const Color(0xFF3B8AFF),
+                                color: AppColors.primary,
                               ),
                               _ScoreChip(
                                 label: '활동',
@@ -1532,7 +1533,7 @@ class _TrustScoreCardState extends State<_TrustScoreCard> {
                                 label: '출근',
                                 score: widget.attendanceScore,
                                 icon: Icons.check_circle_outline_rounded,
-                                color: const Color(0xFF10B981),
+                                color: AppColors.success,
                               ),
                               _ScoreChip(
                                 label: '응답',
@@ -1555,7 +1556,7 @@ class _TrustScoreCardState extends State<_TrustScoreCard> {
                           Container(
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF4F6FA),
+                              color: AppColors.bgPage,
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Column(
@@ -1703,7 +1704,7 @@ class _ScoreDetailSheet extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF111827),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   Text(
@@ -1724,13 +1725,13 @@ class _ScoreDetailSheet extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w800,
-              color: Color(0xFF111827),
+              color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 10),
           _DetailRow(
             icon: Icons.wifi_rounded,
-            color: const Color(0xFF3B8AFF),
+            color: AppColors.primary,
             label: '앱 접속으로 얻은 점수',
             score: loginScore,
             desc: '하루 1회 접속 시 +3점',
@@ -1751,7 +1752,7 @@ class _ScoreDetailSheet extends StatelessWidget {
           ),
           _DetailRow(
             icon: Icons.check_circle_outline_rounded,
-            color: const Color(0xFF10B981),
+            color: AppColors.success,
             label: '출근 완료로 얻은 점수',
             score: attendanceScore,
             desc: '출근 확정 후 실제 출근 시 +10점',
@@ -1768,7 +1769,7 @@ class _ScoreDetailSheet extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFF4F6FA),
+              color: AppColors.bgPage,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -1783,10 +1784,10 @@ class _ScoreDetailSheet extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                _GradeRow('NEW', '0 ~ 19점', const Color(0xFF9CA3AF), grade),
-                _GradeRow('C', '20 ~ 39점', const Color(0xFF6B7280), grade),
-                _GradeRow('B', '40 ~ 69점', const Color(0xFF10B981), grade),
-                _GradeRow('A', '70 ~ 99점', const Color(0xFF3B8AFF), grade),
+                _GradeRow('NEW', '0 ~ 19점', AppColors.textTertiary, grade),
+                _GradeRow('C', '20 ~ 39점', AppColors.textSecondary, grade),
+                _GradeRow('B', '40 ~ 69점', AppColors.success, grade),
+                _GradeRow('A', '70 ~ 99점', AppColors.primary, grade),
                 _GradeRow('S', '100점 이상', const Color(0xFFFF6B00), grade),
               ],
             ),
@@ -1837,14 +1838,14 @@ class _DetailRow extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF111827),
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 Text(
                   desc,
                   style: const TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF6B7280),
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
@@ -1901,7 +1902,7 @@ class _GradeRow extends StatelessWidget {
             range,
             style: TextStyle(
               fontSize: 12,
-              color: isCurrent ? color : const Color(0xFF6B7280),
+              color: isCurrent ? color : AppColors.textSecondary,
               fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w400,
             ),
           ),
@@ -1980,11 +1981,11 @@ class _TipRow extends StatelessWidget {
       padding: const EdgeInsets.only(top: 4),
       child: Row(
         children: [
-          Icon(icon, size: 13, color: const Color(0xFF3B8AFF)),
+          Icon(icon, size: 13, color: AppColors.primary),
           const SizedBox(width: 6),
           Text(
             text,
-            style: const TextStyle(fontSize: 11, color: Color(0xFF6B7280)),
+            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
           ),
         ],
       ),

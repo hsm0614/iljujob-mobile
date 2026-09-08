@@ -8,6 +8,7 @@ import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
 import '../../../data/services/authenticated_http_client.dart';
 import '../worker_screen/worker_profile_screen.dart';
+import '../../../config/messages.dart';
 
 class NearbyWorkersScreen extends StatefulWidget {
   final int jobId;
@@ -58,7 +59,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
         setState(() => _loading = false);
       }
     } catch (e) {
-      _showError('네트워크 오류가 발생했어요.');
+      _showError(Msg.network);
       setState(() => _loading = false);
     }
   }
@@ -88,7 +89,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
         _showError('발송에 실패했어요. 다시 시도해주세요.');
       }
     } catch (_) {
-      _showError('네트워크 오류가 발생했어요.');
+      _showError(Msg.network);
     } finally {
       if (mounted) setState(() => _sending = false);
     }
@@ -239,7 +240,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
     if (score >= 100) return const Color(0xFFFF9500);
     if (score >= 70) return AppColors.primary;
     if (score >= 40) return const Color(0xFF22C55E);
-    return const Color(0xFF9CA3AF);
+    return AppColors.textTertiary;
   }
 
   String _distanceLabel(num? meters) {
@@ -444,7 +445,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
               border: Border.all(
                 color:
                     alreadySent
-                        ? const Color(0xFFE5E7EB)
+                        ? AppColors.border
                         : isSelected
                         ? AppColors.primary
                         : AppColors.border,
@@ -465,7 +466,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                       color:
                           isSelected
                               ? AppColors.primary
-                              : const Color(0xFFD1D5DB),
+                              : AppColors.textDisabled,
                       width: 1.5,
                     ),
                   ),
@@ -514,8 +515,8 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                               fontWeight: FontWeight.w700,
                               color:
                                   alreadySent
-                                      ? const Color(0xFF9CA3AF)
-                                      : const Color(0xFF111827),
+                                      ? AppColors.textTertiary
+                                      : AppColors.textPrimary,
                             ),
                           ),
                           if (availableToday && !alreadySent) ...[
@@ -555,7 +556,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w600,
-                                  color: Color(0xFF9CA3AF),
+                                  color: AppColors.textTertiary,
                                 ),
                               ),
                             ),
@@ -584,14 +585,14 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                           const Icon(
                             Icons.access_time_rounded,
                             size: 11,
-                            color: Color(0xFF6B7280),
+                            color: AppColors.textSecondary,
                           ),
                           const SizedBox(width: 2),
                           Text(
                             _lastActiveLabel(w['last_active_at']),
                             style: const TextStyle(
                               fontSize: 11,
-                              color: Color(0xFF6B7280),
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../data/models/job.dart';
 import 'package:iljujob/utils/pay_display.dart';
+import '../../../config/app_theme.dart';
 
 class JobMetaSection extends StatelessWidget {
   final Job job;
@@ -95,7 +96,7 @@ class _MetaTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.02),
@@ -126,7 +127,7 @@ class _MetaTile extends StatelessWidget {
                   label,
                   style: TextStyle(
                     fontSize: 11,
-                    color: const Color(0xFF6B7280),
+                    color: AppColors.textSecondary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

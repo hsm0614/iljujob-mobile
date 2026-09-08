@@ -903,12 +903,12 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: const Color(0xFF3B8AFF).withOpacity(0.12),
+                color: AppColors.primary.withOpacity(0.12),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.system_update_alt,
-                color: Color(0xFF3B8AFF),
+                color: AppColors.primary,
                 size: 26,
               ),
             ),
@@ -943,7 +943,7 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
-                      side: const BorderSide(color: Color(0xFFE5E7EB)),
+                      side: const BorderSide(color: AppColors.border),
                     ),
                     child: Text(
                       force ? '필수 업데이트' : '나중에',
@@ -959,7 +959,7 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
                       if (!force && context.mounted) Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF3B8AFF),
+                      backgroundColor: AppColors.primary,
                       minimumSize: const Size.fromHeight(46),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -983,7 +983,7 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
                 '업데이트는 스토어에서 진행됩니다.',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Color(0xFF9CA3AF),
+                  color: AppColors.textTertiary,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -1008,7 +1008,7 @@ class _ReleaseNotesBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFFF9FAFB),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Text(
         t,

@@ -16,8 +16,9 @@ import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/main.dart';
 import 'package:iljujob/presentation/screens/signup_worker_screen/signup_worker_screen.dart';
 import 'package:iljujob/presentation/screens/AppleExtraInfoScreen.dart';
+import '../../../config/app_theme.dart';
 
-const kBrand = Color(0xFF3B8AFF);
+const kBrand = AppColors.primary;
 
 class SignupChoiceScreen extends StatefulWidget {
   const SignupChoiceScreen({super.key});
@@ -87,7 +88,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
           MaterialPageRoute(
             builder:
                 (_) => Scaffold(
-                  backgroundColor: const Color(0xFFF4F6FA),
+                  backgroundColor: AppColors.bgPage,
                   appBar: AppBar(
                     title: const Text('프로필 설정'),
                     centerTitle: true,
@@ -270,7 +271,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFF4F6FA),
+        backgroundColor: AppColors.bgPage,
         appBar: AppBar(
           title: const Text('가입 방법 선택'),
           centerTitle: true,
@@ -290,14 +291,14 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF191F28),
+                      color: AppColors.textPrimary,
                     ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   const Text(
                     '카카오/애플로 간편하게 가입하고 바로 시작하세요.\n전화번호 인증은 나중에 프로필에서 선택할 수 있어요.',
-                    style: TextStyle(fontSize: 13.5, color: Color(0xFF6B7280)),
+                    style: TextStyle(fontSize: 13.5, color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -342,8 +343,8 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                         //   icon: Image.asset('assets/icons/google.png', height: 20, width: 20,
                         //       errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata)),
                         //   label: Text(_loading ? '처리 중...' : 'Google로 시작하기'),
-                        //   style: _primaryBtnStyle(bg: Colors.white, fg: const Color(0xFF111827)).copyWith(
-                        //     side: WidgetStateProperty.all(const BorderSide(color: Color(0xFFE5E7EB))),
+                        //   style: _primaryBtnStyle(bg: Colors.white, fg: AppColors.textPrimary).copyWith(
+                        //     side: WidgetStateProperty.all(const BorderSide(color: AppColors.border)),
                         //   ),
                         // ),
                         // const SizedBox(height: 12),
@@ -371,7 +372,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                               child: const Center(
                                 child: Text(
                                   'Apple은 iOS에서만 제공됩니다',
-                                  style: TextStyle(color: Color(0xFF6B7280)),
+                                  style: TextStyle(color: AppColors.textSecondary),
                                 ),
                               ),
                             ),
@@ -395,7 +396,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                   const SizedBox(height: 20),
                   const Text(
                     '※ 프로필을 더 채우면 사장님이 관심을 더 가져줘요. 홈에서 보강 배너로 안내해 드릴게요!',
-                    style: TextStyle(fontSize: 12.5, color: Color(0xFF6B7280)),
+                    style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -484,7 +485,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                 '자신 있는 업무 (2개까지)',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF191F28),
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 12),
@@ -520,7 +521,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                 '나를 표현하는 단어',
                 style: TextStyle(
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF191F28),
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 12),

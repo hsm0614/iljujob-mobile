@@ -12,16 +12,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../config/constants.dart';
 import '../../../data/services/authenticated_http_client.dart';
 import 'package:iljujob/presentation/screens/worker_screen/add_experience_screen.dart';
+import '../../../config/app_theme.dart';
 
 // =====================
 // 알바일주 색상 팔레트 (worker_calendar_screen과 통일)
 // =====================
-const kBrandBlue = Color(0xFF3B8AFF);
-const kBg = Color(0xFFF4F6FA);
+const kBrandBlue = AppColors.primary;
+const kBg = AppColors.bgPage;
 const kCard = Colors.white;
-const kBorder = Color(0xFFE5E7EB);
-const kMuted = Color(0xFF6B7280);
-const kText = Color(0xFF111827);
+const kBorder = AppColors.border;
+const kMuted = AppColors.textSecondary;
+const kText = AppColors.textPrimary;
 
 // =====================
 // Models
@@ -1043,7 +1044,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
     required String title,
     required String message,
     required String confirmLabel,
-    Color confirmColor = const Color(0xFFDC2626),
+    Color confirmColor = AppColors.error,
   }) async {
     final result = await showModalBottomSheet<bool>(
       context: context,
@@ -1959,7 +1960,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                 : IconButton(
                   icon: const Icon(
                     Icons.delete_outline_rounded,
-                    color: Color(0xFFDC2626),
+                    color: AppColors.error,
                   ),
                   onPressed: () => _deleteExperience(e),
                   splashRadius: 20,
@@ -2020,7 +2021,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                 : IconButton(
                   icon: const Icon(
                     Icons.delete_outline_rounded,
-                    color: Color(0xFFDC2626),
+                    color: AppColors.error,
                   ),
                   onPressed: () => _deleteLicense(l),
                 ),
@@ -2130,8 +2131,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
           child: OutlinedButton(
             onPressed: _handleDeleteAccount,
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFFDC2626),
-              side: const BorderSide(color: Color(0xFFDC2626)),
+              foregroundColor: AppColors.error,
+              side: const BorderSide(color: AppColors.error),
               padding: const EdgeInsets.symmetric(vertical: 14),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
@@ -2290,7 +2291,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
             child: LinearProgressIndicator(
               value: done / total,
               minHeight: 8,
-              backgroundColor: const Color(0xFFE5E7EB),
+              backgroundColor: AppColors.border,
               valueColor: const AlwaysStoppedAnimation<Color>(kBrandBlue),
             ),
           ),

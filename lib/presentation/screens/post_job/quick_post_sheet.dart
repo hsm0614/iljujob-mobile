@@ -1129,7 +1129,7 @@ class _DateTile extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: value != null ? const Color(0xFFEEF5FF) : _bg,
+        color: value != null ? AppColors.primaryLight : _bg,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: value != null ? _blue : _border),
       ),

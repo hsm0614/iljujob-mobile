@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:iljujob/presentation/chat/chat_image_screen.dart';
+import '../../config/app_theme.dart';
 
 // ─────────────────────────────────────────────
 // 지원 취소 확인 다이얼로그
@@ -54,7 +55,7 @@ class CancelApplicationDialog extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF111827),
+                          color: AppColors.textPrimary,
                         ),
                       ),
                       SizedBox(height: 4),
@@ -64,7 +65,7 @@ class CancelApplicationDialog extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 13,
                           height: 1.4,
-                          color: Color(0xFF6B7280),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
@@ -79,13 +80,13 @@ class CancelApplicationDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF4F6FA),
+                color: AppColors.bgPage,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Row(
                 children: [
                   Icon(Icons.info_outline_rounded,
-                      size: 16, color: Color(0xFF9CA3AF)),
+                      size: 16, color: AppColors.textTertiary),
                   SizedBox(width: 6),
                   Expanded(
                     child: Text(
@@ -94,7 +95,7 @@ class CancelApplicationDialog extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11.5,
                         height: 1.4,
-                        color: Color(0xFF6B7280),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ),
@@ -134,7 +135,7 @@ class CancelApplicationDialog extends StatelessWidget {
                   height: 44,
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Color(0xFFE5E7EB)),
+                      side: const BorderSide(color: AppColors.border),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(999),
                       ),

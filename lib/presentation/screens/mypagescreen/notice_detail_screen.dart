@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../data/services/notice_service.dart';
 import '../../../data/models/notice.dart';
+import '../../../config/app_theme.dart';
 
 class NoticeDetailScreen extends StatelessWidget {
   final int noticeId;
@@ -39,7 +40,7 @@ class NoticeDetailScreen extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   formattedDate,
-                  style: const TextStyle(color: Color(0xFF6B7280)),
+                  style: const TextStyle(color: AppColors.textSecondary),
                 ),
                 const Divider(height: 24),
                 Expanded(

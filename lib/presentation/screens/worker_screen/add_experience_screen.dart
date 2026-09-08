@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../config/constants.dart';
 import '../../../data/services/authenticated_http_client.dart';
 import 'package:flutter/services.dart';
+import '../../../config/messages.dart';
+import '../../../config/app_theme.dart';
 
 class AddExperienceScreen extends StatefulWidget {
   /// 수정 모드: {'id','place','description','year','duration'} 전달 시 프리필 + PUT
@@ -20,7 +22,7 @@ class AddExperienceScreen extends StatefulWidget {
 
 class _AddExperienceScreenState extends State<AddExperienceScreen> {
   // --- UI 상수 ---
-  static const kBrand = Color(0xFF3B8AFF);
+  static const kBrand = AppColors.primary;
   static const kBorder = Color(0xFFE2E7EF);
   static const kFill = Colors.white;
 
@@ -287,7 +289,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('네트워크 오류가 발생했습니다.')));
+      ).showSnackBar(const SnackBar(content: Text(Msg.network)));
     } finally {
       if (mounted) setState(() => isSaving = false);
     }

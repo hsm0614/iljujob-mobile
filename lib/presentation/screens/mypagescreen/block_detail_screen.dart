@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../config/constants.dart'; // baseUrl이 정의되어 있다면 여기에 있어야 합니다.
 import 'dart:async';
-import 'package:http/http.dart' as http;
+import '../../../data/services/authenticated_http_client.dart';
+
 class BlockedUserListScreen extends StatefulWidget {
   const BlockedUserListScreen({super.key});
 
@@ -26,7 +27,9 @@ class _BlockedUserListScreenState extends State<BlockedUserListScreen> {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('userId') ?? 0;
 
-    final res = await http.get(Uri.parse('$baseUrl/api/user-block/list?userId=$userId'));
+    final res = await AuthenticatedHttpClient.get(
+      Uri.parse('$baseUrl/api/user-block/list?userId=$userId'),
+    );
     if (res.statusCode == 200) {
       final data = List<Map<String, dynamic>>.from(jsonDecode(res.body));
       setState(() {
@@ -42,14 +45,9 @@ class _BlockedUserListScreenState extends State<BlockedUserListScreen> {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('userId') ?? 0;
 
-    await http.post(
+    await AuthenticatedHttpClient.postJson(
       Uri.parse('$baseUrl/api/user-block/unblock'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'userId': userId,
-        'targetId': targetId,
-        'targetType': targetType,
-      }),
+      body: {'userId': userId, 'targetId': targetId, 'targetType': targetType},
     );
 
     _loadBlockedUsers(); // 차단 해제 후 다시 목록 불러오기
@@ -59,26 +57,27 @@ class _BlockedUserListScreenState extends State<BlockedUserListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('차단한 사용자')),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : blockedUsers.isEmpty
+      body:
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : blockedUsers.isEmpty
               ? const Center(child: Text('차단한 사용자가 없습니다.'))
               : ListView.separated(
-                  itemCount: blockedUsers.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final user = blockedUsers[index];
-                    return ListTile(
-                      leading: const Icon(Icons.person_off),
-                      title: Text(user['name'] ?? '이름 없음'),
-                      subtitle: Text(user['type'] == 'worker' ? '구직자' : '기업'),
-                      trailing: TextButton(
-                        child: const Text('차단 해제'),
-                        onPressed: () => _unblockUser(user['id'], user['type']),
-                      ),
-                    );
-                  },
-                ),
+                itemCount: blockedUsers.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (context, index) {
+                  final user = blockedUsers[index];
+                  return ListTile(
+                    leading: const Icon(Icons.person_off),
+                    title: Text(user['name'] ?? '이름 없음'),
+                    subtitle: Text(user['type'] == 'worker' ? '구직자' : '기업'),
+                    trailing: TextButton(
+                      child: const Text('차단 해제'),
+                      onPressed: () => _unblockUser(user['id'], user['type']),
+                    ),
+                  );
+                },
+              ),
     );
   }
 }

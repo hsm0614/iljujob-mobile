@@ -3,8 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
+import '../../../config/app_theme.dart';
 
-const kBrand = Color(0xFF3B8AFF);
+const kBrand = AppColors.primary;
 
 /// 소셜 로그인(카카오/애플)으로 기업 신규 가입 시
 /// 담당자 이름을 추가로 입력받는 화면
@@ -88,7 +89,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
                   height: 1.3,
-                  color: Color(0xFF111827),
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 10),
@@ -96,7 +97,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                 '지원자와의 채팅 및 고객센터 안내에 사용돼요.',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF6B7280),
+                  color: AppColors.textSecondary,
                   height: 1.5,
                 ),
               ),
@@ -138,7 +139,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                         hintText: '홍길동',
                         isDense: true,
                         filled: true,
-                        fillColor: const Color(0xFFF4F6FA),
+                        fillColor: AppColors.bgPage,
                         prefixIcon: const Icon(Icons.person_outline),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14,
@@ -147,13 +148,13 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(
-                            color: Color(0xFFE5E7EB),
+                            color: AppColors.border,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: const BorderSide(
-                            color: Color(0xFFE5E7EB),
+                            color: AppColors.border,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(

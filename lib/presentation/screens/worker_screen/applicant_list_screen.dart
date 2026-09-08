@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/presentation/chat/chat_room_screen.dart';
+import '../../../config/messages.dart';
+import '../../../config/app_theme.dart';
 
 class ApplicantListScreen extends StatefulWidget {
   const ApplicantListScreen({super.key});
@@ -20,10 +22,10 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
   bool _aiSorted = false; // AI 정렬 여부
   String? jobId;
 
-  static const Color _brandBlue = Color(0xFF3B8AFF);
-  static const Color _bg = Color(0xFFF4F6FA);
-  static const Color _border = Color(0xFFE5E8EB);
-  static const Color _text = Color(0xFF191F28);
+  static const Color _brandBlue = AppColors.primary;
+  static const Color _bg = AppColors.bgPage;
+  static const Color _border = AppColors.border;
+  static const Color _text = AppColors.textPrimary;
   static const Color _label = Color(0xFF8B95A1);
 
   String formatDate(String isoDate) {
@@ -78,11 +80,11 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
       }
     } on AuthSessionExpiredException {
       setState(() => isLoading = false);
-      _showSnackbar('로그인이 필요한 기능입니다.');
+      _showSnackbar(Msg.loginRequired);
       if (mounted) Navigator.pushNamed(context, '/login');
     } catch (e) {
       setState(() => isLoading = false);
-      _showSnackbar('네트워크 오류가 발생했어요.');
+      _showSnackbar(Msg.network);
     }
   }
 
@@ -128,10 +130,10 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
         ),
       );
     } on AuthSessionExpiredException {
-      _showSnackbar('로그인이 필요한 기능입니다.');
+      _showSnackbar(Msg.loginRequired);
       if (mounted) Navigator.pushNamed(context, '/login');
     } catch (e) {
-      _showSnackbar('네트워크 오류가 발생했어요.');
+      _showSnackbar(Msg.network);
     }
   }
 
@@ -144,10 +146,10 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
 
   // ── AI 스코어 색상 ──────────────────────────────────────
   Color _scoreColor(double score) {
-    if (score >= 0.80) return const Color(0xFF10B981); // 초록
-    if (score >= 0.60) return const Color(0xFF3B8AFF); // 파랑
-    if (score >= 0.40) return const Color(0xFFF59E0B); // 노랑
-    return const Color(0xFF9CA3AF); // 회색
+    if (score >= 0.80) return AppColors.success; // 초록
+    if (score >= 0.60) return AppColors.primary; // 파랑
+    if (score >= 0.40) return AppColors.warning; // 노랑
+    return AppColors.textTertiary; // 회색
   }
 
   // ── reasons 아이콘 매핑 ─────────────────────────────────
@@ -214,7 +216,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
               child: const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('✨', style: TextStyle(fontSize: 12)),
+                  Icon(Icons.auto_awesome, size: 12),
                   SizedBox(width: 4),
                   Text(
                     'AI 정렬됨',
@@ -417,7 +419,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
                               '($originalName)',
                               style: const TextStyle(
                                 fontSize: 12,
-                                color: Color(0xFF6B7280),
+                                color: AppColors.textSecondary,
                               ),
                             ),
                           ],
