@@ -53,6 +53,11 @@ macos/firebase_app_id_file.json
 
 # ── Env ──────────────────────────────────────────────────────────────────────
 .env
+.env.*
+!.env.example
+*.key
+*.pem
+.codex-outfind-ssh*
 
 # ── Symbolication / Obfuscation ──────────────────────────────────────────────
 app.*.symbols
