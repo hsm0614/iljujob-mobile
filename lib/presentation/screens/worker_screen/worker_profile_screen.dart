@@ -290,6 +290,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
         title: const Text('알바생 프로필'),
         actions: [
           IconButton(
+            tooltip: '신고',
             icon: const Icon(Icons.report, color: Colors.red),
             onPressed: () => _showReportDialog('worker', widget.workerId),
           ),

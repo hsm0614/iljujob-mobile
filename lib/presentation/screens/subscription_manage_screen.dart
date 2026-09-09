@@ -175,6 +175,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
         brand: true,
         actions: [
           IconButton(
+            tooltip: '새로고침',
             onPressed: _refresh,
             icon: const Icon(Icons.refresh_rounded),
           ),

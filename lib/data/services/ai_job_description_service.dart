@@ -297,6 +297,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                   ),
                   if (widget.onClose != null)
                     IconButton(
+                      tooltip: '닫기',
                       onPressed: widget.onClose,
                       icon: const Icon(Icons.close),
                     ),

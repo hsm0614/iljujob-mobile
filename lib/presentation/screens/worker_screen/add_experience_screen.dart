@@ -282,9 +282,10 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
           'duration': selectedDuration,
         });
       } else {
+        debugPrint('경력 저장 실패 (${res.statusCode})');
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('저장 실패 (${res.statusCode})')));
+        ).showSnackBar(const SnackBar(content: Text(Msg.saveFailed)));
       }
     } catch (e) {
       ScaffoldMessenger.of(
@@ -307,6 +308,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
+          tooltip: '닫기',
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),
         ),

@@ -451,6 +451,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
         // quickMode일 때 타이틀 다르게
         title: Text(widget.quickMode ? '빠른 등록 · 공고 선택' : '기존 공고 선택'),
         leading: IconButton(
+          tooltip: '뒤로',
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.pop(context),
         ),

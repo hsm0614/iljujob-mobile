@@ -231,7 +231,8 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
           context,
         ).showSnackBar(const SnackBar(content: Text('찜에서 해제했어요.')));
       } else {
-        _showErrorSnackbar('찜 해제에 실패했습니다. (${res.statusCode})');
+        debugPrint('찜 해제 실패 (${res.statusCode})');
+        _showErrorSnackbar(Msg.bookmarkFailed);
       }
     } catch (e) {
       debugPrint('찜 해제 중 오류가 발생했습니다: $e');
@@ -512,7 +513,8 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
         await _loadAppliedJobs();
         _applyFilters();
       } else {
-        _showErrorSnackbar('지원 취소에 실패했습니다. (${res.statusCode})');
+        debugPrint('지원 취소 실패 (${res.statusCode})');
+        _showErrorSnackbar(Msg.applyCancelFailed);
       }
     } catch (e) {
       debugPrint('지원 취소 중 오류가 발생했습니다: $e');
@@ -541,7 +543,8 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
           ),
         );
       } else {
-        _showErrorSnackbar('채팅방 정보 요청 실패 (${res.statusCode})');
+        debugPrint('채팅방 정보 요청 실패 (${res.statusCode})');
+        _showErrorSnackbar(Msg.chatCreateFailed);
       }
     } catch (e) {
       debugPrint('네트워크 오류: $e');
@@ -842,9 +845,16 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
 
   String _statusText(Job job) {
     if (job.status == 'deleted') return '삭제됨';
-    if (job.status == 'active') return '지원중';
     if (job.status == 'hired' || job.status == 'confirmed') return '출근 확정';
-    return '마감';
+    if (job.status != 'active') return '마감';
+    // '지원중' 은 공고가 살아있다는 뜻일 뿐이라, 지원자 입장에선 아무 정보가 아니다.
+    // 최소한 얼마나 지났는지는 알려준다.
+    final at = job.appliedAt;
+    if (at == null) return '지원중';
+    final days = DateTime.now().toUtc().difference(at.toUtc()).inDays;
+    if (days <= 0) return '오늘 지원';
+    if (days == 1) return '지원 1일째';
+    return '지원 $days일째';
   }
 
   Color _statusColor(Job job) {
@@ -917,8 +927,13 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
     final reviewKey = '${job.clientId}-${job.title}';
     final reviewed = reviewStatusMap[reviewKey] == true;
     final isDeleted = job.status == 'deleted';
+    // 지원일은 applications.created_at(=applied_at). 공고 생성일(job.createdAt)을
+    // 쓰면 "3일 전에 올라온 공고에 오늘 지원"이 "지원일 3일 전"으로 표시된다.
+    final appliedDate = job.appliedAt ?? job.createdAt;
     final appliedAt =
-        job.createdAt != null ? DateFormat('MM.dd').format(job.createdAt!) : '';
+        appliedDate != null
+            ? DateFormat('MM.dd').format(appliedDate.toLocal())
+            : '';
     final start =
         job.startDate != null ? DateFormat('MM.dd').format(job.startDate!) : '';
     final end =

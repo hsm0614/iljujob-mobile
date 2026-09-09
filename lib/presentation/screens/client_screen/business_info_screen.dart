@@ -355,6 +355,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
           backgroundColor: Colors.white,
           elevation: 0,
           leading: IconButton(
+            tooltip: '뒤로',
             icon: const Icon(Icons.arrow_back),
             onPressed:
                 () => Navigator.pushNamedAndRemoveUntil(

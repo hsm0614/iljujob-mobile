@@ -294,6 +294,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
         elevation: 0,
         titleSpacing: 0,
         leading: IconButton(
+          tooltip: '뒤로',
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           onPressed: () => Navigator.pop(context),
         ),

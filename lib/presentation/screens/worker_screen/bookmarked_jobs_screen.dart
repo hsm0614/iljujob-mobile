@@ -10,6 +10,7 @@ import '../../../data/services/job_service.dart';
 import 'job_detail_screen.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import '../../../config/app_theme.dart';
+import '../../../config/messages.dart';
 
 const kBrand = AppColors.primary;
 const kBorder = Color(0xFFE2E7EF);
@@ -166,14 +167,16 @@ class _BookmarkedJobsScreenState extends State<BookmarkedJobsScreen> {
           context,
         ).showSnackBar(SnackBar(content: Text('찜 삭제: ${job.title}')));
       } else {
+        debugPrint('찜 삭제 실패: ${resp.statusCode}');
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('삭제 실패: ${resp.statusCode}')));
+        ).showSnackBar(const SnackBar(content: Text(Msg.deleteFailed)));
       }
     } catch (e) {
+      debugPrint('찜 삭제 중 오류: $e');
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('삭제 중 오류: $e')));
+      ).showSnackBar(const SnackBar(content: Text(Msg.deleteFailed)));
     }
   }
 
@@ -561,12 +564,53 @@ class _Empty extends StatelessWidget {
         padding: const EdgeInsets.all(28),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.bookmark_border, size: 42, color: Colors.black38),
-            SizedBox(height: 10),
-            Text('찜한 공고가 없습니다.', style: TextStyle(fontWeight: FontWeight.w700)),
-            SizedBox(height: 4),
-            Text('마음에 드는 공고를 찜해 보세요.', style: TextStyle(color: Colors.black54)),
+          children: [
+            const Icon(
+              Icons.bookmark_border,
+              size: 42,
+              color: AppColors.textDisabled,
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '찜한 공고가 없어요',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              '마음에 드는 공고를 찜해두면\n나중에 빠르게 다시 볼 수 있어요.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                height: 1.4,
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 18),
+            SizedBox(
+              height: 44,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed:
+                    () => Navigator.popUntil(context, (r) => r.isFirst),
+                child: const Text(
+                  '공고 둘러보기',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),

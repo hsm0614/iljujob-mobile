@@ -97,6 +97,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
       appBar: AppBar(
         title: const Text('알림설정'),
         leading: IconButton(
+          tooltip: '뒤로',
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),

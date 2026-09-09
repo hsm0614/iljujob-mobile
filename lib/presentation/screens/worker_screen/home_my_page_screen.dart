@@ -11,6 +11,7 @@ import '../../../data/services/screen_analytics_service.dart';
 import 'edit_worker_profile_screen.dart';
 import 'labor_consult_screen.dart';
 import '../../../config/app_theme.dart';
+import '../../../config/messages.dart';
 
 class WorkerMyPageScreen extends StatefulWidget {
   const WorkerMyPageScreen({super.key});
@@ -395,9 +396,10 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
 
       if (res.statusCode != 200) {
         if (!mounted) return;
+        debugPrint('탈퇴 실패 (${res.statusCode})');
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('탈퇴 실패 (${res.statusCode})')));
+        ).showSnackBar(const SnackBar(content: Text(Msg.withdrawFailed)));
         return;
       }
 

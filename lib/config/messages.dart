@@ -25,4 +25,15 @@ class Msg {
 
   // ── 채팅 ─────────────────────────────────────────────
   static const chatCreateFailed = '채팅방을 열지 못했어요. 잠시 후 다시 시도해 주세요.';
+  static const chatListFailed = '채팅 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
+  static const chatLeaveFailed = '채팅방을 나가지 못했어요. 잠시 후 다시 시도해 주세요.';
+
+  // ── 저장·조회 ────────────────────────────────────────
+  static const saveFailed = '저장하지 못했어요. 잠시 후 다시 시도해 주세요.';
+  static const loadFailed = '불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
+  static const deleteFailed = '삭제하지 못했어요. 잠시 후 다시 시도해 주세요.';
+  static const reviewFailed = '후기를 등록하지 못했어요. 잠시 후 다시 시도해 주세요.';
+  static const applicantLoadFailed = '지원자 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
+  static const messageSendFailed = '메시지를 보내지 못했어요. 잠시 후 다시 시도해 주세요.';
+  static const withdrawFailed = '탈퇴를 처리하지 못했어요. 잠시 후 다시 시도해 주세요.';
 }

@@ -957,6 +957,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                             ),
                           ),
                           IconButton(
+                            tooltip: '닫기',
                             icon: const Icon(Icons.close),
                             onPressed: () => Navigator.pop(context),
                           ),
@@ -2568,6 +2569,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                       ),
                                       const Spacer(),
                                       IconButton(
+                                        tooltip: '닫기',
                                         icon: const Icon(Icons.close, size: 20),
                                         onPressed: () => Navigator.pop(ctx),
                                       ),
@@ -3618,6 +3620,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             ),
           ),
           IconButton(
+            tooltip: '찜',
             padding: EdgeInsets.zero,
             constraints: const BoxConstraints(),
             icon: Icon(

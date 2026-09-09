@@ -130,6 +130,7 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
         elevation: 0,
         centerTitle: false,
         leading: IconButton(
+          tooltip: '뒤로',
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           onPressed: () => Navigator.pop(context),
         ),

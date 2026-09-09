@@ -17,6 +17,7 @@ import 'package:iljujob/main.dart';
 import 'package:iljujob/presentation/screens/signup_worker_screen/signup_worker_screen.dart';
 import 'package:iljujob/presentation/screens/AppleExtraInfoScreen.dart';
 import '../../../config/app_theme.dart';
+import '../../../config/messages.dart';
 
 const kBrand = AppColors.primary;
 
@@ -588,7 +589,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                       );
                     } catch (e) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('프로필 저장 중 오류: $e')),
+                        const SnackBar(content: Text(Msg.saveFailed)),
                       );
                     }
                   },

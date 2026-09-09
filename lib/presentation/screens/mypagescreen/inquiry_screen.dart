@@ -408,6 +408,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
                 right: -8,
                 top: -8,
                 child: IconButton(
+                  tooltip: '닫기',
                   onPressed: () => setState(() => _images.removeAt(i)),
                   style: IconButton.styleFrom(
                     backgroundColor: Colors.black.withOpacity(.55),

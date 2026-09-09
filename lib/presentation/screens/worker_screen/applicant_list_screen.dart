@@ -76,7 +76,8 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
         });
       } else {
         setState(() => isLoading = false);
-        _showSnackbar('지원자 정보를 불러오지 못했어요. (코드 ${response.statusCode})');
+        debugPrint('지원자 정보 조회 실패 (${response.statusCode})');
+        _showSnackbar(Msg.applicantLoadFailed);
       }
     } on AuthSessionExpiredException {
       setState(() => isLoading = false);

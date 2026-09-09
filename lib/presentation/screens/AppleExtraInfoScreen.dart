@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import '../../config/app_theme.dart';
+import '../../config/messages.dart';
 
 const kBrand = AppColors.primary;
 
@@ -123,9 +124,10 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+      debugPrint('Apple 추가정보 요청 오류: $e');
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('요청 중 오류가 발생했습니다: $e')));
+      ).showSnackBar(const SnackBar(content: Text(Msg.server)));
     } finally {
       if (mounted) {
         setState(() => _loading = false);

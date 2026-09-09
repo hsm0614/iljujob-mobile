@@ -802,6 +802,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         brand: true,
         actions: [
           IconButton(
+            tooltip: '새로고침',
             icon: const Icon(Icons.refresh_rounded),
             onPressed: () => _fetchMonth(_focusedDay),
           ),
@@ -2279,9 +2280,10 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
+      debugPrint('일정 저장 중 오류: $e');
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('저장 중 오류가 났어요: $e')));
+      ).showSnackBar(const SnackBar(content: Text(Msg.saveFailed)));
     }
   }
 

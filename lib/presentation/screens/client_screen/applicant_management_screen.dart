@@ -11,6 +11,7 @@ import '../../../data/services/screen_analytics_service.dart';
 import '../../chat/chat_room_screen.dart'; // 경로 맞게 수정
 import '../../widgets/albailju_common.dart';
 import '../../../config/app_theme.dart';
+import '../../../config/messages.dart';
 
 // ─── 모델 ────────────────────────────────────────────────────────
 
@@ -258,7 +259,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         ),
       ).timeout(const Duration(seconds: 10));
 
-      if (res.statusCode != 200) throw Exception('서버 오류 (${res.statusCode})');
+      if (res.statusCode != 200) throw Exception('서버 오류 (${res.statusCode})'); // 노출 금지 — catch 에서 Msg 로 치환
 
       final data = jsonDecode(res.body);
       final groups =
@@ -353,9 +354,10 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       }
     } catch (e) {
       if (!mounted) return;
+      debugPrint('지원자 관리 오류: $e');
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('오류: $e')));
+      ).showSnackBar(const SnackBar(content: Text(Msg.server)));
     }
   }
 
@@ -508,9 +510,10 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       _redirectToOnboarding();
     } catch (e) {
       if (!mounted) return;
+      debugPrint('연락처 조회 실패: $e');
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('연락처 조회 실패: $e')));
+      ).showSnackBar(const SnackBar(content: Text(Msg.loadFailed)));
     } finally {
       if (mounted) {
         setState(() => _phoneLoading.remove(applicant.applicationId));
@@ -666,9 +669,10 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       _redirectToOnboarding();
     } catch (e) {
       if (!mounted) return;
+      debugPrint('메시지 발송 실패: $e');
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('메시지 발송 실패: $e')));
+      ).showSnackBar(const SnackBar(content: Text(Msg.messageSendFailed)));
     } finally {
       if (mounted) setState(() => _bulkSending = false);
     }
@@ -683,6 +687,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         brand: true,
         actions: [
           IconButton(
+            tooltip: '새로고침',
             icon: const Icon(Icons.refresh_rounded),
             onPressed: _fetch,
           ),

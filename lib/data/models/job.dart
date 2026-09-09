@@ -190,6 +190,9 @@ class Job {
 
   // ✅ 모두 UTC로 보관
   final DateTime? createdAt; // UTC
+  /// 내가 이 공고에 지원한 시각(UTC). 지원 목록 API(applications.created_at)에서만 온다.
+  /// 공고 생성일(createdAt)과 다르다 — 섞어 쓰면 "지원일"이 공고 올린 날로 표시된다.
+  final DateTime? appliedAt;
   final DateTime? startDate; // UTC (KST 자정 의미)
   final DateTime? endDate; // UTC (KST 자정 의미)
   final DateTime? publishAt; // UTC (UI 노출/예약)
@@ -246,6 +249,7 @@ class Job {
     this.description,
     this.company,
     this.createdAt,
+    this.appliedAt,
     this.startDate,
     this.endDate,
     this.publishAt,
@@ -309,6 +313,9 @@ class Job {
     final createdAtUtc = _parseServerDateTimeUtc(
       json['created_at'] ?? json['createdAt'],
     );
+    final appliedAtUtc = _parseServerDateTimeUtc(
+      json['applied_at'] ?? json['appliedAt'],
+    );
     final expiresAtUtc = _parseServerDateTimeUtc(
       json['expires_at'] ?? json['expiresAt'],
     );
@@ -334,6 +341,7 @@ class Job {
       // ✅ UTC 보관
       publishAt: publishAtUtc,
       createdAt: createdAtUtc,
+      appliedAt: appliedAtUtc,
       expiresAt: expiresAtUtc,
       pinnedUntil: pinnedUntilUtc,
 
@@ -520,6 +528,7 @@ class Job {
       description: description,
       company: company,
       createdAt: createdAt,
+      appliedAt: appliedAt,
       startDate: startDate,
       endDate: endDate,
       publishAt: publishAt,
@@ -568,6 +577,7 @@ class Job {
       'company': company,
       // ✅ 항상 UTC ISO 저장
       'created_at': createdAt?.toUtc().toIso8601String(),
+      'applied_at': appliedAt?.toUtc().toIso8601String(),
       'start_date': startDate?.toUtc().toIso8601String(),
       'end_date': endDate?.toUtc().toIso8601String(),
       'publish_at': publishAt?.toUtc().toIso8601String(),

@@ -1563,6 +1563,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
           // ── 앱바
           appBar: AlbailjuAppBar(
             leading: IconButton(
+              tooltip: '뒤로',
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.pop(context, 'updated'),
             ),
@@ -1784,6 +1785,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                 ),
                                 const SizedBox(width: 4),
                                 IconButton(
+                                  tooltip: '사진 첨부',
                                   icon: const Icon(Icons.image),
                                   color:
                                       ctrl.inputEnabled

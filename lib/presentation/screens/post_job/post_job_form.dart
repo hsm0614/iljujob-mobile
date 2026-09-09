@@ -1449,6 +1449,7 @@ class _PostJobFormState extends State<PostJobForm>
               child: Row(
                 children: [
                   IconButton(
+                    tooltip: '닫기',
                     onPressed: _prevQ,
                     icon: Icon(
                       _q == 0 ? Icons.close : Icons.arrow_back_ios_new_rounded,
@@ -2172,6 +2173,7 @@ class _PostJobFormState extends State<PostJobForm>
                     button: true,
                     label: '${_extraLocations[i].address} 삭제',
                     child: IconButton(
+                      tooltip: '닫기',
                       icon: const Icon(Icons.close_rounded, size: 20, color: _label),
                       onPressed: () => setState(() => _extraLocations.removeAt(i)),
                     ),

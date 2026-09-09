@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import '../../config/constants.dart';
 import '../../data/services/authenticated_http_client.dart';
 import '../../config/app_theme.dart';
+import '../../config/messages.dart';
 
 class ReviewScreen extends StatefulWidget {
   final int jobId;
@@ -160,15 +161,16 @@ class _ReviewScreenState extends State<ReviewScreen> {
         ).showSnackBar(const SnackBar(content: Text('후기가 등록되었습니다!')));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('후기 등록 실패 (${resp.statusCode})')),
+          const SnackBar(content: Text(Msg.reviewFailed)),
         );
       }
     } catch (e) {
       if (!mounted) return;
       setState(() => isSubmitting = false);
+      debugPrint('후기 등록 네트워크 오류: $e');
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('네트워크 오류: $e')));
+      ).showSnackBar(const SnackBar(content: Text(Msg.network)));
     }
   }
 
@@ -186,6 +188,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
           elevation: 0.5,
           title: const Text('후기 보내기'),
           leading: IconButton(
+            tooltip: '뒤로',
             icon: const Icon(Icons.arrow_back),
             onPressed: () => Navigator.pop(context),
           ),

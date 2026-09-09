@@ -644,6 +644,8 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                         const SizedBox(height: 3),
                         Text(
                           '회당 ${formatPrice((price / count).floor())}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(fontSize: 13, color: _label),
                         ),
                       ],
@@ -654,6 +656,8 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     children: [
                       Text(
                         formatPrice(price),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w900,

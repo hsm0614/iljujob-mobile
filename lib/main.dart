@@ -725,6 +725,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         GlobalCupertinoLocalizations.delegate,
       ],
       theme: AppTheme.theme,
+      // 시스템 '글자 크게'를 1.3배로 제한한다. 앱 전반이 고정 height 를 쓰고 있어
+      // (1,000곳 이상) 그 이상 키우면 버튼·카드가 통째로 넘친다.
+      // 근본 해결은 화면별 유연 레이아웃이지만, 그 전까지 여기서 막는다.
+      builder: (context, child) {
+        final mq = MediaQuery.of(context);
+        return MediaQuery(
+          data: mq.copyWith(
+            textScaler: mq.textScaler.clamp(maxScaleFactor: 1.3),
+          ),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
       ],

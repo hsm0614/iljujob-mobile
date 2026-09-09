@@ -650,6 +650,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                           readOnly: true,
                           onTap: pickIssuedAt,
                           suffixIcon: IconButton(
+                            tooltip: '일정 수정',
                             icon: const Icon(
                               Icons.edit_calendar_rounded,
                               color: kBrandBlue,
@@ -861,6 +862,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                               ),
                             ),
                             IconButton(
+                              tooltip: '닫기',
                               onPressed: () => Navigator.pop(ctx),
                               icon: const Icon(Icons.close_rounded),
                               splashRadius: 20,
@@ -2019,6 +2021,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                   ),
                 )
                 : IconButton(
+                  tooltip: '삭제',
                   icon: const Icon(
                     Icons.delete_outline_rounded,
                     color: AppColors.error,

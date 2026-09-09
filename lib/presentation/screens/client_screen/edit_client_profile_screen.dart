@@ -167,7 +167,8 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         await prefs.setString('cached_logo_url', logoUrl);
         await prefs.setString('cached_certificate_url', certificateUrl);
       } else {
-        _showSnackbar('프로필을 불러오지 못했습니다. (${resp.statusCode})');
+        debugPrint('프로필 조회 실패 (${resp.statusCode})');
+        _showSnackbar(Msg.loadFailed);
         if (mounted) setState(() => isLoading = false);
       }
     } catch (e) {
@@ -356,7 +357,8 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         });
       } else {
         debugPrint('upload error ${streamed.statusCode}: $body');
-        _showSnackbar('저장에 실패했습니다. (${streamed.statusCode})');
+        debugPrint('프로필 저장 실패 (${streamed.statusCode})');
+        _showSnackbar(Msg.saveFailed);
       }
     } catch (e) {
       debugPrint('save error: $e');
@@ -403,6 +405,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         elevation: 0,
         centerTitle: false,
         leading: IconButton(
+          tooltip: '뒤로',
           icon: const Icon(Icons.arrow_back),
           onPressed: _confirmLeaveIfDirty,
         ),

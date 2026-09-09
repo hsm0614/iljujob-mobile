@@ -446,7 +446,8 @@ class _ChatListScreenState extends State<ChatListScreen>
           });
         });
       } else {
-        _showSnackbar('채팅방 목록 불러오기 실패 (${response.statusCode})');
+        debugPrint('채팅방 목록 불러오기 실패 (${response.statusCode})');
+        _showSnackbar(Msg.chatListFailed);
       }
     } on AuthSessionExpiredException {
       _showSnackbar(Msg.loginRequired);
@@ -603,7 +604,8 @@ class _ChatListScreenState extends State<ChatListScreen>
       } else if (response.statusCode == 403) {
         _showSnackbar('권한이 없습니다.');
       } else {
-        _showSnackbar('채팅방 나가기 실패 (${response.statusCode})');
+        debugPrint('채팅방 나가기 실패 (${response.statusCode})');
+        _showSnackbar(Msg.chatLeaveFailed);
       }
     } on AuthSessionExpiredException {
       _showSnackbar(Msg.loginRequired);
@@ -1527,6 +1529,7 @@ class _SearchFieldState extends State<_SearchField> {
           ),
           if (controller.text.isNotEmpty)
             IconButton(
+              tooltip: '닫기',
               onPressed: () {
                 controller.clear();
                 widget.onChanged('');

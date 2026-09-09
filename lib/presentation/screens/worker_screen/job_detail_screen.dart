@@ -1381,6 +1381,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         actions: [
           if (_shouldShowReportButton())
             IconButton(
+              tooltip: '신고',
               icon: const Icon(Icons.report, color: AppColors.error),
               onPressed: () => _showReportDialog(),
             ),

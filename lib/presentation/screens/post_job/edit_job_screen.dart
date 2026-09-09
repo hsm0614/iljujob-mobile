@@ -380,6 +380,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                           ),
                         ),
                         IconButton(
+                          tooltip: '닫기',
                           icon: const Icon(Icons.close),
                           onPressed: () => Navigator.pop(context),
                         ),
@@ -1429,6 +1430,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                 _title.text.isEmpty
                                     ? null
                                     : IconButton(
+                                      tooltip: '지우기',
                                       icon: const Icon(Icons.clear),
                                       onPressed:
                                           () => setState(() => _title.clear()),
@@ -1585,6 +1587,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                         _pay.text.isEmpty
                                             ? null
                                             : IconButton(
+                                              tooltip: '지우기',
                                               icon: const Icon(Icons.clear),
                                               onPressed: () {
                                                 setState(() => _pay.clear());
@@ -1635,6 +1638,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                             _desc.text.isEmpty
                                 ? null
                                 : IconButton(
+                                  tooltip: '지우기',
                                   icon: const Icon(Icons.clear),
                                   onPressed:
                                       () => setState(() => _desc.clear()),

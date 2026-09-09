@@ -145,6 +145,7 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
         backgroundColor: Colors.white,
         elevation: 0.5,
         leading: IconButton(
+          tooltip: '뒤로',
           icon: const Icon(Icons.arrow_back_ios_new, size: 18),
           onPressed: () => Navigator.pop(context),
         ),

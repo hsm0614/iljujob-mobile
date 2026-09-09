@@ -5,6 +5,7 @@ import 'package:lottie/lottie.dart';
 import '../../data/services/ai_api.dart';
 import 'package:iljujob/data/models/job.dart';
 import '../config/app_theme.dart';
+import '../config/messages.dart';
 
 class RecommendedSection extends StatefulWidget {
   final AiApi api;
@@ -90,7 +91,7 @@ class _RecommendedSectionState extends State<RecommendedSection> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('오류: $e')),
+        const SnackBar(content: Text(Msg.server)),
       );
     } finally {
       if (mounted) setState(() => _loadingJobId = null);

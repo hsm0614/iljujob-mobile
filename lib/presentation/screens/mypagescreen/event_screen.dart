@@ -383,6 +383,7 @@ class _SearchFieldState extends State<_SearchField> {
           ),
           if (controller.text.isNotEmpty)
             IconButton(
+              tooltip: '닫기',
               onPressed: () {
                 controller.clear();
                 widget.onChanged('');

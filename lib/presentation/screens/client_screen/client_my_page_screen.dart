@@ -9,6 +9,7 @@ import '../../../data/services/ai_api.dart'; // fetchMySubscription()
 import '../../../data/services/authenticated_http_client.dart';
 import '../../../data/services/screen_analytics_service.dart';
 import '../../../config/app_theme.dart';
+import '../../../config/messages.dart';
 
 class ClientMyPageScreen extends StatefulWidget {
   const ClientMyPageScreen({super.key});
@@ -283,7 +284,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
         if (!mounted) return;
         final msg = res.body.isNotEmpty ? res.body : '(empty body)';
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('탈퇴 실패 (${res.statusCode}) $msg')),
+          const SnackBar(content: Text(Msg.withdrawFailed)),
         );
         return;
       }
