@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'home_main_screen.dart';
@@ -19,6 +18,7 @@ import 'package:iljujob/widget/recommended_section.dart';
 import '../worker_calendar_screen.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/widget/app_ui.dart';
+import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 
 class HomeScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -204,29 +204,11 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _sendFcmTokenToServer(String? phone, String? userType) async {
-    if (phone == null ||
-        phone.trim().isEmpty ||
-        userType == null ||
-        userType.trim().isEmpty) {
-      return;
-    }
-    final token = await FirebaseMessaging.instance.getToken();
-    if (token == null || token.trim().isEmpty) return;
-    try {
-      await http.post(
-        Uri.parse('$baseUrl/api/user/update-token'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'userPhone': phone,
-          'userType': userType,
-          'fcmToken': token,
-        }),
-      );
-    } catch (e) {
-      debugPrint('FCM 토큰 전송 오류: $e');
-    }
-  }
+  // main.dart 의 sendFcmTokenUnified 로 위임한다.
+  // 여기 있던 자체 구현은 iOS APNS 대기·응답 확인·재시도가 전부 없어서
+  // 실패해도 아무도 몰랐고, userId 없이 phone 만 보내 매칭도 약했다.
+  Future<void> _sendFcmTokenToServer(String? phone, String? userType) =>
+      sendFcmTokenUnified();
 
   void _setupFirebaseMessagingListeners() {
     FirebaseMessaging.onMessage.listen(_showNotification);

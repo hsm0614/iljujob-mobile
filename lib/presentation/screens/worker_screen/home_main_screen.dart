@@ -28,6 +28,7 @@ import 'package:iljujob/data/models/partner_recruit_post.dart';
 import 'package:iljujob/presentation/screens/worker_screen/partner_recruit_detail_screen.dart';
 import 'package:iljujob/data/services/notificaion_service.dart';
 import '../../../config/messages.dart';
+import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 
 class HomeMainScreen extends StatefulWidget {
   final VoidCallback? onAiRecommend;
@@ -245,26 +246,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     }
   }
 
-  Future<void> retryFcmTokenSend() async {
-    final token = await FirebaseMessaging.instance.getToken();
-    if (token == null) return;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userPhone = prefs.getString('userPhone');
-      final userType = prefs.getString('userType');
-      await http.post(
-        Uri.parse('$baseUrl/api/user/update-token'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'userPhone': userPhone,
-          'userType': userType,
-          'fcmToken': token,
-        }),
-      );
-    } catch (e) {
-      debugPrint('토큰 전송 실패: $e');
-    }
-  }
+  // main.dart 의 sendFcmTokenUnified 로 위임 (iOS APNS 대기·응답 확인·재시도 포함)
+  Future<void> retryFcmTokenSend() => sendFcmTokenUnified();
 
   Future<void> _init() async {
     final prefs = await SharedPreferences.getInstance();

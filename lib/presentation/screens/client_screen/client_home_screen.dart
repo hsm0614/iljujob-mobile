@@ -28,6 +28,7 @@ import 'package:iljujob/presentation/widgets/albailju_common.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:iljujob/presentation/screens/purchase_screen.dart';
 import '../../../data/services/client_tracking_service.dart';
+import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 
 DateTime _nowLocal() => DateTime.now();
 
@@ -327,27 +328,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     }
   }
 
-  Future<void> _saveClientFcmToken() async {
-    if (!Platform.isAndroid) return;
-    try {
-      final token = await FirebaseMessaging.instance.getToken();
-      if (token == null) return;
-      final prefs = await SharedPreferences.getInstance();
-      final phone = prefs.getString('userPhone');
-      if (phone == null || phone.isEmpty) return;
-      await http.post(
-        Uri.parse('$baseUrl/api/user/update-token'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'userPhone': phone,
-          'userType': 'client',
-          'fcmToken': token,
-        }),
-      );
-    } catch (e) {
-      debugPrint('FCM token save error: $e');
-    }
-  }
+  // main.dart 의 sendFcmTokenUnified 로 위임.
+  // 예전엔 !Platform.isAndroid 로 막혀 있어 iOS 사장님은 이 경로로 토큰을 못 올렸다.
+  Future<void> _saveClientFcmToken() => sendFcmTokenUnified();
 
   // ======= Profile =======
   Future<void> _fetchClientProfile() async {

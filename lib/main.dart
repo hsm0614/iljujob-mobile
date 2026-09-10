@@ -223,6 +223,73 @@ Future<bool> _refreshAccessToken(SharedPreferences prefs) async {
 // FCM 토큰 관리
 // ============================================================
 
+/// authorized 뿐 아니라 provisional(iOS 조용한 알림 허용)도 발송 가능 상태다.
+/// 이걸 authorized 로만 보면 provisional 사용자의 서버 토큰을 앱 켤 때마다 지워버린다.
+bool _pushAllowed(AuthorizationStatus status) =>
+    status == AuthorizationStatus.authorized ||
+    status == AuthorizationStatus.provisional;
+
+/// FCM 토큰 얻기.
+/// iOS 는 APNS 토큰이 붙기 전에 getToken() 을 부르면 null 이거나 예외를 던진다.
+/// 앱 시작 직후가 정확히 그 타이밍이고, 한 번 실패하면 onTokenRefresh 는
+/// (토큰이 이미 발급돼 있어서) 다시 안 불린다 → 그 사용자는 영영 미저장이었다.
+Future<String?> _resolveFcmToken() async {
+  if (Platform.isIOS) {
+    for (var i = 0; i < 5; i++) {
+      try {
+        final apns = await FirebaseMessaging.instance.getAPNSToken();
+        if (apns != null && apns.isNotEmpty) break;
+      } catch (e) {
+        debugPrint('⚠️ APNS 토큰 조회 실패($i): $e');
+      }
+      await Future.delayed(Duration(milliseconds: 400 * (i + 1)));
+    }
+  }
+  try {
+    return await FirebaseMessaging.instance.getToken();
+  } catch (e) {
+    debugPrint('❌ FCM getToken 실패: $e');
+    return null;
+  }
+}
+
+/// 서버에 토큰 저장/삭제. 응답을 확인하고 한 번 재시도한다.
+/// 예전엔 http.post 결과를 버려서 실패해도 아무도 몰랐다.
+Future<bool> _postFcmToken(String? token, {bool delete = false}) async {
+  final prefs = await SharedPreferences.getInstance();
+  final payload = buildFcmTokenPayload(
+    userId: prefs.getInt('userId'),
+    userPhone: prefs.getString('userPhone'),
+    userType: prefs.getString('userType'),
+    fcmToken: token,
+    allowNullToken: delete,
+  );
+  if (payload == null) {
+    debugPrint('⚠️ FCM 전송 생략: 유효한 로그인 정보 없음');
+    return false;
+  }
+
+  final uri = Uri.parse('$baseUrl/api/user/update-token');
+  for (var attempt = 0; attempt < 2; attempt++) {
+    try {
+      final res = await AuthenticatedHttpClient.postJson(uri, body: payload);
+      if (res.statusCode == 200) {
+        debugPrint(delete ? '✅ FCM 토큰 서버에서 삭제' : '✅ FCM 토큰 저장');
+        return true;
+      }
+      debugPrint('⚠️ FCM 토큰 저장 실패 ${res.statusCode}: ${res.body}');
+    } on AuthSessionExpiredException {
+      // 세션이 끊긴 상태. 재시도해도 같으니 다음 로그인에 맡긴다.
+      debugPrint('⚠️ FCM 토큰 저장 생략: 세션 만료');
+      return false;
+    } catch (e) {
+      debugPrint('❌ FCM 토큰 전송 오류(${attempt + 1}/2): $e');
+    }
+    if (attempt == 0) await Future.delayed(const Duration(seconds: 2));
+  }
+  return false;
+}
+
 /// 알림 허용 상태 → 토큰 서버에 저장
 Future<void> sendFcmTokenUnified() async {
   if (kIsWeb) return;
@@ -234,39 +301,19 @@ Future<void> sendFcmTokenUnified() async {
         badge: true,
         sound: true,
       );
-      if (settings.authorizationStatus != AuthorizationStatus.authorized) {
-        debugPrint('⚠️ iOS 알림 권한 없음');
+      if (!_pushAllowed(settings.authorizationStatus)) {
+        debugPrint('⚠️ iOS 알림 권한 없음 (${settings.authorizationStatus})');
         return;
       }
     }
 
-    final fcm = await FirebaseMessaging.instance.getToken();
-    if (fcm == null) {
-      debugPrint('❌ FCM 토큰 null');
+    final fcm = await _resolveFcmToken();
+    if (fcm == null || fcm.isEmpty) {
+      debugPrint('❌ FCM 토큰 null — 저장 생략');
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt('userId');
-    final userPhone = prefs.getString('userPhone');
-    final userType = prefs.getString('userType');
-
-    final payload = buildFcmTokenPayload(
-      userId: userId,
-      userPhone: userPhone,
-      userType: userType,
-      fcmToken: fcm,
-    );
-    if (payload == null) {
-      debugPrint('⚠️ FCM 전송 생략: 유효한 로그인 정보 없음');
-      return;
-    }
-
-    await http.post(
-      Uri.parse('$baseUrl/api/user/update-token'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(payload),
-    );
+    await _postFcmToken(fcm);
   } catch (e) {
     debugPrint('❌ FCM 토큰 전송 실패: $e');
   }
@@ -275,45 +322,28 @@ Future<void> sendFcmTokenUnified() async {
 /// 알림 거부 상태 → 서버 토큰 NULL 처리
 Future<void> _clearFcmToken() async {
   if (kIsWeb) return;
-  try {
-    final prefs = await SharedPreferences.getInstance();
-    final userId = prefs.getInt('userId');
-    final userPhone = prefs.getString('userPhone');
-    final userType = prefs.getString('userType');
-
-    final payload = buildFcmTokenPayload(
-      userId: userId,
-      userPhone: userPhone,
-      userType: userType,
-      fcmToken: null,
-      allowNullToken: true,
-    );
-    if (payload == null) return;
-
-    await http.post(
-      Uri.parse('$baseUrl/api/user/update-token'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(payload),
-    );
-    debugPrint('✅ FCM 토큰 서버에서 삭제 완료');
-  } catch (e) {
-    debugPrint('❌ FCM 토큰 삭제 실패: $e');
-  }
+  await _postFcmToken(null, delete: true);
 }
 
 /// ✅ 알림 상태 동기화 (앱 시작 + 복귀 시 호출)
-/// - 허용 → 토큰 갱신
-/// - 거부 → 서버 토큰 삭제
+/// - 허용(authorized·provisional) → 토큰 갱신
+/// - 거부(denied)               → 서버 토큰 삭제
+/// - 미결정(notDetermined)      → 아무것도 안 함
+///   권한 다이얼로그가 아직 안 끝난 순간에 삭제를 때리면 멀쩡한 토큰이 날아간다.
 Future<void> syncNotificationStatus() async {
   if (kIsWeb) return;
   try {
     final settings = await FirebaseMessaging.instance.getNotificationSettings();
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+    final status = settings.authorizationStatus;
+
+    if (_pushAllowed(status)) {
       await sendFcmTokenUnified();
-      debugPrint('✅ 알림 허용 — 토큰 갱신');
-    } else {
+      debugPrint('✅ 알림 허용($status) — 토큰 갱신');
+    } else if (status == AuthorizationStatus.denied) {
       await _clearFcmToken();
       debugPrint('🔕 알림 거부 — 서버 토큰 삭제');
+    } else {
+      debugPrint('⏳ 알림 권한 미결정 — 토큰 그대로 둠');
     }
   } catch (e) {
     debugPrint('❌ 알림 상태 동기화 실패: $e');
@@ -608,16 +638,19 @@ void main() async {
 
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  FirebaseMessaging.instance.onTokenRefresh.listen((_) async {
-    await _sendFirstOpenIfNeeded();
-    await sendFcmTokenUnified();
-  });
-
   final prefs = await SharedPreferences.getInstance();
   await Future.delayed(const Duration(milliseconds: 300));
 
   await _refreshAccessToken(prefs);
   await _hydrateUserInfo();
+
+  // ⚠️ 리스너 등록은 로그인 정보 복원(_hydrateUserInfo) 뒤여야 한다.
+  // 앞에 두면 앱 시작 직후 발화한 refresh 가 prefs 가 비어 있는 채로
+  // sendFcmTokenUnified 를 불러 '로그인 정보 없음'으로 조용히 버려졌다.
+  FirebaseMessaging.instance.onTokenRefresh.listen((_) async {
+    await _sendFirstOpenIfNeeded();
+    await sendFcmTokenUnified();
+  });
 
   final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
   final refreshedToken = await AuthenticatedHttpClient.accessToken();
