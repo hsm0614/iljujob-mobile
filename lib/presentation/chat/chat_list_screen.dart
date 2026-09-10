@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 
 import 'chat_room_screen.dart';
 import '../../config/constants.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
-import '../../data/models/banner_ad.dart';
 import 'dart:async';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -37,23 +34,14 @@ class _ChatListScreenState extends State<ChatListScreen>
   int? myId;
   String? myType;
   bool _showNotificationBanner = false;
-  // ✅ 배너 관련
-  List<BannerAd> bannerAds = [];
-  int _currentBannerIndex = 0;
-  Timer? _bannerTimer;
   IO.Socket? _socket;
   Timer? _listRefreshTimer;
   String _query = '';
-  late final PageController _pageController; // ✅ nullable 제거
-  bool _isBannerHidden = false;
   final Set<int> _leavingRoomIds = {};
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _pageController = PageController(initialPage: 0);
-    _loadBannerHidden();
-    _loadBannerAds();
     _loadMyIdAndType().then((_) {
       ScreenAnalyticsService.instance.logScreenView(
         userType == 'client' ? 'client_chat_list' : 'worker_chat_list',
@@ -70,12 +58,10 @@ class _ChatListScreenState extends State<ChatListScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _bannerTimer?.cancel();
     _listRefreshTimer?.cancel();
     _socket?.clearListeners();
     _socket?.disconnect();
     _socket = null;
-    _pageController.dispose();
     super.dispose();
   }
 
@@ -96,219 +82,6 @@ class _ChatListScreenState extends State<ChatListScreen>
     });
   }
 
-  /* ---------------- 배너 트래킹 ---------------- */
-  Future<void> _recordBannerImpression(int bannerId) async {
-    try {
-      await http.post(
-        Uri.parse("$baseUrl/api/banners/impression"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"bannerId": bannerId}),
-      );
-    } catch (e) {
-      print("❌ 배너 노출 기록 실패: $e");
-    }
-  }
-
-  Future<void> _recordBannerClick(int bannerId) async {
-    try {
-      await http.post(
-        Uri.parse("$baseUrl/api/banners/click"),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({"bannerId": bannerId}),
-      );
-    } catch (e) {
-      print("❌ 배너 클릭 기록 실패: $e");
-    }
-  }
-
-  Future<void> _loadBannerHidden() async {
-    final prefs = await SharedPreferences.getInstance();
-    final hidden = prefs.getBool('chat_banner_hidden') ?? false;
-    if (!mounted) return;
-    setState(() => _isBannerHidden = hidden);
-  }
-
-  Future<void> _setBannerHidden(bool v) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('chat_banner_hidden', v);
-    if (!mounted) return;
-
-    setState(() => _isBannerHidden = v);
-
-    if (v) {
-      _bannerTimer?.cancel();
-    } else {
-      // ✅ 다시 켤 때 첫 배너로 맞추고(선택) 노출 기록
-      if (bannerAds.isNotEmpty && _pageController.hasClients) {
-        _currentBannerIndex = 0;
-        _pageController.jumpToPage(0);
-
-        final id = int.tryParse(bannerAds[0].id.toString());
-        if (id != null) _recordBannerImpression(id);
-      }
-      _startBannerAutoSlide();
-    }
-  }
-
-  Future<void> _loadBannerAds() async {
-    try {
-      final uri = Uri.parse(
-        '$baseUrl/api/banners',
-      ).replace(queryParameters: {'audience': 'worker', 'placement': 'chat'});
-      final response = await http.get(uri);
-      if (response.statusCode != 200) return;
-
-      final List<dynamic> data = jsonDecode(response.body);
-      if (!mounted) return;
-
-      setState(() {
-        bannerAds = data.map((json) => BannerAd.fromJson(json)).toList();
-        if (_currentBannerIndex >= bannerAds.length) _currentBannerIndex = 0;
-      });
-
-      // ✅ 첫 배너 노출도 바로 기록(0번 페이지는 onPageChanged가 안 불릴 수 있음)
-      if (bannerAds.isNotEmpty) {
-        final id = int.tryParse(bannerAds[_currentBannerIndex].id.toString());
-        if (id != null) _recordBannerImpression(id);
-      }
-
-      // ✅ 배너 2개 이상일 때만 자동 슬라이드
-      _startBannerAutoSlide();
-    } catch (e) {
-      print('❌ 배너 로드 예외: $e');
-    }
-  }
-
-  void _startBannerAutoSlide() {
-    _bannerTimer?.cancel();
-
-    if (bannerAds.length <= 1) return;
-
-    _bannerTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      if (!mounted) return;
-      if (bannerAds.length <= 1) return;
-      if (!_pageController.hasClients) return; // ✅ 핵심
-
-      final nextPage = (_currentBannerIndex + 1) % bannerAds.length;
-
-      _pageController.animateToPage(
-        nextPage,
-        duration: const Duration(milliseconds: 500),
-        curve: Curves.easeInOut,
-      );
-    });
-  }
-
-  Widget _buildBannerSlider() {
-    if (_isBannerHidden || bannerAds.isEmpty) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-      child: AspectRatio(
-        aspectRatio: 4 / 1,
-        child: Stack(
-          children: [
-            PageView.builder(
-              controller: _pageController,
-              itemCount: bannerAds.length,
-              onPageChanged: (index) {
-                setState(() => _currentBannerIndex = index);
-                final id = int.tryParse(bannerAds[index].id.toString());
-                if (id != null) _recordBannerImpression(id);
-              },
-              itemBuilder: (context, index) {
-                final banner = bannerAds[index];
-                return GestureDetector(
-                  onTap: () async {
-                    final id = int.tryParse(banner.id.toString());
-                    if (id != null) _recordBannerClick(id);
-
-                    if (banner.linkUrl != null && banner.linkUrl!.isNotEmpty) {
-                      final Uri url = Uri.parse(banner.linkUrl!);
-                      await launchUrl(
-                        url,
-                        mode: LaunchMode.externalApplication,
-                      );
-                    }
-                  },
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      color: AppColors.bgMuted,
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: Image.network(
-                        '$baseUrl${banner.imageUrl}',
-                        fit: BoxFit.contain,
-                        alignment: Alignment.center,
-                        filterQuality: FilterQuality.high,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return const Center(
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Center(
-                            child: Icon(
-                              Icons.error_outline,
-                              color: AppColors.textTertiary,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-            Positioned(
-              top: 7,
-              right: 9,
-              child: ClipOval(
-                child: Material(
-                  color: Colors.black.withValues(alpha: 0.25),
-                  child: InkWell(
-                    onTap: () => _setBannerHidden(true),
-                    child: const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: Icon(Icons.close, size: 13, color: Colors.white),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            if (bannerAds.length > 1)
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 7,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    bannerAds.length,
-                    (index) => AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
-                      width: _currentBannerIndex == index ? 14 : 5,
-                      height: 5,
-                      margin: const EdgeInsets.symmetric(horizontal: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(
-                          alpha: _currentBannerIndex == index ? 0.95 : 0.52,
-                        ),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 
   /* ---------------- 기본 유저 정보 로드 ---------------- */
 
@@ -1409,37 +1182,6 @@ class _ChatListScreenState extends State<ChatListScreen>
                     height: 1.1,
                   ),
                 ),
-                actions: [
-                  if (_isBannerHidden)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 12),
-                      child: TextButton.icon(
-                        onPressed: () => _setBannerHidden(false),
-                        icon: const Icon(
-                          Icons.visibility,
-                          size: 18,
-                          color: Colors.white,
-                        ),
-                        label: const Text(
-                          '배너 켜기',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        style: TextButton.styleFrom(
-                          backgroundColor: Colors.black.withValues(alpha: 0.22),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
                 flexibleSpace: FlexibleSpaceBar(
                   background: Container(
                     decoration: const BoxDecoration(
@@ -1483,7 +1225,6 @@ class _ChatListScreenState extends State<ChatListScreen>
               SliverToBoxAdapter(
                 child: _buildNotificationBanner(), // ✅ 여기 추가
               ),
-              SliverToBoxAdapter(child: _buildBannerSlider()),
               const SliverToBoxAdapter(
                 child: AdBannerWidget(placement: 'app_chat_list'),
               ),
