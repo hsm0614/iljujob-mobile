@@ -388,6 +388,19 @@ class _ClientMainScreenState extends State<ClientMainScreen>
         socket!.emit('register_user', {'userPhone': userPhone});
       });
 
+      // 예전엔 소켓을 연결만 하고 리스너가 하나도 없었다 — 뱃지는 30초 폴링에만
+      // 의존했다. 서버가 보내주는 값을 그대로 받아 즉시 반영한다.
+      socket!.on('unreadCountUpdated', (data) {
+        if (!mounted || data is! Map) return;
+        if (data['userType'] != userType) return;
+        final n = int.tryParse('${data['newCount']}');
+        if (n != null) setState(() => unreadCount = n);
+      });
+
+      socket!.on('new_chat_room', (_) {
+        if (mounted) _fetchUnreadCount();
+      });
+
       socket!.onConnectError((error) {
         debugPrint('socket connect error: $error');
       });

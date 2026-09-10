@@ -11,6 +11,7 @@ import '../../data/models/banner_ad.dart';
 import 'dart:async';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 import 'package:iljujob/config/app_theme.dart';
@@ -40,6 +41,8 @@ class _ChatListScreenState extends State<ChatListScreen>
   List<BannerAd> bannerAds = [];
   int _currentBannerIndex = 0;
   Timer? _bannerTimer;
+  IO.Socket? _socket;
+  Timer? _listRefreshTimer;
   String _query = '';
   late final PageController _pageController; // ✅ nullable 제거
   bool _isBannerHidden = false;
@@ -68,6 +71,10 @@ class _ChatListScreenState extends State<ChatListScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _bannerTimer?.cancel();
+    _listRefreshTimer?.cancel();
+    _socket?.clearListeners();
+    _socket?.disconnect();
+    _socket = null;
     _pageController.dispose();
     super.dispose();
   }
@@ -76,6 +83,7 @@ class _ChatListScreenState extends State<ChatListScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       _fetchChatRooms();
+      _socket?.connect();
     }
   }
 
@@ -322,6 +330,43 @@ class _ChatListScreenState extends State<ChatListScreen>
 
     await _fetchChatRooms();
     widget.onMessagesRead?.call();
+    await _initSocket(prefs.getString('userPhone') ?? '');
+  }
+
+  /* ---------------- 실시간 목록 갱신 ---------------- */
+
+  // 목록에 소켓이 아예 없어서, 화면을 열어둔 채로는 새 메시지가 와도 갱신되지
+  // 않았다(앱을 백그라운드에 보냈다 돌아와야 반영). 새 메시지·새 채팅방 신호를
+  // 받아 목록만 다시 불러온다.
+  Future<void> _initSocket(String userPhone) async {
+    if (_socket != null || userPhone.isEmpty) return;
+    final token = await AuthenticatedHttpClient.accessToken();
+    if (token.isEmpty) return;
+
+    _socket = IO.io(baseUrl, <String, dynamic>{
+      'transports': ['websocket'],
+      'autoConnect': false,
+      'reconnection': true,
+      'auth': {'token': token},
+      'extraHeaders': {'Authorization': 'Bearer $token'},
+    });
+
+    _socket!.onConnect((_) {
+      _socket!.emit('register_user', {'userPhone': userPhone});
+    });
+
+    // 여러 방에서 동시에 오면 요청이 겹치므로 묶어서 한 번만 다시 받는다.
+    void refresh(dynamic _) {
+      if (!mounted) return;
+      _listRefreshTimer?.cancel();
+      _listRefreshTimer = Timer(const Duration(milliseconds: 400), () {
+        if (mounted) _fetchChatRooms();
+      });
+    }
+
+    _socket!.on('unreadCountUpdated', refresh);
+    _socket!.on('new_chat_room', refresh);
+    _socket!.connect();
   }
 
   /* ---------------- 시간 처리 ---------------- */

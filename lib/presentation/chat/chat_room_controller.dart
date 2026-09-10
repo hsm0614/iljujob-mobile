@@ -38,6 +38,7 @@ class ChatRoomController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _markReadTimer?.cancel();
     socket?.clearListeners();
     socket?.disconnect();
     socket = null;
@@ -387,27 +388,44 @@ class ChatRoomController extends ChangeNotifier {
       onSystemMessage?.call(data['message'] ?? '알바가 완료되었습니다!');
     });
 
-    socket!.on('receive_message', (data) async {
+    socket!.on('receive_message', (data) {
+      if (_disposed) return;
+      // 화면 먼저, 읽음 처리는 뒤에. 예전엔 mark-read 응답을 await 한 뒤에야
+      // 메시지를 그려서, 메시지가 뜨는 속도가 HTTP 왕복에 묶여 있었다.
+      upsertMessage(data);
+      onScrollToBottom?.call();
+      _markReadDebounced(localUserType);
+    });
+
+    socket!.connect();
+  }
+
+  // 메시지가 연달아 오면 건마다 POST 하지 않고 마지막 한 번으로 묶는다.
+  Timer? _markReadTimer;
+  void _markReadDebounced(String readerType) {
+    _markReadTimer?.cancel();
+    _markReadTimer = Timer(const Duration(milliseconds: 600), () async {
       if (_disposed) return;
       try {
         await AuthenticatedHttpClient.postJson(
           Uri.parse('$baseUrl/api/chat/mark-read'),
-          body: {'roomId': chatRoomId, 'reader': localUserType},
+          body: {'roomId': chatRoomId, 'reader': readerType},
         );
       } catch (_) {}
-      if (_disposed) return;
-      upsertMessage(data);
-      onScrollToBottom?.call();
     });
-
-    socket!.connect();
   }
 
   void _joinSafe(String userPhone) {
     if (_disposed) return;
     final s = socket;
     if (s == null || !s.connected) return;
-    s.emit('join_room', {'roomId': chatRoomId, 'userPhone': userPhone});
+    // sender 를 실어야 서버가 신원을 제대로 판정한다. 이게 없으면 토큰이 만료된
+    // 사장님이 워커로 취급돼 상대방의 안읽음 이벤트를 받는다.
+    s.emit('join_room', {
+      'roomId': chatRoomId,
+      'userPhone': userPhone,
+      'sender': userType,
+    });
   }
 
   Future<void> ensureConnect() async {

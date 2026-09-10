@@ -264,11 +264,14 @@ class _HomeScreenState extends State<HomeScreen> {
       (_) => socket!.emit('register_user', {'userPhone': userPhone}),
     );
     socket!.on('unreadCountUpdated', (data) {
-      if (data['userPhone'] == userPhone && data['userType'] == userType) {
-        setState(
-          () => unreadCount = int.tryParse(data['newCount'].toString()) ?? 0,
-        );
-      }
+      if (!mounted || data is! Map) return;
+      // userPhone 만으로 거르면 안 된다 — 서버가 userId 만 싣던 시절 payload도
+      // 있어서 항상 탈락했다. userType 이 맞고 전화번호가 어긋나지 않으면 받는다.
+      if (data['userType'] != userType) return;
+      final phone = data['userPhone'];
+      if (phone != null && phone != userPhone) return;
+      final n = int.tryParse('${data['newCount']}');
+      if (n != null) setState(() => unreadCount = n);
     });
     socket!.onDisconnect((_) => debugPrint('소켓 연결 종료'));
   }
