@@ -95,77 +95,82 @@ class ChatMessageList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 날짜별 그룹핑
-    final Map<String, List<Map<String, dynamic>>> grouped = {};
-    for (final msg in messages) {
-      final key = _dateKey(_messageDate(msg));
-      grouped.putIfAbsent(key, () => []).add(msg);
-    }
+    // 정렬·그룹핑은 여기서 딱 한 번. 예전엔 dateKeys 정렬의 비교자 안에서
+    // 그날 메시지를 매번 다시 정렬하고 루프에서 또 정렬해서,
+    // 메시지가 하나 도착할 때마다 이 전부가 다시 돌았다.
+    final dated = <_Dated>[for (final m in messages) _Dated(m, _messageDate(m))]
+      ..sort((a, b) => a.date.compareTo(b.date));
 
-    // 날짜 오름차순 정렬
-    final dateKeys =
-        grouped.keys.toList()..sort((a, b) {
-          DateTime first(String k) {
-            final list =
-                grouped[k]!..sort(
-                  (m1, m2) => _messageDate(m1).compareTo(_messageDate(m2)),
-                );
-            return _messageDate(list.first);
-          }
-
-          return first(a).compareTo(first(b));
-        });
-
-    final List<Widget> children = [];
-
-    for (final dateKey in dateKeys) {
-      final dayMessages =
-          grouped[dateKey]!
-            ..sort((m1, m2) => _messageDate(m1).compareTo(_messageDate(m2)));
-
-      // 날짜 구분선
-      children.add(_DateDivider(label: dateKey));
-
-      for (var i = 0; i < dayMessages.length; i++) {
-        final msg = dayMessages[i];
-        final sender = msg['sender']?.toString() ?? '';
-
-        // 봇 메시지
-        if (sender == 'bot' || sender == 'system') {
-          children.add(
-            _BotMessageBubble(message: msg['message']?.toString() ?? ''),
-          );
-          continue;
-        }
-
-        final isMe = sender == (userType == 'worker' ? 'worker' : 'client');
-        final isPrevSameSender =
-            i > 0 && dayMessages[i - 1]['sender'] == sender;
-        final when = _messageDate(msg);
-
-        children.add(
-          _MessageBubble(
-            msg: msg,
-            isMe: isMe,
-            isPrevSameSender: isPrevSameSender,
-            when: when,
-            targetThumbnailUrl: targetThumbnailUrl,
-            targetName: targetName ?? (userType == 'worker' ? '기업' : '알바생'),
-            onProfileTap: onProfileTap,
-            onRetry:
-                onRetryMessage == null ? null : () => onRetryMessage!(msg),
-          ),
-        );
+    // 위젯이 아니라 "무엇을 그릴지"만 나열한다. 실제 위젯은 ListView.builder 가
+    // 화면에 보이는 것만 만든다 — 예전엔 전체를 Column 에 즉시 생성해서
+    // 메시지 500개면 위젯 500개가 항상 트리에 살아 있었다.
+    final rows = <_Row>[];
+    String? curKey;
+    String? prevSender;
+    for (final d in dated) {
+      final key = _dateKey(d.date);
+      if (key != curKey) {
+        rows.add(_Row.divider(key));
+        curKey = key;
+        prevSender = null;
       }
+      final sender = d.msg['sender']?.toString() ?? '';
+      if (sender == 'bot' || sender == 'system') {
+        rows.add(_Row.bot(d.msg['message']?.toString() ?? ''));
+      } else {
+        rows.add(_Row.message(d.msg, d.date, sender == prevSender));
+      }
+      prevSender = sender;
     }
 
     // 취소된 카드는 숨기고, 활성 카드만 표시
-    final visibleConfirms = workConfirmations
-        .where((c) => c.status != 'cancelled')
-        .toList();
-    for (final confirm in visibleConfirms) {
-      children.add(
-        WorkConfirmationCard(
+    for (final c in workConfirmations.where((c) => c.status != 'cancelled')) {
+      rows.add(_Row.confirm(c));
+    }
+    if (showHireNudge && onConfirmHire != null) rows.add(const _Row.nudge());
+
+    // reverse: true — 새 메시지가 아래에 붙고, 위로 과거를 읽어도 위치가 밀리지
+    // 않는다. 메시지가 적을 때 아래로 정렬되는 것도 공짜로 얻어서
+    // 예전의 ConstrainedBox(minHeight) + MainAxisAlignment.end 조합이 필요없다.
+    final ordered = rows.reversed.toList(growable: false);
+    final bottomInset = MediaQuery.of(context).padding.bottom;
+
+    return ListView.builder(
+      controller: scrollController,
+      reverse: true,
+      padding: EdgeInsets.only(
+        left: 8,
+        right: 8,
+        top: 4,
+        bottom: inputOverlayHeight + bottomInset,
+      ),
+      itemCount: ordered.length,
+      itemBuilder: (context, i) => _buildRow(ordered[i]),
+    );
+  }
+
+  Widget _buildRow(_Row row) {
+    switch (row.kind) {
+      case _RowKind.divider:
+        return _DateDivider(label: row.text!);
+      case _RowKind.bot:
+        return _BotMessageBubble(message: row.text!);
+      case _RowKind.message:
+        final msg = row.msg!;
+        final sender = msg['sender']?.toString() ?? '';
+        return _MessageBubble(
+          msg: msg,
+          isMe: sender == (userType == 'worker' ? 'worker' : 'client'),
+          isPrevSameSender: row.prevSame,
+          when: row.when!,
+          targetThumbnailUrl: targetThumbnailUrl,
+          targetName: targetName ?? (userType == 'worker' ? '기업' : '알바생'),
+          onProfileTap: onProfileTap,
+          onRetry: onRetryMessage == null ? null : () => onRetryMessage!(msg),
+        );
+      case _RowKind.confirm:
+        final confirm = row.confirm!;
+        return WorkConfirmationCard(
           confirm: confirm,
           userType: userType,
           onAccept:
@@ -180,38 +185,49 @@ class ChatMessageList extends StatelessWidget {
               userType == 'client'
                   ? () => onNoShowWorkConfirmation?.call(confirm)
                   : null,
-        ),
-      );
-    }
-
-    // 채용 확정 유도 버블
-    if (showHireNudge && onConfirmHire != null) {
-      children.add(_HireNudgeBubble(onConfirmHire: onConfirmHire!));
-    }
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final bottomInset = MediaQuery.of(context).padding.bottom;
-        return SingleChildScrollView(
-          controller: scrollController,
-          padding: EdgeInsets.only(
-            left: 8,
-            right: 8,
-            top: 4,
-            bottom: inputOverlayHeight + bottomInset,
-          ),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.end,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: children,
-            ),
-          ),
         );
-      },
-    );
+      case _RowKind.nudge:
+        return _HireNudgeBubble(onConfirmHire: onConfirmHire!);
+    }
   }
+}
+
+// ─────────────────────────────────────────────
+// 목록 항목 — 위젯이 아니라 "무엇을 그릴지"만 담는다
+// ─────────────────────────────────────────────
+
+class _Dated {
+  final Map<String, dynamic> msg;
+  final DateTime date;
+  const _Dated(this.msg, this.date);
+}
+
+enum _RowKind { divider, bot, message, confirm, nudge }
+
+class _Row {
+  final _RowKind kind;
+  final String? text;
+  final Map<String, dynamic>? msg;
+  final DateTime? when;
+  final bool prevSame;
+  final WorkConfirmation? confirm;
+
+  const _Row._(
+    this.kind, {
+    this.text,
+    this.msg,
+    this.when,
+    this.prevSame = false,
+    this.confirm,
+  });
+
+  const _Row.divider(String label) : this._(_RowKind.divider, text: label);
+  const _Row.bot(String message) : this._(_RowKind.bot, text: message);
+  const _Row.message(Map<String, dynamic> m, DateTime w, bool prev)
+    : this._(_RowKind.message, msg: m, when: w, prevSame: prev);
+  const _Row.confirm(WorkConfirmation c)
+    : this._(_RowKind.confirm, confirm: c);
+  const _Row.nudge() : this._(_RowKind.nudge);
 }
 
 // ─────────────────────────────────────────────

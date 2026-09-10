@@ -108,7 +108,11 @@ class ChatRoomController extends ChangeNotifier {
   // ─────────────────────────────────────────────
 
   void Function(String)? onShowSnackbar;
-  void Function()? onScrollToBottom;
+  /// 목록을 최신 메시지 쪽으로 내린다.
+  /// force=false 면 사용자가 바닥 근처일 때만 움직인다 — 지난 대화를 읽는 중에
+  /// 상대 메시지가 와도 끌어내리지 않기 위해서다.
+  /// 내가 보낸 메시지·이미지는 위에 있더라도 따라가야 하므로 force=true.
+  void Function({bool force})? onScrollToBottom;
   void Function(String)? onSystemMessage;
   void Function()? onShowEvaluationDialog;
   void Function()? onPopScreen;
@@ -503,7 +507,7 @@ class ChatRoomController extends ChangeNotifier {
       'createdAt': nowIso,
       'pending': true,
     });
-    onScrollToBottom?.call();
+    onScrollToBottom?.call(force: true);
 
     _emitSend(clientTempId);
   }
@@ -1352,7 +1356,7 @@ class ChatRoomController extends ChangeNotifier {
         'createdAt': createdAtUtc.toIso8601String(),
         'createdAtMs': createdAtUtc.millisecondsSinceEpoch,
       });
-      onScrollToBottom?.call();
+      onScrollToBottom?.call(force: true);
     } else {
       onShowSnackbar?.call('이미지 업로드 실패 (${resp.statusCode})');
     }

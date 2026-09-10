@@ -66,6 +66,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   bool isLoading = true;
   bool compactView = false;
   final ScrollController _scrollController = ScrollController();
+  bool _loadingMore = false;
   bool isAvailableToday = false;
   String selectedPayType = 'all';
   int _jobsReqSeq = 0;
@@ -122,8 +123,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         });
 
     _scrollController.addListener(() {
-      if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent - 200) {
+      if (!_scrollController.hasClients) return;
+      final pos = _scrollController.position;
+      if (pos.pixels >= pos.maxScrollExtent - 200) {
         _loadMoreItems();
       }
     });
@@ -656,10 +658,16 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   }
 
   void _loadMoreItems() {
+    // 스크롤 리스너는 매 프레임 돈다. 가드가 없으면 하단 200px 안에 들어간
+    // 순간부터 초당 수십 번 호출돼 홈 전체가 그만큼 리빌드되고,
+    // _itemsToShow 도 10이 아니라 수백씩 뛴다. 한 프레임에 한 번만 허용한다.
+    if (_loadingMore) return;
     if (_itemsToShow < filteredJobs.length) {
+      _loadingMore = true;
       setState(() {
         _itemsToShow += 10;
       });
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadingMore = false);
     }
   }
 
@@ -3173,6 +3181,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                 url,
                                 width: 62,
                                 height: 62,
+                                cacheWidth: 186,
                                 fit: BoxFit.cover,
                                 errorBuilder:
                                     (_, __, ___) => const SizedBox.shrink(),

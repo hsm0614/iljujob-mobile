@@ -91,7 +91,8 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
           ..showSnackBar(SnackBar(content: Text(msg)));
       };
 
-      ctrl.onScrollToBottom = () => _scrollToBottom();
+      ctrl.onScrollToBottom =
+          ({bool force = false}) => _scrollToBottom(force: force);
 
       ctrl.onPopScreen = () {
         if (mounted) Navigator.of(context).maybePop();
@@ -122,21 +123,22 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   // 스크롤
   // ─────────────────────────────────────────────
 
-  void _scrollToBottom({bool initial = false}) {
+  /// 목록이 reverse: true 라 "맨 아래"는 offset 0 이다.
+  /// 최신 메시지가 바닥에 붙어 있으므로 첫 진입엔 스크롤할 것도 없다.
+  static const _nearBottomPx = 120.0;
+
+  void _scrollToBottom({bool force = false}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scrollController.hasClients) return;
       final position = _scrollController.position;
-      final max = position.maxScrollExtent;
 
-      if (initial) {
-        final contentHeight = max + position.viewportDimension;
-        if (contentHeight <= position.viewportDimension * 1.1) {
-          _scrollController.jumpTo(position.minScrollExtent);
-          return;
-        }
-      }
+      // 지난 대화를 읽는 중이면 끌어내리지 않는다. 예전엔 상대 메시지가 올 때마다
+      // 조건 없이 바닥으로 당겨서, 위로 올려 읽던 사람이 계속 튕겨 내려갔다.
+      // 내가 보낸 직후엔 이미 바닥이라 이 조건을 자연히 통과한다.
+      if (!force && position.pixels > _nearBottomPx) return;
+
       _scrollController.animateTo(
-        max,
+        position.minScrollExtent,
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeOut,
       );
@@ -1479,7 +1481,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                   const Spacer(),
                   TextButton.icon(
                     onPressed: () {
-                      _scrollToBottom();
+                      _scrollToBottom(force: true);
                       _inputFocusNode.requestFocus();
                     },
                     style: TextButton.styleFrom(

@@ -955,6 +955,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
           url,
           width: 74,
           height: 74,
+          cacheWidth: 222,
           fit: BoxFit.cover,
           errorBuilder:
               (_, __, ___) => Container(

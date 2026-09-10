@@ -1083,6 +1083,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                               existingImageUrls[i],
                               height: 120,
                               width: 120,
+                              cacheWidth: 360,
                               fit: BoxFit.cover,
                             )
                             : Image.file(

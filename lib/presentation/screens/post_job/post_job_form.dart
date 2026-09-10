@@ -3594,6 +3594,7 @@ class _PostJobFormState extends State<PostJobForm>
                     e.value,
                     width: 80,
                     height: 80,
+                    cacheWidth: 240,
                     fit: BoxFit.cover,
                   ),
                   () => setState(() {
