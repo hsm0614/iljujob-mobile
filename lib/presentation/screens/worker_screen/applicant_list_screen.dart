@@ -26,7 +26,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
   static const Color _bg = AppColors.bgPage;
   static const Color _border = AppColors.border;
   static const Color _text = AppColors.textPrimary;
-  static const Color _label = Color(0xFF8B95A1);
+  static const Color _label = AppColors.textTertiary;
 
   String formatDate(String isoDate) {
     try {
@@ -210,7 +210,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFF3182F6), Color(0xFF6C5CE7)],
+                  colors: [AppColors.primary, AppColors.aiAccent],
                 ),
                 borderRadius: BorderRadius.circular(99),
               ),
@@ -476,7 +476,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
               // ── AI 스코어 영역 ────────────────────────────
               if (hasAi) ...[
                 const SizedBox(height: 12),
-                const Divider(height: 1, color: Color(0xFFF3F4F6)),
+                const Divider(height: 1, color: AppColors.bgMuted),
                 const SizedBox(height: 10),
 
                 Row(

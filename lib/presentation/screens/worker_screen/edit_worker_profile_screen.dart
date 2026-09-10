@@ -1448,7 +1448,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
               text,
               style: const TextStyle(
                 fontSize: 12,
-                color: Color(0xFF1D4ED8),
+                color: AppColors.primaryDark,
                 fontWeight: FontWeight.w700,
                 height: 1.35,
               ),

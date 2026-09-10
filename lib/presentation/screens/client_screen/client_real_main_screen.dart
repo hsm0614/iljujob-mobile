@@ -13,6 +13,7 @@ import 'package:geolocator/geolocator.dart';
 import 'dart:async';
 import 'package:iljujob/utils/pay_display.dart';
 import '../../../config/app_theme.dart';
+import '../../../config/messages.dart';
 
 const kBrandBlue = AppColors.primary;
 const kTextPrimary = Colors.black87;
@@ -188,7 +189,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
       if (!mounted || seq != _loadSeq) return;
       if (allJobs.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('공고를 불러오지 못했습니다. 아래 새로고침을 눌러주세요.')),
+          const SnackBar(content: Text('공고를 불러오지 못했어요. 아래 새로고침을 눌러주세요.')),
         );
       }
     } finally {
@@ -718,7 +719,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
                 if (clientId == null) {
                   ScaffoldMessenger.of(
                     context,
-                  ).showSnackBar(const SnackBar(content: Text('로그인 정보가 없습니다')));
+                  ).showSnackBar(const SnackBar(content: Text(Msg.loginRequired)));
                   return;
                 }
 

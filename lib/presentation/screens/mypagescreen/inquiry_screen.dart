@@ -127,7 +127,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
           builder:
               (_) => AlertDialog(
                 title: const Text('접수 완료'),
-                content: const Text('문의가 정상적으로 접수되었습니다.\n빠르게 답변드릴게요!'),
+                content: const Text('문의를 접수했어요.\n빠르게 답변드릴게요.'),
                 actions: [
                   TextButton(
                     onPressed: () => Navigator.pop(context),
@@ -138,7 +138,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
         );
         _clearForm();
       } else {
-        _showSnack('문의 전송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+        _showSnack('문의를 보내지 못했어요. 잠시 후 다시 시도해 주세요.');
       }
     } catch (e) {
       debugPrint('오류 발생: $e');
@@ -466,7 +466,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
             }
             final data = snap.data ?? [];
             if (data.isEmpty) {
-              return const Center(child: Text('문의 내역이 없습니다.'));
+              return const Center(child: Text('문의 내역이 없어요.'));
             }
 
             return ListView.separated(
@@ -739,7 +739,7 @@ class _StatusBadge extends StatelessWidget {
       case '완료':
       case '답변 완료':
       case 'closed':
-        bg = const Color(0xFF22C55E).withOpacity(.12);
+        bg = AppColors.gradeB.withOpacity(.12);
         fg = const Color(0xFF16A34A);
         break;
       case '대기':

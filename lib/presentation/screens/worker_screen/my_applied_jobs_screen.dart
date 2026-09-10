@@ -212,7 +212,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
       final userId = prefs.getInt('userId');
 
       if (userId == null) {
-        _showErrorSnackbar('로그인 정보가 없습니다. 다시 로그인해주세요.');
+        _showErrorSnackbar(Msg.loginExpired);
         return;
       }
 
@@ -493,7 +493,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
     final workerId = prefs.getInt('userId');
 
     if (workerId == null) {
-      _showErrorSnackbar('로그인 정보가 없습니다. 다시 로그인해주세요.');
+      _showErrorSnackbar(Msg.loginExpired);
       return;
     }
 
@@ -509,7 +509,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('지원이 취소되었습니다.')));
+        ).showSnackBar(const SnackBar(content: Text('지원을 취소했어요.')));
         await _loadAppliedJobs();
         _applyFilters();
       } else {
@@ -802,7 +802,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF8B95A1),
+                        color: AppColors.textTertiary,
                       ),
                     ),
                   ],

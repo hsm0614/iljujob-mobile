@@ -102,7 +102,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
   Future<void> _openCertificate() async {
     final url = _getFullImageUrl(certificateUrl);
     if (url.trim().isEmpty) {
-      _showSnackbar('열 수 있는 파일이 없습니다.');
+      _showSnackbar('열 수 있는 파일이 없어요.');
       return;
     }
 
@@ -110,7 +110,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
-      _showSnackbar('파일을 열 수 없습니다.');
+      _showSnackbar('파일을 열 수 없어요.');
     }
   }
 
@@ -119,7 +119,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
     final clientId = prefs.getInt('userId');
 
     if (clientId == null) {
-      _showSnackbar('로그인 정보가 없습니다.');
+      _showSnackbar(Msg.loginRequired);
       if (mounted) setState(() => isLoading = false);
       return;
     }
@@ -283,7 +283,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
     if (_saving) return;
 
     if (phone.isEmpty) {
-      _showSnackbar('로그인 정보가 없습니다.');
+      _showSnackbar(Msg.loginRequired);
       return;
     }
 
@@ -349,7 +349,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       if (!mounted) return;
 
       if (streamed.statusCode == 200) {
-        _showSnackbar('저장되었습니다. 최신 정보를 불러옵니다.');
+        _showSnackbar('저장했어요. 최신 정보를 불러올게요.');
         await _loadProfile();
         setState(() {
           selectedLogoImage = null;
@@ -652,11 +652,11 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                   height: 120,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF3F4F6),
+                    color: AppColors.bgMuted,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
-                    '파일을 불러오지 못했습니다.',
+                    '파일을 불러오지 못했어요.',
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
                 ),
@@ -667,13 +667,13 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       preview = Container(
         height: 90,
         decoration: BoxDecoration(
-          color: const Color(0xFFF3F4F6),
+          color: AppColors.bgMuted,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.border),
         ),
         alignment: Alignment.center,
         child: const Text(
-          '아직 업로드된 파일이 없습니다.',
+          '아직 올라온 파일이 없어요.',
           style: TextStyle(color: AppColors.textSecondary),
         ),
       );

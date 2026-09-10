@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../../../config/constants.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'quick_post_sheet.dart';
+import '../../../config/messages.dart';
 
 class SelectPreviousJobScreen extends StatefulWidget {
   // quickMode 파라미터 추가
@@ -66,7 +67,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
           setState(() => isLoading = false);
           ScaffoldMessenger.of(
             context,
-          ).showSnackBar(const SnackBar(content: Text('로그인 정보를 불러올 수 없습니다.')));
+          ).showSnackBar(const SnackBar(content: Text(Msg.loginRequired)));
         }
         return;
       }
@@ -190,7 +191,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
             ),
             const SizedBox(height: 14),
             const Text(
-              '작성한 공고가 없습니다',
+              '작성한 공고가 없어요.',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
@@ -466,14 +467,14 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
               color: AppColors.primaryLight,
               child: const Row(
                 children: [
-                  Icon(Icons.info_outline, size: 14, color: Color(0xFF3182F6)),
+                  Icon(Icons.info_outline, size: 14, color: AppColors.primary),
                   SizedBox(width: 6),
                   Text(
                     '공고를 선택하면 날짜·급여만 바꿔서 바로 등록할 수 있어요',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF3182F6),
+                      color: AppColors.primary,
                     ),
                   ),
                 ],

@@ -81,7 +81,7 @@ class _RecommendedSectionState extends State<RecommendedSection> {
 
       if (raw == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('공고 상세를 불러오지 못했습니다.')),
+          const SnackBar(content: Text('공고를 불러오지 못했어요.')),
         );
         return;
       }
@@ -320,7 +320,7 @@ class _AiJobCard extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: loading ? null : onTap,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1675f4),
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

@@ -81,7 +81,7 @@ String url = selectedType == 'job'
           const Divider(),
           Expanded(
             child: filtered.isEmpty
-                ? const Center(child: Text('📭 신고 내역이 없습니다.', style: TextStyle(color: AppColors.textSecondary)))
+                ? const Center(child: Text('신고 내역이 없어요.', style: TextStyle(color: AppColors.textSecondary)))
                 : ListView.builder(
                     itemCount: filtered.length,
                     itemBuilder: (context, index) => _buildReportCard(filtered[index]),

@@ -296,7 +296,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w600,
-                            color: Color(0xFF1D4ED8),
+                            color: AppColors.primaryDark,
                           ),
                         ),
                       ),
@@ -1102,7 +1102,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w700,
-          color: valueColor == _kBrand ? const Color(0xFF1D4ED8) : valueColor,
+          color: valueColor == _kBrand ? AppColors.primaryDark : valueColor,
         ),
       ),
     ],

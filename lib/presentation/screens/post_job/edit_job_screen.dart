@@ -542,7 +542,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                           if (toMinutes(selectedStart) ==
                               toMinutes(selectedEnd)) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('시작과 종료 시간이 같습니다')),
+                              const SnackBar(content: Text('시작 시간과 종료 시간이 같아요.')),
                             );
                             return;
                           }

@@ -1351,7 +1351,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         setState(() => appliedJobIds.remove(jobId));
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('지원을 취소했습니다.')));
+          ..showSnackBar(const SnackBar(content: Text('지원을 취소했어요.')));
       } else {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
@@ -1539,7 +1539,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     const SizedBox(width: 12),
                     const Expanded(
                       child: Text(
-                        '지원이 완료되었습니다',
+                        Msg.applyDone,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w800,
@@ -1590,7 +1590,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                       ),
                       SizedBox(width: 6),
                       Text(
-                        '지원 후 채팅에서 근무 조건을 확인할 수 있습니다',
+                        '지원 후 채팅에서 근무 조건을 확인할 수 있어요.',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -3051,7 +3051,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     // 다 붙은 뱃지는 안 붙은 것과 같다.
     final List<Widget> opBadges = [];
     if (job.isUrgent) {
-      opBadges.add(const JobSignalBadge(label: '⚡ 긴급', signal: JobSignal.time));
+      opBadges.add(const JobSignalBadge(
+          label: '긴급',
+          signal: JobSignal.time,
+          icon: Icons.bolt_rounded,
+        ));
     }
     if (isUrgent) {
       opBadges.add(const JobSignalBadge(label: '마감임박', signal: JobSignal.time));

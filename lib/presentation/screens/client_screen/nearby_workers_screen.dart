@@ -217,14 +217,14 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
   void _showError(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: const Color(0xFFEF4444)),
+      SnackBar(content: Text(msg), backgroundColor: AppColors.urgentCall),
     );
   }
 
   void _showSuccess(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(msg), backgroundColor: const Color(0xFF22C55E)),
+      SnackBar(content: Text(msg), backgroundColor: AppColors.gradeB),
     );
   }
 
@@ -237,9 +237,9 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
   }
 
   Color _gradeColor(int score) {
-    if (score >= 100) return const Color(0xFFFF9500);
+    if (score >= 100) return AppColors.pending;
     if (score >= 70) return AppColors.primary;
-    if (score >= 40) return const Color(0xFF22C55E);
+    if (score >= 40) return AppColors.gradeB;
     return AppColors.textTertiary;
   }
 
@@ -359,7 +359,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                 const Icon(
                   Icons.people_alt_rounded,
                   size: 14,
-                  color: Color(0xFFFF9500),
+                  color: AppColors.pending,
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -367,7 +367,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFFFF9500),
+                    color: AppColors.pending,
                   ),
                 ),
               ],
@@ -549,7 +549,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF3F4F6),
+                                color: AppColors.bgMuted,
                                 borderRadius: BorderRadius.circular(99),
                               ),
                               child: const Text(
@@ -697,7 +697,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
               onPressed: count > 0 && !_sending ? _send : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor:
-                    count > 0 ? const Color(0xFFEF4444) : AppColors.bgMuted,
+                    count > 0 ? AppColors.urgentCall : AppColors.bgMuted,
                 foregroundColor: Colors.white,
                 disabledBackgroundColor: AppColors.bgMuted,
                 elevation: 0,
@@ -717,7 +717,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                         ),
                       )
                       : Text(
-                        count > 0 ? '⚡ $count명에게 긴급 호출 발송' : '알바생을 선택해주세요',
+                        count > 0 ? '$count명에게 긴급 호출 발송' : '알바생을 선택해주세요',
                         style: TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.w700,
@@ -753,7 +753,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF374151),
+                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 8),

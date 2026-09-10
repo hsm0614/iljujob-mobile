@@ -20,7 +20,7 @@ class PassPaymentFailedScreen extends StatelessWidget {
             const Icon(Icons.error, color: Colors.red, size: 80),
             const SizedBox(height: 20),
             const Text(
-              '결제에 실패했습니다.',
+              '결제에 실패했어요.',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),

@@ -928,12 +928,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     if (uri == null ||
         (uri.scheme != 'http' && uri.scheme != 'https') ||
         uri.host.trim().isEmpty) {
-      _showSnack('외부 신청 페이지 주소가 올바르지 않습니다.');
+      _showSnack('외부 신청 페이지 주소가 올바르지 않아요.');
       return;
     }
     final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!launched) {
-      _showSnack('외부 신청 페이지를 열 수 없습니다.');
+      _showSnack('외부 신청 페이지를 열 수 없어요.');
     }
   }
 
@@ -962,7 +962,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
       if (response.statusCode == 200) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('신고가 접수되었습니다. 신고 내용은 24시간 이내 조치됩니다.')),
+          const SnackBar(content: Text('신고를 접수했어요. 24시간 이내에 조치할게요.')),
         );
       } else {
         debugPrint('신고 전송 실패: ${response.body}');
@@ -970,7 +970,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       }
     } catch (e) {
       print('❌ 예외 발생: $e');
-      _showSnack('신고 중 오류가 발생했습니다.');
+      _showSnack('신고를 접수하지 못했어요. 잠시 후 다시 시도해 주세요.');
     }
   }
 
@@ -1177,7 +1177,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       decoration: BoxDecoration(
         color:
             isButtonDisabled
-                ? const Color(0xFFF3F4F6)
+                ? AppColors.bgMuted
                 : const Color(0xFFE7F0FF),
         borderRadius: BorderRadius.circular(12),
       ),
@@ -1197,8 +1197,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 height: 1.25,
                 color:
                     isButtonDisabled
-                        ? const Color(0xFF4B5563)
-                        : const Color(0xFF1D4ED8),
+                        ? AppColors.textSecondary
+                        : AppColors.primaryDark,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -1279,7 +1279,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     Navigator.pop(context);
                     await _submitReport(category, detail, jobId, userId);
                   } else {
-                    _showSnack('로그인 정보 또는 공고 정보가 올바르지 않습니다.');
+                    _showSnack(Msg.loginRequired);
                   }
                 },
                 child: const Text('신고하기'),
@@ -1416,7 +1416,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                           ),
                           SizedBox(width: 8),
                           Text(
-                            '이 공고는 마감되었습니다',
+                            '이 공고는 마감됐어요.',
                             style: TextStyle(
                               fontSize: 14,
                               color: AppColors.textPrimary,
@@ -1541,7 +1541,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               height: 1.32,
               fontWeight: FontWeight.w700,
               fontFamily: 'Jalnan2TTF',
-              color: Color(0xFF4B5563),
+              color: AppColors.textSecondary,
             ),
           ),
 
@@ -1639,7 +1639,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             style: const TextStyle(
               fontSize: 11.5,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF374151),
+              color: AppColors.textSecondary,
             ),
           ),
         ],
@@ -1780,7 +1780,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF374151),
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ],
@@ -2631,7 +2631,7 @@ class _AgencyApplyBar extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 12,
                     height: 1.35,
-                    color: Color(0xFF374151),
+                    color: AppColors.textSecondary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -2730,7 +2730,7 @@ class _AgencyApplyBar extends StatelessWidget {
         style: const TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.w800,
-          color: Color(0xFF374151),
+          color: AppColors.textSecondary,
         ),
       ),
     );

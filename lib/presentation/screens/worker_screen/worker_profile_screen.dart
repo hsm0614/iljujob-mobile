@@ -159,7 +159,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                   if (response.statusCode == 200) {
                     setState(() => isBlocked = true);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('해당 사용자를 차단했습니다.')),
+                      const SnackBar(content: Text('차단했어요.')),
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -263,7 +263,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
 
                   if (response.statusCode == 200) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('신고가 접수되었습니다.')),
+                      const SnackBar(content: Text('신고를 접수했어요.')),
                     );
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -308,7 +308,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
           isLoading
               ? const Center(child: CircularProgressIndicator())
               : profile == null
-              ? const Center(child: Text('프로필 정보를 불러올 수 없습니다.'))
+              ? const Center(child: Text('프로필을 불러올 수 없어요.'))
               : SingleChildScrollView(
                 padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
                 child: Column(
@@ -461,10 +461,10 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: const Color(0xFF1675F4).withValues(alpha: .12),
+              color: AppColors.primary.withValues(alpha: .12),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: const Color(0xFF1675F4)),
+            child: Icon(icon, color: AppColors.primary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -634,7 +634,7 @@ class _SectionTitle extends StatelessWidget {
           width: 8,
           height: 8,
           decoration: const BoxDecoration(
-            color: Color(0xFF1675F4),
+            color: AppColors.primary,
             shape: BoxShape.circle,
           ),
         ),

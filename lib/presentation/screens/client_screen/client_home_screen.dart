@@ -189,7 +189,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '해당 공고를 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.',
+                    '이 공고를 삭제할까요?\n삭제하면 되돌릴 수 없어요.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 13.5,
@@ -883,7 +883,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        '공고 조건을 기준으로 적합한 인재를 추천합니다.\n구독 후 이용할 수 있습니다.',
+                        '공고 조건에 맞는 인재를 추천해요.\n구독하면 이용할 수 있어요.',
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: AppColors.textSecondary,
@@ -1088,7 +1088,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   ),
                   SizedBox(height: 2),
                   Text(
-                    '인증을 완료하시면 지원 전환율이 올라갈 수 있습니다.',
+                    '인증을 완료하면 지원 전환율이 올라갈 수 있어요.',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -1287,7 +1287,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     if (hasAnyJobs) {
       return const SliverFillRemaining(
         hasScrollBody: false,
-        child: Center(child: Text('조건에 맞는 공고가 없습니다.')),
+        child: Center(child: Text('조건에 맞는 공고가 없어요.')),
       );
     }
 
@@ -1323,7 +1323,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             ),
             const SizedBox(height: 8),
             const Text(
-              '근무 조건을 입력해 공고를 등록하고 지원자를 확인할 수 있습니다.',
+              '근무 조건을 입력해 공고를 등록하면 지원자를 확인할 수 있어요.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13.5,
@@ -1640,13 +1640,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       ListTile(
                         leading: const Icon(
                           Icons.emergency_rounded,
-                          color: Color(0xFFEF4444),
+                          color: AppColors.urgentCall,
                         ),
                         title: const Text(
-                          '⚡ 긴급 호출 발송',
+                          '긴급 호출 발송',
                           style: TextStyle(
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFFEF4444),
+                            color: AppColors.urgentCall,
                           ),
                         ),
                         onTap: () => Navigator.pop(context, 'urgent-call'),
@@ -1981,8 +1981,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     final reserved = isJobReserved(job);
     final pinned = isJobPinned(job);
     final formattedPay = formatJobPay(job.pay, job.payType);
-    final payTypeColor =
-        job.payType == '주급' ? AppColors.badgeWeekly : AppColors.badgeDaily;
+    // 급여형은 모든 공고에 있는 정보다 — 색으로 강조하지 않는다(Two-Signal).
+    const payTypeColor = AppColors.textSecondary;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
@@ -2060,8 +2060,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 children: [
                   if (job.isUrgent && !isClosed)
                     _badge(
-                      '⚡ 긴급',
-                      color: const Color(0xFFEF4444),
+                      '긴급',
+                      color: AppColors.badgeUrgent,
                       icon: Icons.emergency_rounded,
                     ),
                   if (reserved && job.isPaid)
@@ -2090,7 +2090,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   if (job.expiresAt != null && !isClosed)
                     _badge(
                       getExpiryText(job),
-                      color: const Color(0xFFEF4444),
+                      color: AppColors.badgeUrgent,
                       icon: Icons.access_time,
                     ),
                 ],
@@ -2117,10 +2117,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 9),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEF4444).withValues(alpha: 0.07),
+                      color: AppColors.urgentCall.withValues(alpha: 0.07),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: const Color(0xFFEF4444).withValues(alpha: 0.25),
+                        color: AppColors.urgentCall.withValues(alpha: 0.25),
                       ),
                     ),
                     child: const Row(
@@ -2129,7 +2129,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         Icon(
                           Icons.emergency_rounded,
                           size: 14,
-                          color: Color(0xFFEF4444),
+                          color: AppColors.urgentCall,
                         ),
                         SizedBox(width: 5),
                         Text(
@@ -2137,7 +2137,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFFEF4444),
+                            color: AppColors.urgentCall,
                           ),
                         ),
                       ],
@@ -2159,7 +2159,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       color: const Color(0xFFFFF7ED),
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
-                        color: const Color(0xFFFF9500).withValues(alpha: 0.35),
+                        color: AppColors.pending.withValues(alpha: 0.35),
                       ),
                     ),
                     child: Row(
@@ -2167,7 +2167,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         const Icon(
                           Icons.schedule_rounded,
                           size: 13,
-                          color: Color(0xFFFF9500),
+                          color: AppColors.pending,
                         ),
                         const SizedBox(width: 5),
                         Expanded(
@@ -2211,8 +2211,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     final reserved = isJobReserved(job);
     final pinned = isJobPinned(job);
     final formattedPay = formatJobPay(job.pay, job.payType);
-    final payTypeColor =
-        job.payType == '주급' ? AppColors.badgeWeekly : AppColors.badgeDaily;
+    // 급여형은 모든 공고에 있는 정보다 — 색으로 강조하지 않는다(Two-Signal).
+    const payTypeColor = AppColors.textSecondary;
     final primaryAction = _primaryJobAction(job);
 
     final titleStyle = TextStyle(
@@ -2293,8 +2293,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     children: [
                       if (job.isUrgent && !isClosed)
                         _badge(
-                          '⚡ 긴급',
-                          color: const Color(0xFFEF4444),
+                          '긴급',
+                          color: AppColors.badgeUrgent,
                           icon: Icons.emergency_rounded,
                         ),
                       if (reserved && job.isPaid)
@@ -2329,7 +2329,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       if (job.expiresAt != null && !isClosed)
                         _badge(
                           getExpiryText(job),
-                          color: const Color(0xFFEF4444),
+                          color: AppColors.urgentCall,
                           icon: Icons.access_time,
                         ),
                     ],
@@ -2392,7 +2392,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                           const Icon(
                             Icons.schedule_rounded,
                             size: 14,
-                            color: Color(0xFFFF9500),
+                            color: AppColors.pending,
                           ),
                           const SizedBox(width: 6),
                           Expanded(
@@ -2477,7 +2477,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       _actionBtn(
                         icon: Icons.emergency_rounded,
                         label: '긴급 호출',
-                        color: const Color(0xFFEF4444),
+                        color: AppColors.urgentCall,
                         onTap: () {
                           SharedPreferences.getInstance().then((prefs) {
                             final cid = prefs.getInt('userId');
@@ -2539,7 +2539,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         icon: Icons.emergency_rounded,
         label: '근처 알바생에게 긴급 호출',
         caption: '공고 주변 활동 알바생에게 바로 알립니다.',
-        color: const Color(0xFFEF4444),
+        color: AppColors.urgentCall,
         onTap: () => _openUrgentCall(job),
       );
     }

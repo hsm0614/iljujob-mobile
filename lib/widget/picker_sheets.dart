@@ -152,7 +152,7 @@ Future<DateTime?> pickDateSheet(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
                       ),
-                      weekendTextStyle: TextStyle(color: Color(0xFFEF4444)),
+                      weekendTextStyle: TextStyle(color: AppColors.urgentCall),
                     ),
                     headerStyle: const HeaderStyle(
                       formatButtonVisible: false,

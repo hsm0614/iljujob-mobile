@@ -1303,7 +1303,7 @@ class _TrustScoreCardState extends State<_TrustScoreCard> {
   Color get _gradeColor {
     switch (widget.grade) {
       case 'S':
-        return const Color(0xFFFF6B00);
+        return AppColors.gradeS;
       case 'A':
         return AppColors.primary;
       case 'B':
@@ -1569,7 +1569,7 @@ class _TrustScoreCardState extends State<_TrustScoreCard> {
                                   style: TextStyle(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w700,
-                                    color: Color(0xFF374151),
+                                    color: AppColors.textSecondary,
                                   ),
                                 ),
                                 SizedBox(height: 6),
@@ -1782,7 +1782,7 @@ class _ScoreDetailSheet extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF374151),
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(height: 8),
@@ -1790,7 +1790,7 @@ class _ScoreDetailSheet extends StatelessWidget {
                 _GradeRow('C', '20 ~ 39점', AppColors.textSecondary, grade),
                 _GradeRow('B', '40 ~ 69점', AppColors.success, grade),
                 _GradeRow('A', '70 ~ 99점', AppColors.primary, grade),
-                _GradeRow('S', '100점 이상', const Color(0xFFFF6B00), grade),
+                _GradeRow('S', '100점 이상', AppColors.gradeS, grade),
               ],
             ),
           ),

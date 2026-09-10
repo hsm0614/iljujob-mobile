@@ -178,7 +178,7 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
                 ),
                 Text(
                   '노동법 궁금증을 해결해드려요',
-                  style: TextStyle(fontSize: 11, color: Color(0xFF8B95A1)),
+                  style: TextStyle(fontSize: 11, color: AppColors.textTertiary),
                 ),
               ],
             ),
@@ -492,7 +492,7 @@ class _TypingDotsState extends State<_TypingDots>
               width: 7,
               height: 7,
               decoration: BoxDecoration(
-                color: const Color(0xFF8B95A1).withOpacity(opacity),
+                color: AppColors.textTertiary.withOpacity(opacity),
                 shape: BoxShape.circle,
               ),
             );

@@ -194,7 +194,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
         final data = jsonDecode(res.body);
 
         if (res.statusCode == 200 && data['success'] == true) {
-          _showSnackbar('추천인 코드가 적용되었습니다.');
+          _showSnackbar('추천인 코드를 적용했어요.');
         } else {
           _showSnackbar(data['message'] ?? '유효하지 않은 추천인 코드예요.');
         }
@@ -371,7 +371,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
               child: const Text(
                 '건너뛰기',
                 style: TextStyle(
-                  color: Color(0xFF8B95A1),
+                  color: AppColors.textTertiary,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                 ),
@@ -425,7 +425,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                         const Icon(
                           Icons.info_outline_rounded,
                           size: 16,
-                          color: Color(0xFF8B95A1),
+                          color: AppColors.textTertiary,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -503,7 +503,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            '계속사업자로 확인되었습니다.\n바로 공고 등록하실 수 있어요.',
+                            '계속사업자로 확인됐어요.\n바로 공고를 등록할 수 있어요.',
                             style: TextStyle(fontSize: 15, color: kBrandBlue),
                           ),
                         ),

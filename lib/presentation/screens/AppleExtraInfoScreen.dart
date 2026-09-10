@@ -367,7 +367,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
 
                     Center(
                       child: Text(
-                        '입력한 정보는 프로필에 반영되며,\n언제든 수정할 수 있습니다.',
+                        '입력한 정보는 프로필에 반영되고,\n언제든 수정할 수 있어요.',
                         style: TextStyle(
                           color: AppColors.textSecondary,
                           fontSize: 13,

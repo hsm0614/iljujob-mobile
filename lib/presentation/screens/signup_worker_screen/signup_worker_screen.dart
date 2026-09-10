@@ -150,7 +150,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
     final phone = _phoneController.text.trim();
 
     if (phone.isEmpty) {
-      _showSnackbar('전화번호가 비어있습니다.');
+      _showSnackbar('전화번호를 입력해 주세요.');
       return;
     }
 
@@ -243,7 +243,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
 
       final contentType = response.headers['content-type'];
       if (contentType == null || !contentType.contains('application/json')) {
-        _showSnackbar('서버가 JSON이 아닌 응답을 보냈습니다.');
+        _showSnackbar(Msg.server);
         return;
       }
 
@@ -251,7 +251,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
       final url = data['certificationUrl'];
 
       if (url == null || url.toString().isEmpty) {
-        _showSnackbar('본인인증 URL이 비어 있습니다.');
+        _showSnackbar('본인인증을 시작할 수 없어요. 잠시 후 다시 시도해 주세요.');
         return;
       }
 
@@ -270,7 +270,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
           await _verifyWithServer(impUid);
         });
       } else {
-        _showSnackbar('본인인증이 완료되지 않았습니다.');
+        _showSnackbar('본인인증이 완료되지 않았어요.');
       }
     } catch (e) {
       print('❌ 본인인증 시작 실패: $e');
@@ -854,7 +854,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                     const SizedBox(height: 8),
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF3F4F6),
+                        color: AppColors.bgMuted,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -1007,7 +1007,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                                 },
                                 selectedColor: kBrand,
                                 checkmarkColor: Colors.white,
-                                backgroundColor: const Color(0xFFF3F4F6),
+                                backgroundColor: AppColors.bgMuted,
                                 shape: StadiumBorder(
                                   side: BorderSide(
                                     color:
@@ -1074,7 +1074,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                                 },
                                 selectedColor: AppColors.success,
                                 checkmarkColor: Colors.white,
-                                backgroundColor: const Color(0xFFF3F4F6),
+                                backgroundColor: AppColors.bgMuted,
                                 shape: StadiumBorder(
                                   side: BorderSide(
                                     color:

@@ -6,6 +6,7 @@ import '../../../data/models/notice.dart';
 import 'notice_detail_screen.dart';
 import 'notice_create_screen.dart';
 import '../../../config/app_theme.dart';
+import '../../../config/messages.dart';
 
 class NoticeListScreen extends StatefulWidget {
   const NoticeListScreen({super.key});
@@ -414,7 +415,7 @@ class _ErrorState extends StatelessWidget {
           children: const [
             Icon(Icons.error_outline, size: 56, color: Colors.redAccent),
             SizedBox(height: 12),
-            Text('오류가 발생했습니다.', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w800)),
+            Text(Msg.server, textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.w800)),
             SizedBox(height: 6),
             Text('다시 시도해주세요.', style: TextStyle(color: Colors.black54)),
           ],

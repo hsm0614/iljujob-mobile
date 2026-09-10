@@ -562,7 +562,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                         color:
                             isGood
                                 ? AppColors.success
-                                : const Color(0xFFEF4444),
+                                : AppColors.urgentCall,
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -592,8 +592,8 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                       active
                                           ? (isGood
                                               ? AppColors.primary
-                                              : const Color(0xFFEF4444))
-                                          : const Color(0xFFF3F4F6),
+                                              : AppColors.urgentCall)
+                                          : AppColors.bgMuted,
                                   borderRadius: BorderRadius.circular(99),
                                 ),
                                 child: Text(
@@ -861,7 +861,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     children: [
                       Icon(
                         Icons.event_available_rounded,
-                        color: Color(0xFF2563EB),
+                        color: AppColors.primary,
                       ),
                       SizedBox(width: 8),
                       Expanded(
@@ -883,7 +883,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     style: const TextStyle(
                       fontSize: 13,
                       height: 1.4,
-                      color: Color(0xFF4B5563),
+                      color: AppColors.textSecondary,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -902,7 +902,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                             '닫기',
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF374151),
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ),
@@ -977,7 +977,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                 child: const Text(
                   '노쇼 확정',
                   style: TextStyle(
-                    color: Color(0xFFEF4444),
+                    color: AppColors.urgentCall,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -1033,7 +1033,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                       ),
                       child: const Icon(
                         Icons.warning_amber_rounded,
-                        color: Color(0xFFEF4444),
+                        color: AppColors.urgentCall,
                         size: 20,
                       ),
                     ),
@@ -1082,7 +1082,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFEF4444), AppColors.error],
+                        colors: [AppColors.urgentCall, AppColors.error],
                       ),
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
@@ -1162,7 +1162,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
               ),
               backgroundColor:
                   status == 'accepted'
-                      ? const Color(0xFF22C55E)
+                      ? AppColors.gradeB
                       : AppColors.textSecondary,
             ),
           );
@@ -1224,7 +1224,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
           children: [
             Icon(
               Icons.check_circle_rounded,
-              color: Color(0xFF22C55E),
+              color: AppColors.gradeB,
               size: 18,
             ),
             SizedBox(width: 8),
@@ -1245,7 +1245,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
-          color: const Color(0xFFF3F4F6),
+          color: AppColors.bgMuted,
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Row(
@@ -1267,14 +1267,14 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFFFF6B1A), Color(0xFFFF9500)],
+          colors: [Color(0xFFFF6B1A), AppColors.pending],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFFFF9500).withValues(alpha: 0.25),
+            color: AppColors.pending.withValues(alpha: 0.25),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -1285,7 +1285,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         children: [
           const Row(
             children: [
-              Text('⚡', style: TextStyle(fontSize: 15)),
+              Icon(Icons.bolt_rounded, size: 17, color: AppColors.badgeUrgent),
               SizedBox(width: 6),
               Text(
                 '긴급 호출이 왔어요!',
@@ -1448,7 +1448,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                   style: const TextStyle(
                     fontSize: 13,
                     height: 1.4,
-                    color: Color(0xFF4B5563),
+                    color: AppColors.textSecondary,
                   ),
                   children: [
                     TextSpan(text: isClient ? '사장님께 ' : '상대방에게 '),
@@ -1856,7 +1856,7 @@ class _CalRow extends StatelessWidget {
           text,
           style: const TextStyle(
             fontSize: 13,
-            color: Color(0xFF374151),
+            color: AppColors.textSecondary,
             fontWeight: FontWeight.w500,
           ),
           overflow: TextOverflow.ellipsis,

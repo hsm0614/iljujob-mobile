@@ -22,7 +22,7 @@ const _border = AppColors.border;
 const _textMain = AppColors.textPrimary;
 const _textSub = AppColors.textSecondary;
 const _red = Color(0xFFFF3B30);
-const _green = Color(0xFF22C55E);
+const _green = AppColors.gradeB;
 const _purple = Color(0xFF8B5CF6);
 
 // ── 공고 모델 ─────────────────────────────────────────────────────
@@ -914,7 +914,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     final job = _selectedJob;
     final canMessage = _canDirectMessageSelected;
     final gradeColor = switch (worker.grade) {
-      'S' => const Color(0xFFFF6B00),
+      'S' => AppColors.gradeS,
       'A' => _primary,
       'B' => _green,
       _ => AppColors.textTertiary,
@@ -2116,7 +2116,7 @@ class _JobMapCard extends StatelessWidget {
             children: [
               if (job.isUrgent)
                 Text(
-                  '⚡ 긴급',
+                  '긴급',
                   style: TextStyle(
                     fontSize: 9,
                     fontWeight: FontWeight.w800,
@@ -2194,9 +2194,9 @@ class _WorkerDot extends StatelessWidget {
   const _WorkerDot({required this.worker});
 
   Color get _color {
-    if (worker.activityScore >= 100) return const Color(0xFFFF6B00); // S
+    if (worker.activityScore >= 100) return AppColors.gradeS; // S
     if (worker.activityScore >= 70) return AppColors.primary; // A
-    if (worker.activityScore >= 40) return const Color(0xFF22C55E); // B
+    if (worker.activityScore >= 40) return AppColors.gradeB; // B
     return AppColors.textTertiary; // C/NEW
   }
 

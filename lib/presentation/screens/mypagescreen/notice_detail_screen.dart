@@ -19,7 +19,7 @@ class NoticeDetailScreen extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError || !snapshot.hasData) {
-            return const Center(child: Text('공지사항을 불러오지 못했습니다.'));
+            return const Center(child: Text('공지사항을 불러오지 못했어요.'));
           }
 
           final notice = snapshot.data!;

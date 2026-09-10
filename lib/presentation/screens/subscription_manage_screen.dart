@@ -16,19 +16,19 @@ const _kAndroidPackage = 'kr.co.iljujob';
 const _planBenefits = {
   'lite': [
     _Benefit(Icons.flash_on_rounded, '즉시게시 3회/월', AppColors.primary),
-    _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', Color(0xFF6C5CE7)),
+    _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', AppColors.aiAccent),
     _Benefit(Icons.verified_rounded, '구독 배지 표시', AppColors.primary),
   ],
   'standard': [
     _Benefit(Icons.flash_on_rounded, '즉시게시 무제한', AppColors.primary),
-    _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', Color(0xFF6C5CE7)),
+    _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', AppColors.aiAccent),
     _Benefit(Icons.verified_user_rounded, '출근 안심 포함', AppColors.success),
     _Benefit(Icons.verified_rounded, '구독 배지 표시', AppColors.primary),
   ],
   'pro': [
     _Benefit(Icons.flash_on_rounded, '즉시게시 무제한', AppColors.primary),
-    _Benefit(Icons.bolt_rounded, '긴급호출 무제한 (반경 5km, 10명)', Color(0xFFEF4444)),
-    _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', Color(0xFF6C5CE7)),
+    _Benefit(Icons.bolt_rounded, '긴급호출 무제한 (반경 5km, 10명)', AppColors.urgentCall),
+    _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', AppColors.aiAccent),
     _Benefit(Icons.verified_user_rounded, '출근 안심 포함', AppColors.success),
     _Benefit(Icons.headset_mic_rounded, '우선 CS 지원', Color(0xFFFFB300)),
     _Benefit(Icons.verified_rounded, '구독 배지 표시', AppColors.primary),
@@ -37,8 +37,8 @@ const _planBenefits = {
 
 const _defaultBenefits = [
   _Benefit(Icons.flash_on_rounded, '즉시게시 이용권 (라이트 3회 / 스탠다드·프로 무제한)', AppColors.primary),
-  _Benefit(Icons.bolt_rounded, '긴급호출 무제한 (프로 전용)', Color(0xFFEF4444)),
-  _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', Color(0xFF6C5CE7)),
+  _Benefit(Icons.bolt_rounded, '긴급호출 무제한 (프로 전용)', AppColors.urgentCall),
+  _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', AppColors.aiAccent),
   _Benefit(Icons.verified_rounded, '구독 배지 표시', AppColors.primary),
 ];
 
@@ -480,7 +480,7 @@ class _BenefitRow extends StatelessWidget {
             benefit.label,
             style: const TextStyle(
               fontSize: 14,
-              color: Color(0xFF374151),
+              color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
           ),

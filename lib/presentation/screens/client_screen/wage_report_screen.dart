@@ -78,7 +78,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)))
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
           : _needsSubscription
               ? _buildSubscriptionGate()
               : _error != null
@@ -193,7 +193,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
               Row(
                 children: [
                   _statItem('최저', r.minHourly, Colors.orange),
-                  _statItem('평균', r.avgHourly, const Color(0xFF2563EB)),
+                  _statItem('평균', r.avgHourly, AppColors.primary),
                   _statItem('최고', r.maxHourly, Colors.green),
                 ],
               ),
@@ -230,7 +230,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
                       vertical: 3,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2563EB),
+                      color: AppColors.primary,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Text(
@@ -317,7 +317,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(4),
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFBFDBFE), Color(0xFF2563EB)],
+                      colors: [Color(0xFFBFDBFE), AppColors.primary],
                     ),
                   ),
                 ),
@@ -328,7 +328,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
                   child: Container(
                     width: 2,
                     height: 16,
-                    color: const Color(0xFF1D4ED8),
+                    color: AppColors.primaryDark,
                   ),
                 ),
                 // 추천 마커
@@ -568,7 +568,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
   Color _percentileColor(int? pct) {
     if (pct == null) return Colors.grey;
     if (pct >= 70) return Colors.green;
-    if (pct >= 40) return const Color(0xFF2563EB);
+    if (pct >= 40) return AppColors.primary;
     return Colors.orange;
   }
 }

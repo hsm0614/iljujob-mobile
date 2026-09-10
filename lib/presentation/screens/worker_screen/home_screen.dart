@@ -645,7 +645,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                 const Opacity(
                   opacity: 0.55,
                   child: Text(
-                    '추천 결과는 조건에 따라 달라질 수 있습니다.',
+                    '추천 결과는 조건에 따라 달라질 수 있어요.',
                     style: TextStyle(fontSize: 11.5),
                   ),
                 ),

@@ -19,7 +19,7 @@ import 'package:iljujob/presentation/screens/potrone_screen.dart';
 const _blue = AppColors.primary;
 const _blueDark = AppColors.primaryDark;
 const _blueLight = AppColors.primaryLight;
-const _red = Color(0xFFEF4444);
+const _red = AppColors.urgentCall;
 const _redLight = Color(0xFFFFF0F0);
 const _green = Color(0xFF00C48C);
 const _orange = Color(0xFFFF6B35);
@@ -353,7 +353,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
             } else {
               ScaffoldMessenger.of(
                 context,
-              ).showSnackBar(const SnackBar(content: Text('이용권이 지급되었습니다!')));
+              ).showSnackBar(const SnackBar(content: Text('이용권을 지급했어요.')));
             }
           }
         } catch (e) {
@@ -408,7 +408,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
           if (mounted) {
             ScaffoldMessenger.of(
               context,
-            ).showSnackBar(const SnackBar(content: Text('이용권이 지급되었습니다!')));
+            ).showSnackBar(const SnackBar(content: Text('이용권을 지급했어요.')));
           }
         }
       } else {
@@ -459,7 +459,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: const Center(
-                  child: Text('⚡', style: TextStyle(fontSize: 30)),
+                  child: Icon(Icons.bolt_rounded, size: 30, color: AppColors.badgeUrgent),
                 ),
               ),
               const SizedBox(height: 16),
@@ -669,7 +669,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                           '$discount% 할인',
                           style: const TextStyle(
                             fontSize: 12,
-                            color: Color(0xFFEF4444),
+                            color: AppColors.urgentCall,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -796,7 +796,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Center(
-                      child: Text('⚡', style: TextStyle(fontSize: 26)),
+                      child: Icon(Icons.bolt_rounded, size: 26, color: AppColors.badgeUrgent),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -918,7 +918,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
               _BuyButton(
                 label: '₩7,900 결제하기',
                 isPurchasing: _isPurchasing,
-                gradient: const [Color(0xFFEF4444), AppColors.error],
+                gradient: const [AppColors.urgentCall, AppColors.error],
                 onTap: () async {
                   Navigator.pop(ctx);
                   if (Platform.isIOS) {
@@ -1015,11 +1015,11 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '⚡ 긴급 호출 — 갑작스러운 결근, 30분 내 대타 구하기',
+                          '긴급 호출 — 갑작스러운 결근, 30분 내 대타 구하기',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFFEF4444),
+                            color: AppColors.urgentCall,
                           ),
                         ),
                         SizedBox(height: 2),
@@ -1299,7 +1299,7 @@ class _InstantTabState extends State<_InstantTab> {
                                   if (discount > 0)
                                     _PriceChip(
                                       label: '$discount% 절약',
-                                      color: const Color(0xFFEF4444),
+                                      color: AppColors.urgentCall,
                                       bgColor: const Color(0xFFFFF0F0),
                                       bold: true,
                                     ),
@@ -1428,14 +1428,14 @@ class _UrgentTab extends StatelessWidget {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFFEF4444), AppColors.error],
+                      colors: [AppColors.urgentCall, AppColors.error],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFEF4444).withOpacity(0.3),
+                        color: AppColors.urgentCall.withOpacity(0.3),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -1443,7 +1443,7 @@ class _UrgentTab extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const Text('⚡', style: TextStyle(fontSize: 28)),
+                      const Icon(Icons.bolt_rounded, size: 28, color: AppColors.badgeUrgent),
                       const SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1480,12 +1480,12 @@ class _UrgentTab extends StatelessWidget {
                     color: _white,
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: const Color(0xFFEF4444),
+                      color: AppColors.urgentCall,
                       width: 1.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFEF4444).withOpacity(0.08),
+                        color: AppColors.urgentCall.withOpacity(0.08),
                         blurRadius: 16,
                         offset: const Offset(0, 4),
                       ),
@@ -1505,7 +1505,7 @@ class _UrgentTab extends StatelessWidget {
                             child: const Icon(
                               Icons.bolt_rounded,
                               size: 24,
-                              color: Color(0xFFEF4444),
+                              color: AppColors.urgentCall,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -1533,7 +1533,7 @@ class _UrgentTab extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w900,
-                              color: Color(0xFFEF4444),
+                              color: AppColors.urgentCall,
                             ),
                           ),
                         ],
@@ -1543,13 +1543,13 @@ class _UrgentTab extends StatelessWidget {
                       const SizedBox(height: 16),
                       const _BenefitRow(
                         icon: Icons.bolt_rounded,
-                        iconColor: Color(0xFFEF4444),
+                        iconColor: AppColors.urgentCall,
                         text: '즉시 노출 + 24시간 긴급 고정',
                       ),
                       const SizedBox(height: 12),
                       const _BenefitRow(
                         icon: Icons.people_alt_rounded,
-                        iconColor: Color(0xFFEF4444),
+                        iconColor: AppColors.urgentCall,
                         text: '반경 5km 내 최대 10명에게 인앱 메시지 발송',
                       ),
                       const SizedBox(height: 12),
@@ -1636,7 +1636,7 @@ class _UrgentTab extends StatelessWidget {
           isSelected: true,
           isPurchasing: isPurchasing,
           label: '₩7,900 긴급 호출 이용권 구매',
-          color: const Color(0xFFEF4444),
+          color: AppColors.urgentCall,
           onTap: isPurchasing ? null : onBuy,
         ),
       ],
@@ -1662,7 +1662,7 @@ class _MiniChip extends StatelessWidget {
       style: const TextStyle(
         fontSize: 11,
         fontWeight: FontWeight.w600,
-        color: Color(0xFFEF4444),
+        color: AppColors.urgentCall,
       ),
     ),
   );

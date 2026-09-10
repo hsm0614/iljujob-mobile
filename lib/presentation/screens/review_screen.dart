@@ -130,7 +130,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
       setState(() => isSubmitting = false);
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('로그인 정보를 확인할 수 없습니다.')));
+      ).showSnackBar(const SnackBar(content: Text(Msg.loginRequired)));
       return;
     }
 
@@ -158,7 +158,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
         Navigator.pop(context, 'reviewed');
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('후기가 등록되었습니다!')));
+        ).showSnackBar(const SnackBar(content: Text('후기를 등록했어요.')));
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text(Msg.reviewFailed)),

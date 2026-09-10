@@ -64,9 +64,9 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
   };
 
   Color _statusColor(String s) => switch (s) {
-    'accepted' => const Color(0xFF22C55E),
-    'rejected' || 'no_response' => const Color(0xFFEF4444),
-    'time_adjusted' => const Color(0xFFFF9500),
+    'accepted' => AppColors.gradeB,
+    'rejected' || 'no_response' => AppColors.urgentCall,
+    'time_adjusted' => AppColors.pending,
     _ => AppColors.textTertiary,
   };
 
@@ -80,7 +80,7 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
 
   Color _gradeColor(int score) {
     if (score >= 100) return const Color(0xFFAB47BC);
-    if (score >= 70) return const Color(0xFFEF4444);
+    if (score >= 70) return AppColors.urgentCall;
     if (score >= 40) return AppColors.primary;
     if (score >= 20) return AppColors.textSecondary;
     return AppColors.textTertiary;
@@ -135,7 +135,7 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          widget.jobTitle != null ? '⚡ ${widget.jobTitle}' : '⚡ 긴급호출 발송이력',
+          widget.jobTitle ?? '긴급호출 발송이력',
         ),
       ),
       body:

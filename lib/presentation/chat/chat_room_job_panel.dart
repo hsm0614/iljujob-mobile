@@ -186,13 +186,13 @@ class ChatRoomJobPanel extends StatelessWidget {
                 _InfoBit(
                   icon: Icons.calendar_today_outlined,
                   text: _periodText,
-                  color: const Color(0xFF374151),
+                  color: AppColors.textSecondary,
                 ),
                 _InfoDivider(),
                 _InfoBit(
                   icon: Icons.access_time_outlined,
                   text: _timeText,
-                  color: const Color(0xFF374151),
+                  color: AppColors.textSecondary,
                 ),
               ],
             ),
@@ -324,7 +324,7 @@ class _ClientActions extends StatelessWidget {
         _ActionButton(
           text: proposeText,
           icon: proposeIcon,
-          color: const Color(0xFF1675F4),
+          color: AppColors.primary,
           onPressed:
               isActive && !hasOpenConfirmation
                   ? (onProposeWorkConfirmation ?? onConfirmHire)
@@ -345,14 +345,14 @@ class _ClientActions extends StatelessWidget {
               const Icon(
                 Icons.info_outline_rounded,
                 size: 13,
-                color: Color(0xFF2563EB),
+                color: AppColors.primary,
               ),
               const SizedBox(width: 5),
               Text(
                 helperText,
                 style: const TextStyle(
                   fontSize: 11,
-                  color: Color(0xFF1D4ED8),
+                  color: AppColors.primaryDark,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -515,8 +515,8 @@ class _WorkerActions extends StatelessWidget {
           OutlinedButton.icon(
             onPressed: onOpenCalendar,
             style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF1675F4),
-              side: const BorderSide(color: Color(0xFF1675F4)),
+              foregroundColor: AppColors.primary,
+              side: const BorderSide(color: AppColors.primary),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(999),
               ),
@@ -643,13 +643,13 @@ class _WorkerActions extends StatelessWidget {
         icon: Icon(
           Icons.edit_note,
           size: 18,
-          color: hasReviewed ? Colors.grey : const Color(0xFF1675F4),
+          color: hasReviewed ? Colors.grey : AppColors.primary,
         ),
         label: Text(
           hasReviewed ? '후기 작성 완료' : '후기 남기기',
           style: TextStyle(
             fontSize: 13,
-            color: hasReviewed ? Colors.grey : const Color(0xFF1675F4),
+            color: hasReviewed ? Colors.grey : AppColors.primary,
           ),
         ),
       ),
@@ -830,13 +830,13 @@ class ChatRoomConsentBanner extends StatelessWidget {
           const Icon(
             Icons.info_outline_rounded,
             size: 18,
-            color: Color(0xFF2563EB),
+            color: AppColors.primary,
           ),
           const SizedBox(width: 8),
           const Expanded(
             child: Text(
               '사장님의 대화 요청입니다.\n수락 시 채팅이 시작되고 연락이 가능해요.',
-              style: TextStyle(fontSize: 12, color: Color(0xFF1D4ED8)),
+              style: TextStyle(fontSize: 12, color: AppColors.primaryDark),
             ),
           ),
           const SizedBox(width: 8),

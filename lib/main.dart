@@ -725,6 +725,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         GlobalCupertinoLocalizations.delegate,
       ],
       theme: AppTheme.theme,
+      themeMode: ThemeMode.light, // 시스템 다크를 따라가지 않는다
       // 시스템 '글자 크게'를 1.3배로 제한한다. 앱 전반이 고정 height 를 쓰고 있어
       // (1,000곳 이상) 그 이상 키우면 버튼·카드가 통째로 넘친다.
       // 근본 해결은 화면별 유연 레이아웃이지만, 그 전까지 여기서 막는다.
@@ -845,7 +846,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         return MaterialPageRoute(
           builder:
               (_) =>
-                  const Scaffold(body: Center(child: Text('페이지를 찾을 수 없습니다'))),
+                  const Scaffold(body: Center(child: Text('페이지를 찾을 수 없어요.'))),
         );
       },
     );
@@ -938,7 +939,7 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 13,
                 height: 1.35,
-                color: Color(0xFF4B5563),
+                color: AppColors.textSecondary,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -1027,7 +1028,7 @@ class _ReleaseNotesBox extends StatelessWidget {
         style: const TextStyle(
           fontSize: 12,
           height: 1.35,
-          color: Color(0xFF374151),
+          color: AppColors.textSecondary,
           fontWeight: FontWeight.w700,
         ),
       ),

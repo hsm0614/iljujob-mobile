@@ -367,7 +367,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF3F4F6),
+                                color: AppColors.bgMuted,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: const Center(

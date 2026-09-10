@@ -636,7 +636,7 @@ class _ProfileCard extends StatelessWidget {
                           vertical: 3,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFF9500),
+                          color: AppColors.pending,
                           borderRadius: BorderRadius.circular(99),
                         ),
                         child: Row(

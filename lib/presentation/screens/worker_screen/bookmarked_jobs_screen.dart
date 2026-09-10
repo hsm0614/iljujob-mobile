@@ -126,7 +126,7 @@ class _BookmarkedJobsScreenState extends State<BookmarkedJobsScreen> {
       if (userId == null) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('로그인 정보가 없습니다.')));
+        ).showSnackBar(const SnackBar(content: Text(Msg.loginRequired)));
         return;
       }
 

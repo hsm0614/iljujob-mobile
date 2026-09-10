@@ -618,23 +618,23 @@ class _PlanCard extends StatelessWidget {
                   _Chip(
                     icon: Icons.bolt_rounded,
                     label: '긴급호출 무제한',
-                    color: const Color(0xFFEF4444),
+                    color: AppColors.urgentCall,
                   ),
                 _Chip(
                   icon: Icons.auto_awesome_rounded,
                   label: 'AI 기능 무제한',
-                  color: const Color(0xFF6C5CE7),
+                  color: AppColors.aiAccent,
                 ),
                 _Chip(
                   icon: Icons.workspace_premium_rounded,
                   label: '구독 배지',
-                  color: const Color(0xFFFF9500),
+                  color: AppColors.pending,
                 ),
                 if (plan.attendanceCare)
                   _Chip(
                     icon: Icons.verified_user_rounded,
                     label: '출근 안심',
-                    color: const Color(0xFF22C55E),
+                    color: AppColors.gradeB,
                   ),
                 if (plan.priorityCs)
                   _Chip(
@@ -651,7 +651,7 @@ class _PlanCard extends StatelessWidget {
   }
 
   Color _planColor(String key) {
-    if (key == 'pro') return const Color(0xFFFF9500);
+    if (key == 'pro') return AppColors.pending;
     if (key == 'standard') return AppColors.primary;
     return AppColors.textSecondary;
   }
@@ -757,7 +757,7 @@ class _CompareTable extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFFFF9500),
+                        color: AppColors.pending,
                       ),
                     ),
                   ),
@@ -792,7 +792,7 @@ class _CompareTable extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF374151),
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ),
@@ -932,7 +932,7 @@ class _BottomCta extends StatelessWidget {
   }
 
   Color _planColor(String key) {
-    if (key == 'pro') return const Color(0xFFFF9500);
+    if (key == 'pro') return AppColors.pending;
     if (key == 'standard') return AppColors.primary;
     return AppColors.textSecondary;
   }

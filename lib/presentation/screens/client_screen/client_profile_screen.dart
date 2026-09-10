@@ -200,7 +200,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                   if (response.statusCode == 200) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('신고가 접수되었습니다. 관리자 검토 후 24시간 이내 조치됩니다.'),
+                        content: Text('신고를 접수했어요. 검토 후 24시간 이내에 조치할게요.'),
                       ),
                     );
                   } else {
@@ -241,14 +241,14 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
-          colors: [Color(0xFF1675F4), Color(0xFF5AA6FF)],
+          colors: [AppColors.primary, Color(0xFF5AA6FF)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1675F4).withOpacity(0.25),
+            color: AppColors.primary.withOpacity(0.25),
             blurRadius: 16,
             offset: const Offset(0, 8),
           ),
@@ -269,7 +269,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                     ? const Icon(
                       Icons.business,
                       size: 30,
-                      color: Color(0xFF1675F4),
+                      color: AppColors.primary,
                     )
                     : null,
           ),
@@ -307,7 +307,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF1675F4),
+                            color: AppColors.primary,
                           ),
                         ),
                       ),
@@ -432,7 +432,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
     child: Text(
       text,
       style: const TextStyle(
-        color: Color(0xFF1675F4),
+        color: AppColors.primary,
         fontWeight: FontWeight.w700,
       ),
     ),
@@ -501,10 +501,10 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(0xFF1675F4).withOpacity(.1),
+              color: AppColors.primary.withOpacity(.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: const Color(0xFF1675F4)),
+            child: Icon(icon, color: AppColors.primary),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -547,7 +547,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
           isLoading
               ? const Center(child: CircularProgressIndicator())
               : profile == null
-              ? const Center(child: Text('기업 정보를 불러올 수 없습니다.'))
+              ? const Center(child: Text('기업 정보를 불러올 수 없어요.'))
               : SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
                 child: Column(

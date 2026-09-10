@@ -466,7 +466,7 @@ class _ChatListScreenState extends State<ChatListScreen>
   Future<void> _confirmLeaveChat(Map chat) async {
     final roomId = int.tryParse(chat['id']?.toString() ?? '');
     if (roomId == null) {
-      _showSnackbar('채팅방 정보를 확인할 수 없습니다.');
+      _showSnackbar('채팅방 정보를 확인할 수 없어요.');
       return;
     }
     final title = (chat['job_title'] ?? '이 채팅방').toString();
@@ -593,7 +593,7 @@ class _ChatListScreenState extends State<ChatListScreen>
       if (response.statusCode == 200 ||
           response.statusCode == 204 ||
           response.statusCode == 404) {
-        _showSnackbar('채팅방을 나갔습니다.');
+        _showSnackbar('채팅방을 나갔어요.');
         setState(() {
           chatRooms.removeWhere(
             (r) =>
@@ -602,7 +602,7 @@ class _ChatListScreenState extends State<ChatListScreen>
         });
         widget.onMessagesRead?.call();
       } else if (response.statusCode == 403) {
-        _showSnackbar('권한이 없습니다.');
+        _showSnackbar('권한이 없어요.');
       } else {
         debugPrint('채팅방 나가기 실패 (${response.statusCode})');
         _showSnackbar(Msg.chatLeaveFailed);
@@ -613,7 +613,7 @@ class _ChatListScreenState extends State<ChatListScreen>
         Navigator.pushNamedAndRemoveUntil(context, '/onboarding', (_) => false);
       }
     } catch (e) {
-      _showSnackbar('채팅방 나가기 중 오류가 발생했습니다.');
+      _showSnackbar(Msg.chatLeaveFailed);
     } finally {
       if (mounted) setState(() => _leavingRoomIds.remove(roomId));
     }
@@ -629,7 +629,7 @@ class _ChatListScreenState extends State<ChatListScreen>
 
     final jobId = chat['job_id'];
     if (jobId == null) {
-      _showSnackbar('공고 정보가 없어 취소할 수 없습니다.');
+      _showSnackbar('공고 정보가 없어 취소할 수 없어요.');
       return;
     }
 
@@ -647,7 +647,7 @@ class _ChatListScreenState extends State<ChatListScreen>
   Future<void> _cancelApplicationFromChat(Map chat) async {
     final jobId = chat['job_id'];
     if (jobId == null) {
-      _showSnackbar('공고 정보가 없어 취소할 수 없습니다.');
+      _showSnackbar('공고 정보가 없어 취소할 수 없어요.');
       return;
     }
 
@@ -655,7 +655,7 @@ class _ChatListScreenState extends State<ChatListScreen>
     final workerId = myId ?? prefs.getInt('userId');
 
     if (workerId == null) {
-      _showSnackbar('로그인 정보가 없습니다. 다시 로그인해주세요.');
+      _showSnackbar(Msg.loginExpired);
       return;
     }
 

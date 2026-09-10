@@ -514,7 +514,7 @@ class _BotMessageBubble extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF2563EB),
+                      color: AppColors.primary,
                     ),
                   ),
                 ],
@@ -525,7 +525,7 @@ class _BotMessageBubble extends StatelessWidget {
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 13,
-                  color: Color(0xFF374151),
+                  color: AppColors.textSecondary,
                   height: 1.5,
                 ),
               ),
@@ -587,7 +587,7 @@ class _HireNudgeBubble extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12.5,
                   height: 1.4,
-                  color: Color(0xFF374151),
+                  color: AppColors.textSecondary,
                 ),
               ),
               const SizedBox(height: 10),

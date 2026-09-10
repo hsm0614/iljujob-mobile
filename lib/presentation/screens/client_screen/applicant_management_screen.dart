@@ -88,7 +88,7 @@ class ApplicantModel {
   Color get activityGradeColor {
     switch (activityGrade) {
       case 'S':
-        return const Color(0xFFFF6B00);
+        return AppColors.gradeS;
       case 'A':
         return AppColors.primary;
       case 'B':
@@ -348,7 +348,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       } else if (res.statusCode == 404) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('아직 채팅방이 없습니다.')));
+        ).showSnackBar(const SnackBar(content: Text('아직 채팅방이 없어요.')));
       } else {
         throw Exception('채팅방 조회 실패');
       }
@@ -452,7 +452,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(ctx, false),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: const Color(0xFF4B5563),
+                          foregroundColor: AppColors.textSecondary,
                           side: const BorderSide(color: AppColors.border),
                           padding: const EdgeInsets.symmetric(vertical: 13),
                           shape: RoundedRectangleBorder(
@@ -915,7 +915,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   shape: BoxShape.circle,
                   color:
                       group.jobStatus == 'active'
-                          ? const Color(0xFF22C55E)
+                          ? AppColors.gradeB
                           : const Color(0xFFBCC0CB),
                 ),
               ),
@@ -1335,7 +1335,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                                   style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w800,
-                                    color: Color(0xFF374151),
+                                    color: AppColors.textSecondary,
                                   ),
                                 ),
                               ),

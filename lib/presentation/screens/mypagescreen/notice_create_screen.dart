@@ -35,12 +35,12 @@ class _NoticeCreateScreenState extends State<NoticeCreateScreen> {
 
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('공지사항이 등록되었습니다')),
+        const SnackBar(content: Text('공지사항을 등록했어요.')),
       );
 Navigator.pop(context, true); // 성공 시 true 반환
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('등록에 실패했습니다')),
+        const SnackBar(content: Text('등록하지 못했어요.')),
       );
     }
   }

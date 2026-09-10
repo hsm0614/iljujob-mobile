@@ -61,7 +61,7 @@ class _BlockedUserListScreenState extends State<BlockedUserListScreen> {
           isLoading
               ? const Center(child: CircularProgressIndicator())
               : blockedUsers.isEmpty
-              ? const Center(child: Text('차단한 사용자가 없습니다.'))
+              ? const Center(child: Text('차단한 사용자가 없어요.'))
               : ListView.separated(
                 itemCount: blockedUsers.length,
                 separatorBuilder: (_, __) => const Divider(height: 1),

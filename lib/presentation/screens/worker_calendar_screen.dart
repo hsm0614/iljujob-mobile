@@ -1259,7 +1259,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         completed
             ? const Color(0xFFDCFCE7)
             : cancelled
-            ? const Color(0xFFF3F4F6)
+            ? AppColors.bgMuted
             : const Color(0xFFEFF6FF);
     final badgeFg =
         completed
@@ -1365,7 +1365,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                                 const SizedBox(width: 6),
                                 _pill(
                                   label: isConfirmation ? '채팅확정' : '공고',
-                                  bg: const Color(0xFFF3F4F6),
+                                  bg: AppColors.bgMuted,
                                   fg: AppColors.textSecondary,
                                 ),
                               ],
@@ -2875,7 +2875,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
             color:
                 selected
                     ? Colors.white
-                    : (isWeekend ? const Color(0xFFEF4444) : kText),
+                    : (isWeekend ? AppColors.urgentCall : kText),
           ),
         ),
       ),

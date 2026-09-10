@@ -38,7 +38,7 @@ class _PartnerRecruitDetailScreenState
 
     final uri = Uri.tryParse(widget.post.applyUrl);
     if (uri == null || (uri.scheme != 'http' && uri.scheme != 'https')) {
-      _snack('지원 페이지 주소가 올바르지 않습니다.');
+      _snack('지원 페이지 주소가 올바르지 않아요.');
       setState(() => _applying = false);
       return;
     }
@@ -55,7 +55,7 @@ class _PartnerRecruitDetailScreenState
     } catch (_) {}
 
     if (!mounted) return;
-    if (!launched) _snack('지원 페이지를 열 수 없습니다.');
+    if (!launched) _snack('지원 페이지를 열 수 없어요.');
     setState(() => _applying = false);
   }
 

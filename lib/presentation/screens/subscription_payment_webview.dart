@@ -88,7 +88,7 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
       await _loadProducts();
     } catch (e) {
       debugPrint('❌ 초기화 실패: $e');
-      _showError('초기화 중 오류가 발생했습니다.');
+      _showError('초기화하지 못했어요. 잠시 후 다시 시도해 주세요.');
     } finally {
       _isInitializing = false;
     }
@@ -150,7 +150,7 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
       _onPurchaseUpdates,
       onError: (e) {
         debugPrint('❌ 구매 스트림 오류: $e');
-        _showError('결제 처리 중 오류가 발생했습니다');
+        _showError('결제를 처리하지 못했어요.');
         _resetState();
       },
     );
@@ -870,7 +870,7 @@ class _SubscribeScreenState extends State<SubscribeScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              '상품을 불러올 수 없습니다',
+              '상품을 불러올 수 없어요.',
               style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 8),

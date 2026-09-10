@@ -103,7 +103,7 @@ class WorkConfirmationCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 14),
-            const Divider(height: 1, color: Color(0xFFF3F4F6)),
+            const Divider(height: 1, color: AppColors.bgMuted),
             const SizedBox(height: 14),
 
             // 근무 정보
@@ -206,8 +206,8 @@ class WorkConfirmationCard extends StatelessWidget {
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                   ),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFEF4444),
-                    side: const BorderSide(color: Color(0xFFEF4444)),
+                    foregroundColor: AppColors.urgentCall,
+                    side: const BorderSide(color: AppColors.urgentCall),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -245,13 +245,13 @@ class WorkConfirmationCard extends StatelessWidget {
   };
 
   Color _statusColor(String s) => switch (s) {
-    'proposed' => const Color(0xFFFF9500),
+    'proposed' => AppColors.pending,
     'accepted' ||
     'scheduled' ||
     'day_before_confirmed' ||
     'day_of_confirmed' => AppColors.primary,
-    'checked_in' || 'completed' => const Color(0xFF22C55E),
-    'cancelled' || 'no_show' => const Color(0xFFEF4444),
+    'checked_in' || 'completed' => AppColors.gradeB,
+    'cancelled' || 'no_show' => AppColors.urgentCall,
     _ => AppColors.textSecondary,
   };
 }
@@ -316,7 +316,7 @@ class _StatusHint extends StatelessWidget {
           const Icon(
             Icons.info_outline_rounded,
             size: 16,
-            color: Color(0xFF2563EB),
+            color: AppColors.primary,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -325,7 +325,7 @@ class _StatusHint extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 12,
                 height: 1.35,
-                color: Color(0xFF1D4ED8),
+                color: AppColors.primaryDark,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -811,7 +811,7 @@ class _FieldLabel extends StatelessWidget {
     style: const TextStyle(
       fontSize: 13,
       fontWeight: FontWeight.w600,
-      color: Color(0xFF374151),
+      color: AppColors.textSecondary,
     ),
   );
 }

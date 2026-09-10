@@ -94,7 +94,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
       final data = jsonDecode(response.body);
       final url = data['certificationUrl'];
       if (url == null || url.toString().isEmpty) {
-        _showSnackbar('본인인증 URL이 비어 있습니다.');
+        _showSnackbar('본인인증을 시작할 수 없어요. 잠시 후 다시 시도해 주세요.');
         return;
       }
       final impUid = await Navigator.push<String>(
@@ -108,7 +108,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
         await Future.delayed(const Duration(milliseconds: 500));
         await _verifyWithServer(impUid);
       } else {
-        _showSnackbar('본인인증이 완료되지 않았습니다.');
+        _showSnackbar('본인인증이 완료되지 않았어요.');
       }
     } catch (e) {
       debugPrint('인증 시작 오류: $e');
@@ -369,7 +369,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(fontSize: 13.5, color: Color(0xFF374151)),
+            style: const TextStyle(fontSize: 13.5, color: AppColors.textSecondary),
           ),
         ),
         TextButton(

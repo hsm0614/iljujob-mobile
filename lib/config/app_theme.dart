@@ -44,14 +44,30 @@ class AppColors {
   static const info    = Color(0xFF3B8AFF);
 
   // ── Badge 색상 ─────────────────────────────────────────
-  static const badgeNew     = Color(0xFFE55353); // 신규
-  static const badgeUrgent  = Color(0xFFEA8035); // 마감임박
-  static const badgeLong    = Color(0xFF8B5CF6); // 장기
-  static const badgeMonthly = Color(0xFF0284C7); // 월급
-  static const badgeDaily   = Color(0xFF2563EB); // 일급
-  static const badgeWeekly  = Color(0xFF6366F1); // 주급
-  static const badgeSameDay = Color(0xFF059669); // 당일지급
-  static const badgeSafe    = Color(0xFF4D7C0F); // 안심기업
+  // DESIGN.md Two-Signal: 뱃지 색은 주황(시간 급함)과 초록계열(돈·신뢰) 둘뿐이다.
+  // 급여형(일급/주급/월급)은 모든 공고에 붙는 정보라 색을 주지 않는다 —
+  // 파랑·인디고·하늘로 나눠 놨더니 서로 구분도 안 되고, 파랑은 "누를 수 있는 것"
+  // 신호를 뺏어갔다. 급여형 뱃지는 중립(textSecondary)으로 그린다.
+  static const badgeUrgent  = Color(0xFFEA8035); // 시간: 긴급·마감임박
+  static const badgeSameDay = Color(0xFF059669); // 돈: 당일지급
+  static const badgeSafe    = Color(0xFF4D7C0F); // 신뢰: 안심기업
+  static const badgeNew     = Color(0xFFE55353); // 찜(하트) 전용 — 뱃지 아님
+
+  // ── 제품·상태 색 ───────────────────────────────────────
+  // 화면마다 하드코딩돼 있던 값을 여기로 올린다. 값은 그대로 두고
+  // 관리 지점만 하나로 모은다 — 색 정책을 바꿀 때 여기 한 줄만 고치면 된다.
+  /// 긴급호출(유료 상품) 브랜딩 색. 그라디언트 [urgentCall, error] 로 쓰인다.
+  static const urgentCall = Color(0xFFEF4444);
+  /// 진행 중·대기 상태(출근확정 proposed, 프로 플랜 등)
+  static const pending = Color(0xFFFF9500);
+  /// AI 기능 표시
+  static const aiAccent = Color(0xFF6C5CE7);
+
+  // ── 구직자 활동등급 (CLAUDE.md 스펙) ───────────────────
+  static const gradeS = Color(0xFFFF6B00); // 100점 이상
+  static const gradeA = primary;           // 70~99
+  static const gradeB = Color(0xFF22C55E); // 40~69
+  static const gradeC = textTertiary;      // 20~39 · NEW
 }
 
 // ─────────────────────────────────────────────────────────
@@ -233,10 +249,16 @@ class AppTheme {
 
   static ThemeData get theme => ThemeData(
         useMaterial3: true,
+        // 알바일주는 라이트 전용이다. 화면 색이 하드코딩으로 흩어져 있어
+        // 다크 팔레트를 얹으면 절반만 뒤집힌 화면이 나온다.
+        // brightness 를 명시해야 시스템 다크에서 키보드·시트 같은 네이티브
+        // 요소까지 라이트로 따라온다. (다크 지원은 색 토큰화가 끝난 뒤)
+        brightness: Brightness.light,
         // Jalnan2TTF는 브랜드명/타이틀에만 명시적으로 사용
         // 전역 적용 시 모든 텍스트가 볼드처럼 보이므로 시스템 폰트 사용
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.primary,
+          brightness: Brightness.light,
           primary: AppColors.primary,
           secondary: AppColors.primaryDark,
           surface: AppColors.bgCard,

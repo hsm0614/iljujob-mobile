@@ -401,20 +401,20 @@ String _grade(int score) {
 Color _gradeColor(String grade) {
   switch (grade) {
     case 'S':
-      return const Color(0xFFFF6B00);
+      return AppColors.gradeS;
     case 'A':
       return AppColors.primary;
     case 'B':
-      return const Color(0xFF22C55E);
+      return AppColors.gradeB;
     default:
       return AppColors.textTertiary;
   }
 }
 
 Color _matchColor(double pct) {
-  if (pct >= 80) return const Color(0xFF22C55E);
+  if (pct >= 80) return AppColors.gradeB;
   if (pct >= 60) return AppColors.primary;
-  if (pct >= 40) return const Color(0xFFFF9500);
+  if (pct >= 40) return AppColors.pending;
   return AppColors.textTertiary;
 }
 
@@ -509,7 +509,7 @@ class _WorkerCard extends StatelessWidget {
       ctaWidget = _ctaButton(
         label: '채팅 열기',
         icon: Icons.forum_rounded,
-        color: const Color(0xFF22C55E),
+        color: AppColors.gradeB,
         onTap: onOpenChat,
       );
     } else if (inviteState == InviteState.pending) {
@@ -664,7 +664,7 @@ class _WorkerCard extends StatelessWidget {
                       ? Icons.how_to_reg_rounded
                       : Icons.mark_chat_read_rounded,
                   size: 14,
-                  color: const Color(0xFF22C55E),
+                  color: AppColors.gradeB,
                 ),
                 const SizedBox(width: 4),
                 Text(
@@ -674,7 +674,7 @@ class _WorkerCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF22C55E),
+                    color: AppColors.gradeB,
                   ),
                 ),
               ],
@@ -701,7 +701,7 @@ class _WorkerCard extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF2563EB),
+                          color: AppColors.primary,
                         ),
                       ),
                     ),
@@ -825,7 +825,7 @@ class _CandidateSearchFieldState extends State<_CandidateSearchField> {
       height: 40,
       padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
+        color: AppColors.bgMuted,
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(

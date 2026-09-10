@@ -25,7 +25,7 @@ class PolicyDetailScreen extends StatelessWidget {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
         if (!snapshot.hasData) {
-          return const Scaffold(body: Center(child: Text('문서를 불러올 수 없습니다.')));
+          return const Scaffold(body: Center(child: Text('문서를 불러올 수 없어요.')));
         }
 
         return Scaffold(

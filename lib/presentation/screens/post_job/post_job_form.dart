@@ -33,6 +33,7 @@ import 'package:iljujob/widget/picker_sheets.dart';
 import 'package:iljujob/widget/free_limit_sheet.dart';
 import 'package:iljujob/utils/nationwide_hint.dart';
 import 'package:iljujob/config/job_categories.dart';
+import '../../../config/messages.dart';
 
 // 2026년 적용 최저시급
 const int minWagePerHour = 10320;
@@ -725,7 +726,7 @@ class _PostJobFormState extends State<PostJobForm>
     final clientId = prefs.getInt('userId');
     final userType = prefs.getString('userType') ?? '';
     if (clientId == null) {
-      _showError('로그인 정보가 올바르지 않습니다.');
+      _showError(Msg.loginRequired);
       return;
     }
 
@@ -869,9 +870,9 @@ class _PostJobFormState extends State<PostJobForm>
                       size: 38,
                       color:
                           isUrgent
-                              ? const Color(0xFFEF4444)
+                              ? AppColors.urgentCall
                               : isDelayed
-                              ? const Color(0xFFFF9500)
+                              ? AppColors.pending
                               : _blue,
                     ),
                   ),
@@ -936,7 +937,7 @@ class _PostJobFormState extends State<PostJobForm>
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor:
-                            isUrgent ? const Color(0xFFEF4444) : _blue,
+                            isUrgent ? AppColors.urgentCall : _blue,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 15),
                         shape: RoundedRectangleBorder(
@@ -945,7 +946,7 @@ class _PostJobFormState extends State<PostJobForm>
                         elevation: 0,
                       ),
                       child: Text(
-                        isUrgent ? '⚡ 긴급 호출 발송하기' : '내 공고 보러가기',
+                        isUrgent ? '긴급 호출 발송하기' : '내 공고 보러가기',
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
@@ -2542,7 +2543,7 @@ class _PostJobFormState extends State<PostJobForm>
               style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
-                color: Color(0xFF1D4ED8),
+                color: AppColors.primaryDark,
               ),
             ),
           ),
@@ -2792,7 +2793,7 @@ class _PostJobFormState extends State<PostJobForm>
                             if (toMin(s) == toMin(e)) {
                               ScaffoldMessenger.of(ctx).showSnackBar(
                                 const SnackBar(
-                                  content: Text('시작과 종료 시간이 같습니다'),
+                                  content: Text('시작 시간과 종료 시간이 같아요.'),
                                 ),
                               );
                               return;
@@ -3111,7 +3112,7 @@ class _PostJobFormState extends State<PostJobForm>
                 color:
                     _subscriptionPlan != null
                         ? const Color(0xFFEFF6FF)
-                        : const Color(0xFFF3F4F6),
+                        : AppColors.bgMuted,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color:
@@ -3130,7 +3131,7 @@ class _PostJobFormState extends State<PostJobForm>
                     size: 16,
                     color:
                         _subscriptionPlan != null
-                            ? const Color(0xFF2563EB)
+                            ? AppColors.primary
                             : AppColors.textTertiary,
                   ),
                   const SizedBox(width: 6),
@@ -3141,7 +3142,7 @@ class _PostJobFormState extends State<PostJobForm>
                       // #9CA3AF는 이 배경에서 2.5:1 — AA 미달
                       color:
                           _subscriptionPlan != null
-                              ? const Color(0xFF2563EB)
+                              ? AppColors.primary
                               : AppColors.textSecondary,
                       fontWeight: FontWeight.w600,
                     ),
@@ -3152,7 +3153,7 @@ class _PostJobFormState extends State<PostJobForm>
                     size: 14,
                     color:
                         _subscriptionPlan != null
-                            ? const Color(0xFF2563EB)
+                            ? AppColors.primary
                             : AppColors.textSecondary,
                   ),
                 ],
@@ -3266,7 +3267,7 @@ class _PostJobFormState extends State<PostJobForm>
             margin: const EdgeInsets.only(bottom: 16),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
-                colors: [Color(0xFF3182F6), Color(0xFF6C5CE7)],
+                colors: [AppColors.primary, AppColors.aiAccent],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -4440,7 +4441,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                         ? Icons.lock_outline_rounded
                         : Icons.schedule_rounded,
                     size: 26,
-                    color: const Color(0xFFFF9500),
+                    color: AppColors.pending,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -4712,12 +4713,12 @@ class _PublishSheetState extends State<_PublishSheet> {
                           (_urgentPassCount > 0 ||
                                   _urgentPassCount == -1)
                               ? [
-                                const Color(0xFFEF4444),
+                                AppColors.urgentCall,
                                 AppColors.error,
                               ]
                               : [
                                 const Color(0xFFF87171),
-                                const Color(0xFFEF4444),
+                                AppColors.urgentCall,
                               ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
@@ -4725,7 +4726,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFEF4444).withValues(alpha: 0.30),
+                        color: AppColors.urgentCall.withValues(alpha: 0.30),
                         blurRadius: 12,
                         offset: const Offset(0, 4),
                       ),
@@ -5240,7 +5241,7 @@ class _CompareCard extends StatelessWidget {
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFEF4444),
+                            color: AppColors.urgentCall,
                             borderRadius: BorderRadius.circular(99),
                           ),
                           child: const Text(
@@ -5340,7 +5341,7 @@ class _CompareCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [Color(0xFF3182F6), Color(0xFF6C5CE7)],
+                      colors: [AppColors.primary, AppColors.aiAccent],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -5462,7 +5463,7 @@ class _CompareRow extends StatelessWidget {
               style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: highlight ? const Color(0xFFEF4444) : _label,
+                color: highlight ? AppColors.urgentCall : _label,
               ),
             ),
           ),

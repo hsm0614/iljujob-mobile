@@ -126,7 +126,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,
-                        color: Color(0xFF374151),
+                        color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 10),

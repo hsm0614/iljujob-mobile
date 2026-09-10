@@ -36,7 +36,7 @@ Future<void> showFreeLimitSheet(BuildContext context, String message) {
             child: const Icon(
               Icons.lock_outline_rounded,
               size: 26,
-              color: Color(0xFFFF9500),
+              color: AppColors.pending,
             ),
           ),
           const SizedBox(height: 14),
