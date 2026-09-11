@@ -101,30 +101,60 @@ class ChatMessageList extends StatelessWidget {
     final dated = <_Dated>[for (final m in messages) _Dated(m, _messageDate(m))]
       ..sort((a, b) => a.date.compareTo(b.date));
 
+    // 출근확정 카드도 대화의 일부다. 예전엔 메시지를 다 그린 뒤 맨 끝에 붙여서,
+    // 카드가 제안된 뒤 오간 메시지가 전부 카드 '위'로 올라갔다. 카드는 크고
+    // 맨 아래에 고정돼 있으니 스크롤을 내려도 최신 메시지가 화면 밖으로 밀렸다.
+    // ("출근확정카드 위로 채팅이 올라가서 안 보인다" 제보의 원인)
+    // proposedAt 기준으로 제자리에 끼워넣는다. 시각을 모르는 카드만 맨 뒤로.
+    final confirms =
+        workConfirmations.where((c) => c.status != 'cancelled').toList()
+          ..sort((a, b) {
+            final x = a.proposedAt, y = b.proposedAt;
+            if (x == null && y == null) return 0;
+            if (x == null) return 1;
+            if (y == null) return -1;
+            return x.compareTo(y);
+          });
+
+    // 메시지와 카드를 한 줄기 타임라인으로 합친다. 시각을 모르는 카드(구버전
+    // 응답)는 순서를 보장할 수 없으니 맨 뒤로 보낸다.
+    final undated = confirms.where((c) => c.proposedAt == null).toList();
+    final timeline = <_Entry>[
+      for (final d in dated) _Entry(d.date, msg: d.msg),
+      for (final c in confirms)
+        if (c.proposedAt != null) _Entry(c.proposedAt!, confirm: c),
+    ]..sort((a, b) => a.at.compareTo(b.at));
+
     // 위젯이 아니라 "무엇을 그릴지"만 나열한다. 실제 위젯은 ListView.builder 가
     // 화면에 보이는 것만 만든다 — 예전엔 전체를 Column 에 즉시 생성해서
     // 메시지 500개면 위젯 500개가 항상 트리에 살아 있었다.
     final rows = <_Row>[];
     String? curKey;
     String? prevSender;
-    for (final d in dated) {
-      final key = _dateKey(d.date);
+
+    for (final e in timeline) {
+      final key = _dateKey(e.at);
       if (key != curKey) {
         rows.add(_Row.divider(key));
         curKey = key;
         prevSender = null;
       }
-      final sender = d.msg['sender']?.toString() ?? '';
+      if (e.confirm != null) {
+        rows.add(_Row.confirm(e.confirm!));
+        prevSender = null; // 카드가 끼면 말풍선 묶음이 끊긴다
+        continue;
+      }
+      final msg = e.msg!;
+      final sender = msg['sender']?.toString() ?? '';
       if (sender == 'bot' || sender == 'system') {
-        rows.add(_Row.bot(d.msg['message']?.toString() ?? ''));
+        rows.add(_Row.bot(msg['message']?.toString() ?? ''));
       } else {
-        rows.add(_Row.message(d.msg, d.date, sender == prevSender));
+        rows.add(_Row.message(msg, e.at, sender == prevSender));
       }
       prevSender = sender;
     }
 
-    // 취소된 카드는 숨기고, 활성 카드만 표시
-    for (final c in workConfirmations.where((c) => c.status != 'cancelled')) {
+    for (final c in undated) {
       rows.add(_Row.confirm(c));
     }
     if (showHireNudge && onConfirmHire != null) rows.add(const _Row.nudge());
@@ -202,6 +232,15 @@ class _Dated {
   const _Dated(this.msg, this.date);
 }
 
+/// 메시지와 출근확정 카드를 한 줄기로 세우기 위한 타임라인 항목.
+/// 둘 중 하나만 채워진다.
+class _Entry {
+  final DateTime at;
+  final Map<String, dynamic>? msg;
+  final WorkConfirmation? confirm;
+  const _Entry(this.at, {this.msg, this.confirm});
+}
+
 enum _RowKind { divider, bot, message, confirm, nudge }
 
 class _Row {
@@ -225,8 +264,7 @@ class _Row {
   const _Row.bot(String message) : this._(_RowKind.bot, text: message);
   const _Row.message(Map<String, dynamic> m, DateTime w, bool prev)
     : this._(_RowKind.message, msg: m, when: w, prevSame: prev);
-  const _Row.confirm(WorkConfirmation c)
-    : this._(_RowKind.confirm, confirm: c);
+  const _Row.confirm(WorkConfirmation c) : this._(_RowKind.confirm, confirm: c);
   const _Row.nudge() : this._(_RowKind.nudge);
 }
 
@@ -400,7 +438,10 @@ class _MessageBubble extends StatelessWidget {
                                 imageUrl: msg['imageUrl'].toString(),
                                 heroTag: 'img_${when.millisecondsSinceEpoch}',
                               )
-                              : Text(
+                              // 사장님이 보내는 건 대개 주소·계좌번호·담당자
+                              // 연락처다. Text 로 두면 눈으로 보고 옮겨 적어야
+                              // 했다 — 계좌번호 오타는 그대로 사고다.
+                              : SelectableText(
                                 messageText,
                                 style: TextStyle(
                                   fontSize: 14,
@@ -437,7 +478,7 @@ class _MessageBubble extends StatelessWidget {
                                 Text(
                                   '전송 안 됨 · 탭해서 재전송',
                                   style: TextStyle(
-                                    fontSize: 10,
+                                    fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.error,
                                   ),
@@ -449,7 +490,7 @@ class _MessageBubble extends StatelessWidget {
                           ? const Text(
                             '전송 중…',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 11,
                               color: AppColors.textTertiary,
                             ),
                           )
@@ -463,7 +504,7 @@ class _MessageBubble extends StatelessWidget {
                               Text(
                                 DateFormat('a h:mm', 'ko_KR').format(when),
                                 style: const TextStyle(
-                                  fontSize: 10,
+                                  fontSize: 11,
                                   color: AppColors.textSecondary,
                                 ),
                               ),
@@ -475,7 +516,7 @@ class _MessageBubble extends StatelessWidget {
                                       ? '읽음'
                                       : '안읽음',
                                   style: TextStyle(
-                                    fontSize: 10,
+                                    fontSize: 11,
                                     color:
                                         (msg['is_read'] == 1 ||
                                                 msg['is_read'] == true)

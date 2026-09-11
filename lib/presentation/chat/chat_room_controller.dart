@@ -16,6 +16,7 @@ import '../../data/services/ai_api.dart';
 import '../../data/services/authenticated_http_client.dart';
 import '../../data/services/work_confirmation_service.dart';
 import 'chat_room_helpers.dart';
+import '../../config/messages.dart';
 
 class ChatRoomController extends ChangeNotifier {
   final int chatRoomId;
@@ -108,6 +109,7 @@ class ChatRoomController extends ChangeNotifier {
   // ─────────────────────────────────────────────
 
   void Function(String)? onShowSnackbar;
+
   /// 목록을 최신 메시지 쪽으로 내린다.
   /// force=false 면 사용자가 바닥 근처일 때만 움직인다 — 지난 대화를 읽는 중에
   /// 상대 메시지가 와도 끌어내리지 않기 위해서다.
@@ -382,14 +384,14 @@ class ChatRoomController extends ChangeNotifier {
       if (_disposed) return;
       isConfirmed = true;
       _notify();
-      onSystemMessage?.call(data['message'] ?? '채용이 확정되었습니다!');
+      onSystemMessage?.call(data['message'] ?? '채용이 확정됐어요.');
     });
 
     socket!.on('completed', (data) {
       if (_disposed) return;
       isCompleted = true;
       _notify();
-      onSystemMessage?.call(data['message'] ?? '알바가 완료되었습니다!');
+      onSystemMessage?.call(data['message'] ?? '알바가 완료됐어요.');
     });
 
     socket!.on('receive_message', (data) {
@@ -457,7 +459,8 @@ class ChatRoomController extends ChangeNotifier {
       if (_disposed) return;
 
       if (resp.statusCode != 200) {
-        onShowSnackbar?.call('메시지 불러오기 실패 (${resp.statusCode})');
+        debugPrint('메시지 불러오기 실패 (${resp.statusCode})');
+        onShowSnackbar?.call(Msg.loadFailed);
         return;
       }
 
@@ -749,12 +752,14 @@ class ChatRoomController extends ChangeNotifier {
       if (resp.statusCode == 200) {
         isConfirmed = true;
         _notify();
-        onShowSnackbar?.call('✅ 채용 확정 완료');
+        onShowSnackbar?.call('채용을 확정했어요.');
       } else {
-        onShowSnackbar?.call('❌ 채용 확정 실패: ${resp.statusCode}');
+        debugPrint('❌ 채용 확정 실패: ${resp.statusCode}');
+        onShowSnackbar?.call(Msg.server);
       }
     } catch (e) {
-      if (!_disposed) onShowSnackbar?.call('❌ 오류 발생: $e');
+      debugPrint('❌ 오류 발생: $e');
+      if (!_disposed) onShowSnackbar?.call(Msg.server);
     }
   }
 
@@ -802,7 +807,8 @@ class ChatRoomController extends ChangeNotifier {
         onShowEvaluationDialog?.call();
       }
     } catch (e) {
-      if (!_disposed) onShowSnackbar?.call('처리에 실패했어요: $e');
+      debugPrint('처리에 실패했어요: $e');
+      if (!_disposed) onShowSnackbar?.call(Msg.server);
     } finally {
       if (_disposed) return;
       workLoading = false;
@@ -825,13 +831,14 @@ class ChatRoomController extends ChangeNotifier {
       if (resp.statusCode == 200) {
         isCompleted = true;
         _notify();
-        onShowSnackbar?.call('🎉 알바 완료 처리되었습니다.');
+        onShowSnackbar?.call('알바를 완료 처리했어요.');
         onShowEvaluationDialog?.call();
       } else {
         onShowSnackbar?.call('알바 완료 실패');
       }
     } catch (e) {
-      if (!_disposed) onShowSnackbar?.call('서버 오류: $e');
+      debugPrint('서버 오류: $e');
+      if (!_disposed) onShowSnackbar?.call(Msg.server);
     }
   }
 
@@ -856,7 +863,7 @@ class ChatRoomController extends ChangeNotifier {
 
       consentBusy = false;
       if (!result.ok) {
-        onShowSnackbar?.call(result.message ?? '처리에 실패했습니다.');
+        onShowSnackbar?.call(result.message ?? Msg.server);
         _notify();
         return;
       }
@@ -865,16 +872,17 @@ class ChatRoomController extends ChangeNotifier {
       _notify();
 
       if (accept) {
-        onShowSnackbar?.call('수락되었습니다. 이제 채팅이 가능합니다.');
+        onShowSnackbar?.call('수락했어요. 이제 대화할 수 있어요.');
       } else {
-        onShowSnackbar?.call('대화 요청을 거절했습니다.');
+        onShowSnackbar?.call('대화 요청을 거절했어요.');
         onPopScreen?.call();
       }
     } catch (e) {
       if (_disposed) return;
       consentBusy = false;
       _notify();
-      onShowSnackbar?.call('네트워크 오류: $e');
+      debugPrint('네트워크 오류: $e');
+      onShowSnackbar?.call(Msg.network);
     }
   }
 
@@ -927,7 +935,8 @@ class ChatRoomController extends ChangeNotifier {
       if (!_disposed) onShowSnackbar?.call(msg);
       return false;
     } catch (e) {
-      if (!_disposed) onShowSnackbar?.call('네트워크 오류: $e');
+      debugPrint('네트워크 오류: $e');
+      if (!_disposed) onShowSnackbar?.call(Msg.network);
       return false;
     }
   }
@@ -1014,7 +1023,8 @@ class ChatRoomController extends ChangeNotifier {
       } catch (_) {}
       onShowSnackbar?.call(msg);
     } catch (e) {
-      if (!_disposed) onShowSnackbar?.call('네트워크 오류: $e');
+      debugPrint('네트워크 오류: $e');
+      if (!_disposed) onShowSnackbar?.call(Msg.network);
     } finally {
       if (!_disposed) {
         workLoading = false;
@@ -1115,7 +1125,7 @@ class ChatRoomController extends ChangeNotifier {
     final src = jobSource;
     final weekdays = (src['weekdays'] ?? '').toString().trim();
     if (weekdays.isNotEmpty) {
-      onShowSnackbar?.call('요일 공고는 출근확인이 아직 지원되지 않습니다.');
+      onShowSnackbar?.call('요일 공고는 아직 출근확인을 지원하지 않아요.');
       return;
     }
 
@@ -1123,7 +1133,7 @@ class ChatRoomController extends ChangeNotifier {
       (src['id'] ?? src['job_id'] ?? src['jobId'])?.toString() ?? '',
     );
     if (jobId == null) {
-      onShowSnackbar?.call('공고 정보를 찾을 수 없습니다.');
+      onShowSnackbar?.call(Msg.loadFailed);
       return;
     }
 
@@ -1146,7 +1156,7 @@ class ChatRoomController extends ChangeNotifier {
         return;
       }
       if (!await Geolocator.isLocationServiceEnabled()) {
-        onShowSnackbar?.call('GPS가 꺼져 있습니다. 위치 서비스를 켜주세요.');
+        onShowSnackbar?.call('GPS가 꺼져 있어요. 위치 서비스를 켜주세요.');
         return;
       }
 
@@ -1156,7 +1166,7 @@ class ChatRoomController extends ChangeNotifier {
       if (_disposed) return;
 
       if (myLat == null || myLng == null) {
-        onShowSnackbar?.call('현재 위치를 가져올 수 없습니다. 잠시 후 다시 시도해 주세요.');
+        onShowSnackbar?.call('현재 위치를 가져올 수 없어요. 잠시 후 다시 시도해 주세요.');
         return;
       }
 
@@ -1186,17 +1196,18 @@ class ChatRoomController extends ChangeNotifier {
         'OUT_OF_RADIUS':
             '현장 반경 밖입니다. (${data['distance_m']}m / ${data['radius_m']}m)',
         'LOW_GPS_ACCURACY': 'GPS 정확도가 낮아요. (${data['accuracy_m']}m)',
-        'CHECKIN_DEADLINE_PASSED': '출근 확인 가능 시간이 지났습니다.',
+        'CHECKIN_DEADLINE_PASSED': '출근 확인 가능 시간이 지났어요.',
         'JOB_LOCATION_MISSING': '공고 위치 정보가 없어 출근 확인이 불가합니다.',
-        'LONG_TERM_NOT_SUPPORTED_YET': '요일 공고 출근확인은 아직 지원되지 않습니다.',
-        'CLAIM_ALREADY_EXISTS': '이미 환급 요청이 진행 중이라 출근 확인이 막혀 있습니다.',
+        'LONG_TERM_NOT_SUPPORTED_YET': '요일 공고 출근확인은 아직 지원하지 않아요.',
+        'CLAIM_ALREADY_EXISTS': '환급 요청이 진행 중이라 출근 확인을 할 수 없어요.',
         'JOB_NOT_ACTIVE': '진행 중인 공고가 아닙니다.',
       };
       onShowSnackbar?.call(errMap[msg] ?? '출근 확인 실패: $msg');
     } on TimeoutException {
       if (!_disposed) onShowSnackbar?.call('위치 확인이 지연되고 있어요. 다시 시도해 주세요.');
     } catch (e) {
-      if (!_disposed) onShowSnackbar?.call('출근 확인 중 오류: $e');
+      debugPrint('출근 확인 중 오류: $e');
+      if (!_disposed) onShowSnackbar?.call(Msg.server);
     } finally {
       if (!_disposed) {
         checkinLoading = false;
@@ -1216,7 +1227,7 @@ class ChatRoomController extends ChangeNotifier {
       (src['id'] ?? src['job_id'] ?? src['jobId'])?.toString() ?? '',
     );
     if (jobId == null) {
-      onShowSnackbar?.call('공고 정보가 없어 취소할 수 없습니다.');
+      onShowSnackbar?.call('공고 정보가 없어 취소할 수 없어요.');
       return;
     }
     if (isCompleted) {
@@ -1233,7 +1244,7 @@ class ChatRoomController extends ChangeNotifier {
     final workerId = prefs.getInt('userId');
 
     if (workerId == null) {
-      onShowSnackbar?.call('로그인 정보가 없습니다. 다시 로그인해주세요.');
+      onShowSnackbar?.call(Msg.loginExpired);
       return;
     }
 
@@ -1247,7 +1258,7 @@ class ChatRoomController extends ChangeNotifier {
       String message =
           resp.statusCode == 200
               ? '이 공고에 대한 지원을 취소했어요.'
-              : '지원 취소에 실패했습니다. (${resp.statusCode})';
+              : Msg.applyCancelFailed;
       try {
         final data = jsonDecode(resp.body);
         if (data is Map && data['message'] is String) message = data['message'];
@@ -1259,7 +1270,8 @@ class ChatRoomController extends ChangeNotifier {
       }
       onShowSnackbar?.call(message);
     } catch (e) {
-      if (!_disposed) onShowSnackbar?.call('지원 취소 중 오류가 발생했습니다: $e');
+      debugPrint('지원 취소 중 오류가 발생했습니다: $e');
+      if (!_disposed) onShowSnackbar?.call(Msg.applyCancelFailed);
     }
   }
 
@@ -1339,7 +1351,7 @@ class ChatRoomController extends ChangeNotifier {
       final resData = jsonDecode(resp.body);
       final imageUrl = resData['imageUrl'];
       if (imageUrl == null || imageUrl.isEmpty) {
-        onShowSnackbar?.call('서버가 이미지 URL을 반환하지 않았습니다.');
+        onShowSnackbar?.call(Msg.server);
         return;
       }
       final createdAtUtc = DateTime.now().toUtc();
@@ -1358,7 +1370,8 @@ class ChatRoomController extends ChangeNotifier {
       });
       onScrollToBottom?.call(force: true);
     } else {
-      onShowSnackbar?.call('이미지 업로드 실패 (${resp.statusCode})');
+      debugPrint('이미지 업로드 실패 (${resp.statusCode})');
+      onShowSnackbar?.call(Msg.server);
     }
   }
 }

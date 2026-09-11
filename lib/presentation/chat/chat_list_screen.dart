@@ -485,7 +485,7 @@ class _ChatListScreenState extends State<ChatListScreen>
       );
 
       if (response.statusCode == 200) {
-        String message = '지원이 취소되었습니다.';
+        String message = '지원을 취소했어요.';
         try {
           final data = jsonDecode(response.body);
           if (data is Map && data['message'] is String) {
@@ -496,7 +496,7 @@ class _ChatListScreenState extends State<ChatListScreen>
         _showSnackbar(message);
         await _fetchChatRooms();
       } else {
-        String message = '지원 취소에 실패했습니다. (${response.statusCode})';
+        String message = Msg.applyCancelFailed;
         try {
           final data = jsonDecode(response.body);
           if (data is Map && data['message'] is String) {
@@ -566,7 +566,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                   icon: Icons.logout_rounded,
                   iconColor: AppColors.textSecondary,
                   title: '채팅방 나가기',
-                  subtitle: '목록에서 정리하고 새 메시지 알림을 받지 않습니다.',
+                  subtitle: '목록에서 정리하고 새 메시지 알림을 받지 않아요.',
                   trailing:
                       isLeaving
                           ? const SizedBox(
@@ -1435,7 +1435,7 @@ class _EmptyState extends StatelessWidget {
   const _EmptyState.search({required String query})
     : icon = Icons.search_off_rounded,
       title = '검색 결과가 없어요',
-      message = '"$query"와 일치하는 채팅이 없습니다.';
+      message = '"$query"와 일치하는 채팅이 없어요.';
 
   const _EmptyState.unread()
     : icon = Icons.mark_chat_read_outlined,
@@ -1450,7 +1450,7 @@ class _EmptyState extends StatelessWidget {
   const _EmptyState.unreadSearch({required String query})
     : icon = Icons.search_off_rounded,
       title = '안읽은 채팅 검색 결과가 없어요',
-      message = '"$query"와 일치하는 안읽은 채팅이 없습니다.';
+      message = '"$query"와 일치하는 안읽은 채팅이 없어요.';
 
   @override
   Widget build(BuildContext context) {

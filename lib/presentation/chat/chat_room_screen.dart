@@ -69,6 +69,10 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   final _inputFocusNode = FocusNode();
   bool _jobPanelExpanded = true;
 
+  /// 위로 올려 읽는 중에 새 메시지가 도착했는지. 자동 스크롤을 막는 대신
+  /// "새 메시지" 버튼으로 알린다.
+  bool _hasNewBelow = false;
+
   // 긴급호출 수락/거절 상태 (worker 전용)
   String? _urgentCallStatus;
   bool _urgentCallBusy = false;
@@ -135,8 +139,14 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
       // 지난 대화를 읽는 중이면 끌어내리지 않는다. 예전엔 상대 메시지가 올 때마다
       // 조건 없이 바닥으로 당겨서, 위로 올려 읽던 사람이 계속 튕겨 내려갔다.
       // 내가 보낸 직후엔 이미 바닥이라 이 조건을 자연히 통과한다.
-      if (!force && position.pixels > _nearBottomPx) return;
+      if (!force && position.pixels > _nearBottomPx) {
+        // 안 내려간다고 조용히 넘어가면 새 메시지가 온 줄도 모른다.
+        // 아래에 새 글이 있다는 표시를 띄워 준다.
+        if (!_hasNewBelow && mounted) setState(() => _hasNewBelow = true);
+        return;
+      }
 
+      if (_hasNewBelow && mounted) setState(() => _hasNewBelow = false);
       _scrollController.animateTo(
         position.minScrollExtent,
         duration: const Duration(milliseconds: 250),
@@ -145,13 +155,21 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
     });
   }
 
+  /// 바닥 근처로 돌아오면 "새 메시지" 표시를 거둔다.
+  bool _onScrollUpdate(ScrollUpdateNotification n) {
+    if (_hasNewBelow && n.metrics.pixels <= _nearBottomPx) {
+      setState(() => _hasNewBelow = false);
+    }
+    return false;
+  }
+
   // ─────────────────────────────────────────────
   // 이미지 전송
   // ─────────────────────────────────────────────
 
   Future<void> _pickAndSendImage(ChatRoomController ctrl) async {
     if (!ctrl.inputEnabled) {
-      ctrl.onShowSnackbar?.call('아직 채팅이 활성화되지 않았습니다.');
+      ctrl.onShowSnackbar?.call('아직 채팅이 열리지 않았어요.');
       return;
     }
     final picker = ImagePicker();
@@ -193,7 +211,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
     final workerId = ctrl.roomWorkerId;
     final clientId = ctrl.roomClientId;
     if (jobId == null || workerId == null || clientId == null) {
-      ctrl.onShowSnackbar?.call('채팅방 정보를 불러오는 중입니다.');
+      ctrl.onShowSnackbar?.call('채팅방 정보를 불러오는 중이에요.');
       return;
     }
     await showModalBottomSheet(
@@ -270,7 +288,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         _navigatingToDetail = true;
         await Navigator.pushNamed(context, '/job-detail', arguments: rawId);
       } else {
-        ctrl.onShowSnackbar?.call('공고 상세를 열 수 없습니다.');
+        ctrl.onShowSnackbar?.call('공고를 열 수 없어요.');
       }
     } finally {
       _navigatingToDetail = false;
@@ -531,7 +549,10 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     const SizedBox(height: 6),
                     const Text(
                       '솔직한 평가가 더 나은 매칭을 만들어요',
-                      style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                     const SizedBox(height: 20),
 
@@ -562,9 +583,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
                         color:
-                            isGood
-                                ? AppColors.success
-                                : AppColors.urgentCall,
+                            isGood ? AppColors.success : AppColors.urgentCall,
                       ),
                     ),
                     const SizedBox(height: 14),
@@ -1224,11 +1243,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         ),
         child: const Row(
           children: [
-            Icon(
-              Icons.check_circle_rounded,
-              color: AppColors.gradeB,
-              size: 18,
-            ),
+            Icon(Icons.check_circle_rounded, color: AppColors.gradeB, size: 18),
             SizedBox(width: 8),
             Text(
               '긴급호출 수락 완료',
@@ -1476,7 +1491,10 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                   const SizedBox(width: 4),
                   const Text(
                     '알바일주 데이터 기준',
-                    style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
                   const Spacer(),
                   TextButton.icon(
@@ -1569,6 +1587,31 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
               icon: const Icon(Icons.arrow_back),
               onPressed: () => Navigator.pop(context, 'updated'),
             ),
+            // 문제가 생기는 자리는 채팅방인데 신고·차단은 상대 프로필에만 있었다.
+            // 구현을 옮기지는 않고(프로필 화면이 이미 갖고 있다) 진입점만 연다.
+            actions:
+                onProfileTap == null
+                    ? null
+                    : [
+                      PopupMenuButton<String>(
+                        tooltip: '더보기',
+                        icon: const Icon(Icons.more_vert),
+                        onSelected: (_) => onProfileTap!(),
+                        itemBuilder:
+                            (_) => const [
+                              PopupMenuItem(
+                                value: 'report',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.flag_outlined, size: 18),
+                                    SizedBox(width: 10),
+                                    Text('신고·차단'),
+                                  ],
+                                ),
+                              ),
+                            ],
+                      ),
+                    ],
             titleWidget: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -1671,49 +1714,100 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                               : ctrl.messages.isEmpty &&
                                   ctrl.workConfirmations.isEmpty
                               ? _buildEmptyChatNotice(ctrl.isClient)
-                              : NotificationListener<ScrollStartNotification>(
-                                onNotification: (_) {
-                                  FocusScope.of(context).unfocus();
-                                  return false;
-                                },
-                                child: ChatMessageList(
-                                  messages: ctrl.messages,
-                                  scrollController: _scrollController,
-                                  userType: ctrl.userType,
-                                  onProfileTap: onProfileTap,
-                                  targetThumbnailUrl: targetThumbnailUrl,
-                                  targetName: targetName,
-                                  showHireNudge:
-                                      ctrl.userType == 'client' &&
-                                      !ctrl.isConfirmed &&
-                                      !ctrl.hasPendingWorkConfirmation &&
-                                      ctrl.status == 'active' &&
-                                      ctrl.messages.length >= 2,
-                                  onConfirmHire: () => _showProposeSheet(ctrl),
-                                  workConfirmations: ctrl.workConfirmations,
-                                  onAcceptWorkConfirmation:
-                                      (confirm) =>
-                                          ctrl.respondToWorkConfirmation(
-                                            confirm,
-                                            'accepted',
-                                          ),
-                                  onRejectWorkConfirmation:
-                                      (confirm) =>
-                                          ctrl.respondToWorkConfirmation(
-                                            confirm,
-                                            'cancelled',
-                                          ),
-                                  onNoShowWorkConfirmation:
-                                      (confirm) => _confirmNoShow(
-                                        context,
-                                        ctrl,
-                                        confirm,
-                                      ),
-                                  onRetryMessage: ctrl.retryMessage,
-                                  inputOverlayHeight: 112,
+                              : NotificationListener<ScrollUpdateNotification>(
+                                onNotification: _onScrollUpdate,
+                                child: NotificationListener<
+                                  ScrollStartNotification
+                                >(
+                                  onNotification: (_) {
+                                    FocusScope.of(context).unfocus();
+                                    return false;
+                                  },
+                                  child: ChatMessageList(
+                                    messages: ctrl.messages,
+                                    scrollController: _scrollController,
+                                    userType: ctrl.userType,
+                                    onProfileTap: onProfileTap,
+                                    targetThumbnailUrl: targetThumbnailUrl,
+                                    targetName: targetName,
+                                    showHireNudge:
+                                        ctrl.userType == 'client' &&
+                                        !ctrl.isConfirmed &&
+                                        !ctrl.hasPendingWorkConfirmation &&
+                                        ctrl.status == 'active' &&
+                                        ctrl.messages.length >= 2,
+                                    onConfirmHire:
+                                        () => _showProposeSheet(ctrl),
+                                    workConfirmations: ctrl.workConfirmations,
+                                    onAcceptWorkConfirmation:
+                                        (confirm) =>
+                                            ctrl.respondToWorkConfirmation(
+                                              confirm,
+                                              'accepted',
+                                            ),
+                                    onRejectWorkConfirmation:
+                                        (confirm) =>
+                                            ctrl.respondToWorkConfirmation(
+                                              confirm,
+                                              'cancelled',
+                                            ),
+                                    onNoShowWorkConfirmation:
+                                        (confirm) => _confirmNoShow(
+                                          context,
+                                          ctrl,
+                                          confirm,
+                                        ),
+                                    onRetryMessage: ctrl.retryMessage,
+                                    inputOverlayHeight: 112,
+                                  ),
                                 ),
                               ),
                     ),
+
+                    // 위로 올려 읽는 중에 새 메시지가 오면 알려 준다.
+                    // (자동 스크롤을 막아 놨으므로 이게 없으면 온 줄을 모른다)
+                    if (_hasNewBelow)
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 124,
+                        child: Center(
+                          child: Material(
+                            color: AppColors.primary,
+                            borderRadius: BorderRadius.circular(999),
+                            elevation: 3,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(999),
+                              onTap: () => _scrollToBottom(force: true),
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      '새 메시지',
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    SizedBox(width: 4),
+                                    Icon(
+                                      Icons.arrow_downward_rounded,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
 
                     // 입력창 (하단 오버레이)
                     Positioned(
@@ -1767,16 +1861,16 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                             ctrl.inputEnabled
                                                 ? '메시지를 입력하세요...'
                                                 : (ctrl.status == 'pending'
-                                                    ? '상대방의 수락을 기다리는 중입니다'
+                                                    ? '상대방의 수락을 기다리는 중이에요'
                                                     : (ctrl.status ==
                                                                 'cancelled' ||
                                                             ctrl.status ==
                                                                 'canceled'
                                                         ? (ctrl.userType ==
                                                                 'client'
-                                                            ? '알바생이 지원을 취소한 채팅입니다'
-                                                            : '지원 취소 후에는 채팅을 보낼 수 없습니다')
-                                                        : '지금은 채팅을 보낼 수 없습니다')),
+                                                            ? '알바생이 지원을 취소했어요'
+                                                            : '지원을 취소해서 메시지를 보낼 수 없어요')
+                                                        : '지금은 메시지를 보낼 수 없어요')),
                                         hintStyle: const TextStyle(
                                           fontSize: 14,
                                           color: AppColors.textTertiary,

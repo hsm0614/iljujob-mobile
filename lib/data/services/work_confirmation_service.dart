@@ -17,6 +17,11 @@ class WorkConfirmation {
   final String? workerName;
   final String? companyName;
 
+  /// 카드가 제안된 시각(UTC). 서버는 proposed_at 을 UTC_TIMESTAMP() 로 쓰고
+  /// wc.* 로 그대로 내려준다. 이걸 안 읽으면 카드를 대화 흐름에 끼워넣을
+  /// 수 없어 항상 맨 아래로 밀린다.
+  final DateTime? proposedAt;
+
   const WorkConfirmation({
     required this.id,
     required this.chatRoomId,
@@ -31,6 +36,7 @@ class WorkConfirmation {
     required this.status,
     this.workerName,
     this.companyName,
+    this.proposedAt,
   });
 
   factory WorkConfirmation.fromJson(Map<String, dynamic> j) => WorkConfirmation(
@@ -47,7 +53,18 @@ class WorkConfirmation {
     status: j['status']?.toString() ?? 'proposed',
     workerName: j['worker_name']?.toString(),
     companyName: j['company_name']?.toString(),
+    proposedAt: _parseUtc(j['proposed_at']),
   );
+
+  static DateTime? _parseUtc(dynamic v) {
+    if (v == null) return null;
+    final s = v.toString().trim();
+    if (s.isEmpty) return null;
+    // "2026-09-11 01:23:45"(MySQL) 과 ISO 둘 다 온다. 전자는 UTC 로 읽는다.
+    final iso = s.contains('T') ? s : '${s.replaceFirst(' ', 'T')}Z';
+    final dt = DateTime.tryParse(iso);
+    return dt?.toLocal();
+  }
 }
 
 class WorkConfirmationService {
