@@ -82,7 +82,6 @@ class _ChatListScreenState extends State<ChatListScreen>
     });
   }
 
-
   /* ---------------- 기본 유저 정보 로드 ---------------- */
 
   Future<void> _loadMyIdAndType() async {
@@ -1161,113 +1160,112 @@ class _ChatListScreenState extends State<ChatListScreen>
             await _fetchChatRooms();
           },
           color: AppColors.primary,
-          child: CustomScrollView(
-            slivers: [
-              SliverAppBar(
-                pinned: true,
-                elevation: 0,
-                backgroundColor: AppColors.primary,
-                surfaceTintColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                expandedHeight: 130,
-                toolbarHeight: 88,
-                titleSpacing: 20,
-                title: const Text(
-                  '채팅',
-                  style: TextStyle(
-                    fontFamily: 'Jalnan2TTF',
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    height: 1.1,
-                  ),
-                ),
-                flexibleSpace: FlexibleSpaceBar(
-                  background: Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [AppColors.primary, AppColors.primaryDark],
+          // 예전엔 CustomScrollView 의 SliverFillRemaining(hasScrollBody: true)
+          // 안에 TabBarView 를 넣었다. 그러면 안쪽 ListView 가 제스처를 먹어
+          // 바깥 스크롤이 움직이지 않았고, 광고 배너를 스크롤로 치울 수 없었다.
+          // NestedScrollView 는 헤더와 본문 스크롤을 이어 준다 —
+          // 배너는 위로 사라지고 검색바·탭만 고정으로 남으며 탭 스와이프도 유지된다.
+          child: NestedScrollView(
+            headerSliverBuilder:
+                (context, innerBoxIsScrolled) => [
+                  SliverAppBar(
+                    pinned: true,
+                    elevation: 0,
+                    backgroundColor: AppColors.primary,
+                    surfaceTintColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    expandedHeight: 130,
+                    toolbarHeight: 88,
+                    titleSpacing: 20,
+                    title: const Text(
+                      '채팅',
+                      style: TextStyle(
+                        fontFamily: 'Jalnan2TTF',
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        height: 1.1,
                       ),
                     ),
-                    child: SafeArea(
-                      bottom: false,
-                      child: Align(
-                        alignment: Alignment.bottomCenter,
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
-                          child: _SearchField(
-                            onChanged: (q) => setState(() => _query = q),
+                    flexibleSpace: FlexibleSpaceBar(
+                      background: Container(
+                        decoration: const BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [AppColors.primary, AppColors.primaryDark],
+                          ),
+                        ),
+                        child: SafeArea(
+                          bottom: false,
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Padding(
+                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+                              child: _SearchField(
+                                onChanged: (q) => setState(() => _query = q),
+                              ),
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ),
-              SliverPersistentHeader(
-                pinned: true,
-                delegate: _TabHeaderDelegate(
-                  TabBar(
-                    indicatorColor: AppColors.primary,
-                    labelColor: AppColors.textPrimary,
-                    unselectedLabelColor: AppColors.textTertiary,
-                    labelStyle: const TextStyle(fontWeight: FontWeight.w700),
-                    tabs: [
-                      _BadgeTab(label: '전체', count: totalUnread),
-                      _BadgeTab(label: '안읽음', count: unreadOnly.length),
-                      _BadgeTab(label: '긴급', count: urgentUnread),
-                    ],
+                  // 배너를 탭 헤더보다 앞에 둔다. 스크롤하면 배너가 먼저 위로
+                  // 빠지고, 탭 헤더가 앱바 아래에 붙어 고정된다.
+                  SliverToBoxAdapter(child: _buildNotificationBanner()),
+                  const SliverToBoxAdapter(
+                    child: AdBannerWidget(placement: 'app_chat_list'),
                   ),
-                ),
-              ),
-              SliverToBoxAdapter(
-                child: _buildNotificationBanner(), // ✅ 여기 추가
-              ),
-              const SliverToBoxAdapter(
-                child: AdBannerWidget(placement: 'app_chat_list'),
-              ),
-              if (isLoading)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              else if (chatRooms.isEmpty)
-                const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _EmptyState(),
-                )
-              else
-                SliverFillRemaining(
-                  hasScrollBody: true,
-                  child: TabBarView(
-                    children: [
-                      _PrettyListView(
-                        items: filtered,
-                        itemBuilder: (c) => _buildChatItem(c),
-                        emptyState:
-                            q.isEmpty
-                                ? const _EmptyState()
-                                : _EmptyState.search(query: _query),
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _TabHeaderDelegate(
+                      TabBar(
+                        indicatorColor: AppColors.primary,
+                        labelColor: AppColors.textPrimary,
+                        unselectedLabelColor: AppColors.textTertiary,
+                        labelStyle: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                        ),
+                        tabs: [
+                          _BadgeTab(label: '전체', count: totalUnread),
+                          _BadgeTab(label: '안읽음', count: unreadOnly.length),
+                          _BadgeTab(label: '긴급', count: urgentUnread),
+                        ],
                       ),
-                      _PrettyListView(
-                        items: unreadOnly,
-                        itemBuilder: (c) => _buildChatItem(c),
-                        emptyState:
-                            q.isEmpty
-                                ? const _EmptyState.unread()
-                                : _EmptyState.unreadSearch(query: _query),
-                      ),
-                      _PrettyListView(
-                        items: urgentOnly,
-                        itemBuilder: (c) => _buildChatItem(c),
-                        emptyState: const _EmptyState.urgent(),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-            ],
+                ],
+            body:
+                isLoading
+                    ? const Center(child: CircularProgressIndicator())
+                    : chatRooms.isEmpty
+                    ? const _EmptyState()
+                    : TabBarView(
+                      children: [
+                        _PrettyListView(
+                          items: filtered,
+                          itemBuilder: (c) => _buildChatItem(c),
+                          emptyState:
+                              q.isEmpty
+                                  ? const _EmptyState()
+                                  : _EmptyState.search(query: _query),
+                        ),
+                        _PrettyListView(
+                          items: unreadOnly,
+                          itemBuilder: (c) => _buildChatItem(c),
+                          emptyState:
+                              q.isEmpty
+                                  ? const _EmptyState.unread()
+                                  : _EmptyState.unreadSearch(query: _query),
+                        ),
+                        _PrettyListView(
+                          items: urgentOnly,
+                          itemBuilder: (c) => _buildChatItem(c),
+                          emptyState: const _EmptyState.urgent(),
+                        ),
+                      ],
+                    ),
           ),
         ),
       ),
