@@ -45,6 +45,10 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
   String phone = '';
   String logoUrl = '';
   String certificateUrl = '';
+  // 심사 상태. 예전엔 이 값이 없어서 심사중·승인·거절이 전부 같은 화면이었고,
+  // 거절당한 사장님도 "검토가 진행됩니다"만 계속 봤다.
+  String certStatus = 'none';
+  String certRejectReason = '';
   String? _authHeaderToken;
 
   File? selectedLogoImage;
@@ -160,6 +164,11 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
           descriptionController.text = data['description']?.toString() ?? '';
           logoUrl = fetchedLogoUrl;
           certificateUrl = fetchedCertUrl;
+          // 구버전 서버는 이 필드를 안 준다 — 없으면 서류 유무로 추정한다.
+          certStatus =
+              data['cert_status']?.toString() ??
+              (fetchedCertUrl.isNotEmpty ? 'pending' : 'none');
+          certRejectReason = data['cert_reject_reason']?.toString() ?? '';
           isLoading = false;
         });
 
@@ -606,6 +615,51 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
     );
   }
 
+  // 심사 상태를 문장으로 보여준다. 이게 없어서 거절당한 사장님도 "검토가
+  // 진행됩니다"만 계속 봤고, 1년 넘게 묻힌 신청도 본인은 알 길이 없었다.
+  Widget _certStatusBanner() {
+    late final String text;
+    late final Color fg;
+    late final Color bg;
+
+    switch (certStatus) {
+      case 'approved':
+        text = '안심기업으로 승인되었어요. 공고에 «안심기업» 표시가 붙습니다.';
+        fg = const Color(0xFF4D7C0F);
+        bg = const Color(0xFFF3F8EC);
+        break;
+      case 'pending':
+        text = '서류를 검토하고 있어요. 결과는 알림으로 알려드립니다.';
+        fg = const Color(0xFF6B7280);
+        bg = const Color(0xFFF3F4F6);
+        break;
+      case 'rejected':
+        text = certRejectReason.isNotEmpty
+            ? '승인되지 않았어요. 사유: $certRejectReason\n서류를 다시 올리면 재심사합니다.'
+            : '승인되지 않았어요. 서류를 다시 올리면 재심사합니다.';
+        fg = const Color(0xFF9A3412);
+        bg = const Color(0xFFFEF3EC);
+        break;
+      default:
+        text = '사업자등록증을 올리면 관리자 검토 후 «안심기업» 표시가 적용됩니다.';
+        fg = const Color(0xFF6B7280);
+        bg = const Color(0xFFF3F4F6);
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(fontSize: 12.5, color: fg, height: 1.4),
+      ),
+    );
+  }
+
   Widget _certificateSection() {
     final hasLocal = selectedCertificateFile != null;
     final extLocal = selectedCertificateFile?.extension?.toLowerCase().trim();
@@ -687,14 +741,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         label: const Text('업로드'),
       ),
       children: [
-        Text(
-          '업로드 후 관리자 검토가 진행됩니다. 검토 완료 시 “안심기업” 표시가 적용됩니다.',
-          style: TextStyle(
-            fontSize: 12.5,
-            color: Colors.grey.shade600,
-            height: 1.35,
-          ),
-        ),
+        _certStatusBanner(),
         const SizedBox(height: 10),
         preview,
         const SizedBox(height: 10),

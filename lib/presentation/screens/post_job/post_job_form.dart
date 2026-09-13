@@ -2271,7 +2271,12 @@ class _PostJobFormState extends State<PostJobForm>
           // 실측(2026-09-13): 6월 이후 공고 566건 중 23건이 좌표 없이 등록됐다.
           if (!picked.hasGeo) {
             _trackFail('location_no_coordinates', {'scope': 'main', 'address': picked.address});
-            _showError('이 주소의 좌표를 찾지 못했어요. 다른 주소로 검색해주세요.');
+            // 좌표는 기기 geocoder 로 얻는데(kpostal 내부), 이게 실패하는 기기가
+            // 있다. 아래 '현재 위치로 설정' 은 GPS 를 직접 쓰므로 그 경로를 안내한다.
+            _showError(
+              '이 주소의 좌표를 찾지 못했어요.\n'
+              '가게에 계시다면 아래 «현재 위치로 설정» 을 눌러주세요.',
+            );
             return;
           }
           setState(() {
