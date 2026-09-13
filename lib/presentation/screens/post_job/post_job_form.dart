@@ -2079,6 +2079,16 @@ class _PostJobFormState extends State<PostJobForm>
 
   /// 주소 검색 → 좌표까지. 취소하면 null.
   /// 주 근무지와 추가 근무지가 같은 경로를 쓰도록 모아둔다.
+  // 근무지 단계는 성공(job_post_location_complete)만 기록해서, 실패는 "이벤트가
+  // 없다"는 공백으로만 남았다 — 2026-09-12 문의가 들어오고서야 알았다.
+  // 실패를 직접 남겨야 다음엔 문의 없이 대시보드에서 보인다.
+  void _trackLocationFailed(String reason, String address) {
+    ClientTrackingService.instance.track(
+      'job_post_location_failed',
+      properties: {'reason': reason, 'address': address},
+    );
+  }
+
   Future<JobLocation?> _searchAddress() async {
     // kpostal 의 callback 은 `void Function(Kpostal)` 이라 await 되지 않는다.
     // 여기에 async 콜백을 넘기고 안에서 locationFromAddress 를 await 했더니,
@@ -2109,6 +2119,7 @@ class _PostJobFormState extends State<PostJobForm>
 
     // 좌표를 못 얻으면 거리 필터에 안 걸려서 추가해도 노출되지 않는다
     if (!picked.hasGeo) {
+      _trackLocationFailed('no_coordinates_extra', picked.address);
       _showError('이 주소의 좌표를 찾지 못했어요. 다른 주소로 검색해주세요.');
       return;
     }
@@ -2215,6 +2226,7 @@ class _PostJobFormState extends State<PostJobForm>
           // 추가 근무지는 원래 막고 있었는데 주 근무지만 빠져 있었다 —
           // 실측(2026-09-13): 6월 이후 공고 566건 중 23건이 좌표 없이 등록됐다.
           if (!picked.hasGeo) {
+            _trackLocationFailed('no_coordinates', picked.address);
             _showError('이 주소의 좌표를 찾지 못했어요. 다른 주소로 검색해주세요.');
             return;
           }
