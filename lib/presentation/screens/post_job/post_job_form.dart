@@ -2080,32 +2080,26 @@ class _PostJobFormState extends State<PostJobForm>
   /// 주소 검색 → 좌표까지. 취소하면 null.
   /// 주 근무지와 추가 근무지가 같은 경로를 쓰도록 모아둔다.
   Future<JobLocation?> _searchAddress() async {
-    JobLocation? picked;
-    await Navigator.push(
+    // kpostal 의 callback 은 `void Function(Kpostal)` 이라 await 되지 않는다.
+    // 여기에 async 콜백을 넘기고 안에서 locationFromAddress 를 await 했더니,
+    // 그 사이 kpostal 이 navigator.pop 을 먼저 실행해 결과가 통째로 버려졌다
+    // — 주소를 골라도 근무지가 안 채워져 "근무지를 입력해주세요"가 계속 뜬 원인.
+    // geocoding 이 pop 애니메이션(~300ms)보다 느린 기기·회선에서만 재현돼
+    // 일부 사장님만 겪었다(2026-09-12 client 670 문의).
+    //
+    // kpostal 은 pop 직전에 이미 좌표를 채워준다(kpostal.dart: await result.latLng).
+    // 그 값을 그대로 받으면 중복 geocoding 도 사라지고 경쟁 조건도 없다.
+    final result = await Navigator.push<Kpostal>(
       context,
-      MaterialPageRoute(
-        builder: (_) => KpostalView(
-          useLocalServer: false,
-          callback: (result) async {
-            double lat = 0, lng = 0;
-            try {
-              final locs = await locationFromAddress(result.address);
-              if (locs.isNotEmpty) {
-                lat = locs.first.latitude;
-                lng = locs.first.longitude;
-              }
-            } catch (_) {}
-            picked = JobLocation(
-              address: result.address,
-              locationCity: _extractCity(result.address),
-              lat: lat,
-              lng: lng,
-            );
-          },
-        ),
-      ),
+      MaterialPageRoute(builder: (_) => KpostalView(useLocalServer: false)),
     );
-    return picked;
+    if (result == null) return null;
+    return JobLocation(
+      address: result.address,
+      locationCity: _extractCity(result.address),
+      lat: result.kakaoLatitude ?? result.latitude ?? 0,
+      lng: result.kakaoLongitude ?? result.longitude ?? 0,
+    );
   }
 
   Future<void> _addExtraLocation() async {
@@ -2217,6 +2211,13 @@ class _PostJobFormState extends State<PostJobForm>
         onTap: () async {
           final picked = await _searchAddress();
           if (picked == null || !mounted) return;
+          // 좌표가 없으면 거리 필터에 안 걸려서 등록해도 근처 구직자에게 안 보인다.
+          // 추가 근무지는 원래 막고 있었는데 주 근무지만 빠져 있었다 —
+          // 실측(2026-09-13): 6월 이후 공고 566건 중 23건이 좌표 없이 등록됐다.
+          if (!picked.hasGeo) {
+            _showError('이 주소의 좌표를 찾지 못했어요. 다른 주소로 검색해주세요.');
+            return;
+          }
           setState(() {
             _location = picked.address;
             _locationCity = picked.locationCity ?? '';

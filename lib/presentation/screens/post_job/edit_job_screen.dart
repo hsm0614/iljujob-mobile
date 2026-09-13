@@ -88,6 +88,9 @@ class _EditJobScreenState extends State<EditJobScreen> {
   String category = '제조';
   String payType = '일급';
   String location = '';
+  // 주소를 바꿔도 좌표를 안 보내면 서버가 옛 좌표를 그대로 둔다(jobController.updateJob
+  // 은 lat/lng 가 올 때만 갱신한다) → 공고가 예전 위치 기준으로 검색된다.
+  double? _pickedLat, _pickedLng;
 
   // Short-term (date-only) vs weekdays
   bool isShortTerm = true;
@@ -835,6 +838,10 @@ class _EditJobScreenState extends State<EditJobScreen> {
       'startDate': isShortTerm ? _Tx.utcToKstYmd(startDateUtc) : null,
       'endDate': isShortTerm ? _Tx.utcToKstYmd(endDateUtc) : null,
       'weekdays': !isShortTerm ? selectedWeekdays.join(',') : null,
+      // 주소를 새로 고른 경우에만 실어 보낸다. 서버는 lat/lng 가 오면 검증 후
+      // 갱신하고, 안 오면 기존 좌표를 유지한다(0 을 보내면 400 으로 거절된다).
+      'lat': _pickedLat,
+      'lng': _pickedLng,
     }..removeWhere((k, v) => v == null);
 
     try {
@@ -1466,9 +1473,16 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                     (_) => KpostalView(
                                       useLocalServer: false,
                                       callback: (result) {
+                                        // kpostal 이 pop 직전에 좌표를 채워준다.
+                                        // 콜백 안에서 따로 geocoding 하면 안 된다 —
+                                        // callback 은 await 되지 않아 결과가 버려진다.
                                         setState(() {
                                           location = result.address;
                                           _location.text = result.address;
+                                          _pickedLat = result.kakaoLatitude ??
+                                              result.latitude;
+                                          _pickedLng = result.kakaoLongitude ??
+                                              result.longitude;
                                         });
                                       },
                                     ),
