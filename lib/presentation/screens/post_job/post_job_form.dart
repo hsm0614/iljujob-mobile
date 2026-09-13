@@ -220,6 +220,28 @@ class _PostJobFormState extends State<PostJobForm>
     _checkProStatus().then((_) => _loadAiQuota());
   }
 
+  // 공고 퍼널의 실패는 전부 여기로 모은다.
+  //
+  // 왜 한 이벤트에 reason 으로 나누나: 예전엔 성공 이벤트(job_post_*_complete)만
+  // 남겨서, 실패는 "이벤트가 없다"는 공백으로만 존재했다. 2026-09-12 주소 단계
+  // 버그도 문의가 들어오고서야 알았고, 범위 파악은 단계별 개수 차이로 추정하는
+  // 수밖에 없었다. 이름을 하나로 두면 "뭐가 깨지고 있나"를 한 쿼리로 본다:
+  //   SELECT properties->>'$.reason', COUNT(*) FROM client_events
+  //    WHERE event_type='job_post_failed' GROUP BY 1
+  void _trackFail(String reason, [Map<String, dynamic> extra = const {}]) {
+    // 예외 문자열이 스택까지 물고 오면 이벤트 테이블이 지저분해진다.
+    final safe = extra.map(
+      (k, v) => MapEntry(
+        k,
+        v is String && v.length > 300 ? '${v.substring(0, 300)}…' : v,
+      ),
+    );
+    ClientTrackingService.instance.track(
+      'job_post_failed',
+      properties: {'reason': reason, 'step': _q, ...safe},
+    );
+  }
+
   @override
   void dispose() {
     if (!_submitted) {
@@ -337,7 +359,11 @@ class _PostJobFormState extends State<PostJobForm>
         });
         return;
       }
-    } catch (_) {}
+    } catch (e) {
+      // 조회에 실패하면 아래에서 '정지 아님'으로 통과시킨다 — 정지된 사장님이
+      // 그대로 등록할 수 있으므로 실패 자체를 남겨야 한다.
+      _trackFail('suspension_check_failed', {'message': e.toString()});
+    }
     setState(() {
       _suspension = const SuspensionState(
         suspendedType: null,
@@ -361,7 +387,9 @@ class _PostJobFormState extends State<PostJobForm>
           _subscriptionPlan = isActive ? plan : null;
         });
       }
-    } catch (_) {
+    } catch (e) {
+      // 구독자인데도 플랜이 null 이 되어 혜택 없는 결제 화면을 보게 된다.
+      _trackFail('subscription_check_failed', {'message': e.toString()});
       setState(() => _subscriptionPlan = null);
     }
   }
@@ -389,7 +417,9 @@ class _PostJobFormState extends State<PostJobForm>
             0,
         urgent: int.tryParse('${d['urgent'] ?? 0}') ?? 0,
       );
-    } catch (_) {
+    } catch (e) {
+      // 잔여를 못 읽으면 이용권이 있는데도 결제 화면이 뜬다.
+      _trackFail('pass_balance_check_failed', {'message': e.toString()});
       return null;
     }
   }
@@ -726,21 +756,25 @@ class _PostJobFormState extends State<PostJobForm>
     final clientId = prefs.getInt('userId');
     final userType = prefs.getString('userType') ?? '';
     if (clientId == null) {
+      _trackFail('submit_blocked_not_logged_in');
       _showError(Msg.loginRequired);
       return;
     }
 
     // 단기 공고인데 날짜가 없으면 등록 막기
     if (_isShortTerm && _startDate == null) {
+      _trackFail('submit_blocked_no_date');
       _showError('근무 날짜를 선택해주세요.');
       return;
     }
     final externalApplyUrl = _normalizedExternalApplyUrl();
     if (_externalApplyEnabled && externalApplyUrl == null) {
+      _trackFail('submit_blocked_bad_external_url');
       _showError('외부 신청 페이지 주소를 확인해주세요.');
       return;
     }
     if (_externalApplyEnabled && !isPaid) {
+      _trackFail('submit_blocked_external_requires_paid');
       _showError('외부 신청 연결은 즉시게시·긴급호출 공고에서만 사용할 수 있어요.');
       return;
     }
@@ -963,6 +997,17 @@ class _PostJobFormState extends State<PostJobForm>
       // 단, 서버가 code 를 실어 보낸 사유(긴급호출 후보 부족·이용권 없음 등)는
       // 그대로 보여줘야 사장님이 일반/즉시 게시로 갈아탈 수 있다.
       debugPrint('❌ 공고 등록 실패: $e');
+      // 등록 API 실패는 여기까지 와서 debugPrint 로 끝났다 — 프로덕션에선 흔적이
+      // 남지 않아, publish_options_view(330) → complete(252) 의 78 격차가
+      // 이탈인지 실패인지 구분할 수 없었다.
+      _trackFail(
+        e is JobPostException ? 'submit_${e.code}' : 'submit_unknown',
+        {
+          'is_paid': isPaid,
+          'pass_type': passType,
+          'message': e is JobPostException ? e.message : e.toString(),
+        },
+      );
       // 무료 한도 소진은 "실패"가 아니라 결제 안내다. 앞단(_PublishSheet)에서
       // 이미 막지만, 다른 기기에서 동시에 올렸거나 조회가 실패한 경우가 남는다.
       if (e is JobPostException && e.code == 'FREE_LIMIT_REACHED') {
@@ -1119,6 +1164,13 @@ class _PostJobFormState extends State<PostJobForm>
                   'job_post_payment_success',
                 );
                 _showPublishSheet();
+              } else {
+                // payment_start 40 건 중 success 는 14 건뿐인데, 나머지 26 건이
+                // 취소인지 결제 실패인지 구분할 기록이 없었다.
+                _trackFail('payment_not_completed', {
+                  'result': result is Map ? result['reason']?.toString() : null,
+                  'cancelled': result == null,
+                });
               }
             },
           ),
@@ -1273,7 +1325,9 @@ class _PostJobFormState extends State<PostJobForm>
         _welfareCtrl.text = d['welfare']?.toString() ?? '';
       });
       _validatePay();
-    } catch (_) {
+    } catch (e) {
+      // 복원 실패 시 초안을 지운다 — 사장님 입장에선 쓰던 게 사라진 것이다.
+      _trackFail('draft_restore_failed', {'message': e.toString()});
       await prefs.remove(_draftKey);
     }
   }
@@ -2079,16 +2133,6 @@ class _PostJobFormState extends State<PostJobForm>
 
   /// 주소 검색 → 좌표까지. 취소하면 null.
   /// 주 근무지와 추가 근무지가 같은 경로를 쓰도록 모아둔다.
-  // 근무지 단계는 성공(job_post_location_complete)만 기록해서, 실패는 "이벤트가
-  // 없다"는 공백으로만 남았다 — 2026-09-12 문의가 들어오고서야 알았다.
-  // 실패를 직접 남겨야 다음엔 문의 없이 대시보드에서 보인다.
-  void _trackLocationFailed(String reason, String address) {
-    ClientTrackingService.instance.track(
-      'job_post_location_failed',
-      properties: {'reason': reason, 'address': address},
-    );
-  }
-
   Future<JobLocation?> _searchAddress() async {
     // kpostal 의 callback 은 `void Function(Kpostal)` 이라 await 되지 않는다.
     // 여기에 async 콜백을 넘기고 안에서 locationFromAddress 를 await 했더니,
@@ -2119,7 +2163,7 @@ class _PostJobFormState extends State<PostJobForm>
 
     // 좌표를 못 얻으면 거리 필터에 안 걸려서 추가해도 노출되지 않는다
     if (!picked.hasGeo) {
-      _trackLocationFailed('no_coordinates_extra', picked.address);
+      _trackFail('location_no_coordinates', {'scope': 'extra', 'address': picked.address});
       _showError('이 주소의 좌표를 찾지 못했어요. 다른 주소로 검색해주세요.');
       return;
     }
@@ -2226,7 +2270,7 @@ class _PostJobFormState extends State<PostJobForm>
           // 추가 근무지는 원래 막고 있었는데 주 근무지만 빠져 있었다 —
           // 실측(2026-09-13): 6월 이후 공고 566건 중 23건이 좌표 없이 등록됐다.
           if (!picked.hasGeo) {
-            _trackLocationFailed('no_coordinates', picked.address);
+            _trackFail('location_no_coordinates', {'scope': 'main', 'address': picked.address});
             _showError('이 주소의 좌표를 찾지 못했어요. 다른 주소로 검색해주세요.');
             return;
           }
