@@ -2148,12 +2148,43 @@ class _PostJobFormState extends State<PostJobForm>
       MaterialPageRoute(builder: (_) => KpostalView(useLocalServer: false)),
     );
     if (result == null) return null;
+
+    double lat = result.kakaoLatitude ?? result.latitude ?? 0;
+    double lng = result.kakaoLongitude ?? result.longitude ?? 0;
+
+    // 기기 geocoder(iOS CLGeocoder / Android Geocoder)가 실패하는 기기가 있다.
+    // 그때 좌표 0 으로 등록되면 거리 필터에 안 걸려 근처 구직자에게 영영 안 보인다
+    // (실측 2026-09-13: 6월 이후 566건 중 23건). 서버의 카카오 REST 로 한 번 더 본다.
+    if (lat == 0 || lng == 0) {
+      final fromServer = await _geocodeOnServer(result.address);
+      if (fromServer != null) {
+        lat = fromServer.$1;
+        lng = fromServer.$2;
+      }
+    }
+
     return JobLocation(
       address: result.address,
       locationCity: _extractCity(result.address),
-      lat: result.kakaoLatitude ?? result.latitude ?? 0,
-      lng: result.kakaoLongitude ?? result.longitude ?? 0,
+      lat: lat,
+      lng: lng,
     );
+  }
+
+  Future<(double, double)?> _geocodeOnServer(String address) async {
+    try {
+      final resp = await AuthenticatedHttpClient.get(
+        Uri.parse('$baseUrl/api/job/geocode?address=${Uri.encodeQueryComponent(address)}'),
+      ).timeout(const Duration(seconds: 6));
+      if (resp.statusCode != 200) return null;
+      final d = jsonDecode(resp.body) as Map<String, dynamic>;
+      final lat = (d['lat'] as num?)?.toDouble();
+      final lng = (d['lng'] as num?)?.toDouble();
+      if (lat == null || lng == null) return null;
+      return (lat, lng);
+    } catch (_) {
+      return null; // 구버전 서버엔 이 경로가 없다 — 조용히 기존 동작으로.
+    }
   }
 
   Future<void> _addExtraLocation() async {
