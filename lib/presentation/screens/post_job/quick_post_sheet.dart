@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:iljujob/widget/picker_sheets.dart';
 import 'package:iljujob/widget/free_limit_sheet.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/data/services/job_service.dart';
+import 'package:iljujob/data/services/client_tracking_service.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/utils/date_ymd.dart';
+import 'package:uuid/uuid.dart';
 
 // ════════════════════════════════════════════════════════
 //  디자인 토큰 (post_job_form.dart와 동일)
@@ -94,6 +95,8 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
   bool _passLoading = false;
   // 조회 실패와 "0개/한도 소진"은 다른 상태다. 섞으면 잔여가 있는 사장님을 막는다.
   bool _countsFailed = false;
+  bool _submitted = false;
+  final String _attemptId = const Uuid().v4();
 
   final _payCtrl = TextEditingController();
 
@@ -121,12 +124,23 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
 
     _loadCounts();
     _loadReachableWorkers();
+    _track('job_post_start');
   }
 
   @override
   void dispose() {
+    if (!_submitted) _track('job_post_abandon');
     _payCtrl.dispose();
     super.dispose();
+  }
+
+  void _track(String eventName, [Map<String, dynamic>? properties]) {
+    ClientTrackingService.instance.track(
+      eventName,
+      properties: properties,
+      attemptId: _attemptId,
+      flowType: 'quick',
+    );
   }
 
   Future<void> _loadCounts() async {
@@ -143,7 +157,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
       }
 
       // 무료 잔여
-      final freeRes = await http.get(
+      final freeRes = await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/job/free-post-usage?clientId=$clientId'),
         headers: {'Cache-Control': 'no-cache'},
       );
@@ -218,7 +232,6 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
     });
   }
 
-
   // ─── 급여 검증 ───
   void _validatePay() {
     if (isNegotiablePayType(payType)) {
@@ -257,6 +270,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
 
   // ─── 등록 실행 ───
   Future<void> _submit({required bool isPaid, String? passType}) async {
+    if (_isSubmitting) return;
     if (startDate == null || endDate == null) {
       _showSnack('날짜를 선택해주세요');
       return;
@@ -302,8 +316,16 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
         isPaid: isPaid,
         passType: passType,
         isAgency: clientId == 1,
+        requestId: _attemptId,
       );
 
+      _submitted = true;
+      _track('job_post_complete', {
+        'job_id': result['jobId'] ?? result['job_id'],
+        'is_paid': isPaid,
+        'pass_type': passType,
+        'status': result['status'],
+      });
       if (!mounted) return;
       Navigator.pop(context);
 
@@ -408,6 +430,11 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
         Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
       }
     } catch (e) {
+      _track('job_post_failed', {
+        'is_paid': isPaid,
+        'pass_type': passType,
+        'reason': e is JobPostException ? 'submit_${e.code}' : 'submit_unknown',
+      });
       if (mounted) {
         // 무료 한도 소진은 실패가 아니라 결제 안내다. 재등록 경로가
         // 헤비 유저가 한도에 부딪히는 자리라 스낵바로 흘리면 안 된다.
@@ -501,7 +528,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
               _OptionCard(
                 icon: Icons.access_time_rounded,
                 title: '일반 등록',
-                desc: '바로 노출 · 3일간',
+                desc: '12시간 후 노출 · 3일간',
                 badge:
                     _countsFailed
                         ? '확인 실패'

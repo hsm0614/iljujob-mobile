@@ -602,7 +602,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       for (final j in enrichedJobs) {
         if (j.status == 'closed' || j.status == 'deleted') continue;
         if (isExpired(j)) continue;
-        if (!isPinnedActive(j) && isFutureScheduled(j)) continue;
+        if (isFutureScheduled(j)) continue;
         validJobs.add(j);
       }
 
@@ -703,7 +703,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           final isFuture = publishAt.isAfter(nowUtc);
           final notExpired =
               (job.expiresAt == null) || job.expiresAt!.isAfter(nowUtc);
-          if (isPinned(job)) return notExpired;
           return !isFuture && notExpired;
         }).toList();
 
@@ -758,8 +757,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     }
 
     int cmpPinned(Job a, Job b) {
-      // 긴급 공고 최상단 (pinnedUntil보다 우선)
-      if (a.isUrgent != b.isUrgent) return a.isUrgent ? -1 : 1;
+      // 상단 노출은 상품명이 아니라 실제 pinned_until 만 따른다.
+      // 긴급호출도 24시간이 지나면 일반 정렬로 돌아가야 한다.
       final ap = isPinned(a), bp = isPinned(b);
       if (ap != bp) return bp ? 1 : -1;
       if (ap && bp) return b.pinnedUntil!.compareTo(a.pinnedUntil!);

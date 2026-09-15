@@ -240,6 +240,7 @@ class JobService {
     String? passType, // 'instant' | 'urgent'
     bool isNationwide = false,
     List<JobLocation> locations = const [],
+    String? requestId,
   }) async {
     final uri = Uri.parse('$baseUrl/api/job/post_job');
 
@@ -278,6 +279,8 @@ class JobService {
                 'locations': jsonEncode(
                   locations.map((l) => l.toJson()).toList(),
                 ),
+              if (requestId != null && requestId.isNotEmpty)
+                'request_id': requestId,
               // 장기 공고 전용
               'job_type': jobType,
               if (jobType == 'long') 'is_always_open': isAlwaysOpen ? '1' : '0',
@@ -322,8 +325,12 @@ class JobService {
       return request;
     }
 
-    final resp = await AuthenticatedHttpClient.sendMultipart(buildRequest);
-    final body = await resp.stream.bytesToString();
+    final resp = await AuthenticatedHttpClient.sendMultipart(
+      buildRequest,
+    ).timeout(const Duration(seconds: 45));
+    final body = await resp.stream.bytesToString().timeout(
+      const Duration(seconds: 45),
+    );
 
     if (resp.statusCode != 200) {
       debugPrint('❌ POST /post_job 실패: ${resp.statusCode} | $body');
@@ -331,7 +338,10 @@ class JobService {
         final j = jsonDecode(body) as Map<String, dynamic>;
         final code = j['code'];
         final msg = j['message'];
-        if (code is String && code.isNotEmpty && msg is String && msg.isNotEmpty) {
+        if (code is String &&
+            code.isNotEmpty &&
+            msg is String &&
+            msg.isNotEmpty) {
           throw JobPostException(code, msg);
         }
       } on JobPostException {
@@ -473,8 +483,11 @@ class JobService {
             ..headers['Accept'] = 'application/json';
 
       // 필드 채우기
-      normalized.forEach((k, v) => req.fields[k] =
-          (v is List || v is Map) ? jsonEncode(v) : v.toString());
+      normalized.forEach(
+        (k, v) =>
+            req.fields[k] =
+                (v is List || v is Map) ? jsonEncode(v) : v.toString(),
+      );
 
       // 삭제할 기존 이미지 URL
       for (final url in deleteImageUrls) {
@@ -569,14 +582,16 @@ class JobService {
 
   /// 이번 달 무료 등록 잔여. 조회 실패 시 null — "0건 남음"과 구분해야 한다.
   /// null 이면 막지 않는다(서버가 최종 판정한다).
-  static Future<({int limit, int used, int remaining})?> fetchFreeQuota() async {
+  static Future<({int limit, int used, int remaining})?>
+  fetchFreeQuota() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final clientId = prefs.getInt('userId');
       if (clientId == null || clientId <= 0) return null;
       final res = await AuthenticatedHttpClient.get(
-        Uri.parse('$baseUrl/api/job/free-post-usage')
-            .replace(queryParameters: {'clientId': '$clientId'}),
+        Uri.parse(
+          '$baseUrl/api/job/free-post-usage',
+        ).replace(queryParameters: {'clientId': '$clientId'}),
         headers: {'Accept': 'application/json'},
       ).timeout(const Duration(seconds: 6));
       if (res.statusCode != 200) return null;

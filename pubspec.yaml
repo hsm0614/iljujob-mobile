@@ -88,6 +88,7 @@ dependencies:
   table_calendar: ^3.0.9
   socket_io_client: ^3.1.2
   crypto: ^3.0.0
+  synchronized: ^3.4.0
   uuid: ^4.5.1 # 최신 버전 확인
   flutter_local_notifications: ^17.1.2
   badges: ^3.1.1

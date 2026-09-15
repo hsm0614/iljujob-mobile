@@ -1814,7 +1814,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 Text(
                   isUnlimited
                       ? '구독 혜택으로 즉시 게시됩니다. 이용권 차감 없이 지금 바로 공고를 노출합니다.'
-                      : '즉시게시 이용권 1개를 사용해 상단에 노출합니다.\n노출 기간이 3일에서 7일로 늘어납니다.',
+                      : '즉시게시 이용권 1개를 사용해 12시간 기다리지 않고 바로 노출합니다.\n노출 기간이 3일에서 7일로 늘어납니다.',
                   style: const TextStyle(
                     fontSize: 14,
                     color: AppColors.textSecondary,

@@ -34,6 +34,7 @@ import 'package:iljujob/widget/free_limit_sheet.dart';
 import 'package:iljujob/utils/nationwide_hint.dart';
 import 'package:iljujob/config/job_categories.dart';
 import '../../../config/messages.dart';
+import 'package:uuid/uuid.dart';
 
 // 2026년 적용 최저시급
 const int minWagePerHour = 10320;
@@ -52,7 +53,6 @@ const _sub = AppColors.textSecondary;
 // ════════════════════════════════════════════════════════
 //  업종 데이터
 // ════════════════════════════════════════════════════════
-
 
 const _qTitles = [
   '어떤 일인가요?',
@@ -100,6 +100,17 @@ class _PostJobFormState extends State<PostJobForm>
     with TickerProviderStateMixin {
   int _q = 0;
   bool _submitted = false;
+  final String _attemptId = const Uuid().v4();
+  String get _flowType => widget.isRepost ? 'repost' : 'new';
+
+  void _trackPost(String eventType, {Map<String, dynamic>? properties}) {
+    ClientTrackingService.instance.track(
+      eventType,
+      properties: properties,
+      attemptId: _attemptId,
+      flowType: _flowType,
+    );
+  }
 
   String _title = '';
   String _category = '';
@@ -206,7 +217,7 @@ class _PostJobFormState extends State<PostJobForm>
   @override
   void initState() {
     super.initState();
-    ClientTrackingService.instance.track('job_post_start');
+    _trackPost('job_post_start');
     _fadeCtrl = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 260),
@@ -236,7 +247,7 @@ class _PostJobFormState extends State<PostJobForm>
         v is String && v.length > 300 ? '${v.substring(0, 300)}…' : v,
       ),
     );
-    ClientTrackingService.instance.track(
+    _trackPost(
       'job_post_failed',
       properties: {'reason': reason, 'step': _q, ...safe},
     );
@@ -248,7 +259,7 @@ class _PostJobFormState extends State<PostJobForm>
       // 어느 단계에서 나갔는지 남긴다. 이게 없어서 8월 이탈 91건의
       // 원인을 하나도 몰랐다 (properties 가 전부 NULL 이었다).
       // ⚠️ 컨트롤러 dispose 보다 먼저 읽어야 한다 — 아래에서 dispose 된다.
-      ClientTrackingService.instance.track(
+      _trackPost(
         'job_post_abandon',
         properties: {
           'step': _q,
@@ -287,7 +298,7 @@ class _PostJobFormState extends State<PostJobForm>
         'is_short_term': _isShortTerm ? 1 : 0,
       },
     );
-    ClientTrackingService.instance.track(
+    _trackPost(
       _jobPostStepEvents[_q],
       properties: {
         'step': _q,
@@ -345,6 +356,7 @@ class _PostJobFormState extends State<PostJobForm>
       );
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
+        if (!mounted) return;
         setState(() {
           _suspension = SuspensionState(
             suspendedType:
@@ -364,6 +376,7 @@ class _PostJobFormState extends State<PostJobForm>
       // 그대로 등록할 수 있으므로 실패 자체를 남겨야 한다.
       _trackFail('suspension_check_failed', {'message': e.toString()});
     }
+    if (!mounted) return;
     setState(() {
       _suspension = const SuspensionState(
         suspendedType: null,
@@ -383,6 +396,7 @@ class _PostJobFormState extends State<PostJobForm>
         final d = jsonDecode(res.body);
         final plan = d['plan']?.toString();
         final isActive = d['active'] == true;
+        if (!mounted) return;
         setState(() {
           _subscriptionPlan = isActive ? plan : null;
         });
@@ -390,6 +404,7 @@ class _PostJobFormState extends State<PostJobForm>
     } catch (e) {
       // 구독자인데도 플랜이 null 이 되어 혜택 없는 결제 화면을 보게 된다.
       _trackFail('subscription_check_failed', {'message': e.toString()});
+      if (!mounted) return;
       setState(() => _subscriptionPlan = null);
     }
   }
@@ -463,9 +478,15 @@ class _PostJobFormState extends State<PostJobForm>
   }
 
   Future<void> _loadInitialData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final clientId = prefs.getInt('userId');
-    if (clientId != null) await _fetchClientProfile(clientId);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final clientId = prefs.getInt('userId');
+      if (clientId != null) await _fetchClientProfile(clientId);
+    } catch (e) {
+      // 프로필 조회가 실패해도 재등록 데이터와 임시저장 복구는 계속 진행한다.
+      _trackFail('client_profile_load_failed', {'message': e.toString()});
+    }
+    if (!mounted) return;
     if (widget.isRepost && widget.existingJob != null) {
       final job = widget.existingJob!;
       setState(() {
@@ -510,6 +531,7 @@ class _PostJobFormState extends State<PostJobForm>
         _endTime = _parseTime(job.endTime);
       });
     }
+    if (!mounted) return;
     await _maybeOfferDraftRestore();
   }
 
@@ -519,6 +541,7 @@ class _PostJobFormState extends State<PostJobForm>
     );
     if (res.statusCode == 200) {
       final d = json.decode(res.body);
+      if (!mounted) return;
       setState(() {
         companyName = d['company_name'] ?? '';
         managerName = d['manager_name'] ?? '';
@@ -840,14 +863,13 @@ class _PostJobFormState extends State<PostJobForm>
         welfare: !_isShortTerm ? _welfareCtrl.text.trim() : null,
         externalApplyEnabled: isPaid && _externalApplyEnabled,
         externalApplyUrl: externalApplyUrl,
+        requestId: _attemptId,
       );
 
-      if (!mounted) return;
-      await _clearDraft();
       _submitted = true;
       final jobId = result['jobId'] as int?;
       final postType = passType ?? 'free';
-      ClientTrackingService.instance.track(
+      _trackPost(
         'job_post_complete',
         properties: {'type': postType, 'job_id': jobId},
       );
@@ -858,6 +880,8 @@ class _PostJobFormState extends State<PostJobForm>
         name: 'job_post_complete',
         parameters: {'type': postType, 'job_id': jobId ?? 0},
       );
+      unawaited(_clearDraft().catchError((_) {}));
+      if (!mounted) return;
       final isUrgent = passType == 'urgent';
       final isDelayed = !isPaid && result['status'] == 'reserved';
       final eta = DateTime.now().add(const Duration(hours: 12));
@@ -1008,15 +1032,14 @@ class _PostJobFormState extends State<PostJobForm>
           'message': e is JobPostException ? e.message : e.toString(),
         },
       );
+      if (!mounted) return;
       // 무료 한도 소진은 "실패"가 아니라 결제 안내다. 앞단(_PublishSheet)에서
       // 이미 막지만, 다른 기기에서 동시에 올렸거나 조회가 실패한 경우가 남는다.
       if (e is JobPostException && e.code == 'FREE_LIMIT_REACHED') {
         showFreeLimitSheet(context, e.message);
       } else {
         _showError(
-          e is JobPostException
-              ? e.message
-              : '공고를 등록하지 못했어요.\n잠시 후 다시 시도해주세요.',
+          e is JobPostException ? e.message : '공고를 등록하지 못했어요.\n잠시 후 다시 시도해주세요.',
         );
       }
     } finally {
@@ -1033,7 +1056,7 @@ class _PostJobFormState extends State<PostJobForm>
           suspendedReason: null,
         );
     if (!guardSuspended(context, susp)) return;
-    ClientTrackingService.instance.track('job_post_preview_view');
+    _trackPost('job_post_preview_view');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -1077,7 +1100,7 @@ class _PostJobFormState extends State<PostJobForm>
   }
 
   Future<void> _showPublishSheet() async {
-    ClientTrackingService.instance.track('job_post_publish_options_view');
+    _trackPost('job_post_publish_options_view');
 
     // 조회를 시트 앞에서 await하면 최대 8초+ 먹통이 된다(C2).
     // 시트를 먼저 띄우고 조회는 시트가 직접 하도록 넘긴다.
@@ -1094,17 +1117,11 @@ class _PostJobFormState extends State<PostJobForm>
           (ctx) => _PublishSheet(
             fetchPassCounts: _fetchPassCounts,
             fetchFreeQuota: JobService.fetchFreeQuota,
-            nationwideHint: hasNationwideHint(
-              _titleCtrl.text,
-              _descCtrl.text,
-            ),
+            nationwideHint: hasNationwideHint(_titleCtrl.text, _descCtrl.text),
             nationwideOn: _isNationwide,
             onNationwideChanged: (v) {
               setState(() => _isNationwide = v);
-              ClientTrackingService.instance.track(
-                'job_post_nationwide_toggle',
-                properties: {'on': v},
-              );
+              _trackPost('job_post_nationwide_toggle', properties: {'on': v});
             },
             fetchReachableWorkerCount:
                 () =>
@@ -1130,12 +1147,13 @@ class _PostJobFormState extends State<PostJobForm>
                 _showError('외부 신청 연결은 즉시게시·긴급호출 공고에서만 사용할 수 있어요.');
                 return;
               }
+              publishAt = null;
               _submit(isPaid: false);
             },
             onPaidSubmit: (dt) {
               Navigator.pop(ctx);
               publishAt = dt;
-              ClientTrackingService.instance.track(
+              _trackPost(
                 'job_post_paid_publish_start',
                 properties: {'pass_type': 'instant'},
               );
@@ -1143,7 +1161,10 @@ class _PostJobFormState extends State<PostJobForm>
             },
             onUrgentSubmit: () {
               Navigator.pop(ctx);
-              ClientTrackingService.instance.track(
+              // 긴급호출은 항상 즉시 노출이다. 이전에 즉시게시 예약을 골랐다가
+              // 시트를 다시 연 경우 남아 있던 예약시각을 재사용하면 안 된다.
+              publishAt = null;
+              _trackPost(
                 'job_post_paid_publish_start',
                 properties: {'pass_type': 'urgent'},
               );
@@ -1151,7 +1172,7 @@ class _PostJobFormState extends State<PostJobForm>
             },
             onBuyPass: () async {
               Navigator.pop(ctx);
-              ClientTrackingService.instance.track('job_post_payment_start');
+              _trackPost('job_post_payment_start');
               final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -1160,9 +1181,7 @@ class _PostJobFormState extends State<PostJobForm>
               );
               // 시트를 다시 열면 _PublishSheet.initState가 잔여를 재조회한다.
               if (result is Map && result['success'] == true && mounted) {
-                ClientTrackingService.instance.track(
-                  'job_post_payment_success',
-                );
+                _trackPost('job_post_payment_success');
                 _showPublishSheet();
               } else {
                 // payment_start 40 건 중 success 는 14 건뿐인데, 나머지 26 건이
@@ -1190,9 +1209,9 @@ class _PostJobFormState extends State<PostJobForm>
       _extraLocations
         ..clear()
         ..addAll(
-          (job['locations'] as List? ?? const [])
-              .whereType<Map>()
-              .map((e) => JobLocation.fromJson(Map<String, dynamic>.from(e))),
+          (job['locations'] as List? ?? const []).whereType<Map>().map(
+            (e) => JobLocation.fromJson(Map<String, dynamic>.from(e)),
+          ),
         );
       _pay = int.tryParse(job['pay']?.toString() ?? '') ?? 0;
       _payType = job['pay_type'] ?? '일급';
@@ -1247,42 +1266,40 @@ class _PostJobFormState extends State<PostJobForm>
         _description.trim().isNotEmpty ||
         _externalApplyEnabled ||
         _externalApplyUrlCtrl.text.trim().isNotEmpty;
+    final draftJson = jsonEncode({
+      'q': _q,
+      'title': _title,
+      'category': _category,
+      'majorCat': _majorCat,
+      'location': _location,
+      'locationCity': _locationCity,
+      'lat': _lat,
+      'lng': _lng,
+      'locations': _extraLocations.map((l) => l.toJson()).toList(),
+      'isShortTerm': _isShortTerm,
+      'startDate': _startDate?.toIso8601String(),
+      'endDate': _endDate?.toIso8601String(),
+      'weekdays': _weekdays,
+      'longTermMode': _longTermMode,
+      'negotiationText': _negotiationText,
+      'startTime': _fmt24(_startTime),
+      'endTime': _fmt24(_endTime),
+      'payType': _payType,
+      'pay': _pay,
+      'isSameDayPay': _isSameDayPay,
+      'description': _description,
+      'externalApplyEnabled': _externalApplyEnabled,
+      'externalApplyUrl': _externalApplyUrlCtrl.text.trim(),
+      'isAlwaysOpen': _isAlwaysOpen,
+      'requiredCerts': _requiredCertsCtrl.text.trim(),
+      'welfare': _welfareCtrl.text.trim(),
+    });
     final prefs = await SharedPreferences.getInstance();
     if (!hasDraft) {
       await prefs.remove(_draftKey);
       return;
     }
-    await prefs.setString(
-      _draftKey,
-      jsonEncode({
-        'q': _q,
-        'title': _title,
-        'category': _category,
-        'majorCat': _majorCat,
-        'location': _location,
-        'locationCity': _locationCity,
-        'lat': _lat,
-        'lng': _lng,
-        'locations': _extraLocations.map((l) => l.toJson()).toList(),
-        'isShortTerm': _isShortTerm,
-        'startDate': _startDate?.toIso8601String(),
-        'endDate': _endDate?.toIso8601String(),
-        'weekdays': _weekdays,
-        'longTermMode': _longTermMode,
-        'negotiationText': _negotiationText,
-        'startTime': _fmt24(_startTime),
-        'endTime': _fmt24(_endTime),
-        'payType': _payType,
-        'pay': _pay,
-        'isSameDayPay': _isSameDayPay,
-        'description': _description,
-        'externalApplyEnabled': _externalApplyEnabled,
-        'externalApplyUrl': _externalApplyUrlCtrl.text.trim(),
-        'isAlwaysOpen': _isAlwaysOpen,
-        'requiredCerts': _requiredCertsCtrl.text.trim(),
-        'welfare': _welfareCtrl.text.trim(),
-      }),
-    );
+    await prefs.setString(_draftKey, draftJson);
   }
 
   Future<void> _restoreDraft() async {
@@ -1497,98 +1514,98 @@ class _PostJobFormState extends State<PostJobForm>
 
   Widget _buildBody() {
     return SafeArea(
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
-              child: Row(
-                children: [
-                  IconButton(
-                    tooltip: '닫기',
-                    onPressed: _prevQ,
-                    icon: Icon(
-                      _q == 0 ? Icons.close : Icons.arrow_back_ios_new_rounded,
-                      size: 20,
-                      color: _text,
-                    ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
+            child: Row(
+              children: [
+                IconButton(
+                  tooltip: '닫기',
+                  onPressed: _prevQ,
+                  icon: Icon(
+                    _q == 0 ? Icons.close : Icons.arrow_back_ios_new_rounded,
+                    size: 20,
+                    color: _text,
                   ),
-                  const Spacer(),
+                ),
+                const Spacer(),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(99),
+              // 입력 6단계 뒤에도 미리보기·등록방식 2화면이 더 있다.
+              // 분모를 6으로 두면 마지막 입력에서 100%가 되어, 결제 결정이
+              // 남은 지점에서 "다 끝났다"는 신호를 준다(목표 경사 붕괴).
+              child: LinearProgressIndicator(
+                value: (_q + 1) / (_totalQ + 2),
+                minHeight: 4,
+                backgroundColor: _border,
+                valueColor: const AlwaysStoppedAnimation<Color>(_blue),
+              ),
+            ),
+          ),
+          FadeTransition(
+            opacity: _fadeAnim,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(22, 14, 22, 4),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _qTitles[_q],
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                            color: _text,
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        // 진행바 분모와 같아야 한다. 6으로 두면 마지막 입력에서
+                        // 바는 75%인데 텍스트만 6/6이라 서로 다른 말을 한다.
+                        '${_q + 1}/${_totalQ + 2}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: _label,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _qSubs[_q],
+                    style: const TextStyle(fontSize: 13, color: _label),
+                  ),
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(99),
-                // 입력 6단계 뒤에도 미리보기·등록방식 2화면이 더 있다.
-                // 분모를 6으로 두면 마지막 입력에서 100%가 되어, 결제 결정이
-                // 남은 지점에서 "다 끝났다"는 신호를 준다(목표 경사 붕괴).
-                child: LinearProgressIndicator(
-                  value: (_q + 1) / (_totalQ + 2),
-                  minHeight: 4,
-                  backgroundColor: _border,
-                  valueColor: const AlwaysStoppedAnimation<Color>(_blue),
-                ),
-              ),
-            ),
-            FadeTransition(
+          ),
+          Expanded(
+            child: FadeTransition(
               opacity: _fadeAnim,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(22, 14, 22, 4),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _qTitles[_q],
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                              color: _text,
-                              letterSpacing: -0.3,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          // 진행바 분모와 같아야 한다. 6으로 두면 마지막 입력에서
-                          // 바는 75%인데 텍스트만 6/6이라 서로 다른 말을 한다.
-                          '${_q + 1}/${_totalQ + 2}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: _label,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _qSubs[_q],
-                      style: const TextStyle(fontSize: 13, color: _label),
-                    ),
-                  ],
-                ),
+              child: SingleChildScrollView(
+                controller: _contentScrollCtrl,
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                child: _buildQ(),
               ),
             ),
-            Expanded(
-              child: FadeTransition(
-                opacity: _fadeAnim,
-                child: SingleChildScrollView(
-                  controller: _contentScrollCtrl,
-                  keyboardDismissBehavior:
-                      ScrollViewKeyboardDismissBehavior.onDrag,
-                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                  child: _buildQ(),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1619,38 +1636,40 @@ class _PostJobFormState extends State<PostJobForm>
         button: true,
         label: '이전 공고 불러오기',
         child: GestureDetector(
-        onTap: () async {
-          final job = await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SelectPreviousJobScreen()),
-          );
-          if (job != null) _fillFromJob(job);
-        },
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: _bg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: _border),
-          ),
-          child: const Row(
-            children: [
-              Icon(Icons.history_rounded, size: 16, color: _label),
-              SizedBox(width: 8),
-              Text(
-                '이전 공고 불러오기',
-                style: TextStyle(
-                  fontSize: 13,
-                  color: _sub,
-                  fontWeight: FontWeight.w600,
-                ),
+          onTap: () async {
+            final job = await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const SelectPreviousJobScreen(),
               ),
-              Spacer(),
-              Icon(Icons.chevron_right_rounded, size: 16, color: _label),
-            ],
+            );
+            if (job != null) _fillFromJob(job);
+          },
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: _bg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: _border),
+            ),
+            child: const Row(
+              children: [
+                Icon(Icons.history_rounded, size: 16, color: _label),
+                SizedBox(width: 8),
+                Text(
+                  '이전 공고 불러오기',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: _sub,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Spacer(),
+                Icon(Icons.chevron_right_rounded, size: 16, color: _label),
+              ],
+            ),
           ),
-        ),
         ),
       ),
       TextField(
@@ -1732,125 +1751,127 @@ class _PostJobFormState extends State<PostJobForm>
                           ? '${cat.name}, $_category 선택됨'
                           : cat.name,
                   child: GestureDetector(
-                  onTap: () {
-                    final opening = !isOpen;
-                    setState(() => _majorCat = isOpen ? '' : cat.name);
-                    if (opening) {
-                      // AnimatedSize(220ms)가 끝난 뒤에 스크롤해야 한다.
-                      // 확장 도중에 maxScrollExtent를 읽으면 그 시점의 짧은
-                      // 높이를 기준으로 잡아서 세부직종 칩이 잘린 채 멈춘다.
-                      Future.delayed(const Duration(milliseconds: 300), () {
-                        if (!mounted || !_contentScrollCtrl.hasClients) return;
-                        _contentScrollCtrl
-                            .animateTo(
-                              _contentScrollCtrl.position.maxScrollExtent,
-                              duration: const Duration(milliseconds: 320),
-                              curve: Curves.easeOutCubic,
-                            )
-                            .then((_) {
-                              // 애니메이션 중 레이아웃이 더 자랐으면 한 번 더.
-                              if (!mounted || !_contentScrollCtrl.hasClients) {
-                                return;
-                              }
-                              final max =
-                                  _contentScrollCtrl.position.maxScrollExtent;
-                              if (_contentScrollCtrl.offset < max - 1) {
-                                _contentScrollCtrl.jumpTo(max);
-                              }
-                            });
-                      });
-                    }
-                  },
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 180),
-                    decoration: BoxDecoration(
-                      color:
-                          isSel
-                              ? _blue
-                              : isOpen
-                              ? AppColors.primaryLight
-                              : const Color(0xFFF5F6F8),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
+                    onTap: () {
+                      final opening = !isOpen;
+                      setState(() => _majorCat = isOpen ? '' : cat.name);
+                      if (opening) {
+                        // AnimatedSize(220ms)가 끝난 뒤에 스크롤해야 한다.
+                        // 확장 도중에 maxScrollExtent를 읽으면 그 시점의 짧은
+                        // 높이를 기준으로 잡아서 세부직종 칩이 잘린 채 멈춘다.
+                        Future.delayed(const Duration(milliseconds: 300), () {
+                          if (!mounted || !_contentScrollCtrl.hasClients)
+                            return;
+                          _contentScrollCtrl
+                              .animateTo(
+                                _contentScrollCtrl.position.maxScrollExtent,
+                                duration: const Duration(milliseconds: 320),
+                                curve: Curves.easeOutCubic,
+                              )
+                              .then((_) {
+                                // 애니메이션 중 레이아웃이 더 자랐으면 한 번 더.
+                                if (!mounted ||
+                                    !_contentScrollCtrl.hasClients) {
+                                  return;
+                                }
+                                final max =
+                                    _contentScrollCtrl.position.maxScrollExtent;
+                                if (_contentScrollCtrl.offset < max - 1) {
+                                  _contentScrollCtrl.jumpTo(max);
+                                }
+                              });
+                        });
+                      }
+                    },
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      decoration: BoxDecoration(
                         color:
                             isSel
                                 ? _blue
                                 : isOpen
-                                ? _blue.withOpacity(0.4)
-                                : Colors.transparent,
-                        width: 1.5,
+                                ? AppColors.primaryLight
+                                : const Color(0xFFF5F6F8),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color:
+                              isSel
+                                  ? _blue
+                                  : isOpen
+                                  ? _blue.withOpacity(0.4)
+                                  : Colors.transparent,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color:
+                                  isSel
+                                      ? Colors.white.withOpacity(0.2)
+                                      : isOpen
+                                      ? _blue.withOpacity(0.08)
+                                      : Colors.white,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Center(
+                              child: Icon(
+                                cat.icon,
+                                size: 18,
+                                color: isSel ? Colors.white : _blue,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            cat.name,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight:
+                                  isSel ? FontWeight.w700 : FontWeight.w500,
+                              color:
+                                  isSel
+                                      ? Colors.white
+                                      : isOpen
+                                      ? _blue
+                                      : _sub,
+                              height: 1.3,
+                            ),
+                          ),
+                          if (isSel &&
+                              _category.isNotEmpty &&
+                              _category != cat.name) ...[
+                            const SizedBox(height: 2),
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 1,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(99),
+                              ),
+                              child: Text(
+                                _category,
+                                // 9px → 11px (최소 가독 크기)
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color:
-                                isSel
-                                    ? Colors.white.withOpacity(0.2)
-                                    : isOpen
-                                    ? _blue.withOpacity(0.08)
-                                    : Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Center(
-                            child: Icon(
-                              cat.icon,
-                              size: 18,
-                              color: isSel ? Colors.white : _blue,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          cat.name,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight:
-                                isSel ? FontWeight.w700 : FontWeight.w500,
-                            color:
-                                isSel
-                                    ? Colors.white
-                                    : isOpen
-                                    ? _blue
-                                    : _sub,
-                            height: 1.3,
-                          ),
-                        ),
-                        if (isSel &&
-                            _category.isNotEmpty &&
-                            _category != cat.name) ...[
-                          const SizedBox(height: 2),
-                          Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 6),
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 1,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                            child: Text(
-                              _category,
-                              // 9px → 11px (최소 가독 크기)
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
                   ),
                 );
               }).toList(),
@@ -1926,63 +1947,63 @@ class _PostJobFormState extends State<PostJobForm>
                                       selected: sel,
                                       label: s,
                                       child: GestureDetector(
-                                      onTap: () {
-                                        setState(() {
-                                          _category = s;
-                                          _majorCat = '';
-                                        });
-                                        Future.delayed(
-                                          const Duration(milliseconds: 200),
-                                          _nextQ,
-                                        );
-                                      },
-                                      child: AnimatedContainer(
-                                        duration: const Duration(
-                                          milliseconds: 130,
-                                        ),
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 14,
-                                          vertical: 8,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: sel ? _blue : Colors.white,
-                                          borderRadius: BorderRadius.circular(
-                                            99,
+                                        onTap: () {
+                                          setState(() {
+                                            _category = s;
+                                            _majorCat = '';
+                                          });
+                                          Future.delayed(
+                                            const Duration(milliseconds: 200),
+                                            _nextQ,
+                                          );
+                                        },
+                                        child: AnimatedContainer(
+                                          duration: const Duration(
+                                            milliseconds: 130,
                                           ),
-                                          border: Border.all(
-                                            color:
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 14,
+                                            vertical: 8,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: sel ? _blue : Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              99,
+                                            ),
+                                            border: Border.all(
+                                              color:
+                                                  sel
+                                                      ? _blue
+                                                      : const Color(0xFFDDE3EC),
+                                              width: sel ? 0 : 1,
+                                            ),
+                                            boxShadow:
                                                 sel
-                                                    ? _blue
-                                                    : const Color(0xFFDDE3EC),
-                                            width: sel ? 0 : 1,
-                                          ),
-                                          boxShadow:
-                                              sel
-                                                  ? []
-                                                  : [
-                                                    BoxShadow(
-                                                      color: Colors.black
-                                                          .withOpacity(0.04),
-                                                      blurRadius: 4,
-                                                      offset: const Offset(
-                                                        0,
-                                                        1,
+                                                    ? []
+                                                    : [
+                                                      BoxShadow(
+                                                        color: Colors.black
+                                                            .withOpacity(0.04),
+                                                        blurRadius: 4,
+                                                        offset: const Offset(
+                                                          0,
+                                                          1,
+                                                        ),
                                                       ),
-                                                    ),
-                                                  ],
-                                        ),
-                                        child: Text(
-                                          s,
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight:
-                                                sel
-                                                    ? FontWeight.w700
-                                                    : FontWeight.w500,
-                                            color: sel ? Colors.white : _sub,
+                                                    ],
+                                          ),
+                                          child: Text(
+                                            s,
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight:
+                                                  sel
+                                                      ? FontWeight.w700
+                                                      : FontWeight.w500,
+                                              color: sel ? Colors.white : _sub,
+                                            ),
                                           ),
                                         ),
-                                      ),
                                       ),
                                     );
                                   }).toList(),
@@ -2174,7 +2195,9 @@ class _PostJobFormState extends State<PostJobForm>
   Future<(double, double)?> _geocodeOnServer(String address) async {
     try {
       final resp = await AuthenticatedHttpClient.get(
-        Uri.parse('$baseUrl/api/job/geocode?address=${Uri.encodeQueryComponent(address)}'),
+        Uri.parse(
+          '$baseUrl/api/job/geocode?address=${Uri.encodeQueryComponent(address)}',
+        ),
       ).timeout(const Duration(seconds: 6));
       if (resp.statusCode != 200) return null;
       final d = jsonDecode(resp.body) as Map<String, dynamic>;
@@ -2194,7 +2217,10 @@ class _PostJobFormState extends State<PostJobForm>
 
     // 좌표를 못 얻으면 거리 필터에 안 걸려서 추가해도 노출되지 않는다
     if (!picked.hasGeo) {
-      _trackFail('location_no_coordinates', {'scope': 'extra', 'address': picked.address});
+      _trackFail('location_no_coordinates', {
+        'scope': 'extra',
+        'address': picked.address,
+      });
       _showError('이 주소의 좌표를 찾지 못했어요. 다른 주소로 검색해주세요.');
       return;
     }
@@ -2213,7 +2239,11 @@ class _PostJobFormState extends State<PostJobForm>
       children: [
         const Text(
           '추가 근무지',
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: _text),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            color: _text,
+          ),
         ),
         const SizedBox(height: 4),
         // 여기서 무료/유료로 막지 않는다 — 결제 선택은 맨 마지막 발행 시트라
@@ -2255,8 +2285,13 @@ class _PostJobFormState extends State<PostJobForm>
                     label: '${_extraLocations[i].address} 삭제',
                     child: IconButton(
                       tooltip: '닫기',
-                      icon: const Icon(Icons.close_rounded, size: 20, color: _label),
-                      onPressed: () => setState(() => _extraLocations.removeAt(i)),
+                      icon: const Icon(
+                        Icons.close_rounded,
+                        size: 20,
+                        color: _label,
+                      ),
+                      onPressed:
+                          () => setState(() => _extraLocations.removeAt(i)),
                     ),
                   ),
                 ],
@@ -2269,13 +2304,20 @@ class _PostJobFormState extends State<PostJobForm>
           child: OutlinedButton.icon(
             onPressed: canAdd ? _addExtraLocation : null,
             icon: const Icon(Icons.add_rounded, size: 18),
-            label: Text(canAdd ? '근무지 추가' : '최대 ${_maxExtraLocations + 1}곳까지 가능해요'),
+            label: Text(
+              canAdd ? '근무지 추가' : '최대 ${_maxExtraLocations + 1}곳까지 가능해요',
+            ),
             style: OutlinedButton.styleFrom(
               foregroundColor: _label,
               backgroundColor: Colors.white,
               side: const BorderSide(color: _border),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              textStyle: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ),
@@ -2294,78 +2336,81 @@ class _PostJobFormState extends State<PostJobForm>
                 ? '근무지 주소 $_location, 변경하려면 두 번 탭'
                 : '근무지 주소 검색',
         child: GestureDetector(
-        onTap: () async {
-          final picked = await _searchAddress();
-          if (picked == null || !mounted) return;
-          // 좌표가 없으면 거리 필터에 안 걸려서 등록해도 근처 구직자에게 안 보인다.
-          // 추가 근무지는 원래 막고 있었는데 주 근무지만 빠져 있었다 —
-          // 실측(2026-09-13): 6월 이후 공고 566건 중 23건이 좌표 없이 등록됐다.
-          if (!picked.hasGeo) {
-            _trackFail('location_no_coordinates', {'scope': 'main', 'address': picked.address});
-            // 좌표는 기기 geocoder 로 얻는데(kpostal 내부), 이게 실패하는 기기가
-            // 있다. 아래 '현재 위치로 설정' 은 GPS 를 직접 쓰므로 그 경로를 안내한다.
-            _showError(
-              '이 주소의 좌표를 찾지 못했어요.\n'
-              '가게에 계시다면 아래 «현재 위치로 설정» 을 눌러주세요.',
-            );
-            return;
-          }
-          setState(() {
-            _location = picked.address;
-            _locationCity = picked.locationCity ?? '';
-            _lat = picked.lat;
-            _lng = picked.lng;
-          });
-        },
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: _location.isNotEmpty ? AppColors.primaryLight : _bg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: _location.isNotEmpty ? _blue : _border),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.place_outlined,
-                size: 22,
-                color: _location.isNotEmpty ? _blue : _label,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 폼 레이블은 검정 계열 (디자인 가이드).
-                    // _blue는 #EEF5FF 위에서 3.05:1로 AA도 미달.
-                    const Text(
-                      '근무지 주소',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: _text,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      _location.isNotEmpty ? _location : '주소를 검색해주세요',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: _location.isNotEmpty ? _text : _label,
-                      ),
-                    ),
-                  ],
+          onTap: () async {
+            final picked = await _searchAddress();
+            if (picked == null || !mounted) return;
+            // 좌표가 없으면 거리 필터에 안 걸려서 등록해도 근처 구직자에게 안 보인다.
+            // 추가 근무지는 원래 막고 있었는데 주 근무지만 빠져 있었다 —
+            // 실측(2026-09-13): 6월 이후 공고 566건 중 23건이 좌표 없이 등록됐다.
+            if (!picked.hasGeo) {
+              _trackFail('location_no_coordinates', {
+                'scope': 'main',
+                'address': picked.address,
+              });
+              // 좌표는 기기 geocoder 로 얻는데(kpostal 내부), 이게 실패하는 기기가
+              // 있다. 아래 '현재 위치로 설정' 은 GPS 를 직접 쓰므로 그 경로를 안내한다.
+              _showError(
+                '이 주소의 좌표를 찾지 못했어요.\n'
+                '가게에 계시다면 아래 «현재 위치로 설정» 을 눌러주세요.',
+              );
+              return;
+            }
+            setState(() {
+              _location = picked.address;
+              _locationCity = picked.locationCity ?? '';
+              _lat = picked.lat;
+              _lng = picked.lng;
+            });
+          },
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: _location.isNotEmpty ? AppColors.primaryLight : _bg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: _location.isNotEmpty ? _blue : _border),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.place_outlined,
+                  size: 22,
+                  color: _location.isNotEmpty ? _blue : _label,
                 ),
-              ),
-              Icon(
-                Icons.chevron_right_rounded,
-                color: _location.isNotEmpty ? _blue : _label,
-              ),
-            ],
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 폼 레이블은 검정 계열 (디자인 가이드).
+                      // _blue는 #EEF5FF 위에서 3.05:1로 AA도 미달.
+                      const Text(
+                        '근무지 주소',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: _text,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        _location.isNotEmpty ? _location : '주소를 검색해주세요',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: _location.isNotEmpty ? _text : _label,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: _location.isNotEmpty ? _blue : _label,
+                ),
+              ],
+            ),
           ),
-        ),
         ),
       ),
       const SizedBox(height: 10),
@@ -2431,70 +2476,75 @@ class _PostJobFormState extends State<PostJobForm>
                     ? '근무 날짜 ${df.format(_startDate!)}, 변경하려면 두 번 탭'
                     : '근무 날짜 선택',
             child: GestureDetector(
-            onTap: () async {
-              final picked = await pickDateSheet(
-                context,
-                title: '근무 날짜 선택',
-                initial: _startDate,
-                firstDate: today,
-                lastDate: today.add(const Duration(days: 365)),
-              );
-              if (picked != null) {
-                setState(() {
-                  _startDate = picked;
-                  _endDate = picked;
-                });
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-              decoration: BoxDecoration(
-                color: _startDate != null ? AppColors.primaryLight : _bg,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: _startDate != null ? _blue : _border),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.calendar_today_rounded,
-                    size: 18,
-                    color: _startDate != null ? _blue : _label,
+              onTap: () async {
+                final picked = await pickDateSheet(
+                  context,
+                  title: '근무 날짜 선택',
+                  initial: _startDate,
+                  firstDate: today,
+                  lastDate: today.add(const Duration(days: 365)),
+                );
+                if (picked != null) {
+                  setState(() {
+                    _startDate = picked;
+                    _endDate = picked;
+                  });
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 15,
+                ),
+                decoration: BoxDecoration(
+                  color: _startDate != null ? AppColors.primaryLight : _bg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: _startDate != null ? _blue : _border,
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          '근무 날짜',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: _text,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          _startDate != null
-                              ? df.format(_startDate!)
-                              : '날짜를 선택해주세요',
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: _startDate != null ? _text : _label,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ],
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.calendar_today_rounded,
+                      size: 18,
+                      color: _startDate != null ? _blue : _label,
                     ),
-                  ),
-                  Icon(
-                    Icons.chevron_right,
-                    color: _startDate != null ? _blue : _label,
-                  ),
-                ],
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            '근무 날짜',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: _text,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            _startDate != null
+                                ? df.format(_startDate!)
+                                : '날짜를 선택해주세요',
+                            style: TextStyle(
+                              fontSize: 15,
+                              color: _startDate != null ? _text : _label,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right,
+                      color: _startDate != null ? _blue : _label,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
           ),
         ] else ...[
           Row(
@@ -2531,30 +2581,30 @@ class _PostJobFormState extends State<PostJobForm>
                       selected: sel,
                       label: '$d요일',
                       child: GestureDetector(
-                      onTap:
-                          () => setState(() {
-                            sel ? _weekdays.remove(d) : _weekdays.add(d);
-                          }),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 160),
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: sel ? _blue : _bg,
-                          border: Border.all(color: sel ? _blue : _border),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Center(
-                          child: Text(
-                            d,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                              color: sel ? Colors.white : _sub,
+                        onTap:
+                            () => setState(() {
+                              sel ? _weekdays.remove(d) : _weekdays.add(d);
+                            }),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 160),
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: sel ? _blue : _bg,
+                            border: Border.all(color: sel ? _blue : _border),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Text(
+                              d,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w800,
+                                color: sel ? Colors.white : _sub,
+                              ),
                             ),
                           ),
                         ),
-                      ),
                       ),
                     );
                   }).toList(),
@@ -3082,177 +3132,180 @@ class _PostJobFormState extends State<PostJobForm>
                     ? '이 업종 임금 AI 리포트 보기'
                     : '이 업종 임금 AI 리포트 보기, 구독자 전용',
             child: GestureDetector(
-            onTap: () {
-              if (_subscriptionPlan != null) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
+              onTap: () {
+                if (_subscriptionPlan != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (_) => WageReportScreen(
+                            category: _category,
+                            locationCity:
+                                _locationCity.isNotEmpty ? _locationCity : null,
+                            payType: _payType,
+                            currentPay: _pay > 0 ? _pay : null,
+                            hours: (_workMins() / 60).round().clamp(1, 24),
+                          ),
+                    ),
+                  );
+                } else {
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: Colors.transparent,
                     builder:
-                        (_) => WageReportScreen(
-                          category: _category,
-                          locationCity:
-                              _locationCity.isNotEmpty ? _locationCity : null,
-                          payType: _payType,
-                          currentPay: _pay > 0 ? _pay : null,
-                          hours: (_workMins() / 60).round().clamp(1, 24),
-                        ),
-                  ),
-                );
-              } else {
-                showModalBottomSheet(
-                  context: context,
-                  backgroundColor: Colors.transparent,
-                  builder:
-                      (_) => Container(
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.vertical(
-                            top: Radius.circular(24),
+                        (_) => Container(
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.vertical(
+                              top: Radius.circular(24),
+                            ),
+                          ),
+                          padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Center(
+                                child: Container(
+                                  width: 40,
+                                  height: 4,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.border,
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              const Icon(
+                                Icons.analytics_rounded,
+                                color: AppColors.primary,
+                                size: 32,
+                              ),
+                              const SizedBox(height: 12),
+                              const Text(
+                                '임금 AI 리포트는 구독자 전용이에요',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 16,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              const Text(
+                                '업종·지역·경쟁 공고 시급을 분석해\n적정 급여를 AI가 추천해 드려요.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                  height: 1.5,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                    Navigator.pushNamed(
+                                      context,
+                                      '/subscription/manage',
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 14,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  child: const Text(
+                                    '구독 시작하기',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 10),
+                              SizedBox(
+                                width: double.infinity,
+                                child: TextButton(
+                                  onPressed: () => Navigator.pop(context),
+                                  child: const Text(
+                                    '닫기',
+                                    style: TextStyle(
+                                      color: AppColors.textSecondary,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                        padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Center(
-                              child: Container(
-                                width: 40,
-                                height: 4,
-                                decoration: BoxDecoration(
-                                  color: AppColors.border,
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            const Icon(
-                              Icons.analytics_rounded,
-                              color: AppColors.primary,
-                              size: 32,
-                            ),
-                            const SizedBox(height: 12),
-                            const Text(
-                              '임금 AI 리포트는 구독자 전용이에요',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              '업종·지역·경쟁 공고 시급을 분석해\n적정 급여를 AI가 추천해 드려요.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textSecondary,
-                                height: 1.5,
-                              ),
-                            ),
-                            const SizedBox(height: 24),
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                  Navigator.pushNamed(
-                                    context,
-                                    '/subscription/manage',
-                                  );
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.primary,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: const Text(
-                                  '구독 시작하기',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            SizedBox(
-                              width: double.infinity,
-                              child: TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text(
-                                  '닫기',
-                                  style: TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                );
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color:
-                    _subscriptionPlan != null
-                        ? const Color(0xFFEFF6FF)
-                        : AppColors.bgMuted,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
+                  );
+                }
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
                   color:
                       _subscriptionPlan != null
-                          ? const Color(0xFF93C5FD)
-                          : AppColors.textDisabled,
-                ),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _subscriptionPlan != null
-                        ? Icons.analytics_rounded
-                        : Icons.lock_outline_rounded,
-                    size: 16,
+                          ? const Color(0xFFEFF6FF)
+                          : AppColors.bgMuted,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
                     color:
                         _subscriptionPlan != null
-                            ? AppColors.primary
-                            : AppColors.textTertiary,
+                            ? const Color(0xFF93C5FD)
+                            : AppColors.textDisabled,
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '이 업종 임금 AI 리포트 보기',
-                    style: TextStyle(
-                      fontSize: 12,
-                      // #9CA3AF는 이 배경에서 2.5:1 — AA 미달
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _subscriptionPlan != null
+                          ? Icons.analytics_rounded
+                          : Icons.lock_outline_rounded,
+                      size: 16,
+                      color:
+                          _subscriptionPlan != null
+                              ? AppColors.primary
+                              : AppColors.textTertiary,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '이 업종 임금 AI 리포트 보기',
+                      style: TextStyle(
+                        fontSize: 12,
+                        // #9CA3AF는 이 배경에서 2.5:1 — AA 미달
+                        color:
+                            _subscriptionPlan != null
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 14,
                       color:
                           _subscriptionPlan != null
                               ? AppColors.primary
                               : AppColors.textSecondary,
-                      fontWeight: FontWeight.w600,
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.chevron_right_rounded,
-                    size: 14,
-                    color:
-                        _subscriptionPlan != null
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
           ),
         ],
 
@@ -3268,64 +3321,64 @@ class _PostJobFormState extends State<PostJobForm>
             toggled: _isSameDayPay,
             label: '당일지급, 근무 당일 현금 지급',
             child: GestureDetector(
-            onTap: () => setState(() => _isSameDayPay = !_isSameDayPay),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: _isSameDayPay ? AppColors.primaryLight : _bg,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: _isSameDayPay ? _blue : _border),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.payments_rounded, size: 24, color: _blue),
-                  const SizedBox(width: 12),
-                  const Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '당일지급',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: _text,
+              onTap: () => setState(() => _isSameDayPay = !_isSameDayPay),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 160),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: _isSameDayPay ? AppColors.primaryLight : _bg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: _isSameDayPay ? _blue : _border),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.payments_rounded, size: 24, color: _blue),
+                    const SizedBox(width: 12),
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '당일지급',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: _text,
+                          ),
+                        ),
+                        Text(
+                          '근무 당일 현금 지급',
+                          style: TextStyle(fontSize: 12, color: _label),
+                        ),
+                      ],
+                    ),
+                    const Spacer(),
+                    // 꺼진 상태를 꽉 찬 회색 원으로 두면 체크박스가 아니라
+                    // 비활성 점이나 로딩 인디케이터로 읽힌다. 빈 원 + 테두리로.
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 160),
+                      width: 24,
+                      height: 24,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: _isSameDayPay ? _blue : Colors.white,
+                        border: Border.all(
+                          color: _isSameDayPay ? _blue : AppColors.textTertiary,
+                          width: 1.5,
                         ),
                       ),
-                      Text(
-                        '근무 당일 현금 지급',
-                        style: TextStyle(fontSize: 12, color: _label),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  // 꺼진 상태를 꽉 찬 회색 원으로 두면 체크박스가 아니라
-                  // 비활성 점이나 로딩 인디케이터로 읽힌다. 빈 원 + 테두리로.
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 160),
-                    width: 24,
-                    height: 24,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _isSameDayPay ? _blue : Colors.white,
-                      border: Border.all(
-                        color: _isSameDayPay ? _blue : AppColors.textTertiary,
-                        width: 1.5,
-                      ),
+                      child:
+                          _isSameDayPay
+                              ? const Icon(
+                                Icons.check_rounded,
+                                size: 14,
+                                color: Colors.white,
+                              )
+                              : null,
                     ),
-                    child:
-                        _isSameDayPay
-                            ? const Icon(
-                              Icons.check_rounded,
-                              size: 14,
-                              color: Colors.white,
-                            )
-                            : null,
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
           ),
         ],
       ],
@@ -3343,121 +3396,121 @@ class _PostJobFormState extends State<PostJobForm>
           enabled: !_isAIGenerating,
           label: _isAIGenerating ? '공고문 생성 중' : '공고문 작성 도움 받기',
           child: GestureDetector(
-          onTap:
-              _isAIGenerating
-                  ? null
-                  : () async {
-                    await _loadAiQuota();
-                    // -1=무제한(pro), N>0=잔여, 0=소진
-                    if (_aiQuotaRemaining != 0) {
-                      _showAIDialog();
-                    } else {
-                      _showAiPaywall();
-                    }
-                  },
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            margin: const EdgeInsets.only(bottom: 16),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, AppColors.aiAccent],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child:
+            onTap:
                 _isAIGenerating
-                    ? const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
+                    ? null
+                    : () async {
+                      await _loadAiQuota();
+                      // -1=무제한(pro), N>0=잔여, 0=소진
+                      if (_aiQuotaRemaining != 0) {
+                        _showAIDialog();
+                      } else {
+                        _showAiPaywall();
+                      }
+                    },
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [AppColors.primary, AppColors.aiAccent],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child:
+                  _isAIGenerating
+                      ? const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
                           ),
-                        ),
-                        SizedBox(width: 10),
-                        Text(
-                          '공고문을 정리하고 있어요…',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    )
-                    : Row(
-                      children: [
-                        const Icon(
-                          Icons.description_outlined,
-                          size: 18,
-                          color: Colors.white,
-                        ),
-                        const SizedBox(width: 10),
-                        // 트레일링에 버튼+배지가 붙어 폭이 좁다. 줄바꿈을 막지
-                        // 않으면 '공고문 작성 도 / 움'으로 단어가 쪼개진다.
-                        const Expanded(
-                          child: Text(
-                            '공고문 작성 도움',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          SizedBox(width: 10),
+                          Text(
+                            '공고문을 정리하고 있어요…',
                             style: TextStyle(
                               fontSize: 14,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
+                        ],
+                      )
+                      : Row(
+                        children: [
+                          const Icon(
+                            Icons.description_outlined,
+                            size: 18,
                             color: Colors.white,
-                            borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Text(
-                            _description.isNotEmpty ? '다시 생성' : '생성하기',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w800,
-                              color: _blue,
+                          const SizedBox(width: 10),
+                          // 트레일링에 버튼+배지가 붙어 폭이 좁다. 줄바꿈을 막지
+                          // 않으면 '공고문 작성 도 / 움'으로 단어가 쪼개진다.
+                          const Expanded(
+                            child: Text(
+                              '공고문 작성 도움',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.25),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            _aiQuotaRemaining == -1
-                                ? '무제한'
-                                : _aiQuotaRemaining <= 0
-                                ? '이번 주 소진'
-                                : '이번 주 $_aiQuotaRemaining회',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w600,
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
                               color: Colors.white,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              _description.isNotEmpty ? '다시 생성' : '생성하기',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                                color: _blue,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.25),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              _aiQuotaRemaining == -1
+                                  ? '무제한'
+                                  : _aiQuotaRemaining <= 0
+                                  ? '이번 주 소진'
+                                  : '이번 주 $_aiQuotaRemaining회',
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+            ),
           ),
-        ),
         ),
         Container(
           decoration: BoxDecoration(
@@ -3519,34 +3572,34 @@ class _PostJobFormState extends State<PostJobForm>
                 toggled: _isAlwaysOpen,
                 label: '상시모집, 종료일 없이 계속 모집',
                 child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => setState(() => _isAlwaysOpen = !_isAlwaysOpen),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: 46,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    color: _isAlwaysOpen ? _blue : _border,
-                  ),
-                  child: AnimatedAlign(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => setState(() => _isAlwaysOpen = !_isAlwaysOpen),
+                  child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    alignment:
-                        _isAlwaysOpen
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
-                    child: Container(
-                      margin: const EdgeInsets.all(3),
-                      width: 20,
-                      height: 20,
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
+                    width: 46,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(999),
+                      color: _isAlwaysOpen ? _blue : _border,
+                    ),
+                    child: AnimatedAlign(
+                      duration: const Duration(milliseconds: 200),
+                      alignment:
+                          _isAlwaysOpen
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.all(3),
+                        width: 20,
+                        height: 20,
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
               ),
             ],
           ),
@@ -3793,7 +3846,10 @@ class _PostJobFormState extends State<PostJobForm>
                 // 플랜별 횟수를 여기 적으려면 _loadAiQuota()부터 그렇게 고쳐야 한다.
                 const Text(
                   '구독하면 횟수 제한 없이 사용할 수 있어요',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
                 const SizedBox(height: 24),
                 SizedBox(
@@ -3827,7 +3883,10 @@ class _PostJobFormState extends State<PostJobForm>
                     onPressed: () => Navigator.pop(context),
                     child: const Text(
                       '닫기',
-                      style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ),
@@ -4014,16 +4073,16 @@ class _ToggleBtn extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primaryLight : _bg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: selected ? _blue : _border,
-            width: selected ? 1.5 : 1,
+          duration: const Duration(milliseconds: 160),
+          padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primaryLight : _bg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected ? _blue : _border,
+              width: selected ? 1.5 : 1,
+            ),
           ),
-        ),
           child: Text(
             label,
             style: TextStyle(
@@ -4256,28 +4315,28 @@ class _LaborNoticeState extends State<_LaborNotice> {
           expanded: _open,
           label: '공고 등록 시 알바 준수사항에 동의합니다, 자세히 보기',
           child: GestureDetector(
-          onTap: () => setState(() => _open = !_open),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
-              children: [
-                const Icon(Icons.shield_outlined, size: 14, color: _label),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    '공고 등록 시 알바 준수사항에 동의합니다',
-                    style: TextStyle(fontSize: 12, color: _sub),
+            onTap: () => setState(() => _open = !_open),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              child: Row(
+                children: [
+                  const Icon(Icons.shield_outlined, size: 14, color: _label),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      '공고 등록 시 알바 준수사항에 동의합니다',
+                      style: TextStyle(fontSize: 12, color: _sub),
+                    ),
                   ),
-                ),
-                Icon(
-                  _open ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
-                  color: _label,
-                  size: 16,
-                ),
-              ],
+                  Icon(
+                    _open ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    color: _label,
+                    size: 16,
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
         ),
         if (_open) ...[
           const Divider(height: 1, color: _border),
@@ -4360,10 +4419,13 @@ class _LaborNoticeState extends State<_LaborNotice> {
 class _PublishSheet extends StatefulWidget {
   /// 이용권 잔여 조회. null이면 조회 실패(= "0개"와 구분해야 함).
   final Future<({int instant, int urgent})?> Function() fetchPassCounts;
+
   /// 이번 달 무료 잔여. null이면 조회 실패 — 막지 않고 서버 판정에 맡긴다.
-  final Future<({int limit, int used, int remaining})?> Function() fetchFreeQuota;
+  final Future<({int limit, int used, int remaining})?> Function()
+  fetchFreeQuota;
   final Future<int> Function() fetchReachableWorkerCount;
   final Future<int> Function() fetchUrgentWorkerCount;
+
   /// 숙식·기숙사·셔틀 키워드가 잡혔을 때만 전국 노출 카드를 띄운다.
   final bool nationwideHint;
   final bool nationwideOn;
@@ -4435,8 +4497,10 @@ class _PublishSheetState extends State<_PublishSheet> {
       _passCountLoading = true;
       _passCountFailed = false;
     });
-    final r = await widget.fetchPassCounts();
-    final q = await widget.fetchFreeQuota();
+    final passFuture = widget.fetchPassCounts();
+    final quotaFuture = widget.fetchFreeQuota();
+    final r = await passFuture;
+    final q = await quotaFuture;
     if (!mounted) return;
     setState(() {
       _freeQuota = q;
@@ -4464,9 +4528,10 @@ class _PublishSheetState extends State<_PublishSheet> {
       return '보유 이용권을 확인하지 못했어요. 탭해서 다시 시도해주세요.';
     }
 
-    final candidateText = _urgentWorkersCount == null
-        ? '반경 5km 알바생 최대 10명 직접 호출'
-        : '반경 5km 활동 구직자 $_urgentWorkersCount명 · 최대 10명 직접 호출';
+    final candidateText =
+        _urgentWorkersCount == null
+            ? '반경 5km 알바생 최대 10명 직접 호출'
+            : '반경 5km 활동 구직자 $_urgentWorkersCount명 · 최대 10명 직접 호출';
     final owned = _urgentPassCount > 0 || _urgentPassCount == -1;
     return owned
         ? '$candidateText · 무응답 100% 환급 · 추가 결제 없음'
@@ -4540,9 +4605,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  _freeExhausted
-                      ? '이번 달 무료 등록을 다 쓰셨어요'
-                      : '무료 게시는 3일간 노출돼요',
+                  _freeExhausted ? '이번 달 무료 등록을 다 쓰셨어요' : '무료 게시는 3일간 노출돼요',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 17,
@@ -4560,10 +4623,10 @@ class _PublishSheetState extends State<_PublishSheet> {
                           ? '보유 중인 즉시게시 이용권 ${_paidPassCount}개로\n지금 바로 올릴 수 있어요. 추가 결제 없어요.'
                           : '무료 등록은 매월 1일에 ${_freeQuota?.limit ?? 3}건으로 다시 채워져요.\n지금 올리시려면 즉시게시(₩4,900)를 이용해 주세요.')
                       : _paidPassCount == -1
-                      ? '구독 혜택으로 지금 바로 상단에 노출할 수 있어요.\n이용권 차감 없이 진행됩니다.'
+                      ? '구독 혜택으로 12시간 기다리지 않고 바로 노출할 수 있어요.\n이용권 차감 없이 진행됩니다.'
                       : _paidPassCount > 0
-                      ? '보유 중인 즉시게시 이용권 ${_paidPassCount}개로\n7일간 상단에 노출할 수 있어요. 추가 결제 없어요.'
-                      : '즉시게시 이용권(₩4,900)을 쓰면 3일이 아니라\n7일간, 상단에 노출돼요.',
+                      ? '보유 중인 즉시게시 이용권 ${_paidPassCount}개로\n12시간 기다리지 않고 바로 노출할 수 있어요.'
+                      : '즉시게시 이용권(₩4,900)을 쓰면\n12시간 기다리지 않고 바로 노출돼요.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 13,
@@ -4719,14 +4782,16 @@ class _PublishSheetState extends State<_PublishSheet> {
                 child: Container(
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: widget.nationwideOn
-                        ? AppColors.primaryLight
-                        : const Color(0xFFF8F9FB),
+                    color:
+                        widget.nationwideOn
+                            ? AppColors.primaryLight
+                            : const Color(0xFFF8F9FB),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: widget.nationwideOn
-                          ? AppColors.primary
-                          : AppColors.border,
+                      color:
+                          widget.nationwideOn
+                              ? AppColors.primary
+                              : AppColors.border,
                     ),
                   ),
                   child: Row(
@@ -4734,9 +4799,10 @@ class _PublishSheetState extends State<_PublishSheet> {
                       Icon(
                         Icons.public_rounded,
                         size: 20,
-                        color: widget.nationwideOn
-                            ? AppColors.primary
-                            : AppColors.textTertiary,
+                        color:
+                            widget.nationwideOn
+                                ? AppColors.primary
+                                : AppColors.textTertiary,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -4766,9 +4832,10 @@ class _PublishSheetState extends State<_PublishSheet> {
                             ? Icons.check_circle_rounded
                             : Icons.circle_outlined,
                         size: 22,
-                        color: widget.nationwideOn
-                            ? AppColors.primary
-                            : AppColors.textDisabled,
+                        color:
+                            widget.nationwideOn
+                                ? AppColors.primary
+                                : AppColors.textDisabled,
                       ),
                     ],
                   ),
@@ -4783,126 +4850,122 @@ class _PublishSheetState extends State<_PublishSheet> {
                 label:
                     _passCountFailed
                         ? '긴급 호출, 이용권 확인 실패. 다시 시도'
-                        : (_urgentPassCount > 0 ||
-                            _urgentPassCount == -1)
+                        : (_urgentPassCount > 0 || _urgentPassCount == -1)
                         ? '긴급 호출로 등록하기, 이용권 사용'
                         : '긴급 호출로 등록하기, 7900원',
                 child: GestureDetector(
-                onTap:
-                    _passCountFailed
-                        ? _loadCounts
-                        : (_urgentPassCount > 0 ||
-                            _urgentPassCount == -1)
-                        ? widget.onUrgentSubmit
-                        : widget.onBuyPass,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 18,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors:
-                          (_urgentPassCount > 0 ||
-                                  _urgentPassCount == -1)
-                              ? [
-                                AppColors.urgentCall,
-                                AppColors.error,
-                              ]
-                              : [
-                                const Color(0xFFF87171),
-                                AppColors.urgentCall,
-                              ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                  onTap:
+                      _passCountFailed
+                          ? _loadCounts
+                          : (_urgentPassCount > 0 || _urgentPassCount == -1)
+                          ? widget.onUrgentSubmit
+                          : widget.onBuyPass,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 18,
                     ),
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.urgentCall.withValues(alpha: 0.30),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors:
+                            (_urgentPassCount > 0 || _urgentPassCount == -1)
+                                ? [AppColors.urgentCall, AppColors.error]
+                                : [
+                                  const Color(0xFFF87171),
+                                  AppColors.urgentCall,
+                                ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(9),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.20),
-                          borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.urgentCall.withValues(alpha: 0.30),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         ),
-                        child: const Icon(
-                          Icons.bolt_rounded,
-                          size: 22,
-                          color: Colors.white,
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(9),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.20),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.bolt_rounded,
+                            size: 22,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                const Text(
-                                  '긴급 호출',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(width: 7),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withValues(alpha: 0.25),
-                                    borderRadius: BorderRadius.circular(99),
-                                  ),
-                                  child: Text(
-                                    _passCountFailed
-                                        ? '확인 필요'
-                                        : _urgentPassCount == -1
-                                        ? '무제한 (구독)'
-                                        : _urgentPassCount > 0
-                                        ? '${_urgentPassCount}회 보유'
-                                        : '₩7,900',
-                                    style: const TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Text(
+                                    '긴급 호출',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
                                       color: Colors.white,
                                     ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              _urgentBenefitText,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.white.withValues(alpha: 0.88),
+                                  const SizedBox(width: 7),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withValues(
+                                        alpha: 0.25,
+                                      ),
+                                      borderRadius: BorderRadius.circular(99),
+                                    ),
+                                    child: Text(
+                                      _passCountFailed
+                                          ? '확인 필요'
+                                          : _urgentPassCount == -1
+                                          ? '무제한 (구독)'
+                                          : _urgentPassCount > 0
+                                          ? '${_urgentPassCount}회 보유'
+                                          : '₩7,900',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
+                              const SizedBox(height: 3),
+                              Text(
+                                _urgentBenefitText,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white.withValues(alpha: 0.88),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ],
+                        const SizedBox(width: 8),
+                        const Icon(
+                          Icons.chevron_right_rounded,
+                          color: Colors.white,
+                          size: 22,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
               ),
               const SizedBox(height: 16),
               const Row(
@@ -5146,49 +5209,49 @@ class _PublishSheetState extends State<_PublishSheet> {
             ? '공개 날짜 ${DateFormat('M월 d일', 'ko_KR').format(_scheduledDate!)}, 변경하려면 두 번 탭'
             : '공개 날짜 선택',
     child: GestureDetector(
-    onTap: () async {
-      // 같은 퍼널의 근무 날짜와 동일한 바텀시트를 쓴다.
-      // Material 다이얼로그를 섞으면 인터랙션을 두 번 배워야 한다.
-      final now = DateTime.now();
-      final p = await pickDateSheet(
-        context,
-        title: '공개 날짜 선택',
-        initial: _scheduledDate ?? now.add(const Duration(days: 1)),
-        firstDate: DateTime(now.year, now.month, now.day),
-        lastDate: now.add(const Duration(days: 365)),
-      );
-      if (p != null) setState(() => _scheduledDate = p);
-    },
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-      decoration: BoxDecoration(
-        color: _scheduledDate != null ? AppColors.primaryLight : _bg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _scheduledDate != null ? _blue : _border),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.calendar_today_outlined,
-            size: 15,
-            color: _scheduledDate != null ? _blue : _label,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              _scheduledDate != null
-                  ? DateFormat('M월 d일', 'ko_KR').format(_scheduledDate!)
-                  : '날짜',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: _scheduledDate != null ? _text : _label,
+      onTap: () async {
+        // 같은 퍼널의 근무 날짜와 동일한 바텀시트를 쓴다.
+        // Material 다이얼로그를 섞으면 인터랙션을 두 번 배워야 한다.
+        final now = DateTime.now();
+        final p = await pickDateSheet(
+          context,
+          title: '공개 날짜 선택',
+          initial: _scheduledDate ?? now.add(const Duration(days: 1)),
+          firstDate: DateTime(now.year, now.month, now.day),
+          lastDate: now.add(const Duration(days: 365)),
+        );
+        if (p != null) setState(() => _scheduledDate = p);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        decoration: BoxDecoration(
+          color: _scheduledDate != null ? AppColors.primaryLight : _bg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _scheduledDate != null ? _blue : _border),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.calendar_today_outlined,
+              size: 15,
+              color: _scheduledDate != null ? _blue : _label,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _scheduledDate != null
+                    ? DateFormat('M월 d일', 'ko_KR').format(_scheduledDate!)
+                    : '날짜',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: _scheduledDate != null ? _text : _label,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     ),
   );
 
@@ -5199,45 +5262,45 @@ class _PublishSheetState extends State<_PublishSheet> {
             ? '공개 시각 ${_scheduledTime!.hour}시 ${_scheduledTime!.minute}분, 변경하려면 두 번 탭'
             : '공개 시각 선택',
     child: GestureDetector(
-    onTap: () async {
-      // 근무 시간 시트와 동일한 스피너. Material 다이얼로그 혼용 제거.
-      final p = await pickTimeSheet(
-        context,
-        title: '공개 시각 선택',
-        initial: _scheduledTime,
-      );
-      if (p != null) setState(() => _scheduledTime = p);
-    },
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-      decoration: BoxDecoration(
-        color: _scheduledTime != null ? AppColors.primaryLight : _bg,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _scheduledTime != null ? _blue : _border),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.access_time_rounded,
-            size: 15,
-            color: _scheduledTime != null ? _blue : _label,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              _scheduledTime != null
-                  ? '${_scheduledTime!.hour.toString().padLeft(2, '0')}:${_scheduledTime!.minute.toString().padLeft(2, '0')}'
-                  : '시간',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: _scheduledTime != null ? _text : _label,
+      onTap: () async {
+        // 근무 시간 시트와 동일한 스피너. Material 다이얼로그 혼용 제거.
+        final p = await pickTimeSheet(
+          context,
+          title: '공개 시각 선택',
+          initial: _scheduledTime,
+        );
+        if (p != null) setState(() => _scheduledTime = p);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+        decoration: BoxDecoration(
+          color: _scheduledTime != null ? AppColors.primaryLight : _bg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: _scheduledTime != null ? _blue : _border),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.access_time_rounded,
+              size: 15,
+              color: _scheduledTime != null ? _blue : _label,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                _scheduledTime != null
+                    ? '${_scheduledTime!.hour.toString().padLeft(2, '0')}:${_scheduledTime!.minute.toString().padLeft(2, '0')}'
+                    : '시간',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: _scheduledTime != null ? _text : _label,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-    ),
     ),
   );
 }
@@ -5373,50 +5436,50 @@ class _CompareCard extends StatelessWidget {
                 button: true,
                 label: '무료 등록, 3일간 노출',
                 child: GestureDetector(
-                onTap: onFreeTap,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: _border),
-                  ),
-                  child: const Column(
-                    children: [
-                      Text(
-                        '무료 등록',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: _text,
-                        ),
-                      ),
-                      SizedBox(height: 5),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.schedule_rounded,
-                            size: 11,
-                            color: AppColors.textSecondary,
+                  onTap: onFreeTap,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: _border),
+                    ),
+                    child: const Column(
+                      children: [
+                        Text(
+                          '무료 등록',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: _text,
                           ),
-                          SizedBox(width: 3),
-                          Text(
-                            // 지연이 없어졌으니 더 이상 '경고'가 아니다.
-                            // 주황은 시간 급함에만 쓴다(DESIGN.md Two-Signal).
-                            '3일간 노출',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
+                        ),
+                        SizedBox(height: 5),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.schedule_rounded,
+                              size: 11,
                               color: AppColors.textSecondary,
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                            SizedBox(width: 3),
+                            Text(
+                              // 지연이 없어졌으니 더 이상 '경고'가 아니다.
+                              // 주황은 시간 급함에만 쓴다(DESIGN.md Two-Signal).
+                              '3일간 노출',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
               ),
             ),
             const SizedBox(width: 10),
@@ -5430,61 +5493,61 @@ class _CompareCard extends StatelessWidget {
                         ? '즉시게시로 등록, 이용권 사용'
                         : '즉시게시로 등록, 4900원',
                 child: GestureDetector(
-                onTap: onPaidTap,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.primary, AppColors.aiAccent],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+                  onTap: onPaidTap,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppColors.primary, AppColors.aiAccent],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    children: [
-                      // 이용권이 있으면 가격을 보여주지 않는다 —
-                      // 실제로는 차감만 되는데 ₩4,900이 붙으면 "결제해야 하는 줄" 오해한다.
-                      Text(
-                        passCountFailed
-                            ? '즉시게시'
-                            : paidOk
-                            ? '즉시게시 · 이용권 사용'
-                            : '즉시게시 · ₩4,900',
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                    child: Column(
+                      children: [
+                        // 이용권이 있으면 가격을 보여주지 않는다 —
+                        // 실제로는 차감만 되는데 ₩4,900이 붙으면 "결제해야 하는 줄" 오해한다.
+                        Text(
+                          passCountFailed
+                              ? '즉시게시'
+                              : paidOk
+                              ? '즉시게시 · 이용권 사용'
+                              : '즉시게시 · ₩4,900',
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        paidOk ? '즉시 노출 · 추가 결제 없음' : '즉시 노출',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: Colors.white70,
+                        const SizedBox(height: 2),
+                        Text(
+                          paidOk ? '즉시 노출 · 추가 결제 없음' : '즉시 노출',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.white70,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        passCountLoading
-                            ? '조회 중…'
-                            : passCountFailed
-                            ? '이용권 확인 실패 · 다시 시도'
-                            : paidPassCount == -1
-                            ? '무제한 (구독 혜택)'
-                            : paidOk
-                            ? '이용권 $paidPassCount개 보유'
-                            : '이용권 없음 · 구매하기',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.white.withValues(alpha: 0.85),
+                        const SizedBox(height: 2),
+                        Text(
+                          passCountLoading
+                              ? '조회 중…'
+                              : passCountFailed
+                              ? '이용권 확인 실패 · 다시 시도'
+                              : paidPassCount == -1
+                              ? '무제한 (구독 혜택)'
+                              : paidOk
+                              ? '이용권 $paidPassCount개 보유'
+                              : '이용권 없음 · 구매하기',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.white.withValues(alpha: 0.85),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ),
               ),
             ),
           ],
