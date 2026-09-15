@@ -32,7 +32,8 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
   bool _loading = true;
   bool _sending = false;
 
-  static const int _maxSelect = 10;
+  // 서버가 공고별 남은 발송 인원을 준다(단건 10 / 라이트 10 / 스탠다드 15 / 프로 20, 공고 누적).
+  int _maxSelect = 10;
 
   @override
   void initState() {
@@ -52,6 +53,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
         final body = jsonDecode(resp.body);
         setState(() {
           _workers = List<Map<String, dynamic>>.from(body['workers'] ?? []);
+          _maxSelect = (body['remainingRecipients'] as num?)?.toInt() ?? 10;
           _loading = false;
         });
       } else {
@@ -86,7 +88,13 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
         _showSuccess('$sent명에게 긴급 호출을 보냈어요!');
         Navigator.pop(context, {'sent': sent});
       } else {
-        _showError('발송에 실패했어요. 다시 시도해주세요.');
+        // 인원 한도 초과 등 서버가 사유를 주면 그대로 보여준다.
+        var msg = '발송에 실패했어요. 다시 시도해주세요.';
+        try {
+          final m = jsonDecode(resp.body)['message'];
+          if (m is String && m.isNotEmpty) msg = m;
+        } catch (_) {}
+        _showError(msg);
       }
     } catch (_) {
       _showError(Msg.network);

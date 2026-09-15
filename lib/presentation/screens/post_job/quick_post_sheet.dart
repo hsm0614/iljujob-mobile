@@ -8,6 +8,7 @@ import 'package:iljujob/widget/free_limit_sheet.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/data/services/job_service.dart';
+import 'package:iljujob/data/models/job.dart' show JobLocation;
 import 'package:iljujob/data/services/client_tracking_service.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/utils/date_ymd.dart';
@@ -284,13 +285,20 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
       return;
     }
 
+    final j = widget.job;
+    final lat = double.tryParse('${j['lat'] ?? ''}') ?? 0;
+    final lng = double.tryParse('${j['lng'] ?? ''}') ?? 0;
+    if (lat == 0 || lng == 0) {
+      _showSnack('근무지 좌표가 없는 공고예요. 일반 등록에서 근무지를 다시 선택해주세요.');
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
       final prefs = await SharedPreferences.getInstance();
       final clientId = prefs.getInt('userId')!;
       final userType = prefs.getString('userType') ?? '';
-      final j = widget.job;
 
       final result = await JobService.postJobWithImages(
         title: j['title'] ?? '',
@@ -308,8 +316,8 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
         images: [],
         clientId: clientId,
         weekdays: j['weekdays'],
-        lat: (j['lat'] ?? 0.0).toDouble(),
-        lng: (j['lng'] ?? 0.0).toDouble(),
+        lat: lat,
+        lng: lng,
         isScheduled: false,
         publishAt: null,
         isSameDayPay: j['is_same_day_pay'] == 1,
@@ -317,6 +325,24 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
         passType: passType,
         isAgency: clientId == 1,
         requestId: _attemptId,
+        // 원본 공고 조건을 그대로 싣는다 — 예전엔 빠져서 장기 공고가 단기로,
+        // 다중 근무지·전국노출·외부신청이 사라진 채 올라갔다.
+        // (이미지는 파일 재업로드가 필요해 빠른 등록에선 제외)
+        jobType: _jobType(j),
+        categoryMajor: j['category_major']?.toString(),
+        categorySub: j['category_sub']?.toString(),
+        isNationwide: _truthy(j['is_nationwide']),
+        locations: _locations(j),
+        isAlwaysOpen: _truthy(j['is_always_open']),
+        requiredCerts: j['required_certs']?.toString(),
+        welfare: j['welfare']?.toString(),
+        externalApplyEnabled:
+            isPaid &&
+            _truthy(j['external_apply_enabled']) &&
+            (j['external_apply_url']?.toString().isNotEmpty ?? false),
+        externalApplyUrl: j['external_apply_url']?.toString(),
+        externalApplyLabel:
+            j['external_apply_label']?.toString() ?? '자세히 보고 신청하기',
       );
 
       _submitted = true;
@@ -451,6 +477,27 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  static bool _truthy(dynamic v) =>
+      v == true || v == 1 || v == '1' || v == 'true';
+
+  static String _jobType(Map j) {
+    final t = j['job_type']?.toString();
+    if (t == 'long' || t == 'short') return t!;
+    return (j['weekdays']?.toString().trim().isNotEmpty ?? false)
+        ? 'long'
+        : 'short';
+  }
+
+  static List<JobLocation> _locations(Map j) {
+    final raw = j['locations'];
+    if (raw is! List) return const [];
+    return raw
+        .whereType<Map>()
+        .map((m) => JobLocation.fromJson(Map<String, dynamic>.from(m)))
+        .where((l) => l.hasGeo)
+        .toList();
   }
 
   void _showSnack(String msg) {

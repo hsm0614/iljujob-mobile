@@ -31,8 +31,9 @@ class _Plan {
   final String name;
   final int price;
   final int instantCredits; // -1=무제한, N=횟수
+  final int urgentCredits;
+  final int maxRecipients;
   final bool unlimitedInstant;
-  final bool unlimitedUrgent;
   final bool attendanceCare;
   final bool priorityCs;
   final bool recommended;
@@ -43,8 +44,9 @@ class _Plan {
     required this.name,
     required this.price,
     required this.instantCredits,
+    required this.urgentCredits,
+    required this.maxRecipients,
     this.unlimitedInstant = false,
-    this.unlimitedUrgent = false,
     required this.attendanceCare,
     required this.priorityCs,
     required this.iosId,
@@ -53,14 +55,15 @@ class _Plan {
   });
 }
 
+// 서버 lib/subscriptionPlans.js 와 같은 표 (2026-09-15 확정: 프로만 즉시게시 무제한)
 const _plans = [
   _Plan(
     key: 'lite',
     name: '라이트',
     price: 9900,
     instantCredits: 3,
-    unlimitedInstant: false,
-    unlimitedUrgent: false,
+    urgentCredits: 1,
+    maxRecipients: 10,
     attendanceCare: false,
     priorityCs: false,
     iosId: _kIosLite,
@@ -70,9 +73,9 @@ const _plans = [
     key: 'standard',
     name: '스탠다드',
     price: 19900,
-    instantCredits: -1,
-    unlimitedInstant: true,
-    unlimitedUrgent: false,
+    instantCredits: 3,
+    urgentCredits: 3,
+    maxRecipients: 15,
     attendanceCare: true,
     priorityCs: false,
     iosId: _kIosStandard,
@@ -84,8 +87,9 @@ const _plans = [
     name: '프로',
     price: 39900,
     instantCredits: -1,
+    urgentCredits: 5,
+    maxRecipients: 20,
     unlimitedInstant: true,
-    unlimitedUrgent: true,
     attendanceCare: true,
     priorityCs: true,
     iosId: _kIosPro,
@@ -359,8 +363,8 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
               const SizedBox(height: 8),
               Text(
                 _plan.unlimitedInstant
-                    ? '${_plan.name} 플랜이 활성화되었습니다.\n즉시게시를 무제한으로 사용할 수 있어요.'
-                    : '${_plan.name} 플랜 즉시게시 이용권 3개가\n계정에 지급되었습니다.',
+                    ? '${_plan.name} 플랜이 활성화되었습니다.\n즉시게시 무제한 · 긴급호출 ${_plan.urgentCredits}회를 쓸 수 있어요.'
+                    : '${_plan.name} 플랜 즉시게시 ${_plan.instantCredits}회 · 긴급호출 ${_plan.urgentCredits}회가\n계정에 지급되었습니다.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,
@@ -614,12 +618,11 @@ class _PlanCard extends StatelessWidget {
                           : '즉시게시 ${plan.instantCredits}회',
                   color: AppColors.primary,
                 ),
-                if (plan.unlimitedUrgent)
-                  _Chip(
-                    icon: Icons.bolt_rounded,
-                    label: '긴급호출 무제한',
-                    color: AppColors.urgentCall,
-                  ),
+                _Chip(
+                  icon: Icons.bolt_rounded,
+                  label: '긴급호출 ${plan.urgentCredits}회 · ${plan.maxRecipients}명',
+                  color: AppColors.urgentCall,
+                ),
                 _Chip(
                   icon: Icons.auto_awesome_rounded,
                   label: 'AI 기능 무제한',
@@ -694,8 +697,9 @@ class _CompareTable extends StatelessWidget {
   const _CompareTable({required this.selectedPlan});
 
   static const _rows = [
-    ['즉시게시', '3회/월', '무제한', '무제한'],
-    ['긴급호출', '단건 구매', '단건 구매', '무제한'],
+    ['즉시게시', '3회/월', '3회/월', '무제한'],
+    ['긴급호출', '1회/월', '3회/월', '5회/월'],
+    ['발송 인원', '10명', '15명', '20명'],
     ['AI 기능', '포함', '포함', '포함'],
     ['맞춤 인재', '포함', '포함', '포함'],
     ['임금 리포트', '포함', '포함', '포함'],

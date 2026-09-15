@@ -773,8 +773,20 @@ class _PostJobFormState extends State<PostJobForm>
         ),
   );
 
+  // 연타 방지 잠금. _isSubmitting 은 await 뒤에 켜져서 그 사이 두 번째 탭이 통과했다.
+  bool _submitLock = false;
+
   Future<void> _submit({required bool isPaid, String? passType}) async {
-    if (_isSubmitting) return;
+    if (_isSubmitting || _submitLock) return;
+    _submitLock = true;
+    try {
+      await _submitOnce(isPaid: isPaid, passType: passType);
+    } finally {
+      _submitLock = false;
+    }
+  }
+
+  Future<void> _submitOnce({required bool isPaid, String? passType}) async {
     final prefs = await SharedPreferences.getInstance();
     final clientId = prefs.getInt('userId');
     final userType = prefs.getString('userType') ?? '';
@@ -883,7 +895,9 @@ class _PostJobFormState extends State<PostJobForm>
       unawaited(_clearDraft().catchError((_) {}));
       if (!mounted) return;
       final isUrgent = passType == 'urgent';
-      final isDelayed = !isPaid && result['status'] == 'reserved';
+      // 같은 요청번호로 이미 등록된 공고가 돌아오면(duplicate) 그 공고의 유료 여부를 따른다.
+      final serverPaid = result['is_paid'] == true || result['is_paid'] == 1;
+      final isDelayed = !serverPaid && result['status'] == 'reserved';
       final eta = DateTime.now().add(const Duration(hours: 12));
       final etaStr =
           '${eta.hour.toString().padLeft(2, '0')}:${eta.minute.toString().padLeft(2, '0')}';

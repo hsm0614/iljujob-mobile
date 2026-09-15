@@ -503,7 +503,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
   Future<void> fetchAppliedJobs(int userId) async {
     try {
-      final response = await http.get(
+      // 토큰을 실어야 서버가 query 의 workerId 대신 본인 것만 돌려준다.
+      final response = await AuthenticatedHttpClient.get(
         Uri.parse('$baseUrl/api/apply/my-jobs?workerId=$userId'),
       );
       if (response.statusCode == 200) {

@@ -162,6 +162,7 @@ class ChatRoomController extends ChangeNotifier {
     if (status == 'cancelled' ||
         status == 'canceled' ||
         status == 'blocked' ||
+        status == 'archived' ||
         status == 'expired') {
       return false;
     }
@@ -548,6 +549,7 @@ class ChatRoomController extends ChangeNotifier {
       'sender': msg['sender'],
       'senderId': msg['senderId'],
       'message': msg['message'],
+      if (msg['imageUrl'] != null) 'imageUrl': msg['imageUrl'],
       'clientTempId': clientTempId,
       'clientCreatedAt': msg['createdAt'],
     };
@@ -1354,21 +1356,19 @@ class ChatRoomController extends ChangeNotifier {
         onShowSnackbar?.call(Msg.server);
         return;
       }
-      final createdAtUtc = DateTime.now().toUtc();
-      socket?.emit('send_message', {
-        'roomId': chatRoomId,
-        'sender': sender,
-        'message': '[이미지]',
-        'imageUrl': imageUrl,
-      });
+      // 텍스트와 같은 경로(ack·실패 표시·재전송). 예전엔 응답 확인 없이 쏴서
+      // 연결이 끊겨 있으면 화면엔 보이는데 상대에겐 안 가는 이미지가 생겼다.
+      final clientTempId = _uuid.v4();
       upsertMessage({
+        'clientTempId': clientTempId,
         'sender': sender,
         'message': '[이미지]',
         'imageUrl': imageUrl,
-        'createdAt': createdAtUtc.toIso8601String(),
-        'createdAtMs': createdAtUtc.millisecondsSinceEpoch,
+        'createdAt': DateTime.now().toUtc().toIso8601String(),
+        'pending': true,
       });
       onScrollToBottom?.call(force: true);
+      _emitSend(clientTempId);
     } else {
       debugPrint('이미지 업로드 실패 (${resp.statusCode})');
       onShowSnackbar?.call(Msg.server);

@@ -9,7 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
 
 import '../../config/constants.dart';
 import '../../data/services/authenticated_http_client.dart';
@@ -38,6 +37,18 @@ const _kIosInstant = {
   10: 'com.iljujob.pass30',
 };
 const _kIosUrgent1 = 'com.iljujob.urgent1';
+
+bool _isPassProduct(String id) =>
+    _kIosInstant.values.contains(id) || id == _kIosUrgent1;
+
+class _IosVerifyFailure implements Exception {
+  final String message;
+  // 400: 다시 보내도 안 되는 거래(번들·상품 불일치 등). 그 외는 재시도 대상.
+  final bool permanent;
+  const _IosVerifyFailure(this.message, {required this.permanent});
+  @override
+  String toString() => message;
+}
 
 // ── 즉시 게시 패스 옵션 (단건 ₩4,900 기준) ──
 const _instantOptions = [
@@ -112,7 +123,8 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
     _tabCtrl = TabController(length: 2, vsync: this);
     _refreshPassCount();
     _loadUserInfo();
-    _forceFinishAllIosTransactions();
+    // 끝나지 않은 거래는 아래 리스너가 서버 검증 후에 완료한다.
+    // 예전엔 화면 진입 시 검증 없이 전부 강제 종료해서, 검증이 실패했던 결제는 이용권 없이 사라졌다.
     _purchaseSub = _iap.purchaseStream.listen(
       _onPurchaseUpdated,
       onDone: () => _purchaseSub?.cancel(),
@@ -175,16 +187,6 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
     });
   }
 
-  Future<void> _forceFinishAllIosTransactions() async {
-    if (!Platform.isIOS) return;
-    final q = SKPaymentQueueWrapper();
-    for (final t in await q.transactions()) {
-      try {
-        await q.finishTransaction(t);
-      } catch (_) {}
-    }
-  }
-
   // ─── 에러 다이얼로그 ──────────────────────────────────
   void _showErrorDialog(String msg) {
     if (!mounted) return;
@@ -236,7 +238,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
       try {
         msg = jsonDecode(res.body)['message'] ?? msg;
       } catch (_) {}
-      throw Exception(msg);
+      throw _IosVerifyFailure(msg, permanent: res.statusCode == 400);
     }
   }
 
@@ -315,6 +317,8 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
 
       if (p.status == PurchaseStatus.purchased ||
           p.status == PurchaseStatus.restored) {
+        // 이 화면은 이용권 상품만 처리한다. 구독 거래는 구독 화면이 검증·완료한다.
+        if (Platform.isIOS && !_isPassProduct(p.productID)) continue;
         final purchaseKey =
             p.purchaseID ?? '${p.productID}-${p.transactionDate ?? ''}';
         if (_handledPurchaseIds.contains(purchaseKey)) {
@@ -358,7 +362,14 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
           }
         } catch (e) {
           _handledPurchaseIds.remove(purchaseKey);
-          _purchaseCompleter?.completeError(e);
+          // 영구 실패만 거래를 끝낸다. 네트워크·서버 오류는 끝내지 않아야
+          // StoreKit 이 다음에 다시 전달해 이용권을 받을 수 있다.
+          if (e is _IosVerifyFailure && e.permanent && p.pendingCompletePurchase) {
+            try {
+              await _iap.completePurchase(p);
+            } catch (_) {}
+          }
+          if (!_purchaseCompleterIsDone) _purchaseCompleter?.completeError(e);
           if (mounted) _showErrorDialog('서버 검증 실패: $e');
         }
         continue;
