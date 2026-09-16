@@ -7,12 +7,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../config/app_theme.dart';
 import '../../config/constants.dart';
+import '../../config/messages.dart';
 import '../../data/models/subscription_product_config.dart';
 import '../../data/services/authenticated_http_client.dart';
 import '../../data/services/client_tracking_service.dart';
+import 'potrone_screen.dart';
 
 typedef _Plan = SubscriptionProductConfig;
 const _plans = subscriptionProductConfigs;
@@ -27,6 +30,9 @@ class SubscriptionPlansScreen extends StatefulWidget {
 class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   String _selectedPlan = 'standard';
   bool _processing = false;
+  int? _userId;
+  String? _companyName;
+  String? _companyPhone;
   final InAppPurchase _iap = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _purchaseSub;
   final Set<String> _handledIds = {};
@@ -34,7 +40,10 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   @override
   void initState() {
     super.initState();
-    _purchaseSub = _iap.purchaseStream.listen(_onPurchase, onError: (_) {});
+    _loadUser();
+    if (Platform.isIOS) {
+      _purchaseSub = _iap.purchaseStream.listen(_onPurchase, onError: (_) {});
+    }
     ClientTrackingService.instance.track('subscription_page_view');
   }
 
@@ -46,6 +55,16 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
 
   _Plan get _plan => _plans.firstWhere((p) => p.key == _selectedPlan);
 
+  Future<void> _loadUser() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _userId = prefs.getInt('userId');
+      _companyName = prefs.getString('companyName');
+      _companyPhone = prefs.getString('companyPhone');
+    });
+  }
+
   Future<void> _purchase() async {
     if (_processing) return;
     final plan = _plan;
@@ -54,17 +73,22 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       properties: {'plan': plan.key},
     );
 
-    await _purchaseStore(plan);
+    if (checkoutProviderForPlatform(isIos: Platform.isIOS) ==
+        CheckoutProvider.appStore) {
+      await _purchaseStore(plan);
+    } else {
+      await _purchaseWithPortOne(plan);
+    }
   }
 
-  // iOS·Android 모두 스토어 결제를 사용한다.
+  // iOS는 기존 App Store 상품 ID를 그대로 사용한다.
   Future<void> _purchaseStore(_Plan plan) async {
     setState(() => _processing = true);
     try {
       final available = await _iap.isAvailable();
       if (!available) throw Exception('스토어를 사용할 수 없습니다');
 
-      final productId = Platform.isIOS ? plan.iosId : plan.androidId;
+      final productId = plan.iosId;
       final resp = await _iap.queryProductDetails({productId});
       if (resp.productDetails.isEmpty) {
         throw Exception('상품 정보를 불러올 수 없습니다. ($productId)');
@@ -88,7 +112,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       if (p.status == PurchaseStatus.purchased ||
           p.status == PurchaseStatus.restored) {
         _handledIds.add(purchaseKey);
-        final activated = await _activateStoreOnServer(p);
+        final activated = await _activateIosOnServer(p);
         if (activated) {
           if (p.pendingCompletePurchase) await _iap.completePurchase(p);
         } else {
@@ -103,14 +127,14 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
     }
   }
 
-  Future<bool> _activateStoreOnServer(PurchaseDetails purchase) async {
+  Future<bool> _activateIosOnServer(PurchaseDetails purchase) async {
     final token = purchase.verificationData.serverVerificationData;
     if (token.isEmpty) return false;
     try {
       final resp = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/iap/verify'),
         body: {
-          'platform': Platform.isIOS ? 'app_store' : 'google_play',
+          'platform': 'app_store',
           'productId': purchase.productID,
           'purchaseId': purchase.purchaseID,
           'token': token,
@@ -133,6 +157,57 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       return false;
     } finally {
       if (mounted) setState(() => _processing = false);
+    }
+  }
+
+  Future<void> _purchaseWithPortOne(_Plan plan) async {
+    if (!mounted) return;
+    setState(() => _processing = true);
+    try {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => PortonePaymentScreen(
+                count: 1,
+                companyName: _companyName ?? '알바일주',
+                companyPhone: _companyPhone ?? '',
+                amount: plan.price,
+                productName: '알바일주 ${plan.name} 구독',
+              ),
+        ),
+      );
+      if (result is Map && result['imp_uid'] != null) {
+        await _activatePortOneOnServer(result['imp_uid']?.toString());
+      }
+    } catch (_) {
+      if (mounted) _showError(Msg.server);
+    } finally {
+      if (mounted) setState(() => _processing = false);
+    }
+  }
+
+  Future<bool> _activatePortOneOnServer(String? impUid) async {
+    if (impUid == null || impUid.isEmpty) return false;
+    try {
+      final resp = await AuthenticatedHttpClient.postJson(
+        Uri.parse('$baseUrl/api/subscription/activate'),
+        body: {'clientId': _userId, 'plan': _selectedPlan, 'impUid': impUid},
+      );
+      if (!mounted) return resp.statusCode == 200;
+      if (resp.statusCode == 200) {
+        ClientTrackingService.instance.track(
+          'subscription_success',
+          properties: {'plan': _selectedPlan},
+        );
+        _showSuccess();
+        return true;
+      }
+      _showError('구독 활성화에 실패했어요. 고객센터에 문의해주세요.');
+      return false;
+    } catch (_) {
+      if (mounted) _showError(Msg.server);
+      return false;
     }
   }
 
@@ -311,7 +386,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                     const SizedBox(height: 20),
 
                     // 유의사항
-                    const _Notice(),
+                    _Notice(isStoreBilling: Platform.isIOS),
                     const SizedBox(height: 20),
                   ],
                 ),
@@ -676,7 +751,8 @@ class _CompareTable extends StatelessWidget {
 
 // ── 유의사항 ─────────────────────────────────────────────
 class _Notice extends StatelessWidget {
-  const _Notice();
+  const _Notice({required this.isStoreBilling});
+  final bool isStoreBilling;
   @override
   Widget build(BuildContext context) {
     const style = TextStyle(
@@ -690,10 +766,10 @@ class _Notice extends StatelessWidget {
         color: AppColors.bgMuted,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
+          const Text(
             '유의사항',
             style: TextStyle(
               fontSize: 12,
@@ -701,11 +777,16 @@ class _Notice extends StatelessWidget {
               color: AppColors.textSecondary,
             ),
           ),
-          SizedBox(height: 6),
-          Text('• 구독은 30일 단위로 자동 갱신됩니다.', style: style),
-          Text('• 지급된 이용권은 구독을 취소해도 회수되지 않습니다.', style: style),
-          Text('• 구독 취소 시 만료일까지 혜택이 유지됩니다.', style: style),
-          Text('• 결제는 구독 선택 즉시 이루어집니다.', style: style),
+          const SizedBox(height: 6),
+          Text(
+            isStoreBilling
+                ? '• 구독은 App Store에서 자동 갱신됩니다.'
+                : '• Android는 PortOne 30일 결제이며 자동 갱신되지 않습니다.',
+            style: style,
+          ),
+          const Text('• 지급된 이용권은 구독을 취소해도 회수되지 않습니다.', style: style),
+          const Text('• 구독 취소 시 만료일까지 혜택이 유지됩니다.', style: style),
+          const Text('• 결제는 구독 선택 즉시 이루어집니다.', style: style),
         ],
       ),
     );

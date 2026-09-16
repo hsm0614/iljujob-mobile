@@ -9,11 +9,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:in_app_purchase_android/billing_client_wrappers.dart';
-import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 
 import '../../config/constants.dart';
 import '../../data/services/authenticated_http_client.dart';
+import 'potrone_screen.dart';
 
 // ── 디자인 토큰 ──
 const _blue = AppColors.primary;
@@ -37,19 +36,9 @@ const _kIosInstant = {
   10: 'com.iljujob.pass30',
 };
 const _kIosUrgent1 = 'com.iljujob.urgent1';
-const _kAndroidInstant = {
-  1: 'instant_1',
-  3: 'instant_3',
-  5: 'instant_5',
-  10: 'instant_10',
-};
-const _kAndroidUrgent1 = 'urgent_1';
 
 bool _isPassProduct(String id) =>
-    _kIosInstant.values.contains(id) ||
-    id == _kIosUrgent1 ||
-    _kAndroidInstant.values.contains(id) ||
-    id == _kAndroidUrgent1;
+    _kIosInstant.values.contains(id) || id == _kIosUrgent1;
 
 class _StoreVerifyFailure implements Exception {
   final String message;
@@ -107,6 +96,9 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   int remainingInstant = 0;
   int remainingUrgent = 0;
 
+  String companyName = '';
+  String companyPhone = '';
+
   final formatter = NumberFormat('#,###');
 
   // IAP
@@ -124,22 +116,16 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
     super.initState();
     _tabCtrl = TabController(length: 2, vsync: this);
     _refreshPassCount();
+    _loadUserInfo();
     // 끝나지 않은 거래는 아래 리스너가 서버 검증 후에 완료한다.
     // 예전엔 화면 진입 시 검증 없이 전부 강제 종료해서, 검증이 실패했던 결제는 이용권 없이 사라졌다.
-    _purchaseSub = _iap.purchaseStream.listen(
-      _onPurchaseUpdated,
-      onDone: () => _purchaseSub?.cancel(),
-      onError: (e) {
-        if (mounted) _showErrorDialog('결제 오류: $e');
-      },
-    );
-    // Android에서 서버 잠시 오류로 consume하지 못한 거래를
-    // 이 화면에 다시 들어왔을 때 재검증한다.
-    if (Platform.isAndroid) {
-      unawaited(
-        _iap.restorePurchases().catchError((Object error) {
-          debugPrint('미완료 이용권 결제 확인 실패: $error');
-        }),
+    if (Platform.isIOS) {
+      _purchaseSub = _iap.purchaseStream.listen(
+        _onPurchaseUpdated,
+        onDone: () => _purchaseSub?.cancel(),
+        onError: (e) {
+          if (mounted) _showErrorDialog('결제 오류: $e');
+        },
       );
     }
   }
@@ -184,6 +170,16 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
         setState(() => _nearbyCount = (data['count'] as num?)?.toInt() ?? 0);
       }
     } catch (_) {}
+  }
+
+  Future<void> _loadUserInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      companyName = prefs.getString('companyName') ?? '';
+      companyPhone =
+          prefs.getString('companyPhone') ?? prefs.getString('userPhone') ?? '';
+    });
   }
 
   // ─── 에러 다이얼로그 ──────────────────────────────────
@@ -238,28 +234,6 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
         msg = jsonDecode(res.body)['message'] ?? msg;
       } catch (_) {}
       throw _StoreVerifyFailure(msg, permanent: res.statusCode == 400);
-    }
-  }
-
-  Future<void> _verifyGooglePlayOnServer(PurchaseDetails purchase) async {
-    final purchaseToken = purchase.verificationData.serverVerificationData;
-    if (purchaseToken.isEmpty) {
-      throw const _StoreVerifyFailure(
-        'Google Play 구매 토큰이 없습니다.',
-        permanent: false,
-      );
-    }
-    final res = await AuthenticatedHttpClient.postJson(
-      Uri.parse('$baseUrl/api/pass/verify-google-play'),
-      headers: {'Accept': 'application/json'},
-      body: {'productId': purchase.productID, 'purchaseToken': purchaseToken},
-    );
-    if (res.statusCode != 200) {
-      String message = 'Google Play 결제 검증에 실패했습니다.';
-      try {
-        message = jsonDecode(res.body)['message'] ?? message;
-      } catch (_) {}
-      throw _StoreVerifyFailure(message, permanent: res.statusCode == 400);
     }
   }
 
@@ -349,28 +323,12 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
               jwsTransaction: jws,
             );
             if (p.pendingCompletePurchase) await _iap.completePurchase(p);
-          } else if (Platform.isAndroid) {
-            await _verifyGooglePlayOnServer(p);
-            final addition =
-                _iap
-                    .getPlatformAddition<
-                      InAppPurchaseAndroidPlatformAddition
-                    >();
-            final consumeResult = await addition.consumePurchase(p);
-            if (consumeResult.responseCode != BillingResponse.ok) {
-              throw const _StoreVerifyFailure(
-                'Google Play 결제 완료 처리에 실패했습니다.',
-                permanent: false,
-              );
-            }
           }
           if (!_purchaseCompleterIsDone) _purchaseCompleter?.complete(p);
 
           if (mounted) {
             final isUrgent =
-                p.productID == _kIosUrgent1 ||
-                p.productID == _kAndroidUrgent1 ||
-                _pendingPassType == 'urgent';
+                p.productID == _kIosUrgent1 || _pendingPassType == 'urgent';
             await _refreshPassCount();
             if (widget.fromPostJob) {
               await Future.delayed(const Duration(milliseconds: 600));
@@ -410,6 +368,92 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   }
 
   // ─── Android 결제 검증 ────────────────────────────────
+  Future<void> _purchaseWithPortOne({
+    required int count,
+    required int amount,
+    required String passType,
+    String? productName,
+  }) async {
+    if (!mounted || _isPurchasing) return;
+    setState(() => _isPurchasing = true);
+    try {
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => PortonePaymentScreen(
+                count: count,
+                companyName: companyName,
+                companyPhone: companyPhone,
+                amount: amount,
+                productName: productName,
+              ),
+        ),
+      );
+      if (!mounted) return;
+      if (result is Map &&
+          result['success'] == true &&
+          result['imp_uid'] != null) {
+        await _verifyAndroidOnServer(
+          impUid: result['imp_uid'].toString(),
+          count: count,
+          passType: passType,
+        );
+      }
+    } catch (_) {
+      if (mounted) _showErrorDialog('결제 화면을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
+    } finally {
+      if (mounted) setState(() => _isPurchasing = false);
+    }
+  }
+
+  Future<void> _verifyAndroidOnServer({
+    required String impUid,
+    required int count,
+    required String passType,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final clientId = prefs.getInt('userId') ?? 0;
+    try {
+      final res = await AuthenticatedHttpClient.postJson(
+        Uri.parse('$baseUrl/api/pass/verify'),
+        body: {
+          'impUid': impUid,
+          'clientId': clientId,
+          'platform': 'android',
+          'count': count,
+          'passType': passType,
+        },
+      );
+      Map<String, dynamic> data = {};
+      try {
+        data = jsonDecode(res.body);
+      } catch (_) {}
+
+      if (res.statusCode == 200 && data['ok'] == true) {
+        if (!mounted) return;
+        await _refreshPassCount();
+        if (widget.fromPostJob) {
+          await Future.delayed(const Duration(milliseconds: 600));
+          if (mounted) Navigator.pop(context, {'success': true});
+        } else if (passType == 'urgent') {
+          _showUrgentSuccessAndNudge();
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('이용권을 지급했어요.')));
+        }
+      } else {
+        final message = data['message'] ?? '이용권 지급에 실패했습니다.';
+        if (mounted) {
+          _showErrorDialog('결제는 완료됐으나 지급 오류입니다.\n고객센터에 문의해주세요.\n\n($message)');
+        }
+      }
+    } catch (_) {
+      if (mounted) _showErrorDialog('네트워크 오류입니다. 잠시 후 다시 시도해주세요.');
+    }
+  }
+
   // ─── 긴급 결제 후 구독 넛지 ──────────────────────────
   void _showUrgentSuccessAndNudge() {
     if (!mounted) return;
@@ -706,11 +750,18 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                 gradient: const [_blue, _blueDark],
                 onTap: () async {
                   Navigator.pop(ctx);
-                  final pid =
-                      Platform.isIOS
-                          ? _kIosInstant[count]
-                          : _kAndroidInstant[count];
-                  if (pid != null) await _buyWithIAP(pid, 'instant');
+                  if (Platform.isIOS) {
+                    final productId = _kIosInstant[count];
+                    if (productId != null) {
+                      await _buyWithIAP(productId, 'instant');
+                    }
+                  } else {
+                    await _purchaseWithPortOne(
+                      count: count,
+                      amount: price,
+                      passType: 'instant',
+                    );
+                  }
                 },
               ),
             ],
@@ -891,10 +942,16 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                 gradient: const [AppColors.urgentCall, AppColors.error],
                 onTap: () async {
                   Navigator.pop(ctx);
-                  await _buyWithIAP(
-                    Platform.isIOS ? _kIosUrgent1 : _kAndroidUrgent1,
-                    'urgent',
-                  );
+                  if (Platform.isIOS) {
+                    await _buyWithIAP(_kIosUrgent1, 'urgent');
+                  } else {
+                    await _purchaseWithPortOne(
+                      count: 1,
+                      amount: 7900,
+                      passType: 'urgent',
+                      productName: '알바일주 긴급 호출 이용권',
+                    );
+                  }
                 },
               ),
             ],

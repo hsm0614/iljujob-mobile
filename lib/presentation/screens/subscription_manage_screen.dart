@@ -12,8 +12,6 @@ import '../widgets/albailju_common.dart';
 import '../../config/app_theme.dart';
 import '../../data/models/subscription_product_config.dart';
 
-const _kAndroidPackage = 'kr.co.iljujob';
-
 const _defaultBenefits = [
   _Benefit(Icons.flash_on_rounded, '즉시게시 3~10회/월', AppColors.primary),
   _Benefit(Icons.bolt_rounded, '긴급호출 0~2회/월', AppColors.urgentCall),
@@ -109,10 +107,8 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
   Future<void> _openStore() async {
     final Uri url;
     if (Platform.isAndroid) {
-      url = Uri.parse(
-        'https://play.google.com/store/account/subscriptions'
-        '?package=$_kAndroidPackage',
-      );
+      _toast('Android 구독은 PortOne 30일 결제이며 자동 갱신되지 않아요.');
+      return;
     } else if (Platform.isIOS) {
       url = Uri.parse('itms-apps://apps.apple.com/account/subscriptions');
     } else {
@@ -127,6 +123,11 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
   }
 
   Future<void> _restore() async {
+    if (Platform.isAndroid) {
+      await _refresh();
+      _toast('PortOne 결제 내역을 서버에서 다시 확인했어요.');
+      return;
+    }
     try {
       await _restoreSubscription?.cancel();
       _restoreTimeout?.cancel();
@@ -153,6 +154,9 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
         continue;
       }
       if (!isSubscriptionProductId(purchase.productID)) continue;
+      // 안드로이드는 포트원 결제라 스토어 구매가 올라올 일이 없다.
+      // 혹시 올라와도 서버가 google_play 를 받지 않으므로 여기서 끊는다.
+      if (!Platform.isIOS) continue;
       final key =
           purchase.purchaseID ??
           '${purchase.productID}-${purchase.transactionDate ?? ''}';
@@ -167,7 +171,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
         final response = await AuthenticatedHttpClient.postJson(
           Uri.parse('$baseUrl/api/iap/verify'),
           body: {
-            'platform': Platform.isIOS ? 'app_store' : 'google_play',
+            'platform': 'app_store',
             'productId': purchase.productID,
             'purchaseId': purchase.purchaseID,
             'token': token,
@@ -270,6 +274,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
 
                     // ── 구독 관리 / 복원
                     _ManageSection(
+                      isStoreBilling: Platform.isIOS,
                       onOpenStore: _openStore,
                       onRestore: _restore,
                     ),
@@ -277,7 +282,10 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
                     const SizedBox(height: 16),
 
                     // ── 정책
-                    _PolicySection(onOpenStore: _openStore),
+                    _PolicySection(
+                      isStoreBilling: Platform.isIOS,
+                      onOpenStore: _openStore,
+                    ),
 
                     const SizedBox(height: 24),
 
@@ -626,9 +634,14 @@ class _BenefitRow extends StatelessWidget {
 
 // ─── 관리 버튼 섹션 ──────────────────────────────────────────────
 class _ManageSection extends StatelessWidget {
+  final bool isStoreBilling;
   final VoidCallback onOpenStore;
   final VoidCallback onRestore;
-  const _ManageSection({required this.onOpenStore, required this.onRestore});
+  const _ManageSection({
+    required this.isStoreBilling,
+    required this.onOpenStore,
+    required this.onRestore,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -642,15 +655,16 @@ class _ManageSection extends StatelessWidget {
         children: [
           _tile(
             icon: Icons.manage_accounts_rounded,
-            title: '구독 관리',
-            subtitle: '스토어에서 변경 · 해지',
+            title: isStoreBilling ? '구독 관리' : '결제 방식 안내',
+            subtitle:
+                isStoreBilling ? 'App Store에서 변경 · 해지' : 'PortOne 30일 결제 · 자동 갱신 없음',
             onTap: onOpenStore,
             showDivider: true,
           ),
           _tile(
             icon: Icons.history_rounded,
-            title: '구매 복원',
-            subtitle: '이전 결제 내역 복원',
+            title: isStoreBilling ? '구매 복원' : '결제 상태 새로고침',
+            subtitle: isStoreBilling ? '이전 결제 내역 복원' : '서버의 이용 기간 다시 확인',
             onTap: onRestore,
             showDivider: false,
           ),
@@ -708,8 +722,9 @@ class _ManageSection extends StatelessWidget {
 
 // ─── 정책 섹션 ───────────────────────────────────────────────────
 class _PolicySection extends StatelessWidget {
+  final bool isStoreBilling;
   final VoidCallback onOpenStore;
-  const _PolicySection({required this.onOpenStore});
+  const _PolicySection({required this.isStoreBilling, required this.onOpenStore});
 
   @override
   Widget build(BuildContext context) {
@@ -741,11 +756,15 @@ class _PolicySection extends StatelessWidget {
           ),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
-            const Text(
-              '• 구독 해지는 각 스토어 구독 관리 페이지에서 직접 처리됩니다.\n'
-              '• 환불 규정은 Apple App Store / Google Play 정책을 따릅니다.\n'
-              '• 결제 영수증은 스토어 구매 내역에서 확인하세요.',
-              style: TextStyle(
+            Text(
+              isStoreBilling
+                  ? '• 구독 해지는 App Store 구독 관리 페이지에서 처리됩니다.\n'
+                      '• 환불 규정은 Apple App Store 정책을 따릅니다.\n'
+                      '• 결제 영수증은 App Store 구매 내역에서 확인하세요.'
+                  : '• Android 구독은 PortOne을 통한 30일 이용권 결제입니다.\n'
+                      '• 자동 갱신되지 않으며 기간이 끝난 뒤 다시 결제할 수 있습니다.\n'
+                      '• 환불과 결제 영수증은 고객센터로 문의해주세요.',
+              style: const TextStyle(
                 fontSize: 13,
                 color: AppColors.textSecondary,
                 height: 1.6,
@@ -758,7 +777,7 @@ class _PolicySection extends StatelessWidget {
               children: [
                 OutlinedButton.icon(
                   icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                  label: const Text('구독 관리 열기'),
+                  label: Text(isStoreBilling ? '구독 관리 열기' : '결제 방식 확인'),
                   onPressed: onOpenStore,
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primary,

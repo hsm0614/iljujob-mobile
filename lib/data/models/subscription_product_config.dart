@@ -7,7 +7,6 @@ class SubscriptionProductConfig {
     required this.urgentCredits,
     required this.maxRecipients,
     required this.iosId,
-    required this.androidId,
     this.unlimitedInstant = false,
     this.priorityCs = false,
     this.recommended = false,
@@ -23,8 +22,12 @@ class SubscriptionProductConfig {
   final bool priorityCs;
   final bool recommended;
   final String iosId;
-  final String androidId;
 }
+
+enum CheckoutProvider { appStore, portOne }
+
+CheckoutProvider checkoutProviderForPlatform({required bool isIos}) =>
+    isIos ? CheckoutProvider.appStore : CheckoutProvider.portOne;
 
 const subscriptionProductConfigs = [
   SubscriptionProductConfig(
@@ -34,8 +37,7 @@ const subscriptionProductConfigs = [
     instantCredits: 3,
     urgentCredits: 0,
     maxRecipients: 10,
-    iosId: 'kr.co.iljujob.sub.v2.lite',
-    androidId: 'sub_v2_lite',
+    iosId: 'kr.co.iljujob.sub.lite',
   ),
   SubscriptionProductConfig(
     key: 'standard',
@@ -44,8 +46,7 @@ const subscriptionProductConfigs = [
     instantCredits: 5,
     urgentCredits: 1,
     maxRecipients: 15,
-    iosId: 'kr.co.iljujob.sub.v2.standard',
-    androidId: 'sub_v2_standard',
+    iosId: 'kr.co.iljujob.sub.standard',
     recommended: true,
   ),
   SubscriptionProductConfig(
@@ -55,8 +56,7 @@ const subscriptionProductConfigs = [
     instantCredits: 10,
     urgentCredits: 2,
     maxRecipients: 20,
-    iosId: 'kr.co.iljujob.sub.v2.pro',
-    androidId: 'sub_v2_pro',
+    iosId: 'kr.co.iljujob.sub.pro',
     priorityCs: true,
   ),
 ];
@@ -83,7 +83,8 @@ bool isSubscriptionProductId(String productId) {
   final id = productId.trim();
   return _legacySubscriptionProductIds.contains(id) ||
       subscriptionProductConfigs.any(
-        (product) => product.iosId == id || product.androidId == id,
+        // 스토어 구매는 iOS 뿐이다 — 안드로이드는 포트원으로 결제한다.
+        (product) => product.iosId == id,
       );
 }
 
