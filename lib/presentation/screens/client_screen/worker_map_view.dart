@@ -1150,7 +1150,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Text(
-                '💡 무료 공고는 3일간, 즉시게시는 7일간 지도에 표시됩니다',
+                '💡 무료 공고는 12시간 후, 즉시게시는 결제 즉시 노출됩니다',
                 style: TextStyle(
                   fontSize: 11,
                   color: Colors.white,

@@ -598,7 +598,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
               _OptionCard(
                 icon: Icons.bolt_rounded,
                 title: '즉시 게시',
-                desc: '7일간 노출 · 알바생 알림',
+                desc: '결제 즉시 노출 · 알바생 알림',
                 badge:
                     _passLoading
                         ? '조회중…'

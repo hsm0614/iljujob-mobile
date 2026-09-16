@@ -362,11 +362,13 @@ extension SubscriptionApi on AiApi {
         if (m is Map) {
           final active = m['active'] == true;
           final plan = m['plan']?.toString();
+          final entitlementVersion = m['entitlementVersion']?.toString();
           final expiresAt = _parseDateLoose(m['expiresAt']);
           final isTrial = m['isTrial'] == true;
           return SubscriptionStatus(
             active: active,
             plan: plan,
+            entitlementVersion: entitlementVersion,
             expiresAt: expiresAt,
             isTrial: isTrial,
           );
@@ -418,11 +420,13 @@ extension SubscriptionApi on AiApi {
 class SubscriptionStatus {
   final bool active;
   final String? plan;
+  final String? entitlementVersion;
   final DateTime? expiresAt;
   final bool? isTrial;
   const SubscriptionStatus({
     required this.active,
     this.plan,
+    this.entitlementVersion,
     this.expiresAt,
     this.isTrial,
   });

@@ -9,17 +9,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:in_app_purchase_android/billing_client_wrappers.dart';
+import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 
 import '../../config/constants.dart';
 import '../../data/services/authenticated_http_client.dart';
-import 'package:iljujob/presentation/screens/potrone_screen.dart';
 
 // ── 디자인 토큰 ──
 const _blue = AppColors.primary;
 const _blueDark = AppColors.primaryDark;
 const _blueLight = AppColors.primaryLight;
 const _red = AppColors.urgentCall;
-const _redLight = Color(0xFFFFF0F0);
 const _green = Color(0xFF00C48C);
 const _orange = Color(0xFFFF6B35);
 const _bg = AppColors.bgPage;
@@ -37,15 +37,25 @@ const _kIosInstant = {
   10: 'com.iljujob.pass30',
 };
 const _kIosUrgent1 = 'com.iljujob.urgent1';
+const _kAndroidInstant = {
+  1: 'instant_1',
+  3: 'instant_3',
+  5: 'instant_5',
+  10: 'instant_10',
+};
+const _kAndroidUrgent1 = 'urgent_1';
 
 bool _isPassProduct(String id) =>
-    _kIosInstant.values.contains(id) || id == _kIosUrgent1;
+    _kIosInstant.values.contains(id) ||
+    id == _kIosUrgent1 ||
+    _kAndroidInstant.values.contains(id) ||
+    id == _kAndroidUrgent1;
 
-class _IosVerifyFailure implements Exception {
+class _StoreVerifyFailure implements Exception {
   final String message;
   // 400: 다시 보내도 안 되는 거래(번들·상품 불일치 등). 그 외는 재시도 대상.
   final bool permanent;
-  const _IosVerifyFailure(this.message, {required this.permanent});
+  const _StoreVerifyFailure(this.message, {required this.permanent});
   @override
   String toString() => message;
 }
@@ -97,21 +107,13 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   int remainingInstant = 0;
   int remainingUrgent = 0;
 
-  // 사용자 정보
-  String managerName = '';
-  String companyName = '';
-  String companyPhone = '';
   final formatter = NumberFormat('#,###');
-
-  // 즉시 게시 선택
-  int? _selectedInstantCount;
 
   // IAP
   final InAppPurchase _iap = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _purchaseSub;
   Completer<PurchaseDetails>? _purchaseCompleter;
   bool _isPurchasing = false;
-  String? _expectedProductId;
   String? _pendingPassType; // 결제 중인 패스 타입
   final Set<String> _handledPurchaseIds = {};
 
@@ -122,7 +124,6 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
     super.initState();
     _tabCtrl = TabController(length: 2, vsync: this);
     _refreshPassCount();
-    _loadUserInfo();
     // 끝나지 않은 거래는 아래 리스너가 서버 검증 후에 완료한다.
     // 예전엔 화면 진입 시 검증 없이 전부 강제 종료해서, 검증이 실패했던 결제는 이용권 없이 사라졌다.
     _purchaseSub = _iap.purchaseStream.listen(
@@ -132,6 +133,15 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
         if (mounted) _showErrorDialog('결제 오류: $e');
       },
     );
+    // Android에서 서버 잠시 오류로 consume하지 못한 거래를
+    // 이 화면에 다시 들어왔을 때 재검증한다.
+    if (Platform.isAndroid) {
+      unawaited(
+        _iap.restorePurchases().catchError((Object error) {
+          debugPrint('미완료 이용권 결제 확인 실패: $error');
+        }),
+      );
+    }
   }
 
   @override
@@ -174,17 +184,6 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
         setState(() => _nearbyCount = (data['count'] as num?)?.toInt() ?? 0);
       }
     } catch (_) {}
-  }
-
-  Future<void> _loadUserInfo() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (!mounted) return;
-    setState(() {
-      managerName = prefs.getString('userName') ?? '';
-      companyName = prefs.getString('companyName') ?? '';
-      companyPhone =
-          prefs.getString('companyPhone') ?? prefs.getString('userPhone') ?? '';
-    });
   }
 
   // ─── 에러 다이얼로그 ──────────────────────────────────
@@ -238,7 +237,29 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
       try {
         msg = jsonDecode(res.body)['message'] ?? msg;
       } catch (_) {}
-      throw _IosVerifyFailure(msg, permanent: res.statusCode == 400);
+      throw _StoreVerifyFailure(msg, permanent: res.statusCode == 400);
+    }
+  }
+
+  Future<void> _verifyGooglePlayOnServer(PurchaseDetails purchase) async {
+    final purchaseToken = purchase.verificationData.serverVerificationData;
+    if (purchaseToken.isEmpty) {
+      throw const _StoreVerifyFailure(
+        'Google Play 구매 토큰이 없습니다.',
+        permanent: false,
+      );
+    }
+    final res = await AuthenticatedHttpClient.postJson(
+      Uri.parse('$baseUrl/api/pass/verify-google-play'),
+      headers: {'Accept': 'application/json'},
+      body: {'productId': purchase.productID, 'purchaseToken': purchaseToken},
+    );
+    if (res.statusCode != 200) {
+      String message = 'Google Play 결제 검증에 실패했습니다.';
+      try {
+        message = jsonDecode(res.body)['message'] ?? message;
+      } catch (_) {}
+      throw _StoreVerifyFailure(message, permanent: res.statusCode == 400);
     }
   }
 
@@ -246,61 +267,51 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   Future<void> _buyWithIAP(String productId, String passType) async {
     if (!mounted) return;
     if (_isPurchasing ||
-        (_purchaseCompleter != null && !_purchaseCompleter!.isCompleted))
+        (_purchaseCompleter != null && !_purchaseCompleter!.isCompleted)) {
       return;
+    }
 
     setState(() => _isPurchasing = true);
     _handledPurchaseIds.clear();
-    _expectedProductId = productId;
     _pendingPassType = passType;
     _purchaseCompleter = Completer<PurchaseDetails>();
 
     try {
       final available = await _iap.isAvailable();
-      if (!available)
+      if (!available) {
         throw Exception('IAP 서비스를 사용할 수 없습니다 (isAvailable=false)');
+      }
 
       final resp = await _iap.queryProductDetails({productId});
 
       // 디버그: 콘솔에서 확인
-      print('🛒 IAP query [$productId]');
-      print('  found: ${resp.productDetails.map((p) => p.id).toList()}');
-      print('  notFound: ${resp.notFoundIDs}');
-      print('  error: ${resp.error}');
+      debugPrint('🛒 IAP query [$productId]');
+      debugPrint('  found: ${resp.productDetails.map((p) => p.id).toList()}');
+      debugPrint('  notFound: ${resp.notFoundIDs}');
+      debugPrint('  error: ${resp.error}');
 
       if (resp.productDetails.isEmpty) {
         final detail =
             resp.notFoundIDs.isNotEmpty
-                ? 'App Store에 상품 ID가 없음: ${resp.notFoundIDs}'
+                ? '스토어에 상품 ID가 없음: ${resp.notFoundIDs}'
                 : resp.error != null
-                ? 'StoreKit 오류: ${resp.error?.message}'
+                ? '스토어 오류: ${resp.error?.message}'
                 : '알 수 없는 오류';
         throw Exception('상품 조회 실패\n$detail');
       }
 
-      final isConsumable = passType == 'instant';
-      if (isConsumable) {
-        await _iap.buyConsumable(
-          purchaseParam: PurchaseParam(
-            productDetails: resp.productDetails.first,
-          ),
-          autoConsume: true,
-        );
-      } else {
-        await _iap.buyConsumable(
-          purchaseParam: PurchaseParam(
-            productDetails: resp.productDetails.first,
-          ),
-          autoConsume: true,
-        );
-      }
+      await _iap.buyConsumable(
+        purchaseParam: PurchaseParam(productDetails: resp.productDetails.first),
+        // 서버 검증과 이용권 지급이 끝난 뒤에만 consume한다.
+        // 먼저 consume하면 검증 실패 시 구매를 다시 전달받을 수 없다.
+        autoConsume: false,
+      );
 
       await _purchaseCompleter!.future.timeout(const Duration(minutes: 5));
       if (mounted) await _refreshPassCount();
     } catch (e) {
       if (mounted) _showErrorDialog('결제 처리 중 오류: $e');
     } finally {
-      _expectedProductId = null;
       _pendingPassType = null;
       _purchaseCompleter = null;
       if (mounted) setState(() => _isPurchasing = false);
@@ -318,15 +329,12 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
       if (p.status == PurchaseStatus.purchased ||
           p.status == PurchaseStatus.restored) {
         // 이 화면은 이용권 상품만 처리한다. 구독 거래는 구독 화면이 검증·완료한다.
-        if (Platform.isIOS && !_isPassProduct(p.productID)) continue;
+        if (!_isPassProduct(p.productID)) continue;
         final purchaseKey =
             p.purchaseID ?? '${p.productID}-${p.transactionDate ?? ''}';
         if (_handledPurchaseIds.contains(purchaseKey)) {
-          if (p.pendingCompletePurchase) {
-            try {
-              await _iap.completePurchase(p);
-            } catch (_) {}
-          }
+          // 같은 거래 이벤트가 서버 검증 중 다시 올 수 있다. 첫 이벤트가 검증을
+          // 끝내기 전에 여기서 완료하면 결제만 끝나고 이용권이 유실될 수 있다.
           continue;
         }
         _handledPurchaseIds.add(purchaseKey);
@@ -340,14 +348,29 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
               transactionId: p.purchaseID ?? '',
               jwsTransaction: jws,
             );
+            if (p.pendingCompletePurchase) await _iap.completePurchase(p);
+          } else if (Platform.isAndroid) {
+            await _verifyGooglePlayOnServer(p);
+            final addition =
+                _iap
+                    .getPlatformAddition<
+                      InAppPurchaseAndroidPlatformAddition
+                    >();
+            final consumeResult = await addition.consumePurchase(p);
+            if (consumeResult.responseCode != BillingResponse.ok) {
+              throw const _StoreVerifyFailure(
+                'Google Play 결제 완료 처리에 실패했습니다.',
+                permanent: false,
+              );
+            }
           }
-
-          if (p.pendingCompletePurchase) await _iap.completePurchase(p);
           if (!_purchaseCompleterIsDone) _purchaseCompleter?.complete(p);
 
           if (mounted) {
             final isUrgent =
-                p.productID == _kIosUrgent1 || _pendingPassType == 'urgent';
+                p.productID == _kIosUrgent1 ||
+                p.productID == _kAndroidUrgent1 ||
+                _pendingPassType == 'urgent';
             await _refreshPassCount();
             if (widget.fromPostJob) {
               await Future.delayed(const Duration(milliseconds: 600));
@@ -364,7 +387,10 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
           _handledPurchaseIds.remove(purchaseKey);
           // 영구 실패만 거래를 끝낸다. 네트워크·서버 오류는 끝내지 않아야
           // StoreKit 이 다음에 다시 전달해 이용권을 받을 수 있다.
-          if (e is _IosVerifyFailure && e.permanent && p.pendingCompletePurchase) {
+          if (e is _StoreVerifyFailure &&
+              e.permanent &&
+              Platform.isIOS &&
+              p.pendingCompletePurchase) {
             try {
               await _iap.completePurchase(p);
             } catch (_) {}
@@ -384,54 +410,6 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   }
 
   // ─── Android 결제 검증 ────────────────────────────────
-  Future<void> _verifyAndroidOnServer({
-    required String impUid,
-    required int count,
-    required String passType,
-  }) async {
-    final prefs = await SharedPreferences.getInstance();
-    final clientId = prefs.getInt('userId') ?? 0;
-    try {
-      final res = await AuthenticatedHttpClient.postJson(
-        Uri.parse('$baseUrl/api/pass/verify'),
-        body: {
-          'impUid': impUid,
-          'clientId': clientId,
-          'platform': 'android',
-          'count': count,
-          'passType': passType,
-        },
-      );
-      Map<String, dynamic> data = {};
-      try {
-        data = jsonDecode(res.body);
-      } catch (_) {}
-
-      if (res.statusCode == 200 && data['ok'] == true) {
-        if (!mounted) return;
-        await _refreshPassCount();
-        if (widget.fromPostJob) {
-          await Future.delayed(const Duration(milliseconds: 600));
-          if (mounted) Navigator.pop(context, {'success': true});
-        } else if (passType == 'urgent') {
-          _showUrgentSuccessAndNudge();
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('이용권을 지급했어요.')));
-          }
-        }
-      } else {
-        final msg = data['message'] ?? '이용권 지급에 실패했습니다.';
-        if (mounted)
-          _showErrorDialog('결제는 완료됐으나 지급 오류.\n고객센터 문의 바랍니다.\n\n($msg)');
-      }
-    } catch (_) {
-      if (mounted) _showErrorDialog('네트워크 오류. 잠시 후 다시 시도해주세요.');
-    }
-  }
-
   // ─── 긴급 결제 후 구독 넛지 ──────────────────────────
   void _showUrgentSuccessAndNudge() {
     if (!mounted) return;
@@ -470,7 +448,11 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: const Center(
-                  child: Icon(Icons.bolt_rounded, size: 30, color: AppColors.badgeUrgent),
+                  child: Icon(
+                    Icons.bolt_rounded,
+                    size: 30,
+                    color: AppColors.badgeUrgent,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
@@ -527,7 +509,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                           ),
                           SizedBox(height: 4),
                           Text(
-                            '구독 라이트로 전환하면 이번 달 긴급 호출 1회가 포함돼요 (₩9,900/월)',
+                            '구독 스탠다드는 긴급 호출 1회가 포함돼요 (₩19,900/월)',
                             style: TextStyle(
                               fontSize: 12,
                               color: _sub,
@@ -700,7 +682,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     _BenefitRow(
                       icon: Icons.bolt_rounded,
                       iconColor: _blue,
-                      text: '7일간 노출 (무료는 3일)',
+                      text: '결제 즉시 공고 노출',
                     ),
                     SizedBox(height: 10),
                     _BenefitRow(
@@ -724,38 +706,11 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                 gradient: const [_blue, _blueDark],
                 onTap: () async {
                   Navigator.pop(ctx);
-                  if (Platform.isIOS) {
-                    final pid = _kIosInstant[count];
-                    if (pid != null) await _buyWithIAP(pid, 'instant');
-                  } else {
-                    if (mounted) setState(() => _isPurchasing = true);
-                    try {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (_) => PortonePaymentScreen(
-                                count: count,
-                                companyName: companyName,
-                                companyPhone: companyPhone,
-                                amount: price,
-                              ),
-                        ),
-                      );
-                      if (!mounted) return;
-                      if (result is Map<String, dynamic> &&
-                          result['success'] == true &&
-                          result['imp_uid'] != null) {
-                        await _verifyAndroidOnServer(
-                          impUid: result['imp_uid'] as String,
-                          count: count,
-                          passType: 'instant',
-                        );
-                      }
-                    } finally {
-                      if (mounted) setState(() => _isPurchasing = false);
-                    }
-                  }
+                  final pid =
+                      Platform.isIOS
+                          ? _kIosInstant[count]
+                          : _kAndroidInstant[count];
+                  if (pid != null) await _buyWithIAP(pid, 'instant');
                 },
               ),
             ],
@@ -807,7 +762,11 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Center(
-                      child: Icon(Icons.bolt_rounded, size: 26, color: AppColors.badgeUrgent),
+                      child: Icon(
+                        Icons.bolt_rounded,
+                        size: 26,
+                        color: AppColors.badgeUrgent,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -913,7 +872,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
-                        '구독 라이트로 전환하면 이번 달 긴급 호출 1회가 포함돼요 (₩9,900/월)',
+                        '구독 스탠다드는 긴급 호출 1회가 포함돼요 (₩19,900/월)',
                         style: TextStyle(
                           fontSize: 11,
                           color: _blue,
@@ -932,38 +891,10 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                 gradient: const [AppColors.urgentCall, AppColors.error],
                 onTap: () async {
                   Navigator.pop(ctx);
-                  if (Platform.isIOS) {
-                    await _buyWithIAP(_kIosUrgent1, 'urgent');
-                  } else {
-                    if (mounted) setState(() => _isPurchasing = true);
-                    try {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (_) => PortonePaymentScreen(
-                                count: 1,
-                                companyName: companyName,
-                                companyPhone: companyPhone,
-                                amount: 7900,
-                                productName: '알바일주 긴급 호출 이용권',
-                              ),
-                        ),
-                      );
-                      if (!mounted) return;
-                      if (result is Map<String, dynamic> &&
-                          result['success'] == true &&
-                          result['imp_uid'] != null) {
-                        await _verifyAndroidOnServer(
-                          impUid: result['imp_uid'] as String,
-                          count: 1,
-                          passType: 'urgent',
-                        );
-                      }
-                    } finally {
-                      if (mounted) setState(() => _isPurchasing = false);
-                    }
-                  }
+                  await _buyWithIAP(
+                    Platform.isIOS ? _kIosUrgent1 : _kAndroidUrgent1,
+                    'urgent',
+                  );
                 },
               ),
             ],
@@ -1454,7 +1385,11 @@ class _UrgentTab extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.bolt_rounded, size: 28, color: AppColors.badgeUrgent),
+                      const Icon(
+                        Icons.bolt_rounded,
+                        size: 28,
+                        color: AppColors.badgeUrgent,
+                      ),
                       const SizedBox(width: 12),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1490,10 +1425,7 @@ class _UrgentTab extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: _white,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: AppColors.urgentCall,
-                      width: 1.5,
-                    ),
+                    border: Border.all(color: AppColors.urgentCall, width: 1.5),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.urgentCall.withOpacity(0.08),
@@ -1610,7 +1542,7 @@ class _UrgentTab extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             const Text(
-                              '구독 라이트로 전환하면 이번 달 긴급 호출 1회가 포함돼요 (₩9,900/월)',
+                              '구독 스탠다드는 긴급 호출 1회가 포함돼요 (₩19,900/월)',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: _sub,

@@ -85,6 +85,10 @@ class NoPassException implements Exception {
 }
 
 class JobService {
+  static String encodeDeleteImageUrls(List<String> urls) => jsonEncode(
+    urls.map((url) => url.trim()).where((url) => url.isNotEmpty).toList(),
+  );
+
   // ✅ FIX: _parseDateToLocal 제거
   //    - 원래 인스턴스 메서드로 정의되어 static 클래스 내에서 호출 불가
   //    - job.dart의 _parseServerDateTimeUtc / _parseDateOnlyUtcFromKST 로 일원화됨
@@ -489,10 +493,11 @@ class JobService {
                 (v is List || v is Map) ? jsonEncode(v) : v.toString(),
       );
 
-      // 삭제할 기존 이미지 URL
-      for (final url in deleteImageUrls) {
-        if (url.trim().isEmpty) continue;
-        req.fields['delete_image_urls[]'] = url;
+      // MultipartRequest.fields 는 같은 키를 여러 번 보존하지 않으므로 JSON 배열 하나로 보낸다.
+      if (deleteImageUrls.any((url) => url.trim().isNotEmpty)) {
+        req.fields['delete_image_urls'] = encodeDeleteImageUrls(
+          deleteImageUrls,
+        );
       }
 
       // 새 이미지

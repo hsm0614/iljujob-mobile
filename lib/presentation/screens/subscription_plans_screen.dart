@@ -6,96 +6,16 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
-import 'package:in_app_purchase_storekit/store_kit_wrappers.dart';
 import 'package:intl/intl.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../config/app_theme.dart';
 import '../../config/constants.dart';
+import '../../data/models/subscription_product_config.dart';
 import '../../data/services/authenticated_http_client.dart';
 import '../../data/services/client_tracking_service.dart';
-import 'potrone_screen.dart';
-import '../../config/messages.dart';
 
-// ── IAP 상품 ID ──────────────────────────────────────
-const _kIosLite = 'kr.co.iljujob.sub.lite';
-const _kIosStandard = 'kr.co.iljujob.sub.standard';
-const _kIosPro = 'kr.co.iljujob.sub.pro';
-const _kAndLite = 'sub-lite';
-const _kAndStandard = 'sub-standard';
-const _kAndPro = 'sub-pro';
-
-// ── 플랜 정의 ─────────────────────────────────────────
-class _Plan {
-  final String key;
-  final String name;
-  final int price;
-  final int instantCredits; // -1=무제한, N=횟수
-  final int urgentCredits;
-  final int maxRecipients;
-  final bool unlimitedInstant;
-  final bool attendanceCare;
-  final bool priorityCs;
-  final bool recommended;
-  final String iosId;
-  final String androidId;
-  const _Plan({
-    required this.key,
-    required this.name,
-    required this.price,
-    required this.instantCredits,
-    required this.urgentCredits,
-    required this.maxRecipients,
-    this.unlimitedInstant = false,
-    required this.attendanceCare,
-    required this.priorityCs,
-    required this.iosId,
-    required this.androidId,
-    this.recommended = false,
-  });
-}
-
-// 서버 lib/subscriptionPlans.js 와 같은 표 (2026-09-15 확정: 프로만 즉시게시 무제한)
-const _plans = [
-  _Plan(
-    key: 'lite',
-    name: '라이트',
-    price: 9900,
-    instantCredits: 3,
-    urgentCredits: 1,
-    maxRecipients: 10,
-    attendanceCare: false,
-    priorityCs: false,
-    iosId: _kIosLite,
-    androidId: _kAndLite,
-  ),
-  _Plan(
-    key: 'standard',
-    name: '스탠다드',
-    price: 19900,
-    instantCredits: 3,
-    urgentCredits: 3,
-    maxRecipients: 15,
-    attendanceCare: true,
-    priorityCs: false,
-    iosId: _kIosStandard,
-    androidId: _kAndStandard,
-    recommended: true,
-  ),
-  _Plan(
-    key: 'pro',
-    name: '프로',
-    price: 39900,
-    instantCredits: -1,
-    urgentCredits: 5,
-    maxRecipients: 20,
-    unlimitedInstant: true,
-    attendanceCare: true,
-    priorityCs: true,
-    iosId: _kIosPro,
-    androidId: _kAndPro,
-  ),
-];
+typedef _Plan = SubscriptionProductConfig;
+const _plans = subscriptionProductConfigs;
 
 class SubscriptionPlansScreen extends StatefulWidget {
   const SubscriptionPlansScreen({super.key});
@@ -107,10 +27,6 @@ class SubscriptionPlansScreen extends StatefulWidget {
 class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   String _selectedPlan = 'standard';
   bool _processing = false;
-  int? _userId;
-  String? _companyName;
-  String? _companyPhone;
-
   final InAppPurchase _iap = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _purchaseSub;
   final Set<String> _handledIds = {};
@@ -118,10 +34,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   @override
   void initState() {
     super.initState();
-    _loadUser();
-    if (Platform.isIOS) {
-      _purchaseSub = _iap.purchaseStream.listen(_onPurchase, onError: (_) {});
-    }
+    _purchaseSub = _iap.purchaseStream.listen(_onPurchase, onError: (_) {});
     ClientTrackingService.instance.track('subscription_page_view');
   }
 
@@ -129,15 +42,6 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   void dispose() {
     _purchaseSub?.cancel();
     super.dispose();
-  }
-
-  Future<void> _loadUser() async {
-    final p = await SharedPreferences.getInstance();
-    setState(() {
-      _userId = p.getInt('userId');
-      _companyName = p.getString('companyName');
-      _companyPhone = p.getString('companyPhone');
-    });
   }
 
   _Plan get _plan => _plans.firstWhere((p) => p.key == _selectedPlan);
@@ -150,29 +54,20 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       properties: {'plan': plan.key},
     );
 
-    if (Platform.isIOS) {
-      await _purchaseIos(plan);
-    } else {
-      await _purchaseAndroid(plan);
-    }
+    await _purchaseStore(plan);
   }
 
-  // ── iOS: IAP ─────────────────────────────────────────
-  Future<void> _purchaseIos(_Plan plan) async {
+  // iOS·Android 모두 스토어 결제를 사용한다.
+  Future<void> _purchaseStore(_Plan plan) async {
     setState(() => _processing = true);
     try {
       final available = await _iap.isAvailable();
       if (!available) throw Exception('스토어를 사용할 수 없습니다');
 
-      // 미완료 트랜잭션 정리
-      final txns = await SKPaymentQueueWrapper().transactions();
-      for (final t in txns) {
-        await SKPaymentQueueWrapper().finishTransaction(t);
-      }
-
-      final resp = await _iap.queryProductDetails({plan.iosId});
+      final productId = Platform.isIOS ? plan.iosId : plan.androidId;
+      final resp = await _iap.queryProductDetails({productId});
       if (resp.productDetails.isEmpty) {
-        throw Exception('상품 정보를 불러올 수 없습니다. (${plan.iosId})');
+        throw Exception('상품 정보를 불러올 수 없습니다. ($productId)');
       }
       await _iap.buyNonConsumable(
         purchaseParam: PurchaseParam(productDetails: resp.productDetails.first),
@@ -185,61 +80,40 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
 
   void _onPurchase(List<PurchaseDetails> purchases) async {
     for (final p in purchases) {
-      if (_handledIds.contains(p.purchaseID)) continue;
+      if (!isSubscriptionProductId(p.productID)) continue;
+      final purchaseKey =
+          p.purchaseID ?? '${p.productID}-${p.transactionDate ?? ''}';
+      if (_handledIds.contains(purchaseKey)) continue;
 
       if (p.status == PurchaseStatus.purchased ||
           p.status == PurchaseStatus.restored) {
-        _handledIds.add(p.purchaseID ?? '');
-        final activated = await _activateIosOnServer(p);
+        _handledIds.add(purchaseKey);
+        final activated = await _activateStoreOnServer(p);
         if (activated) {
-          await _iap.completePurchase(p);
+          if (p.pendingCompletePurchase) await _iap.completePurchase(p);
         } else {
-          _handledIds.remove(p.purchaseID ?? '');
+          _handledIds.remove(purchaseKey);
         }
       } else if (p.status == PurchaseStatus.error) {
         setState(() => _processing = false);
         _showError('결제 중 오류가 발생했어요.');
-        await _iap.completePurchase(p);
       } else if (p.status == PurchaseStatus.canceled) {
         setState(() => _processing = false);
       }
     }
   }
 
-  // ── Android: Portone ─────────────────────────────────
-  Future<void> _purchaseAndroid(_Plan plan) async {
-    final name = _companyName ?? '알바일주';
-    final phone = _companyPhone ?? '';
-    final result = await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (_) => PortonePaymentScreen(
-              count: 1,
-              companyName: name,
-              companyPhone: phone,
-              amount: plan.price,
-              productName: '알바일주 ${plan.name} 구독',
-            ),
-      ),
-    );
-    if (result is Map && result['imp_uid'] != null) {
-      await _activateServer(result['imp_uid']);
-    }
-  }
-
-  Future<bool> _activateIosOnServer(PurchaseDetails purchase) async {
+  Future<bool> _activateStoreOnServer(PurchaseDetails purchase) async {
     final token = purchase.verificationData.serverVerificationData;
     if (token.isEmpty) return false;
     try {
       final resp = await AuthenticatedHttpClient.postJson(
         Uri.parse('$baseUrl/api/iap/verify'),
         body: {
-          'platform': 'app_store',
+          'platform': Platform.isIOS ? 'app_store' : 'google_play',
           'productId': purchase.productID,
           'purchaseId': purchase.purchaseID,
           'token': token,
-          'clientId': _userId,
           'isReactivation': purchase.status == PurchaseStatus.restored,
         },
       );
@@ -256,33 +130,6 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       return false;
     } catch (_) {
       if (mounted) _showError('서버 연결 오류가 발생했어요. 결제는 다시 확인됩니다.');
-      return false;
-    } finally {
-      if (mounted) setState(() => _processing = false);
-    }
-  }
-
-  Future<bool> _activateServer(String? token) async {
-    if (token == null) return false;
-    try {
-      final resp = await AuthenticatedHttpClient.postJson(
-        Uri.parse('$baseUrl/api/subscription/activate'),
-        body: {'clientId': _userId, 'plan': _selectedPlan, 'impUid': token},
-      );
-      if (!mounted) return false;
-      if (resp.statusCode == 200) {
-        ClientTrackingService.instance.track(
-          'subscription_success',
-          properties: {'plan': _selectedPlan},
-        );
-        _showSuccess();
-        return true;
-      } else {
-        _showError('구독 활성화에 실패했어요. 고객센터에 문의해주세요.');
-        return false;
-      }
-    } catch (_) {
-      if (mounted) _showError(Msg.server);
       return false;
     } finally {
       if (mounted) setState(() => _processing = false);
@@ -362,9 +209,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                _plan.unlimitedInstant
-                    ? '${_plan.name} 플랜이 활성화되었습니다.\n즉시게시 무제한 · 긴급호출 ${_plan.urgentCredits}회를 쓸 수 있어요.'
-                    : '${_plan.name} 플랜 즉시게시 ${_plan.instantCredits}회 · 긴급호출 ${_plan.urgentCredits}회가\n계정에 지급되었습니다.',
+                '${_plan.name} 플랜 즉시게시 ${_plan.instantCredits}회 · 긴급호출 ${_plan.urgentCredits}회가\n계정에 지급되었습니다.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,
@@ -441,7 +286,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      '미사용 크레딧은 1개월 이월됩니다',
+                      '결제 기간마다 플랜 이용권이 지급됩니다',
                       style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textSecondary,
@@ -633,12 +478,6 @@ class _PlanCard extends StatelessWidget {
                   label: '구독 배지',
                   color: AppColors.pending,
                 ),
-                if (plan.attendanceCare)
-                  _Chip(
-                    icon: Icons.verified_user_rounded,
-                    label: '출근 안심',
-                    color: AppColors.gradeB,
-                  ),
                 if (plan.priorityCs)
                   _Chip(
                     icon: Icons.headset_mic_rounded,
@@ -697,13 +536,12 @@ class _CompareTable extends StatelessWidget {
   const _CompareTable({required this.selectedPlan});
 
   static const _rows = [
-    ['즉시게시', '3회/월', '3회/월', '무제한'],
-    ['긴급호출', '1회/월', '3회/월', '5회/월'],
+    ['즉시게시', '3회/월', '5회/월', '10회/월'],
+    ['긴급호출', '0회/월', '1회/월', '2회/월'],
     ['발송 인원', '10명', '15명', '20명'],
     ['AI 기능', '포함', '포함', '포함'],
     ['맞춤 인재', '포함', '포함', '포함'],
     ['임금 리포트', '포함', '포함', '포함'],
-    ['출근 안심', '-', '포함', '포함'],
     ['구독 배지', '포함', '포함', '포함'],
     ['우선 CS', '-', '-', '포함'],
   ];
@@ -865,7 +703,7 @@ class _Notice extends StatelessWidget {
           ),
           SizedBox(height: 6),
           Text('• 구독은 30일 단위로 자동 갱신됩니다.', style: style),
-          Text('• 라이트 플랜의 미사용 즉시게시 이용권은 1개월 이월됩니다.', style: style),
+          Text('• 지급된 이용권은 구독을 취소해도 회수되지 않습니다.', style: style),
           Text('• 구독 취소 시 만료일까지 혜택이 유지됩니다.', style: style),
           Text('• 결제는 구독 선택 즉시 이루어집니다.', style: style),
         ],

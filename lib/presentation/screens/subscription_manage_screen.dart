@@ -1,4 +1,5 @@
 // lib/screens/payment/subscription_manage_screen.dart
+import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -6,41 +7,21 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/constants.dart';
 import '../../data/services/ai_api.dart';
+import '../../data/services/authenticated_http_client.dart';
 import '../widgets/albailju_common.dart';
 import '../../config/app_theme.dart';
+import '../../data/models/subscription_product_config.dart';
 
-const _kProductId = 'subscribe';
 const _kAndroidPackage = 'kr.co.iljujob';
 
-// ─── 플랜별 혜택 정의 ────────────────────────────────────────────
-const _planBenefits = {
-  'lite': [
-    _Benefit(Icons.flash_on_rounded, '즉시게시 3회/월', AppColors.primary),
-    _Benefit(Icons.bolt_rounded, '긴급호출 1회/월 (반경 5km, 최대 10명)', AppColors.urgentCall),
-    _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', AppColors.aiAccent),
-    _Benefit(Icons.verified_rounded, '구독 배지 표시', AppColors.primary),
-  ],
-  'standard': [
-    _Benefit(Icons.flash_on_rounded, '즉시게시 3회/월', AppColors.primary),
-    _Benefit(Icons.bolt_rounded, '긴급호출 3회/월 (반경 5km, 최대 15명)', AppColors.urgentCall),
-    _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', AppColors.aiAccent),
-    _Benefit(Icons.verified_user_rounded, '출근 안심 포함', AppColors.success),
-    _Benefit(Icons.verified_rounded, '구독 배지 표시', AppColors.primary),
-  ],
-  'pro': [
-    _Benefit(Icons.flash_on_rounded, '즉시게시 무제한', AppColors.primary),
-    _Benefit(Icons.bolt_rounded, '긴급호출 5회/월 (반경 5km, 최대 20명)', AppColors.urgentCall),
-    _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', AppColors.aiAccent),
-    _Benefit(Icons.verified_user_rounded, '출근 안심 포함', AppColors.success),
-    _Benefit(Icons.headset_mic_rounded, '우선 CS 지원', Color(0xFFFFB300)),
-    _Benefit(Icons.verified_rounded, '구독 배지 표시', AppColors.primary),
-  ],
-};
-
 const _defaultBenefits = [
-  _Benefit(Icons.flash_on_rounded, '즉시게시 (라이트·스탠다드 3회 / 프로 무제한)', AppColors.primary),
-  _Benefit(Icons.bolt_rounded, '긴급호출 (라이트 1회 / 스탠다드 3회 / 프로 5회)', AppColors.urgentCall),
-  _Benefit(Icons.auto_awesome_rounded, 'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)', AppColors.aiAccent),
+  _Benefit(Icons.flash_on_rounded, '즉시게시 3~10회/월', AppColors.primary),
+  _Benefit(Icons.bolt_rounded, '긴급호출 0~2회/월', AppColors.urgentCall),
+  _Benefit(
+    Icons.auto_awesome_rounded,
+    'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)',
+    AppColors.aiAccent,
+  ),
   _Benefit(Icons.verified_rounded, '구독 배지 표시', AppColors.primary),
 ];
 
@@ -77,8 +58,12 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
   bool _loading = true;
   bool _active = false;
   String? _plan;
+  String? _entitlementVersion;
   DateTime? _expiresAt;
   bool? _isTrial;
+  StreamSubscription<List<PurchaseDetails>>? _restoreSubscription;
+  Timer? _restoreTimeout;
+  final Set<String> _restoredPurchaseKeys = {};
 
   @override
   void initState() {
@@ -94,6 +79,13 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
     });
   }
 
+  @override
+  void dispose() {
+    _restoreTimeout?.cancel();
+    _restoreSubscription?.cancel();
+    super.dispose();
+  }
+
   Future<void> _refresh() async {
     setState(() => _loading = true);
     try {
@@ -103,6 +95,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
       setState(() {
         _active = s.active;
         _plan = s.plan;
+        _entitlementVersion = s.entitlementVersion;
         _expiresAt = s.expiresAt;
         _isTrial = s.isTrial;
         _loading = false;
@@ -118,7 +111,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
     if (Platform.isAndroid) {
       url = Uri.parse(
         'https://play.google.com/store/account/subscriptions'
-        '?sku=$_kProductId&package=$_kAndroidPackage',
+        '?package=$_kAndroidPackage',
       );
     } else if (Platform.isIOS) {
       url = Uri.parse('itms-apps://apps.apple.com/account/subscriptions');
@@ -135,10 +128,71 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
 
   Future<void> _restore() async {
     try {
+      await _restoreSubscription?.cancel();
+      _restoreTimeout?.cancel();
+      _restoredPurchaseKeys.clear();
+      _restoreSubscription = InAppPurchase.instance.purchaseStream.listen(
+        _handleRestoredPurchases,
+        onError: (_) => _toast('복원 결과를 확인하지 못했어요.'),
+      );
+      _restoreTimeout = Timer(const Duration(seconds: 30), () {
+        _restoreSubscription?.cancel();
+        _restoreSubscription = null;
+      });
       await InAppPurchase.instance.restorePurchases();
-      _toast('복원을 요청했어요. 잠시 후 새로고침해 주세요.');
+      _toast('복원을 요청했어요. 스토어 결과를 확인할게요.');
     } catch (e) {
       _toast('복원 실패: $e');
+    }
+  }
+
+  Future<void> _handleRestoredPurchases(List<PurchaseDetails> purchases) async {
+    for (final purchase in purchases) {
+      if (purchase.status != PurchaseStatus.restored &&
+          purchase.status != PurchaseStatus.purchased) {
+        continue;
+      }
+      if (!isSubscriptionProductId(purchase.productID)) continue;
+      final key =
+          purchase.purchaseID ??
+          '${purchase.productID}-${purchase.transactionDate ?? ''}';
+      if (!_restoredPurchaseKeys.add(key)) continue;
+
+      final token = purchase.verificationData.serverVerificationData;
+      if (token.isEmpty) {
+        _restoredPurchaseKeys.remove(key);
+        continue;
+      }
+      try {
+        final response = await AuthenticatedHttpClient.postJson(
+          Uri.parse('$baseUrl/api/iap/verify'),
+          body: {
+            'platform': Platform.isIOS ? 'app_store' : 'google_play',
+            'productId': purchase.productID,
+            'purchaseId': purchase.purchaseID,
+            'token': token,
+            'isReactivation': true,
+          },
+        );
+        if (response.statusCode != 200) {
+          _restoredPurchaseKeys.remove(key);
+          if (mounted) _toast('구독 복원 검증에 실패했어요.');
+          continue;
+        }
+        if (purchase.pendingCompletePurchase) {
+          await InAppPurchase.instance.completePurchase(purchase);
+        }
+        if (mounted) {
+          await _refresh();
+          _toast('구독 권리를 복원했어요.');
+        }
+        _restoreTimeout?.cancel();
+        await _restoreSubscription?.cancel();
+        _restoreSubscription = null;
+      } catch (_) {
+        _restoredPurchaseKeys.remove(key);
+        if (mounted) _toast('서버 연결 오류로 복원을 확인하지 못했어요.');
+      }
     }
   }
 
@@ -197,6 +251,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
                     _StatusCard(
                       active: _active,
                       plan: _plan,
+                      entitlementVersion: _entitlementVersion,
                       isTrial: _isTrial,
                       expiresText: _expiresText(),
                       remainText: _remainText(),
@@ -205,7 +260,11 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
                     const SizedBox(height: 16),
 
                     // ── 혜택
-                    _BenefitSection(plan: _plan, active: _active),
+                    _BenefitSection(
+                      plan: _plan,
+                      entitlementVersion: _entitlementVersion,
+                      active: _active,
+                    ),
 
                     const SizedBox(height: 16),
 
@@ -267,6 +326,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
 class _StatusCard extends StatelessWidget {
   final bool active;
   final String? plan;
+  final String? entitlementVersion;
   final bool? isTrial;
   final String expiresText;
   final String remainText;
@@ -274,6 +334,7 @@ class _StatusCard extends StatelessWidget {
   const _StatusCard({
     required this.active,
     required this.plan,
+    required this.entitlementVersion,
     required this.isTrial,
     required this.expiresText,
     required this.remainText,
@@ -345,6 +406,27 @@ class _StatusCard extends StatelessWidget {
                     ),
                   ),
                 ),
+              if (active && entitlementVersion == 'legacy_v1') ...[
+                const SizedBox(width: 6),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                  child: const Text(
+                    '기존 권리 유지',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
               if (isTrial == true) ...[
                 const SizedBox(width: 6),
                 Container(
@@ -414,12 +496,60 @@ class _StatusCard extends StatelessWidget {
 // ─── 혜택 섹션 ───────────────────────────────────────────────────
 class _BenefitSection extends StatelessWidget {
   final String? plan;
+  final String? entitlementVersion;
   final bool active;
-  const _BenefitSection({required this.plan, required this.active});
+  const _BenefitSection({
+    required this.plan,
+    required this.entitlementVersion,
+    required this.active,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final benefits = _planBenefits[plan?.toLowerCase()] ?? _defaultBenefits;
+    final labels =
+        active
+            ? subscriptionBenefitLabels(plan?.toLowerCase(), entitlementVersion)
+            : const <String>[];
+    final benefits =
+        labels.isEmpty
+            ? _defaultBenefits
+            : labels
+                .map((label) {
+                  if (label.startsWith('즉시게시')) {
+                    return _Benefit(
+                      Icons.flash_on_rounded,
+                      label,
+                      AppColors.primary,
+                    );
+                  }
+                  if (label.startsWith('긴급호출')) {
+                    return _Benefit(
+                      Icons.bolt_rounded,
+                      label,
+                      AppColors.urgentCall,
+                    );
+                  }
+                  if (label.startsWith('AI')) {
+                    return _Benefit(
+                      Icons.auto_awesome_rounded,
+                      label,
+                      AppColors.aiAccent,
+                    );
+                  }
+                  if (label.startsWith('우선')) {
+                    return _Benefit(
+                      Icons.headset_mic_rounded,
+                      label,
+                      AppColors.pending,
+                    );
+                  }
+                  return _Benefit(
+                    Icons.verified_rounded,
+                    label,
+                    AppColors.primary,
+                  );
+                })
+                .toList(growable: false);
     final label = _planLabel(plan);
 
     return Container(
@@ -554,7 +684,10 @@ class _ManageSection extends StatelessWidget {
           ),
           subtitle: Text(
             subtitle,
-            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
           ),
           trailing: const Icon(
             Icons.chevron_right_rounded,

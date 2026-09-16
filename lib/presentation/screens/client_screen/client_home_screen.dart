@@ -1771,10 +1771,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       return;
     }
 
-    // 구독 상태 확인 (standard/pro = 무제한)
+    // 신규 v2 구독은 모두 유한 이용권이다. 기존 legacy 프로만 무제한을 유지한다.
     final sub = await AiApi(baseUrl).fetchMySubscription();
     final isUnlimited =
-        sub.active && (sub.plan == 'standard' || sub.plan == 'pro');
+        sub.active &&
+        sub.plan == 'pro' &&
+        (sub.entitlementVersion == null ||
+            sub.entitlementVersion == 'legacy_v1');
     if (!mounted) return;
 
     // 무료 공고 → 즉시게시 확인 바텀시트
