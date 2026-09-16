@@ -7,6 +7,7 @@ class SubscriptionProductConfig {
     required this.urgentCredits,
     required this.maxRecipients,
     required this.iosId,
+    required this.androidId,
     this.unlimitedInstant = false,
     this.priorityCs = false,
     this.recommended = false,
@@ -22,6 +23,7 @@ class SubscriptionProductConfig {
   final bool priorityCs;
   final bool recommended;
   final String iosId;
+  final String androidId;
 }
 
 enum CheckoutProvider { appStore, portOne }
@@ -38,6 +40,7 @@ const subscriptionProductConfigs = [
     urgentCredits: 0,
     maxRecipients: 10,
     iosId: 'kr.co.iljujob.sub.lite',
+    androidId: 'sub-lite',
   ),
   SubscriptionProductConfig(
     key: 'standard',
@@ -47,6 +50,7 @@ const subscriptionProductConfigs = [
     urgentCredits: 1,
     maxRecipients: 15,
     iosId: 'kr.co.iljujob.sub.standard',
+    androidId: 'sub-standard',
     recommended: true,
   ),
   SubscriptionProductConfig(
@@ -57,6 +61,7 @@ const subscriptionProductConfigs = [
     urgentCredits: 2,
     maxRecipients: 20,
     iosId: 'kr.co.iljujob.sub.pro',
+    androidId: 'sub-pro',
     priorityCs: true,
   ),
 ];
@@ -83,8 +88,7 @@ bool isSubscriptionProductId(String productId) {
   final id = productId.trim();
   return _legacySubscriptionProductIds.contains(id) ||
       subscriptionProductConfigs.any(
-        // 스토어 구매는 iOS 뿐이다 — 안드로이드는 포트원으로 결제한다.
-        (product) => product.iosId == id,
+        (product) => product.iosId == id || product.androidId == id,
       );
 }
 
