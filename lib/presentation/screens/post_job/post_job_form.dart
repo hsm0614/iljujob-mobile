@@ -786,7 +786,11 @@ class _PostJobFormState extends State<PostJobForm>
     }
   }
 
-  Future<void> _submitOnce({required bool isPaid, String? passType}) async {
+  Future<void> _submitOnce({
+    required bool isPaid,
+    String? passType,
+    bool payUnitConfirmed = false,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
     final clientId = prefs.getInt('userId');
     final userType = prefs.getString('userType') ?? '';
@@ -841,6 +845,7 @@ class _PostJobFormState extends State<PostJobForm>
       final publishAtUtcStr = publishAt?.toUtc().toIso8601String();
 
       final result = await JobService.postJobWithImages(
+        payUnitConfirmed: payUnitConfirmed,
         title: _title.trim(),
         category: _category,
         categoryMajor: majorOfCategory(_category),
@@ -1051,6 +1056,19 @@ class _PostJobFormState extends State<PostJobForm>
       // 이미 막지만, 다른 기기에서 동시에 올렸거나 조회가 실패한 경우가 남는다.
       if (e is JobPostException && e.code == 'FREE_LIMIT_REACHED') {
         showFreeLimitSheet(context, e.message);
+      } else if (e is JobPostException && e.code == 'PAY_UNIT_SUSPECT') {
+        // 급여 단위 오입력 되묻기. 막는 게 아니라 확인이다 — "맞아요"를 누르면
+        // 그대로 등록된다. 2026-09-18: 월급 300만원이 일급으로 등록돼
+        // "일당 3,000,000원" 푸시가 140명에게 나갔다.
+        final confirmed = await _confirmPayUnit(e.message);
+        if (confirmed == true && mounted) {
+          await _submitOnce(
+            isPaid: isPaid,
+            passType: passType,
+            payUnitConfirmed: true,
+          );
+        }
+        return;
       } else {
         _showError(
           e is JobPostException ? e.message : '공고를 등록하지 못했어요.\n잠시 후 다시 시도해주세요.',
@@ -1059,6 +1077,62 @@ class _PostJobFormState extends State<PostJobForm>
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  /// 급여 단위 확인 바텀시트. "맞아요" 면 true.
+  Future<bool?> _confirmPayUnit(String message) {
+    return showModalBottomSheet<bool>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          24, 28, 24, MediaQuery.of(ctx).padding.bottom + 20,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('급여를 한 번만 확인해주세요', style: AppTextStyles.h3),
+            const SizedBox(height: 12),
+            Text(message, style: AppTextStyles.body1),
+            const SizedBox(height: 8),
+            Text(
+              '단위가 잘못되면 알림에도 그대로 나가서 지원이 줄어요.',
+              style: AppTextStyles.body2,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text('고칠게요'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    ),
+                    child: const Text('맞아요'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _onPreview() {

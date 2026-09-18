@@ -245,6 +245,8 @@ class JobService {
     bool isNationwide = false,
     List<JobLocation> locations = const [],
     String? requestId,
+    // 서버가 급여 단위를 되물었을 때(PAY_UNIT_SUSPECT) 사장님이 "맞다"고 한 경우에만 true.
+    bool payUnitConfirmed = false,
   }) async {
     final uri = Uri.parse('$baseUrl/api/job/post_job');
 
@@ -285,6 +287,7 @@ class JobService {
                 ),
               if (requestId != null && requestId.isNotEmpty)
                 'request_id': requestId,
+              if (payUnitConfirmed) 'pay_unit_confirmed': '1',
               // 장기 공고 전용
               'job_type': jobType,
               if (jobType == 'long') 'is_always_open': isAlwaysOpen ? '1' : '0',
