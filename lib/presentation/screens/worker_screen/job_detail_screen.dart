@@ -987,25 +987,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   Widget _buildApplyButton() {
     if (isLoading) return const SizedBox();
 
-    // ✅ 대행공고 여부 (null-safe)
+    // 대행 공고도 앱 지원을 받는다. 예전엔 지원·채팅을 막고 전화/이메일만 보여줬는데
+    // 그 경로는 플랫폼 밖이라 결과를 알 수 없었다. 막힘이 새서(AI 검색에 is_agency 누락)
+    // 앱으로 들어온 지원 48건은 사장님 답장률 50%로 일반 공고(48.8%)와 같았다 —
+    // 게스트 사장님도 알림톡 → 웹 보드로 받아 답한다(2026-09-21 실측).
+    // 연락처는 없애지 않고 지원 버튼 위에 전화·문자·이메일로 함께 둔다.
     final isAgency = (widget.job.isAgency == true);
 
-    // ✅ 대행공고는 채팅/지원 기능을 막고, 전화/이메일만 노출
-    if (isAgency) {
-      return SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(12),
-          child: _AgencyApplyBar(
-            phone: widget.job.agencyPhone,
-            email: widget.job.agencyEmail,
-            note: widget.job.agencyNote,
-            onSnack: _showSnack,
-          ),
-        ),
-      );
-    }
-
-    // ---- 기존 로직(일반 공고) 유지 ----
     final isSuspended = _suspension?.isSuspended ?? false;
     final hasExternalApply = widget.job.hasExternalApply;
     final isButtonDisabled =
@@ -1018,6 +1006,15 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            if (isAgency) ...[
+              _AgencyContactRow(
+                phone: widget.job.agencyPhone,
+                email: widget.job.agencyEmail,
+                note: widget.job.agencyNote,
+                onSnack: _showSnack,
+              ),
+              const SizedBox(height: 10),
+            ],
             _buildApplyHint(isButtonDisabled: isButtonDisabled),
             const SizedBox(height: 8),
             Row(
@@ -1653,7 +1650,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         widget.job.description?.trim().isNotEmpty == true
             ? widget.job.description!.trim()
             : isAgency
-            ? '상세 설명이 많이 적혀 있지 않아요.\n지원은 아래 “전화/이메일” 버튼으로 진행해주세요.'
+            ? '상세 설명이 많이 적혀 있지 않아요.\n아래에서 바로 지원하거나 전화·문자·이메일로 문의할 수 있어요.'
             : '상세 설명이 많이 적혀 있지 않아요.\n궁금한 점은 채팅으로 바로 물어보면 좋아요 👀';
 
     return Container(
@@ -2551,186 +2548,120 @@ class _MapWithSafeMarkerState extends State<MapWithSafeMarker> {
   }
 }
 
-class _AgencyApplyBar extends StatelessWidget {
+/// 대행 공고의 사장님 연락처. 지원 버튼과 함께 보여준다 — 지원을 대신하지 않는다.
+class _AgencyContactRow extends StatelessWidget {
   final String? phone;
   final String? email;
   final String? note;
   final void Function(String msg) onSnack;
 
-  const _AgencyApplyBar({
+  const _AgencyContactRow({
     required this.phone,
     required this.email,
     required this.note,
     required this.onSnack,
   });
 
-  bool get _hasPhone => (phone != null && phone!.trim().isNotEmpty);
-  bool get _hasEmail => (email != null && email!.trim().isNotEmpty);
-
-  Future<void> _callPhone() async {
-    final p = phone!.trim().replaceAll(' ', '');
-    final uri = Uri.parse('tel:$p');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
-      onSnack('전화 앱을 열 수 없어요');
-    }
+  String? get _phone {
+    final p = phone?.trim().replaceAll(RegExp(r'[^0-9+]'), '');
+    return (p == null || p.isEmpty) ? null : p;
   }
 
-  Future<void> _sendEmail() async {
-    final e = email!.trim();
-    final uri = Uri.parse('mailto:$e');
+  String? get _email {
+    final e = email?.trim();
+    return (e == null || e.isEmpty) ? null : e;
+  }
+
+  Future<void> _open(Uri uri, String failMsg) async {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
-      onSnack('이메일 앱을 열 수 없어요');
+      onSnack(failMsg);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final defaultNote =
-        '이 공고는 알바일주 공식계정이 대행 등록한 공고입니다.\n'
-        '지원은 아래 연락처로 진행해주세요.\n\n'
-        '연락하실 때 “알바일주 보고 연락드렸어요” 한마디만 부탁드려요 🙂';
+    final p = _phone;
+    final e = _email;
+    final memo = note?.trim();
+    if (p == null && e == null) return const SizedBox.shrink();
 
-    final safeNote =
-        (note != null && note!.trim().isNotEmpty) ? note!.trim() : defaultNote;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.border)),
-      ),
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 안내문
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 34,
-                height: 34,
-                decoration: BoxDecoration(
-                  color: kBrand.withOpacity(0.10),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.campaign_outlined,
-                  color: kBrand,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  safeNote,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    height: 1.35,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '사장님께 직접 문의',
+          style: AppTextStyles.captionBold.copyWith(
+            color: AppColors.textSecondary,
           ),
-
-          const SizedBox(height: 10),
-
-          // 버튼 두 개(가능한 것만)
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size.fromHeight(46),
-                    side: BorderSide(color: AppColors.textDisabled),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  onPressed: _hasPhone ? _callPhone : null,
-                  icon: Icon(
-                    Icons.call,
-                    size: 18,
-                    color: _hasPhone ? kBrand : const Color(0xFFBCC0CB),
-                  ),
-                  label: Text(
-                    _hasPhone ? '전화로 지원' : '전화 정보 없음',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      color:
-                          _hasPhone
-                              ? AppColors.textPrimary
-                              : AppColors.textTertiary,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        _hasEmail ? kBrand : AppColors.textDisabled,
-                    minimumSize: const Size.fromHeight(46),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    elevation: 0,
-                  ),
-                  onPressed: _hasEmail ? _sendEmail : null,
-                  icon: Icon(
-                    Icons.email_outlined,
-                    size: 18,
-                    color: _hasEmail ? Colors.white : AppColors.textTertiary,
-                  ),
-                  label: Text(
-                    _hasEmail ? '이메일 지원' : '이메일 없음',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w900,
-                      color: _hasEmail ? Colors.white : AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-
-          // 연락처 표시(투명하게)
-          const SizedBox(height: 8),
-          if (_hasPhone || _hasEmail)
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                if (_hasPhone) _miniChip('전화', phone!.trim()),
-                if (_hasEmail) _miniChip('이메일', email!.trim()),
-              ],
+        ),
+        if (memo != null && memo.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Text(
+            memo,
+            style: AppTextStyles.caption.copyWith(
+              color: AppColors.textSecondary,
             ),
+          ),
         ],
-      ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            _button(
+              Icons.call_outlined,
+              '전화',
+              p == null
+                  ? null
+                  : () => _open(Uri.parse('tel:$p'), '전화 앱을 열 수 없어요'),
+            ),
+            const SizedBox(width: 8),
+            _button(
+              Icons.sms_outlined,
+              '문자',
+              p == null
+                  ? null
+                  : () => _open(Uri.parse('sms:$p'), '문자 앱을 열 수 없어요'),
+            ),
+            const SizedBox(width: 8),
+            _button(
+              Icons.email_outlined,
+              '이메일',
+              e == null
+                  ? null
+                  : () => _open(Uri.parse('mailto:$e'), '이메일 앱을 열 수 없어요'),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
-  static Widget _miniChip(String k, String v) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.bgPage,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Text(
-        '$k: $v',
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w800,
-          color: AppColors.textSecondary,
+  Widget _button(IconData icon, String label, VoidCallback? onTap) {
+    final enabled = onTap != null;
+    return Expanded(
+      child: OutlinedButton.icon(
+        onPressed: onTap,
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(42),
+          side: BorderSide(
+            color: enabled ? AppColors.border : AppColors.textDisabled,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        icon: Icon(
+          icon,
+          size: 16,
+          color: enabled ? kBrand : AppColors.textTertiary,
+        ),
+        label: Text(
+          label,
+          style: AppTextStyles.captionBold.copyWith(
+            color: enabled ? AppColors.textPrimary : AppColors.textTertiary,
+          ),
         ),
       ),
     );
