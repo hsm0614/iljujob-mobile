@@ -129,6 +129,8 @@ class _PostJobFormState extends State<PostJobForm>
   String _longTermMode = '요일 지정';
   String _negotiationText = '';
   TimeOfDay? _startTime, _endTime;
+  // 근무시간 협의: 켜면 시각 없이 등록한다(요일 협의·급여 협의와 같은 방식).
+  bool _timeNegotiable = false;
   String _payType = '시급';
   int _pay = 0;
   bool _isSameDayPay = false;
@@ -203,7 +205,8 @@ class _PostJobFormState extends State<PostJobForm>
                 : _longTermMode == '요일 지정'
                 ? _weekdays.isNotEmpty
                 : true;
-        return hasDate && _startTime != null && _endTime != null;
+        return hasDate &&
+            (_timeNegotiable || (_startTime != null && _endTime != null));
       case 4:
         return isNegotiablePayType(_payType) ||
             (_pay > 0 && _payWarning == null);
@@ -529,6 +532,7 @@ class _PostJobFormState extends State<PostJobForm>
         _endDate = job.endDate?.toLocal() ?? job.startDate?.toLocal();
         _startTime = _parseTime(job.startTime);
         _endTime = _parseTime(job.endTime);
+        _timeNegotiable = job.isTimeNegotiable;
       });
     }
     if (!mounted) return;
@@ -575,7 +579,7 @@ class _PostJobFormState extends State<PostJobForm>
 
   int _toMin(TimeOfDay t) => t.hour * 60 + t.minute;
   int _workMins() {
-    if (_startTime == null || _endTime == null) return 0;
+    if (_timeNegotiable || _startTime == null || _endTime == null) return 0;
     int d = _toMin(_endTime!) - _toMin(_startTime!);
     if (d <= 0) d += 1440;
     return d;
@@ -854,8 +858,9 @@ class _PostJobFormState extends State<PostJobForm>
         locationCity: _locationCity,
         startDate: startDateStr,
         endDate: endDateStr,
-        startTime: _fmt24(_startTime),
-        endTime: _fmt24(_endTime),
+        startTime: _timeNegotiable ? '' : _fmt24(_startTime),
+        endTime: _timeNegotiable ? '' : _fmt24(_endTime),
+        isTimeNegotiable: _timeNegotiable,
         payType: _payType,
         pay: _pay,
         description: _description.trim(),
@@ -1169,7 +1174,9 @@ class _PostJobFormState extends State<PostJobForm>
               // 23:00~00:00 을 '오후 11:00 ~ 오전 12:00'으로만 쓰면 자정인지
               // 정오인지 구분이 안 된다. 시간 설정 시트와 동일하게 '익일'을 붙인다.
               workingTime:
-                  (_startTime != null && _endTime != null)
+                  _timeNegotiable
+                      ? '시간 협의'
+                      : (_startTime != null && _endTime != null)
                       ? '${_startTime!.format(context)} ~ '
                           '${_toMin(_endTime!) <= _toMin(_startTime!) ? '익일 ' : ''}'
                           '${_endTime!.format(context)}'
@@ -1318,6 +1325,8 @@ class _PostJobFormState extends State<PostJobForm>
       _endDate = parsedEnd ?? _startDate;
       _startTime = _parseTime(job['start_time']);
       _endTime = _parseTime(job['end_time']);
+      _timeNegotiable =
+          job['is_time_negotiable'] == 1 || job['is_time_negotiable'] == true;
       _weekdays =
           job['weekdays'] != null ? (job['weekdays'] as String).split(',') : [];
       _isSameDayPay = job['is_same_day_pay'] == 1;
@@ -1372,6 +1381,7 @@ class _PostJobFormState extends State<PostJobForm>
       'negotiationText': _negotiationText,
       'startTime': _fmt24(_startTime),
       'endTime': _fmt24(_endTime),
+      'timeNegotiable': _timeNegotiable,
       'payType': _payType,
       'pay': _pay,
       'isSameDayPay': _isSameDayPay,
@@ -1417,6 +1427,7 @@ class _PostJobFormState extends State<PostJobForm>
         _negoCtrl.text = _negotiationText;
         _startTime = _parseTime(d['startTime']?.toString());
         _endTime = _parseTime(d['endTime']?.toString());
+        _timeNegotiable = d['timeNegotiable'] == true;
         _payType = d['payType']?.toString() ?? '시급';
         _pay = d['pay'] as int? ?? 0;
         _payCtrl.text = _pay > 0 ? NumberFormat('#,###').format(_pay) : '';
@@ -2733,6 +2744,38 @@ class _PostJobFormState extends State<PostJobForm>
           ],
         ],
         const SizedBox(height: 14),
+        GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => setState(() => _timeNegotiable = !_timeNegotiable),
+          child: Row(
+            children: [
+              Icon(
+                _timeNegotiable
+                    ? Icons.check_box_rounded
+                    : Icons.check_box_outline_blank_rounded,
+                size: 22,
+                color: _timeNegotiable ? _blue : _label,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '근무시간 협의',
+                style: AppTextStyles.body2.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: _text,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (_timeNegotiable) ...[
+          const SizedBox(height: 6),
+          Text(
+            '시간은 지원자와 채팅으로 정해요. 일급이라면 하루 몇 시간 기준인지 본문에 적어주세요.',
+            style: AppTextStyles.caption.copyWith(color: _label),
+          ),
+        ],
+        const SizedBox(height: 10),
+        if (!_timeNegotiable)
         Row(
           children: [
             Expanded(
@@ -2756,7 +2799,7 @@ class _PostJobFormState extends State<PostJobForm>
             ),
           ],
         ),
-        if (_startTime != null && _endTime != null) ...[
+        if (!_timeNegotiable && _startTime != null && _endTime != null) ...[
           const SizedBox(height: 8),
           Container(
             width: double.infinity,
@@ -4012,7 +4055,9 @@ class _PostJobFormState extends State<PostJobForm>
               payType: _payType,
               pay: isNegotiablePayType(_payType) ? 0 : _pay,
               workingTime:
-                  (_startTime != null && _endTime != null)
+                  _timeNegotiable
+                      ? '시간 협의'
+                      : (_startTime != null && _endTime != null)
                       ? '${_startTime!.format(ctx)} ~ ${_endTime!.format(ctx)}'
                       : null,
               weekdays: _isShortTerm ? null : _weekdays,

@@ -225,6 +225,7 @@ class JobService {
     required String endDate,
     required String startTime,
     required String endTime,
+    bool isTimeNegotiable = false,
     required String payType,
     required int pay,
     required String description,
@@ -280,6 +281,7 @@ class JobService {
               'end_date': endDate, // ✅ 이미 YYYY-MM-DD 로컬 기준
               'start_time': startTime,
               'end_time': endTime,
+              if (isTimeNegotiable) 'is_time_negotiable': '1',
               'pay_type': payType,
               'pay': pay.toString(),
               'description': description.trim(),

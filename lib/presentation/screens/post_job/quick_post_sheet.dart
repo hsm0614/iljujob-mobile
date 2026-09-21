@@ -310,6 +310,8 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
         endDate: toYmd(endDate!),
         startTime: j['start_time'] ?? '',
         endTime: j['end_time'] ?? '',
+        isTimeNegotiable: j['is_time_negotiable'] == 1 ||
+            j['is_time_negotiable'] == true,
         payType: payType,
         pay: isNegotiablePayType(payType) ? 0 : pay,
         description: j['description'] ?? '',

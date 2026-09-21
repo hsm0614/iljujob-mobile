@@ -184,6 +184,8 @@ class Job {
   final String payType;
   final String startTime;
   final String endTime;
+  // 1이면 근무시간 협의 — startTime·endTime 은 빈 값이다.
+  final bool isTimeNegotiable;
   final String category;
   final String? description;
   final String? company;
@@ -245,6 +247,7 @@ class Job {
     required this.payType,
     required this.startTime,
     required this.endTime,
+    this.isTimeNegotiable = false,
     required this.category,
     this.description,
     this.company,
@@ -286,7 +289,8 @@ class Job {
     this.welfare,
   });
 
-  String get workingHours => '$startTime ~ $endTime';
+  String get workingHours =>
+      isTimeNegotiable ? '시간 협의' : '$startTime ~ $endTime';
 
   // Job 클래스 내부에 추가 (UTC 가정)
   DateTime? get postedAtUtc => publishAt ?? createdAt;
@@ -334,6 +338,11 @@ class Job {
       payType: pick<String>(['pay_type', 'payType']) ?? '일급',
       startTime: pick<String>(['start_time', 'startTime'])?.toString() ?? '',
       endTime: pick<String>(['end_time', 'endTime'])?.toString() ?? '',
+      isTimeNegotiable:
+          json['is_time_negotiable'] == 1 ||
+          json['is_time_negotiable'] == true ||
+          json['is_time_negotiable']?.toString() == '1' ||
+          json['isTimeNegotiable'] == true,
       category: json['category'] ?? '기타',
       description: json['description'],
       company: json['company'],
@@ -524,6 +533,7 @@ class Job {
       payType: payType,
       startTime: startTime,
       endTime: endTime,
+      isTimeNegotiable: isTimeNegotiable,
       category: category,
       description: description,
       company: company,
@@ -572,6 +582,7 @@ class Job {
       'pay_type': payType,
       'start_time': startTime,
       'end_time': endTime,
+      'is_time_negotiable': isTimeNegotiable ? 1 : 0,
       'category': category,
       'description': description,
       'company': company,
