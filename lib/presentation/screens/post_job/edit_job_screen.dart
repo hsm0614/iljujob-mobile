@@ -103,6 +103,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
 
   // Time of day (HH:mm)
   TimeOfDay? startTime;
+  bool _timeNegotiable = false;
   TimeOfDay? endTime;
 
   // Images
@@ -174,6 +175,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
         // Times (HH:mm strings)
         startTime = _Tx.parseHm(job.startTime);
         endTime = _Tx.parseHm(job.endTime);
+        _timeNegotiable = job.isTimeNegotiable;
 
         existingImageUrls = job.imageUrls;
         isLoading = false;
@@ -817,7 +819,8 @@ class _EditJobScreenState extends State<EditJobScreen> {
       return;
     }
 
-    if (startTime == null || endTime == null) {
+    // 시간 협의 공고는 시각 없이 저장한다. 시각을 고르면 서버가 협의를 해제한다.
+    if (!_timeNegotiable && (startTime == null || endTime == null)) {
       _showError('근무 시간을 선택해주세요.');
       return;
     }
