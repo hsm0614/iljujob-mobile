@@ -1,4 +1,8 @@
-platform :ios, '17.4'
+# 최소 iOS 는 의존성이 실제로 요구하는 최대치에 맞춘다 — 현재 Firebase(15.0).
+# 2025-09-10 첫 커밋부터 근거 없이 17.4 였고, iOS 16 이하 기기(iPhone 8·X 등)는
+# App Store 에서 설치 자체가 안 됐다. 나머지 의존성은 13.0 이하이고 네이티브 코드는
+# AppDelegate.swift 하나라 iOS 16·17 전용 API 가 없다(2026-09-21 확인).
+platform :ios, '15.0'
 
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
