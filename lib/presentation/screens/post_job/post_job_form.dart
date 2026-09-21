@@ -2386,9 +2386,9 @@ class _PostJobFormState extends State<PostJobForm>
               ),
             ),
           ),
+        // 높이를 36 으로 고정하면 버튼 기본 최소높이(40)·패딩과 부딪혀 글자가 잘렸다.
         SizedBox(
           width: double.infinity,
-          height: 36,
           child: OutlinedButton.icon(
             onPressed: canAdd ? _addExtraLocation : null,
             icon: const Icon(Icons.add_rounded, size: 18),
@@ -2402,8 +2402,9 @@ class _PostJobFormState extends State<PostJobForm>
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
-              textStyle: const TextStyle(
-                fontSize: 14,
+              minimumSize: const Size.fromHeight(44),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              textStyle: AppTextStyles.body2.copyWith(
                 fontWeight: FontWeight.w700,
               ),
             ),

@@ -100,6 +100,11 @@ class JobService {
     double? lat,
     double? lng,
     double? radiusKm,
+    // 목록 보기 방식: 'near'(반경, 기본) · 'region'(시·도/시·군·구) · 'nationwide'.
+    // 안 보내면 서버는 지금처럼 반경으로 거른다(구버전 호환).
+    String? scope,
+    String? sido,
+    String? sigungu,
   }) async {
     final String base =
         (clientId != null)
@@ -120,6 +125,11 @@ class JobService {
         'lng': lng.toStringAsFixed(6),
         'radiusKm': (radiusKm ?? 30).toStringAsFixed(0),
       },
+      if (clientId == null && scope != null && scope != 'near') 'scope': scope,
+      if (clientId == null && scope == 'region' && (sido ?? '').isNotEmpty)
+        'sido': sido!,
+      if (clientId == null && scope == 'region' && (sigungu ?? '').isNotEmpty)
+        'sigungu': sigungu!,
       '_ts': DateTime.now().millisecondsSinceEpoch.toString(),
     };
 

@@ -984,6 +984,15 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     );
   }
 
+  Future<void> _callAgencyPhone(String phone) async {
+    final uri = Uri.parse('tel:$phone');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      _showSnack('전화 앱을 열 수 없어요');
+    }
+  }
+
   Widget _buildApplyButton() {
     if (isLoading) return const SizedBox();
 
@@ -991,8 +1000,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     // 그 경로는 플랫폼 밖이라 결과를 알 수 없었다. 막힘이 새서(AI 검색에 is_agency 누락)
     // 앱으로 들어온 지원 48건은 사장님 답장률 50%로 일반 공고(48.8%)와 같았다 —
     // 게스트 사장님도 알림톡 → 웹 보드로 받아 답한다(2026-09-21 실측).
-    // 연락처는 없애지 않고 지원 버튼 위에 전화·문자·이메일로 함께 둔다.
+    // 연락 방식은 둘로 나눈다 — '전화로 지원'(사장님 번호) · '앱으로 지원'(채팅).
     final isAgency = (widget.job.isAgency == true);
+    final agencyPhone =
+        widget.job.agencyPhone?.trim().replaceAll(RegExp(r'[^0-9+]'), '') ?? '';
+    final showPhoneApply = isAgency && agencyPhone.isNotEmpty;
 
     final isSuspended = _suspension?.isSuspended ?? false;
     final hasExternalApply = widget.job.hasExternalApply;
@@ -1006,19 +1018,29 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isAgency) ...[
-              _AgencyContactRow(
-                phone: widget.job.agencyPhone,
-                email: widget.job.agencyEmail,
-                note: widget.job.agencyNote,
-                onSnack: _showSnack,
-              ),
-              const SizedBox(height: 10),
-            ],
             _buildApplyHint(isButtonDisabled: isButtonDisabled),
             const SizedBox(height: 8),
             Row(
               children: [
+                if (showPhoneApply)
+                  Expanded(
+                    child: SizedBox(
+                      height: 50,
+                      child: OutlinedButton.icon(
+                        onPressed: () => _callAgencyPhone(agencyPhone),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.primary),
+                          foregroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(Icons.call_outlined, size: 18),
+                        label: Text('전화로 지원', style: AppTextStyles.btnLg),
+                      ),
+                    ),
+                  )
+                else
                 // AI 면접 준비 버튼
                 SizedBox(
                   height: 50,
@@ -1104,6 +1126,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                             ? '차단된 기업'
                             : isSuspended
                             ? '정지된 계정'
+                            : isAgency
+                            ? '앱으로 지원'
                             : '지원하고 채팅 시작',
                         style: const TextStyle(
                           fontSize: 16,
@@ -1650,7 +1674,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         widget.job.description?.trim().isNotEmpty == true
             ? widget.job.description!.trim()
             : isAgency
-            ? '상세 설명이 많이 적혀 있지 않아요.\n아래에서 바로 지원하거나 전화·문자·이메일로 문의할 수 있어요.'
+            ? '상세 설명이 많이 적혀 있지 않아요.\n아래에서 전화로 지원하거나 앱으로 지원할 수 있어요.'
             : '상세 설명이 많이 적혀 있지 않아요.\n궁금한 점은 채팅으로 바로 물어보면 좋아요 👀';
 
     return Container(
@@ -2548,122 +2572,3 @@ class _MapWithSafeMarkerState extends State<MapWithSafeMarker> {
   }
 }
 
-/// 대행 공고의 사장님 연락처. 지원 버튼과 함께 보여준다 — 지원을 대신하지 않는다.
-class _AgencyContactRow extends StatelessWidget {
-  final String? phone;
-  final String? email;
-  final String? note;
-  final void Function(String msg) onSnack;
-
-  const _AgencyContactRow({
-    required this.phone,
-    required this.email,
-    required this.note,
-    required this.onSnack,
-  });
-
-  String? get _phone {
-    final p = phone?.trim().replaceAll(RegExp(r'[^0-9+]'), '');
-    return (p == null || p.isEmpty) ? null : p;
-  }
-
-  String? get _email {
-    final e = email?.trim();
-    return (e == null || e.isEmpty) ? null : e;
-  }
-
-  Future<void> _open(Uri uri, String failMsg) async {
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
-      onSnack(failMsg);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final p = _phone;
-    final e = _email;
-    final memo = note?.trim();
-    if (p == null && e == null) return const SizedBox.shrink();
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '사장님께 직접 문의',
-          style: AppTextStyles.captionBold.copyWith(
-            color: AppColors.textSecondary,
-          ),
-        ),
-        if (memo != null && memo.isNotEmpty) ...[
-          const SizedBox(height: 4),
-          Text(
-            memo,
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-        const SizedBox(height: 6),
-        Row(
-          children: [
-            _button(
-              Icons.call_outlined,
-              '전화',
-              p == null
-                  ? null
-                  : () => _open(Uri.parse('tel:$p'), '전화 앱을 열 수 없어요'),
-            ),
-            const SizedBox(width: 8),
-            _button(
-              Icons.sms_outlined,
-              '문자',
-              p == null
-                  ? null
-                  : () => _open(Uri.parse('sms:$p'), '문자 앱을 열 수 없어요'),
-            ),
-            const SizedBox(width: 8),
-            _button(
-              Icons.email_outlined,
-              '이메일',
-              e == null
-                  ? null
-                  : () => _open(Uri.parse('mailto:$e'), '이메일 앱을 열 수 없어요'),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _button(IconData icon, String label, VoidCallback? onTap) {
-    final enabled = onTap != null;
-    return Expanded(
-      child: OutlinedButton.icon(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size.fromHeight(42),
-          side: BorderSide(
-            color: enabled ? AppColors.border : AppColors.textDisabled,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        icon: Icon(
-          icon,
-          size: 16,
-          color: enabled ? kBrand : AppColors.textTertiary,
-        ),
-        label: Text(
-          label,
-          style: AppTextStyles.captionBold.copyWith(
-            color: enabled ? AppColors.textPrimary : AppColors.textTertiary,
-          ),
-        ),
-      ),
-    );
-  }
-}

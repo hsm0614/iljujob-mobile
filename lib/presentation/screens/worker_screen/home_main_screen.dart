@@ -73,6 +73,17 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   bool _isLoadingJobs = false;
   bool _distanceExpanded = false;
 
+  // 목록 보기 방식: 'near'(내 주변, 기본) · 'region'(지역) · 'nationwide'(전국).
+  // 반경만 있을 땐 노출 중인 공고가 전국 17건인데(2026-09-21) 대전 구직자는 0건,
+  // 부산은 2건만 봤다. 푸시·긴급호출은 계속 거리 기준이고 목록만 넓힌다.
+  String _scope = 'near';
+  String? _regionSido;
+  String? _regionSigungu;
+  static const _kScopeKey = 'job_list_scope';
+  static const _kRegionSidoKey = 'job_list_region_sido';
+  static const _kRegionSigunguKey = 'job_list_region_sigungu';
+  bool get _isNearScope => _scope == 'near';
+
   // 검색창은 기본 접힘. 검색어가 있으면 목록 위 필터 칩으로 보인다.
   bool _searchExpanded = false;
   final FocusNode _searchFocus = FocusNode();
@@ -253,6 +264,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
   Future<void> _init() async {
     final prefs = await SharedPreferences.getInstance();
+    _scope = prefs.getString(_kScopeKey) ?? 'near';
+    _regionSido = prefs.getString(_kRegionSidoKey);
+    _regionSigungu = prefs.getString(_kRegionSigunguKey);
+    if (_scope == 'region' && (_regionSido ?? '').isEmpty) _scope = 'near';
     double lat = prefs.getDouble('currentLatitude') ?? 0.0;
     double lng = prefs.getDouble('currentLongitude') ?? 0.0;
 
@@ -540,6 +555,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         lat: hasLocation ? currentLatitude : null,
         lng: hasLocation ? currentLongitude : null,
         radiusKm: selectedDistance,
+        scope: _scope,
+        sido: _regionSido,
+        sigungu: _regionSigungu,
       );
       if (req != _jobsReqSeq || !mounted) return;
 
@@ -608,7 +626,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       }
 
       List<Job> filtered = validJobs;
-      if (currentLatitude != 0.0 && currentLongitude != 0.0) {
+      if (_isNearScope && currentLatitude != 0.0 && currentLongitude != 0.0) {
         // 근무지가 여러 곳인 공고는 하나만 반경 안이어도 통과한다.
         // 전국 공고·좌표 없는 공고도 여기서 버리지 않는다 — Job.withinRadiusKm이
         // 목록·필터 양쪽에서 같은 판단을 하도록 모아뒀다.
@@ -707,7 +725,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           return !isFuture && notExpired;
         }).toList();
 
-    if (currentLatitude != 0.0 && currentLongitude != 0.0) {
+    if (_isNearScope && currentLatitude != 0.0 && currentLongitude != 0.0) {
       tempJobs =
           tempJobs
               .where(
@@ -1820,7 +1838,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _buildDistanceSlider(),
+                  child: _buildListScope(),
                 ),
               ),
               const SliverToBoxAdapter(child: SizedBox(height: 8)),
@@ -2335,7 +2353,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             Text(
               hasQuery
                   ? '검색어를 바꾸거나 지우면\n주변 공고를 다시 볼 수 있어요.'
-                  : '설정한 거리 안에는 공고가 없어요.\n새 공고 알림을 켜두고 다시 확인해보세요.',
+                  : _scope == 'region'
+                  ? '이 지역에는 지금 노출 중인 공고가 없어요.\n다른 지역이나 전국 공고를 둘러보세요.'
+                  : _scope == 'nationwide'
+                  ? '지금 노출 중인 공고가 없어요.\n새 공고 알림을 켜두고 다시 확인해보세요.'
+                  : '설정한 거리 안에는 공고가 없어요.\n지역이나 전국으로 넓혀서 볼 수 있어요.',
               textAlign: TextAlign.center,
               style: const TextStyle(
                 fontSize: 13,
@@ -2420,6 +2442,26 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   ),
                 ),
               ),
+              if (_scope != 'nationwide') ...[
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    if (_isNearScope)
+                      Expanded(
+                        child: TextButton(
+                          onPressed: _openRegionPicker,
+                          child: const Text('지역으로 보기'),
+                        ),
+                      ),
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => _setScope('nationwide'),
+                        child: const Text('전국 공고 보기'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ],
         ),
@@ -2871,6 +2913,242 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     if (km <= 10.0) return '퇴근 후도 무난한 거리 (차로 15~20분)';
     if (km <= 20.0) return '주말 알바 당일치기 거리 (차로 30분대)';
     return '원거리 이동이 필요한 범위 (차로 1시간 내외)';
+  }
+
+  Widget _buildListScope() {
+    final regionLabel =
+        _scope == 'region' && (_regionSido ?? '').isNotEmpty
+            ? [_regionSido, _regionSigungu].whereType<String>().join(' ')
+            : '지역';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            _scopeChip('near', '내 주변', Icons.near_me_outlined),
+            const SizedBox(width: 8),
+            _scopeChip('region', regionLabel, Icons.map_outlined),
+            const SizedBox(width: 8),
+            _scopeChip('nationwide', '전국', Icons.public_rounded),
+          ],
+        ),
+        if (_isNearScope) ...[const SizedBox(height: 8), _buildDistanceSlider()],
+      ],
+    );
+  }
+
+  Widget _scopeChip(String scope, String label, IconData icon) {
+    final selected = _scope == scope;
+    return Expanded(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        // '지역'은 이미 골라둔 상태여도 다시 누르면 바꿀 수 있게 항상 선택창을 연다
+        onTap: () => scope == 'region' ? _openRegionPicker() : _setScope(scope),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+          decoration: BoxDecoration(
+            color: selected ? AppColors.primaryLight : AppColors.bgCard,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: selected ? AppColors.primary : AppColors.border,
+            ),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: selected ? AppColors.primary : AppColors.textSecondary,
+              ),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.captionBold.copyWith(
+                    color: selected ? AppColors.primary : AppColors.textPrimary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _setScope(String scope, {String? sido, String? sigungu}) async {
+    setState(() {
+      _scope = scope;
+      if (scope == 'region') {
+        _regionSido = sido;
+        _regionSigungu = sigungu;
+      }
+      _itemsToShow = 10;
+    });
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_kScopeKey, scope);
+      if (scope == 'region') {
+        await prefs.setString(_kRegionSidoKey, sido ?? '');
+        if (sigungu == null) {
+          await prefs.remove(_kRegionSigunguKey);
+        } else {
+          await prefs.setString(_kRegionSigunguKey, sigungu);
+        }
+      }
+    } catch (_) {}
+    // 불러오는 중이면 _loadJobs 가 그냥 돌아가 버려 옛 보기가 남는다 — 끝날 때까지 잠깐 기다린다.
+    for (var i = 0; i < 40 && _isLoadingJobs; i++) {
+      await Future.delayed(const Duration(milliseconds: 150));
+      if (!mounted) return;
+    }
+    await _loadJobs();
+  }
+
+  Future<void> _openRegionPicker() async {
+    List<Map<String, dynamic>> regions = [];
+    try {
+      final resp = await AuthenticatedHttpClient.get(
+        Uri.parse('$baseUrl/api/job/regions'),
+      ).timeout(const Duration(seconds: 6));
+      if (resp.statusCode == 200) {
+        final d = jsonDecode(resp.body) as Map<String, dynamic>;
+        regions =
+            ((d['regions'] as List?) ?? const [])
+                .whereType<Map>()
+                .map((e) => Map<String, dynamic>.from(e))
+                .toList();
+      }
+    } catch (_) {}
+    if (!mounted) return;
+    if (regions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('지역 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.')),
+      );
+      return;
+    }
+
+    String? pickedSido =
+        regions.any((r) => r['sido'] == _regionSido)
+            ? _regionSido
+            : regions.first['sido'] as String?;
+    String? pickedGu = pickedSido == _regionSido ? _regionSigungu : null;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder:
+          (ctx) => StatefulBuilder(
+            builder: (ctx, setSheet) {
+              final current = regions.firstWhere(
+                (r) => r['sido'] == pickedSido,
+                orElse: () => regions.first,
+              );
+              final gus =
+                  ((current['sigungu'] as List?) ?? const [])
+                      .whereType<Map>()
+                      .toList();
+              return SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('지역으로 보기', style: AppTextStyles.h3),
+                      const SizedBox(height: 4),
+                      Text(
+                        '지금 공고가 있는 지역만 보여드려요.',
+                        style: AppTextStyles.caption.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      Text('시·도', style: AppTextStyles.captionBold),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final r in regions)
+                            ChoiceChip(
+                              label: Text('${r['sido']} ${r['count']}'),
+                              selected: pickedSido == r['sido'],
+                              onSelected:
+                                  (_) => setSheet(() {
+                                    pickedSido = r['sido'] as String?;
+                                    pickedGu = null;
+                                  }),
+                            ),
+                        ],
+                      ),
+                      if (gus.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Text('시·군·구', style: AppTextStyles.captionBold),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            ChoiceChip(
+                              label: const Text('전체'),
+                              selected: pickedGu == null,
+                              onSelected: (_) => setSheet(() => pickedGu = null),
+                            ),
+                            for (final g in gus)
+                              ChoiceChip(
+                                label: Text('${g['name']} ${g['count']}'),
+                                selected: pickedGu == g['name'],
+                                onSelected:
+                                    (_) => setSheet(
+                                      () => pickedGu = g['name'] as String?,
+                                    ),
+                              ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(ctx);
+                            _setScope(
+                              'region',
+                              sido: pickedSido,
+                              sigungu: pickedGu,
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                            ),
+                          ),
+                          child: Text(
+                            '이 지역 공고 보기',
+                            style: AppTextStyles.btnLg.copyWith(
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+    );
   }
 
   Widget _buildDistanceSlider() {
