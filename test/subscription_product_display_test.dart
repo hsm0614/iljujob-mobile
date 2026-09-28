@@ -2,14 +2,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:iljujob/data/models/subscription_product_config.dart';
 
 void main() {
-  test('신규 앱은 v2 상품과 유한 이용권만 노출한다', () {
+  test('신규 앱은 기존 스토어 상품 ID와 v2 혜택을 사용한다', () {
     expect(
       subscriptionProductConfigs.map((p) => p.iosId),
-      contains('kr.co.iljujob.sub.v2.pro'),
+      contains('kr.co.iljujob.sub.pro'),
     );
     expect(
       subscriptionProductConfigs.map((p) => p.androidId),
-      contains('sub_v2_pro'),
+      contains('sub-pro'),
     );
     expect(
       subscriptionProductConfigs.map(
@@ -36,10 +36,15 @@ void main() {
   });
 
   test('복원 시 구독 상품만 서버 검증 대상으로 분류한다', () {
-    expect(isSubscriptionProductId('kr.co.iljujob.sub.v2.pro'), isTrue);
-    expect(isSubscriptionProductId('sub_v2_pro'), isTrue);
+    expect(isSubscriptionProductId('kr.co.iljujob.sub.pro'), isTrue);
+    expect(isSubscriptionProductId('sub-pro'), isTrue);
     expect(isSubscriptionProductId('subscribe'), isTrue);
     expect(isSubscriptionProductId('instant_10'), isFalse);
     expect(isSubscriptionProductId('com.iljujob.pass30'), isFalse);
+  });
+
+  test('iOS만 App Store를 쓰고 그 외 플랫폼은 PortOne을 사용한다', () {
+    expect(checkoutProviderForPlatform(isIos: true), CheckoutProvider.appStore);
+    expect(checkoutProviderForPlatform(isIos: false), CheckoutProvider.portOne);
   });
 }
