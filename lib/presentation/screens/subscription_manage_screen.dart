@@ -13,13 +13,9 @@ import '../../config/app_theme.dart';
 import '../../data/models/subscription_product_config.dart';
 
 const _defaultBenefits = [
-  _Benefit(Icons.flash_on_rounded, '즉시게시 3~10회/월', AppColors.primary),
-  _Benefit(Icons.bolt_rounded, '긴급호출 0~2회/월', AppColors.urgentCall),
-  _Benefit(
-    Icons.auto_awesome_rounded,
-    'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)',
-    AppColors.aiAccent,
-  ),
+  _Benefit(Icons.flash_on_rounded, '즉시게시 3회 또는 무제한', AppColors.primary),
+  _Benefit(Icons.message_outlined, '먼저 연락 10~50명/결제기간', AppColors.primary),
+  _Benefit(Icons.notifications_outlined, '지도 알림 2~8회/결제기간', AppColors.primary),
   _Benefit(Icons.verified_rounded, '구독 배지 표시', AppColors.primary),
 ];
 
@@ -59,6 +55,9 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
   String? _entitlementVersion;
   DateTime? _expiresAt;
   bool? _isTrial;
+  int? _instantRemaining;
+  int? _directRemaining;
+  int? _pushRemaining;
   StreamSubscription<List<PurchaseDetails>>? _restoreSubscription;
   Timer? _restoreTimeout;
   final Set<String> _restoredPurchaseKeys = {};
@@ -96,6 +95,9 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
         _entitlementVersion = s.entitlementVersion;
         _expiresAt = s.expiresAt;
         _isTrial = s.isTrial;
+        _instantRemaining = s.instantRemaining;
+        _directRemaining = s.directMonthlyRemaining;
+        _pushRemaining = s.pushMonthlyRemaining;
         _loading = false;
       });
     } catch (_) {
@@ -268,6 +270,10 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
                       plan: _plan,
                       entitlementVersion: _entitlementVersion,
                       active: _active,
+                      remainingText:
+                          _entitlementVersion == 'v3'
+                              ? '남은 즉시게시 ${_instantRemaining == -1 ? '무제한' : '${_instantRemaining ?? 0}회'} · 먼저 연락 ${_directRemaining ?? 0}명 · 지도 알림 ${_pushRemaining ?? 0}회'
+                              : null,
                     ),
 
                     const SizedBox(height: 16),
@@ -506,10 +512,12 @@ class _BenefitSection extends StatelessWidget {
   final String? plan;
   final String? entitlementVersion;
   final bool active;
+  final String? remainingText;
   const _BenefitSection({
     required this.plan,
     required this.entitlementVersion,
     required this.active,
+    required this.remainingText,
   });
 
   @override
@@ -535,6 +543,20 @@ class _BenefitSection extends StatelessWidget {
                       Icons.bolt_rounded,
                       label,
                       AppColors.urgentCall,
+                    );
+                  }
+                  if (label.startsWith('먼저 연락')) {
+                    return _Benefit(
+                      Icons.message_outlined,
+                      label,
+                      AppColors.primary,
+                    );
+                  }
+                  if (label.startsWith('지도 알림')) {
+                    return _Benefit(
+                      Icons.notifications_outlined,
+                      label,
+                      AppColors.primary,
                     );
                   }
                   if (label.startsWith('AI')) {
@@ -590,6 +612,13 @@ class _BenefitSection extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           ...benefits.map((b) => _BenefitRow(benefit: b)),
+          if (remainingText != null) ...[
+            const SizedBox(height: 10),
+            Text(
+              remainingText!,
+              style: const TextStyle(color: AppColors.textSecondary),
+            ),
+          ],
         ],
       ),
     );
@@ -657,7 +686,9 @@ class _ManageSection extends StatelessWidget {
             icon: Icons.manage_accounts_rounded,
             title: isStoreBilling ? '구독 관리' : '결제 방식 안내',
             subtitle:
-                isStoreBilling ? 'App Store에서 변경 · 해지' : 'PortOne 30일 결제 · 자동 갱신 없음',
+                isStoreBilling
+                    ? 'App Store에서 변경 · 해지'
+                    : 'PortOne 30일 결제 · 자동 갱신 없음',
             onTap: onOpenStore,
             showDivider: true,
           ),
@@ -724,7 +755,10 @@ class _ManageSection extends StatelessWidget {
 class _PolicySection extends StatelessWidget {
   final bool isStoreBilling;
   final VoidCallback onOpenStore;
-  const _PolicySection({required this.isStoreBilling, required this.onOpenStore});
+  const _PolicySection({
+    required this.isStoreBilling,
+    required this.onOpenStore,
+  });
 
   @override
   Widget build(BuildContext context) {

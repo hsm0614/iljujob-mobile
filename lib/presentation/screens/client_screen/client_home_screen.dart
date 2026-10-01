@@ -27,6 +27,7 @@ import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/presentation/widgets/albailju_common.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:iljujob/presentation/screens/purchase_screen.dart';
+import 'package:iljujob/presentation/screens/subscription_plans_screen.dart';
 import '../../../data/services/client_tracking_service.dart';
 import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 
@@ -1771,13 +1772,18 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       return;
     }
 
-    // 신규 v2 구독은 모두 유한 이용권이다. 기존 legacy 프로만 무제한을 유지한다.
+    // v3는 결제기간 제공량, 구버전은 기존 지급 이용권을 따로 사용한다.
     final sub = await AiApi(baseUrl).fetchMySubscription();
     final isUnlimited =
         sub.active &&
         sub.plan == 'pro' &&
-        (sub.entitlementVersion == null ||
+        (sub.entitlementVersion == 'v3' ||
+            sub.entitlementVersion == null ||
             sub.entitlementVersion == 'legacy_v1');
+    final v3Available =
+        sub.active &&
+        sub.entitlementVersion == 'v3' &&
+        (sub.instantRemaining == -1 || (sub.instantRemaining ?? 0) > 0);
     if (!mounted) return;
 
     // 무료 공고 → 즉시게시 확인 바텀시트
@@ -1815,7 +1821,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  isUnlimited
+                  v3Available
+                      ? '선택한 이 공고에 구독 즉시게시 혜택을 적용합니다. 다른 공고는 변경되지 않습니다.'
+                      : isUnlimited
                       ? '구독 혜택으로 즉시 게시됩니다. 이용권 차감 없이 지금 바로 공고를 노출합니다.'
                       : '즉시게시 이용권 1개를 사용해 12시간 기다리지 않고 바로 노출합니다.\n노출 기간이 3일에서 7일로 늘어납니다.',
                   style: const TextStyle(
@@ -1856,7 +1864,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                           elevation: 0,
                         ),
                         child: Text(
-                          isUnlimited ? '즉시 게시' : '이용권 사용',
+                          v3Available || isUnlimited ? '즉시 게시' : '이용권 사용',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
@@ -1951,6 +1959,32 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                           fontWeight: FontWeight.w700,
                         ),
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () async {
+                        Navigator.pop(context);
+                        final purchased = await Navigator.push<bool>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SubscriptionPlansScreen(),
+                          ),
+                        );
+                        if (!mounted || purchased != true) return;
+                        try {
+                          await JobService.publishNow(jobId);
+                          _toast('선택한 공고가 즉시 게시되었습니다.');
+                          _loadMyJobs();
+                        } catch (_) {
+                          _toast(
+                            '구독은 시작됐지만 이 공고는 아직 예약 상태예요. 공고에서 즉시게시를 다시 눌러주세요.',
+                          );
+                        }
+                      },
+                      child: const Text('구독하고 이 공고 게시하기'),
                     ),
                   ),
                 ],

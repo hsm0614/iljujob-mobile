@@ -1,7 +1,8 @@
 // lib/presentation/screens/subscription_plans_screen.dart
 //
-// 알바일주 구독 플랜 선택 화면 (라이트/스탠다드/프로)
+// 알바일주 구독 플랜 선택 화면 (라이트/프로)
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -28,7 +29,7 @@ class SubscriptionPlansScreen extends StatefulWidget {
 }
 
 class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
-  String _selectedPlan = 'standard';
+  String _selectedPlan = 'lite';
   bool _processing = false;
   int? _userId;
   String? _companyName;
@@ -36,6 +37,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   final InAppPurchase _iap = InAppPurchase.instance;
   StreamSubscription<List<PurchaseDetails>>? _purchaseSub;
   final Set<String> _handledIds = {};
+  final Map<String, String> _storePrices = {};
 
   @override
   void initState() {
@@ -43,6 +45,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
     _loadUser();
     if (Platform.isIOS) {
       _purchaseSub = _iap.purchaseStream.listen(_onPurchase, onError: (_) {});
+      _loadStorePrices();
     }
     ClientTrackingService.instance.track('subscription_page_view');
   }
@@ -54,6 +57,20 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   }
 
   _Plan get _plan => _plans.firstWhere((p) => p.key == _selectedPlan);
+
+  Future<void> _loadStorePrices() async {
+    try {
+      final response = await _iap.queryProductDetails(
+        _plans.map((plan) => plan.iosId).toSet(),
+      );
+      if (!mounted) return;
+      setState(() {
+        for (final product in response.productDetails) {
+          _storePrices[product.id] = product.price;
+        }
+      });
+    } catch (_) {}
+  }
 
   Future<void> _loadUser() async {
     final prefs = await SharedPreferences.getInstance();
@@ -73,6 +90,23 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       properties: {'plan': plan.key},
     );
 
+    try {
+      final status = await AuthenticatedHttpClient.get(
+        Uri.parse('$baseUrl/api/subscription/status'),
+      );
+      if (status.statusCode != 200 ||
+          (jsonDecode(status.body)
+                  as Map<String, dynamic>)['v3ProductsPublic'] !=
+              true) {
+        if (mounted) _showError('새 구독 상품을 준비 중입니다. 잠시 뒤 다시 확인해 주세요.');
+        return;
+      }
+    } catch (_) {
+      if (mounted) _showError('구독 상품 상태를 확인할 수 없습니다. 잠시 뒤 다시 시도해 주세요.');
+      return;
+    }
+    if (!mounted) return;
+
     if (checkoutProviderForPlatform(isIos: Platform.isIOS) ==
         CheckoutProvider.appStore) {
       await _purchaseStore(plan);
@@ -81,7 +115,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
     }
   }
 
-  // iOS는 기존 App Store 상품 ID를 그대로 사용한다.
+  // iOS는 새 v3 상품 ID로 구매하되 화면의 플랜명은 유지한다.
   Future<void> _purchaseStore(_Plan plan) async {
     setState(() => _processing = true);
     try {
@@ -143,11 +177,18 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       );
       if (!mounted) return resp.statusCode == 200;
       if (resp.statusCode == 200) {
+        final isNewProduct = purchase.productID.contains('.v3.');
         ClientTrackingService.instance.track(
           'subscription_success',
-          properties: {'plan': _selectedPlan},
+          properties: {'product_id': purchase.productID},
         );
-        _showSuccess();
+        if (isNewProduct) {
+          _showSuccess();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('기존 구독이 복원됐어요. 관리 화면에서 혜택을 확인해 주세요.')),
+          );
+        }
         return true;
       }
       _showError('구독 검증에 실패했어요. 결제는 다시 확인됩니다.');
@@ -164,6 +205,18 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
     if (!mounted) return;
     setState(() => _processing = true);
     try {
+      final status = await AuthenticatedHttpClient.get(
+        Uri.parse('$baseUrl/api/subscription/status'),
+      );
+      if (status.statusCode != 200) {
+        throw Exception('구독 상태를 확인할 수 없습니다. 잠시 뒤 다시 시도해 주세요.');
+      }
+      final current = jsonDecode(status.body) as Map<String, dynamic>;
+      if (!mounted) return;
+      if (current['active'] == true) {
+        _showError('현재 구독이 끝난 뒤 새 기간권을 구매해 주세요. 중복 결제를 막기 위해 결제창을 열지 않았어요.');
+        return;
+      }
       final result = await Navigator.push(
         context,
         MaterialPageRoute(
@@ -284,7 +337,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                '${_plan.name} 플랜 즉시게시 ${_plan.instantCredits}회 · 긴급호출 ${_plan.urgentCredits}회가\n계정에 지급되었습니다.',
+                '${_plan.name} 플랜의 기간 혜택이 시작됐어요.\n즉시게시·먼저 연락·지도 알림 잔여량을 확인해 주세요.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14,
@@ -361,7 +414,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      '결제 기간마다 플랜 이용권이 지급됩니다',
+                      '결제 기간 동안 먼저 연락하고 지도에서 알릴 수 있어요',
                       style: TextStyle(
                         fontSize: 13,
                         color: AppColors.textSecondary,
@@ -373,6 +426,10 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                     ..._plans.map(
                       (plan) => _PlanCard(
                         plan: plan,
+                        displayPrice:
+                            Platform.isIOS
+                                ? (_storePrices[plan.iosId] ?? '가격 확인 중')
+                                : null,
                         selected: plan.key == _selectedPlan,
                         onTap: () => setState(() => _selectedPlan = plan.key),
                       ),
@@ -396,6 +453,10 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
             // 하단 CTA
             _BottomCta(
               plan: _plan,
+              displayPrice:
+                  Platform.isIOS
+                      ? (_storePrices[_plan.iosId] ?? '가격 확인 중')
+                      : null,
               processing: _processing,
               onPurchase: _purchase,
             ),
@@ -409,10 +470,12 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
 // ── 플랜 카드 ─────────────────────────────────────────────
 class _PlanCard extends StatelessWidget {
   final _Plan plan;
+  final String? displayPrice;
   final bool selected;
   final VoidCallback onTap;
   const _PlanCard({
     required this.plan,
+    required this.displayPrice,
     required this.selected,
     required this.onTap,
   });
@@ -505,15 +568,22 @@ class _PlanCard extends StatelessWidget {
                   text: TextSpan(
                     children: [
                       TextSpan(
-                        text: NumberFormat('#,###').format(plan.price),
+                        text:
+                            displayPrice ??
+                            NumberFormat('#,###').format(plan.price),
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w900,
                           color: selected ? color : AppColors.textPrimary,
                         ),
                       ),
-                      const TextSpan(
-                        text: '원/월',
+                      TextSpan(
+                        text:
+                            displayPrice == '가격 확인 중'
+                                ? ''
+                                : displayPrice == null
+                                ? '원/월'
+                                : '/월',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
@@ -539,26 +609,22 @@ class _PlanCard extends StatelessWidget {
                   color: AppColors.primary,
                 ),
                 _Chip(
-                  icon: Icons.bolt_rounded,
-                  label: '긴급호출 ${plan.urgentCredits}회 · ${plan.maxRecipients}명',
-                  color: AppColors.urgentCall,
+                  icon: Icons.message_outlined,
+                  label:
+                      '먼저 연락 ${plan.directMonthly}명/월 · 공고당 ${plan.directPerJob}명',
+                  color: AppColors.primary,
                 ),
                 _Chip(
-                  icon: Icons.auto_awesome_rounded,
-                  label: 'AI 기능 무제한',
-                  color: AppColors.aiAccent,
+                  icon: Icons.notifications_active_outlined,
+                  label:
+                      '지도 알림 ${plan.pushMonthly}회/월 · 공고당 ${plan.pushPerJob}회',
+                  color: AppColors.primary,
                 ),
                 _Chip(
                   icon: Icons.workspace_premium_rounded,
                   label: '구독 배지',
                   color: AppColors.pending,
                 ),
-                if (plan.priorityCs)
-                  _Chip(
-                    icon: Icons.headset_mic_rounded,
-                    label: '우선 CS',
-                    color: const Color(0xFF6366F1),
-                  ),
               ],
             ),
           ],
@@ -611,14 +677,12 @@ class _CompareTable extends StatelessWidget {
   const _CompareTable({required this.selectedPlan});
 
   static const _rows = [
-    ['즉시게시', '3회/월', '5회/월', '10회/월'],
-    ['긴급호출', '0회/월', '1회/월', '2회/월'],
-    ['발송 인원', '10명', '15명', '20명'],
-    ['AI 기능', '포함', '포함', '포함'],
-    ['맞춤 인재', '포함', '포함', '포함'],
-    ['임금 리포트', '포함', '포함', '포함'],
-    ['구독 배지', '포함', '포함', '포함'],
-    ['우선 CS', '-', '-', '포함'],
+    ['즉시게시', '3회/기간', '무제한'],
+    ['먼저 연락', '10명/기간', '50명/기간'],
+    ['공고당 연락', '10명', '20명'],
+    ['지도 알림', '2회/기간', '8회/기간'],
+    ['공고당 알림', '1회', '2회'],
+    ['구독 배지', '포함', '포함'],
   ];
 
   @override
@@ -651,18 +715,6 @@ class _CompareTable extends StatelessWidget {
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      '스탠다드',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
                       ),
                     ),
                   ),
@@ -714,7 +766,7 @@ class _CompareTable extends StatelessWidget {
                       ),
                     ),
                   ),
-                  ...List.generate(3, (col) {
+                  ...List.generate(2, (col) {
                     final val = row[col + 1];
                     final isNone = val == '-';
                     return Expanded(
@@ -784,7 +836,7 @@ class _Notice extends StatelessWidget {
                 : '• Android는 PortOne 30일 결제이며 자동 갱신되지 않습니다.',
             style: style,
           ),
-          const Text('• 지급된 이용권은 구독을 취소해도 회수되지 않습니다.', style: style),
+          const Text('• 제공량은 결제 기간마다 초기화되며 이월되지 않습니다.', style: style),
           const Text('• 구독 취소 시 만료일까지 혜택이 유지됩니다.', style: style),
           const Text('• 결제는 구독 선택 즉시 이루어집니다.', style: style),
         ],
@@ -796,10 +848,12 @@ class _Notice extends StatelessWidget {
 // ── 하단 CTA ─────────────────────────────────────────────
 class _BottomCta extends StatelessWidget {
   final _Plan plan;
+  final String? displayPrice;
   final bool processing;
   final VoidCallback onPurchase;
   const _BottomCta({
     required this.plan,
+    required this.displayPrice,
     required this.processing,
     required this.onPurchase,
   });
@@ -843,7 +897,9 @@ class _BottomCta extends StatelessWidget {
                     ),
                   )
                   : Text(
-                    '${plan.name} 구독 시작 (${NumberFormat('#,###').format(plan.price)}원/월)',
+                    displayPrice == '가격 확인 중'
+                        ? '${plan.name} App Store 가격 확인 후 구독'
+                        : '${plan.name} 구독 시작 (${displayPrice ?? '${NumberFormat('#,###').format(plan.price)}원'}/월)',
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w800,

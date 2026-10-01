@@ -49,35 +49,14 @@ class _StoreVerifyFailure implements Exception {
   String toString() => message;
 }
 
-// ── 즉시 게시 패스 옵션 (단건 ₩4,900 기준) ──
+// ── 신규 판매는 즉시게시 단건만; 기존 묶음 잔액은 서버에서 계속 인정 ──
 const _instantOptions = [
   {
     'count': 1,
-    'price': 4900,
+    'price': 8900,
     'tag': null,
     'tagColor': null,
-    'desc': '가볍게 한 번 써보기',
-  },
-  {
-    'count': 3,
-    'price': 13900,
-    'tag': null,
-    'tagColor': null,
-    'desc': '3회 묶음 · 회당 ₩4,633',
-  },
-  {
-    'count': 5,
-    'price': 22000,
-    'tag': '가장 많이 선택',
-    'tagColor': 'green',
-    'desc': '5회 묶음 · 회당 ₩4,400',
-  },
-  {
-    'count': 10,
-    'price': 39900,
-    'tag': '최대 19% 할인',
-    'tagColor': 'orange',
-    'desc': '10회 묶음 · 회당 ₩3,990',
+    'desc': '공고 1건을 바로 게시',
   },
 ];
 
@@ -544,7 +523,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            '구독으로 더 저렴하게!',
+                            '반복 채용은 구독으로',
                             style: TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w800,
@@ -553,7 +532,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                           ),
                           SizedBox(height: 4),
                           Text(
-                            '구독 스탠다드는 긴급 호출 1회가 포함돼요 (₩19,900/월)',
+                            '구독은 즉시게시와 먼저 연락·지도 알림을 제공합니다. 긴급호출은 별도예요.',
                             style: TextStyle(
                               fontSize: 12,
                               color: _sub,
@@ -617,7 +596,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
     final discount =
         count == 1
             ? 0
-            : (((4900 * count - price) / (4900 * count)) * 100).round();
+            : (((8900 * count - price) / (8900 * count)) * 100).round();
     showModalBottomSheet(
       context: context,
       useSafeArea: true,
@@ -863,7 +842,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     ),
                   ),
                   const Text(
-                    '₩7,900',
+                    '₩13,900',
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.w900,
@@ -923,7 +902,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     const SizedBox(width: 8),
                     const Expanded(
                       child: Text(
-                        '구독 스탠다드는 긴급 호출 1회가 포함돼요 (₩19,900/월)',
+                        '구독은 먼저 연락·지도 알림을 제공하며 긴급호출 이용권은 별도예요.',
                         style: TextStyle(
                           fontSize: 11,
                           color: _blue,
@@ -937,7 +916,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
               ),
               const SizedBox(height: 20),
               _BuyButton(
-                label: '₩7,900 결제하기',
+                label: '₩13,900 결제하기',
                 isPurchasing: _isPurchasing,
                 gradient: const [AppColors.urgentCall, AppColors.error],
                 onTap: () async {
@@ -947,7 +926,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                   } else {
                     await _purchaseWithPortOne(
                       count: 1,
-                      amount: 7900,
+                      amount: 13900,
                       passType: 'urgent',
                       productName: '알바일주 긴급 호출 이용권',
                     );
@@ -1173,7 +1152,7 @@ class _InstantTabState extends State<_InstantTab> {
               final discount =
                   count == 1
                       ? 0
-                      : (((4900 * count - price) / (4900 * count)) * 100)
+                      : (((8900 * count - price) / (8900 * count)) * 100)
                           .round();
 
               return GestureDetector(
@@ -1529,7 +1508,7 @@ class _UrgentTab extends StatelessWidget {
                             ),
                           ),
                           const Text(
-                            '₩7,900',
+                            '₩13,900',
                             style: TextStyle(
                               fontSize: 24,
                               fontWeight: FontWeight.w900,
@@ -1590,7 +1569,7 @@ class _UrgentTab extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              '구독이 더 저렴해요',
+                              '반복 채용은 구독으로',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w800,
@@ -1599,7 +1578,7 @@ class _UrgentTab extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             const Text(
-                              '구독 스탠다드는 긴급 호출 1회가 포함돼요 (₩19,900/월)',
+                              '라이트는 즉시게시 3회, 프로는 즉시게시 무제한입니다. 긴급호출은 별도예요.',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: _sub,
@@ -1635,7 +1614,7 @@ class _UrgentTab extends StatelessWidget {
         _BottomCta(
           isSelected: true,
           isPurchasing: isPurchasing,
-          label: '₩7,900 긴급 호출 이용권 구매',
+          label: '₩13,900 긴급 호출 이용권 구매',
           color: AppColors.urgentCall,
           onTap: isPurchasing ? null : onBuy,
         ),

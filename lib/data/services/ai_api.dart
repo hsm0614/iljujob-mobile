@@ -289,6 +289,37 @@ class AiApi {
       return RequestChatResult(ok: false, message: '클라이언트 계정으로 로그인하세요.');
     }
 
+    final subscriptionResponse = await _get(
+      Uri.parse('$base/api/subscription/status'),
+    );
+    final isV3 =
+        subscriptionResponse.statusCode == 200 &&
+        _asMap(_decode<dynamic>(subscriptionResponse))['entitlementVersion'] ==
+            'v3';
+    if (isV3) {
+      final directResponse = await _post(
+        Uri.parse('$base/api/direct-message/send'),
+        {
+          'jobId': jobId,
+          'workerIds': [workerId],
+          'messageText': openerMessage ?? '안녕하세요! 일자리 관련해서 대화 요청드립니다.',
+        },
+      );
+      final directBody = _asMap(_decode<dynamic>(directResponse));
+      if (directResponse.statusCode != 200) {
+        return RequestChatResult(
+          ok: false,
+          message: directBody['message']?.toString() ?? '먼저 연락하기에 실패했어요.',
+        );
+      }
+      final results = _asList(directBody['results']);
+      if (results.isEmpty)
+        return const RequestChatResult(ok: false, message: '이미 연락한 구직자입니다.');
+      final first = _asMap(results.first);
+      final roomId = int.tryParse(first['chatRoomId']?.toString() ?? '');
+      return RequestChatResult(ok: true, roomId: roomId, status: 'active');
+    }
+
     final url = Uri.parse('$base/api/chat/request');
     final r = await _post(url, {
       'workerId': workerId,
@@ -371,6 +402,10 @@ extension SubscriptionApi on AiApi {
             entitlementVersion: entitlementVersion,
             expiresAt: expiresAt,
             isTrial: isTrial,
+            instantRemaining: (m['instantRemaining'] as num?)?.toInt(),
+            directMonthlyRemaining:
+                (m['directMonthlyRemaining'] as num?)?.toInt(),
+            pushMonthlyRemaining: (m['pushMonthlyRemaining'] as num?)?.toInt(),
           );
         }
       }
@@ -423,12 +458,18 @@ class SubscriptionStatus {
   final String? entitlementVersion;
   final DateTime? expiresAt;
   final bool? isTrial;
+  final int? instantRemaining;
+  final int? directMonthlyRemaining;
+  final int? pushMonthlyRemaining;
   const SubscriptionStatus({
     required this.active,
     this.plan,
     this.entitlementVersion,
     this.expiresAt,
     this.isTrial,
+    this.instantRemaining,
+    this.directMonthlyRemaining,
+    this.pushMonthlyRemaining,
   });
 }
 

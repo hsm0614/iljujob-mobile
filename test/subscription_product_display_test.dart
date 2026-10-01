@@ -2,26 +2,31 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:iljujob/data/models/subscription_product_config.dart';
 
 void main() {
-  test('신규 앱은 기존 스토어 상품 ID와 v2 혜택을 사용한다', () {
+  test('신규 앱은 두 개의 v3 상품과 기간 제공량을 사용한다', () {
     expect(
       subscriptionProductConfigs.map((p) => p.iosId),
-      contains('kr.co.iljujob.sub.pro'),
+      contains('kr.co.iljujob.sub.v3.pro'),
     );
     expect(
       subscriptionProductConfigs.map((p) => p.androidId),
-      contains('sub-pro'),
+      contains('sub-v3-pro'),
     );
     expect(
       subscriptionProductConfigs.map(
-        (p) => [p.key, p.instantCredits, p.urgentCredits],
+        (p) => [
+          p.key,
+          p.price,
+          p.instantCredits,
+          p.directMonthly,
+          p.pushMonthly,
+        ],
       ),
       [
-        ['lite', 3, 0],
-        ['standard', 5, 1],
-        ['pro', 10, 2],
+        ['lite', 29000, 3, 10, 2],
+        ['pro', 95000, 0, 50, 8],
       ],
     );
-    expect(subscriptionProductConfigs.any((p) => p.unlimitedInstant), isFalse);
+    expect(subscriptionProductConfigs.last.unlimitedInstant, isTrue);
   });
 
   test('관리 화면은 기존 프로 권리와 신규 프로 권리를 구분한다', () {
@@ -29,6 +34,11 @@ void main() {
     expect(subscriptionBenefitLabels('pro', 'legacy_v1')[1], contains('5회'));
     expect(subscriptionBenefitLabels('pro', 'v2').first, '즉시게시 10회/월');
     expect(subscriptionBenefitLabels('pro', 'v2')[1], contains('2회'));
+    expect(subscriptionBenefitLabels('pro', 'v3').first, '즉시게시 무제한');
+    expect(
+      subscriptionBenefitLabels('pro', 'v3').join(' '),
+      contains('먼저 연락 50명'),
+    );
     expect(
       subscriptionBenefitLabels('standard', 'v2').join(' '),
       isNot(contains('출근 안심')),
@@ -38,6 +48,7 @@ void main() {
   test('복원 시 구독 상품만 서버 검증 대상으로 분류한다', () {
     expect(isSubscriptionProductId('kr.co.iljujob.sub.pro'), isTrue);
     expect(isSubscriptionProductId('sub-pro'), isTrue);
+    expect(isSubscriptionProductId('kr.co.iljujob.sub.v3.pro'), isTrue);
     expect(isSubscriptionProductId('subscribe'), isTrue);
     expect(isSubscriptionProductId('instant_10'), isFalse);
     expect(isSubscriptionProductId('com.iljujob.pass30'), isFalse);

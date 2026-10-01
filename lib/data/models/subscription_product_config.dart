@@ -6,6 +6,10 @@ class SubscriptionProductConfig {
     required this.instantCredits,
     required this.urgentCredits,
     required this.maxRecipients,
+    required this.directMonthly,
+    required this.directPerJob,
+    required this.pushMonthly,
+    required this.pushPerJob,
     required this.iosId,
     required this.androidId,
     this.unlimitedInstant = false,
@@ -19,6 +23,10 @@ class SubscriptionProductConfig {
   final int instantCredits;
   final int urgentCredits;
   final int maxRecipients;
+  final int directMonthly;
+  final int directPerJob;
+  final int pushMonthly;
+  final int pushPerJob;
   final bool unlimitedInstant;
   final bool priorityCs;
   final bool recommended;
@@ -35,34 +43,33 @@ const subscriptionProductConfigs = [
   SubscriptionProductConfig(
     key: 'lite',
     name: '라이트',
-    price: 9900,
+    price: 29000,
     instantCredits: 3,
     urgentCredits: 0,
     maxRecipients: 10,
-    iosId: 'kr.co.iljujob.sub.lite',
-    androidId: 'sub-lite',
-  ),
-  SubscriptionProductConfig(
-    key: 'standard',
-    name: '스탠다드',
-    price: 19900,
-    instantCredits: 5,
-    urgentCredits: 1,
-    maxRecipients: 15,
-    iosId: 'kr.co.iljujob.sub.standard',
-    androidId: 'sub-standard',
-    recommended: true,
+    directMonthly: 10,
+    directPerJob: 10,
+    pushMonthly: 2,
+    pushPerJob: 1,
+    iosId: 'kr.co.iljujob.sub.v3.lite',
+    androidId: 'sub-v3-lite',
   ),
   SubscriptionProductConfig(
     key: 'pro',
     name: '프로',
-    price: 39900,
-    instantCredits: 10,
-    urgentCredits: 2,
+    price: 95000,
+    instantCredits: 0,
+    urgentCredits: 0,
     maxRecipients: 20,
-    iosId: 'kr.co.iljujob.sub.pro',
-    androidId: 'sub-pro',
+    directMonthly: 50,
+    directPerJob: 20,
+    pushMonthly: 8,
+    pushPerJob: 2,
+    iosId: 'kr.co.iljujob.sub.v3.pro',
+    androidId: 'sub-v3-pro',
+    unlimitedInstant: true,
     priorityCs: true,
+    recommended: true,
   ),
 ];
 
@@ -98,6 +105,21 @@ List<String> subscriptionBenefitLabels(
 ) {
   final isLegacy =
       entitlementVersion == null || entitlementVersion == 'legacy_v1';
+  if (entitlementVersion == 'v3') {
+    final product = subscriptionProductConfigs.where(
+      (item) => item.key == plan,
+    );
+    if (product.isEmpty) return const [];
+    final selected = product.first;
+    return [
+      selected.unlimitedInstant
+          ? '즉시게시 무제한'
+          : '즉시게시 ${selected.instantCredits}회/결제기간',
+      '먼저 연락 ${selected.directMonthly}명/결제기간 · 공고당 ${selected.directPerJob}명',
+      '지도 알림 ${selected.pushMonthly}회/결제기간 · 공고당 ${selected.pushPerJob}회',
+      '구독 배지 표시',
+    ];
+  }
   final values =
       isLegacy
           ? const {

@@ -427,12 +427,29 @@ class _PostJobFormState extends State<PostJobForm>
       ).timeout(const Duration(seconds: 8));
       if (res.statusCode != 200) return null;
       final d = jsonDecode(utf8.decode(res.bodyBytes));
+      var subscriptionInstant = 0;
+      try {
+        final subResponse = await AuthenticatedHttpClient.get(
+          Uri.parse('$baseUrl/api/subscription/status'),
+        ).timeout(const Duration(seconds: 6));
+        if (subResponse.statusCode == 200) {
+          final sub = jsonDecode(utf8.decode(subResponse.bodyBytes));
+          if (sub['active'] == true && sub['entitlementVersion'] == 'v3') {
+            subscriptionInstant =
+                (sub['instantRemaining'] as num?)?.toInt() ?? 0;
+          }
+        }
+      } catch (_) {}
+      final purchasedInstant =
+          int.tryParse(
+            '${d['instant'] ?? d['remaining'] ?? d['remain'] ?? 0}',
+          ) ??
+          0;
       return (
         instant:
-            int.tryParse(
-              '${d['instant'] ?? d['remaining'] ?? d['remain'] ?? 0}',
-            ) ??
-            0,
+            subscriptionInstant == -1
+                ? -1
+                : purchasedInstant + subscriptionInstant,
         urgent: int.tryParse('${d['urgent'] ?? 0}') ?? 0,
       );
     } catch (e) {
@@ -1094,49 +1111,53 @@ class _PostJobFormState extends State<PostJobForm>
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          24, 28, 24, MediaQuery.of(ctx).padding.bottom + 20,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text('급여를 한 번만 확인해주세요', style: AppTextStyles.h3),
-            const SizedBox(height: 12),
-            Text(message, style: AppTextStyles.body1),
-            const SizedBox(height: 8),
-            Text(
-              '단위가 잘못되면 알림에도 그대로 나가서 지원이 줄어요.',
-              style: AppTextStyles.body2,
+      builder:
+          (ctx) => Padding(
+            padding: EdgeInsets.fromLTRB(
+              24,
+              28,
+              24,
+              MediaQuery.of(ctx).padding.bottom + 20,
             ),
-            const SizedBox(height: 24),
-            Row(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: const Text('고칠게요'),
-                  ),
+                Text('급여를 한 번만 확인해주세요', style: AppTextStyles.h3),
+                const SizedBox(height: 12),
+                Text(message, style: AppTextStyles.body1),
+                const SizedBox(height: 8),
+                Text(
+                  '단위가 잘못되면 알림에도 그대로 나가서 지원이 줄어요.',
+                  style: AppTextStyles.body2,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(ctx, true),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text('고칠게요'),
+                      ),
                     ),
-                    child: const Text('맞아요'),
-                  ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text('맞아요'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -2776,29 +2797,29 @@ class _PostJobFormState extends State<PostJobForm>
         ],
         const SizedBox(height: 10),
         if (!_timeNegotiable)
-        Row(
-          children: [
-            Expanded(
-              child: _TimeInputCard(
-                label: '시작 시간',
-                value: fmtTime(_startTime),
-                onTap: () {
-                  _showTimeSheet();
-                },
+          Row(
+            children: [
+              Expanded(
+                child: _TimeInputCard(
+                  label: '시작 시간',
+                  value: fmtTime(_startTime),
+                  onTap: () {
+                    _showTimeSheet();
+                  },
+                ),
               ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: _TimeInputCard(
-                label: '종료 시간',
-                value: fmtTime(_endTime),
-                onTap: () {
-                  _showTimeSheet();
-                },
+              const SizedBox(width: 10),
+              Expanded(
+                child: _TimeInputCard(
+                  label: '종료 시간',
+                  value: fmtTime(_endTime),
+                  onTap: () {
+                    _showTimeSheet();
+                  },
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
         if (!_timeNegotiable && _startTime != null && _endTime != null) ...[
           const SizedBox(height: 8),
           Container(
@@ -4755,12 +4776,12 @@ class _PublishSheetState extends State<_PublishSheet> {
                           ? '구독 혜택으로 지금 바로 올릴 수 있어요.\n이용권 차감 없이 진행됩니다.'
                           : _paidPassCount > 0
                           ? '보유 중인 즉시게시 이용권 ${_paidPassCount}개로\n지금 바로 올릴 수 있어요. 추가 결제 없어요.'
-                          : '무료 등록은 매월 1일에 ${_freeQuota?.limit ?? 3}건으로 다시 채워져요.\n지금 올리시려면 즉시게시(₩4,900)를 이용해 주세요.')
+                          : '무료 등록은 매월 1일에 ${_freeQuota?.limit ?? 3}건으로 다시 채워져요.\n지금 올리시려면 즉시게시(₩8,900)를 이용해 주세요.')
                       : _paidPassCount == -1
                       ? '구독 혜택으로 12시간 기다리지 않고 바로 노출할 수 있어요.\n이용권 차감 없이 진행됩니다.'
                       : _paidPassCount > 0
                       ? '보유 중인 즉시게시 이용권 ${_paidPassCount}개로\n12시간 기다리지 않고 바로 노출할 수 있어요.'
-                      : '즉시게시 이용권(₩4,900)을 쓰면\n12시간 기다리지 않고 바로 노출돼요.',
+                      : '즉시게시 이용권(₩8,900)을 쓰면\n12시간 기다리지 않고 바로 노출돼요.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 13,
@@ -4986,7 +5007,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                         ? '긴급 호출, 이용권 확인 실패. 다시 시도'
                         : (_urgentPassCount > 0 || _urgentPassCount == -1)
                         ? '긴급 호출로 등록하기, 이용권 사용'
-                        : '긴급 호출로 등록하기, 7900원',
+                        : '긴급 호출로 등록하기, 13900원',
                 child: GestureDetector(
                   onTap:
                       _passCountFailed
@@ -5069,7 +5090,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                                           ? '무제한 (구독)'
                                           : _urgentPassCount > 0
                                           ? '${_urgentPassCount}회 보유'
-                                          : '₩7,900',
+                                          : '₩13,900',
                                       style: const TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
@@ -5625,7 +5646,7 @@ class _CompareCard extends StatelessWidget {
                         ? '즉시게시, 이용권 확인 실패. 다시 시도'
                         : paidOk
                         ? '즉시게시로 등록, 이용권 사용'
-                        : '즉시게시로 등록, 4900원',
+                        : '즉시게시로 등록, 8900원',
                 child: GestureDetector(
                   onTap: onPaidTap,
                   child: Container(
@@ -5641,13 +5662,13 @@ class _CompareCard extends StatelessWidget {
                     child: Column(
                       children: [
                         // 이용권이 있으면 가격을 보여주지 않는다 —
-                        // 실제로는 차감만 되는데 ₩4,900이 붙으면 "결제해야 하는 줄" 오해한다.
+                        // 실제로는 차감만 되는데 가격이 붙으면 "결제해야 하는 줄" 오해한다.
                         Text(
                           passCountFailed
                               ? '즉시게시'
                               : paidOk
                               ? '즉시게시 · 이용권 사용'
-                              : '즉시게시 · ₩4,900',
+                              : '즉시게시 · ₩8,900',
                           style: const TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.w700,

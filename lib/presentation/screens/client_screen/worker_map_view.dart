@@ -198,7 +198,11 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   bool _loading = true;
   bool _workersLoading = false;
   bool _isSubscribed = false;
-  int _urgentCredits = 0;
+  String? _entitlementVersion;
+  int _directMonthlyRemaining = 0;
+  int _pushMonthlyRemaining = 0;
+  final Map<int, int> _directJobRemaining = {};
+  final Map<int, int> _pushJobRemaining = {};
   bool _broadcastSending = false;
   bool _directSending = false;
 
@@ -244,20 +248,42 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   // ── 구독 + 이용권 상태 ────────────────────────────────────────
   Future<void> _fetchSubscription() async {
     try {
+      final selectedJobId = _selectedJob?.id;
       final res = await AuthenticatedHttpClient.get(
-        Uri.parse('$baseUrl/api/subscription/status'),
+        Uri.parse(
+          '$baseUrl/api/subscription/status${selectedJobId == null ? '' : '?jobId=$selectedJobId'}',
+        ),
       ).timeout(const Duration(seconds: 6));
       if (res.statusCode == 200 && mounted) {
         final d = jsonDecode(res.body) as Map<String, dynamic>;
         setState(() {
           _isSubscribed = d['active'] == true;
-          _urgentCredits = (d['credits'] as Map?)?['urgent'] as int? ?? 0;
+          _entitlementVersion = d['entitlementVersion']?.toString();
+          _directMonthlyRemaining =
+              (d['directMonthlyRemaining'] as num?)?.toInt() ?? 0;
+          _pushMonthlyRemaining =
+              (d['pushMonthlyRemaining'] as num?)?.toInt() ?? 0;
+          if (selectedJobId != null && d['directPerJobRemaining'] is num) {
+            _directJobRemaining[selectedJobId] =
+                (d['directPerJobRemaining'] as num).toInt();
+          }
+          if (selectedJobId != null && d['pushPerJobRemaining'] is num) {
+            _pushJobRemaining[selectedJobId] =
+                (d['pushPerJobRemaining'] as num).toInt();
+          }
         });
       }
     } catch (_) {}
   }
 
-  bool get _canUrgentCall => _isSubscribed || _urgentCredits > 0;
+  bool get _canUrgentCall => _selectedJob?.isUrgent == true;
+  bool get _canBroadcastSelected =>
+      _selectedJob?.status == 'active' &&
+      (_selectedJob?.isUrgent == true ||
+          (_isSubscribed &&
+              (_entitlementVersion != 'v3' ||
+                  (_pushMonthlyRemaining > 0 &&
+                      (_pushJobRemaining[_selectedJob!.id] ?? 0) > 0))));
 
   // ── 내 공고 ───────────────────────────────────────────────────
   Future<void> _fetchJobs() async {
@@ -536,6 +562,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       _mapMoving = true;
     });
     final job = _jobs[idx];
+    unawaited(_fetchSubscription());
     debugPrint(
       '[MAP] 선택 공고 id=${job.id} lat=${job.lat} lng=${job.lng} hasLoc=${job.hasLocation}',
     );
@@ -616,6 +643,8 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       debugPrint('[MAP][WORKER] API status=${res.statusCode}');
       if (res.statusCode == 200) {
         final body = jsonDecode(res.body);
+        _directJobRemaining[jobId] =
+            (body['remainingRecipients'] as num?)?.toInt() ?? 0;
         final list = body['workers'] as List? ?? [];
         debugPrint('[MAP][WORKER] raw workers=${list.length}');
         final workers =
@@ -629,6 +658,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
         );
         return withLoc;
       } else {
+        if (res.statusCode == 429) _directJobRemaining[jobId] = 0;
         debugPrint('[MAP][WORKER] 에러 body=${res.body}');
       }
     } catch (e) {
@@ -687,10 +717,13 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       final body = jsonDecode(res.body) as Map<String, dynamic>;
       _showSnack(
         res.statusCode == 200
-            ? '${body['sentCount'] ?? 0}명에게 알림을 발송했어요!'
+            ? ((body['sentCount'] as num?)?.toInt() ?? 0) > 0
+                ? '${body['sentCount']}명에게 알림을 발송했어요!'
+                : '알림을 받은 사람이 없어 제공량은 차감되지 않았어요.'
             : (body['message']?.toString() ?? '발송 실패'),
         isError: res.statusCode != 200,
       );
+      if (res.statusCode == 200) await _fetchSubscription();
     } catch (_) {
       if (mounted) _showSnack('네트워크 오류', isError: true);
     } finally {
@@ -700,7 +733,14 @@ class _WorkerMapViewState extends State<WorkerMapView> {
 
   bool get _canDirectMessageSelected {
     final job = _selectedJob;
-    return job != null && (job.isUrgent || _isSubscribed);
+    if (job == null || job.status != 'active') return false;
+    if (job.isUrgent) return (_directJobRemaining[job.id] ?? 1) > 0;
+    if (!_isSubscribed) return false;
+    if (_entitlementVersion != 'v3') {
+      return (_directJobRemaining[job.id] ?? 1) > 0;
+    }
+    return _directMonthlyRemaining > 0 &&
+        (_directJobRemaining[job.id] ?? 0) > 0;
   }
 
   String _maskName(String name) {
@@ -725,7 +765,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       return;
     }
     final messageText = await _showPushMessageSheet(
-      title: '긴급호출 문구 수정',
+      title: '먼저 연락 문구 수정',
       subtitle: '${_maskName(worker.name)}님에게 채팅과 푸시로 함께 전달돼요.',
       initialText: '${job.title} 공고에서 지금 바로 일할 분을 찾고 있어요. 가능하시면 답장해주세요!',
       actionLabel: '메시지 보내기',
@@ -759,6 +799,9 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       final roomId = results.isNotEmpty ? results.first['chatRoomId'] : null;
       _dotCache.remove(job.id);
       _countCache.remove(job.id);
+      _directJobRemaining[job.id] =
+          (body['remainingRecipients'] as num?)?.toInt() ?? 0;
+      unawaited(_fetchSubscription());
       Navigator.pop(context);
       _showSnack('메시지를 보냈어요.', isError: false);
       if (roomId != null) {
@@ -1041,7 +1084,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                                   ? '발송 완료'
                                   : canMessage
                                   ? (_directSending ? '발송 중' : '메시지 보내기')
-                                  : '구독/긴급만',
+                                  : '제공량 확인',
                           icon:
                               worker.alreadySent
                                   ? Icons.check_rounded
@@ -1061,7 +1104,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                   if (!canMessage && job != null) ...[
                     const SizedBox(height: 10),
                     const Text(
-                      '일반 공고는 구독 중일 때만 직접 메시지를 보낼 수 있어요.',
+                      '게시 중인 공고와 남은 먼저 연락하기 제공량을 확인해 주세요.',
                       style: TextStyle(fontSize: 12, color: _textSub),
                     ),
                   ],
@@ -1160,6 +1203,35 @@ class _WorkerMapViewState extends State<WorkerMapView> {
             ),
           ),
         ),
+
+        if (_selectedJob != null &&
+            !_selectedJob!.isUrgent &&
+            _entitlementVersion == 'v3')
+          Positioned(
+            top: topPad + 96,
+            left: 16,
+            right: 16,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Text(
+                  '먼저 연락 $_directMonthlyRemaining명(이 공고 ${_directJobRemaining[_selectedJob!.id] ?? 0}명) · 지도 알림 $_pushMonthlyRemaining회(이 공고 ${_pushJobRemaining[_selectedJob!.id] ?? 0}회)',
+                  style: const TextStyle(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          ),
 
         // ── 상단 공고 칩 ──────────────────────────────────────────
         Positioned(
@@ -1358,7 +1430,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
               workerCount: _workerCount,
               canUrgentCall: _selectedJob!.isUrgent && _canUrgentCall,
               isUrgentJob: _selectedJob!.isUrgent,
-              isSubscribed: _isSubscribed,
+              isSubscribed: _canBroadcastSelected,
               broadcasting: _broadcastSending,
               bottomPad: bottomPad,
               onUrgentCall:
@@ -2009,11 +2081,11 @@ class _ActionRow extends StatelessWidget {
                     onTap: broadcasting ? null : onBroadcast,
                   )
                   : _Btn(
-                    label: '구독 시 발송',
+                    label: '알림 이용 불가',
                     icon: Icons.lock_rounded,
                     color: _textSub,
                     filled: false,
-                    onTap: () => Navigator.pushNamed(context, '/subscribe'),
+                    onTap: null,
                   ),
         ),
       ],
