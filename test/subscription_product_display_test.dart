@@ -45,6 +45,17 @@ void main() {
     );
   });
 
+  test('라이트는 공고 AI 월 3회를 명시하고 프로만 공고 AI 무제한을 표시한다', () {
+    expect(
+      subscriptionBenefitLabels('lite', 'v3').join(' '),
+      contains('AI 공고문 월 3회'),
+    );
+    expect(
+      subscriptionBenefitLabels('pro', 'v3').join(' '),
+      contains('AI 공고문 무제한'),
+    );
+  });
+
   test('복원 시 구독 상품만 서버 검증 대상으로 분류한다', () {
     expect(isSubscriptionProductId('kr.co.iljujob.sub.pro'), isTrue);
     expect(isSubscriptionProductId('sub-pro'), isTrue);

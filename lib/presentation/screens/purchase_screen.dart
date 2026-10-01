@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../../config/constants.dart';
+import '../../data/models/pass_product_config.dart';
 import '../../data/services/authenticated_http_client.dart';
 import 'potrone_screen.dart';
 
@@ -48,17 +49,6 @@ class _StoreVerifyFailure implements Exception {
   @override
   String toString() => message;
 }
-
-// ── 신규 판매는 즉시게시 단건만; 기존 묶음 잔액은 서버에서 계속 인정 ──
-const _instantOptions = [
-  {
-    'count': 1,
-    'price': 8900,
-    'tag': null,
-    'tagColor': null,
-    'desc': '공고 1건을 바로 게시',
-  },
-];
 
 class PurchasePassScreen extends StatefulWidget {
   final bool fromPostJob;
@@ -715,9 +705,9 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     ),
                     SizedBox(height: 10),
                     _BenefitRow(
-                      icon: Icons.calendar_today_outlined,
+                      icon: Icons.repeat_rounded,
                       iconColor: _orange,
-                      text: '결제일로부터 1년간 유효',
+                      text: '남은 이용권은 다음 공고에도 사용',
                     ),
                   ],
                 ),
@@ -1028,7 +1018,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
               children: [
                 _InstantTab(
                   remainingCount: remainingInstant,
-                  options: _instantOptions,
+                  options: instantPassOptions,
                   isPurchasing: _isPurchasing,
                   onSelect: _showInstantConfirmSheet,
                   formatPrice: formatPrice,

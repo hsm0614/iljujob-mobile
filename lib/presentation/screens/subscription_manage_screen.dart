@@ -471,7 +471,7 @@ class _StatusCard extends StatelessWidget {
             _infoRow('남은 기간', remainText),
           ] else
             const Text(
-              '구독하면 즉시게시·AI 기능을 자유롭게 사용할 수 있어요.',
+              '구독하면 즉시게시와 AI 공고문 작성 혜택을 사용할 수 있어요.',
               style: TextStyle(
                 color: Colors.white70,
                 fontSize: 13,

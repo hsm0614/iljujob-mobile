@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:portone_flutter/iamport_payment.dart';
 import 'package:portone_flutter/model/payment_data.dart';
 import 'package:flutter/services.dart';
+import '../../data/models/pass_product_config.dart';
 
 class PortonePaymentScreen extends StatefulWidget {
   final int count;
@@ -122,7 +123,9 @@ class _PortonePaymentScreenState extends State<PortonePaymentScreen> {
                 'couponCode': widget.couponCode,
               });
             } else {
-              debugPrint('❌ [callback] 결제 실패 → imp_uid: $impUid / merchant_uid: $merchantUidFromCb');
+              debugPrint(
+                '❌ [callback] 결제 실패 → imp_uid: $impUid / merchant_uid: $merchantUidFromCb',
+              );
               Navigator.pop(context, {
                 'success': false,
                 'error_msg': result['error_msg'] ?? '결제 실패',
@@ -136,18 +139,10 @@ class _PortonePaymentScreenState extends State<PortonePaymentScreen> {
     );
   }
 
- int getPriceForCount(int count) {
-  switch (count) {
-    case 1:
-      return 4900;
-    case 3:
-      return 13900;
-    case 5:
-      return 22000;
-    case 10:
-      return 39900;
-    default:
-      return 0;
+  int getPriceForCount(int count) {
+    for (final product in instantPassOptions) {
+      if (product['count'] == count) return product['price'] as int;
+    }
+    return 0;
   }
-}
 }

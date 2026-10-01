@@ -6,6 +6,22 @@ import 'authenticated_http_client.dart';
 import '../../config/app_theme.dart';
 
 class AIJobDescriptionService {
+  static Future<({int remaining, String? plan, String yearMonth})>
+  fetchQuota() async {
+    final response = await AuthenticatedHttpClient.get(
+      Uri.parse('$baseUrl/api/ai/job-description/quota'),
+    ).timeout(const Duration(seconds: 10));
+    if (response.statusCode != 200) {
+      throw const AIGenerationException('AI 사용 횟수를 확인할 수 없어요. 잠시 후 다시 시도해주세요.');
+    }
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    return (
+      remaining: (data['remaining'] as num).toInt(),
+      plan: data['plan'] as String?,
+      yearMonth: data['yearMonth'] as String,
+    );
+  }
+
   static Future<String> generateJobDescription({
     required String title,
     required String category,

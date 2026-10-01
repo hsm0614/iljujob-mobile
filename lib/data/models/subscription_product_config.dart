@@ -10,6 +10,7 @@ class SubscriptionProductConfig {
     required this.directPerJob,
     required this.pushMonthly,
     required this.pushPerJob,
+    required this.aiJobMonthly,
     required this.iosId,
     required this.androidId,
     this.unlimitedInstant = false,
@@ -27,6 +28,7 @@ class SubscriptionProductConfig {
   final int directPerJob;
   final int pushMonthly;
   final int pushPerJob;
+  final int aiJobMonthly;
   final bool unlimitedInstant;
   final bool priorityCs;
   final bool recommended;
@@ -51,6 +53,7 @@ const subscriptionProductConfigs = [
     directPerJob: 10,
     pushMonthly: 2,
     pushPerJob: 1,
+    aiJobMonthly: 3,
     iosId: 'kr.co.iljujob.sub.v3.lite',
     androidId: 'sub-v3-lite',
   ),
@@ -65,6 +68,7 @@ const subscriptionProductConfigs = [
     directPerJob: 20,
     pushMonthly: 8,
     pushPerJob: 2,
+    aiJobMonthly: -1,
     iosId: 'kr.co.iljujob.sub.v3.pro',
     androidId: 'sub-v3-pro',
     unlimitedInstant: true,
@@ -117,6 +121,9 @@ List<String> subscriptionBenefitLabels(
           : '즉시게시 ${selected.instantCredits}회/결제기간',
       '먼저 연락 ${selected.directMonthly}명/결제기간 · 공고당 ${selected.directPerJob}명',
       '지도 알림 ${selected.pushMonthly}회/결제기간 · 공고당 ${selected.pushPerJob}회',
+      selected.aiJobMonthly < 0
+          ? 'AI 공고문 무제한'
+          : 'AI 공고문 월 ${selected.aiJobMonthly}회',
       '구독 배지 표시',
     ];
   }

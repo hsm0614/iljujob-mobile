@@ -163,9 +163,6 @@ class _PostJobFormState extends State<PostJobForm>
   SuspensionState? _suspension;
   Timer? _draftSaveTimer;
 
-  static const _kAiFreeWeekKey = 'ai_free_week_key';
-  static const _kAiFreeUsedKey = 'ai_free_used';
-
   late final AnimationController _fadeCtrl;
   late final Animation<double> _fadeAnim;
   final ScrollController _contentScrollCtrl = ScrollController();
@@ -229,8 +226,7 @@ class _PostJobFormState extends State<PostJobForm>
     _fadeCtrl.forward();
     _loadInitialData();
     _loadSuspension();
-    // _loadAiQuota()는 _subscriptionPlan을 읽으므로 반드시 구독 조회 뒤에.
-    // 병렬로 두면 구독자가 '주 1회'로 계산되는 경합이 있었다.
+    // 구독 상태와 AI 잔여 횟수는 모두 서버 원장을 기준으로 갱신한다.
     _checkProStatus().then((_) => _loadAiQuota());
   }
 
@@ -337,15 +333,6 @@ class _PostJobFormState extends State<PostJobForm>
   }
 
   // ── 날짜 유틸 ──
-  DateTime _weekStart(DateTime d) => DateTime(
-    d.year,
-    d.month,
-    d.day,
-  ).subtract(Duration(days: DateTime(d.year, d.month, d.day).weekday - 1));
-  String _currentWeekKey() =>
-      DateFormat('yyyy-MM-dd').format(_weekStart(DateTime.now()));
-  DateTime _nextWeekStart() =>
-      _weekStart(DateTime.now()).add(const Duration(days: 7));
   // 날짜를 "YYYY-MM-DD" 문자열로 변환 (로컬 날짜 기준) → utils/date_ymd.dart
   String _dateToYmd(DateTime d) => toYmd(d);
 
@@ -459,42 +446,29 @@ class _PostJobFormState extends State<PostJobForm>
     }
   }
 
-  // AI 할당량 로드: 구독자 무제한(-1), 비구독자 주 1회 무료
-  Future<void> _loadAiQuota() async {
-    if (_subscriptionPlan != null) {
-      if (!mounted) return;
-      setState(() => _aiQuotaRemaining = -1);
-      return;
+  // 서버의 UTC 월별 사용 원장을 기준으로 표시한다. 기기 저장값으로 한도를 판단하지 않는다.
+  Future<bool> _loadAiQuota() async {
+    try {
+      final quota = await AIJobDescriptionService.fetchQuota();
+      if (!mounted) return false;
+      setState(() {
+        _subscriptionPlan = quota.plan;
+        _aiQuotaRemaining = quota.remaining;
+        final parts = quota.yearMonth.split('-');
+        final nextMonth = DateTime.utc(
+          int.parse(parts[0]),
+          int.parse(parts[1]) + 1,
+        );
+        _aiQuotaResetText = '${nextMonth.month}월 1일 09:00';
+      });
+      return true;
+    } catch (_) {
+      if (!mounted) return false;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('AI 사용 횟수를 확인할 수 없어요. 잠시 후 다시 시도해주세요.')),
+      );
+      return false;
     }
-
-    // 비구독: 주 1회 무료
-    final prefs = await SharedPreferences.getInstance();
-    final nowKey = _currentWeekKey();
-    int used = prefs.getInt(_kAiFreeUsedKey) ?? 0;
-    if (prefs.getString(_kAiFreeWeekKey) != nowKey) {
-      await prefs.setString(_kAiFreeWeekKey, nowKey);
-      await prefs.setInt(_kAiFreeUsedKey, 0);
-      used = 0;
-    }
-    if (!mounted) return;
-    setState(() {
-      _aiQuotaRemaining = used >= 1 ? 0 : 1;
-      _aiQuotaResetText = DateFormat(
-        'M월 d일 00:00',
-        'ko_KR',
-      ).format(_nextWeekStart());
-    });
-  }
-
-  Future<void> _consumeAiUsage() async {
-    if (_subscriptionPlan != null) return; // 구독자는 소비 없음
-
-    // 비구독: 주 1회 소진
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_kAiFreeWeekKey, _currentWeekKey());
-    await prefs.setInt(_kAiFreeUsedKey, 1);
-    if (!mounted) return;
-    setState(() => _aiQuotaRemaining = 0);
   }
 
   Future<void> _loadInitialData() async {
@@ -3553,7 +3527,7 @@ class _PostJobFormState extends State<PostJobForm>
                 _isAIGenerating
                     ? null
                     : () async {
-                      await _loadAiQuota();
+                      if (!await _loadAiQuota()) return;
                       // -1=무제한(pro), N>0=잔여, 0=소진
                       if (_aiQuotaRemaining != 0) {
                         _showAIDialog();
@@ -3651,8 +3625,8 @@ class _PostJobFormState extends State<PostJobForm>
                               _aiQuotaRemaining == -1
                                   ? '무제한'
                                   : _aiQuotaRemaining <= 0
-                                  ? '이번 주 소진'
-                                  : '이번 주 $_aiQuotaRemaining회',
+                                  ? '이번 달 소진'
+                                  : '이번 달 $_aiQuotaRemaining회',
                               style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
@@ -3995,10 +3969,8 @@ class _PostJobFormState extends State<PostJobForm>
                   ),
                 ),
                 const SizedBox(height: 8),
-                // _loadAiQuota() 구현과 일치시킬 것 — 구독=무제한 / 비구독=주 1회.
-                // 플랜별 횟수를 여기 적으려면 _loadAiQuota()부터 그렇게 고쳐야 한다.
                 const Text(
-                  '구독하면 횟수 제한 없이 사용할 수 있어요',
+                  '라이트는 월 3회, 프로는 무제한으로 사용할 수 있어요',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,
@@ -4087,7 +4059,7 @@ class _PostJobFormState extends State<PostJobForm>
               managerPhone: managerPhone.isNotEmpty ? managerPhone : null,
               isShortTerm: _isShortTerm,
               onGenerated: (text) async {
-                await _consumeAiUsage();
+                await _loadAiQuota();
                 if (!mounted) return;
                 setState(() {
                   _description = text;
@@ -4099,7 +4071,7 @@ class _PostJobFormState extends State<PostJobForm>
                   SnackBar(
                     content: Text(
                       _subscriptionPlan == null
-                          ? '이번 주 작성 도움 기능을 사용했습니다.'
+                          ? '이번 달 무료 작성 1회를 사용했습니다.'
                           : '공고문이 적용되었습니다.',
                     ),
                     backgroundColor: Colors.green,
