@@ -483,7 +483,8 @@ Future<void> _handleChatNotification(RemoteMessage message) async {
 void _logPushOpen(Map<String, dynamic> data, String openedFrom) {
   final campaign = data['campaign']?.toString();
   final type = data['type']?.toString();
-  if ((campaign == null || campaign.isEmpty) && (type == null || type.isEmpty)) {
+  if ((campaign == null || campaign.isEmpty) &&
+      (type == null || type.isEmpty)) {
     return;
   }
   ScreenAnalyticsService.instance.logEvent(
@@ -567,7 +568,7 @@ Future<void> _handleInitialMessage(
 Future<Widget?> _checkForceUpdate() async {
   try {
     final resp = await http
-        .get(Uri.parse('$baseUrl/api/version'))
+        .get(Uri.parse('$baseUrl/api/version'), headers: appHeaders)
         .timeout(const Duration(seconds: 5));
     if (resp.statusCode == 200) {
       final data = jsonDecode(resp.body);
