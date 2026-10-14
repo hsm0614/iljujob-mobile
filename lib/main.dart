@@ -44,6 +44,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:iljujob/presentation/admin/admin_safe_company_screen.dart';
 import 'package:iljujob/presentation/admin/admin_report_screen.dart';
 import 'package:iljujob/presentation/admin/admin_event_write_screen.dart';
+import 'data/services/background_location_service.dart';
 import 'package:iljujob/data/services/job_service.dart';
 import 'package:iljujob/data/services/fcm_token_payload.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
@@ -715,6 +716,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     // 앱 첫 실행(콜드 스타트) 시 접속 점수 기록
     WidgetsBinding.instance.addPostFrameCallback((_) => _recordAppOpen());
+    // 상시 위치 공유를 켜둔 구직자는 흐름을 다시 띄운다.
+    // 앱을 강제 종료하면 OS 가 흐름을 끊으므로 실행할 때마다 되살려야 한다.
+    BackgroundLocationService.resumeIfEnabled();
   }
 
   @override

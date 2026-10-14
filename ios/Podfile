@@ -51,6 +51,9 @@ post_install do |installer|
 
       # ✅ firebase_messaging 모듈 오류 방지
       config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
+
+      # ✅ Xcode 26: 배포타겟 15.0 미만 pod 경고 제거 (앱 최소 지원도 15.0)
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
     end
   end
 end
