@@ -297,11 +297,10 @@ Future<void> sendFcmTokenUnified() async {
 
   try {
     if (Platform.isIOS) {
-      final settings = await FirebaseMessaging.instance.requestPermission(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
+      // 여기서 requestPermission 을 부르면 가입 직후 이유 없이 OS 팝업이 뜬다.
+      // 권한 요청은 widget/push_permission.dart 에서만 한다.
+      final settings =
+          await FirebaseMessaging.instance.getNotificationSettings();
       if (!_pushAllowed(settings.authorizationStatus)) {
         debugPrint('⚠️ iOS 알림 권한 없음 (${settings.authorizationStatus})');
         return;
@@ -425,7 +424,8 @@ Future<void> _handleNotificationData(Map<String, String> data) async {
     await _handleJobNotification(RemoteMessage(data: data));
   } else if (type == 'inquiry') {
     navigatorKey.currentState?.pushNamed('/inquiry');
-  } else if (data['chatRoomId'] != null) {
+  } else if (data['chatRoomId'] != null || data['roomId'] != null) {
+    // 채팅 초대·동의 결과 푸시는 예전 서버가 roomId 로만 보냈다(눌러도 안 열렸음).
     await _handleChatNotification(RemoteMessage(data: data));
   }
 }
@@ -447,7 +447,7 @@ Future<void> _handleJobNotification(RemoteMessage message) async {
 
 Future<void> _handleChatNotification(RemoteMessage message) async {
   final data = message.data;
-  final chatRoomId = int.tryParse(data['chatRoomId'] ?? '');
+  final chatRoomId = int.tryParse(data['chatRoomId'] ?? data['roomId'] ?? '');
 
   if (chatRoomId == null) {
     debugPrint('❌ chatRoomId 누락');
@@ -477,6 +477,10 @@ Future<void> _handleChatNotification(RemoteMessage message) async {
     debugPrint('❌ 알림 클릭 처리 중 예외: $e');
   }
 }
+
+/// 홈 카드 등에서 채팅방 열기 — 푸시 탭과 같은 경로(상세 조회 후 이동).
+Future<void> openChatRoomById(int chatRoomId) =>
+    _handleChatNotification(RemoteMessage(data: {'chatRoomId': '$chatRoomId'}));
 
 /// 푸시 오픈 계측.
 /// 서버는 발송만 기록하고 있어서 "어떤 캠페인이 실제로 앱을 열게 했나"를 알 수 없었다.
@@ -530,35 +534,15 @@ Future<void> _handleInitialMessage(
       }
     } else if (type == 'inquiry') {
       navigator.pushNamed('/inquiry');
-    } else if (initialMessage.data['chatRoomId'] != null) {
-      final data = initialMessage.data;
-      final chatRoomId = int.tryParse(data['chatRoomId'] ?? '');
-      final jobId = int.tryParse(data['jobId'] ?? '');
-
-      if (chatRoomId != null && jobId != null) {
-        final jobInfo = <String, dynamic>{
-          'id': jobId,
-          'senderName': data['senderName'] ?? '',
-          if (data['workerId'] != null)
-            'worker_id': int.tryParse(data['workerId'] ?? '') ?? 0,
-          if (data['clientId'] != null)
-            'client_id': int.tryParse(data['clientId'] ?? '') ?? 0,
-          if (data['senderType'] != null) 'senderType': data['senderType'],
-        };
-
-        final homeWithChatTab =
-            userType == 'client'
-                ? const ClientMainScreen(initialTabIndex: 3)
-                : const HomeScreen(initialTabIndex: 3);
-
-        navigator.push(MaterialPageRoute(builder: (_) => homeWithChatTab));
-        navigator.push(
-          MaterialPageRoute(
-            builder:
-                (_) => ChatRoomScreen(chatRoomId: chatRoomId, jobInfo: jobInfo),
-          ),
-        );
-      }
+    } else if (initialMessage.data['chatRoomId'] != null ||
+        initialMessage.data['roomId'] != null) {
+      final homeWithChatTab =
+          userType == 'client'
+              ? const ClientMainScreen(initialTabIndex: 3)
+              : const HomeScreen(initialTabIndex: 3);
+      navigator.push(MaterialPageRoute(builder: (_) => homeWithChatTab));
+      // 상세 조회로 연다 — 푸시 데이터만으로 만든 jobInfo 엔 먼저 연락 수락 버튼 정보가 없다.
+      await _handleChatNotification(initialMessage);
     }
   });
 }
@@ -632,12 +616,7 @@ void main() async {
   await _initFirebaseAndAnalytics();
   await initAppMeta();
 
-  await FirebaseMessaging.instance.requestPermission(
-    alert: true,
-    badge: true,
-    sound: true,
-  );
-
+  // 알림 권한은 앱 시작 때 묻지 않는다 — widget/push_permission.dart 참고.
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   final prefs = await SharedPreferences.getInstance();

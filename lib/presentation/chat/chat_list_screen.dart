@@ -10,7 +10,7 @@ import 'dart:async';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:iljujob/main.dart'; // sendFcmTokenUnified
+import 'package:iljujob/widget/push_permission.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
@@ -632,12 +632,8 @@ class _ChatListScreenState extends State<ChatListScreen>
             onTap: () async {
               final prefs = await SharedPreferences.getInstance();
               await prefs.setBool('notification_dialog_shown', true);
-              await FirebaseMessaging.instance.requestPermission(
-                alert: true,
-                badge: true,
-                sound: true,
-              );
-              await sendFcmTokenUnified();
+              // 이미 거부했으면 OS 가 다시 안 물어서 '켜기'가 아무 일도 안 했다 → 설정으로.
+              await requestPushPermission(source: 'chat_list_banner');
               await _checkNotificationBannerNeeded(); // 허용하면 배너 사라짐
             },
             child: Container(

@@ -5,8 +5,6 @@ import '../../../data/models/job.dart';
 import '../../../data/services/job_service.dart';
 import 'package:intl/intl.dart';
 import 'job_detail_screen.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'dart:io';
 import 'package:iljujob/config/constants.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -29,6 +27,8 @@ import 'package:iljujob/presentation/screens/worker_screen/partner_recruit_detai
 import 'package:iljujob/data/services/notificaion_service.dart';
 import '../../../config/messages.dart';
 import 'package:iljujob/main.dart'; // sendFcmTokenUnified
+import 'package:iljujob/widget/push_permission.dart';
+import 'home_nudges.dart';
 
 class HomeMainScreen extends StatefulWidget {
   final VoidCallback? onAiRecommend;
@@ -115,7 +115,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   void initState() {
     super.initState();
     ScreenAnalyticsService.instance.logScreenView('worker_home');
-    _requestNotificationPermission();
+    // 알림 권한은 첫 공고 상세 뒤에 묻는다(widget/push_permission.dart).
     _loadGenderHintDismissed();
     _loadPartnerCardHidden();
     _loadPartnerAdActive();
@@ -249,14 +249,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     if (userId == null) return;
     await fetchAppliedJobs(userId);
     await _loadJobs();
-  }
-
-  void _requestNotificationPermission() async {
-    if (!Platform.isAndroid) return;
-    final settings = await FirebaseMessaging.instance.requestPermission();
-    if (settings.authorizationStatus == AuthorizationStatus.denied) {
-      debugPrint('알림 권한 거부됨');
-    }
   }
 
   // main.dart 의 sendFcmTokenUnified 로 위임 (iOS APNS 대기·응답 확인·재시도 포함)
@@ -1819,6 +1811,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildTopControlRow(nearbyCount),
+                      const PushOffBanner(
+                        message: '알림이 꺼져 있어요 · 켜면 근처 새 공고를 바로 받아요',
+                        source: 'worker_home_banner',
+                      ),
+                      const HomeNudges(),
                       if (!isLoading &&
                           _workerGender == null &&
                           !_genderHintDismissed) ...[

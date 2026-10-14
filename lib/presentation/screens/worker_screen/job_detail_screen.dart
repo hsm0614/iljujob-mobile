@@ -27,6 +27,7 @@ import 'package:iljujob/data/services/log_service.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
+import 'package:iljujob/widget/push_permission.dart';
 import 'ai_interview_prep_sheet.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import '../../../config/messages.dart';
@@ -144,6 +145,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       _checkBlockStatus(),
       _loadSuspension(),
     ]).whenComplete(_logDetailView);
+
+    // 첫 공고 상세를 본 구직자에게 한 번, 왜 알림이 필요한지 말하고 묻는다.
+    Future.delayed(const Duration(seconds: 2), () async {
+      final prefs = await SharedPreferences.getInstance();
+      if (!mounted || prefs.getString('userType') != 'worker') return;
+      await maybeShowPushPrimer(context);
+    });
     _loadLocationContext();
     final jobId = int.tryParse(widget.job.id.toString());
     if (jobId != null) {
