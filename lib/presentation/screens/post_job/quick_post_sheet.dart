@@ -12,6 +12,7 @@ import 'package:iljujob/data/models/job.dart' show JobLocation;
 import 'package:iljujob/data/services/client_tracking_service.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/utils/date_ymd.dart';
+import 'package:iljujob/utils/publish_timing.dart';
 import 'package:uuid/uuid.dart';
 
 // ════════════════════════════════════════════════════════
@@ -577,7 +578,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
               _OptionCard(
                 icon: Icons.access_time_rounded,
                 title: '일반 등록',
-                desc: '12시간 후 노출 · 3일간',
+                desc: '${kstWhenLabel(freePublishAt(kstNow()), kstNow())} 공개 · 알림 1회',
                 badge:
                     _countsFailed
                         ? '확인 실패'
@@ -600,7 +601,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
               _OptionCard(
                 icon: Icons.bolt_rounded,
                 title: '즉시 게시',
-                desc: '결제 즉시 노출 · 알바생 알림',
+                desc: '지금 바로 공개 · 알림 2회',
                 badge:
                     _passLoading
                         ? '조회중…'
@@ -608,7 +609,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                         ? '확인 실패'
                         : _paidPassCount > 0
                         ? '이용권 $_paidPassCount개'
-                        : '₩4,900',
+                        : '₩8,900',
                 badgeOk: !_countsFailed && _paidPassCount > 0,
                 onTap: () {
                   Navigator.pop(ctx);

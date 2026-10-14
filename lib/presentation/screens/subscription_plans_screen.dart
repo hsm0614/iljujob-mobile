@@ -628,11 +628,6 @@ class _PlanCard extends StatelessWidget {
                           : 'AI 공고문 월 ${plan.aiJobMonthly}회',
                   color: AppColors.primary,
                 ),
-                _Chip(
-                  icon: Icons.workspace_premium_rounded,
-                  label: '구독 배지',
-                  color: AppColors.pending,
-                ),
               ],
             ),
           ],
@@ -691,7 +686,6 @@ class _CompareTable extends StatelessWidget {
     ['지도 알림', '2회/기간', '8회/기간'],
     ['공고당 알림', '1회', '2회'],
     ['AI 공고문', '월 3회', '무제한'],
-    ['구독 배지', '포함', '포함'],
   ];
 
   @override

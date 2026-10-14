@@ -32,6 +32,7 @@ import 'package:iljujob/utils/date_ymd.dart';
 import 'package:iljujob/widget/picker_sheets.dart';
 import 'package:iljujob/widget/free_limit_sheet.dart';
 import 'package:iljujob/utils/nationwide_hint.dart';
+import 'package:iljujob/utils/publish_timing.dart';
 import 'package:iljujob/config/job_categories.dart';
 import '../../../config/messages.dart';
 import 'package:uuid/uuid.dart';
@@ -4689,6 +4690,18 @@ class _PublishSheetState extends State<_PublishSheet> {
   }
 
   void _showFreeUpsell() {
+    final now = kstNow();
+    final freePublish = freePublishAt(now);
+    final paidPushText =
+        paidPushesNow(now)
+            ? '바로 알린 뒤 내일 한 번 더 알려드려요.'
+            : '오전 9시에 알린 뒤 다음 날 한 번 더 알려드려요.';
+    final paidWho =
+        _paidPassCount == -1
+            ? '구독 혜택으로'
+            : _paidPassCount > 0
+            ? '보유 이용권($_paidPassCount개)으로'
+            : '즉시게시(₩8,900)는';
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -4732,7 +4745,9 @@ class _PublishSheetState extends State<_PublishSheet> {
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  _freeExhausted ? '이번 달 무료 등록을 다 쓰셨어요' : '무료 게시는 3일간 노출돼요',
+                  _freeExhausted
+                      ? '이번 달 무료 등록을 다 쓰셨어요'
+                      : '무료로 올리면 ${kstWhenLabel(freePublish, now)}에 공개돼요',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 17,
@@ -4748,12 +4763,9 @@ class _PublishSheetState extends State<_PublishSheet> {
                           ? '구독 혜택으로 지금 바로 올릴 수 있어요.\n이용권 차감 없이 진행됩니다.'
                           : _paidPassCount > 0
                           ? '보유 중인 즉시게시 이용권 ${_paidPassCount}개로\n지금 바로 올릴 수 있어요. 추가 결제 없어요.'
-                          : '무료 등록은 매월 1일에 ${_freeQuota?.limit ?? 3}건으로 다시 채워져요.\n지금 올리시려면 즉시게시(₩8,900)를 이용해 주세요.')
-                      : _paidPassCount == -1
-                      ? '구독 혜택으로 12시간 기다리지 않고 바로 노출할 수 있어요.\n이용권 차감 없이 진행됩니다.'
-                      : _paidPassCount > 0
-                      ? '보유 중인 즉시게시 이용권 ${_paidPassCount}개로\n12시간 기다리지 않고 바로 노출할 수 있어요.'
-                      : '즉시게시 이용권(₩8,900)을 쓰면\n12시간 기다리지 않고 바로 노출돼요.',
+                          : '다음 무료 등록은 ${nextFreeResetAt(now).month}월 1일부터 가능해요.\n지금 올리시려면 즉시게시(₩8,900)를 이용해 주세요.')
+                      : '알바생 알림은 ${kstWhenLabel(freeFirstPushAt(freePublish), now)}에 한 번 나가요.\n'
+                          '$paidWho 지금 공개하고 $paidPushText',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                     fontSize: 13,
@@ -5437,12 +5449,14 @@ class _PublishSheetState extends State<_PublishSheet> {
 // ════════════════════════════════════════════════════════
 class _CompareConfig {
   // [항목, 기본, 즉시게시, 긴급호출, 강조여부]
-  static const rows = [
+  // 무료는 오전 9시 배치 1회(상위 20명), 유료는 등록 즉시 + 다음 날 9:30 재알림.
+  static List<List<String>> rows(String freePublish) => [
+    ['공개', freePublish, '지금 바로', '지금 바로', '1'],
+    ['알바생 알림', '1회', '2회', '2회', '1'],
     ['노출 기간', '3일', '7일', '7일', '1'],
     ['상단 고정', '없음', '없음', '24시간 고정', '1'],
     ['긴급 호출', '불가', '불가', '최대 10명', '1'],
     ['무응답 환급', '-', '-', '100% 자동', '1'],
-    ['조건 알림', '없음', '알바생 알림', '알바생 알림', '0'],
   ];
 }
 
@@ -5464,6 +5478,8 @@ class _CompareCard extends StatelessWidget {
     // 조회 실패 시 paidPassCount는 0이지만 "없음"이 아니라 "모름"이다.
     final paidOk =
         !passCountFailed && (paidPassCount > 0 || paidPassCount == -1);
+    final now = kstNow();
+    final freePublish = freePublishAt(now);
     return Column(
       children: [
         Container(
@@ -5543,7 +5559,7 @@ class _CompareCard extends StatelessWidget {
                 ),
               ),
               const Divider(height: 1, color: _border),
-              ..._CompareConfig.rows.map(
+              ..._CompareConfig.rows(kstWhenShort(freePublish, now)).map(
                 (r) => _CompareRow(
                   label: r[0],
                   free: r[1],
@@ -5561,7 +5577,7 @@ class _CompareCard extends StatelessWidget {
             Expanded(
               child: Semantics(
                 button: true,
-                label: '무료 등록, 3일간 노출',
+                label: '무료 등록, ${kstWhenLabel(freePublish, now)} 공개',
                 child: GestureDetector(
                   onTap: onFreeTap,
                   child: Container(
@@ -5571,9 +5587,9 @@ class _CompareCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: _border),
                     ),
-                    child: const Column(
+                    child: Column(
                       children: [
-                        Text(
+                        const Text(
                           '무료 등록',
                           style: TextStyle(
                             fontSize: 14,
@@ -5581,21 +5597,20 @@ class _CompareCard extends StatelessWidget {
                             color: _text,
                           ),
                         ),
-                        SizedBox(height: 5),
+                        const SizedBox(height: 5),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.schedule_rounded,
                               size: 11,
                               color: AppColors.textSecondary,
                             ),
-                            SizedBox(width: 3),
+                            const SizedBox(width: 3),
                             Text(
-                              // 지연이 없어졌으니 더 이상 '경고'가 아니다.
-                              // 주황은 시간 급함에만 쓴다(DESIGN.md Two-Signal).
-                              '3일간 노출',
-                              style: TextStyle(
+                              // 12시간 지연을 '몇 시'로 보여준다. 경고가 아니라 사실이라 회색.
+                              '${kstWhenLabel(freePublish, now)} 공개',
+                              style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textSecondary,
@@ -5649,7 +5664,7 @@ class _CompareCard extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          paidOk ? '즉시 노출 · 추가 결제 없음' : '즉시 노출',
+                          paidOk ? '지금 공개 · 추가 결제 없음' : '지금 공개 · 알림 2회',
                           style: const TextStyle(
                             fontSize: 11,
                             color: Colors.white70,

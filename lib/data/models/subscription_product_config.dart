@@ -124,7 +124,6 @@ List<String> subscriptionBenefitLabels(
       selected.aiJobMonthly < 0
           ? 'AI 공고문 무제한'
           : 'AI 공고문 월 ${selected.aiJobMonthly}회',
-      '구독 배지 표시',
     ];
   }
   final values =
@@ -144,7 +143,6 @@ List<String> subscriptionBenefitLabels(
     '즉시게시 ${values.instant}',
     '긴급호출 ${values.urgent}회/월 (반경 5km, 최대 ${values.max}명)',
     'AI 기능 무제한 (맞춤인재·인사이트·임금리포트)',
-    '구독 배지 표시',
     if (plan == 'pro') '우선 CS 지원',
   ];
 }

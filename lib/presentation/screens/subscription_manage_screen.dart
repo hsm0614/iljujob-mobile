@@ -16,7 +16,6 @@ const _defaultBenefits = [
   _Benefit(Icons.flash_on_rounded, '즉시게시 3회 또는 무제한', AppColors.primary),
   _Benefit(Icons.message_outlined, '먼저 연락 10~50명/결제기간', AppColors.primary),
   _Benefit(Icons.notifications_outlined, '지도 알림 2~8회/결제기간', AppColors.primary),
-  _Benefit(Icons.verified_rounded, '구독 배지 표시', AppColors.primary),
 ];
 
 class _Benefit {
