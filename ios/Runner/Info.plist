@@ -46,7 +46,7 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>3.0.12</string>
+	<string>3.0.14</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleSupportedPlatforms</key>
@@ -116,8 +116,11 @@
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<!-- 앱스토어가 '요구 사항'으로 읽는 값은 IPHONEOS_DEPLOYMENT_TARGET 이 아니라 이 키다.
+	     2026-09-21 에 Podfile·pbxproj 를 15.0 으로 내렸는데 여기가 17.4 로 남아 있어
+	     출시된 3.0.13 도 iOS 17.4 미만 기기에서 설치가 막혀 있었다. 함께 고쳐야 한다. -->
 	<key>MinimumOSVersion</key>
-	<string>17.4</string>
+	<string>15.0</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
