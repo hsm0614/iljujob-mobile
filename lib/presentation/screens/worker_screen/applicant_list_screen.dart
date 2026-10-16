@@ -209,9 +209,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
               margin: const EdgeInsets.only(right: 16),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppColors.primary, AppColors.aiAccent],
-                ),
+                color: AppColors.primary,
                 borderRadius: BorderRadius.circular(99),
               ),
               child: const Row(

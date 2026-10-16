@@ -623,11 +623,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [_blue, _blueDark],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      color: _blue,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Center(
@@ -1073,11 +1069,7 @@ class _InstantTabState extends State<_InstantTab> {
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [_blue, Color(0xFF1E5FC5)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(

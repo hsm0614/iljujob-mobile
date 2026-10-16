@@ -329,11 +329,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
                 background: Container(
                   clipBehavior: Clip.hardEdge,
                   decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [AppColors.primary, AppColors.primary],
-                    ),
+                    color: AppColors.primary,
                   ),
                   child: SafeArea(
                     bottom: false,

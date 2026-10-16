@@ -152,9 +152,7 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primary, Color(0xFF6C63FF)],
-                      ),
+                      color: AppColors.primary,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(

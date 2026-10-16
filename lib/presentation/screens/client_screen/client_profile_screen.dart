@@ -240,11 +240,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, Color(0xFF5AA6FF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(

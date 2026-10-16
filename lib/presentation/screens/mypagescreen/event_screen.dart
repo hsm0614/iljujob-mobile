@@ -120,11 +120,7 @@ class _EventScreenState extends State<EventScreen> {
   flexibleSpace: FlexibleSpaceBar(
     background: Container(
       decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, AppColors.primary],
-        ),
+        color: AppColors.primary,
       ),
       child: SafeArea(
         bottom: false,

@@ -105,11 +105,7 @@ class _NoticeListScreenState extends State<NoticeListScreen> {
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
                   decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [brandBlue, brandBlueLight],
-                    ),
+                    color: brandBlue,
                   ),
                   child: SafeArea(
                     bottom: false,

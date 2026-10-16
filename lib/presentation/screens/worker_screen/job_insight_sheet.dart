@@ -102,9 +102,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppColors.primary, AppColors.aiAccent],
-                        ),
+                        color: AppColors.primary,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(Icons.auto_awesome, size: 18),
@@ -160,9 +158,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primary, AppColors.aiAccent],
-              ),
+              color: AppColors.primary,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Icon(Icons.auto_awesome, size: 32),
