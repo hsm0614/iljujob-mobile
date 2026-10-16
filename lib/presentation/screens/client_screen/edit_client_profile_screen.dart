@@ -522,6 +522,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border),
       ),
       padding: const EdgeInsets.all(14),
       child: Row(
@@ -817,6 +818,7 @@ class _SectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border),
       ),
       padding: const EdgeInsets.all(14),
       child: Column(

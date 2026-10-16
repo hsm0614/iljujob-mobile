@@ -574,6 +574,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: AppColors.border),
             ),
             // ✅ SingleChildScrollView로 감싸서 키보드 올라올 때 overflow 방지
             child: SingleChildScrollView(
@@ -766,6 +767,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(22),
+              border: Border.all(color: AppColors.border),
             ),
             child: StatefulBuilder(
               builder: (ctx, setLocal) {
@@ -2411,6 +2413,7 @@ Future<DateTime?> showKoWheelDatePickerSheet(
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: AppColors.border),
           ),
           child: StatefulBuilder(
             builder: (ctx, setLocal) {

@@ -732,6 +732,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
                 ),
                 padding: const EdgeInsets.all(16),
                 child: _buildLabeledField(
@@ -817,6 +818,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.border),
                 ),
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                 child: Column(
@@ -947,6 +949,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border),
                   ),
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -1007,6 +1010,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.border),
                   ),
                   padding: const EdgeInsets.all(16),
                   child: Column(

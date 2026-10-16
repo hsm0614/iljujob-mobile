@@ -70,8 +70,9 @@ class OnboardingScreen extends StatelessWidget {
                         label: '사장님',
                         icon: Icons.storefront_outlined,
                         subtitle: '갑작스러운 결근도\n30분 내 해결',
-                        badge: '빠른 채용',
-                        isHighlighted: true,
+                        // 두 카드는 같은 무게 — 구직자 쪽이 비활성처럼 보이던 문제(2026-10)
+                        badge: null,
+                        isHighlighted: false,
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -172,20 +173,13 @@ class _Tag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(AppRadius.full),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontSize: 11,
-          color: AppColors.textSecondary,
-          fontWeight: FontWeight.w500,
-        ),
+    // 누를 수 없는 소개 문구라 버튼처럼 보이는 테두리 알약을 쓰지 않는다
+    return Text(
+      label,
+      style: const TextStyle(
+        fontSize: 13,
+        color: AppColors.textSecondary,
+        fontWeight: FontWeight.w600,
       ),
     );
   }
@@ -248,9 +242,6 @@ class _TypeCardState extends State<_TypeCard> {
                         : AppColors.border,
                     width: widget.isHighlighted ? 1.5 : 1.0,
                   ),
-                  boxShadow: widget.isHighlighted
-                      ? AppShadows.cardElevated
-                      : AppShadows.card,
                 ),
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -305,18 +296,14 @@ class _TypeCardState extends State<_TypeCard> {
                       child: Container(
                         width: 28,
                         height: 28,
-                        decoration: BoxDecoration(
-                          color: widget.isHighlighted
-                              ? AppColors.primary
-                              : AppColors.bgMuted,
+                        decoration: const BoxDecoration(
+                          color: AppColors.primary,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.arrow_forward_rounded,
                           size: 14,
-                          color: widget.isHighlighted
-                              ? Colors.white
-                              : AppColors.textTertiary,
+                          color: Colors.white,
                         ),
                       ),
                     ),

@@ -243,6 +243,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
                     ),
                     padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
                     child: Column(

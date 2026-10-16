@@ -308,6 +308,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.border),
                     ),
                     padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
                     child: Column(
@@ -417,6 +418,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.border),
           ),
           padding: const EdgeInsets.all(20),
           child: Column(

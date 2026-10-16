@@ -64,25 +64,35 @@ class JobListTile extends StatelessWidget {
                     ),
                   ),
                 ),
+              // 급여 줄 오른쪽 끝에 뱃지·하트를 모아 오른쪽 가장자리를 한 줄로 맞춘다
               Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Text(
-                    pay,
-                    style:
-                        negotiablePay
-                            ? AppTextStyles.body1.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textSecondary,
-                            )
-                            : AppTextStyles.jobPayHero,
+                  Expanded(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Flexible(
+                          child: Text(
+                            pay,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style:
+                                negotiablePay
+                                    ? AppTextStyles.body1.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textSecondary,
+                                    )
+                                    : AppTextStyles.jobPayHero,
+                          ),
+                        ),
+                        if (payType.isNotEmpty && !negotiablePay) ...[
+                          const SizedBox(width: 5),
+                          Text(payType, style: AppTextStyles.jobPayUnit),
+                        ],
+                      ],
+                    ),
                   ),
-                  if (payType.isNotEmpty && !negotiablePay) ...[
-                    const SizedBox(width: 5),
-                    Text(payType, style: AppTextStyles.jobPayUnit),
-                  ],
-                  const Spacer(),
                   if (isApplied)
                     Padding(
                       padding: const EdgeInsets.only(left: 4),
@@ -95,7 +105,25 @@ class JobListTile extends StatelessWidget {
                     ),
                   for (final b in badges)
                     Padding(padding: const EdgeInsets.only(left: 4), child: b),
-                  const SizedBox(width: 8),
+                  SizedBox(
+                    width: 40,
+                    height: 36,
+                    child: IconButton(
+                      tooltip: '찜',
+                      onPressed: onBookmark,
+                      padding: EdgeInsets.zero,
+                      icon: Icon(
+                        isBookmarked
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        size: 20,
+                        color:
+                            isBookmarked
+                                ? AppColors.badgeNew
+                                : AppColors.textTertiary,
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 6),
@@ -148,21 +176,7 @@ class JobListTile extends StatelessWidget {
                       ),
                     ),
                   ],
-                  IconButton(
-                    tooltip: '찜',
-                    onPressed: onBookmark,
-                    visualDensity: VisualDensity.compact,
-                    icon: Icon(
-                      isBookmarked
-                          ? Icons.favorite_rounded
-                          : Icons.favorite_border_rounded,
-                      size: 20,
-                      color:
-                          isBookmarked
-                              ? AppColors.badgeNew
-                              : AppColors.textTertiary,
-                    ),
-                  ),
+                  const SizedBox(width: 12),
                 ],
               ),
             ],

@@ -104,6 +104,7 @@ class _FancyTabBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(26),
+        border: Border.all(color: AppColors.border),
       ),
       child: TabBar(
         tabs: tabs,
