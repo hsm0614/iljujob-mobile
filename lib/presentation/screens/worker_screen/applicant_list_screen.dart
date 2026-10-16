@@ -339,13 +339,6 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
               hasAi && aiScore >= 0.80 ? scoreColor.withOpacity(0.4) : _border,
           width: hasAi && aiScore >= 0.80 ? 1.5 : 0.8,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),

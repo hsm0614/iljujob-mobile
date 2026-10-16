@@ -574,13 +574,6 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.10),
-                  blurRadius: 24,
-                  spreadRadius: 2,
-                ),
-              ],
             ),
             // ✅ SingleChildScrollView로 감싸서 키보드 올라올 때 overflow 방지
             child: SingleChildScrollView(
@@ -773,13 +766,6 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  blurRadius: 24,
-                  spreadRadius: 2,
-                  color: Colors.black.withOpacity(0.10),
-                ),
-              ],
             ),
             child: StatefulBuilder(
               builder: (ctx, setLocal) {
@@ -1064,13 +1050,6 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(color: kBorder),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.12),
-                    blurRadius: 30,
-                    offset: const Offset(0, 18),
-                  ),
-                ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -2432,13 +2411,6 @@ Future<DateTime?> showKoWheelDatePickerSheet(
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                blurRadius: 24,
-                spreadRadius: 2,
-                color: Colors.black.withOpacity(0.10),
-              ),
-            ],
           ),
           child: StatefulBuilder(
             builder: (ctx, setLocal) {

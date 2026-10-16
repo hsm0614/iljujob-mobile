@@ -367,7 +367,6 @@ class _SearchFieldState extends State<_SearchField> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white, borderRadius: BorderRadius.circular(14),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4))],
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(

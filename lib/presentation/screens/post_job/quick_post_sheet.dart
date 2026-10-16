@@ -1259,13 +1259,6 @@ class _OptionCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: _border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Row(
         children: [

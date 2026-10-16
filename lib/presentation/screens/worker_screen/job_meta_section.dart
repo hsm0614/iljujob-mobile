@@ -97,13 +97,6 @@ class _MetaTile extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
-            blurRadius: 6,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       child: Row(

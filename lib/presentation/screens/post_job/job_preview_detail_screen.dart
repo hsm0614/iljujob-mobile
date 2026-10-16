@@ -268,13 +268,6 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

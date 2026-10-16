@@ -318,9 +318,6 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 6),
-              ],
             ),
             child: const _TypingDots(),
           ),

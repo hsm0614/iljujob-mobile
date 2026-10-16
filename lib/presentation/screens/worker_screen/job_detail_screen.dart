@@ -2196,13 +2196,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.03),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
         ),
         padding: const EdgeInsets.all(16),
         child: Column(

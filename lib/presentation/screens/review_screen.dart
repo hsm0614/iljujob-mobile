@@ -359,13 +359,6 @@ class _JobHeaderCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-            color: Colors.black.withOpacity(0.05),
-          ),
-        ],
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -427,13 +420,6 @@ class _SectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-            color: Colors.black.withOpacity(0.05),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

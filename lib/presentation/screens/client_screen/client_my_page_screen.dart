@@ -832,13 +832,6 @@ class _SectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1F000000),
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         children: [

@@ -655,13 +655,6 @@ class _PillTabBar extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(26),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 14,
-            offset: Offset(0, 6),
-          ),
-        ],
       ),
       child: TabBar(
         tabs: const [

@@ -26,7 +26,6 @@ class WorkerMyPageScreen extends StatefulWidget {
 class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
   // ===== Brand =====
   static const Color kBrandBlue = AppColors.primary;
-  static const Color kBrandBlueLight = Color(0xFF6EB6FF);
   static const Color kBg = AppColors.bgPage;
 
   // ===== Profile State =====
@@ -472,59 +471,32 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            SliverAppBar(
+            // 리디자인(2026-10): 215px 파란 헤더 → 흰 앱바 + 회색 바탕 위 프로필 카드
+            const SliverAppBar(
               pinned: true,
-              elevation: 0,
-              backgroundColor: Colors.white,
-              expandedHeight: 215, // ✅ 통계가 카드 안으로 들어가서 너무 높일 필요 없음
               automaticallyImplyLeading: false,
-              toolbarHeight: 0,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  clipBehavior: Clip.hardEdge,
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [kBrandBlue, kBrandBlueLight],
-                    ),
-                  ),
-                  child: SafeArea(
-                    bottom: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 12),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '마이페이지',
-                            style: TextStyle(
-                              fontFamily: 'Jalnan2TTF',
-                              color: Colors.white,
-                              fontSize: 22,
-                              height: 1.1,
-                            ),
-                          ),
-                          const Spacer(),
-
-                          // ✅ 프로필 카드 안에 정산완료/정산예정 붙임
-                          GestureDetector(
-                            onTap: _goEditProfile,
-                            child: _WorkerProfileCard(
-                              brandBlue: kBrandBlue,
-                              imageUrl: _fullImageUrl(_imagePath),
-                              displayName: _name,
-                              phoneText: _formatPhone(_phone),
-                              loading: _loading,
-                              loadingSettle: _loadingSettle,
-                              settledText: _formatMoney(_settledAmount),
-                              pendingText: _formatMoney(_pendingAmount),
-                              onEditProfile: _goEditProfile,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+              backgroundColor: AppColors.bgCard,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              toolbarHeight: 52,
+              titleSpacing: 20,
+              title: Text('마이', style: AppTextStyles.h2),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: GestureDetector(
+                  onTap: _goEditProfile,
+                  child: _WorkerProfileCard(
+                    brandBlue: kBrandBlue,
+                    imageUrl: _fullImageUrl(_imagePath),
+                    displayName: _name,
+                    phoneText: _formatPhone(_phone),
+                    loading: _loading,
+                    loadingSettle: _loadingSettle,
+                    settledText: _formatMoney(_settledAmount),
+                    pendingText: _formatMoney(_pendingAmount),
+                    onEditProfile: _goEditProfile,
                   ),
                 ),
               ),
@@ -735,15 +707,8 @@ class _WorkerProfileCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.97),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1F000000),
-            blurRadius: 10,
-            offset: Offset(0, 6),
-          ),
-        ],
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -1023,13 +988,6 @@ class _SectionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1F000000),
-            blurRadius: 8,
-            offset: Offset(0, 4),
-          ),
-        ],
       ),
       child: Column(
         children: [
@@ -1409,13 +1367,6 @@ class _TrustScoreCardState extends State<_TrustScoreCard> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x0F000000),
-              blurRadius: 8,
-              offset: Offset(0, 2),
-            ),
-          ],
         ),
         child:
             widget.loading

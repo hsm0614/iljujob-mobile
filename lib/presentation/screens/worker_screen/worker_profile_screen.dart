@@ -445,13 +445,6 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: .03),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(

@@ -109,13 +109,6 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
                 ),
                 padding: const EdgeInsets.all(16),
                 child: Column(

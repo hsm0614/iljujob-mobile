@@ -1416,13 +1416,6 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 14,
-                offset: const Offset(0, 6),
-              ),
-            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

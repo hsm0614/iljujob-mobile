@@ -763,13 +763,6 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: const Color(0xFFE8EDF3)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x08000000),
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
           ),
           child: Row(
             children: [
@@ -1253,13 +1246,6 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 12,
-            offset: Offset(0, 2),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),

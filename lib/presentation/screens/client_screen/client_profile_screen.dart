@@ -395,13 +395,6 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.04),
-            blurRadius: 10,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -451,13 +444,6 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.04),
-            blurRadius: 10,
-            offset: const Offset(0, 6),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

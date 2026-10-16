@@ -360,13 +360,6 @@ class _JobTile extends StatelessWidget {
         color: Colors.white,
         border: Border.all(color: kBorder),
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 22,
-            offset: const Offset(0, 10),
-            color: Colors.black.withOpacity(0.04),
-          ),
-        ],
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),

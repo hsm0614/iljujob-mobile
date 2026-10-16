@@ -332,13 +332,6 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                       color: Colors.white,
                       border: Border.all(color: kBorder),
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          blurRadius: 24,
-                          offset: const Offset(0, 10),
-                          color: Colors.black.withOpacity(0.04),
-                        ),
-                      ],
                     ),
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
                     child: Column(

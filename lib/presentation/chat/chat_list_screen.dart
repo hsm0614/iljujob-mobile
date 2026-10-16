@@ -1167,31 +1167,17 @@ class _ChatListScreenState extends State<ChatListScreen>
                   SliverAppBar(
                     pinned: true,
                     elevation: 0,
-                    backgroundColor: AppColors.primary,
-                    surfaceTintColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    expandedHeight: 130,
-                    toolbarHeight: 88,
+                    backgroundColor: AppColors.bgCard,
+                    surfaceTintColor: Colors.transparent,
+                    foregroundColor: AppColors.textPrimary,
+                    // 흰 앱바 52 + 검색창 56. 예전 파란 헤더는 130이었다.
+                    expandedHeight: 108,
+                    toolbarHeight: 52,
                     titleSpacing: 20,
-                    title: const Text(
-                      '채팅',
-                      style: TextStyle(
-                        fontFamily: 'Jalnan2TTF',
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        height: 1.1,
-                      ),
-                    ),
+                    title: const Text('채팅', style: AppTextStyles.h2),
                     flexibleSpace: FlexibleSpaceBar(
                       background: Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [AppColors.primary, AppColors.primaryDark],
-                          ),
-                        ),
+                        color: AppColors.bgCard,
                         child: SafeArea(
                           bottom: false,
                           child: Align(
@@ -1285,9 +1271,8 @@ class _SearchFieldState extends State<_SearchField> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: AppShadows.card,
+        color: AppColors.bgMuted,
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
