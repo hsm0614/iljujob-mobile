@@ -71,6 +71,7 @@ import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/presentation/screens/subscription_plans_screen.dart';
 import 'package:iljujob/presentation/screens/client_screen/nearby_workers_screen.dart';
 import 'package:iljujob/config/api_headers.dart';
+import 'package:iljujob/config/crashlytics_error_policy.dart';
 import 'package:iljujob/presentation/screens/force_update_screen.dart';
 
 // ============================================================
@@ -99,8 +100,14 @@ Future<void> _initFirebaseAndAnalytics() async {
   await Firebase.initializeApp();
   await FirebaseAnalytics.instance.setAnalyticsCollectionEnabled(true);
 
-  // Flutter 프레임워크 에러 → Crashlytics
-  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+  // 이미지/지도 타일처럼 프레임워크가 복구한 오류는 비정상 종료로 집계하지 않는다.
+  FlutterError.onError = (details) {
+    if (isRecoverableFlutterError(details)) {
+      FirebaseCrashlytics.instance.recordFlutterError(details);
+      return;
+    }
+    FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+  };
   // 프레임워크 밖(비동기 등) 에러 → Crashlytics
   WidgetsBinding.instance.platformDispatcher.onError = (error, stack) {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);

@@ -21,7 +21,8 @@ class SignupClientChoiceScreen extends StatefulWidget {
   const SignupClientChoiceScreen({super.key});
 
   @override
-  State<SignupClientChoiceScreen> createState() => _SignupClientChoiceScreenState();
+  State<SignupClientChoiceScreen> createState() =>
+      _SignupClientChoiceScreenState();
 }
 
 class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
@@ -35,9 +36,10 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: borderColor != null
-            ? BorderSide(color: borderColor)
-            : BorderSide.none,
+        side:
+            borderColor != null
+                ? BorderSide(color: borderColor)
+                : BorderSide.none,
       ),
       minimumSize: const Size.fromHeight(52),
       textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
@@ -77,7 +79,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
 
     if (!mounted) return;
 
-    final isAdmin   = data['isAdmin'] ?? false;
+    final isAdmin = data['isAdmin'] ?? false;
     final isNewUser = data['isNewUser'] ?? false;
 
     if (isAdmin) {
@@ -90,9 +92,8 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => ClientExtraInfoScreen(
-            clientId: data['clientId'] as int,
-          ),
+          builder:
+              (_) => ClientExtraInfoScreen(clientId: data['clientId'] as int),
         ),
       );
     } else {
@@ -107,9 +108,10 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
     setState(() => _loading = true);
     try {
       final isInstalled = await kakao.isKakaoTalkInstalled();
-      final token = isInstalled
-          ? await kakao.UserApi.instance.loginWithKakaoTalk()
-          : await kakao.UserApi.instance.loginWithKakaoAccount();
+      final token =
+          isInstalled
+              ? await kakao.UserApi.instance.loginWithKakaoTalk()
+              : await kakao.UserApi.instance.loginWithKakaoAccount();
 
       final res = await http.post(
         Uri.parse('$baseUrl/api/client/social-login'),
@@ -138,7 +140,10 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
     const chars =
         '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
     final rnd = Random.secure();
-    return List.generate(length, (_) => chars[rnd.nextInt(chars.length)]).join();
+    return List.generate(
+      length,
+      (_) => chars[rnd.nextInt(chars.length)],
+    ).join();
   }
 
   String _sha256of(String input) =>
@@ -153,7 +158,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
     setState(() => _loading = true);
     try {
       final rawNonce = _randomNonce();
-      final nonce    = _sha256of(rawNonce);
+      final nonce = _sha256of(rawNonce);
 
       final credential = await SignInWithApple.getAppleIDCredential(
         scopes: [
@@ -169,18 +174,19 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
         return;
       }
 
-      final fullName = [credential.givenName, credential.familyName]
-          .where((e) => e != null && e.isNotEmpty)
-          .join(' ');
+      final fullName = [
+        credential.givenName,
+        credential.familyName,
+      ].where((e) => e != null && e.isNotEmpty).join(' ');
 
       final res = await http.post(
         Uri.parse('$baseUrl/api/client/social-login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'provider': 'apple',
-          'idToken':  identityToken,
+          'idToken': identityToken,
           'rawNonce': rawNonce,
-          'name':     fullName.isNotEmpty ? fullName : null,
+          'name': fullName.isNotEmpty ? fullName : null,
         }),
       );
 
@@ -234,7 +240,10 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                   const SizedBox(height: 8),
                   const Text(
                     '카카오/애플로 간편하게 가입하고\n바로 공고를 올려보세요.',
-                    style: TextStyle(fontSize: 13.5, color: AppColors.textSecondary),
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      color: AppColors.textSecondary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -258,12 +267,10 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                         // 카카오
                         ElevatedButton.icon(
                           onPressed: _loading ? null : _kakao,
-                          icon: Image.asset(
-                            'assets/icons/kakao.png',
-                            height: 20, width: 20,
-                            errorBuilder: (_, __, ___) =>
-                                const Icon(Icons.chat_bubble, size: 20,
-                                    color: Color(0xFF191919)),
+                          icon: const Icon(
+                            Icons.chat_bubble,
+                            size: 20,
+                            color: Color(0xFF191919),
                           ),
                           label: Text(_loading ? '처리 중...' : '카카오로 시작하기'),
                           style: _btnStyle(
@@ -291,7 +298,9 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                             child: const Center(
                               child: Text(
                                 'Apple은 iOS에서만 제공됩니다',
-                                style: TextStyle(color: AppColors.textSecondary),
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                ),
                               ),
                             ),
                           ),
@@ -314,7 +323,10 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                   const SizedBox(height: 20),
                   const Text(
                     '※ 공고 등록 후 지원자와 채팅으로 바로 연결됩니다.',
-                    style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: AppColors.textSecondary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ],

@@ -299,7 +299,10 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                   const SizedBox(height: 8),
                   const Text(
                     '카카오/애플로 간편하게 가입하고 바로 시작하세요.\n전화번호 인증은 나중에 프로필에서 선택할 수 있어요.',
-                    style: TextStyle(fontSize: 13.5, color: AppColors.textSecondary),
+                    style: TextStyle(
+                      fontSize: 13.5,
+                      color: AppColors.textSecondary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -323,12 +326,10 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                         // Kakao
                         ElevatedButton.icon(
                           onPressed: _signInWithKakao,
-                          icon: Image.asset(
-                            'assets/icons/kakao.png',
-                            height: 20,
-                            width: 20,
-                            errorBuilder:
-                                (_, __, ___) => const Icon(Icons.bolt),
+                          icon: const Icon(
+                            Icons.chat_bubble,
+                            size: 20,
+                            color: Color(0xFF191919),
                           ),
                           label: Text(_loading ? '처리 중...' : '카카오로 시작하기'),
                           style: _primaryBtnStyle(
@@ -373,7 +374,9 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                               child: const Center(
                                 child: Text(
                                   'Apple은 iOS에서만 제공됩니다',
-                                  style: TextStyle(color: AppColors.textSecondary),
+                                  style: TextStyle(
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
                               ),
                             ),
@@ -397,7 +400,10 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                   const SizedBox(height: 20),
                   const Text(
                     '※ 프로필을 더 채우면 사장님이 관심을 더 가져줘요. 홈에서 보강 배너로 안내해 드릴게요!',
-                    style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
+                    style: TextStyle(
+                      fontSize: 12.5,
+                      color: AppColors.textSecondary,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ],

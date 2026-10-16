@@ -14,6 +14,7 @@ import 'package:iljujob/widget/push_permission.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
+import 'package:iljujob/widget/safe_snackbar.dart';
 import '../../config/messages.dart';
 
 class ChatListScreen extends StatefulWidget {
@@ -1091,9 +1092,8 @@ class _ChatListScreenState extends State<ChatListScreen>
   }
 
   void _showSnackbar(String message) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    if (!mounted) return;
+    showSafeSnackBar(context, message);
   }
 
   /* ---------------- Build ---------------- */
