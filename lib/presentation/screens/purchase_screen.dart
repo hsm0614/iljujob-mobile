@@ -1387,19 +1387,9 @@ class _UrgentTab extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [AppColors.urgentCall, AppColors.error],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                    color: AppColors.urgentCall,
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.urgentCall.withOpacity(0.3),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+                    
                   ),
                   child: Row(
                     children: [
@@ -1667,25 +1657,9 @@ class _BottomCta extends StatelessWidget {
             duration: const Duration(milliseconds: 200),
             height: 54,
             decoration: BoxDecoration(
-              gradient:
-                  active
-                      ? LinearGradient(
-                        colors: [btnColor, btnColor.withOpacity(0.85)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      )
-                      : const LinearGradient(colors: [_border, _border]),
+              color: active ? btnColor : _border,
               borderRadius: BorderRadius.circular(16),
-              boxShadow:
-                  active
-                      ? [
-                        BoxShadow(
-                          color: btnColor.withOpacity(0.4),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
-                        ),
-                      ]
-                      : [],
+              
             ),
             child: Center(
               child:
@@ -1734,22 +1708,10 @@ class _BuyButton extends StatelessWidget {
       width: double.infinity,
       height: 52,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isPurchasing ? [_border, _border] : gradient,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        // 그라데이션·글로우 없이 단색 (리디자인 2026-10). gradient 첫 색만 쓴다
+        color: isPurchasing ? _border : gradient.first,
         borderRadius: BorderRadius.circular(14),
-        boxShadow:
-            isPurchasing
-                ? []
-                : [
-                  BoxShadow(
-                    color: gradient.first.withOpacity(0.35),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
+        
       ),
       child: Center(
         child:

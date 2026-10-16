@@ -432,11 +432,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [AppColors.primaryLight, Color(0xFFF3EEFF)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: AppColors.primaryLight,
               borderRadius: BorderRadius.circular(14),
               border: Border.all(color: _blue.withOpacity(0.2)),
             ),

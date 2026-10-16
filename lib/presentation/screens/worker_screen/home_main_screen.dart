@@ -2405,9 +2405,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                                             vertical: 3,
                                                           ),
                                                       decoration: BoxDecoration(
-                                                        color: const Color(
-                                                          0xFF7C3AED,
-                                                        ),
+                                                        // DESIGN.md: 장기 같은 분류 뱃지는 중립 회색
+                                                        color: AppColors.bgMuted,
                                                         borderRadius:
                                                             BorderRadius.circular(
                                                               20,
@@ -2416,7 +2415,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                                       child: const Text(
                                                         '장기',
                                                         style: TextStyle(
-                                                          color: Colors.white,
+                                                          color: AppColors.textSecondary,
                                                           fontSize: 11,
                                                           fontWeight:
                                                               FontWeight.w700,
@@ -2724,6 +2723,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         distanceText == null ? placeText : '$placeText · ${distanceText}km';
 
     final nowUtc = DateTime.now().toUtc();
+    final bool isPinned =
+        job.pinnedUntil != null && job.pinnedUntil!.isAfter(nowUtc);
     final bool isUrgent =
         job.endDate != null &&
         !job.endDate!.isBefore(nowUtc) &&
@@ -2791,6 +2792,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               : (rawImage.startsWith('http') ? rawImage : '$baseUrl$rawImage'),
       isBookmarked: bookmarkedJobIds.contains(job.id.toString()),
       isApplied: isApplied,
+      isPinned: isPinned,
       onTap: () => _openJobDetail(job),
       onBookmark: () => _toggleBookmark(job.id.toString()),
     );

@@ -1036,7 +1036,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE0E4FF)),
+          border: Border.all(color: AppColors.border),
         ),
         child: const Text(
           '사진은 선택 사항이에요.\n현장 사진/근무복/약도 등을 올리면 지원율이 올라갑니다.',
@@ -1169,7 +1169,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
           decoration: BoxDecoration(
             color: cardBg,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFE0E4FF)),
+            border: Border.all(color: AppColors.border),
           ),
           child: const Text(
             '날짜는 KST(UTC+9) 자정 기준으로 저장됩니다.',
@@ -1193,7 +1193,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
         decoration: BoxDecoration(
           color: cardBg,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE0E4FF)),
+          border: Border.all(color: AppColors.border),
         ),
         child: Row(
           children: [

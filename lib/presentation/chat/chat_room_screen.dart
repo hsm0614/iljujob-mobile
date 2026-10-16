@@ -1102,19 +1102,9 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.urgentCall, AppColors.error],
-                      ),
+                      color: AppColors.urgentCall,
                       borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(
-                            0xFFEF4444,
-                          ).withValues(alpha: 0.25),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
+                      
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -1283,19 +1273,9 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
       margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF6B1A), AppColors.pending],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+        color: AppColors.urgentCall,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.pending.withValues(alpha: 0.25),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

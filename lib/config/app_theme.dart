@@ -56,12 +56,13 @@ class AppColors {
   // ── 제품·상태 색 ───────────────────────────────────────
   // 화면마다 하드코딩돼 있던 값을 여기로 올린다. 값은 그대로 두고
   // 관리 지점만 하나로 모은다 — 색 정책을 바꿀 때 여기 한 줄만 고치면 된다.
-  /// 긴급호출(유료 상품) 브랜딩 색. 그라디언트 [urgentCall, error] 로 쓰인다.
-  static const urgentCall = Color(0xFFEF4444);
+  /// 긴급호출(유료 상품) 색. 2026-10 빨강 그라데이션 → 주황 단색(시간 신호와 같은 값).
+  /// 급함은 알리되 화면 전체가 경고처럼 보이지 않게.
+  static const urgentCall = Color(0xFFEA8035);
   /// 진행 중·대기 상태(출근확정 proposed, 프로 플랜 등)
   static const pending = Color(0xFFFF9500);
-  /// AI 기능 표시
-  static const aiAccent = Color(0xFF6C5CE7);
+  /// AI 기능 — 2026-10 보라 폐지. AI는 색이 아니라 기능 이름·아이콘으로 구분한다.
+  static const aiAccent = textSecondary;
 
   // ── 구직자 활동등급 (CLAUDE.md 스펙) ───────────────────
   static const gradeS = Color(0xFFFF6B00); // 100점 이상

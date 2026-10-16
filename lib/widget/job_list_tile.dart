@@ -17,6 +17,8 @@ class JobListTile extends StatelessWidget {
   final String? imageUrl;
   final bool isBookmarked;
   final bool isApplied;
+  /// 지금 상단 고정 중(pinned_until > 지금)일 때만 true. 즉시게시·긴급호출(24시간) 공통
+  final bool isPinned;
   final VoidCallback onTap;
   final VoidCallback onBookmark;
 
@@ -35,6 +37,7 @@ class JobListTile extends StatelessWidget {
     this.imageUrl,
     this.isBookmarked = false,
     this.isApplied = false,
+    this.isPinned = false,
   });
 
   @override
@@ -51,6 +54,16 @@ class JobListTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (isPinned)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Text(
+                    '상단 고정',
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
