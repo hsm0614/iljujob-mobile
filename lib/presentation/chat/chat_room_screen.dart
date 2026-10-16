@@ -1332,7 +1332,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                           : () => _respondToUrgentCall('accepted'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFFFF6B1A),
+                    foregroundColor: AppColors.urgentCall,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
@@ -1346,7 +1346,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Color(0xFFFF6B1A),
+                              color: AppColors.urgentCall,
                             ),
                           )
                           : const Text(

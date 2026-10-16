@@ -553,10 +553,10 @@ class _BotMessageBubble extends StatelessWidget {
         child: Container(
           constraints: const BoxConstraints(maxWidth: 300),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          // 안내 메시지는 누를 수 없다 — 파랑 대신 회색 면 (2026-10)
           decoration: BoxDecoration(
-            color: const Color(0xFFF0F6FF),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.primaryMid, width: 1),
+            color: AppColors.bgMuted,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -564,14 +564,18 @@ class _BotMessageBubble extends StatelessWidget {
               const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('🤖', style: TextStyle(fontSize: 14)),
-                  SizedBox(width: 6),
+                  Icon(
+                    Icons.smart_toy_outlined,
+                    size: 15,
+                    color: AppColors.textSecondary,
+                  ),
+                  SizedBox(width: 5),
                   Text(
                     '일주봇',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ],
@@ -610,10 +614,11 @@ class _HireNudgeBubble extends StatelessWidget {
         child: Container(
           constraints: const BoxConstraints(maxWidth: 320),
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          // 하늘색 4종(팔레트 밖) → 흰 카드 + 기본 테두리. 버튼만 파랑
           decoration: BoxDecoration(
-            color: const Color(0xFFF0F9FF),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFBAE6FD), width: 1),
+            color: AppColors.bgCard,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -624,7 +629,7 @@ class _HireNudgeBubble extends StatelessWidget {
                   Icon(
                     Icons.event_available_rounded,
                     size: 18,
-                    color: Color(0xFF0284C7),
+                    color: AppColors.textSecondary,
                   ),
                   SizedBox(width: 6),
                   Text(
@@ -632,14 +637,14 @@ class _HireNudgeBubble extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0369A1),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               const Text(
-                '일정을 확정하면 D-1 알림과\n출근 자동 확인이 진행돼요.',
+                '일정을 확정하면 전날 알림과\n출근 자동 확인이 진행돼요.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 13,

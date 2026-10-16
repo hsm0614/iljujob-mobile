@@ -171,9 +171,9 @@ class ChatRoomJobPanel extends StatelessWidget {
             margin: const EdgeInsets.only(top: 6, bottom: 2),
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFF),
+              color: AppColors.bgMuted,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFE8EEFF)),
+              border: Border.all(color: AppColors.border),
             ),
             child: Row(
               children: [
@@ -609,7 +609,7 @@ class _WorkerActions extends StatelessWidget {
                   ? '출근 확인됨 (${checkinDistanceM}m)'
                   : '출근 확인됨',
           bg: const Color(0x1410B981),
-          fg: const Color(0xFF047857),
+          fg: AppColors.badgeSameDay,
         ),
       );
     }
@@ -854,7 +854,7 @@ class ChatRoomConsentBanner extends StatelessWidget {
           ElevatedButton(
             onPressed: busy ? null : onAccept,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B82F6),
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               minimumSize: Size.zero,
@@ -897,9 +897,9 @@ class ChatRoomWaitingBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: const BoxDecoration(
-        color: Color(0xFFFFF7E6),
+        color: AppColors.warningLight,
         border: Border(
-          bottom: BorderSide(color: Color(0xFFFDE68A), width: 0.5),
+          bottom: BorderSide(color: AppColors.warningBorder, width: 0.5),
         ),
       ),
       child: const Row(
@@ -907,13 +907,13 @@ class ChatRoomWaitingBanner extends StatelessWidget {
           Icon(
             Icons.hourglass_bottom_rounded,
             size: 18,
-            color: Color(0xFFEA580C),
+            color: AppColors.badgeUrgent,
           ),
           SizedBox(width: 8),
           Expanded(
             child: Text(
               '구직자의 수락을 기다리는 중입니다.\n수락되면 바로 채팅이 가능해요.',
-              style: TextStyle(fontSize: 12, color: Color(0xFF92400E)),
+              style: TextStyle(fontSize: 12, color: AppColors.warningDark),
             ),
           ),
         ],
@@ -954,14 +954,14 @@ class ChatRoomCancelledBanner extends StatelessWidget {
           const Icon(
             Icons.info_outline_rounded,
             size: 18,
-            color: Color(0xFFB91C1C),
+            color: AppColors.error,
           ),
           const SizedBox(width: 8),
           const Expanded(
             child: Text(
               '알바생이 이 공고에 대한 지원을 취소했어요.\n'
               '지금 다른 공고도 한 번 올려보실래요?',
-              style: TextStyle(fontSize: 12, color: Color(0xFF7F1D1D)),
+              style: TextStyle(fontSize: 12, color: AppColors.error),
             ),
           ),
           const SizedBox(width: 8),
