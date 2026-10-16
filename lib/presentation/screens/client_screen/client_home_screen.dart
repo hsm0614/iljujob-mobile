@@ -2002,7 +2002,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     final pinned = isJobPinned(job);
     final formattedPay = formatJobPay(job.pay, job.payType);
     // 급여형은 모든 공고에 있는 정보다 — 색으로 강조하지 않는다(Two-Signal).
-    const payTypeColor = AppColors.textSecondary;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 10),
@@ -2041,27 +2040,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: payTypeColor.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(AppRadius.full),
-                      border: Border.all(
-                        color: payTypeColor.withValues(alpha: 0.30),
-                      ),
-                    ),
-                    child: Text(
-                      job.payType,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                        color: payTypeColor,
-                      ),
-                    ),
-                  ),
+                  if (job.payType.isNotEmpty) JobSignalBadge(label: job.payType),
                   const SizedBox(width: 4),
                   IconButton(
                     tooltip: '관리',
@@ -2232,12 +2211,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     final pinned = isJobPinned(job);
     final formattedPay = formatJobPay(job.pay, job.payType);
     // 급여형은 모든 공고에 있는 정보다 — 색으로 강조하지 않는다(Two-Signal).
-    const payTypeColor = AppColors.textSecondary;
     final primaryAction = _primaryJobAction(job);
 
     final titleStyle = TextStyle(
       fontSize: 16,
-      fontWeight: FontWeight.w900,
+      fontWeight: FontWeight.w800,
       color: isClosed ? AppColors.textDisabled : AppColors.textPrimary,
       decoration: isClosed ? TextDecoration.lineThrough : null,
     );
@@ -2269,27 +2247,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: payTypeColor.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(AppRadius.full),
-                        border: Border.all(
-                          color: payTypeColor.withValues(alpha: 0.30),
-                        ),
-                      ),
-                      child: Text(
-                        job.payType,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
-                          color: payTypeColor,
-                        ),
-                      ),
-                    ),
+                    // 테두리 알약은 버튼처럼 보였다 → 구직자 목록과 같은 중립 뱃지
+                    if (job.payType.isNotEmpty) JobSignalBadge(label: job.payType),
                     const SizedBox(width: 6),
                     IconButton(
                       tooltip: '관리',
@@ -2401,11 +2360,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       decoration: BoxDecoration(
                         color: AppColors.warningLight,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(
-                          color: const Color(
-                            0xFFFF9500,
-                          ).withValues(alpha: 0.35),
-                        ),
+                        border: Border.all(color: AppColors.warningBorder),
                       ),
                       child: Row(
                         children: [
