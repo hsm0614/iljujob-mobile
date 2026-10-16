@@ -93,7 +93,7 @@ class ApplicantModel {
       case 'A':
         return AppColors.primary;
       case 'B':
-        return const Color(0xFF0F766E);
+        return AppColors.gradeB; // CLAUDE.md 활동등급 규격
       case 'C':
         return AppColors.textSecondary;
       default:
@@ -200,10 +200,10 @@ class JobApplicantGroup {
 const kBrandBlue = AppColors.primary;
 const _blue = AppColors.primary;
 const _blueBg = AppColors.primaryLight;
-const _green = Color(0xFF0F766E);
+const _green = AppColors.badgeSameDay;
 const _greenBg = Color(0xFFE8F7EF);
-const _signalTime = Color(0xFFEA8035); // 시간이 급함
-const _signalTimeBg = Color(0xFFFDF1E7);
+const _signalTime = AppColors.badgeUrgent; // 시간이 급함
+const _signalTimeBg = AppColors.warningLight;
 const _ink = AppColors.textPrimary;
 const _inkSecondary = AppColors.textSecondary;
 const int _jobsPerPage = 5;
@@ -891,7 +891,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       decoration: BoxDecoration(
-        color: hasNew ? AppColors.primaryLight : const Color(0xFFFAFAFA),
+        color: hasNew ? AppColors.primaryLight : AppColors.bgMuted,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
         border: Border(bottom: BorderSide(color: AppColors.bgPage)),
       ),
@@ -1202,9 +1202,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     final actionColor =
         applicant.isCompleted
             ? _green
-            : applicant.isConfirmed
-            ? const Color(0xFF0C447C)
-            : _blue;
+            : _blue; // 확정 상태도 버튼은 CTA 파랑
     return Column(
       children: [
         Padding(
@@ -1516,11 +1514,9 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   }
 
   Widget _buildAvatar(ApplicantModel applicant) {
+    // 사진 없는 아바타: 사람마다 다른 파스텔 4색(라벤더 포함) → 중립 한 색 (2026-10)
     final colors = [
-      [const Color(0xFFE6F1FB), const Color(0xFF0C447C)],
-      [const Color(0xFFE1F5EE), const Color(0xFF085041)],
-      [const Color(0xFFEEEDFE), const Color(0xFF3C3489)],
-      [const Color(0xFFFAEEDA), const Color(0xFF633806)],
+      [AppColors.bgMuted, AppColors.textSecondary],
     ];
     final c = colors[applicant.workerId % colors.length];
 
@@ -1582,15 +1578,15 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     if (applicant.isCompleted) {
       return _chip(
         applicant.statusLabel,
-        const Color(0xFFE1F5EE),
-        const Color(0xFF085041),
+        _greenBg,
+        AppColors.badgeSameDay,
       );
     }
     if (applicant.isConfirmed) {
       return _chip(
         applicant.statusLabel,
-        const Color(0xFFE6F1FB),
-        const Color(0xFF0C447C),
+        AppColors.bgMuted,
+        AppColors.textPrimary,
       );
     }
     if (applicant.isNew) return _chip(applicant.statusLabel, _blueBg, _blue);

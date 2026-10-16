@@ -19,9 +19,10 @@ import 'potrone_screen.dart';
 const _blue = AppColors.primary;
 const _blueDark = AppColors.primaryDark;
 const _blueLight = AppColors.primaryLight;
+// 긴급호출 색(2026-10 빨강→주황). 이름은 호환 때문에 유지
 const _red = AppColors.urgentCall;
 const _green = Color(0xFF00C48C);
-const _orange = Color(0xFFFF6B35);
+const _orange = AppColors.badgeUrgent;
 const _bg = AppColors.bgPage;
 const _white = Colors.white;
 const _text = AppColors.textPrimary;
@@ -457,7 +458,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFEBEB),
+                  color: AppColors.warningLight,
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: const Center(
@@ -774,7 +775,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFEBEB),
+                      color: AppColors.warningLight,
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Center(
@@ -841,7 +842,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF5F5),
+                  color: AppColors.warningLight,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: _red.withOpacity(0.15)),
                 ),
@@ -958,13 +959,13 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: const Color(0xFFFFF5F5),
+              color: AppColors.warningLight,
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(7),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFEBEB),
+                      color: AppColors.warningLight,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Icon(
@@ -1006,7 +1007,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
               ),
             ),
           ),
-          const Divider(height: 1, color: Color(0xFFFFE4E4)),
+          const Divider(height: 1, color: AppColors.warningBorder),
           // ── TabBarView ──
           Expanded(
             child: TabBarView(
@@ -1260,7 +1261,7 @@ class _InstantTabState extends State<_InstantTab> {
                                     _PriceChip(
                                       label: '$discount% 절약',
                                       color: AppColors.urgentCall,
-                                      bgColor: const Color(0xFFFFF0F0),
+                                      bgColor: AppColors.warningLight,
                                       bold: true,
                                     ),
                                 ],
@@ -1450,7 +1451,7 @@ class _UrgentTab extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFEBEB),
+                              color: AppColors.warningLight,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: const Icon(
@@ -1605,7 +1606,7 @@ class _MiniChip extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(
-      color: const Color(0xFFFFEBEB),
+      color: AppColors.warningLight,
       borderRadius: BorderRadius.circular(6),
     ),
     child: Text(
