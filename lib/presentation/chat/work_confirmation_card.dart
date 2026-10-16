@@ -56,13 +56,13 @@ class WorkConfirmationCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
+                    color: AppColors.bgMuted,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.calendar_today_rounded,
                     size: 16,
-                    color: AppColors.primary,
+                    color: AppColors.textSecondary,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -227,7 +227,7 @@ class WorkConfirmationCard extends StatelessWidget {
     'proposed' => '제안됨',
     'accepted' => '수락됨',
     'scheduled' => '예정',
-    'day_before_confirmed' => 'D-1 확인',
+    'day_before_confirmed' => '전날 확인',
     'day_of_confirmed' => '당일 확인',
     'checked_in' => '출근 확인',
     'completed' => '근무 완료',
@@ -296,7 +296,7 @@ class _StatusHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final text = switch (status) {
-      'proposed' => '구직자가 수락하면 근무가 확정돼요.',
+      'proposed' => '수락하면 근무가 확정돼요.',
       'accepted' || 'scheduled' => '근무가 확정됐어요. 전날 18시에 확인 알림이 가요.',
       'day_before_confirmed' => '전날 확인 완료. 출근 2시간 전에 당일 확인 알림이 가요.',
       'day_of_confirmed' => '당일 확인 완료. 출근하면 정산 달력에 반영돼요.',
