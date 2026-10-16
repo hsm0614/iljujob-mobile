@@ -130,6 +130,12 @@ class AppRadius {
 class AppTextStyles {
   AppTextStyles._();
 
+  /// 앱바 로고 — Jalnan2는 브랜드 순간 한정
+  static const logo = TextStyle(
+    fontFamily: 'Jalnan2TTF', fontSize: 20,
+    color: AppColors.primary, height: 1.1,
+  );
+
   // 제목
   static const h1 = TextStyle(
     fontSize: 24, fontWeight: FontWeight.w800,
@@ -186,6 +192,16 @@ class AppTextStyles {
   static const jobPay = TextStyle(
     fontSize: 18, fontWeight: FontWeight.w800,
     color: AppColors.textPrimary, height: 1.1,
+  );
+  /// 목록 급여 — 카드에서 가장 무거운 요소. 자릿수를 맞춰 위아래 금액이 정렬된다.
+  static const jobPayHero = TextStyle(
+    fontSize: 22, fontWeight: FontWeight.w800,
+    color: AppColors.textPrimary, height: 1.1, letterSpacing: -0.5,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+  static const jobPayUnit = TextStyle(
+    fontSize: 12, fontWeight: FontWeight.w700,
+    color: AppColors.textSecondary,
   );
   static const jobPayType = TextStyle(
     fontSize: 12, fontWeight: FontWeight.w600,
