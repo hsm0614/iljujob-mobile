@@ -128,6 +128,17 @@ class AppTextStyles {
     color: AppColors.primary, height: 1.1,
   );
 
+  /// 탭 화면 제목(내 활동·채팅·마이·캘린더·사장님 탭) — 홈 로고와 같은 잘난체로 통일 (2026-10 대표 요청)
+  static const tabTitle = TextStyle(
+    fontFamily: 'Jalnan2TTF', fontSize: 20,
+    color: AppColors.textPrimary, height: 1.1,
+  );
+  /// 화면 안 섹션 머리글('전체 공고' 등)
+  static const sectionTitle = TextStyle(
+    fontFamily: 'Jalnan2TTF', fontSize: 16,
+    color: AppColors.textPrimary, height: 1.2,
+  );
+
   // 제목
   static const h1 = TextStyle(
     fontSize: 24, fontWeight: FontWeight.w800,

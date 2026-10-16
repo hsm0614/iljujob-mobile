@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/widget/app_ui.dart';
+import 'package:iljujob/widget/job_list_tile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
@@ -899,8 +900,17 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
 
     // 이미지 (있으면)
     Widget thumb() {
-      final hasImage = job.imageUrls.isNotEmpty;
-      if (!hasImage) return const SizedBox(width: 74, height: 74);
+      // 사진이 없으면 빈칸 대신 알바일주 심볼 (2026-10)
+      final fallback = ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Image.asset(
+          JobListTile.defaultImage,
+          width: 74,
+          height: 74,
+          fit: BoxFit.cover,
+        ),
+      );
+      if (job.imageUrls.isEmpty) return fallback;
       final raw = job.imageUrls.first;
       final url = raw.startsWith('http') ? raw : '$baseUrl$raw';
 
@@ -912,16 +922,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
           height: 74,
           cacheWidth: 222,
           fit: BoxFit.cover,
-          errorBuilder:
-              (_, __, ___) => Container(
-                width: 74,
-                height: 74,
-                color: AppColors.bgMuted,
-                child: const Icon(
-                  Icons.image_not_supported_outlined,
-                  color: AppColors.textTertiary,
-                ),
-              ),
+          errorBuilder: (_, __, ___) => fallback,
         ),
       );
     }

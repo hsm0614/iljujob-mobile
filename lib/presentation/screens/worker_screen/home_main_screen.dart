@@ -1398,38 +1398,12 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               if (!isLoading && filteredJobs.isNotEmpty)
                 SliverToBoxAdapter(
                   child: Container(
-                    color: AppColors.bgCard,
-                    padding: const EdgeInsets.fromLTRB(20, 16, 16, 4),
+                    // 카드 목록 위 회색 바탕에 머리글만. 지역 공고 개수는 보여주지 않는다
+                    // (적은 지역에선 '3개'가 오히려 빈약해 보인다 — 2026-10 대표 피드백)
+                    padding: const EdgeInsets.fromLTRB(20, 8, 16, 10),
                     child: Row(
                       children: [
-                        const Text(
-                          '전체 공고',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        // 카운트는 액션이 아니므로 중립 톤 (파랑은 CTA 전용)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 3,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.bgMuted,
-                            borderRadius: BorderRadius.circular(AppRadius.full),
-                          ),
-                          child: Text(
-                            '${filteredJobs.length}',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
+                        const Text('전체 공고', style: AppTextStyles.sectionTitle),
                         const Spacer(),
                         // 정렬 기준 — 지금 무슨 순서로 보고 있는지 화면에 없으면
                         // "왜 먼 공고가 위에 있지?"가 된다. 탭하면 필터 시트.
@@ -1504,12 +1478,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                         itemBuilder: (context, index) {
                           if (stripAt >= 0 && index == stripAt) {
                             return Container(
-                              color: AppColors.bgCard,
-                              padding: const EdgeInsets.fromLTRB(
-                                16,
-                                12,
-                                16,
-                                12,
+                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                              decoration: BoxDecoration(
+                                color: AppColors.bgCard,
+                                borderRadius: BorderRadius.circular(AppRadius.lg),
                               ),
                               child: _AiRecommendStrip(
                                 onJobTap:
@@ -1721,12 +1694,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           animation: _shimmerCtrl,
           builder: (_, __) {
             return Container(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-              decoration: const BoxDecoration(
+              margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
                 color: AppColors.bgCard,
-                border: Border(
-                  bottom: BorderSide(color: AppColors.borderSub),
-                ),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2945,12 +2917,13 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   Widget _buildCompactJobCard(Job job) {
     final formattedPay = formatJobPay(job.pay, job.payType);
 
-    // 간략 보기도 목록과 같은 풀폭 흰 줄 + 구분선
+    // 간략 보기도 카드 (목록과 같은 결)
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 13, 12, 13),
-      decoration: const BoxDecoration(
+      margin: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+      padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
+      decoration: BoxDecoration(
         color: AppColors.bgCard,
-        border: Border(bottom: BorderSide(color: AppColors.borderSub)),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Row(
         children: [

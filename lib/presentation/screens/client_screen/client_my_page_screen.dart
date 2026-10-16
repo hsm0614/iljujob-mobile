@@ -328,7 +328,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
               elevation: 0,
               toolbarHeight: 52,
               titleSpacing: 20,
-              title: Text('마이', style: AppTextStyles.h2),
+              title: Text('마이', style: AppTextStyles.tabTitle),
             ),
             SliverToBoxAdapter(
               child: Padding(

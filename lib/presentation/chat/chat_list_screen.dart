@@ -1175,7 +1175,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                     expandedHeight: 108,
                     toolbarHeight: 52,
                     titleSpacing: 20,
-                    title: const Text('채팅', style: AppTextStyles.h2),
+                    title: const Text('채팅', style: AppTextStyles.tabTitle),
                     flexibleSpace: FlexibleSpaceBar(
                       background: Container(
                         color: AppColors.bgCard,

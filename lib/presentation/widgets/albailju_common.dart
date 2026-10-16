@@ -63,7 +63,7 @@ class AlbailjuAppBar extends StatelessWidget implements PreferredSizeWidget {
                 title!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: brand ? AppTextStyles.h2 : AppTextStyles.h3,
+                style: brand ? AppTextStyles.tabTitle : AppTextStyles.h3,
               )),
       actions: actions,
       bottom: appBarBottom,
