@@ -4,7 +4,7 @@ import '../config/app_theme.dart';
 
 /// 공고 목록 카드. 회색 배경 위 흰 카드 + 8px 간격으로 공고끼리 경계를 분명히 한다
 /// (플랫 줄+구분선은 공고가 서로 붙어 보였다 — 2026-10 대표 피드백).
-/// 읽는 순서: 급여 → 제목 → 언제 → 어디. 오른쪽 썸네일(사진 없으면 알바일주 심볼) 위에 찜.
+/// 읽는 순서: 급여 → 제목 → 언제 → 어디. 왼쪽 썸네일(사진 없으면 알바일주 심볼), 오른쪽 위 찜.
 /// 지원 버튼은 없다 — 지원은 상세에서 조건을 본 뒤에 한다.
 class JobListTile extends StatelessWidget {
   final String pay;
@@ -23,7 +23,7 @@ class JobListTile extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onBookmark;
 
-  static const _thumb = 76.0;
+  static const _thumb = 64.0;
   static const defaultImage = 'assets/images/logo_mark.png';
 
   const JobListTile({
@@ -77,6 +77,9 @@ class JobListTile extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // 사진은 왼쪽, 찜은 오른쪽 위 — 둘이 겹쳐 있으면 사진 위 하트가 지저분했다(2026-10 대표)
+                _Thumb(imageUrl: imageUrl, size: _thumb),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,12 +152,24 @@ class JobListTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                _Thumb(
-                  imageUrl: imageUrl,
-                  size: _thumb,
-                  isBookmarked: isBookmarked,
-                  onBookmark: onBookmark,
+                SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: IconButton(
+                    tooltip: '찜',
+                    padding: EdgeInsets.zero,
+                    onPressed: onBookmark,
+                    icon: Icon(
+                      isBookmarked
+                          ? Icons.favorite_rounded
+                          : Icons.favorite_border_rounded,
+                      size: 20,
+                      color:
+                          isBookmarked
+                              ? AppColors.badgeNew
+                              : AppColors.textTertiary,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -168,14 +183,7 @@ class JobListTile extends StatelessWidget {
 class _Thumb extends StatelessWidget {
   final String? imageUrl;
   final double size;
-  final bool isBookmarked;
-  final VoidCallback onBookmark;
-  const _Thumb({
-    required this.imageUrl,
-    required this.size,
-    required this.isBookmarked,
-    required this.onBookmark,
-  });
+  const _Thumb({required this.imageUrl, required this.size});
 
   @override
   Widget build(BuildContext context) {
@@ -185,50 +193,19 @@ class _Thumb extends StatelessWidget {
       height: size,
       fit: BoxFit.cover,
     );
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Stack(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            child:
-                imageUrl == null
-                    ? fallback
-                    : Image.network(
-                      imageUrl!,
-                      width: size,
-                      height: size,
-                      cacheWidth: (size * 3).round(),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => fallback,
-                    ),
-          ),
-          Positioned(
-            top: 0,
-            right: 0,
-            child: SizedBox(
-              width: 34,
-              height: 34,
-              child: IconButton(
-                tooltip: '찜',
-                padding: EdgeInsets.zero,
-                onPressed: onBookmark,
-                icon: Icon(
-                  isBookmarked
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_border_rounded,
-                  size: 20,
-                  color: isBookmarked ? AppColors.badgeNew : Colors.white,
-                  shadows: const [
-                    Shadow(color: Color(0x40000000), blurRadius: 4),
-                  ],
-                ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child:
+          imageUrl == null
+              ? fallback
+              : Image.network(
+                imageUrl!,
+                width: size,
+                height: size,
+                cacheWidth: (size * 3).round(),
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => fallback,
               ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

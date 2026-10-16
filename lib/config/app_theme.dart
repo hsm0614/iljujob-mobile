@@ -189,7 +189,7 @@ class AppTextStyles {
 
   // 공고 카드 전용
   static const jobTitle = TextStyle(
-    fontSize: 15.5, fontWeight: FontWeight.w700,
+    fontSize: 15, fontWeight: FontWeight.w600,
     color: AppColors.textPrimary, height: 1.3,
   );
   static const jobPay = TextStyle(
@@ -198,8 +198,8 @@ class AppTextStyles {
   );
   /// 목록 급여 — 카드에서 가장 무거운 요소. 자릿수를 맞춰 위아래 금액이 정렬된다.
   static const jobPayHero = TextStyle(
-    fontSize: 22, fontWeight: FontWeight.w800,
-    color: AppColors.textPrimary, height: 1.1, letterSpacing: -0.5,
+    fontSize: 19, fontWeight: FontWeight.w800,
+    color: AppColors.textPrimary, height: 1.1, letterSpacing: -0.4,
     fontFeatures: [FontFeature.tabularFigures()],
   );
   /// 공고 상세 급여 — C안의 큰 숫자는 상세에서만 쓴다
