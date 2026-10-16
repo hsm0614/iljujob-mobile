@@ -3,7 +3,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/models/job.dart';
 import '../../../data/services/job_service.dart';
-import 'package:intl/intl.dart';
 import 'job_detail_screen.dart';
 import 'package:iljujob/config/constants.dart';
 import 'dart:convert';
@@ -98,8 +97,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   static const _kPartnerCardHiddenUntilKey = 'partner_card_hidden_until';
   static const _partnerCardHideDays = 7;
 
-  // AI 추천 스트립을 공고 리스트 N번째 뒤에 삽입
-  static const _aiStripAfter = 4;
 
   // 근무지가 여러 곳이면 가장 가까운 곳까지의 거리. 필터가 '고양으로 통과'시킨
   // 공고에 대표좌표(수원) 거리를 표시하면 목록과 카드가 서로 다른 말을 한다.
@@ -1263,45 +1260,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     return parts.join(' ');
   }
 
-  String? _buildAiSummary(Job job) {
-    final score = job.matchScore;
-    final reasons = job.matchReasons;
-    if ((score == null || score < 0.6) && reasons.isEmpty) return null;
-
-    // 명사구로 이어붙인다. 이전에는 '~고' + '잘 맞아요'를 조합해서
-    // '의미유사'가 섞이면 "업무가 잘 맞아요 시급이 높고 잘 맞아요"처럼 문장이 깨졌다.
-    final parts = <String>[];
-    for (final r in reasons.take(2)) {
-      switch (r) {
-        case '가까움':
-          parts.add('가까움');
-          break;
-        case '시간대겹침':
-          parts.add('시간대 맞음');
-          break;
-        case '시급상위':
-          parts.add('시급 높음');
-          break;
-        case '당일지급':
-          parts.add('당일지급');
-          break;
-        case '완료이력좋음':
-          parts.add('이력 좋음');
-          break;
-        case '의미유사':
-          parts.add('업무 적합');
-          break;
-      }
-    }
-
-    // 점수는 높을 때만 노출. 52% 같은 낮은 숫자를 그대로 보여주면
-    // 추천이 아니라 "안 맞는다"는 신호로 읽혀 신뢰를 깎는다.
-    final pct =
-        (score != null && score >= 0.7) ? ' ${(score * 100).round()}%' : '';
-    final reasonText = parts.isEmpty ? '잘 맞는 공고예요' : parts.join(' · ');
-    return 'AI 추천$pct · $reasonText';
-  }
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -1400,7 +1358,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   child: Container(
                     // 카드 목록 위 회색 바탕에 머리글만. 지역 공고 개수는 보여주지 않는다
                     // (적은 지역에선 '3개'가 오히려 빈약해 보인다 — 2026-10 대표 피드백)
-                    padding: const EdgeInsets.fromLTRB(20, 8, 16, 10),
+                    color: AppColors.bgCard,
+                    padding: const EdgeInsets.fromLTRB(20, 16, 16, 4),
                     child: Row(
                       children: [
                         const Text('전체 공고', style: AppTextStyles.sectionTitle),
@@ -1469,37 +1428,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                           (_itemsToShow < filteredJobs.length)
                               ? _itemsToShow
                               : filteredJobs.length;
-                      // AI 추천 스트립을 4번째 공고 뒤에 끼워넣는다 (상단 다이어트).
-                      // 공고가 4개 미만이면 삽입하지 않는다.
-                      final stripAt =
-                          visibleCount > _aiStripAfter ? _aiStripAfter : -1;
                       return SliverList.builder(
-                        itemCount: visibleCount + (stripAt >= 0 ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          if (stripAt >= 0 && index == stripAt) {
-                            return Container(
-                              margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                              decoration: BoxDecoration(
-                                color: AppColors.bgCard,
-                                borderRadius: BorderRadius.circular(AppRadius.lg),
-                              ),
-                              child: _AiRecommendStrip(
-                                onJobTap:
-                                    (job) => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (_) => JobDetailScreen(job: job),
-                                      ),
-                                    ),
-                              ),
-                            );
-                          }
-                          final jobIndex =
-                              (stripAt >= 0 && index > stripAt)
-                                  ? index - 1
-                                  : index;
+                        itemCount: visibleCount,
+                        itemBuilder: (context, jobIndex) {
                           final job = filteredJobs[jobIndex];
                           return compactView
                               ? GestureDetector(
@@ -1694,11 +1625,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           animation: _shimmerCtrl,
           builder: (_, __) {
             return Container(
-              margin: const EdgeInsets.fromLTRB(12, 0, 12, 8),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              decoration: const BoxDecoration(
                 color: AppColors.bgCard,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border(bottom: BorderSide(color: AppColors.border)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -2702,7 +2632,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     }
 
     final displayBadges = opBadges.take(2).toList();
-    final aiSummary = _buildAiSummary(job);
     // 칩 줄(거리·당일지급·긴급·안심기업·매칭이유)은 제거했다 —
     // 전부 상단 위치줄·뱃지·AI 요약에 이미 있는 내용이라 카드만 길어졌다.
 
@@ -2722,7 +2651,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       title: job.title,
       schedule: schedule.isEmpty ? null : schedule,
       location: locationLine,
-      note: aiSummary,
       badges: displayBadges,
       imageUrl:
           rawImage == null
@@ -2917,13 +2845,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   Widget _buildCompactJobCard(Job job) {
     final formattedPay = formatJobPay(job.pay, job.payType);
 
-    // 간략 보기도 카드 (목록과 같은 결)
     return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 6),
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.fromLTRB(20, 12, 8, 12),
+      decoration: const BoxDecoration(
         color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        border: Border(bottom: BorderSide(color: AppColors.border)),
       ),
       child: Row(
         children: [
@@ -3017,208 +2943,3 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 // AI 추천 가로 스크롤 스트립
 // ─────────────────────────────────────────────
 
-class _AiRecommendStrip extends StatefulWidget {
-  final void Function(Job job) onJobTap;
-  const _AiRecommendStrip({required this.onJobTap});
-
-  @override
-  State<_AiRecommendStrip> createState() => _AiRecommendStripState();
-}
-
-class _AiRecommendStripState extends State<_AiRecommendStrip> {
-  List<Map<String, dynamic>> _items = [];
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _fetch();
-  }
-
-  Future<void> _fetch() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final workerId = prefs.getInt('userId');
-      if (workerId == null) {
-        if (mounted) setState(() => _loading = false);
-        return;
-      }
-      final resp = await AuthenticatedHttpClient.get(
-        Uri.parse('$baseUrl/api/rank/jobs?workerId=$workerId&limit=8'),
-      ).timeout(const Duration(seconds: 6));
-      if (!mounted) return;
-      if (resp.statusCode == 200) {
-        final data = jsonDecode(resp.body);
-        final List raw =
-            data is List ? data : (data['data'] ?? data['jobs'] ?? []);
-        setState(() {
-          _items =
-              raw
-                  .take(6)
-                  .map((e) => Map<String, dynamic>.from(e as Map))
-                  .toList();
-          _loading = false;
-        });
-      } else {
-        setState(() => _loading = false);
-      }
-    } catch (_) {
-      if (mounted) setState(() => _loading = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    if (_loading || _items.isEmpty) return const SizedBox.shrink();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                  border: Border.all(color: AppColors.primaryMid),
-                ),
-                child: const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.recommend_outlined,
-                      size: 12,
-                      color: AppColors.primary,
-                    ),
-                    SizedBox(width: 4),
-                    Text(
-                      'AI 맞춤 추천',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '조건을 반영한 추천 공고',
-                style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(
-          height: 110,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            itemCount: _items.length,
-            itemBuilder: (_, i) {
-              final it = _items[i];
-              final title = (it['title'] ?? '').toString();
-              final city =
-                  (it['location_city'] ?? it['location'] ?? '').toString();
-              final payRaw = (it['pay'] ?? 0).toString().replaceAll(
-                _reNonDigit,
-                '',
-              );
-              final payInt = int.tryParse(payRaw) ?? 0;
-              final payStr =
-                  isNegotiablePayType((it['pay_type'] ?? '').toString())
-                      ? '급여 협의'
-                      : payInt > 0
-                      ? '${NumberFormat('#,###').format(payInt)}원'
-                      : '';
-              final reasons =
-                  (it['reasons'] is List)
-                      ? (it['reasons'] as List)
-                          .take(2)
-                          .map((e) => e.toString())
-                          .toList()
-                      : <String>[];
-              final jobId = it['jobId'] ?? it['job_id'] ?? it['id'];
-
-              return GestureDetector(
-                onTap: () async {
-                  final raw = await http.get(
-                    Uri.parse('$baseUrl/api/job/$jobId'),
-                  );
-                  if (raw.statusCode == 200) {
-                    try {
-                      final job = Job.fromJson(jsonDecode(raw.body));
-                      widget.onJobTap(job);
-                    } catch (_) {}
-                  }
-                },
-                child: Container(
-                  width: 180,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.bgCard,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    border: Border.all(color: AppColors.border),
-                    boxShadow: AppShadows.card,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          height: 1.3,
-                        ),
-                      ),
-                      const Spacer(),
-                      if (payStr.isNotEmpty)
-                        Text(
-                          payStr,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      if (city.isNotEmpty)
-                        Text(
-                          city,
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      if (reasons.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            reasons.first,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textTertiary,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        const SizedBox(height: 8),
-      ],
-    );
-  }
-}
