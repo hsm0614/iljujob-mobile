@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../data/models/job.dart';
@@ -552,61 +553,12 @@ class _Empty extends StatelessWidget {
   const _Empty();
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.bookmark_border,
-              size: 42,
-              color: AppColors.textDisabled,
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              '찜한 공고가 없어요',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              '마음에 드는 공고를 찜해두면\n나중에 빠르게 다시 볼 수 있어요.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.4,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 18),
-            SizedBox(
-              height: 44,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                onPressed:
-                    () => Navigator.popUntil(context, (r) => r.isFirst),
-                child: const Text(
-                  '공고 둘러보기',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return AppEmptyState(
+      icon: Icons.favorite_border_rounded,
+      title: '찜한 공고가 없어요',
+      message: '마음에 드는 공고를 찜해두면\n나중에 빠르게 다시 볼 수 있어요.',
+      actionLabel: '공고 둘러보기',
+      onAction: () => Navigator.popUntil(context, (r) => r.isFirst),
     );
   }
 }

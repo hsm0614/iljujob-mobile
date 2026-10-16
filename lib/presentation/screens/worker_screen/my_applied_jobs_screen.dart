@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:iljujob/config/app_theme.dart';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
@@ -19,7 +20,9 @@ import '../../widgets/albailju_common.dart';
 const kBrandBlue = AppColors.primary;
 
 class MyAppliedJobsScreen extends StatefulWidget {
-  const MyAppliedJobsScreen({super.key});
+  /// 빈 화면 '공고 보러 가기' — 탭 안이라 pop 으로는 홈에 못 간다. 탭 컨테이너가 넘겨준다
+  final VoidCallback? onGoHome;
+  const MyAppliedJobsScreen({super.key, this.onGoHome});
 
   @override
   State<MyAppliedJobsScreen> createState() => _MyAppliedJobsScreenState();
@@ -860,60 +863,18 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
   }
 
   Widget _emptyView({required bool forBookmark}) {
-    final title = forBookmark ? '찜한 공고가 아직 없어요.' : '아직 지원한 알바가 없어요.';
-    final desc =
-        forBookmark
-            ? '마음에 드는 공고를 하트로 저장해두면\n나중에 빠르게 다시 볼 수 있어요.'
-            : '지금 바로 동네 알바를 찾아볼까요?';
-    final cta = forBookmark ? '공고 둘러보기' : '공고보러 가기';
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              desc,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 44,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kBrandBlue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                ),
-                onPressed: () {
-                  // 홈으로 보내는 안전한 기본 동작
-                  Navigator.popUntil(context, (r) => r.isFirst);
-                },
-                child: Text(
-                  cta,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return AppEmptyState(
+      icon: forBookmark ? Icons.favorite_border_rounded : Icons.work_outline_rounded,
+      title: forBookmark ? '찜한 공고가 아직 없어요' : '아직 지원한 알바가 없어요',
+      message:
+          forBookmark
+              ? '마음에 드는 공고를 하트로 저장해두면\n나중에 빠르게 다시 볼 수 있어요.'
+              : '지금 바로 동네 알바를 찾아볼까요?',
+      actionLabel: '공고 보러 가기',
+      // 예전엔 popUntil(isFirst)였는데 탭 안이라 아무 일도 안 일어났다
+      onAction:
+          widget.onGoHome ??
+          () => Navigator.popUntil(context, (r) => r.isFirst),
     );
   }
 

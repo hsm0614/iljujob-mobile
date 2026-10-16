@@ -314,3 +314,86 @@ class AppBottomNavItem extends StatelessWidget {
     );
   }
 }
+
+/// 빈 화면 공용 (2026-10). 아이콘 → 제목 → 한 줄 설명 → 버튼 **최대 1개**.
+/// 빈 화면에서 할 수 있는 다음 행동은 하나여야 한다(급구 참고). 버튼이 없으면 설명만.
+class AppEmptyState extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String? message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+  /// 새로고침·다시 시도처럼 보조 행동이면 테두리 버튼
+  final bool secondaryAction;
+
+  const AppEmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.message,
+    this.actionLabel,
+    this.onAction,
+    this.secondaryAction = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              decoration: const BoxDecoration(
+                color: AppColors.bgMuted,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, size: 30, color: AppColors.textTertiary),
+            ),
+            const SizedBox(height: 16),
+            Text(title, textAlign: TextAlign.center, style: AppTextStyles.h3),
+            if (message != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                message!,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.body2,
+              ),
+            ],
+            if (actionLabel != null && onAction != null) ...[
+              const SizedBox(height: 20),
+              SizedBox(
+                height: 44,
+                child:
+                    secondaryAction
+                        ? OutlinedButton(
+                          onPressed: onAction,
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.textPrimary,
+                            side: const BorderSide(color: AppColors.border),
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                            ),
+                          ),
+                          child: Text(actionLabel!),
+                        )
+                        : FilledButton(
+                          onPressed: onAction,
+                          style: FilledButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            textStyle: AppTextStyles.btnMd,
+                          ),
+                          child: Text(actionLabel!),
+                        ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

@@ -312,7 +312,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Widget> _buildScreens() {
     return [
       const WorkerCalendarScreen(),
-      const MyAppliedJobsScreen(),
+      MyAppliedJobsScreen(onGoHome: () => _onItemTapped(2)),
       HomeMainScreen(onAiRecommend: _openRecommendSheet),
       ChatListScreen(onMessagesRead: _fetchUnreadCount),
       const WorkerMyPageScreen(),

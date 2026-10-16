@@ -1,6 +1,7 @@
 // lib/presentation/screens/applicant_management_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1640,47 +1641,23 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   }
 
   Widget _buildEmpty() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.people_alt_outlined,
-            size: 56,
-            color: AppColors.textTertiary,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            '아직 지원자가 없어요',
-            style: TextStyle(fontSize: 16, color: AppColors.textTertiary),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            '공고를 올리면 알바생들이 지원할 거예요!',
-            style: TextStyle(fontSize: 13, color: AppColors.textTertiary),
-          ),
-          const SizedBox(height: 24),
-          TextButton(onPressed: _fetch, child: const Text('새로고침')),
-        ],
-      ),
+    return AppEmptyState(
+      icon: Icons.people_alt_outlined,
+      title: '아직 지원자가 없어요',
+      message: '공고를 올리면 알바생들이 지원할 거예요.',
+      actionLabel: '새로고침',
+      onAction: _fetch,
+      secondaryAction: true,
     );
   }
 
   Widget _buildError() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
-          const SizedBox(height: 12),
-          Text(
-            _error ?? '알 수 없는 오류',
-            style: const TextStyle(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(onPressed: _fetch, child: const Text('다시 시도')),
-        ],
-      ),
+    return AppEmptyState(
+      icon: Icons.error_outline_rounded,
+      title: '불러오지 못했어요',
+      message: _error ?? '알 수 없는 오류',
+      actionLabel: '다시 시도',
+      onAction: _fetch,
     );
   }
 }

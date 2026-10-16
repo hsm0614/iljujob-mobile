@@ -1,6 +1,7 @@
 // lib/presentation/screens/client_screen/urgent_sent_history_screen.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:intl/intl.dart';
 
 import '../../../config/app_theme.dart';
@@ -298,36 +299,10 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
   }
 
   Widget _buildEmpty() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.flash_off_rounded,
-            size: 48,
-            color: AppColors.textDisabled,
-          ),
-          SizedBox(height: 12),
-          Text(
-            '발송이력이 없어요',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          SizedBox(height: 6),
-          Text(
-            '긴급호출을 보내면 여기서 응답 현황을 확인할 수 있어요.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
+    return const AppEmptyState(
+      icon: Icons.flash_off_rounded,
+      title: '발송 이력이 없어요',
+      message: '긴급호출을 보내면 여기서 응답 현황을 확인할 수 있어요.',
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:iljujob/data/services/job_service.dart';
 import 'package:iljujob/data/models/job.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
@@ -209,61 +210,12 @@ class _EmptyJobs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.work_outline_rounded,
-              size: 42,
-              color: AppColors.textDisabled,
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              '아직 등록한 공고가 없어요',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              '공고를 올리면 근처 알바생에게 바로 노출돼요.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.4,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 18),
-            SizedBox(
-              height: 44,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                onPressed:
-                    () => Navigator.popUntil(context, (r) => r.isFirst),
-                child: const Text(
-                  '공고 올리러 가기',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return AppEmptyState(
+      icon: Icons.work_outline_rounded,
+      title: '아직 등록한 공고가 없어요',
+      message: '공고를 올리면 근처 알바생에게 바로 노출돼요.',
+      actionLabel: '공고 올리러 가기',
+      onAction: () => Navigator.popUntil(context, (r) => r.isFirst),
     );
   }
 }

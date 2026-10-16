@@ -3,6 +3,7 @@
 // 긴급 호출: 사장님이 근무지 3km 내 구직자를 보고 직접 메시지 발송
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_ui.dart';
 
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
@@ -743,48 +744,13 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
   }
 
   Widget _buildEmpty() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.location_off_rounded,
-              size: 60,
-              color: AppColors.textDisabled,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              '반경 5km 내 오늘 가능한 알바생이 없어요',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '잠시 후 다시 시도하거나\n공고를 일반 게시로 등록해보세요.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 24),
-            OutlinedButton(
-              onPressed: _fetchWorkers,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: const Text('새로고침'),
-            ),
-          ],
-        ),
-      ),
+    return AppEmptyState(
+      icon: Icons.location_off_rounded,
+      title: '반경 5km 내 오늘 가능한 알바생이 없어요',
+      message: '잠시 후 다시 시도하거나\n공고를 일반 게시로 등록해보세요.',
+      actionLabel: '새로고침',
+      onAction: _fetchWorkers,
+      secondaryAction: true,
     );
   }
 }
