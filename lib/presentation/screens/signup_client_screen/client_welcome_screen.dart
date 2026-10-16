@@ -146,7 +146,7 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
                           child: Text(
                             '첫 공고는 무료예요. 지금 바로 올려보세요!',
                             style: TextStyle(
-                              fontSize: 13.5,
+                              fontSize: 14,
                               color: AppColors.warningDark,
                               fontWeight: FontWeight.w600,
                               height: 1.4,

@@ -613,7 +613,7 @@ class _ProfileCard extends StatelessWidget {
                             Text(
                               subscriptionPlan!.toUpperCase(),
                               style: const TextStyle(
-                                fontSize: 10,
+                                fontSize: 11,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
                               ),
@@ -758,7 +758,7 @@ class _ChipText extends StatelessWidget {
                     text,
                     maxLines: 1,
                     style: const TextStyle(
-                      fontSize: 12.5,
+                      fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -771,7 +771,7 @@ class _ChipText extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 12.5,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -930,13 +930,13 @@ class _BizInfoItem extends StatelessWidget {
             width: 110,
             child: Text(
               k,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13.5),
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
             ),
           ),
           Expanded(
             child: Text(
               v,
-              style: const TextStyle(fontSize: 13.5, color: AppColors.textPrimary),
+              style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
             ),
           ),
         ],
@@ -1031,7 +1031,7 @@ class _ConfirmSheet extends StatelessWidget {
             message,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 12.5,
+              fontSize: 13,
               color: AppColors.textSecondary,
               height: 1.35,
             ),

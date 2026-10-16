@@ -308,7 +308,7 @@ class _EventCard extends StatelessWidget {
                           style: TextStyle(
                             color: badgeColor(event),
                             fontWeight: FontWeight.w800,
-                            fontSize: 11.5,
+                            fontSize: 12,
                           ),
                         ),
                       ),
@@ -326,7 +326,7 @@ class _EventCard extends StatelessWidget {
                   // 제목
                   Text(
                     title,
-                    style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800),
+                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),

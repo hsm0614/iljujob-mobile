@@ -1222,7 +1222,7 @@ class _InstantTabState extends State<_InstantTab> {
                                 child: Text(
                                   tag,
                                   style: TextStyle(
-                                    fontSize: 10,
+                                    fontSize: 11,
                                     fontWeight: FontWeight.w700,
                                     color: tagColor,
                                   ),

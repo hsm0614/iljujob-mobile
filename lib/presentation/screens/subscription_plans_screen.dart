@@ -556,7 +556,7 @@ class _PlanCard extends StatelessWidget {
                     child: const Text(
                       '추천',
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 11,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
                       ),

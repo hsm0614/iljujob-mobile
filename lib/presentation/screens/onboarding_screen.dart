@@ -344,7 +344,7 @@ class _TypeCardState extends State<_TypeCard> {
                     widget.badge!,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 10,
+                      fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),
                   ),

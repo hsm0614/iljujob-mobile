@@ -1608,7 +1608,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                           child: const Text(
                             '광고',
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 11,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textTertiary,
                             ),
@@ -1645,7 +1645,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 14.5,
+                        fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                         height: 1.3,
@@ -1659,7 +1659,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 11.5,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: AppColors.primary,
                         ),
@@ -1922,7 +1922,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 label: Text(
                   hasQuery ? '검색어 지우기' : '새로고침',
                   style: const TextStyle(
-                    fontSize: 14.5,
+                    fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
@@ -1959,7 +1959,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   label: Text(
                     noLocation ? '위치 권한 설정' : '새 공고 뜨면 알림 받기',
                     style: const TextStyle(
-                      fontSize: 14.5,
+                      fontSize: 15,
                       fontWeight: FontWeight.w700,
                       color: AppColors.primary,
                     ),
@@ -2682,7 +2682,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 child: Text(
                   _distanceHint(selectedDistance),
                   style: const TextStyle(
-                    fontSize: 12.5,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
@@ -2992,7 +2992,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               job.title,
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
-                fontSize: 14.5,
+                fontSize: 15,
                 color: AppColors.textPrimary,
               ),
               overflow: TextOverflow.ellipsis,
@@ -3264,7 +3264,7 @@ class _AiRecommendStripState extends State<_AiRecommendStrip> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 11,
                               color: AppColors.textTertiary,
                             ),
                           ),

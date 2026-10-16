@@ -362,11 +362,11 @@ class _WageReportScreenState extends State<WageReportScreen> {
           children: [
             Text(
               '${_fmt.format(r.minHourly)}원',
-              style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
             ),
             Text(
               '${_fmt.format(r.maxHourly)}원',
-              style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
             ),
           ],
         ),

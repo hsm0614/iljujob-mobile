@@ -480,7 +480,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 14.5,
+                      fontSize: 15,
                       color: Colors.black87,
                       fontWeight: FontWeight.w500,
                     ),

@@ -103,7 +103,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
       padding: const EdgeInsets.only(top: 14, bottom: 8),
       child: Text(
         text,
-        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5),
+        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
       ),
     );
   }

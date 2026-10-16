@@ -497,7 +497,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                         Text(
                           '프로필과 위치를 기준으로 공고를 추천합니다.',
                           style: TextStyle(
-                            fontSize: 12.5,
+                            fontSize: 13,
                             color: AppColors.textSecondary,
                             height: 1.2,
                           ),
@@ -558,7 +558,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                           child: Text(
                             label,
                             style: TextStyle(
-                              fontSize: 12.5,
+                              fontSize: 13,
                               fontWeight: FontWeight.w800,
                               color:
                                   selected
@@ -605,7 +605,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                         child: Text(
                           '거리, 일정, 선호 조건, 최근 지원 이력을 반영합니다.',
                           style: TextStyle(
-                            fontSize: 12.5,
+                            fontSize: 13,
                             color: AppColors.textPrimary,
                             height: 1.2,
                           ),
@@ -624,7 +624,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                   opacity: 0.55,
                   child: Text(
                     '추천 결과는 조건에 따라 달라질 수 있어요.',
-                    style: TextStyle(fontSize: 11.5),
+                    style: TextStyle(fontSize: 12),
                   ),
                 ),
               ]),

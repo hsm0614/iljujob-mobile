@@ -648,7 +648,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       ),
       child: Text(
         text,
-        style: TextStyle(fontSize: 12.5, color: fg, height: 1.4),
+        style: TextStyle(fontSize: 13, color: fg, height: 1.4),
       ),
     );
   }
@@ -1070,7 +1070,7 @@ class _ConfirmSheet extends StatelessWidget {
             message,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 12.5,
+              fontSize: 13,
               color: AppColors.textSecondary,
               height: 1.35,
             ),

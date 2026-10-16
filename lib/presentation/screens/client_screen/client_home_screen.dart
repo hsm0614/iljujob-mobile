@@ -194,7 +194,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     '이 공고를 삭제할까요?\n삭제하면 되돌릴 수 없어요.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 13.5,
+                      fontSize: 14,
                       height: 1.35,
                       color: AppColors.textSecondary,
                     ),
@@ -1006,7 +1006,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   child: RichText(
                     text: TextSpan(
                       style: const TextStyle(
-                        fontSize: 13.5,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                         height: 1.4,
@@ -1310,7 +1310,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               '근무 조건을 입력해 공고를 등록하면 지원자를 확인할 수 있어요.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 13.5,
+                fontSize: 14,
                 height: 1.45,
                 color: AppColors.textSecondary,
               ),
@@ -2678,7 +2678,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               label,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 12.5,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -2882,7 +2882,7 @@ class _PrimaryJobActionButton extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 13.5,
+                        fontSize: 14,
                         fontWeight: FontWeight.w900,
                         color: action.color,
                       ),
@@ -2893,7 +2893,7 @@ class _PrimaryJobActionButton extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 11.5,
+                        fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textSecondary,
                       ),

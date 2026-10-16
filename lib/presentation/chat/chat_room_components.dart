@@ -93,7 +93,7 @@ class CancelApplicationDialog extends StatelessWidget {
                       '취소 이후에는 채팅만 남고,\n'
                       '해당 공고와의 매칭은 해제됩니다.',
                       style: TextStyle(
-                        fontSize: 11.5,
+                        fontSize: 12,
                         height: 1.4,
                         color: AppColors.textSecondary,
                       ),
@@ -298,7 +298,7 @@ class AlbailjuChatAppBarTitle extends StatelessWidget {
               Text(
                 chipText,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 11,
                   color: chipFg,
                   fontWeight: FontWeight.w700,
                   letterSpacing: -0.2,

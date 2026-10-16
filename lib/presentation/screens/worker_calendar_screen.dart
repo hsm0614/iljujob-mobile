@@ -1155,7 +1155,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                 child: Text(
                   NumberFormat.compact(locale: 'ko_KR').format(showAmount),
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 11,
                     color: isSelected ? Colors.white : markerColor,
                     fontWeight: FontWeight.w900,
                   ),

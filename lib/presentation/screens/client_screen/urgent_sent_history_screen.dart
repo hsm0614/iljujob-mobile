@@ -227,7 +227,7 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
                       child: Text(
                         grade,
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 11,
                           fontWeight: FontWeight.w900,
                           color: gradeColor,
                         ),

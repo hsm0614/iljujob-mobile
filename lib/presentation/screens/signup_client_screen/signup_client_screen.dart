@@ -362,7 +362,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(fontSize: 13.5, color: AppColors.textSecondary),
+            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
           ),
         ),
         TextButton(
@@ -439,7 +439,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
             const SizedBox(height: 8),
             const Text(
               '기존 회원이면 자동으로 로그인돼요.',
-              style: TextStyle(fontSize: 13.5, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 20),
             _card(
@@ -529,7 +529,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
             const SizedBox(height: 8),
             const Text(
               '채팅 및 고객센터 안내에 사용돼요.',
-              style: TextStyle(fontSize: 13.5, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 20),
 

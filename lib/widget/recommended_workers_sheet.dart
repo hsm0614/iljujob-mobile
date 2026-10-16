@@ -642,7 +642,7 @@ class _WorkerCard extends StatelessWidget {
                     Text(
                       '매칭',
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 11,
                         fontWeight: FontWeight.w600,
                         color: matchColor.withValues(alpha: 0.8),
                       ),

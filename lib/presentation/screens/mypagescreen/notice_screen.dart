@@ -267,7 +267,7 @@ class _NoticeCard extends StatelessWidget {
                           style: TextStyle(
                             color: AppColors.primary,
                             fontWeight: FontWeight.w900,
-                            fontSize: 11.5,
+                            fontSize: 12,
                           ),
                         ),
                       ),
@@ -276,7 +276,7 @@ class _NoticeCard extends StatelessWidget {
 
                     Text(
                       title,
-                      style: const TextStyle(fontSize: 16.5, fontWeight: FontWeight.w900),
+                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),

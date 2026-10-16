@@ -642,7 +642,7 @@ class _HireNudgeBubble extends StatelessWidget {
                 '일정을 확정하면 D-1 알림과\n출근 자동 확인이 진행돼요.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 12.5,
+                  fontSize: 13,
                   height: 1.4,
                   color: AppColors.textSecondary,
                 ),
@@ -668,7 +668,7 @@ class _HireNudgeBubble extends StatelessWidget {
                   label: const Text(
                     '출근 확정 제안하기',
                     style: TextStyle(
-                      fontSize: 12.5,
+                      fontSize: 13,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
                     ),

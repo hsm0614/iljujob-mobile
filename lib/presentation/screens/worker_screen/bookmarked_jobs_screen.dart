@@ -387,7 +387,7 @@ class _JobTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
-                        fontSize: 15.5,
+                        fontSize: 16,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -491,7 +491,7 @@ class _JobTile extends StatelessWidget {
       child: Text(
         text,
         style: const TextStyle(
-          fontSize: 12.5,
+          fontSize: 13,
           fontWeight: FontWeight.w700,
           color: kBrand,
         ),

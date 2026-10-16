@@ -1353,7 +1353,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                                     child: Text(
                                       '${job.applicantCount}',
                                       style: TextStyle(
-                                        fontSize: 10,
+                                        fontSize: 11,
                                         fontWeight: FontWeight.w700,
                                         color: sel ? Colors.white : _primary,
                                       ),
@@ -1716,7 +1716,7 @@ class _ExpandableJobCardState extends State<_ExpandableJobCard> {
                       const SizedBox(width: 2),
                       const Text(
                         '5km',
-                        style: TextStyle(fontSize: 10, color: _textSub),
+                        style: TextStyle(fontSize: 11, color: _textSub),
                       ),
                     ],
                   ),
@@ -2190,7 +2190,7 @@ class _JobMapCard extends StatelessWidget {
                 Text(
                   '긴급',
                   style: TextStyle(
-                    fontSize: 9,
+                    fontSize: 11,
                     fontWeight: FontWeight.w800,
                     color:
                         isSelected ? Colors.white.withValues(alpha: 0.9) : _red,
@@ -2212,7 +2212,7 @@ class _JobMapCard extends StatelessWidget {
                       ? '${job.title.substring(0, 9)}…'
                       : job.title,
                   style: TextStyle(
-                    fontSize: 10,
+                    fontSize: 11,
                     color: fg.withValues(alpha: 0.8),
                   ),
                 ),
@@ -2301,7 +2301,7 @@ class _WorkerDot extends StatelessWidget {
           _grade,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 10,
+            fontSize: 11,
             fontWeight: FontWeight.w900,
             height: 1,
           ),

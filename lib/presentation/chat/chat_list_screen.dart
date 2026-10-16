@@ -344,7 +344,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                 '$title\n$leaveDescription',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 13.5,
+                  fontSize: 14,
                   color: AppColors.textSecondary,
                   height: 1.5,
                 ),
@@ -622,7 +622,7 @@ class _ChatListScreenState extends State<ChatListScreen>
             child: Text(
               '답변과 출근확정을 놓치지 않게 알림을 켜주세요.',
               style: TextStyle(
-                fontSize: 12.5,
+                fontSize: 13,
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w600,
               ),
@@ -647,7 +647,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
-                  fontSize: 12.5,
+                  fontSize: 13,
                 ),
               ),
             ),
@@ -710,7 +710,7 @@ class _ChatListScreenState extends State<ChatListScreen>
         label,
         style: TextStyle(
           color: foreground,
-          fontSize: 10.5,
+          fontSize: 11,
           fontWeight: FontWeight.w800,
         ),
       ),
@@ -929,7 +929,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
                                     fontWeight: FontWeight.w800,
-                                    fontSize: 15.5,
+                                    fontSize: 16,
                                     color: AppColors.textPrimary,
                                   ),
                                 ),
@@ -1024,7 +1024,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                                     '오늘 가능',
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 10,
+                                      fontSize: 11,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -1336,7 +1336,7 @@ class _BadgeTab extends StatelessWidget {
               child: Text(
                 count > 99 ? '99+' : '$count',
                 style: const TextStyle(
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                 ),
@@ -1510,7 +1510,7 @@ class _ChatActionTile extends StatelessWidget {
       subtitle: Text(
         subtitle,
         style: const TextStyle(
-          fontSize: 12.5,
+          fontSize: 13,
           color: AppColors.textSecondary,
           height: 1.35,
         ),
@@ -1601,7 +1601,7 @@ class CancelApplicationDialog extends StatelessWidget {
                     child: Text(
                       '취소 이후에는 채팅만 남고,\n해당 공고와의 매칭은 해제됩니다.',
                       style: TextStyle(
-                        fontSize: 11.5,
+                        fontSize: 12,
                         height: 1.4,
                         color: AppColors.textTertiary,
                       ),

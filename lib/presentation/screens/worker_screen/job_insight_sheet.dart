@@ -549,11 +549,11 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
           children: [
             _dot(_blue),
             const SizedBox(width: 4),
-            const Text('내 시급', style: TextStyle(fontSize: 10, color: _label)),
+            const Text('내 시급', style: TextStyle(fontSize: 11, color: _label)),
             const SizedBox(width: 12),
             _dot(Colors.orange),
             const SizedBox(width: 4),
-            const Text('평균', style: TextStyle(fontSize: 10, color: _label)),
+            const Text('평균', style: TextStyle(fontSize: 11, color: _label)),
           ],
         ),
       ],

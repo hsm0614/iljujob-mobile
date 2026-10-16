@@ -168,7 +168,7 @@ class AppActionBand extends StatelessWidget {
                     Text(
                       title,
                       style: AppTextStyles.h3.copyWith(
-                        fontSize: 14.5,
+                        fontSize: 15,
                         fontWeight: FontWeight.w900,
                         height: 1.15,
                       ),
@@ -288,7 +288,7 @@ class AppBottomNavItem extends StatelessWidget {
                             badgeLabel!,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 9,
+                              fontSize: 11,
                               fontWeight: FontWeight.w700,
                               height: 1.1,
                             ),
@@ -302,7 +302,7 @@ class AppBottomNavItem extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                   color: isActive ? AppColors.primary : AppColors.textDisabled,
                 ),

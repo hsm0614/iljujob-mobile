@@ -136,7 +136,7 @@ class _LeaveConfirmSheet extends StatelessWidget {
             '나가도 입력한 내용은 임시 저장돼요.\n다음에 이어서 작성할 수 있어요.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 13.5,
+              fontSize: 14,
               color: AppColors.textSecondary,
               height: 1.5,
             ),

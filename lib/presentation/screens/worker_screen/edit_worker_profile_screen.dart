@@ -1220,7 +1220,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
           ),
           if (sub != null) ...[
             const SizedBox(height: 4),
-            Text(sub, style: const TextStyle(fontSize: 12.5, color: kMuted)),
+            Text(sub, style: const TextStyle(fontSize: 13, color: kMuted)),
           ],
         ],
       ),
@@ -1239,7 +1239,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
           ),
           if (sub != null) ...[
             const SizedBox(height: 3),
-            Text(sub, style: const TextStyle(fontSize: 12.5, color: kMuted)),
+            Text(sub, style: const TextStyle(fontSize: 13, color: kMuted)),
           ],
         ],
       ),
@@ -1331,7 +1331,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
           text,
           style: TextStyle(
             fontWeight: FontWeight.w900,
-            fontSize: 12.5,
+            fontSize: 13,
             color: selected ? kBrandBlue : kMuted,
           ),
         ),
@@ -1517,7 +1517,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                 const SizedBox(height: 2),
                 Text(
                   _phone.isNotEmpty ? _phone : '전화번호 미입력',
-                  style: const TextStyle(fontSize: 12.5, color: kMuted),
+                  style: const TextStyle(fontSize: 13, color: kMuted),
                 ),
               ],
             ),
@@ -1587,7 +1587,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
               children: [
                 const Text(
                   '사장님이 가장 먼저 읽는 내용이에요. 2~3줄이면 충분해요!',
-                  style: TextStyle(fontSize: 12.5, color: kMuted),
+                  style: TextStyle(fontSize: 13, color: kMuted),
                 ),
                 const SizedBox(height: 10),
                 Container(
@@ -1603,7 +1603,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                     maxLines: 7,
                     maxLength: 300,
                     style: const TextStyle(
-                      fontSize: 14.5,
+                      fontSize: 15,
                       height: 1.5,
                       color: kText,
                     ),
@@ -1844,7 +1844,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                               ? '사장님이 내 이력서를 볼 수 있어요.'
                               : '사장님은 기본 정보만 볼 수 있어요.',
                           style: TextStyle(
-                            fontSize: 12.5,
+                            fontSize: 13,
                             color: _resumeConsent ? kBrandBlue : kMuted,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1902,7 +1902,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                     e.place,
                     style: const TextStyle(
                       fontWeight: FontWeight.w900,
-                      fontSize: 14.5,
+                      fontSize: 15,
                       color: kText,
                     ),
                   ),
@@ -1920,7 +1920,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                     Text(
                       e.description,
                       style: const TextStyle(
-                        fontSize: 13.5,
+                        fontSize: 14,
                         color: kMuted,
                         height: 1.3,
                       ),
@@ -1977,7 +1977,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                     l.name,
                     style: const TextStyle(
                       fontWeight: FontWeight.w900,
-                      fontSize: 14.5,
+                      fontSize: 15,
                       color: kText,
                     ),
                   ),
@@ -2027,7 +2027,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         label,
         style: TextStyle(
           fontWeight: FontWeight.w900,
-          fontSize: 12.5,
+          fontSize: 13,
           color: blue ? kBrandBlue : kMuted,
         ),
       ),
@@ -2058,7 +2058,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
             child: Text(
               label,
               style: const TextStyle(
-                fontSize: 13.5,
+                fontSize: 14,
                 color: kMuted,
                 height: 1.3,
               ),
@@ -2500,7 +2500,7 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                           pretty(temp),
                           style: const TextStyle(
                             fontWeight: FontWeight.w900,
-                            fontSize: 14.5,
+                            fontSize: 15,
                             color: kText,
                           ),
                         ),

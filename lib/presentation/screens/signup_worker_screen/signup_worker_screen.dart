@@ -467,7 +467,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
           label,
           style: const TextStyle(
             fontWeight: FontWeight.w700,
-            fontSize: 14.5,
+            fontSize: 15,
             color: AppColors.textPrimary,
           ),
         ),
@@ -723,7 +723,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               const Text(
                 '전화번호 인증만으로 바로 시작할 수 있어요.',
                 style: TextStyle(
-                  fontSize: 13.5,
+                  fontSize: 14,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -775,7 +775,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               const Text(
                 '인증 후 기존 회원이라면 자동 로그인, 신규 회원이면 다음 단계로 이어집니다.',
                 style: TextStyle(
-                  fontSize: 12.5,
+                  fontSize: 13,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -808,7 +808,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               const Text(
                 '이름과 성별, 출생년도를 정확히 입력해 주세요.',
                 style: TextStyle(
-                  fontSize: 13.5,
+                  fontSize: 14,
                   color: AppColors.textSecondary,
                 ),
               ),

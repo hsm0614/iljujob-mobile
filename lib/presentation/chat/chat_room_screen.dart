@@ -1215,7 +1215,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
             child: Text(
               '$peer이 알림을 꺼둔 상태라 확인이 늦을 수 있어요.',
               style: const TextStyle(
-                fontSize: 12.5,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondary,
                 height: 1.4,
@@ -1435,7 +1435,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     child: const Text(
                       'T I P',
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 11,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary,
                       ),

@@ -180,7 +180,7 @@ class _RecommendedSectionState extends State<RecommendedSection> {
               const SizedBox(height: 6),
               const Text(
                 '프로필(성별/희망직종)과 위치를 채우면 추천 정확도가 확 올라가요.',
-                style: TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.2),
+                style: TextStyle(fontSize: 13, color: Colors.black54, height: 1.2),
               ),
               const SizedBox(height: 12),
               Align(
@@ -219,7 +219,7 @@ class _RecommendedSectionState extends State<RecommendedSection> {
             const SizedBox(height: 6),
             Text(
               '총 ${items.length}개 추천',
-              style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+              style: const TextStyle(fontSize: 13, color: Colors.black54),
             ),
             const SizedBox(height: 10),
           ],
@@ -295,12 +295,12 @@ class _AiJobCard extends StatelessWidget {
                 title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 6),
               Text(
                 meta,
-                style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+                style: const TextStyle(fontSize: 13, color: Colors.black54),
               ),
 
               if (shown.isNotEmpty) ...[

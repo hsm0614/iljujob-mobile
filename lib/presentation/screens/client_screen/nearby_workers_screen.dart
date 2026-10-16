@@ -542,7 +542,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                               child: const Text(
                                 '오늘 가능',
                                 style: TextStyle(
-                                  fontSize: 10,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
                                 ),
@@ -563,7 +563,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                               child: const Text(
                                 '발송됨',
                                 style: TextStyle(
-                                  fontSize: 10,
+                                  fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textTertiary,
                                 ),
@@ -641,7 +641,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                               Text(
                                 '$score',
                                 style: TextStyle(
-                                  fontSize: 9,
+                                  fontSize: 11,
                                   color: gradeColor,
                                 ),
                               ),
@@ -655,7 +655,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                         child: const Text(
                           '프로필',
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: 11,
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,
                           ),

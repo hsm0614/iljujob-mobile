@@ -1003,7 +1003,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 12.5,
+                              fontSize: 13,
                               color: AppColors.textSecondary,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1023,7 +1023,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                             statusText,
                             style: TextStyle(
                               color: statusColor,
-                              fontSize: 12.5,
+                              fontSize: 13,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -1037,7 +1037,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 15.5,
+                        fontSize: 16,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
