@@ -1302,7 +1302,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     return 'AI 추천$pct · $reasonText';
   }
 
-
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -1509,7 +1508,12 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                           if (stripAt >= 0 && index == stripAt) {
                             return Container(
                               color: AppColors.bgCard,
-                              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                              padding: const EdgeInsets.fromLTRB(
+                                16,
+                                12,
+                                16,
+                                12,
+                              ),
                               child: _AiRecommendStrip(
                                 onJobTap:
                                     (job) => Navigator.push(
@@ -2565,7 +2569,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                             ChoiceChip(
                               label: const Text('전체'),
                               selected: pickedGu == null,
-                              onSelected: (_) => setSheet(() => pickedGu = null),
+                              onSelected:
+                                  (_) => setSheet(() => pickedGu = null),
                             ),
                             for (final g in gus)
                               ChoiceChip(
@@ -2732,11 +2737,13 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     // 다 붙은 뱃지는 안 붙은 것과 같다.
     final List<Widget> opBadges = [];
     if (job.isUrgent) {
-      opBadges.add(const JobSignalBadge(
+      opBadges.add(
+        const JobSignalBadge(
           label: '긴급',
           signal: JobSignal.time,
           icon: Icons.bolt_rounded,
-        ));
+        ),
+      );
     }
     if (isUrgent) {
       opBadges.add(const JobSignalBadge(label: '마감임박', signal: JobSignal.time));
@@ -2813,7 +2820,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                         ? '내 주변 ${selectedDistance.toStringAsFixed(0)}km'
                         : '내 주변',
                 selected: _isNearScope,
-                trailing: _isNearScope ? Icons.keyboard_arrow_down_rounded : null,
+                trailing:
+                    _isNearScope ? Icons.keyboard_arrow_down_rounded : null,
                 // 이미 '내 주변'이면 다시 눌러 거리 조절을 연다
                 onTap:
                     () =>
@@ -2929,7 +2937,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         height: 32,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
-          color: isAvailableToday ? AppColors.success.withValues(alpha: 0.1) : AppColors.bgMuted,
+          color:
+              isAvailableToday
+                  ? AppColors.success.withValues(alpha: 0.1)
+                  : AppColors.bgMuted,
           borderRadius: BorderRadius.circular(AppRadius.full),
         ),
         child: Row(
@@ -2941,14 +2952,20 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               height: 7,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: isAvailableToday ? AppColors.success : AppColors.textTertiary,
+                color:
+                    isAvailableToday
+                        ? AppColors.success
+                        : AppColors.textTertiary,
               ),
             ),
             const SizedBox(width: 6),
             Text(
               '오늘 가능',
               style: AppTextStyles.btnSm.copyWith(
-                color: isAvailableToday ? AppColors.badgeSameDay : AppColors.textSecondary,
+                color:
+                    isAvailableToday
+                        ? AppColors.badgeSameDay
+                        : AppColors.textSecondary,
               ),
             ),
           ],

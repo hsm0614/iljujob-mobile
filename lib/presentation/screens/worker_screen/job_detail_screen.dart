@@ -17,7 +17,6 @@ import '../client_screen/client_job_list_screen.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart' as km;
 import '../../../core/suspension.dart';
 import '../../../core/suspension_guard.dart';
-import 'job_meta_section.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter/services.dart'; // Clipboard
 import 'package:url_launcher/url_launcher.dart';
@@ -982,16 +981,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     }
   }
 
-  Widget _infoRow(IconData icon, String text) {
-    return Row(
-      children: [
-        Icon(icon, size: 18, color: Colors.grey.shade700),
-        const SizedBox(width: 8),
-        Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
-      ],
-    );
-  }
-
   Future<void> _callAgencyPhone(String phone) async {
     final uri = Uri.parse('tel:$phone');
     if (await canLaunchUrl(uri)) {
@@ -1020,157 +1009,169 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         isClosed ||
         (!hasExternalApply && (hasApplied || isBlocked || isSuspended));
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildApplyHint(isButtonDisabled: isButtonDisabled),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                if (showPhoneApply)
+    // 하단 고정 바: 흰 면 + 위 구분선. 주 버튼(파랑)은 하나만.
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.bgCard,
+        border: Border(top: BorderSide(color: AppColors.borderSub)),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildApplyHint(isButtonDisabled: isButtonDisabled),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  if (showPhoneApply)
+                    Expanded(
+                      child: SizedBox(
+                        height: 50,
+                        child: OutlinedButton.icon(
+                          onPressed: () => _callAgencyPhone(agencyPhone),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: AppColors.primary),
+                            foregroundColor: AppColors.primary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: const Icon(Icons.call_outlined, size: 18),
+                          label: Text('전화로 지원', style: AppTextStyles.btnLg),
+                        ),
+                      ),
+                    )
+                  else
+                    // AI 면접 준비 — 지원하기와 경쟁하지 않게 회색 정사각 버튼
+                    SizedBox(
+                      height: 52,
+                      width: 56,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          final payInt =
+                              int.tryParse(
+                                widget.job.pay.replaceAll(
+                                  RegExp(r'[^0-9]'),
+                                  '',
+                                ),
+                              ) ??
+                              0;
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            useSafeArea: true,
+                            builder:
+                                (_) => AiInterviewPrepSheet(
+                                  jobTitle: widget.job.title,
+                                  category: widget.job.category,
+                                  location: widget.job.location,
+                                  payType: widget.job.payType,
+                                  pay: payInt,
+                                ),
+                          );
+                        },
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          side: const BorderSide(color: AppColors.border),
+                          foregroundColor: AppColors.textSecondary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                        ),
+                        child: const Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.auto_awesome_rounded, size: 18),
+                            SizedBox(height: 2),
+                            Text(
+                              '면접 준비',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  const SizedBox(width: 10),
+                  // 지원하기 버튼
                   Expanded(
                     child: SizedBox(
-                      height: 50,
-                      child: OutlinedButton.icon(
-                        onPressed: () => _callAgencyPhone(agencyPhone),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppColors.primary),
-                          foregroundColor: AppColors.primary,
+                      height: 52,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kBrand,
+                          disabledBackgroundColor: AppColors.bgMuted,
+                          disabledForegroundColor: AppColors.textTertiary,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
+                          elevation: 0,
                         ),
-                        icon: const Icon(Icons.call_outlined, size: 18),
-                        label: Text('전화로 지원', style: AppTextStyles.btnLg),
-                      ),
-                    ),
-                  )
-                else
-                // AI 면접 준비 버튼
-                SizedBox(
-                  height: 50,
-                  child: OutlinedButton(
-                    onPressed: () {
-                      final payInt =
-                          int.tryParse(
-                            widget.job.pay.replaceAll(RegExp(r'[^0-9]'), ''),
-                          ) ??
-                          0;
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        useSafeArea: true,
-                        builder:
-                            (_) => AiInterviewPrepSheet(
-                              jobTitle: widget.job.title,
-                              category: widget.job.category,
-                              location: widget.job.location,
-                              payType: widget.job.payType,
-                              pay: payInt,
-                            ),
-                      );
-                    },
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
-                      side: const BorderSide(color: AppColors.primary),
-                      foregroundColor: AppColors.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.auto_awesome_rounded, size: 18),
-                        SizedBox(height: 2),
-                        Text(
-                          '면접 준비',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                // 지원하기 버튼
-                Expanded(
-                  child: SizedBox(
-                    height: 50,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            isButtonDisabled ? Colors.grey : kBrand,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                      onPressed:
-                          isButtonDisabled
-                              ? null
+                        onPressed:
+                            isButtonDisabled
+                                ? null
+                                : hasExternalApply
+                                ? _openExternalApplyPage
+                                : _applyToJob,
+                        child: Text(
+                          isClosed
+                              ? '마감된 공고'
                               : hasExternalApply
-                              ? _openExternalApplyPage
-                              : _applyToJob,
-                      child: Text(
-                        isClosed
-                            ? '마감된 공고'
-                            : hasExternalApply
-                            ? ((widget.job.externalApplyLabel
-                                        ?.trim()
-                                        .isNotEmpty ??
-                                    false)
-                                ? widget.job.externalApplyLabel!.trim()
-                                : '자세히 보고 신청하기')
-                            : hasApplied
-                            ? '지원 완료'
-                            : isBlocked
-                            ? '차단된 기업'
-                            : isSuspended
-                            ? '정지된 계정'
-                            : isAgency
-                            ? '앱으로 지원'
-                            : '지원하고 채팅 시작',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
+                              ? ((widget.job.externalApplyLabel
+                                          ?.trim()
+                                          .isNotEmpty ??
+                                      false)
+                                  ? widget.job.externalApplyLabel!.trim()
+                                  : '자세히 보고 신청하기')
+                              : hasApplied
+                              ? '지원 완료'
+                              : isBlocked
+                              ? '차단된 기업'
+                              : isSuspended
+                              ? '정지된 계정'
+                              : isAgency
+                              ? '앱으로 지원'
+                              : '지원하고 채팅 시작',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                          ),
                         ),
                       ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (hasExternalApply) ...[
-              const SizedBox(height: 8),
-              const Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.open_in_new_rounded,
-                    size: 14,
-                    color: AppColors.textSecondary,
-                  ),
-                  SizedBox(width: 4),
-                  Text(
-                    '외부 페이지로 이동합니다',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textSecondary,
                     ),
                   ),
                 ],
               ),
+              if (hasExternalApply) ...[
+                const SizedBox(height: 8),
+                const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.open_in_new_rounded,
+                      size: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      '외부 페이지로 이동합니다',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
@@ -1204,10 +1205,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color:
-            isButtonDisabled
-                ? AppColors.bgMuted
-                : const Color(0xFFE7F0FF),
+        color: isButtonDisabled ? AppColors.bgMuted : const Color(0xFFE7F0FF),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -1403,15 +1401,16 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
         title: const Text('공고 상세'),
         centerTitle: false,
         actions: [
           if (_shouldShowReportButton())
             IconButton(
               tooltip: '신고',
-              icon: const Icon(Icons.report, color: AppColors.error),
+              icon: const Icon(
+                Icons.flag_outlined,
+                color: AppColors.textSecondary,
+              ),
               onPressed: () => _showReportDialog(),
             ),
         ],
@@ -1466,48 +1465,22 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       ),
                     ),
 
-                  const SizedBox(height: 12),
-
-                  // 🔹 상단 헤더 카드 (카테고리, 제목, 요약)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildHeaderCard(postedLabel, postedUtc),
-                  ),
-
-                  const SizedBox(height: 16),
-                  // 🔹 위치 섹션
-                  if (widget.job.lat != 0 && widget.job.lng != 0)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 4,
-                      ),
+                  // 섹션은 화면 끝까지 흰 면, 사이는 8px 회색 띠 (리디자인 2026-10)
+                  _buildHeaderCard(postedLabel, postedUtc),
+                  const SizedBox(height: 8),
+                  if (widget.job.lat != 0 && widget.job.lng != 0) ...[
+                    Container(
+                      color: AppColors.bgCard,
+                      padding: const EdgeInsets.all(20),
                       child: _buildLocationSection(),
                     ),
-
-                  const SizedBox(height: 16),
-                  // 🔹 근무 정보 + 설명
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildJobCoreSection(),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // 🔹 조회수/북마크/지원자 통계
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildStatsSection(),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  // 🔹 기업 카드 + 리뷰 요약
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildClientSection(),
-                  ),
-
+                    const SizedBox(height: 8),
+                  ],
+                  _buildJobCoreSection(),
+                  const SizedBox(height: 8),
+                  _buildStatsSection(),
+                  const SizedBox(height: 8),
+                  _buildClientSection(),
                   const SizedBox(height: 16),
 
                   // 🔹 광고 배너 (원더 제휴)
@@ -1521,154 +1494,94 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     );
   }
 
+  /// 상단 요약. 급구식 순서: 뱃지 → 제목 → **급여(가장 크게)** → 일정·시간·거리·지원자 줄.
+  /// 예전엔 색 아이콘 2×2 타일(JobMetaSection)과 아래 '근무 정보'가 같은 값을 두 번 보여줬다.
   Widget _buildHeaderCard(String postedLabel, DateTime? postedUtc) {
+    final job = widget.job;
+    final negotiable = isNegotiablePayType(job.payType);
+    final hours =
+        job.workingHours.replaceAll('~', '').trim().isEmpty
+            ? null
+            : job.workingHours;
+    final badges = <Widget>[
+      if (job.category.trim().isNotEmpty) JobSignalBadge(label: job.category),
+      if (job.isUrgent)
+        const JobSignalBadge(
+          label: '긴급',
+          signal: JobSignal.time,
+          icon: Icons.bolt_rounded,
+        ),
+      if (job.isSameDayPay == true)
+        const JobSignalBadge(label: '당일지급', signal: JobSignal.money),
+      if (job.isCertifiedCompany)
+        const JobSignalBadge(label: '인증업체', signal: JobSignal.trust),
+    ];
+
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        boxShadow: AppShadows.card,
-      ),
+      width: double.infinity,
+      color: AppColors.bgCard,
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 🔹 상단 작은 라벨들
-          Wrap(
-            spacing: 7,
-            runSpacing: 7,
-            children: [
-              _headerTag(
-                '내 근처 단기 알바',
-                background: AppColors.primaryLight,
-                foreground: AppColors.primary,
-              ),
-              if (widget.job.category.trim().isNotEmpty)
-                _headerTag(
-                  widget.job.category,
-                  background: AppColors.bgMuted,
-                  foreground: AppColors.textSecondary,
-                ),
-              // 당일지급은 '돈' 신호 — 초록 계열이 맞다 (DESIGN.md The Two-Signal Rule).
-              // 주황은 시간이 급하다는 뜻이라 여기 쓰면 의미가 어긋난다.
-              if (widget.job.isSameDayPay == true)
-                _headerTag(
-                  '당일지급',
-                  background: AppColors.badgeSameDay.withValues(alpha: 0.12),
-                  foreground: AppColors.badgeSameDay,
-                ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // 🔹 제목은 전체 폭을 사용해서 긴 공고도 자연스럽게 줄바꿈
+          if (badges.isNotEmpty) ...[
+            Wrap(spacing: 6, runSpacing: 6, children: badges),
+            const SizedBox(height: 10),
+          ],
           Text(
-            widget.job.title,
+            job.title,
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 18,
-              height: 1.32,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'Jalnan2TTF',
-              color: AppColors.textSecondary,
-            ),
+            style: AppTextStyles.h2,
           ),
-
-          const SizedBox(height: 8),
-
-          // 🔹 여기 안에 2x2 메타 카드 네 개 넣기
-          JobMetaSection(job: widget.job),
-
-          const SizedBox(height: 10),
-          _buildHeaderSignals(),
-
-          const SizedBox(height: 10),
-
-          // 🔹 게시일
+          const SizedBox(height: 14),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                postedLabel,
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
+                formatJobPay(job.pay, job.payType),
+                style:
+                    negotiable
+                        ? AppTextStyles.h3.copyWith(
+                          color: AppColors.textSecondary,
+                        )
+                        : AppTextStyles.jobPayDisplay,
               ),
-              const SizedBox(width: 6),
-              Text(
-                postedUtc != null
-                    ? DateFormat('yyyy-MM-dd HH:mm').format(postedUtc.toLocal())
-                    : '-',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
-                ),
-              ),
+              if (!negotiable && job.payType.isNotEmpty) ...[
+                const SizedBox(width: 6),
+                Text(job.payType, style: AppTextStyles.jobPayUnit),
+              ],
             ],
+          ),
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 14),
+          _factRow(Icons.calendar_today_outlined, _getWorkingPeriodText(job)),
+          if (hours != null) _factRow(Icons.schedule_outlined, hours),
+          _factRow(Icons.near_me_outlined, _distanceOrLocationText()),
+          _factRow(Icons.groups_outlined, _applicantSummaryText()),
+          const SizedBox(height: 2),
+          Text(
+            '$postedLabel ${postedUtc != null ? DateFormat('yyyy-MM-dd HH:mm').format(postedUtc.toLocal()) : '-'}',
+            style: AppTextStyles.caption,
           ),
         ],
       ),
     );
   }
 
-  Widget _headerTag(
-    String text, {
-    required Color background,
-    required Color foreground,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        text,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          fontSize: 11,
-          fontWeight: FontWeight.w700,
-          color: foreground,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderSignals() {
-    return Wrap(
-      spacing: 7,
-      runSpacing: 7,
-      children: [
-        if (widget.job.isCertifiedCompany)
-          _subtleSignalChip(Icons.verified_rounded, '인증업체'),
-        if (widget.job.isUrgent)
-          _subtleSignalChip(Icons.flash_on_rounded, '긴급공고'),
-        _subtleSignalChip(Icons.near_me_rounded, _distanceOrLocationText()),
-        _subtleSignalChip(Icons.groups_rounded, _applicantSummaryText()),
-      ],
-    );
-  }
-
-  Widget _subtleSignalChip(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.bgPage,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.border),
-      ),
+  Widget _factRow(IconData icon, String text) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: AppColors.textSecondary),
-          const SizedBox(width: 4),
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: 11.5,
-              fontWeight: FontWeight.w700,
-              color: AppColors.textSecondary,
+          Icon(icon, size: 18, color: AppColors.textTertiary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -1686,37 +1599,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             : '상세 설명이 많이 적혀 있지 않아요.\n궁금한 점은 채팅으로 바로 물어보면 좋아요 👀';
 
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
+      padding: const EdgeInsets.all(20),
+      color: AppColors.bgCard,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '근무 정보',
-            style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
-          ),
-          const SizedBox(height: 12),
-          _infoRow(
-            Icons.monetization_on,
-            formatJobPay(widget.job.pay, widget.job.payType, includeType: true),
-          ),
-          const SizedBox(height: 8),
-          _infoRow(Icons.calendar_today, _getWorkingPeriodText(widget.job)),
-          const SizedBox(height: 8),
-          _infoRow(Icons.access_time, widget.job.workingHours),
-          const SizedBox(height: 16),
-          const Divider(height: 1),
-          const SizedBox(height: 12),
-          const Text(
-            '상세 설명',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-          ),
-          const SizedBox(height: 8),
-          Text(description, style: const TextStyle(fontSize: 14, height: 1.6)),
+          const Text('상세 설명', style: AppTextStyles.h3),
+          const SizedBox(height: 10),
+          Text(description, style: AppTextStyles.body1.copyWith(height: 1.65)),
         ],
       ),
     );
@@ -1728,11 +1618,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
+      decoration: BoxDecoration(color: Colors.white),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2192,11 +2078,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               }
               : null,
       child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-        ),
+        decoration: BoxDecoration(color: Colors.white),
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2572,4 +2454,3 @@ class _MapWithSafeMarkerState extends State<MapWithSafeMarker> {
     );
   }
 }
-

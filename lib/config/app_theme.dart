@@ -190,6 +190,12 @@ class AppTextStyles {
     color: AppColors.textPrimary, height: 1.1, letterSpacing: -0.5,
     fontFeatures: [FontFeature.tabularFigures()],
   );
+  /// 공고 상세 급여 — C안의 큰 숫자는 상세에서만 쓴다
+  static const jobPayDisplay = TextStyle(
+    fontSize: 28, fontWeight: FontWeight.w800,
+    color: AppColors.textPrimary, height: 1.1, letterSpacing: -0.8,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
   static const jobPayUnit = TextStyle(
     fontSize: 12, fontWeight: FontWeight.w700,
     color: AppColors.textSecondary,

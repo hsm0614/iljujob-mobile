@@ -57,12 +57,13 @@ class JobListTile extends StatelessWidget {
                 children: [
                   Text(
                     pay,
-                    style: negotiablePay
-                        ? AppTextStyles.body1.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textSecondary,
-                          )
-                        : AppTextStyles.jobPayHero,
+                    style:
+                        negotiablePay
+                            ? AppTextStyles.body1.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textSecondary,
+                            )
+                            : AppTextStyles.jobPayHero,
                   ),
                   if (payType.isNotEmpty && !negotiablePay) ...[
                     const SizedBox(width: 5),
@@ -100,8 +101,14 @@ class JobListTile extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         if (schedule != null)
-                          _MetaLine(icon: Icons.schedule_outlined, text: schedule!),
-                        _MetaLine(icon: Icons.location_on_outlined, text: location),
+                          _MetaLine(
+                            icon: Icons.schedule_outlined,
+                            text: schedule!,
+                          ),
+                        _MetaLine(
+                          icon: Icons.location_on_outlined,
+                          text: location,
+                        ),
                         if (note != null) ...[
                           const SizedBox(height: 6),
                           Text(
@@ -137,9 +144,10 @@ class JobListTile extends StatelessWidget {
                           ? Icons.favorite_rounded
                           : Icons.favorite_border_rounded,
                       size: 20,
-                      color: isBookmarked
-                          ? AppColors.badgeNew
-                          : AppColors.textTertiary,
+                      color:
+                          isBookmarked
+                              ? AppColors.badgeNew
+                              : AppColors.textTertiary,
                     ),
                   ),
                 ],
