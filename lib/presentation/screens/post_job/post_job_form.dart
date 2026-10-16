@@ -931,7 +931,7 @@ class _PostJobFormState extends State<PostJobForm>
                           isUrgent
                               ? const Color(0xFFFFEBEB)
                               : isDelayed
-                              ? const Color(0xFFFFF3E0)
+                              ? AppColors.warningLight
                               : AppColors.primaryLight,
                       borderRadius: BorderRadius.circular(20),
                     ),
@@ -2069,7 +2069,7 @@ class _PostJobFormState extends State<PostJobForm>
                                               color:
                                                   sel
                                                       ? _blue
-                                                      : const Color(0xFFDDE3EC),
+                                                      : AppColors.border,
                                               width: sel ? 0 : 1,
                                             ),
                                             boxShadow:
@@ -3391,7 +3391,7 @@ class _PostJobFormState extends State<PostJobForm>
                   border: Border.all(
                     color:
                         _subscriptionPlan != null
-                            ? const Color(0xFF93C5FD)
+                            ? AppColors.primaryMid
                             : AppColors.textDisabled,
                   ),
                 ),
@@ -4386,7 +4386,7 @@ class _ExternalApplyOption extends StatelessWidget {
                 hintText: 'https://example.com/apply',
                 hintStyle: const TextStyle(
                   fontSize: 13,
-                  color: Color(0xFFBCC0C8),
+                  color: AppColors.textTertiary,
                 ),
                 prefixIcon: const Icon(
                   Icons.link_rounded,
@@ -5237,7 +5237,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                   decoration: BoxDecoration(
                     color: AppColors.primaryLight,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFD8E8FF)),
+                    border: Border.all(color: AppColors.primaryMid),
                   ),
                   child: const Row(
                     children: [
@@ -5705,7 +5705,7 @@ class _CompareRow extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
     decoration: BoxDecoration(
-      color: highlight ? const Color(0xFFF8FAFF) : Colors.white,
+      color: highlight ? AppColors.bgMuted : Colors.white,
       border: const Border(top: BorderSide(color: _border, width: 0.5)),
     ),
     child: Row(

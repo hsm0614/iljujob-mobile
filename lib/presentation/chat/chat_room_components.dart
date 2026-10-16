@@ -41,7 +41,7 @@ class CancelApplicationDialog extends StatelessWidget {
                   ),
                   child: const Icon(
                     Icons.warning_rounded,
-                    color: Color(0xFFE53935),
+                    color: AppColors.error,
                     size: 20,
                   ),
                 ),
@@ -113,7 +113,7 @@ class CancelApplicationDialog extends StatelessWidget {
                   height: 44,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFE53935),
+                      backgroundColor: AppColors.error,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(999),
@@ -254,23 +254,23 @@ class AlbailjuChatAppBarTitle extends StatelessWidget {
     if (isPending) {
       chipText = '대기중';
       chipBg = const Color(0xFFFFF3E0);
-      chipFg = const Color(0xFFE65100);
+      chipFg = AppColors.warningDark;
     } else if (isCancelled) {
       chipText = '취소됨';
       chipBg = const Color(0xFFFFEBEE);
-      chipFg = const Color(0xFFC62828);
+      chipFg = AppColors.error;
     } else if (isBlocked) {
       chipText = '차단됨';
       chipBg = const Color(0xFFFFEBEE);
-      chipFg = const Color(0xFFC62828);
+      chipFg = AppColors.error;
     } else if (isActive) {
       chipText = '채팅중';
       chipBg = const Color(0xFFE8F5E9);
-      chipFg = const Color(0xFF2E7D32);
+      chipFg = AppColors.badgeSameDay;
     } else {
       chipText = '알바일주';
-      chipBg = const Color(0xFFF5F5F5);
-      chipFg = const Color(0xFF757575);
+      chipBg = AppColors.bgMuted;
+      chipFg = AppColors.textSecondary;
     }
 
     return Row(
@@ -322,7 +322,7 @@ class AlbailjuChatAppBarTitle extends StatelessWidget {
                   fontFamily: 'Jalnan2TTF',
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF0D0D0D),
+                  color: AppColors.textPrimary,
                   height: 1.1,
                 ),
               ),
@@ -333,7 +333,7 @@ class AlbailjuChatAppBarTitle extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 11,
-                    color: Color(0xFF9E9E9E),
+                    color: AppColors.textTertiary,
                     fontWeight: FontWeight.w400,
                     height: 1.2,
                   ),

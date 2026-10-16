@@ -64,7 +64,7 @@ class EditJobScreen extends StatefulWidget {
 class _EditJobScreenState extends State<EditJobScreen> {
   // ===== Brand =====
   static const Color brandBlue = AppColors.primary;
-  static const Color cardBg = Color(0xFFF7F9FF);
+  static const Color cardBg = AppColors.bgMuted;
   static const int minWagePerHour = 10320; // 2026년 적용
 
   final _formKey = GlobalKey<FormState>();
@@ -407,7 +407,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF4F7FF),
+                        color: AppColors.bgMuted,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
@@ -940,7 +940,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
       suffixIcon: suffix,
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
-        borderSide: const BorderSide(color: Color(0xFFE6E8EC)),
+        borderSide: const BorderSide(color: AppColors.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(16),
@@ -1262,7 +1262,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE6E8EC)),
+          border: Border.all(color: AppColors.border),
         ),
         child: Row(
           children: [
@@ -1573,14 +1573,14 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                     color: AppColors.primaryLight,
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: const Color(0xFFD6E7FF),
+                                      color: AppColors.primaryMid,
                                     ),
                                   ),
                                   child: const Text(
                                     '금액은 공고에 급여 협의로 표시됩니다.',
                                     style: TextStyle(
                                       fontSize: 13,
-                                      color: Color(0xFF4E5968),
+                                      color: AppColors.textSecondary,
                                     ),
                                   ),
                                 )

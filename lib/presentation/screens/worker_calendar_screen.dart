@@ -955,8 +955,8 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                               : const Color(0xFFDCFCE7),
                       fg:
                           overdue > 0
-                              ? const Color(0xFF9A3412)
-                              : const Color(0xFF166534),
+                              ? AppColors.warningDark
+                              : AppColors.badgeSameDay,
                     ),
                   ),
               ],
@@ -969,7 +969,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                 minHeight: 8,
                 backgroundColor: AppColors.border,
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  overdue > 0 ? const Color(0xFFF97316) : kBrandBlue,
+                  overdue > 0 ? AppColors.badgeUrgent : kBrandBlue,
                 ),
               ),
             ),
@@ -1035,7 +1035,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                 children: const [
                   Icon(
                     Icons.info_outline_rounded,
-                    color: Color(0xFFF97316),
+                    color: AppColors.badgeUrgent,
                     size: 16,
                   ),
                   SizedBox(width: 6),
@@ -1045,7 +1045,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                       style: TextStyle(
                         fontSize: 11,
                         height: 1.35,
-                        color: Color(0xFF9A3412),
+                        color: AppColors.warningDark,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -1136,7 +1136,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
             final showAmount = scheduled > 0 ? scheduled : completed;
             final markerColor =
                 completed > 0 && scheduled == 0
-                    ? const Color(0xFF16A34A)
+                    ? AppColors.badgeSameDay
                     : kBrandBlue;
             final isSelected = isSameDay(day, _selectedDay);
 
@@ -1263,7 +1263,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
             : AppColors.primaryLight;
     final badgeFg =
         completed
-            ? const Color(0xFF166534)
+            ? AppColors.badgeSameDay
             : cancelled
             ? AppColors.textSecondary
             : kBrandBlue;
@@ -1410,7 +1410,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                     _actionBtn(
                       icon: Icons.check_circle_outline_rounded,
                       label: '완료',
-                      color: const Color(0xFF16A34A),
+                      color: AppColors.badgeSameDay,
                       onTap: () => _markCompleted(it),
                     ),
                   if (!isJob && !completed && !cancelled)
@@ -1553,7 +1553,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                 '완료',
                 completedCount,
                 completed,
-                const Color(0xFF16A34A),
+                AppColors.badgeSameDay,
               ),
               const Divider(height: 20),
               _summaryRow(
@@ -1577,7 +1577,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                     children: const [
                       Icon(
                         Icons.info_outline_rounded,
-                        color: Color(0xFFF97316),
+                        color: AppColors.badgeUrgent,
                         size: 17,
                       ),
                       SizedBox(width: 8),
@@ -1586,7 +1586,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                           '확인 필요 = 날짜가 지났는데 아직 완료 처리가 안 된 근무예요.\n실제로 일했다면 아래 목록에서 완료 버튼을 눌러주세요.',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Color(0xFF9A3412),
+                            color: AppColors.warningDark,
                             height: 1.45,
                             fontWeight: FontWeight.w700,
                           ),
@@ -1675,13 +1675,13 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.warning_amber_rounded, color: Color(0xFF9A3412)),
+          const Icon(Icons.warning_amber_rounded, color: AppColors.warningDark),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
               style: const TextStyle(
-                color: Color(0xFF9A3412),
+                color: AppColors.warningDark,
                 fontSize: 12,
                 fontWeight: FontWeight.w900,
               ),
@@ -2288,7 +2288,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
         isCompleted
             ? const Color(0xFFDCFCE7)
             : widget.brandBlue.withOpacity(0.12);
-    final badgeFg = isCompleted ? const Color(0xFF166534) : widget.brandBlue;
+    final badgeFg = isCompleted ? AppColors.badgeSameDay : widget.brandBlue;
 
     return DraggableScrollableSheet(
       expand: false,
@@ -2570,7 +2570,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                         Expanded(
                           child: OutlinedButton(
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFB91C1C),
+                              foregroundColor: AppColors.error,
                               side: const BorderSide(color: Color(0xFFFCA5A5)),
                               padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(

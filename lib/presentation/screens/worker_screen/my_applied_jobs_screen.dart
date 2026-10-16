@@ -589,7 +589,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
               size: 20,
             ),
             hintText: '제목 또는 지역으로 검색',
-            hintStyle: TextStyle(color: Color(0xFFB0B8C1), fontSize: 14),
+            hintStyle: TextStyle(color: AppColors.textTertiary, fontSize: 14),
             border: InputBorder.none,
             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             isDense: true,
@@ -638,7 +638,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: selected ? kBrandBlue : const Color(0xFFE7ECF3),
+                        color: selected ? kBrandBlue : AppColors.border,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
@@ -675,7 +675,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
             tabItem(idx: 1, title: '찜한 공고', count: filteredBookmarked.length),
           ],
         ),
-        Container(height: 1, color: const Color(0xFFE7E7E7)),
+        Container(height: 1, color: AppColors.border),
       ],
     );
   }
@@ -764,7 +764,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE8EDF3)),
+            border: Border.all(color: AppColors.border),
           ),
           child: Row(
             children: [
@@ -916,7 +916,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
               (_, __, ___) => Container(
                 width: 74,
                 height: 74,
-                color: const Color(0xFFF2F4F7),
+                color: AppColors.bgMuted,
                 child: const Icon(
                   Icons.image_not_supported_outlined,
                   color: AppColors.textTertiary,

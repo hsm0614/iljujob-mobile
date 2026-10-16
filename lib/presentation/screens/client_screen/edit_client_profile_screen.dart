@@ -619,7 +619,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
     switch (certStatus) {
       case 'approved':
         text = '안심기업으로 승인되었어요. 공고에 «안심기업» 표시가 붙습니다.';
-        fg = const Color(0xFF4D7C0F);
+        fg = AppColors.badgeSafe;
         bg = const Color(0xFFF3F8EC);
         break;
       case 'pending':
@@ -631,7 +631,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         text = certRejectReason.isNotEmpty
             ? '승인되지 않았어요. 사유: $certRejectReason\n서류를 다시 올리면 재심사합니다.'
             : '승인되지 않았어요. 서류를 다시 올리면 재심사합니다.';
-        fg = const Color(0xFF9A3412);
+        fg = AppColors.warningDark;
         bg = const Color(0xFFFEF3EC);
         break;
       default:
@@ -748,7 +748,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                 label: const Text('기존 파일 열기'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: kBrand,
-                  side: const BorderSide(color: Color(0xFFD1E3FF)),
+                  side: const BorderSide(color: AppColors.primaryMid),
                   backgroundColor: AppColors.primaryLight,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
