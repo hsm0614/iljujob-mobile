@@ -539,7 +539,7 @@ Future<void> _handleInitialMessage(
       final homeWithChatTab =
           userType == 'client'
               ? const ClientMainScreen(initialTabIndex: 3)
-              : const HomeScreen(initialTabIndex: 2); // 구직자 채팅 탭
+              : const HomeScreen(initialTabIndex: 3);
       navigator.push(MaterialPageRoute(builder: (_) => homeWithChatTab));
       // 상세 조회로 연다 — 푸시 데이터만으로 만든 jobInfo 엔 먼저 연락 수락 버튼 정보가 없다.
       await _handleChatNotification(initialMessage);

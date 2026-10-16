@@ -15,7 +15,6 @@ import '../../chat/chat_room_screen.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import '../../../config/messages.dart';
 import '../../widgets/albailju_common.dart';
-import '../worker_calendar_screen.dart';
 
 const kBrandBlue = AppColors.primary;
 
@@ -1182,18 +1181,6 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
           title: '내 활동',
           brand: true,
           actions: [
-            // 하단 탭을 4개로 줄이면서 정산 달력은 여기서 연다
-            IconButton(
-              tooltip: '정산 달력',
-              icon: const Icon(Icons.calendar_month_outlined),
-              onPressed:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const WorkerCalendarScreen(),
-                    ),
-                  ),
-            ),
             IconButton(
               tooltip: '새로고침',
               icon: const Icon(Icons.refresh_rounded),

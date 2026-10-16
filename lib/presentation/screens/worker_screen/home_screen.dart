@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../worker_calendar_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -21,15 +22,15 @@ import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 
 class HomeScreen extends StatefulWidget {
   final int initialTabIndex;
-  // 탭 순서: 0 홈 · 1 내 활동 · 2 채팅 · 3 마이 (2026-10 리디자인, 캘린더는 내 활동 안으로)
-  const HomeScreen({super.key, this.initialTabIndex = 0});
+  // 탭 순서: 0 캘린더 · 1 내 활동 · 2 홈 · 3 채팅 · 4 마이 (4탭 시도 후 롤백 2026-10-16)
+  const HomeScreen({super.key, this.initialTabIndex = 2});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 2;
   int unreadCount = 0;
   String userPhone = '';
   String userType = 'worker';
@@ -61,7 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _maybeShowPromoIfHomeTab() async {
-    if (_selectedIndex != 0) return;
+    if (_selectedIndex != 2) return;
     if (_promoShownThisSession) return;
     if (!mounted) return;
     final promo = await promoService.fetchPromo(
@@ -305,13 +306,14 @@ class _HomeScreenState extends State<HomeScreen> {
   // ─────────────────────────────────────────────
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
-    if (index == 0) _maybeShowPromoIfHomeTab();
+    if (index == 2) _maybeShowPromoIfHomeTab();
   }
 
   List<Widget> _buildScreens() {
     return [
-      HomeMainScreen(onAiRecommend: _openRecommendSheet),
+      const WorkerCalendarScreen(),
       const MyAppliedJobsScreen(),
+      HomeMainScreen(onAiRecommend: _openRecommendSheet),
       ChatListScreen(onMessagesRead: _fetchUnreadCount),
       const WorkerMyPageScreen(),
     ];
@@ -342,9 +344,9 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               _navItem(
                 index: 0,
-                icon: Icons.home_outlined,
-                activeIcon: Icons.home_rounded,
-                label: '홈',
+                icon: Icons.calendar_month_outlined,
+                activeIcon: Icons.calendar_month_rounded,
+                label: '캘린더',
               ),
               _navItem(
                 index: 1,
@@ -352,9 +354,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 activeIcon: Icons.format_list_bulleted_rounded,
                 label: '내 활동',
               ),
+              _navItem(
+                index: 2,
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home_rounded,
+                label: '홈',
+              ),
               _navItemChat(),
               _navItem(
-                index: 3,
+                index: 4,
                 icon: Icons.person_outline_rounded,
                 activeIcon: Icons.person_rounded,
                 label: '마이',
@@ -385,13 +393,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 채팅 탭 (뱃지 포함)
   Widget _navItemChat() {
-    final isActive = _selectedIndex == 2;
+    final isActive = _selectedIndex == 3;
     return AppBottomNavItem(
       isActive: isActive,
       icon: Icons.chat_bubble_outline_rounded,
       activeIcon: Icons.chat_bubble_rounded,
       label: '채팅',
-      onTap: () => _onItemTapped(2),
+      onTap: () => _onItemTapped(3),
       badgeLabel:
           unreadCount > 0 ? (unreadCount > 99 ? '99+' : '$unreadCount') : null,
     );
