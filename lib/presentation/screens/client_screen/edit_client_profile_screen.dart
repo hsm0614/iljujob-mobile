@@ -530,7 +530,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
             children: [
               CircleAvatar(
                 radius: 34,
-                backgroundColor: const Color(0xFFEAF2FF),
+                backgroundColor: AppColors.primaryLight,
                 backgroundImage: imgProvider as ImageProvider?,
                 child:
                     (imgProvider == null)
@@ -599,7 +599,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
             onPressed: _pickLogoImage,
             icon: const Icon(Icons.photo_camera_back_outlined),
             style: IconButton.styleFrom(
-              backgroundColor: const Color(0xFFEAF2FF),
+              backgroundColor: AppColors.primaryLight,
               foregroundColor: kBrand,
             ),
           ),
@@ -623,8 +623,8 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         break;
       case 'pending':
         text = '서류를 검토하고 있어요. 결과는 알림으로 알려드립니다.';
-        fg = const Color(0xFF6B7280);
-        bg = const Color(0xFFF3F4F6);
+        fg = AppColors.textSecondary;
+        bg = AppColors.bgMuted;
         break;
       case 'rejected':
         text = certRejectReason.isNotEmpty
@@ -635,8 +635,8 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         break;
       default:
         text = '사업자등록증을 올리면 관리자 검토 후 «안심기업» 표시가 적용됩니다.';
-        fg = const Color(0xFF6B7280);
-        bg = const Color(0xFFF3F4F6);
+        fg = AppColors.textSecondary;
+        bg = AppColors.bgMuted;
     }
 
     return Container(
@@ -748,7 +748,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: kBrand,
                   side: const BorderSide(color: Color(0xFFD1E3FF)),
-                  backgroundColor: const Color(0xFFEAF2FF),
+                  backgroundColor: AppColors.primaryLight,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -767,7 +767,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                 label: const Text('선택 해제'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.black54,
-                  side: BorderSide(color: Colors.grey.shade300),
+                  side: BorderSide(color: AppColors.textDisabled),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -886,7 +886,7 @@ class _LabeledField extends StatelessWidget {
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderSide: BorderSide(color: AppColors.textDisabled),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),

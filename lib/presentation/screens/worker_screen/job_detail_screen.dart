@@ -707,7 +707,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE7F0FF),
+                    color: AppColors.primaryLight,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Row(
@@ -1205,7 +1205,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: isButtonDisabled ? AppColors.bgMuted : const Color(0xFFE7F0FF),
+        color: isButtonDisabled ? AppColors.bgMuted : AppColors.primaryLight,
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -1358,9 +1358,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         const SizedBox(height: 6),
         _buildProgressRow('추천해요', satisfaction['recommend'], Colors.orange),
         const SizedBox(height: 6),
-        _buildProgressRow('만족해요', satisfaction['okay'], Colors.grey),
+        _buildProgressRow('만족해요', satisfaction['okay'], AppColors.textTertiary),
         const SizedBox(height: 6),
-        _buildProgressRow('아쉬워요', satisfaction['bad'], Colors.grey[400]!),
+        _buildProgressRow('아쉬워요', satisfaction['bad'], AppColors.textDisabled),
       ],
     );
   }
@@ -1380,7 +1380,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           child: LinearProgressIndicator(
             value: percent,
             color: color,
-            backgroundColor: Colors.grey[200],
+            backgroundColor: AppColors.border,
             minHeight: 10,
           ),
         ),
@@ -1635,7 +1635,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE7F0FF),
+                  color: AppColors.primaryLight,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -1656,7 +1656,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             children: [
               _statItem(
                 icon: Icons.remove_red_eye,
-                iconColor: Colors.grey,
+                iconColor: AppColors.textTertiary,
                 label: '열람',
                 valueText: _formatCount(viewCount),
               ),
@@ -2036,7 +2036,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.place, size: 16, color: Colors.grey),
+                        const Icon(Icons.place, size: 16, color: AppColors.textTertiary),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
@@ -2104,7 +2104,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     child:
                         (clientProfile == null ||
                                 clientProfile!['logo_url'] == null)
-                            ? const Icon(Icons.business, color: Colors.grey)
+                            ? const Icon(Icons.business, color: AppColors.textTertiary)
                             : null,
                   ),
                 ),
@@ -2187,7 +2187,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                         Icon(
                           Icons.arrow_forward_ios,
                           size: 12,
-                          color: Colors.grey,
+                          color: AppColors.textTertiary,
                         ),
                       ],
                     ),

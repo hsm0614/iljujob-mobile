@@ -175,7 +175,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                         '필수 정보를 입력하고 프로필을 완성해주세요!',
                         style: TextStyle(
                           fontSize: 15,
-                          color: Color(0xFF1F2937),
+                          color: AppColors.textPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

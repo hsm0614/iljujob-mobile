@@ -152,7 +152,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                   decoration: InputDecoration(
                     hintText: '예: 오늘 18시부터 가능하신 분을 찾고 있어요. 시급 우대합니다.',
                     filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
+                    fillColor: AppColors.bgMuted,
                     contentPadding: const EdgeInsets.all(14),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -446,7 +446,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
             decoration: BoxDecoration(
               color:
                   alreadySent
-                      ? const Color(0xFFF9FAFB)
+                      ? AppColors.bgMuted
                       : isSelected
                       ? AppColors.primary.withValues(alpha: 0.06)
                       : Colors.white,

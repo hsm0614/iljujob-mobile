@@ -135,7 +135,7 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
                         leading: const Icon(
                           Icons.work_outline,
                           size: 32,
-                          color: Colors.grey,
+                          color: AppColors.textTertiary,
                         ),
                         title: Text(
                           job.title,
@@ -193,7 +193,7 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
       padding: const EdgeInsets.only(top: 2),
       child: Row(
         children: [
-          Icon(icon, size: 13, color: Colors.grey),
+          Icon(icon, size: 13, color: AppColors.textTertiary),
           const SizedBox(width: 4),
           Expanded(child: Text(text)),
         ],

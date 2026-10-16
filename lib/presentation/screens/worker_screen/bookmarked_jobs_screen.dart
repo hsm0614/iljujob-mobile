@@ -14,7 +14,7 @@ import '../../../config/messages.dart';
 
 const kBrand = AppColors.primary;
 const kBorder = Color(0xFFE2E7EF);
-const kBg = Color(0xFFF7F9FC);
+const kBg = AppColors.bgMuted;
 
 /// ------------------------------------------------------------
 /// BookmarkedJobsScreen (refactor)
@@ -518,8 +518,8 @@ class _StatusBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isActive ? kBrand.withOpacity(0.12) : Colors.grey.shade300;
-    final txt = isActive ? kBrand : Colors.grey.shade800;
+    final bg = isActive ? kBrand.withOpacity(0.12) : AppColors.textDisabled;
+    final txt = isActive ? kBrand : AppColors.textPrimary;
     final icn = isActive ? Icons.flash_on : Icons.pause_circle_outline;
 
     return Container(
@@ -527,7 +527,7 @@ class _StatusBadge extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: isActive ? kBrand : Colors.grey.shade400),
+        border: Border.all(color: isActive ? kBrand : AppColors.textDisabled),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

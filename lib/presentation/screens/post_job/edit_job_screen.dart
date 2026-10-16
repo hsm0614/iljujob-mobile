@@ -1302,7 +1302,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
+                  color: AppColors.primaryLight,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: const Text(

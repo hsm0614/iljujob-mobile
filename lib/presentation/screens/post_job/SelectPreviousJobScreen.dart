@@ -143,9 +143,9 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: bgColor ?? const Color(0xFFEFF5FF),
+        color: bgColor ?? AppColors.primaryLight,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: const Color(0xFFDCEAFF)),
+        border: Border.all(color: AppColors.primaryMid),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -179,9 +179,9 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF5FF),
+                color: AppColors.primaryLight,
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(color: const Color(0xFFDCEAFF)),
+                border: Border.all(color: AppColors.primaryMid),
               ),
               child: const Icon(
                 Icons.work_outline,
@@ -208,7 +208,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
             OutlinedButton(
               style: OutlinedButton.styleFrom(
                 foregroundColor: brandBlueDark,
-                side: const BorderSide(color: Color(0xFFDCEAFF)),
+                side: const BorderSide(color: AppColors.primaryMid),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
                 ),
@@ -296,7 +296,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                       decoration: BoxDecoration(
                         color: AppColors.primaryLight,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFDCEAFF)),
+                        border: Border.all(color: AppColors.primaryMid),
                       ),
                       child: Icon(
                         widget.quickMode
@@ -385,10 +385,10 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                     gradient: const LinearGradient(
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
-                      colors: [Color(0xFFEFF5FF), Color(0xFFFFFFFF)],
+                      colors: [AppColors.primaryLight, AppColors.bgCard],
                     ),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFDCEAFF)),
+                    border: Border.all(color: AppColors.primaryMid),
                   ),
                   child: Row(
                     children: [

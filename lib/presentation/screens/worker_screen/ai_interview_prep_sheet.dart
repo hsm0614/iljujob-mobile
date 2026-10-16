@@ -139,7 +139,7 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: AppColors.textDisabled,
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
@@ -178,7 +178,7 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                         widget.jobTitle,
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade500,
+                          color: AppColors.textTertiary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -298,7 +298,7 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                     Icon(
                       Icons.info_outline,
                       size: 13,
-                      color: Colors.grey.shade400,
+                      color: AppColors.textDisabled,
                     ),
                     const SizedBox(width: 5),
                     Expanded(
@@ -306,7 +306,7 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                         'AI가 생성한 내용이에요. 실제 면접과 다를 수 있어요.',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey.shade400,
+                          color: AppColors.textDisabled,
                         ),
                       ),
                     ),

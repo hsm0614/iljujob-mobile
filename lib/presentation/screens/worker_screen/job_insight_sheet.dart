@@ -204,7 +204,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.error_outline, size: 40, color: Colors.grey),
+        const Icon(Icons.error_outline, size: 40, color: AppColors.textTertiary),
         const SizedBox(height: 12),
         Text(_error!, style: const TextStyle(color: AppColors.textSecondary)),
         const SizedBox(height: 16),
@@ -240,7 +240,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
               '조회수',
               '$views회',
               Icons.remove_red_eye_outlined,
-              Colors.grey,
+              AppColors.textTertiary,
             ),
             const SizedBox(width: 10),
             _statCard('지원자', '$applies명', Icons.people_outline, _blue),
@@ -390,7 +390,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
               ),
               Container(width: 1, height: 50, color: _border),
               Expanded(
-                child: _bigNumber('$avgApplicants명', '업종 평균 지원자', Colors.grey),
+                child: _bigNumber('$avgApplicants명', '업종 평균 지원자', AppColors.textTertiary),
               ),
             ],
           ),

@@ -301,7 +301,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: AppColors.bgMuted,
       appBar: AppBar(
         title: Text(_isEdit ? '경력 수정' : '경력 추가'),
         centerTitle: true,

@@ -160,7 +160,7 @@ class _RecommendedSectionState extends State<RecommendedSection> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
+            color: AppColors.bgMuted,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.black12),
           ),
@@ -362,7 +362,7 @@ class _ReasonChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF2FF),
+        color: AppColors.primaryLight,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppColors.primary.withOpacity(.22)),
       ),

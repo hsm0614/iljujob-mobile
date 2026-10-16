@@ -345,7 +345,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                 icon: isBlocked ? Icons.block_flipped : Icons.block,
                 label: isBlocked ? '해제' : '차단',
                 bg: Colors.white,
-                fg: isBlocked ? Colors.grey : Colors.black87,
+                fg: isBlocked ? AppColors.textTertiary : Colors.black87,
                 onTap: _toggleBlockStatus,
               ),
             ],
@@ -394,7 +394,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -443,7 +443,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -478,9 +478,9 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F9FC),
+        color: AppColors.bgMuted,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [

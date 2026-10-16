@@ -247,7 +247,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         decoration: InputDecoration(
                           hintText: '예) 설명이 친절했고 급여도 제때 주셨어요.',
                           filled: true,
-                          fillColor: const Color(0xFFF3F5F9),
+                          fillColor: AppColors.bgMuted,
                           contentPadding: const EdgeInsets.all(14),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
@@ -544,7 +544,7 @@ class _ChoiceWrap extends StatelessWidget {
                         ? brand.withOpacity(0.35)
                         : AppColors.border,
               ),
-              backgroundColor: const Color(0xFFF3F5F9),
+              backgroundColor: AppColors.bgMuted,
             );
           }).toList(),
     );
@@ -591,7 +591,7 @@ class _TagGroups extends StatelessWidget {
               side: BorderSide(
                 color: isOn ? brand.withOpacity(0.35) : AppColors.border,
               ),
-              backgroundColor: const Color(0xFFF3F5F9),
+              backgroundColor: AppColors.bgMuted,
               showCheckmark: false,
             );
           }).toList(),

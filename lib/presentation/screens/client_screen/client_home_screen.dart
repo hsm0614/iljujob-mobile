@@ -983,7 +983,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 4, 12, 0),
       child: Material(
-        color: const Color(0xFFEFF5FF),
+        color: AppColors.primaryLight,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -2176,7 +2176,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       vertical: 9,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFF7ED),
+                      color: AppColors.warningLight,
                       borderRadius: BorderRadius.circular(10),
                       border: Border.all(
                         color: AppColors.pending.withValues(alpha: 0.35),
@@ -2399,7 +2399,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         vertical: 10,
                       ),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF7ED),
+                        color: AppColors.warningLight,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
                           color: const Color(

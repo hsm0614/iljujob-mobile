@@ -20,7 +20,7 @@ class ClientMyPageScreen extends StatefulWidget {
 class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
   // ===== Branding =====
   static const Color brandBlue = AppColors.primary;
-  static const Color brandBlueLight = Color(0xFF6EB6FF);
+  static const Color brandBlueLight = AppColors.primary;
 
   // ===== Profile State =====
   String companyName = '회사명';
@@ -332,7 +332,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
                     gradient: LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [AppColors.primary, Color(0xFF6EB6FF)],
+                      colors: [AppColors.primary, AppColors.primary],
                     ),
                   ),
                   child: SafeArea(
@@ -577,7 +577,7 @@ class _ProfileCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 30,
-                backgroundColor: const Color(0xFFEAF2FF),
+                backgroundColor: AppColors.primaryLight,
                 backgroundImage: hasLogo ? NetworkImage(logoUrl) : null,
                 child:
                     hasLogo
@@ -603,7 +603,7 @@ class _ProfileCard extends StatelessWidget {
                         color: brandBlue,
                         shape: BoxShape.circle,
                         boxShadow: const [
-                          BoxShadow(color: Color(0xFFBCC0CB), blurRadius: 4),
+                          BoxShadow(color: AppColors.textTertiary, blurRadius: 4),
                         ],
                       ),
                       child: const Icon(
@@ -705,7 +705,7 @@ class _ProfileCard extends StatelessWidget {
                       icon: const Icon(Icons.arrow_forward_ios, size: 16),
                       label: const Text('프로필'),
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFEAF2FF),
+                        backgroundColor: AppColors.primaryLight,
                         foregroundColor: brandBlue,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 12,
@@ -779,7 +779,7 @@ class _ChipText extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: const Color(0xFFF1F6FF),
+          color: AppColors.primaryLight,
           borderRadius: BorderRadius.circular(999),
         ),
         child: Row(
@@ -991,7 +991,7 @@ class _StatusPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F6FF),
+        color: AppColors.primaryLight,
         borderRadius: BorderRadius.circular(999),
       ),
       child: Text(

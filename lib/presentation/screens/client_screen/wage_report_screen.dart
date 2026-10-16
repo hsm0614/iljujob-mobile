@@ -92,7 +92,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.wifi_off_rounded, size: 48, color: Colors.grey),
+          const Icon(Icons.wifi_off_rounded, size: 48, color: AppColors.textTertiary),
           const SizedBox(height: 12),
           Text(
             _error!,
@@ -117,7 +117,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
               width: 64,
               height: 64,
               decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
+                color: AppColors.primaryLight,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Icon(
@@ -200,7 +200,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  _statItem('전국평균', r.nationAvg, Colors.grey),
+                  _statItem('전국평균', r.nationAvg, AppColors.textTertiary),
                   _statItem('고지원율', r.highApply, Colors.purple),
                   _statItem(
                     '추천시급',
@@ -255,7 +255,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
                 style: const TextStyle(
                   fontSize: 14,
                   height: 1.6,
-                  color: Color(0xFF1F2937),
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],
@@ -559,7 +559,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
   }
 
   Color _percentileColor(int? pct) {
-    if (pct == null) return Colors.grey;
+    if (pct == null) return AppColors.textTertiary;
     if (pct >= 70) return Colors.green;
     if (pct >= 40) return AppColors.primary;
     return Colors.orange;

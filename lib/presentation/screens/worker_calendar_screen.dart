@@ -951,7 +951,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                       label: overdue > 0 ? '완료 처리 필요 $overdue건' : '정리 완료',
                       bg:
                           overdue > 0
-                              ? const Color(0xFFFFF7ED)
+                              ? AppColors.warningLight
                               : const Color(0xFFDCFCE7),
                       fg:
                           overdue > 0
@@ -1260,7 +1260,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
             ? const Color(0xFFDCFCE7)
             : cancelled
             ? AppColors.bgMuted
-            : const Color(0xFFEFF6FF);
+            : AppColors.primaryLight;
     final badgeFg =
         completed
             ? const Color(0xFF166534)
@@ -1305,7 +1305,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: const Color(0xFFEFF6FF),
+                        color: AppColors.primaryLight,
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Icon(
@@ -1568,9 +1568,9 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF7ED),
+                    color: AppColors.warningLight,
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: const Color(0xFFFED7AA)),
+                    border: Border.all(color: AppColors.warningBorder),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1669,9 +1669,9 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF7ED),
+        color: AppColors.warningLight,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFED7AA)),
+        border: Border.all(color: AppColors.warningBorder),
       ),
       child: Row(
         children: [

@@ -1885,7 +1885,7 @@ class _PostJobFormState extends State<PostJobForm>
                                 ? _blue
                                 : isOpen
                                 ? AppColors.primaryLight
-                                : const Color(0xFFF5F6F8),
+                                : AppColors.bgPage,
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
                           color:
@@ -1986,7 +1986,7 @@ class _PostJobFormState extends State<PostJobForm>
                         margin: const EdgeInsets.only(top: 10),
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF0F5FF),
+                          color: AppColors.primaryLight,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
                             color: _blue.withOpacity(0.12),
@@ -2911,7 +2911,7 @@ class _PostJobFormState extends State<PostJobForm>
                             width: double.infinity,
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFF0F5FF),
+                              color: AppColors.primaryLight,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
@@ -3385,7 +3385,7 @@ class _PostJobFormState extends State<PostJobForm>
                 decoration: BoxDecoration(
                   color:
                       _subscriptionPlan != null
-                          ? const Color(0xFFEFF6FF)
+                          ? AppColors.primaryLight
                           : AppColors.bgMuted,
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
@@ -4732,7 +4732,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                   width: 52,
                   height: 52,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFF7ED),
+                    color: AppColors.warningLight,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -4924,7 +4924,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                     color:
                         widget.nationwideOn
                             ? AppColors.primaryLight
-                            : const Color(0xFFF8F9FB),
+                            : AppColors.bgMuted,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color:

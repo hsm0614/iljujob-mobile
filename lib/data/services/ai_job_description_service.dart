@@ -344,13 +344,13 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                             color:
                                 isSelected
                                     ? AppColors.primary
-                                    : Colors.grey.shade100,
+                                    : AppColors.bgMuted,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color:
                                   isSelected
                                       ? AppColors.primary
-                                      : Colors.grey.shade300,
+                                      : AppColors.textDisabled,
                             ),
                           ),
                           child: Row(
@@ -453,9 +453,9 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                   ), // ✅ 최대 높이 제한
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
+                    color: AppColors.bgMuted,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade200),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: SingleChildScrollView(
                     // ✅ 내용이 길 경우 스크롤
@@ -653,7 +653,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
+                  color: AppColors.primaryLight,
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: const Icon(

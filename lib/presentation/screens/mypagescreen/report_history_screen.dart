@@ -166,7 +166,7 @@ Widget _buildReportCard(Map<String, dynamic> report) {
       label = '기각됨';
       break;
     default:
-      bgColor = Colors.grey;
+      bgColor = AppColors.textTertiary;
       label = '검토 중';
   }
 

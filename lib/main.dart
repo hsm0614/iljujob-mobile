@@ -1036,7 +1036,7 @@ class _ReleaseNotesBox extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
+        color: AppColors.bgMuted,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border),
       ),

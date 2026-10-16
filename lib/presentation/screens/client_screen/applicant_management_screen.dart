@@ -105,11 +105,11 @@ class ApplicantModel {
       case 'S':
         return const Color(0xFFFFF0E6);
       case 'A':
-        return const Color(0xFFE8F0FF);
+        return AppColors.primaryLight;
       case 'B':
         return const Color(0xFFE8F7EF);
       case 'C':
-        return const Color(0xFFF1F3F5);
+        return AppColors.bgMuted;
       default:
         return AppColors.bgPage;
     }
@@ -198,7 +198,7 @@ class JobApplicantGroup {
 // ─── 상수 ────────────────────────────────────────────────────────
 const kBrandBlue = AppColors.primary;
 const _blue = AppColors.primary;
-const _blueBg = Color(0xFFE8F0FF);
+const _blueBg = AppColors.primaryLight;
 const _green = Color(0xFF0F766E);
 const _greenBg = Color(0xFFE8F7EF);
 const _signalTime = Color(0xFFEA8035); // 시간이 급함
@@ -585,7 +585,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 decoration: InputDecoration(
                   hintText: '지원자에게 보낼 메시지를 입력하세요.',
                   filled: true,
-                  fillColor: const Color(0xFFF8F9FB),
+                  fillColor: AppColors.bgMuted,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: const BorderSide(color: AppColors.border),
@@ -813,7 +813,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                       '아직 지원자가 없어요',
                       style: TextStyle(
                         fontSize: 13,
-                        color: const Color(0xFFBCC0CB),
+                        color: AppColors.textTertiary,
                       ),
                     ),
                   ],
@@ -890,7 +890,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       decoration: BoxDecoration(
-        color: hasNew ? const Color(0xFFF0F5FF) : const Color(0xFFFAFAFA),
+        color: hasNew ? AppColors.primaryLight : const Color(0xFFFAFAFA),
         borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
         border: Border(bottom: BorderSide(color: AppColors.bgPage)),
       ),
@@ -909,7 +909,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   color:
                       group.jobStatus == 'active'
                           ? AppColors.gradeB
-                          : const Color(0xFFBCC0CB),
+                          : AppColors.textTertiary,
                 ),
               ),
               Expanded(
@@ -1305,7 +1305,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                             vertical: 8,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
+                            color: AppColors.bgMuted,
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(color: AppColors.border),
                           ),
@@ -1576,7 +1576,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
 
   Widget _statusChip(ApplicantModel applicant) {
     if (applicant.isCanceled) {
-      return _chip(applicant.statusLabel, const Color(0xFFF1F3F5), _inkSecondary);
+      return _chip(applicant.statusLabel, AppColors.bgMuted, _inkSecondary);
     }
     if (applicant.isCompleted) {
       return _chip(
@@ -1593,7 +1593,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       );
     }
     if (applicant.isNew) return _chip(applicant.statusLabel, _blueBg, _blue);
-    return _chip('확인', const Color(0xFFF1F3F5), _inkSecondary);
+    return _chip('확인', AppColors.bgMuted, _inkSecondary);
   }
 
   Widget _chip(String label, Color bg, Color fg) {
@@ -1647,7 +1647,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
           const Icon(
             Icons.people_alt_outlined,
             size: 56,
-            color: Color(0xFFBCC0CB),
+            color: AppColors.textTertiary,
           ),
           const SizedBox(height: 16),
           const Text(

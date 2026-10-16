@@ -886,7 +886,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                   decoration: InputDecoration(
                     hintText: '예: 오늘 18시부터 가능하신 분을 찾고 있어요. 시급 우대합니다.',
                     filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
+                    fillColor: AppColors.bgMuted,
                     contentPadding: const EdgeInsets.all(14),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -1043,7 +1043,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF8F9FB),
+                        color: AppColors.bgMuted,
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(color: _border),
                       ),
@@ -1899,7 +1899,7 @@ class _ExpandedDetail extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: const Color(0xFFF0F7FF),
+                color: AppColors.primaryLight,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: _primary.withValues(alpha: 0.25)),
               ),
@@ -1927,7 +1927,7 @@ class _ExpandedDetail extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8F9FB),
+                color: AppColors.bgMuted,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: _border),
               ),

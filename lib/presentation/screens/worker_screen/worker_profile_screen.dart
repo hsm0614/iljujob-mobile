@@ -297,7 +297,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
           IconButton(
             icon: Icon(
               isBlocked ? Icons.block_flipped : Icons.block,
-              color: isBlocked ? Colors.grey : Colors.black,
+              color: isBlocked ? AppColors.textTertiary : Colors.black,
             ),
             tooltip: isBlocked ? '차단 해제' : '차단하기',
             onPressed: () => _showBlockDialog('worker', widget.workerId),
@@ -474,7 +474,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                 const SizedBox(height: 4),
                 Text(
                   desc,
-                  style: TextStyle(fontSize: 12.5, color: Colors.grey.shade700),
+                  style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -560,7 +560,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: AppColors.bgMuted,
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(

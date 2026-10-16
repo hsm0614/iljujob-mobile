@@ -295,7 +295,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: const [
-            Icon(Icons.people_outline, size: 52, color: Colors.grey),
+            Icon(Icons.people_outline, size: 52, color: AppColors.textTertiary),
             SizedBox(height: 12),
             Text(
               '아직 지원자가 없어요.',

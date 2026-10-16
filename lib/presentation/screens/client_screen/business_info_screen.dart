@@ -433,7 +433,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                             '지금 당장 없으셔도 괜찮아요. 나중에 마이페이지에서 인증할 수 있어요.',
                             style: TextStyle(
                               fontSize: 13,
-                              color: Colors.grey.shade600,
+                              color: AppColors.textSecondary,
                               height: 1.4,
                             ),
                           ),

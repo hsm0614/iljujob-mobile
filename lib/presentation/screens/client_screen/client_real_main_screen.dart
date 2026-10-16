@@ -324,7 +324,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.grey.shade300),
+            border: Border.all(color: AppColors.textDisabled),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
@@ -352,7 +352,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: AppColors.textDisabled),
               ),
               child: Icon(
                 compactView ? Icons.view_agenda : Icons.view_list,
@@ -373,7 +373,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
           Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.search_off, size: 56, color: Colors.grey.shade400),
+              Icon(Icons.search_off, size: 56, color: AppColors.textDisabled),
               const SizedBox(height: 12),
               const Text(
                 '조건에 맞는 공고가 없어요',
@@ -429,7 +429,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
           contentPadding: const EdgeInsets.symmetric(horizontal: 10),
           isDense: true,
           filled: true,
-          fillColor: Colors.grey.shade100,
+          fillColor: AppColors.bgMuted,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8),
             borderSide: BorderSide.none,
@@ -447,7 +447,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: AppColors.border),
       ),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -512,7 +512,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 10),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: Colors.grey.shade200, width: .8),
+          bottom: BorderSide(color: AppColors.border, width: .8),
         ),
       ),
       child: Row(
@@ -563,7 +563,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
           shape: StadiumBorder(
             side: BorderSide(
               color:
-                  (showNearbyOnly == false) ? kBrandBlue : Colors.grey.shade300,
+                  (showNearbyOnly == false) ? kBrandBlue : AppColors.textDisabled,
             ),
           ),
         ),
@@ -584,7 +584,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
           shape: StadiumBorder(
             side: BorderSide(
               color:
-                  (showNearbyOnly == true) ? kBrandBlue : Colors.grey.shade300,
+                  (showNearbyOnly == true) ? kBrandBlue : AppColors.textDisabled,
             ),
           ),
         ),
@@ -628,7 +628,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: Colors.grey.shade200),
+        side: BorderSide(color: AppColors.border),
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

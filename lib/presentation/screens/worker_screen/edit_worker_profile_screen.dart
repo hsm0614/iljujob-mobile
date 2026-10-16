@@ -1414,7 +1414,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: AppColors.primaryLight,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: const Color(0xFFC7D2FE)),
       ),
@@ -1461,7 +1461,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                 CircleAvatar(
                   radius: 28,
                   backgroundImage: avatarProvider,
-                  backgroundColor: const Color(0xFFEFF6FF),
+                  backgroundColor: AppColors.primaryLight,
                   child:
                       avatarProvider == null
                           ? const Icon(

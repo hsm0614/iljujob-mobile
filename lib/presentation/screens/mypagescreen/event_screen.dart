@@ -90,7 +90,7 @@ class _EventScreenState extends State<EventScreen> {
   }
 
   String _badgeText(Map e) => _isOngoing(e) ? '진행중' : '종료';
-  Color _badgeColor(Map e) => _isOngoing(e) ? AppColors.primary : Colors.grey;
+  Color _badgeColor(Map e) => _isOngoing(e) ? AppColors.primary : AppColors.textTertiary;
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +123,7 @@ class _EventScreenState extends State<EventScreen> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [AppColors.primary, Color(0xFF6EB6FF)],
+          colors: [AppColors.primary, AppColors.primary],
         ),
       ),
       child: SafeArea(
@@ -479,7 +479,7 @@ class _SkeletonCard extends StatelessWidget {
           Container(
             height: 160, // 16:9 근사
             decoration: const BoxDecoration(
-              color: Color(0xFFEDEFF5),
+              color: AppColors.border,
               borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
             ),
           ),
@@ -508,7 +508,7 @@ class _SkeletonCard extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: const Color(0xFFEDEFF5),
+        color: AppColors.border,
         borderRadius: BorderRadius.circular(8),
       ),
     );

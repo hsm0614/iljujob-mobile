@@ -30,7 +30,7 @@ Future<void> showFreeLimitSheet(BuildContext context, String message) {
             width: 52,
             height: 52,
             decoration: const BoxDecoration(
-              color: Color(0xFFFFF7ED),
+              color: AppColors.warningLight,
               shape: BoxShape.circle,
             ),
             child: const Icon(

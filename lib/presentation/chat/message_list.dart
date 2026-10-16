@@ -556,7 +556,7 @@ class _BotMessageBubble extends StatelessWidget {
           decoration: BoxDecoration(
             color: const Color(0xFFF0F6FF),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFDBEAFE), width: 1),
+            border: Border.all(color: AppColors.primaryMid, width: 1),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,

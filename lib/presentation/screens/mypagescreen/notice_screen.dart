@@ -17,7 +17,7 @@ class NoticeListScreen extends StatefulWidget {
 
 class _NoticeListScreenState extends State<NoticeListScreen> {
   static const brandBlue = AppColors.primary;
-  static const brandBlueLight = Color(0xFF6EB6FF);
+  static const brandBlueLight = AppColors.primary;
 
   List<Notice> _notices = [];
   bool _isLoading = true;
@@ -244,7 +244,7 @@ class _NoticeCard extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEAF2FF),
+                  color: AppColors.primaryLight,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
@@ -455,7 +455,7 @@ class _SkeletonCard extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: const Color(0xFFEDEFF5),
+              color: AppColors.border,
               borderRadius: BorderRadius.circular(12),
             ),
           ),
@@ -479,7 +479,7 @@ class _SkeletonCard extends StatelessWidget {
     return Container(
       width: width,
       height: height,
-      decoration: BoxDecoration(color: const Color(0xFFEDEFF5), borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(8)),
     );
   }
 }

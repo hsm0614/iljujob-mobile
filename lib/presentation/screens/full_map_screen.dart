@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iljujob/config/app_theme.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart' as km;
 
 class FullMapScreen extends StatefulWidget {
@@ -123,7 +124,7 @@ if (widget.address?.trim().isNotEmpty ?? false)
         ),
         child: Row(
           children: [
-            const Icon(Icons.place, size: 18, color: Colors.grey),
+            const Icon(Icons.place, size: 18, color: AppColors.textTertiary),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
@@ -154,7 +155,7 @@ else
         ),
         child: Row(
           children: [
-            const Icon(Icons.place, size: 18, color: Colors.grey),
+            const Icon(Icons.place, size: 18, color: AppColors.textTertiary),
             const SizedBox(width: 8),
             Expanded(
               child: Text(

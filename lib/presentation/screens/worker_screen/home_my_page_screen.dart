@@ -720,7 +720,7 @@ class _WorkerProfileCard extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 30,
-                    backgroundColor: const Color(0xFFEAF2FF),
+                    backgroundColor: AppColors.primaryLight,
                     backgroundImage:
                         (!loading && hasImg) ? NetworkImage(imageUrl) : null,
                     child:
@@ -748,7 +748,7 @@ class _WorkerProfileCard extends StatelessWidget {
                             shape: BoxShape.circle,
                             boxShadow: const [
                               BoxShadow(
-                                color: Color(0xFFBCC0CB),
+                                color: AppColors.textTertiary,
                                 blurRadius: 4,
                               ),
                             ],
@@ -785,7 +785,7 @@ class _WorkerProfileCard extends StatelessWidget {
                       icon: Icons.call_rounded,
                       text: loading ? '잠시만요' : phoneText,
                       color: AppColors.primary,
-                      bg: const Color(0xFFF1F6FF),
+                      bg: AppColors.primaryLight,
                     ),
                   ],
                 ),
@@ -796,7 +796,7 @@ class _WorkerProfileCard extends StatelessWidget {
                 icon: const Icon(Icons.arrow_forward_ios, size: 16),
                 label: const Text('프로필 수정'),
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFFEAF2FF),
+                  backgroundColor: AppColors.primaryLight,
                   foregroundColor: AppColors.primary,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -813,7 +813,7 @@ class _WorkerProfileCard extends StatelessWidget {
           ),
 
           const SizedBox(height: 10),
-          Container(height: 1, color: const Color(0xFFF1F5F9)),
+          Container(height: 1, color: AppColors.borderSub),
           const SizedBox(height: 10),
 
           // ✅ 카드 안쪽 정산완료/정산예정
@@ -825,7 +825,7 @@ class _WorkerProfileCard extends StatelessWidget {
                   value: loadingSettle ? '불러오는 중…' : settledText,
                   icon: Icons.check_circle_rounded,
                   accent: AppColors.primary,
-                  bg: const Color(0xFFEAF2FF),
+                  bg: AppColors.primaryLight,
                 ),
               ),
               const SizedBox(width: 10),
@@ -835,7 +835,7 @@ class _WorkerProfileCard extends StatelessWidget {
                   value: loadingSettle ? '불러오는 중…' : pendingText,
                   icon: Icons.schedule_rounded,
                   accent: AppColors.primary,
-                  bg: const Color(0xFFF1F6FF),
+                  bg: AppColors.primaryLight,
                 ),
               ),
             ],
@@ -897,7 +897,7 @@ class _MiniStat extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w900,
-                        color: Color(0xFF64748B),
+                        color: AppColors.textSecondary,
                         height: 1.0, // ✅ 라인높이 줄임
                       ),
                     ),
@@ -912,7 +912,7 @@ class _MiniStat extends StatelessWidget {
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w900,
-                          color: Color(0xFF0F172A),
+                          color: AppColors.textPrimary,
                           height: 1.0,
                         ),
                       ),

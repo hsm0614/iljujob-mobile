@@ -335,9 +335,9 @@ class _ClientActions extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           decoration: BoxDecoration(
-            color: const Color(0xFFEFF6FF),
+            color: AppColors.primaryLight,
             borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFDBEAFE)),
+            border: Border.all(color: AppColors.primaryMid),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -383,7 +383,7 @@ class _ClientActions extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
           decoration: BoxDecoration(
-            color: Colors.grey[100],
+            color: AppColors.bgMuted,
             borderRadius: BorderRadius.circular(20),
           ),
           child: const Text(
@@ -643,13 +643,13 @@ class _WorkerActions extends StatelessWidget {
         icon: Icon(
           Icons.edit_note,
           size: 18,
-          color: hasReviewed ? Colors.grey : AppColors.primary,
+          color: hasReviewed ? AppColors.textTertiary : AppColors.primary,
         ),
         label: Text(
           hasReviewed ? '후기 작성 완료' : '후기 남기기',
           style: TextStyle(
             fontSize: 13,
-            color: hasReviewed ? Colors.grey : AppColors.primary,
+            color: hasReviewed ? AppColors.textTertiary : AppColors.primary,
           ),
         ),
       ),
@@ -820,9 +820,9 @@ class ChatRoomConsentBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: const BoxDecoration(
-        color: Color(0xFFEFF6FF),
+        color: AppColors.primaryLight,
         border: Border(
-          bottom: BorderSide(color: Color(0xFFDBEAFE), width: 0.5),
+          bottom: BorderSide(color: AppColors.primaryMid, width: 0.5),
         ),
       ),
       child: Row(

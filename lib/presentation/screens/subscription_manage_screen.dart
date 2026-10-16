@@ -717,7 +717,7 @@ class _ManageSection extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: const Color(0xFFE8F0FF),
+              color: AppColors.primaryLight,
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(icon, color: AppColors.primary, size: 20),

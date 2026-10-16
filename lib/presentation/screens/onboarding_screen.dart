@@ -263,7 +263,7 @@ class _TypeCardState extends State<_TypeCard> {
                       decoration: BoxDecoration(
                         color: widget.isHighlighted
                             ? AppColors.primaryLight
-                            : const Color(0xFFEFF6FF),
+                            : AppColors.primaryLight,
                         borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: Icon(

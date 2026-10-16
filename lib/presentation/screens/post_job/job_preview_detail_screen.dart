@@ -280,7 +280,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFE7F0FF),
+                          color: AppColors.primaryLight,
                           borderRadius: BorderRadius.circular(99),
                         ),
                         child: const Text(
@@ -614,7 +614,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
             child: Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: const Color(0xFFE7F0FF),
+                color: AppColors.primaryLight,
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Column(

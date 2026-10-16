@@ -300,9 +300,9 @@ class _StatusHint extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
+        color: AppColors.primaryLight,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFDBEAFE)),
+        border: Border.all(color: AppColors.primaryMid),
       ),
       child: Row(
         children: [
@@ -565,9 +565,9 @@ class _ProposeWorkConfirmationSheetState
                       padding: const EdgeInsets.all(12),
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFFFF7ED),
+                        color: AppColors.warningLight,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFED7AA)),
+                        border: Border.all(color: AppColors.warningBorder),
                       ),
                       child: Row(
                         children: [
@@ -688,7 +688,7 @@ class _ProposeWorkConfirmationSheetState
                       hintText: '시급을 입력하세요',
                       suffixText: '원',
                       filled: true,
-                      fillColor: const Color(0xFFF9FAFB),
+                      fillColor: AppColors.bgMuted,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 13,
@@ -827,7 +827,7 @@ class _Tile extends StatelessWidget {
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
       decoration: BoxDecoration(
-        color: isEmpty ? const Color(0xFFF9FAFB) : const Color(0xFFEFF6FF),
+        color: isEmpty ? AppColors.bgMuted : AppColors.primaryLight,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color:

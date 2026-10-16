@@ -959,7 +959,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                 color: const Color(0xFFF2F4F7),
                 child: const Icon(
                   Icons.image_not_supported_outlined,
-                  color: Color(0xFFBCC0CB),
+                  color: AppColors.textTertiary,
                 ),
               ),
         ),
@@ -1097,12 +1097,12 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                             icon: Icon(
                               Icons.edit_note,
                               size: 18,
-                              color: reviewed ? Colors.grey : kBrandBlue,
+                              color: reviewed ? AppColors.textTertiary : kBrandBlue,
                             ),
                             label: Text(
                               reviewed ? '후기 작성 완료' : '후기 남기기',
                               style: TextStyle(
-                                color: reviewed ? Colors.grey : kBrandBlue,
+                                color: reviewed ? AppColors.textTertiary : kBrandBlue,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -1125,7 +1125,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                     child: Icon(
                       bookmarkedTab ? Icons.favorite : Icons.favorite_border,
                       color:
-                          bookmarkedTab ? kBrandBlue : const Color(0xFFBCC0CB),
+                          bookmarkedTab ? kBrandBlue : AppColors.textTertiary,
                       size: 22,
                     ),
                   ),

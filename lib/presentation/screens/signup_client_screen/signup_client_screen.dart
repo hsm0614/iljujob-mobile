@@ -575,7 +575,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                       decoration: BoxDecoration(
                         color:
                             _allAgreed
-                                ? const Color(0xFFEFF6FF)
+                                ? AppColors.primaryLight
                                 : AppColors.bgPage,
                         borderRadius: BorderRadius.circular(10),
                       ),
