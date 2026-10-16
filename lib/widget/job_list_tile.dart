@@ -4,6 +4,7 @@ import '../config/app_theme.dart';
 
 /// 공고 목록 한 줄. 카드(그림자·라운드) 대신 흰 바탕 + 아래 구분선.
 /// 읽는 순서: 급여 → 제목 → 언제 → 어디.
+/// 지원 버튼은 없다 — 지원은 상세에서 조건을 본 뒤에 한다(급구와 같은 흐름).
 class JobListTile extends StatelessWidget {
   final String pay;
   final String payType; // 일급·주급 등. 빈 문자열이면 생략
@@ -16,10 +17,8 @@ class JobListTile extends StatelessWidget {
   final String? imageUrl;
   final bool isBookmarked;
   final bool isApplied;
-  final bool isApplying;
   final VoidCallback onTap;
   final VoidCallback onBookmark;
-  final VoidCallback onApply;
 
   const JobListTile({
     super.key,
@@ -30,14 +29,12 @@ class JobListTile extends StatelessWidget {
     required this.location,
     required this.onTap,
     required this.onBookmark,
-    required this.onApply,
     this.schedule,
     this.note,
     this.badges = const [],
     this.imageUrl,
     this.isBookmarked = false,
     this.isApplied = false,
-    this.isApplying = false,
   });
 
   @override
@@ -47,7 +44,7 @@ class JobListTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(20, 16, 16, 14),
+          padding: const EdgeInsets.fromLTRB(20, 16, 8, 16),
           decoration: const BoxDecoration(
             border: Border(bottom: BorderSide(color: AppColors.borderSub)),
           ),
@@ -72,8 +69,19 @@ class JobListTile extends StatelessWidget {
                     Text(payType, style: AppTextStyles.jobPayUnit),
                   ],
                   const Spacer(),
+                  if (isApplied)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 4),
+                      child: Text(
+                        '지원 완료',
+                        style: AppTextStyles.captionBold.copyWith(
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
                   for (final b in badges)
                     Padding(padding: const EdgeInsets.only(left: 4), child: b),
+                  const SizedBox(width: 8),
                 ],
               ),
               const SizedBox(height: 6),
@@ -94,6 +102,15 @@ class JobListTile extends StatelessWidget {
                         if (schedule != null)
                           _MetaLine(icon: Icons.schedule_outlined, text: schedule!),
                         _MetaLine(icon: Icons.location_on_outlined, text: location),
+                        if (note != null) ...[
+                          const SizedBox(height: 6),
+                          Text(
+                            note!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.caption,
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -111,21 +128,6 @@ class JobListTile extends StatelessWidget {
                       ),
                     ),
                   ],
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Expanded(
-                    child: note == null
-                        ? const SizedBox.shrink()
-                        : Text(
-                            note!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.caption,
-                          ),
-                  ),
                   IconButton(
                     tooltip: '찜',
                     onPressed: onBookmark,
@@ -138,33 +140,6 @@ class JobListTile extends StatelessWidget {
                       color: isBookmarked
                           ? AppColors.badgeNew
                           : AppColors.textTertiary,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  SizedBox(
-                    height: 34,
-                    child: FilledButton(
-                      onPressed: isApplied || isApplying ? null : onApply,
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        disabledBackgroundColor: AppColors.bgMuted,
-                        disabledForegroundColor: AppColors.textTertiary,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                        textStyle: AppTextStyles.btnMd,
-                      ),
-                      child: isApplying
-                          ? const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.textTertiary,
-                              ),
-                            )
-                          : Text(isApplied ? '지원 완료' : '지원하기'),
                     ),
                   ),
                 ],

@@ -11,8 +11,6 @@ import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'package:iljujob/data/services/log_service.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
-import 'package:iljujob/data/services/chat_service.dart';
-import 'package:iljujob/presentation/chat/chat_room_screen.dart';
 import 'package:iljujob/data/services/ai_labor_service.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/config/app_theme.dart';
@@ -26,7 +24,6 @@ import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/data/models/partner_recruit_post.dart';
 import 'package:iljujob/presentation/screens/worker_screen/partner_recruit_detail_screen.dart';
 import 'package:iljujob/data/services/notificaion_service.dart';
-import '../../../config/messages.dart';
 import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 import 'package:iljujob/widget/push_permission.dart';
 import 'home_nudges.dart';
@@ -55,7 +52,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   List<Job> filteredJobs = [];
   List<String> bookmarkedJobIds = [];
   List<int> appliedJobIds = [];
-  int? _quickApplyingJobId;
   String searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   String selectedCategory = '전체';
@@ -1306,357 +1302,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     return 'AI 추천$pct · $reasonText';
   }
 
-  /// 지원 완료 안내 + 되돌리기.
-  /// 목록에서 한 번 누르면 바로 지원되므로, 잘못 눌렀을 때 빠져나갈 길이 필요하다
-  /// (지원 후 취소는 활동점수 페널티로 이어진다).
-  void _showApplySnack(
-    String message, {
-    required int jobId,
-    required int workerId,
-  }) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const Icon(Icons.check_circle, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              Expanded(child: Text(message)),
-            ],
-          ),
-          backgroundColor: AppColors.primary,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 6),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          action: SnackBarAction(
-            label: '실행취소',
-            textColor: Colors.white,
-            onPressed: () => _cancelApply(jobId: jobId, workerId: workerId),
-          ),
-        ),
-      );
-  }
-
-  Future<void> _cancelApply({required int jobId, required int workerId}) async {
-    try {
-      final resp = await AuthenticatedHttpClient.postJson(
-        Uri.parse('$baseUrl/api/job/cancel'),
-        body: {'jobId': jobId, 'workerId': workerId},
-      );
-      if (!mounted) return;
-
-      if (resp.statusCode == 200) {
-        setState(() => appliedJobIds.remove(jobId));
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('지원을 취소했어요.')));
-      } else {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            const SnackBar(content: Text('지원 취소에 실패했어요. 내 활동에서 취소해 주세요.')),
-          );
-      }
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('네트워크 오류로 취소하지 못했어요.')));
-    }
-  }
-
-  // 공고 상세와 동일한 지원 및 채팅방 생성 흐름
-  Future<void> _applyDirectly(Job job) async {
-    final jobIdInt = int.tryParse(job.id.toString());
-    if (jobIdInt == null) return;
-
-    final prefs = await SharedPreferences.getInstance();
-    final workerId = prefs.getInt('userId');
-    final clientId = job.clientId;
-
-    if (workerId == null) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text(Msg.loginRequired)));
-      return;
-    }
-
-    if (clientId == null) {
-      if (!mounted) return;
-      // clientId 없으면 상세화면으로 유도
-      _openJobDetail(job);
-      return;
-    }
-
-    if (!mounted) return;
-    setState(() => _quickApplyingJobId = jobIdInt);
-
-    try {
-      final resp = await AuthenticatedHttpClient.postJson(
-        Uri.parse('$baseUrl/api/job/apply'),
-        body: {'workerId': workerId, 'jobId': jobIdInt},
-      );
-      if (!mounted) return;
-
-      if (resp.statusCode == 200) {
-        setState(() => appliedJobIds.add(jobIdInt));
-        LogService.instance.logEvent(
-          eventType: LogService.apply,
-          jobId: jobIdInt,
-        );
-
-        // 채팅방 생성
-        final roomId = await startChatRoom(
-          workerId,
-          jobIdInt.toString(),
-          clientId,
-        );
-        if (!mounted) return;
-
-        if (roomId != null) {
-          // 이동 안내 다이얼로그
-          final goToChat = await _showChatMoveNoticeDialog(job);
-          if (!mounted) return;
-
-          if (goToChat) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder:
-                    (_) => ChatRoomScreen(
-                      chatRoomId: roomId,
-                      jobInfo: {
-                        'title': job.title,
-                        'pay': job.pay,
-                        'posted_at': '',
-                        'publish_at':
-                            job.publishAt?.toUtc().toIso8601String() ?? '',
-                        'created_at':
-                            job.createdAt?.toUtc().toIso8601String() ?? '',
-                        'client_id': clientId,
-                        'worker_id': workerId,
-                        'client_company_name': job.company ?? '기업',
-                        'client_thumbnail_url': '',
-                      },
-                    ),
-              ),
-            );
-          } else {
-            // 나중에 보기 → 목록에 남으므로 되돌릴 기회를 준다
-            _showApplySnack(
-              '지원이 완료되었습니다. 채팅 탭에서 대화를 이어가세요.',
-              jobId: jobIdInt,
-              workerId: workerId,
-            );
-          }
-        } else {
-          // 채팅방 생성 실패 — 지원은 됐으니 안내 + 되돌리기
-          _showApplySnack(
-            '지원이 완료되었습니다. 담당자 연락을 기다려주세요.',
-            jobId: jobIdInt,
-            workerId: workerId,
-          );
-        }
-      } else if (resp.statusCode == 409) {
-        if (!mounted) return;
-        setState(() => appliedJobIds.add(jobIdInt));
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('이미 지원한 공고예요.')));
-      } else {
-        if (!mounted) return;
-        String msg = '지원에 실패했어요. 다시 시도해주세요.';
-        try {
-          final data = jsonDecode(resp.body);
-          if (data is Map && data['message'] is String) msg = data['message'];
-        } catch (_) {}
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg), backgroundColor: Colors.red.shade400),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text(Msg.network)));
-      }
-    } finally {
-      if (mounted) setState(() => _quickApplyingJobId = null);
-    }
-  }
-
-  // ─────────────────────────────────────────────
-  // 채팅방 이동 안내 다이얼로그 (job_detail과 동일)
-  // ─────────────────────────────────────────────
-  Future<bool> _showChatMoveNoticeDialog(Job job) async {
-    if (!mounted) return false;
-
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return SafeArea(
-          child: Container(
-            margin: const EdgeInsets.all(12),
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-            decoration: BoxDecoration(
-              color: AppColors.bgCard,
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.border,
-                      borderRadius: BorderRadius.circular(AppRadius.full),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLight,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.chat_bubble_outline_rounded,
-                        color: AppColors.primary,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        Msg.applyDone,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          fontFamily: 'Jalnan2TTF',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  '이 공고에 대한 채팅방이 열렸어요.\n사장님과 바로 대화하면서 급여, 근무 조건,\n위치 등을 한 번 더 확인해보는 걸 추천해요.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.5,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // 취소 경로를 여기서 알려준다. 이 시트를 지나면 목록의
-                // 실행취소 스낵바가 안 뜨고, 취소 방법이 어디에도 안내되지 않았다.
-                const Text(
-                  '잘못 지원했다면 [내 활동]에서 취소할 수 있어요.',
-                  style: TextStyle(
-                    fontSize: 12.5,
-                    height: 1.4,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textTertiary,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.schedule_rounded,
-                        size: 16,
-                        color: AppColors.primary,
-                      ),
-                      SizedBox(width: 6),
-                      Text(
-                        '지원 후 채팅에서 근무 조건을 확인할 수 있어요.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(46),
-                          side: const BorderSide(color: AppColors.border),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.full),
-                          ),
-                        ),
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: const Text(
-                          '나중에 보기',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          minimumSize: const Size.fromHeight(46),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.full),
-                          ),
-                          elevation: 0,
-                        ),
-                        onPressed: () => Navigator.of(context).pop(true),
-                        child: const Text(
-                          '채팅방으로 이동',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-
-    return result ?? false;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -3050,7 +2695,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     final isNegotiablePay = isNegotiablePayType(job.payType);
     final jobIdInt = int.tryParse(job.id.toString());
     final isApplied = appliedJobIds.contains(jobIdInt);
-    final isApplyingNow = _quickApplyingJobId == jobIdInt;
 
     final distanceKm = _distanceKmFromUser(job);
 
@@ -3140,10 +2784,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               : (rawImage.startsWith('http') ? rawImage : '$baseUrl$rawImage'),
       isBookmarked: bookmarkedJobIds.contains(job.id.toString()),
       isApplied: isApplied,
-      isApplying: isApplyingNow,
       onTap: () => _openJobDetail(job),
       onBookmark: () => _toggleBookmark(job.id.toString()),
-      onApply: () => _applyDirectly(job),
     );
   }
 
