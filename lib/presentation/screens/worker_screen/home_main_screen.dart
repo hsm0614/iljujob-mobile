@@ -1480,10 +1480,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 ),
               // ── 파트너 채용공고 (제휴) — 목록 최상단 고정 ──────────
               if (isLoading)
-                SliverPadding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  sliver: _buildSkeletonList(),
-                )
+                _buildSkeletonList()
               else if (filteredJobs.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
@@ -1716,6 +1713,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     );
   }
 
+  /// 로딩 자리표시 — JobListTile 과 같은 모양(풀폭 흰 줄 + 구분선, 급여 → 제목 → 메타).
   Widget _buildSkeletonList() {
     return SliverList(
       delegate: SliverChildBuilderDelegate(
@@ -1723,61 +1721,29 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           animation: _shimmerCtrl,
           builder: (_, __) {
             return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              decoration: const BoxDecoration(
                 color: AppColors.bgCard,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                boxShadow: AppShadows.card,
+                border: Border(
+                  bottom: BorderSide(color: AppColors.borderSub),
+                ),
               ),
-              child: Row(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _shimmerBox(80, 11),
-                        const SizedBox(height: 10),
-                        _shimmerBox(double.infinity, 16),
-                        const SizedBox(height: 6),
-                        _shimmerBox(160, 13),
-                        const SizedBox(height: 14),
-                        _shimmerBox(110, 22),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            _shimmerBox(36, 36, radius: 10),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: _shimmerBox(
-                                double.infinity,
-                                36,
-                                radius: 10,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              flex: 2,
-                              child: _shimmerBox(
-                                double.infinity,
-                                36,
-                                radius: 10,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  _shimmerBox(72, 72, radius: 12),
+                  _shimmerBox(120, 22),
+                  const SizedBox(height: 10),
+                  _shimmerBox(double.infinity, 15),
+                  const SizedBox(height: 8),
+                  _shimmerBox(170, 12),
+                  const SizedBox(height: 6),
+                  _shimmerBox(130, 12),
                 ],
               ),
             );
           },
         ),
-        childCount: 5,
+        childCount: 6,
       ),
     );
   }
@@ -1792,9 +1758,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         borderRadius: BorderRadius.circular(radius),
         gradient: LinearGradient(
           colors: const [
-            Color(0xFFEEEEEE),
-            Color(0xFFF5F5F5),
-            Color(0xFFEEEEEE),
+            AppColors.bgMuted,
+            AppColors.bgPage,
+            AppColors.bgMuted,
           ],
           stops: [
             (shimmerValue - 0.3).clamp(0.0, 1.0),
@@ -2979,13 +2945,12 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   Widget _buildCompactJobCard(Job job) {
     final formattedPay = formatJobPay(job.pay, job.payType);
 
+    // 간략 보기도 목록과 같은 풀폭 흰 줄 + 구분선
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 14),
-      margin: const EdgeInsets.only(bottom: 8),
-      decoration: BoxDecoration(
+      padding: const EdgeInsets.fromLTRB(20, 13, 12, 13),
+      decoration: const BoxDecoration(
         color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        boxShadow: AppShadows.card,
+        border: Border(bottom: BorderSide(color: AppColors.borderSub)),
       ),
       child: Row(
         children: [
@@ -3054,11 +3019,12 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             constraints: const BoxConstraints(),
             icon: Icon(
               bookmarkedJobIds.contains(job.id)
-                  ? Icons.bookmark
-                  : Icons.bookmark_border,
+                  ? Icons.favorite_rounded
+                  : Icons.favorite_border_rounded,
+              size: 20,
               color:
                   bookmarkedJobIds.contains(job.id)
-                      ? AppColors.warning
+                      ? AppColors.badgeNew
                       : AppColors.textTertiary,
             ),
             onPressed: () => _toggleBookmark(job.id),
