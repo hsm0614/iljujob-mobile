@@ -18,7 +18,7 @@ class WorkerMapScreen extends StatelessWidget {
               padding: const EdgeInsets.only(right: 12),
               child: AlbailjuPostJobCta(
               onPressed: () => Navigator.pushNamed(context, "/post_job"),
-                inverted: true,
+                inverted: false, // 흰 앱바 위 → 채운 파랑
               ),
             ),
           ),

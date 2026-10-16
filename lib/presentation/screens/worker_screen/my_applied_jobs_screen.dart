@@ -14,6 +14,8 @@ import 'job_detail_screen.dart';
 import '../../chat/chat_room_screen.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import '../../../config/messages.dart';
+import '../../widgets/albailju_common.dart';
+import '../worker_calendar_screen.dart';
 
 const kBrandBlue = AppColors.primary;
 
@@ -1183,62 +1185,29 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         backgroundColor: AppColors.bgPage,
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(88),
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppColors.primary, AppColors.primaryDark],
-              ),
-            ),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 8, 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            '내 활동',
-                            style: TextStyle(
-                              fontFamily: 'Jalnan2TTF',
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              height: 1.1,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '지원 ${appliedJobs.length}건 · 찜 ${bookmarkedJobs.length}건',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.80),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
+        appBar: AlbailjuAppBar(
+          title: '내 활동',
+          brand: true,
+          actions: [
+            // 하단 탭을 4개로 줄이면서 정산 달력은 여기서 연다
+            IconButton(
+              tooltip: '정산 달력',
+              icon: const Icon(Icons.calendar_month_outlined),
+              onPressed:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const WorkerCalendarScreen(),
                     ),
-                    IconButton(
-                      onPressed: _loadAll,
-                      icon: const Icon(
-                        Icons.refresh_rounded,
-                        color: Colors.white,
-                      ),
-                      tooltip: '새로고침',
-                    ),
-                  ],
-                ),
-              ),
+                  ),
             ),
-          ),
+            IconButton(
+              tooltip: '새로고침',
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: _loadAll,
+            ),
+            const SizedBox(width: 6),
+          ],
         ),
         body:
             isLoading

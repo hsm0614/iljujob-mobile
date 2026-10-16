@@ -22,13 +22,11 @@ class AlbailjuAppBar extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => Size.fromHeight(
-    (brand ? 88 : kToolbarHeight) + (bottom?.preferredSize.height ?? 0),
-  );
+  Size get preferredSize =>
+      Size.fromHeight(52 + (bottom?.preferredSize.height ?? 0));
 
   @override
   Widget build(BuildContext context) {
-    final titleColor = brand ? Colors.white : AppColors.primary;
     final appBarBottom =
         bottom == null
             ? null
@@ -45,28 +43,18 @@ class AlbailjuAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             );
 
+    // 리디자인(2026-10): 88px 파란 그라데이션(brand)을 없앴다. 탭 루트도 52px 흰 앱바.
+    // brand=true 는 '탭 루트 제목'이라는 뜻으로만 남는다 — 글자가 한 단계 크다.
     return AppBar(
-      backgroundColor: brand ? AppColors.primary : AppColors.bgCard,
-      foregroundColor: brand ? Colors.white : AppColors.textPrimary,
-      surfaceTintColor: brand ? AppColors.primary : AppColors.bgCard,
+      backgroundColor: AppColors.bgCard,
+      foregroundColor: AppColors.textPrimary,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
-      scrolledUnderElevation: 0.5,
-      toolbarHeight: brand ? 88 : kToolbarHeight,
+      scrolledUnderElevation: 0,
+      toolbarHeight: 52,
       centerTitle: centerTitle,
       titleSpacing: leading == null ? 20 : 0,
       leading: leading,
-      flexibleSpace:
-          brand
-              ? const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.primary, AppColors.primaryDark],
-                  ),
-                ),
-              )
-              : null,
       title:
           titleWidget ??
           (title == null
@@ -75,12 +63,7 @@ class AlbailjuAppBar extends StatelessWidget implements PreferredSizeWidget {
                 title!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontFamily: 'Jalnan2TTF',
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  height: 1.1,
-                ).copyWith(color: titleColor),
+                style: brand ? AppTextStyles.h2 : AppTextStyles.h3,
               )),
       actions: actions,
       bottom: appBarBottom,
@@ -183,17 +166,12 @@ class AlbailjuPostJobPrimaryButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Ink(
-          height: 56,
+          height: 52,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.primary, AppColors.primaryDark],
-            ),
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            boxShadow: AppShadows.button,
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,

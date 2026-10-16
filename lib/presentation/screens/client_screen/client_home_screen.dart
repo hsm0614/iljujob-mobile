@@ -2767,7 +2767,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               padding: const EdgeInsets.only(right: 12),
               child: AlbailjuPostJobCta(
                 onPressed: _goToPostJobFlow,
-                inverted: true,
+                inverted: false, // 흰 앱바 위 → 채운 파랑
               ),
             ),
           ),

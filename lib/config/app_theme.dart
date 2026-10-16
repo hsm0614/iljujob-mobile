@@ -76,13 +76,9 @@ class AppColors {
 class AppShadows {
   AppShadows._();
 
-  static const List<BoxShadow> card = [
-    BoxShadow(
-      color: Color(0x0D000000), // black 5%
-      blurRadius: 12,
-      offset: Offset(0, 2),
-    ),
-  ];
+  // 리디자인(2026-10): 목록·카드는 그림자 없이 흰 면 + 회색 배경 대비로 구분한다.
+  // 떠 있는 것(시트·플로팅 버튼)만 cardElevated 를 쓴다.
+  static const List<BoxShadow> card = [];
 
   static const List<BoxShadow> cardElevated = [
     BoxShadow(
@@ -92,13 +88,8 @@ class AppShadows {
     ),
   ];
 
-  static const List<BoxShadow> button = [
-    BoxShadow(
-      color: Color(0x333B8AFF), // primary 20%
-      blurRadius: 10,
-      offset: Offset(0, 4),
-    ),
-  ];
+  // 파란 글로우는 '광고 앱' 인상을 만든다 — 버튼은 색만으로 충분하다
+  static const List<BoxShadow> button = [];
 
   static const List<BoxShadow> bottomNav = [
     BoxShadow(
@@ -286,18 +277,41 @@ class AppTheme {
         // AppBar
         appBarTheme: const AppBarTheme(
           backgroundColor: AppColors.bgCard,
-          foregroundColor: AppColors.primary,
+          foregroundColor: AppColors.textPrimary,
+          surfaceTintColor: Colors.transparent,
           elevation: 0,
-          scrolledUnderElevation: 0.5,
+          scrolledUnderElevation: 0,
+          toolbarHeight: 52,
           centerTitle: false,
-          // 푸시된 화면 제목은 다크 잉크 + 시스템 폰트
-          // (Jalnan·브랜드 블루는 탭 루트의 파란 헤더 같은 브랜드 순간 전용)
           titleTextStyle: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
           ),
-          iconTheme: IconThemeData(color: AppColors.primary),
+          // 뒤로가기·닫기는 잉크색 — 파랑은 화면 안의 주요 액션 몫
+          iconTheme: IconThemeData(color: AppColors.textPrimary),
+          actionsIconTheme: IconThemeData(color: AppColors.textPrimary),
+        ),
+        cardTheme: CardThemeData(
+          color: AppColors.bgCard,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            disabledBackgroundColor: AppColors.bgMuted,
+            disabledForegroundColor: AppColors.textTertiary,
+            textStyle: AppTextStyles.btnLg,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+          ),
         ),
         // ElevatedButton
         elevatedButtonTheme: ElevatedButtonThemeData(

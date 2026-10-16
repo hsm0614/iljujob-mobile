@@ -15,21 +15,21 @@ import 'package:iljujob/data/models/promo_model.dart';
 import 'package:iljujob/data/services/ai_api.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/widget/recommended_section.dart';
-import '../worker_calendar_screen.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/widget/app_ui.dart';
 import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 
 class HomeScreen extends StatefulWidget {
   final int initialTabIndex;
-  const HomeScreen({super.key, this.initialTabIndex = 2});
+  // 탭 순서: 0 홈 · 1 내 활동 · 2 채팅 · 3 마이 (2026-10 리디자인, 캘린더는 내 활동 안으로)
+  const HomeScreen({super.key, this.initialTabIndex = 0});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 2;
+  int _selectedIndex = 0;
   int unreadCount = 0;
   String userPhone = '';
   String userType = 'worker';
@@ -61,7 +61,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _maybeShowPromoIfHomeTab() async {
-    if (_selectedIndex != 2) return;
+    if (_selectedIndex != 0) return;
     if (_promoShownThisSession) return;
     if (!mounted) return;
     final promo = await promoService.fetchPromo(
@@ -301,18 +301,17 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ─────────────────────────────────────────────
-  // 탭 선택 — 5탭 그대로
+  // 탭 선택
   // ─────────────────────────────────────────────
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
-    if (index == 2) _maybeShowPromoIfHomeTab();
+    if (index == 0) _maybeShowPromoIfHomeTab();
   }
 
   List<Widget> _buildScreens() {
     return [
-      const WorkerCalendarScreen(),
-      const MyAppliedJobsScreen(),
       HomeMainScreen(onAiRecommend: _openRecommendSheet),
+      const MyAppliedJobsScreen(),
       ChatListScreen(onMessagesRead: _fetchUnreadCount),
       const WorkerMyPageScreen(),
     ];
@@ -333,7 +332,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.bgCard,
-        boxShadow: AppShadows.bottomNav,
+        border: Border(top: BorderSide(color: AppColors.borderSub)),
       ),
       child: SafeArea(
         top: false,
@@ -343,9 +342,9 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               _navItem(
                 index: 0,
-                icon: Icons.calendar_month_outlined,
-                activeIcon: Icons.calendar_month_rounded,
-                label: '캘린더',
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home_rounded,
+                label: '홈',
               ),
               _navItem(
                 index: 1,
@@ -353,15 +352,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 activeIcon: Icons.format_list_bulleted_rounded,
                 label: '내 활동',
               ),
-              _navItem(
-                index: 2,
-                icon: Icons.home_outlined,
-                activeIcon: Icons.home_rounded,
-                label: '홈',
-              ),
               _navItemChat(),
               _navItem(
-                index: 4,
+                index: 3,
                 icon: Icons.person_outline_rounded,
                 activeIcon: Icons.person_rounded,
                 label: '마이',
@@ -392,13 +385,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 채팅 탭 (뱃지 포함)
   Widget _navItemChat() {
-    final isActive = _selectedIndex == 3;
+    final isActive = _selectedIndex == 2;
     return AppBottomNavItem(
       isActive: isActive,
       icon: Icons.chat_bubble_outline_rounded,
       activeIcon: Icons.chat_bubble_rounded,
       label: '채팅',
-      onTap: () => _onItemTapped(3),
+      onTap: () => _onItemTapped(2),
       badgeLabel:
           unreadCount > 0 ? (unreadCount > 99 ? '99+' : '$unreadCount') : null,
     );
