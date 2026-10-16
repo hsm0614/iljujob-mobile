@@ -28,6 +28,7 @@ import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
 import 'package:iljujob/widget/push_permission.dart';
 import 'ai_interview_prep_sheet.dart';
+import 'recent_jobs_screen.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import '../../../config/messages.dart';
 
@@ -131,6 +132,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   void initState() {
     super.initState();
     ScreenAnalyticsService.instance.logScreenView('job_detail');
+    RecentJobs.add(widget.job.id);
     _loadUserType();
     _initializePage();
     _incrementViewCount();

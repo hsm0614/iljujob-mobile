@@ -18,7 +18,8 @@ class JobListTile extends StatelessWidget {
   /// 지금 상단 고정 중(pinned_until > 지금)일 때만 true. 즉시게시·긴급호출(24시간) 공통
   final bool isPinned;
   final VoidCallback onTap;
-  final VoidCallback onBookmark;
+  /// null이면 '관심' 버튼을 숨긴다 (최근 본 공고 등)
+  final VoidCallback? onBookmark;
 
   static const _thumb = 80.0;
   static const defaultImage = 'assets/images/logo_mark.png';
@@ -31,7 +32,7 @@ class JobListTile extends StatelessWidget {
     required this.title,
     required this.location,
     required this.onTap,
-    required this.onBookmark,
+    this.onBookmark,
     this.schedule,
     this.badges = const [],
     this.imageUrl,
@@ -123,6 +124,7 @@ class JobListTile extends StatelessWidget {
               Column(
                 children: [
                   _Thumb(imageUrl: imageUrl, size: _thumb),
+                  if (onBookmark != null) ...[
                   const SizedBox(height: 6),
                   SizedBox(
                     width: _thumb,
@@ -150,6 +152,7 @@ class JobListTile extends StatelessWidget {
                       label: const Text('관심'),
                     ),
                   ),
+                  ],
                 ],
               ),
             ],
@@ -167,11 +170,22 @@ class _Thumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fallback = Image.asset(
-      JobListTile.defaultImage,
-      width: size,
-      height: size,
-      fit: BoxFit.cover,
+    // 파란 바탕 심볼이 목록마다 반복되면 시선이 쏠렸다 → 반전(연회색 바탕 + 파란 심볼).
+    // logo_mark(파랑 #1A84FF 바탕·흰 글리프)를 R 채널 기준 선형 매핑:
+    // R≈26(바탕) → bgMuted #F2F4F8, R=255(글리프) → primary #3B8AFF
+    final fallback = ColorFiltered(
+      colorFilter: const ColorFilter.matrix(<double>[
+        -0.799, 0, 0, 0, 262.8, //
+        -0.463, 0, 0, 0, 256.0, //
+        0.031, 0, 0, 0, 247.2, //
+        0, 0, 0, 1, 0,
+      ]),
+      child: Image.asset(
+        JobListTile.defaultImage,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+      ),
     );
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.md),

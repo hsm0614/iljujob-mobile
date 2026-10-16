@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/models/job.dart';
 import '../../../data/services/job_service.dart';
 import 'job_detail_screen.dart';
+import 'recent_jobs_screen.dart';
 import 'package:iljujob/config/constants.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -1285,7 +1286,27 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(width: 6),
+            IconButton(
+              tooltip: '최근 본 공고',
+              onPressed:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const RecentJobsScreen()),
+                  ),
+              icon: const Icon(
+                Icons.history_rounded,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            IconButton(
+              tooltip: '알림 설정',
+              onPressed: () => Navigator.pushNamed(context, '/notifications'),
+              icon: const Icon(
+                Icons.notifications_none_rounded,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(width: 4),
           ],
         ),
         body: SafeArea(
@@ -1525,16 +1546,40 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                           ),
                         ),
                         const Spacer(),
-                        // 닫기 — 7일간 숨김
+                        // 닫기 — 7일간 숨김. 16px 회색 X는 안 보이고 누르기도 어려웠다(2026-10 대표)
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
                           onTap: _dismissPartnerCard,
-                          child: const Padding(
-                            padding: EdgeInsets.only(left: 8, bottom: 4),
-                            child: Icon(
-                              Icons.close_rounded,
-                              size: 16,
-                              color: AppColors.textTertiary,
+                          child: Padding(
+                            // 보이는 알약보다 터치 영역을 넓게
+                            padding: const EdgeInsets.fromLTRB(12, 4, 0, 4),
+                            child: Container(
+                              padding: const EdgeInsets.fromLTRB(9, 4, 6, 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.bgMuted,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.full,
+                                ),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '닫기',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                  SizedBox(width: 2),
+                                  Icon(
+                                    Icons.close_rounded,
+                                    size: 15,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
