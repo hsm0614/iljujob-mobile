@@ -117,7 +117,6 @@ class WorkConfirmationCard extends StatelessWidget {
               icon: Icons.payments_rounded,
               label: '시급',
               value: '${NumberFormat('#,###').format(confirm.hourlyWage)}원',
-              valueColor: AppColors.primary,
             ),
             if (confirm.location != null && confirm.location!.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -127,8 +126,8 @@ class WorkConfirmationCard extends StatelessWidget {
                 value: confirm.location!,
               ),
             ],
-            if (!isProposed && !isPast) ...[
-              const SizedBox(height: 12),
+            if (!isPast) ...[
+              const SizedBox(height: 16),
               _StatusHint(status: confirm.status),
             ],
 
@@ -242,9 +241,9 @@ class WorkConfirmationCard extends StatelessWidget {
     'accepted' ||
     'scheduled' ||
     'day_before_confirmed' ||
-    'day_of_confirmed' => AppColors.primary,
-    'checked_in' || 'completed' => AppColors.gradeB,
-    'cancelled' || 'no_show' => AppColors.urgentCall,
+    'day_of_confirmed' => AppColors.textPrimary,
+    'checked_in' || 'completed' => AppColors.badgeSameDay,
+    'cancelled' || 'no_show' => AppColors.error,
     _ => AppColors.textSecondary,
   };
 }
@@ -253,13 +252,7 @@ class _Row extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  final Color? valueColor;
-  const _Row({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
+  const _Row({required this.icon, required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) => Row(
@@ -272,59 +265,109 @@ class _Row extends StatelessWidget {
       ),
       Text(
         value,
-        style: TextStyle(
+        style: const TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: valueColor ?? AppColors.textPrimary,
+          color: AppColors.textPrimary,
         ),
       ),
     ],
   );
 }
 
+/// 출근확정 진행 단계. 배달 앱 주문 추적처럼 지금 어디인지 한눈에 보이게 한다.
+/// 상태값 순서는 work_confirmations.status 와 같다.
 class _StatusHint extends StatelessWidget {
   final String status;
   const _StatusHint({required this.status});
 
+  static const _steps = ['제안', '수락', '전날', '당일', '출근', '완료'];
+
+  int get _current => switch (status) {
+    'proposed' => 0,
+    'accepted' || 'scheduled' => 1,
+    'day_before_confirmed' => 2,
+    'day_of_confirmed' => 3,
+    'checked_in' => 4,
+    'completed' => 5,
+    _ => 0,
+  };
+
   @override
   Widget build(BuildContext context) {
     final text = switch (status) {
-      'accepted' || 'scheduled' => '근무가 확정됐어요. 근무일 전 알림이 발송돼요.',
-      'day_before_confirmed' => 'D-1 확인이 완료됐어요. 당일 출근 확인을 기다리고 있어요.',
-      'day_of_confirmed' => '당일 확인이 완료됐어요. 출근 완료 후 정산달력에 반영돼요.',
-      'checked_in' => '출근 확인이 완료됐어요. 근무 완료 처리만 남았어요.',
+      'proposed' => '구직자가 수락하면 근무가 확정돼요.',
+      'accepted' || 'scheduled' => '근무가 확정됐어요. 전날 18시에 확인 알림이 가요.',
+      'day_before_confirmed' => '전날 확인 완료. 출근 2시간 전에 당일 확인 알림이 가요.',
+      'day_of_confirmed' => '당일 확인 완료. 출근하면 정산 달력에 반영돼요.',
+      'checked_in' => '출근 확인 완료. 근무 완료 처리만 남았어요.',
       _ => '출근 확정이 진행 중이에요.',
     };
+    final cur = _current;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.primaryMid),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.info_outline_rounded,
-            size: 16,
-            color: AppColors.primary,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                fontSize: 12,
-                height: 1.35,
-                color: AppColors.primaryDark,
-                fontWeight: FontWeight.w700,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            for (var i = 0; i < _steps.length; i++) ...[
+              _dot(done: i < cur, now: i == cur),
+              if (i < _steps.length - 1)
+                Expanded(
+                  child: Container(
+                    height: 2,
+                    color: i < cur ? AppColors.primary : AppColors.border,
+                  ),
+                ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            for (var i = 0; i < _steps.length; i++)
+              Text(
+                _steps[i],
+                style: AppTextStyles.caption.copyWith(
+                  color:
+                      i == cur
+                          ? AppColors.textPrimary
+                          : i < cur
+                          ? AppColors.textSecondary
+                          : AppColors.textTertiary,
+                  fontWeight: i == cur ? FontWeight.w700 : FontWeight.w500,
+                ),
               ),
-            ),
-          ),
-        ],
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(text, style: AppTextStyles.body2),
+      ],
+    );
+  }
+
+  Widget _dot({required bool done, required bool now}) {
+    return Container(
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: done ? AppColors.primary : AppColors.bgCard,
+        border: Border.all(
+          color:
+              done
+                  ? AppColors.primary
+                  : now
+                  ? AppColors.badgeUrgent
+                  : AppColors.border,
+          width: now ? 4 : 2,
+        ),
       ),
+      child:
+          done
+              ? const Icon(Icons.check_rounded, size: 10, color: Colors.white)
+              : null,
     );
   }
 }
