@@ -24,7 +24,7 @@ const _textSub = AppColors.textSecondary;
 const _red = Color(0xFFFF3B30);
 const _green = AppColors.gradeB;
 // 알림 발송 버튼(누를 수 있음) — 보라 폐지, CTA 파랑 (2026-10)
-const _purple = AppColors.primary;
+const _broadcastColor = AppColors.primary;
 
 // ── 공고 모델 ─────────────────────────────────────────────────────
 class _Job {
@@ -2077,7 +2077,7 @@ class _ActionRow extends StatelessWidget {
                         broadcasting
                             ? Icons.hourglass_top_rounded
                             : Icons.campaign_rounded,
-                    color: _purple,
+                    color: _broadcastColor,
                     filled: false,
                     onTap: broadcasting ? null : onBroadcast,
                   )
