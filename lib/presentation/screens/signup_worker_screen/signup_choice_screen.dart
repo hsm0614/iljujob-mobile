@@ -317,13 +317,8 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                         // Kakao
                         ElevatedButton.icon(
                           onPressed: _signInWithKakao,
-                          icon: Image.asset(
-                            'assets/icons/kakao.png',
-                            height: 20,
-                            width: 20,
-                            errorBuilder:
-                                (_, __, ___) => const Icon(Icons.bolt),
-                          ),
+                          // assets/icons/kakao.png 가 없어 항상 번개 대체 아이콘이 떴다 → 사장님 화면과 같은 말풍선
+                          icon: const Icon(Icons.chat_bubble, size: 20),
                           label: Text(_loading ? '처리 중...' : '카카오로 시작하기'),
                           style: _primaryBtnStyle(
                             bg: const Color(0xFFFFE812),
@@ -390,7 +385,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
 
                   const SizedBox(height: 20),
                   const Text(
-                    '※ 프로필을 더 채우면 사장님이 관심을 더 가져줘요. 홈에서 보강 배너로 안내해 드릴게요!',
+                    '가입 후 프로필을 채우면 사장님 연락을 더 많이 받을 수 있어요.',
                     style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
