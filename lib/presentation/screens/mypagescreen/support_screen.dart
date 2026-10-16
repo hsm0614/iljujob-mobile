@@ -36,7 +36,7 @@ class SupportScreen extends StatelessWidget {
           ),
           _SupportItemCard(
             icon: Icons.contact_mail_rounded,
-            iconBg: const Color(0xFF7C3AED),
+            iconBg: AppColors.primary,
             title: '1:1 문의하기',
             subtitle: '스크린샷/사진 첨부 가능',
             trailing: const _Badge(text: '권장'),
@@ -52,7 +52,7 @@ class SupportScreen extends StatelessWidget {
           // ✅ 약관(assets에서 읽어서 표시)
           _SupportItemCard(
             icon: Icons.policy_rounded,
-            iconBg: const Color(0xFF0F766E),
+            iconBg: AppColors.primary,
             title: '이용약관',
             onTap: () {
               HapticFeedback.selectionClick();
@@ -71,7 +71,7 @@ class SupportScreen extends StatelessWidget {
           // ✅ 개인정보처리방침(assets에서 읽어서 표시)
           _SupportItemCard(
             icon: Icons.privacy_tip_rounded,
-            iconBg: const Color(0xFF4F46E5),
+            iconBg: AppColors.primary,
             title: '개인정보처리방침',
             onTap: () {
               HapticFeedback.selectionClick();
