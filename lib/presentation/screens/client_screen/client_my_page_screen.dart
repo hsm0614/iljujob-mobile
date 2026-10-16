@@ -319,59 +319,32 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
         color: brandBlue,
         child: CustomScrollView(
           slivers: [
-            SliverAppBar(
+            // 리디자인(2026-10): 200px 파란 헤더 → 흰 앱바 + 회색 바탕 위 프로필 카드
+            const SliverAppBar(
               pinned: true,
-              elevation: 0,
-              backgroundColor: Colors.white,
-              expandedHeight: 200,
               automaticallyImplyLeading: false,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  clipBehavior: Clip.hardEdge,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                  ),
-                  child: SafeArea(
-                    bottom: false,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '마이페이지',
-                            style: TextStyle(
-                              fontFamily: 'Jalnan2TTF',
-                              color: Colors.white,
-                              fontSize: 22,
-                              height: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          _ProfileCard(
-                            brandBlue: brandBlue,
-                            brandBlueLight: brandBlueLight,
-                            logoUrl: _getFullImageUrl(logoUrl),
-                            companyName: companyName,
-                            managerName: managerName,
-                            phoneNumber: _formatPhone(phoneNumber),
-                            subscriptionPlan:
-                                _sub?.active == true
-                                    ? (_sub!.plan ?? '')
-                                    : null,
-                            onEdit:
-                                () => Navigator.pushNamed(
-                                  context,
-                                  '/edit_profile',
-                                ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+              backgroundColor: AppColors.bgCard,
+              surfaceTintColor: Colors.transparent,
+              elevation: 0,
+              toolbarHeight: 52,
+              titleSpacing: 20,
+              title: Text('마이', style: AppTextStyles.h2),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                child: _ProfileCard(
+                  brandBlue: brandBlue,
+                  brandBlueLight: brandBlueLight,
+                  logoUrl: _getFullImageUrl(logoUrl),
+                  companyName: companyName,
+                  managerName: managerName,
+                  phoneNumber: _formatPhone(phoneNumber),
+                  subscriptionPlan:
+                      _sub?.active == true ? (_sub!.plan ?? '') : null,
+                  onEdit: () => Navigator.pushNamed(context, '/edit_profile'),
                 ),
               ),
-              toolbarHeight: 0,
             ),
 
             SliverToBoxAdapter(
@@ -556,17 +529,10 @@ class _ProfileCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1F000000),
-            blurRadius: 10,
-            offset: Offset(0, 6),
-          ),
-        ],
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
       ),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(16),
       child: Row(
         children: [
           Stack(
