@@ -332,6 +332,26 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   /// 현재 좌표 → 시·도/시·군·구 (서버 utils/geocode.js 의 sidoOf·sigunguOf 와 같은 규칙).
   /// 저장하지 않는다 — 다른 동네로 가면 다음 실행 때 그 동네가 기본이 된다.
   Future<void> _defaultToMyRegion(double lat, double lng) async {
+    // 1순위: 서버(카카오 coord2regioncode). iOS geocoder는 광역시의 구('연수구')를 주지 않는다
+    try {
+      final resp = await http
+          .get(Uri.parse('$baseUrl/api/job/my-region?lat=$lat&lng=$lng'))
+          .timeout(const Duration(seconds: 4));
+      if (resp.statusCode == 200) {
+        final d = jsonDecode(resp.body) as Map<String, dynamic>;
+        final sido = d['sido'] as String?;
+        if ((sido ?? '').isNotEmpty) {
+          if (!mounted) return;
+          setState(() {
+            _scope = 'region';
+            _regionSido = sido;
+            _regionSigungu = d['sigungu'] as String?;
+          });
+          return;
+        }
+      }
+    } catch (_) {}
+    // 2순위: 기기 geocoder (시·도만 정확)
     try {
       final marks = await placemarkFromCoordinates(lat, lng);
       if (marks.isEmpty) return;
@@ -1679,159 +1699,49 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       );
     });
 
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 90,
-              height: 90,
-              decoration: const BoxDecoration(
-                color: AppColors.primaryLight,
-                shape: BoxShape.circle,
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.search_off_rounded,
-                  size: 38,
-                  color: AppColors.primary,
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              hasQuery
-                  ? "'${searchQuery.trim()}' 검색 결과가 없어요"
+    final regionName =
+        [_regionSido, _regionSigungu].whereType<String>().join(' ');
+    // 빈 화면에서 할 일은 하나 (급구식). 원인에 따라 그 하나를 고른다
+    final (String title, String message, String action, VoidCallback onAction) =
+        hasQuery
+            ? (
+              "'${searchQuery.trim()}' 검색 결과가 없어요",
+              '검색어를 바꾸거나 지워보세요.',
+              '검색어 지우기',
+              () {
+                _searchController.clear();
+                setState(() => searchQuery = '');
+                _applyFiltersThrottled();
+              },
+            )
+            : noLocation && _isNearScope
+            ? (
+              '위치를 알 수 없어요',
+              '위치 권한을 켜면 내 주변 공고를 보여드려요.',
+              '위치 권한 설정',
+              () => Geolocator.openAppSettings(),
+            )
+            : _scope != 'nationwide'
+            ? (
+              _scope == 'region' && regionName.isNotEmpty
+                  ? '$regionName엔 아직 공고가 없어요'
                   : '이 근처엔 아직 공고가 없어요',
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-                height: 1.2,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              hasQuery
-                  ? '검색어를 바꾸거나 지우면\n주변 공고를 다시 볼 수 있어요.'
-                  : _scope == 'region'
-                  ? '이 지역에는 지금 노출 중인 공고가 없어요.\n다른 지역이나 전국 공고를 둘러보세요.'
-                  : _scope == 'nationwide'
-                  ? '지금 노출 중인 공고가 없어요.\n새 공고 알림을 켜두고 다시 확인해보세요.'
-                  : '설정한 거리 안에는 공고가 없어요.\n지역이나 전국으로 넓혀서 볼 수 있어요.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-                height: 1.35,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 18),
-            SizedBox(
-              width: double.infinity,
-              height: 46,
-              child: ElevatedButton.icon(
-                onPressed:
-                    hasQuery
-                        ? () {
-                          _searchController.clear();
-                          setState(() => searchQuery = '');
-                          _applyFiltersThrottled();
-                        }
-                        : () async {
-                          await _init();
-                          await _loadJobs();
-                        },
-                icon: Icon(
-                  hasQuery ? Icons.backspace_outlined : Icons.refresh_rounded,
-                  size: 18,
-                ),
-                label: Text(
-                  hasQuery ? '검색어 지우기' : '새로고침',
-                  style: const TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                ),
-              ),
-            ),
-            if (!hasQuery) ...[
-              const SizedBox(height: 10),
-              SizedBox(
-                width: double.infinity,
-                height: 46,
-                // 위치 권한 버튼은 실제로 권한이 없을 때만 의미가 있다.
-                // 권한이 멀쩡한 사람에게 띄우면 눌러도 아무것도 안 바뀐다.
-                // 그 외에는 재방문 이유를 만드는 유일한 훅인 알림 신청을 준다.
-                child: OutlinedButton.icon(
-                  onPressed:
-                      noLocation
-                          ? () async => Geolocator.openAppSettings()
-                          : _enableJobAlerts,
-                  icon: Icon(
-                    noLocation
-                        ? Icons.settings_rounded
-                        : Icons.notifications_active_outlined,
-                    size: 18,
-                    color: AppColors.primary,
-                  ),
-                  label: Text(
-                    noLocation ? '위치 권한 설정' : '새 공고 뜨면 알림 받기',
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(
-                      color: AppColors.primary,
-                      width: 1.2,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                  ),
-                ),
-              ),
-              if (_scope != 'nationwide') ...[
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    if (_isNearScope)
-                      Expanded(
-                        child: TextButton(
-                          onPressed: _openRegionPicker,
-                          child: const Text('지역으로 보기'),
-                        ),
-                      ),
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => _setScope('nationwide'),
-                        child: const Text('전국 공고 보기'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
-          ],
-        ),
-      ),
+              '전국 공고에서 찾아보세요.',
+              '전국 공고 보기',
+              () => _setScope('nationwide'),
+            )
+            : (
+              '지금 올라온 공고가 없어요',
+              '새 공고가 올라오면 알려드릴게요.',
+              '새 공고 알림 받기',
+              _enableJobAlerts,
+            );
+    return AppEmptyState(
+      icon: hasQuery ? Icons.search_off_rounded : Icons.work_outline_rounded,
+      title: title,
+      message: message,
+      actionLabel: action,
+      onAction: onAction,
     );
   }
 
