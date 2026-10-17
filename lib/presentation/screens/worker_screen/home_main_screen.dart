@@ -57,7 +57,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   List<int> appliedJobIds = [];
   String searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  String selectedCategory = '전체';
   // 기본 추천순: 가까운 것 + 최근 것을 섞는다 (최신순이면 '내 주변'에 27km 공고가 맨 위로 왔다)
   String sortType = '추천순';
   double currentLatitude = 0.0;
@@ -65,12 +64,49 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   double selectedDistance = 30;
   int _itemsToShow = 10;
   bool isLoading = true;
-  // 칩 줄의 '당일지급' 빠른 필터
+  // ── 필터 규칙 (2026-10) ────────────────────────────────────
+  // 기본값 = 조건 없음 + 추천순. 정렬은 칩 줄 한 곳에서만 바꾼다.
+  // 필터는 실제 공고 값으로 정확히 걸리는 것만: 급여 유형·업종(+ 칩 줄의 당일지급).
+  // 근무일은 대부분 비어 있어 필터로 두지 않는다.
+  static const _defaultSort = '추천순';
+  final Set<String> _payTypes = {}; // 시급·일급·주급·월급
+  final Set<String> _categories = {}; // 업종 이름('이벤트·행사 > 행사스태프' → '행사스태프')
   bool _onlySameDayPay = false;
+  int get _sheetFilterCount => _payTypes.length + _categories.length;
+  bool get _hasConditions =>
+      _sheetFilterCount > 0 || _onlySameDayPay || searchQuery.trim().isNotEmpty;
+
+  /// 업종 표기가 두 가지('행사스태프' / '이벤트·행사 > 행사스태프')라 마지막 이름으로 맞춘다
+  static String _leafCategory(String c) => c.split('>').last.trim();
+
+  /// 목록·필터 시트 개수·빈 화면 힌트가 모두 이 한 함수로 거른다 (결과가 서로 어긋나지 않게)
+  bool _passes(Job j, {Set<String>? pay, Set<String>? cat, bool? sameDay}) {
+    pay ??= _payTypes;
+    cat ??= _categories;
+    sameDay ??= _onlySameDayPay;
+    if (pay.isNotEmpty && !pay.contains(j.payType)) return false;
+    if (cat.isNotEmpty && !cat.contains(_leafCategory(j.category)))
+      return false;
+    if (sameDay && j.isSameDayPay != true) return false;
+    return true;
+  }
+
+  /// 홈 기본값으로 전부 되돌린다 (정렬 추천순, 조건 없음, 검색어 없음)
+  void _resetAll() {
+    _searchController.clear();
+    setState(() {
+      sortType = _defaultSort;
+      _payTypes.clear();
+      _categories.clear();
+      _onlySameDayPay = false;
+      searchQuery = '';
+    });
+    _applyFiltersThrottled();
+  }
+
   final ScrollController _scrollController = ScrollController();
   bool _loadingMore = false;
   bool isAvailableToday = false;
-  String selectedPayType = 'all';
   int _jobsReqSeq = 0;
   bool _isLoadingJobs = false;
   bool _distanceExpanded = false;
@@ -713,9 +749,56 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     }
   }
 
-  void _applyFilters() {
+  /// 정렬·필터 전 목록: 노출 중 + (내 주변이면) 반경 안 + 검색어.
+  /// 필터 시트의 '공고 N개 보기'도 이 목록에서 센다.
+  List<Job> _baseJobs() {
+    final nowUtc = DateTime.now().toUtc();
     List<Job> tempJobs = List.from(allJobs);
+    tempJobs =
+        tempJobs.where((job) {
+          final publishAt = job.publishAt ?? job.createdAt ?? nowUtc;
+          final isFuture = publishAt.isAfter(nowUtc);
+          final notExpired =
+              (job.expiresAt == null) || job.expiresAt!.isAfter(nowUtc);
+          return !isFuture && notExpired;
+        }).toList();
 
+    if (_isNearScope && currentLatitude != 0.0 && currentLongitude != 0.0) {
+      tempJobs =
+          tempJobs
+              .where(
+                (job) => job.withinRadiusKm(
+                  currentLatitude,
+                  currentLongitude,
+                  selectedDistance,
+                ),
+              )
+              .toList();
+    }
+
+    if (searchQuery.isNotEmpty) {
+      tempJobs =
+          tempJobs.where((job) {
+            final q = searchQuery.trim();
+            // 추가 근무지도 검색 대상. '고양'으로 찾는데 대표 주소가
+            // 수원이라 안 나오면 다중 근무지 공고는 검색으로 못 만난다.
+            return job.title.contains(q) ||
+                job.location.contains(q) ||
+                job.locationCity.contains(q) ||
+                job.locations.any(
+                  (l) =>
+                      l.address.contains(q) ||
+                      (l.locationCity?.contains(q) ?? false),
+                ) ||
+                job.category.contains(q) ||
+                (job.description?.contains(q) ?? false);
+          }).toList();
+    }
+
+    return tempJobs;
+  }
+
+  void _applyFilters() {
     final nowUtc = DateTime.now().toUtc();
 
     bool isPinned(Job j) =>
@@ -739,68 +822,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       }
     }
 
-    tempJobs =
-        tempJobs.where((job) {
-          final publishAt = job.publishAt ?? job.createdAt ?? nowUtc;
-          final isFuture = publishAt.isAfter(nowUtc);
-          final notExpired =
-              (job.expiresAt == null) || job.expiresAt!.isAfter(nowUtc);
-          return !isFuture && notExpired;
-        }).toList();
-
-    if (_isNearScope && currentLatitude != 0.0 && currentLongitude != 0.0) {
-      tempJobs =
-          tempJobs
-              .where(
-                (job) => job.withinRadiusKm(
-                  currentLatitude,
-                  currentLongitude,
-                  selectedDistance,
-                ),
-              )
-              .toList();
-    }
-
-    if (selectedPayType != 'all') {
-      tempJobs =
-          tempJobs.where((job) {
-            final payTypeInEnglish =
-                job.payType == '일급'
-                    ? 'daily'
-                    : job.payType == '주급'
-                    ? 'weekly'
-                    : 'all';
-            return payTypeInEnglish == selectedPayType;
-          }).toList();
-    }
-
-    if (selectedCategory != '전체') {
-      tempJobs =
-          tempJobs.where((job) => job.category == selectedCategory).toList();
-    }
-
-    if (_onlySameDayPay) {
-      tempJobs = tempJobs.where((job) => job.isSameDayPay == true).toList();
-    }
-
-    if (searchQuery.isNotEmpty) {
-      tempJobs =
-          tempJobs.where((job) {
-            final q = searchQuery.trim();
-            // 추가 근무지도 검색 대상. '고양'으로 찾는데 대표 주소가
-            // 수원이라 안 나오면 다중 근무지 공고는 검색으로 못 만난다.
-            return job.title.contains(q) ||
-                job.location.contains(q) ||
-                job.locationCity.contains(q) ||
-                job.locations.any(
-                  (l) =>
-                      l.address.contains(q) ||
-                      (l.locationCity?.contains(q) ?? false),
-                ) ||
-                job.category.contains(q) ||
-                (job.description?.contains(q) ?? false);
-          }).toList();
-    }
+    final List<Job> tempJobs = _baseJobs().where((j) => _passes(j)).toList();
 
     int cmpPinned(Job a, Job b) {
       // 상단 노출은 상품명이 아니라 실제 pinned_until 만 따른다.
@@ -868,13 +890,13 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     });
   }
 
-  /// 지금 걸려 있는 필터를 칩으로. 탭하면 그 필터만 해제된다.
-  /// 거리·정렬은 각각 전용 UI가 따로 있어 제외한다.
+  /// 걸려 있는 조건을 하나씩 칩으로. ✕로 그 조건만 푼다. 둘 이상이면 '전체 해제'.
+  /// (당일지급은 칩 줄의 칩 자체가 켜진 상태로 보이므로 여기 넣지 않는다)
   List<Widget> get _activeFilterChips {
     Widget chip(String label, VoidCallback onRemove) => GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: () {
-        onRemove();
+        setState(onRemove);
         _applyFiltersThrottled();
       },
       child: Container(
@@ -882,16 +904,13 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         decoration: BoxDecoration(
           color: AppColors.primaryLight,
           borderRadius: BorderRadius.circular(AppRadius.full),
-          border: Border.all(color: AppColors.primaryMid),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               label,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
+              style: AppTextStyles.captionBold.copyWith(
                 color: AppColors.primaryDark,
               ),
             ),
@@ -905,286 +924,208 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         ),
       ),
     );
-
-    return [
-      if (searchQuery.trim().isNotEmpty)
-        chip('"${searchQuery.trim()}"', () {
+    final q = searchQuery.trim();
+    final chips = <Widget>[
+      if (q.isNotEmpty)
+        chip('"$q"', () {
           _searchController.clear();
-          setState(() => searchQuery = '');
+          searchQuery = '';
         }),
-      if (selectedCategory != '전체')
-        chip(selectedCategory, () => setState(() => selectedCategory = '전체')),
-      if (selectedPayType != 'all')
-        chip(selectedPayType == 'daily' ? '일급' : '주급', () {
-          setState(() => selectedPayType = 'all');
-        }),
+      for (final t in _payTypes.toList()) chip(t, () => _payTypes.remove(t)),
+      for (final c in _categories.toList())
+        chip(c, () => _categories.remove(c)),
     ];
+    if (chips.length >= 2) {
+      chips.add(
+        GestureDetector(
+          onTap: _resetAll,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+            child: Text(
+              '전체 해제',
+              style: AppTextStyles.captionBold.copyWith(
+                color: AppColors.textSecondary,
+                decoration: TextDecoration.underline,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    return chips;
   }
 
+  /// 필터 시트. 고르는 동안 아래 버튼이 '공고 N개 보기'로 결과를 미리 보여준다.
+  /// 닫으면(✕·바깥 탭) 적용 전 상태 그대로, 시트 안 '초기화'는 이 시트의 조건만 비운다.
   void _openFilterSheet() {
+    final base = _baseJobs();
+    final tp = {..._payTypes};
+    final tc = {..._categories};
+
+    // 선택지는 지금 목록에 실제 있는 값만 (없는 업종을 고르면 늘 0개였다)
+    const payOrder = ['시급', '일급', '주급', '월급'];
+    final payOptions =
+        payOrder.where((t) => base.any((j) => j.payType == t)).toList();
+    final catCount = <String, int>{};
+    for (final j in base) {
+      final c = _leafCategory(j.category);
+      if (c.isEmpty) continue;
+      catCount[c] = (catCount[c] ?? 0) + 1;
+    }
+    final catOptions =
+        (catCount.keys.toList()
+              ..sort((a, b) => catCount[b]!.compareTo(catCount[a]!)))
+            .take(16)
+            .toList();
+    // 이미 골라둔 업종이 상위 16개 밖이면 같이 보여준다
+    for (final c in tc) {
+      if (!catOptions.contains(c)) catOptions.add(c);
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        String tempSortType = sortType;
-        String tempPayType = selectedPayType;
-        String tempCategory = selectedCategory;
-
-        return SafeArea(
-          top: false,
-          child: Container(
-            margin: const EdgeInsets.only(top: 40),
-            decoration: const BoxDecoration(
-              color: AppColors.bgCard,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(AppRadius.xxl),
-              ),
-            ),
-            child: StatefulBuilder(
-              builder: (context, setModalState) {
-                final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-                return Padding(
-                  padding: EdgeInsets.fromLTRB(16, 12, 16, bottomInset + 12),
+      builder:
+          (ctx) => StatefulBuilder(
+            builder: (ctx, setS) {
+              final n = base.where((j) => _passes(j, pay: tp, cat: tc)).length;
+              Widget option(String label, Set<String> set, int count) => _pill(
+                label: '$label $count',
+                selected: set.contains(label),
+                onTap:
+                    () => setS(
+                      () =>
+                          set.contains(label)
+                              ? set.remove(label)
+                              : set.add(label),
+                    ),
+              );
+              return SafeArea(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxHeight: MediaQuery.of(ctx).size.height * 0.8,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Container(
-                        width: 40,
-                        height: 4,
-                        margin: const EdgeInsets.only(bottom: 12),
-                        decoration: BoxDecoration(
-                          color: AppColors.border,
-                          borderRadius: BorderRadius.circular(AppRadius.full),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 8, 4),
+                        child: Row(
+                          children: [
+                            const Text('필터', style: AppTextStyles.h3),
+                            const Spacer(),
+                            IconButton(
+                              tooltip: '닫기',
+                              icon: const Icon(Icons.close_rounded),
+                              onPressed: () => Navigator.pop(ctx),
+                            ),
+                          ],
                         ),
                       ),
-                      Row(
-                        children: [
-                          const Text(
-                            '필터',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryLight,
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.full,
-                                ),
-                              ),
-                              child: Text(
-                                '${tempCategory == "전체" ? "모든 업종" : tempCategory} · '
-                                '${tempPayType == "all" ? "전체 급여" : (tempPayType == "daily" ? "일급" : "주급")}',
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ),
-                          ),
-                          TextButton(
-                            onPressed:
-                                () => setModalState(() {
-                                  tempSortType = '최신순';
-                                  tempPayType = 'all';
-                                  tempCategory = '전체';
-                                }),
-                            child: const Text(
-                              '초기화',
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: AppColors.textTertiary,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            tooltip: '닫기',
-                            icon: const Icon(Icons.close),
-                            onPressed: () => Navigator.pop(context),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
                       Flexible(
                         child: SingleChildScrollView(
-                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const SizedBox(height: 8),
-                              _buildFilterSectionTitle('정렬'),
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.bgMuted,
-                                  borderRadius: BorderRadius.circular(
-                                    AppRadius.md,
-                                  ),
-                                  border: Border.all(color: AppColors.border),
-                                ),
-                                child: DropdownButton<String>(
-                                  value: tempSortType,
-                                  isExpanded: true,
-                                  items:
-                                      ['거리순', '최신순', '급여 높은 순']
-                                          .map(
-                                            (e) => DropdownMenuItem(
-                                              value: e,
-                                              child: Text(
-                                                e,
-                                                style: const TextStyle(
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                            ),
-                                          )
-                                          .toList(),
-                                  onChanged: (v) {
-                                    if (v != null) {
-                                      setModalState(() => tempSortType = v);
-                                    }
-                                  },
-                                  underline: const SizedBox(),
-                                  icon: const Icon(Icons.expand_more),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
                               _buildFilterSectionTitle('급여 유형'),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 10),
                               Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
+                                spacing: 6,
+                                runSpacing: 6,
                                 children: [
-                                  _buildPayChipInSheet(
-                                    label: '전체',
-                                    value: 'all',
-                                    groupValue: tempPayType,
-                                    onChanged:
-                                        (v) => setModalState(
-                                          () => tempPayType = v,
-                                        ),
-                                  ),
-                                  _buildPayChipInSheet(
-                                    label: '일급',
-                                    value: 'daily',
-                                    groupValue: tempPayType,
-                                    onChanged:
-                                        (v) => setModalState(
-                                          () => tempPayType = v,
-                                        ),
-                                  ),
-                                  _buildPayChipInSheet(
-                                    label: '주급',
-                                    value: 'weekly',
-                                    groupValue: tempPayType,
-                                    onChanged:
-                                        (v) => setModalState(
-                                          () => tempPayType = v,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 20),
-                              _buildFilterSectionTitle('업종'),
-                              const SizedBox(height: 8),
-                              Wrap(
-                                spacing: 8,
-                                runSpacing: 8,
-                                children: [
-                                  for (final cat in [
-                                    '전체',
-                                    '제조',
-                                    '물류',
-                                    '서비스',
-                                    '건설',
-                                    '사무',
-                                    '청소',
-                                    '기타',
-                                  ])
-                                    _buildCategoryChipInSheet(
-                                      label: cat,
-                                      value: cat,
-                                      groupValue: tempCategory,
-                                      onChanged:
-                                          (v) => setModalState(
-                                            () => tempCategory = v,
-                                          ),
+                                  for (final t in payOptions)
+                                    option(
+                                      t,
+                                      tp,
+                                      base
+                                          .where(
+                                            (j) =>
+                                                j.payType == t &&
+                                                _passes(j, pay: {}, cat: tc),
+                                          )
+                                          .length,
                                     ),
                                 ],
                               ),
                               const SizedBox(height: 20),
+                              _buildFilterSectionTitle('업종'),
+                              const SizedBox(height: 10),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 6,
+                                children: [
+                                  for (final c in catOptions)
+                                    option(
+                                      c,
+                                      tc,
+                                      base
+                                          .where(
+                                            (j) =>
+                                                _leafCategory(j.category) ==
+                                                    c &&
+                                                _passes(j, pay: tp, cat: {}),
+                                          )
+                                          .length,
+                                    ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton(
-                              onPressed:
-                                  () => setModalState(() {
-                                    tempSortType = '최신순';
-                                    tempPayType = 'all';
-                                    tempCategory = '전체';
-                                  }),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppColors.textSecondary,
-                                side: const BorderSide(color: AppColors.border),
+                      const Divider(),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              height: 52,
+                              child: TextButton(
+                                onPressed:
+                                    () => setS(() {
+                                      tp.clear();
+                                      tc.clear();
+                                    }),
+                                child: const Text('초기화'),
                               ),
-                              child: const Text('초기화'),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                minimumSize: const Size.fromHeight(44),
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  sortType = tempSortType;
-                                  selectedPayType = tempPayType;
-                                  selectedCategory = tempCategory;
-                                });
-                                _applyFiltersThrottled();
-                                Navigator.pop(context);
-                              },
-                              child: const Text(
-                                '적용하기',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: SizedBox(
+                                height: 52,
+                                child: FilledButton(
+                                  onPressed:
+                                      n == 0
+                                          ? null
+                                          : () {
+                                            setState(() {
+                                              _payTypes
+                                                ..clear()
+                                                ..addAll(tp);
+                                              _categories
+                                                ..clear()
+                                                ..addAll(tc);
+                                            });
+                                            _applyFiltersThrottled();
+                                            Navigator.pop(ctx);
+                                          },
+                                  child: Text(
+                                    n == 0 ? '조건에 맞는 공고가 없어요' : '공고 $n개 보기',
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
-                );
-              },
-            ),
+                ),
+              );
+            },
           ),
-        );
-      },
     );
   }
 
@@ -1205,105 +1146,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           ),
         ),
       ],
-    );
-  }
-
-  static const _categoryIcons = {
-    '전체': Icons.search_rounded,
-    '음식점·카페': Icons.restaurant_outlined,
-    '편의점·마트': Icons.storefront_outlined,
-    '물류·배송': Icons.local_shipping_outlined,
-    '제조·공장': Icons.factory_outlined,
-    '반도체·전자생산': Icons.memory_outlined,
-    '건설·현장': Icons.construction_outlined,
-    '사무·행정': Icons.business_center_outlined,
-    '청소·시설관리': Icons.cleaning_services_outlined,
-    '서비스·판매': Icons.shopping_bag_outlined,
-    '이벤트·행사': Icons.event_outlined,
-    'IT·개발': Icons.code_rounded,
-    '교육·강의': Icons.school_outlined,
-    '의료·복지': Icons.medical_services_outlined,
-    '농·축산': Icons.agriculture_outlined,
-    '기타': Icons.more_horiz_rounded,
-    '제조': Icons.factory_outlined,
-    '물류': Icons.local_shipping_outlined,
-    '서비스': Icons.storefront_outlined,
-    '건설': Icons.construction_outlined,
-    '사무': Icons.business_center_outlined,
-    '청소': Icons.cleaning_services_outlined,
-  };
-
-  Widget _buildCategoryChipInSheet({
-    required String label,
-    required String value,
-    required String groupValue,
-    required ValueChanged<String> onChanged,
-  }) {
-    final selected = groupValue == value;
-    final icon = _categoryIcons[label] ?? Icons.push_pin_outlined;
-    return GestureDetector(
-      onTap: () => onChanged(value),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.bgCard,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 15,
-              color: selected ? Colors.white : AppColors.textSecondary,
-            ),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: selected ? Colors.white : AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPayChipInSheet({
-    required String label,
-    required String value,
-    required String groupValue,
-    required ValueChanged<String> onChanged,
-  }) {
-    final selected = groupValue == value;
-    return GestureDetector(
-      onTap: () => onChanged(value),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.bgCard,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.border,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: selected ? Colors.white : AppColors.textSecondary,
-          ),
-        ),
-      ),
     );
   }
 
@@ -1680,7 +1522,73 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     );
   }
 
+  /// 조건에 맞는 공고가 없을 때: 조건마다 '풀면 N개'를 보여주고 누르면 그 조건만 푼다.
+  Widget _buildNoMatchView(List<Job> base) {
+    final hints = <(String, int, VoidCallback)>[];
+    if (_onlySameDayPay) {
+      hints.add((
+        '당일지급',
+        base.where((j) => _passes(j, sameDay: false)).length,
+        () => _onlySameDayPay = false,
+      ));
+    }
+    for (final t in _payTypes) {
+      hints.add((
+        t,
+        base.where((j) => _passes(j, pay: {..._payTypes}..remove(t))).length,
+        () => _payTypes.remove(t),
+      ));
+    }
+    for (final c in _categories) {
+      hints.add((
+        c,
+        base.where((j) => _passes(j, cat: {..._categories}..remove(c))).length,
+        () => _categories.remove(c),
+      ));
+    }
+    final q = searchQuery.trim();
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          AppEmptyState(
+            icon: Icons.filter_alt_off_outlined,
+            title: '조건에 맞는 공고가 없어요',
+            message:
+                q.isNotEmpty && hints.isEmpty
+                    ? "'$q' 검색 결과가 없어요."
+                    : '아래 조건을 풀면 공고가 나와요.',
+            actionLabel: '조건 모두 풀기',
+            onAction: _resetAll,
+          ),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            alignment: WrapAlignment.center,
+            children: [
+              for (final (label, count, undo) in hints)
+                if (count > 0)
+                  _pill(
+                    label: '$label 빼면 $count개',
+                    icon: Icons.close_rounded,
+                    onTap: () {
+                      setState(undo);
+                      _applyFiltersThrottled();
+                    },
+                  ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildEmptyJobsView() {
+    // 조건 때문에 비었으면 원인을 보여주고 바로 풀 수 있게 (조건 없이도 비었으면 아래 기존 처리)
+    final base = _baseJobs();
+    if (_hasConditions && (base.isNotEmpty || searchQuery.trim().isNotEmpty)) {
+      return _buildNoMatchView(base);
+    }
     // 원인별 빈 상태: 검색어 때문인지, 주변에 공고가 없는 건지 구분해서 처방
     final hasQuery = searchQuery.trim().isNotEmpty;
 
@@ -1820,8 +1728,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   }
 
   // AI 자연어 검색 바텀시트
-  void _showAiSearchSheet() {
-    final ctrl = TextEditingController();
+  void _showAiSearchSheet([String initial = '']) {
+    final ctrl = TextEditingController(text: initial);
     bool searching = false;
     List<Job> results = [];
     String? errorMsg;
@@ -2116,67 +2024,13 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                       )
                                       : ListView.builder(
                                         controller: scrollCtrl,
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16,
-                                        ),
+                                        padding: EdgeInsets.zero,
                                         itemCount: results.length,
                                         itemBuilder: (_, i) {
                                           final job = results[i];
-                                          return ListTile(
-                                            contentPadding:
-                                                const EdgeInsets.symmetric(
-                                                  vertical: 4,
-                                                ),
-                                            title: Text(
-                                              job.title,
-                                              style: const TextStyle(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w700,
-                                              ),
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                            ),
-                                            subtitle: Text(
-                                              '${job.locationCity.isNotEmpty ? job.locationCity : job.location} · ${formatJobPay(job.pay, job.payType, includeType: true)}',
-                                              style: const TextStyle(
-                                                fontSize: 12,
-                                              ),
-                                            ),
-                                            trailing:
-                                                job.jobType == 'long'
-                                                    ? Container(
-                                                      padding:
-                                                          const EdgeInsets.symmetric(
-                                                            horizontal: 8,
-                                                            vertical: 3,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        // DESIGN.md: 장기 같은 분류 뱃지는 중립 회색
-                                                        color:
-                                                            AppColors.bgMuted,
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                              20,
-                                                            ),
-                                                      ),
-                                                      child: const Text(
-                                                        '장기',
-                                                        style: TextStyle(
-                                                          color:
-                                                              AppColors
-                                                                  .textSecondary,
-                                                          fontSize: 11,
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                        ),
-                                                      ),
-                                                    )
-                                                    : null,
-                                            onTap: () {
-                                              Navigator.pop(ctx);
-                                              _openJobDetail(job);
-                                            },
-                                          );
+                                          return _buildJobCard(
+                                            job,
+                                          ); // 결과도 일반 공고와 같은 줄
                                         },
                                       ),
                             ),
@@ -2694,14 +2548,27 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     );
   }
 
-  /// 칩 줄 (급구식): 정렬 · 상세필터 · 당일지급 · AI 검색 · 오늘 근무 가능. 급여형·업종은 상세필터 안
+  /// 칩 줄: 정렬 → 빠른 조건(당일지급) → 필터(n) → 오늘 근무 가능.
+  /// 검색(일반·AI)은 앱바 검색 하나로 들어간다
   Widget _buildTopControlRow() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         if (_searchExpanded) ...[
           _buildSearchField(),
-          const SizedBox(height: 10),
+          // 일반 검색으로 안 잡히는 건 문장으로 — 같은 검색 안에서 AI로 넘어간다
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => _showAiSearchSheet(searchQuery.trim()),
+              icon: const Icon(Icons.auto_awesome_outlined, size: 16),
+              label: const Text("'주말 성수 카페'처럼 문장으로 찾아보기"),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+              ),
+            ),
+          ),
         ],
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -2713,13 +2580,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 onTap: _openSortSheet,
               ),
               const SizedBox(width: 6),
-              _pill(
-                label: '상세필터',
-                icon: Icons.tune_rounded,
-                selected: selectedCategory != '전체' || selectedPayType != 'all',
-                onTap: _openFilterSheet,
-              ),
-              const SizedBox(width: 6),
+              // 빠른 조건: 한 번 누르면 바로 걸리고 다시 누르면 풀린다
               _pill(
                 label: '당일지급',
                 selected: _onlySameDayPay,
@@ -2730,9 +2591,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               ),
               const SizedBox(width: 6),
               _pill(
-                label: 'AI 검색',
-                icon: Icons.auto_awesome_outlined,
-                onTap: _showAiSearchSheet,
+                label: _sheetFilterCount > 0 ? '필터 $_sheetFilterCount' : '필터',
+                icon: Icons.tune_rounded,
+                selected: _sheetFilterCount > 0,
+                onTap: _openFilterSheet,
               ),
               const SizedBox(width: 6),
               _buildTodayToggle(),
