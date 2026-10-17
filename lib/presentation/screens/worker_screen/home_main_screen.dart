@@ -61,7 +61,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   double selectedDistance = 30;
   int _itemsToShow = 10;
   bool isLoading = true;
-  bool compactView = false;
+  // 칩 줄의 '당일지급' 빠른 필터
+  bool _onlySameDayPay = false;
   final ScrollController _scrollController = ScrollController();
   bool _loadingMore = false;
   bool isAvailableToday = false;
@@ -743,6 +744,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           tempJobs.where((job) => job.category == selectedCategory).toList();
     }
 
+    if (_onlySameDayPay) {
+      tempJobs = tempJobs.where((job) => job.isSameDayPay == true).toList();
+    }
+
     if (searchQuery.isNotEmpty) {
       tempJobs =
           tempJobs.where((job) {
@@ -859,10 +864,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         }),
       if (selectedCategory != '전체')
         chip(selectedCategory, () => setState(() => selectedCategory = '전체')),
-      if (selectedPayType != 'all')
-        chip(selectedPayType == 'daily' ? '일급' : '주급', () {
-          setState(() => selectedPayType = 'all');
-        }),
     ];
   }
 
@@ -1275,9 +1276,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           scrolledUnderElevation: 0,
           toolbarHeight: 52,
           titleSpacing: 20,
-          title: const Text('알바일주', style: AppTextStyles.logo),
+          // 급구처럼 제목 자리에 지금 보는 범위. 탭하면 범위 선택 시트
+          title: _buildScopeTitle(),
           actions: [
-            _buildTodayToggle(),
             IconButton(
               tooltip: _searchExpanded ? '검색 닫기' : '검색',
               onPressed: _toggleSearch,
@@ -1320,45 +1321,12 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   child: _buildTopControlRow(),
                 ),
               ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-                sliver: SliverToBoxAdapter(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const PushOffBanner(
-                        message: '알림이 꺼져 있어요 · 켜면 근처 새 공고를 바로 받아요',
-                        source: 'worker_home_banner',
-                      ),
-                      const HomeNudges(),
-                      if (!isLoading &&
-                          _workerGender == null &&
-                          !_genderHintDismissed) ...[
-                        const SizedBox(height: 8),
-                        _buildGenderHintCard(),
-                      ],
-                    ],
-                  ),
-                ),
+              // 공고 위에는 '사장님이 먼저 연락했어요' 같은 내 일 안내만 둔다.
+              // 알림 꺼짐·성별 안내·배너·파트너 광고는 목록 3번째 공고 뒤 한 칸으로 (첫 공고를 위로)
+              const SliverPadding(
+                padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
+                sliver: SliverToBoxAdapter(child: HomeNudges()),
               ),
-              const SliverToBoxAdapter(
-                child: AdBannerWidget(placement: 'app_home_worker'),
-              ),
-              // AI 추천 스트립은 공고 리스트 중간(4번째 뒤)으로 이동 — 상단은 공고가 주인공
-              // 노무상담 진입점은 마이페이지 > 고객센터로 이동
-              const SliverToBoxAdapter(child: SizedBox(height: 8)),
-              // ── 파트너 채용공고 (제휴) ────────────────────────────
-              // '전체 공고' 헤더 위에 둔다. 헤더 아래면 카운트(N개)에 포함된
-              // 일반 공고로 오인된다.
-              if (_partnerAdActive && !_partnerCardHidden)
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-                  sliver: SliverToBoxAdapter(
-                    child: _buildPartnerRecruitCard(
-                      PartnerRecruitPost.wonderLotte,
-                    ),
-                  ),
-                ),
               // ── 적용 중인 필터 ───────────────────────────────────
               // 필터를 걸어둔 걸 잊으면 "공고가 없다"로 오해한다.
               // 화면에 보이고, 여기서 바로 뗄 수 있어야 한다.
@@ -1373,66 +1341,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     ),
                   ),
                 ),
-              // ── 섹션 헤더 ─────────────────────────────────────────
-              if (!isLoading && filteredJobs.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: Container(
-                    // 카드 목록 위 회색 바탕에 머리글만. 지역 공고 개수는 보여주지 않는다
-                    // (적은 지역에선 '3개'가 오히려 빈약해 보인다 — 2026-10 대표 피드백)
-                    color: AppColors.bgCard,
-                    padding: const EdgeInsets.fromLTRB(20, 16, 16, 4),
-                    child: Row(
-                      children: [
-                        const Text('전체 공고', style: AppTextStyles.sectionTitle),
-                        const Spacer(),
-                        // 정렬 기준 — 지금 무슨 순서로 보고 있는지 화면에 없으면
-                        // "왜 먼 공고가 위에 있지?"가 된다. 탭하면 필터 시트.
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: _openFilterSheet,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 4,
-                              vertical: 2,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  sortType,
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                                const Icon(
-                                  Icons.keyboard_arrow_down_rounded,
-                                  size: 16,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        // 뷰 전환 (컴팩트/일반)
-                        GestureDetector(
-                          onTap:
-                              () => setState(() => compactView = !compactView),
-                          child: Icon(
-                            compactView
-                                ? Icons.view_agenda_outlined
-                                : Icons.view_list_rounded,
-                            size: 20,
-                            color: AppColors.textTertiary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              // ── 파트너 채용공고 (제휴) — 목록 최상단 고정 ──────────
               if (isLoading)
                 _buildSkeletonList()
               else if (filteredJobs.isEmpty)
@@ -1449,16 +1357,14 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                           (_itemsToShow < filteredJobs.length)
                               ? _itemsToShow
                               : filteredJobs.length;
+                      final slotAt = visibleCount < 3 ? visibleCount : 3;
                       return SliverList.builder(
-                        itemCount: visibleCount,
-                        itemBuilder: (context, jobIndex) {
-                          final job = filteredJobs[jobIndex];
-                          return compactView
-                              ? GestureDetector(
-                                onTap: () => _openJobDetail(job),
-                                child: _buildCompactJobCard(job),
-                              )
-                              : _buildJobCard(job);
+                        itemCount: visibleCount + 1,
+                        itemBuilder: (context, index) {
+                          if (index == slotAt) return _buildFeedSlot();
+                          final job =
+                              filteredJobs[index > slotAt ? index - 1 : index];
+                          return _buildJobCard(job);
                         },
                       );
                     },
@@ -1502,13 +1408,12 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             ),
           );
         },
+        // 일반 공고 줄과 같은 모양 + '광고' 표기 (급구식). 파란 테두리 카드는 시선을 뺏었다
         child: Container(
-          padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
-          decoration: BoxDecoration(
+          padding: const EdgeInsets.fromLTRB(20, 14, 16, 14),
+          decoration: const BoxDecoration(
             color: AppColors.bgCard,
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: AppColors.primaryMid),
-            boxShadow: AppShadows.card,
+            border: Border(bottom: BorderSide(color: AppColors.border)),
           ),
           child: Row(
             children: [
@@ -1518,33 +1423,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   children: [
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.bgMuted,
-                            borderRadius: BorderRadius.circular(AppRadius.xs),
-                          ),
-                          child: const Text(
-                            '광고',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textTertiary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        const Text(
-                          '파트너 채용',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                          ),
-                        ),
+                        Text('파트너 채용 · 광고', style: AppTextStyles.jobMeta),
                         const Spacer(),
                         // 닫기 — 7일간 숨김. 16px 회색 X는 안 보이고 누르기도 어려웠다(2026-10 대표)
                         GestureDetector(
@@ -1604,20 +1483,13 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                         '재택근무 · ${post.benefits.items.first.title}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primary,
+                        style: AppTextStyles.jobMeta.copyWith(
+                          color: AppColors.textSecondary,
                         ),
                       ),
                     ],
                   ],
                 ),
-              ),
-              const Icon(
-                Icons.arrow_forward_ios,
-                size: 14,
-                color: AppColors.textTertiary,
               ),
             ],
           ),
@@ -2711,11 +2583,117 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
   /// 검색창(펼쳤을 때) + 한 줄 알약 행: 범위 · AI 검색 · 필터 · 위치.
   /// 예전엔 버튼 4개 행 + 범위 박스 3개 + 거리 박스가 각각 한 줄씩이었다.
-  Widget _buildTopControlRow() {
-    final regionLabel =
-        _scope == 'region' && (_regionSido ?? '').isNotEmpty
+  /// 앱바 제목: 지금 보는 범위 + ▾
+  Widget _buildScopeTitle() {
+    final label =
+        _isNearScope
+            ? '내 주변 ${selectedDistance.toStringAsFixed(0)}km'
+            : _scope == 'region' && (_regionSido ?? '').isNotEmpty
             ? [_regionSido, _regionSigungu].whereType<String>().join(' ')
-            : '지역';
+            : '전국';
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _openScopeSheet,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.tabTitle,
+            ),
+          ),
+          const SizedBox(width: 2),
+          const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            color: AppColors.textPrimary,
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openScopeSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        Widget item(String title, String? sub, bool on, VoidCallback onTap) =>
+            ListTile(
+              title: Text(title, style: AppTextStyles.body1),
+              subtitle: sub == null ? null : Text(sub, style: AppTextStyles.caption),
+              trailing:
+                  on
+                      ? const Icon(Icons.check_rounded, color: AppColors.primary)
+                      : null,
+              onTap: () {
+                Navigator.pop(ctx);
+                onTap();
+              },
+            );
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 8),
+              item('내 주변', '거리를 조절할 수 있어요', _isNearScope, () {
+                if (!_isNearScope) _setScope('near');
+                setState(() => _distanceExpanded = true);
+              }),
+              item('지역 선택', null, _scope == 'region', _openRegionPicker),
+              item('전국', null, _scope == 'nationwide', () => _setScope('nationwide')),
+              item('현재 위치 다시 찾기', null, false, () async {
+                await _init();
+                _applyFiltersThrottled();
+              }),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _openSortSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder:
+          (ctx) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 8),
+                for (final t in const ['최신순', '거리순', '급여 높은 순'])
+                  ListTile(
+                    title: Text(t, style: AppTextStyles.body1),
+                    trailing:
+                        sortType == t
+                            ? const Icon(
+                              Icons.check_rounded,
+                              color: AppColors.primary,
+                            )
+                            : null,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      setState(() => sortType = t);
+                      _applyFiltersThrottled();
+                    },
+                  ),
+                const SizedBox(height: 8),
+              ],
+            ),
+          ),
+    );
+  }
+
+  /// 칩 줄 (급구식): 정렬 · 상세필터 · 당일지급 · 일급 · 주급 · AI 검색 · 오늘 근무 가능
+  Widget _buildTopControlRow() {
+    void togglePay(String v) {
+      setState(() => selectedPayType = selectedPayType == v ? 'all' : v);
+      _applyFiltersThrottled();
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -2728,61 +2706,46 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           child: Row(
             children: [
               _pill(
-                label:
-                    _isNearScope
-                        ? '내 주변 ${selectedDistance.toStringAsFixed(0)}km'
-                        : '내 주변',
-                selected: _isNearScope,
-                trailing:
-                    _isNearScope ? Icons.keyboard_arrow_down_rounded : null,
-                // 이미 '내 주변'이면 다시 눌러 거리 조절을 연다
-                onTap:
-                    () =>
-                        _isNearScope
-                            ? setState(
-                              () => _distanceExpanded = !_distanceExpanded,
-                            )
-                            : _setScope('near'),
-              ),
-              const SizedBox(width: 6),
-              // '지역'은 이미 골라둔 상태여도 다시 누르면 바꿀 수 있게 항상 선택창을 연다
-              _pill(
-                label: regionLabel,
-                selected: _scope == 'region',
-                onTap: _openRegionPicker,
+                label: sortType,
+                trailing: Icons.keyboard_arrow_down_rounded,
+                onTap: _openSortSheet,
               ),
               const SizedBox(width: 6),
               _pill(
-                label: '전국',
-                selected: _scope == 'nationwide',
-                onTap: () => _setScope('nationwide'),
-              ),
-              Container(
-                width: 1,
-                height: 16,
-                margin: const EdgeInsets.symmetric(horizontal: 10),
-                color: AppColors.border,
-              ),
-              _pill(
-                label: 'AI 검색',
-                icon: Icons.search_rounded,
-                onTap: _showAiSearchSheet,
-              ),
-              const SizedBox(width: 6),
-              _pill(
-                label: '필터',
+                label: '상세필터',
                 icon: Icons.tune_rounded,
+                selected: selectedCategory != '전체',
                 onTap: _openFilterSheet,
               ),
               const SizedBox(width: 6),
               _pill(
-                label: '위치',
-                icon: Icons.my_location_rounded,
-                onTap: () async {
-                  await _init();
+                label: '당일지급',
+                selected: _onlySameDayPay,
+                onTap: () {
+                  setState(() => _onlySameDayPay = !_onlySameDayPay);
                   _applyFiltersThrottled();
                 },
               ),
+              const SizedBox(width: 6),
+              _pill(
+                label: '일급',
+                selected: selectedPayType == 'daily',
+                onTap: () => togglePay('daily'),
+              ),
+              const SizedBox(width: 6),
+              _pill(
+                label: '주급',
+                selected: selectedPayType == 'weekly',
+                onTap: () => togglePay('weekly'),
+              ),
+              const SizedBox(width: 6),
+              _pill(
+                label: 'AI 검색',
+                icon: Icons.auto_awesome_outlined,
+                onTap: _showAiSearchSheet,
+              ),
+              const SizedBox(width: 6),
+              _buildTodayToggle(),
             ],
           ),
         ),
@@ -2790,6 +2753,38 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           const SizedBox(height: 10),
           _buildDistanceSlider(),
         ],
+      ],
+    );
+  }
+
+  /// 목록 3번째 공고 뒤 한 칸: 알림 꺼짐 · 성별 안내 · 배너 · 파트너 광고
+  Widget _buildFeedSlot() {
+    final showPartner = _partnerAdActive && !_partnerCardHidden;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (showPartner)
+          _buildPartnerRecruitCard(PartnerRecruitPost.wonderLotte),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const PushOffBanner(
+                message: '알림이 꺼져 있어요 · 켜면 근처 새 공고를 바로 받아요',
+                source: 'worker_home_banner',
+              ),
+              if (!isLoading &&
+                  _workerGender == null &&
+                  !_genderHintDismissed) ...[
+                const SizedBox(height: 8),
+                _buildGenderHintCard(),
+              ],
+            ],
+          ),
+        ),
+        const AdBannerWidget(placement: 'app_home_worker'),
+        const SizedBox(height: 12),
       ],
     );
   }
@@ -2883,97 +2878,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildCompactJobCard(Job job) {
-    final formattedPay = formatJobPay(job.pay, job.payType);
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 8, 12),
-      decoration: const BoxDecoration(
-        color: AppColors.bgCard,
-        border: Border(bottom: BorderSide(color: AppColors.border)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              job.title,
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 15,
-                color: AppColors.textPrimary,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.location_on_outlined,
-                  size: 13,
-                  color: AppColors.textTertiary,
-                ),
-                const SizedBox(width: 2),
-                Flexible(
-                  child: Text(
-                    job.location,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 6),
-          Flexible(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.payments_outlined,
-                  size: 13,
-                  color: AppColors.textTertiary,
-                ),
-                const SizedBox(width: 2),
-                Flexible(
-                  child: Text(
-                    formattedPay,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            tooltip: '찜',
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            icon: Icon(
-              bookmarkedJobIds.contains(job.id)
-                  ? Icons.favorite_rounded
-                  : Icons.favorite_border_rounded,
-              size: 20,
-              color:
-                  bookmarkedJobIds.contains(job.id)
-                      ? AppColors.badgeNew
-                      : AppColors.textTertiary,
-            ),
-            onPressed: () => _toggleBookmark(job.id),
-          ),
-        ],
       ),
     );
   }
