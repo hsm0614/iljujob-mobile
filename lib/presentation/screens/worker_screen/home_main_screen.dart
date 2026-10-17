@@ -77,6 +77,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   // 부산은 2건만 봤다. 푸시·긴급호출은 계속 거리 기준이고 목록만 넓힌다.
   String _scope = 'near';
   String? _regionSido;
+  // 내 위치의 시·군·구 이름('인천 연수구'). '내 주변' 보기의 앱바 제목에만 쓴다
+  String? _myRegionLabel;
   String? _regionSigungu;
   static const _kScopeKey = 'job_list_scope';
   static const _kRegionSidoKey = 'job_list_region_sido';
@@ -253,9 +255,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
   Future<void> _init() async {
     final prefs = await SharedPreferences.getInstance();
-    // 직접 고른 적이 없으면 기본은 '내 지역'(현재 위치의 시·구). 아래 위치 확인 뒤 정한다
-    final savedScope = prefs.getString(_kScopeKey);
-    _scope = savedScope ?? 'near';
+    // 기본은 '내 주변'. 앱바에는 내 위치의 시·군·구 이름을 보여준다(아래 위치 확인 뒤)
+    _scope = prefs.getString(_kScopeKey) ?? 'near';
     _regionSido = prefs.getString(_kRegionSidoKey);
     _regionSigungu = prefs.getString(_kRegionSigunguKey);
     if (_scope == 'region' && (_regionSido ?? '').isEmpty) _scope = 'near';
@@ -313,7 +314,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       }
 
       if (finalLat != 0.0 && finalLng != 0.0) {
-        if (savedScope == null) await _defaultToMyRegion(finalLat, finalLng);
+        _loadMyRegionLabel(finalLat, finalLng); // 기다리지 않는다 — 제목만 바뀐다
         sendLocationToServer(finalLat, finalLng);
         await prefs.setDouble('currentLatitude', finalLat);
         await prefs.setDouble('currentLongitude', finalLng);
@@ -329,64 +330,33 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     }
   }
 
-  /// 현재 좌표 → 시·도/시·군·구 (서버 utils/geocode.js 의 sidoOf·sigunguOf 와 같은 규칙).
-  /// 저장하지 않는다 — 다른 동네로 가면 다음 실행 때 그 동네가 기본이 된다.
-  Future<void> _defaultToMyRegion(double lat, double lng) async {
-    // 1순위: 서버(카카오 coord2regioncode). iOS geocoder는 광역시의 구('연수구')를 주지 않는다
+  /// 현재 좌표 → '인천 연수구'. 1순위 서버(카카오), 실패하면 기기 geocoder(시·도만).
+  /// iOS geocoder는 광역시의 구를 주지 않는다(인천광역시/동춘동만 옴).
+  Future<void> _loadMyRegionLabel(double lat, double lng) async {
+    String? label;
     try {
       final resp = await http
           .get(Uri.parse('$baseUrl/api/job/my-region?lat=$lat&lng=$lng'))
           .timeout(const Duration(seconds: 4));
       if (resp.statusCode == 200) {
         final d = jsonDecode(resp.body) as Map<String, dynamic>;
-        final sido = d['sido'] as String?;
-        if ((sido ?? '').isNotEmpty) {
-          if (!mounted) return;
-          setState(() {
-            _scope = 'region';
-            _regionSido = sido;
-            _regionSigungu = d['sigungu'] as String?;
-          });
-          return;
-        }
+        label = [d['sido'], d['sigungu']].whereType<String>().join(' ');
       }
     } catch (_) {}
-    // 2순위: 기기 geocoder (시·도만 정확)
-    try {
-      final marks = await placemarkFromCoordinates(lat, lng);
-      if (marks.isEmpty) return;
-      final m = marks.first;
-      const sidoAliases = {
-        '전남광주': '광주', '충청북': '충북', '충청남': '충남', '전라북': '전북',
-        '전라남': '전남', '경상북': '경북', '경상남': '경남',
-      };
-      const sidos = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
-        '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
-      final area = (m.administrativeArea ?? '').replaceAll(' ', '');
-      String? sido;
-      for (final e in sidoAliases.entries) {
-        if (area.startsWith(e.key)) sido = e.value;
-      }
-      sido ??= sidos.where(area.startsWith).firstOrNull;
-      if (sido == null) return;
-      final sigungu =
-          [m.subAdministrativeArea, m.locality, m.subLocality]
-              .whereType<String>()
-              .expand((t) => t.split(' '))
-              .where(
-                (t) =>
-                    t.length >= 2 &&
-                    RegExp(r'(시|군|구)$').hasMatch(t) &&
-                    !t.startsWith(sido!),
-              )
-              .firstOrNull;
-      if (!mounted) return;
-      setState(() {
-        _scope = 'region';
-        _regionSido = sido;
-        _regionSigungu = sigungu;
-      });
-    } catch (_) {}
+    if ((label ?? '').isEmpty) {
+      try {
+        final marks = await placemarkFromCoordinates(lat, lng);
+        // '인천광역시' → '인천' (서버 표기와 맞춘다)
+        label = marks.isEmpty
+            ? null
+            : marks.first.administrativeArea?.replaceAll(
+              RegExp(r'(특별자치시|특별자치도|광역시|특별시|도)$'),
+              '',
+            );
+      } catch (_) {}
+    }
+    if (!mounted || (label ?? '').isEmpty) return;
+    setState(() => _myRegionLabel = label);
   }
 
   List<String> _parseBookmarksResponse(String body) {
@@ -2545,7 +2515,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   Widget _buildScopeTitle() {
     final label =
         _isNearScope
-            ? '내 주변 ${selectedDistance.toStringAsFixed(0)}km'
+            ? (_myRegionLabel ?? '내 주변')
             : _scope == 'region' && (_regionSido ?? '').isNotEmpty
             ? [_regionSido, _regionSigungu].whereType<String>().join(' ')
             : '전국';
@@ -2596,7 +2566,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             mainAxisSize: MainAxisSize.min,
             children: [
               const SizedBox(height: 8),
-              item('내 주변', '거리를 조절할 수 있어요', _isNearScope, () {
+              item(
+                '내 주변 ${selectedDistance.toStringAsFixed(0)}km',
+                _myRegionLabel == null ? '거리를 조절할 수 있어요' : '$_myRegionLabel 기준 · 거리를 조절할 수 있어요',
+                _isNearScope, () {
                 if (!_isNearScope) _setScope('near');
                 setState(() => _distanceExpanded = true);
               }),
