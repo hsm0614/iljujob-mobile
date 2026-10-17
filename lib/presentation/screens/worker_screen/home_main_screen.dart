@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/models/job.dart';
@@ -252,7 +253,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
   Future<void> _init() async {
     final prefs = await SharedPreferences.getInstance();
-    _scope = prefs.getString(_kScopeKey) ?? 'near';
+    // 직접 고른 적이 없으면 기본은 '내 지역'(현재 위치의 시·구). 아래 위치 확인 뒤 정한다
+    final savedScope = prefs.getString(_kScopeKey);
+    _scope = savedScope ?? 'near';
     _regionSido = prefs.getString(_kRegionSidoKey);
     _regionSigungu = prefs.getString(_kRegionSigunguKey);
     if (_scope == 'region' && (_regionSido ?? '').isEmpty) _scope = 'near';
@@ -310,6 +313,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       }
 
       if (finalLat != 0.0 && finalLng != 0.0) {
+        if (savedScope == null) await _defaultToMyRegion(finalLat, finalLng);
         sendLocationToServer(finalLat, finalLng);
         await prefs.setDouble('currentLatitude', finalLat);
         await prefs.setDouble('currentLongitude', finalLng);
@@ -323,6 +327,46 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         });
       }
     }
+  }
+
+  /// 현재 좌표 → 시·도/시·군·구 (서버 utils/geocode.js 의 sidoOf·sigunguOf 와 같은 규칙).
+  /// 저장하지 않는다 — 다른 동네로 가면 다음 실행 때 그 동네가 기본이 된다.
+  Future<void> _defaultToMyRegion(double lat, double lng) async {
+    try {
+      final marks = await placemarkFromCoordinates(lat, lng);
+      if (marks.isEmpty) return;
+      final m = marks.first;
+      const sidoAliases = {
+        '전남광주': '광주', '충청북': '충북', '충청남': '충남', '전라북': '전북',
+        '전라남': '전남', '경상북': '경북', '경상남': '경남',
+      };
+      const sidos = ['서울', '부산', '대구', '인천', '광주', '대전', '울산', '세종',
+        '경기', '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'];
+      final area = (m.administrativeArea ?? '').replaceAll(' ', '');
+      String? sido;
+      for (final e in sidoAliases.entries) {
+        if (area.startsWith(e.key)) sido = e.value;
+      }
+      sido ??= sidos.where(area.startsWith).firstOrNull;
+      if (sido == null) return;
+      final sigungu =
+          [m.subAdministrativeArea, m.locality, m.subLocality]
+              .whereType<String>()
+              .expand((t) => t.split(' '))
+              .where(
+                (t) =>
+                    t.length >= 2 &&
+                    RegExp(r'(시|군|구)$').hasMatch(t) &&
+                    !t.startsWith(sido!),
+              )
+              .firstOrNull;
+      if (!mounted) return;
+      setState(() {
+        _scope = 'region';
+        _regionSido = sido;
+        _regionSigungu = sigungu;
+      });
+    } catch (_) {}
   }
 
   List<String> _parseBookmarksResponse(String body) {
@@ -864,6 +908,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         }),
       if (selectedCategory != '전체')
         chip(selectedCategory, () => setState(() => selectedCategory = '전체')),
+      if (selectedPayType != 'all')
+        chip(selectedPayType == 'daily' ? '일급' : '주급', () {
+          setState(() => selectedPayType = 'all');
+        }),
     ];
   }
 
@@ -2602,13 +2650,14 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.tabTitle,
+              // 예전 로고처럼 파랑 (대표 요청 — DESIGN.md '제목 파랑 금지'의 예외: 홈 앱바 한 곳)
+              style: AppTextStyles.tabTitle.copyWith(color: AppColors.primary),
             ),
           ),
           const SizedBox(width: 2),
           const Icon(
             Icons.keyboard_arrow_down_rounded,
-            color: AppColors.textPrimary,
+            color: AppColors.primary,
           ),
         ],
       ),
@@ -2687,13 +2736,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     );
   }
 
-  /// 칩 줄 (급구식): 정렬 · 상세필터 · 당일지급 · 일급 · 주급 · AI 검색 · 오늘 근무 가능
+  /// 칩 줄 (급구식): 정렬 · 상세필터 · 당일지급 · AI 검색 · 오늘 근무 가능. 급여형·업종은 상세필터 안
   Widget _buildTopControlRow() {
-    void togglePay(String v) {
-      setState(() => selectedPayType = selectedPayType == v ? 'all' : v);
-      _applyFiltersThrottled();
-    }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -2714,7 +2758,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               _pill(
                 label: '상세필터',
                 icon: Icons.tune_rounded,
-                selected: selectedCategory != '전체',
+                selected: selectedCategory != '전체' || selectedPayType != 'all',
                 onTap: _openFilterSheet,
               ),
               const SizedBox(width: 6),
@@ -2725,18 +2769,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   setState(() => _onlySameDayPay = !_onlySameDayPay);
                   _applyFiltersThrottled();
                 },
-              ),
-              const SizedBox(width: 6),
-              _pill(
-                label: '일급',
-                selected: selectedPayType == 'daily',
-                onTap: () => togglePay('daily'),
-              ),
-              const SizedBox(width: 6),
-              _pill(
-                label: '주급',
-                selected: selectedPayType == 'weekly',
-                onTap: () => togglePay('weekly'),
               ),
               const SizedBox(width: 6),
               _pill(
