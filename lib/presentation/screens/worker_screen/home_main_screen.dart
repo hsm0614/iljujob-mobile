@@ -6,8 +6,10 @@ import '../../../data/models/job.dart';
 import '../../../data/services/job_service.dart';
 import 'job_detail_screen.dart';
 import 'recent_jobs_screen.dart';
+import 'notification_inbox_screen.dart';
 import 'package:iljujob/config/constants.dart';
 import 'dart:convert';
+import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'package:iljujob/data/services/log_service.dart';
@@ -56,7 +58,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   String searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
   String selectedCategory = '전체';
-  String sortType = '최신순';
+  // 기본 추천순: 가까운 것 + 최근 것을 섞는다 (최신순이면 '내 주변'에 27km 공고가 맨 위로 왔다)
+  String sortType = '추천순';
   double currentLatitude = 0.0;
   double currentLongitude = 0.0;
   double selectedDistance = 30;
@@ -101,7 +104,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   bool _partnerAdActive = false;
   static const _kPartnerCardHiddenUntilKey = 'partner_card_hidden_until';
   static const _partnerCardHideDays = 7;
-
 
   // 근무지가 여러 곳이면 가장 가까운 곳까지의 거리. 필터가 '고양으로 통과'시킨
   // 공고에 대표좌표(수원) 거리를 표시하면 목록과 카드가 서로 다른 말을 한다.
@@ -347,12 +349,13 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       try {
         final marks = await placemarkFromCoordinates(lat, lng);
         // '인천광역시' → '인천' (서버 표기와 맞춘다)
-        label = marks.isEmpty
-            ? null
-            : marks.first.administrativeArea?.replaceAll(
-              RegExp(r'(특별자치시|특별자치도|광역시|특별시|도)$'),
-              '',
-            );
+        label =
+            marks.isEmpty
+                ? null
+                : marks.first.administrativeArea?.replaceAll(
+                  RegExp(r'(특별자치시|특별자치도|광역시|특별시|도)$'),
+                  '',
+                );
       } catch (_) {}
     }
     if (!mounted || (label ?? '').isEmpty) return;
@@ -686,11 +689,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       });
 
       if (req != _jobsReqSeq || !mounted) return;
-      setState(() {
-        allJobs = validJobs;
-        filteredJobs = filtered;
-        _itemsToShow = 10;
-      });
+      allJobs = validJobs;
+      // 정렬·당일지급·급여형 칩이 첫 로드에도 먹도록 같은 필터를 탄다
+      _applyFilters();
     } catch (e) {
       debugPrint('_loadJobs 오류: $e');
     } finally {
@@ -811,6 +812,21 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     }
 
     switch (sortType) {
+      case '추천순':
+        // 점수 = 거리(km) + 게시 후 경과일 × 2. 1.5km·3일 = 7.5, 27km·오늘 = 27
+        double score(Job j) {
+          final d =
+              j.distanceKmFrom(currentLatitude, currentLongitude) ??
+              selectedDistance;
+          final at = j.publishAt ?? j.createdAt ?? nowUtc;
+          return d + nowUtc.difference(at).inHours / 12;
+        }
+        tempJobs.sort((a, b) {
+          final c = cmpPinned(a, b);
+          if (c != 0) return c;
+          return score(a).compareTo(score(b));
+        });
+        break;
       case '거리순':
         // 좌표 없는 공고는 거리를 알 수 없으므로 항상 뒤로
         double distOf(Job j) =>
@@ -1338,8 +1354,14 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               ),
             ),
             IconButton(
-              tooltip: '알림 설정',
-              onPressed: () => Navigator.pushNamed(context, '/notifications'),
+              tooltip: '알림',
+              onPressed:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationInboxScreen(),
+                    ),
+                  ),
               icon: const Icon(
                 Icons.notifications_none_rounded,
                 color: AppColors.textPrimary,
@@ -1349,67 +1371,76 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           ],
         ),
         body: SafeArea(
-          child: CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              SliverToBoxAdapter(
-                child: Container(
-                  color: AppColors.bgCard,
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-                  child: _buildTopControlRow(),
+          child: RefreshIndicator(
+            color: AppColors.primary,
+            onRefresh: () async {
+              await _init();
+              await _loadJobs();
+            },
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Container(
+                    color: AppColors.bgCard,
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+                    child: _buildTopControlRow(),
+                  ),
                 ),
-              ),
-              // 공고 위에는 '사장님이 먼저 연락했어요' 같은 내 일 안내만 둔다.
-              // 알림 꺼짐·성별 안내·배너·파트너 광고는 목록 3번째 공고 뒤 한 칸으로 (첫 공고를 위로)
-              const SliverPadding(
-                padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
-                sliver: SliverToBoxAdapter(child: HomeNudges()),
-              ),
-              // ── 적용 중인 필터 ───────────────────────────────────
-              // 필터를 걸어둔 걸 잊으면 "공고가 없다"로 오해한다.
-              // 화면에 보이고, 여기서 바로 뗄 수 있어야 한다.
-              if (_activeFilterChips.isNotEmpty)
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                  sliver: SliverToBoxAdapter(
-                    child: Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children: _activeFilterChips,
+                // 공고 위에는 '사장님이 먼저 연락했어요' 같은 내 일 안내만 둔다.
+                // 알림 꺼짐·성별 안내·배너·파트너 광고는 목록 3번째 공고 뒤 한 칸으로 (첫 공고를 위로)
+                const SliverPadding(
+                  padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
+                  sliver: SliverToBoxAdapter(child: HomeNudges()),
+                ),
+                // ── 적용 중인 필터 ───────────────────────────────────
+                // 필터를 걸어둔 걸 잊으면 "공고가 없다"로 오해한다.
+                // 화면에 보이고, 여기서 바로 뗄 수 있어야 한다.
+                if (_activeFilterChips.isNotEmpty)
+                  SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                    sliver: SliverToBoxAdapter(
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: _activeFilterChips,
+                      ),
                     ),
                   ),
-                ),
-              if (isLoading)
-                _buildSkeletonList()
-              else if (filteredJobs.isEmpty)
-                SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: _buildEmptyJobsView(),
-                )
-              else
-                SliverPadding(
-                  padding: EdgeInsets.zero,
-                  sliver: Builder(
-                    builder: (_) {
-                      final visibleCount =
-                          (_itemsToShow < filteredJobs.length)
-                              ? _itemsToShow
-                              : filteredJobs.length;
-                      final slotAt = visibleCount < 3 ? visibleCount : 3;
-                      return SliverList.builder(
-                        itemCount: visibleCount + 1,
-                        itemBuilder: (context, index) {
-                          if (index == slotAt) return _buildFeedSlot();
-                          final job =
-                              filteredJobs[index > slotAt ? index - 1 : index];
-                          return _buildJobCard(job);
-                        },
-                      );
-                    },
+                if (isLoading)
+                  _buildSkeletonList()
+                else if (filteredJobs.isEmpty)
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _buildEmptyJobsView(),
+                  )
+                else
+                  SliverPadding(
+                    padding: EdgeInsets.zero,
+                    sliver: Builder(
+                      builder: (_) {
+                        final visibleCount =
+                            (_itemsToShow < filteredJobs.length)
+                                ? _itemsToShow
+                                : filteredJobs.length;
+                        final slotAt = visibleCount < 3 ? visibleCount : 3;
+                        return SliverList.builder(
+                          itemCount: visibleCount + 1,
+                          itemBuilder: (context, index) {
+                            if (index == slotAt) return _buildFeedSlot();
+                            final job =
+                                filteredJobs[index > slotAt
+                                    ? index - 1
+                                    : index];
+                            return _buildJobCard(job);
+                          },
+                        );
+                      },
+                    ),
                   ),
-                ),
-              const SliverToBoxAdapter(child: SizedBox(height: 24)),
-            ],
+                const SliverToBoxAdapter(child: SizedBox(height: 24)),
+              ],
+            ),
           ),
         ),
       ),
@@ -1669,8 +1700,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       );
     });
 
-    final regionName =
-        [_regionSido, _regionSigungu].whereType<String>().join(' ');
+    final regionName = [
+      _regionSido,
+      _regionSigungu,
+    ].whereType<String>().join(' ');
     // 빈 화면에서 할 일은 하나 (급구식). 원인에 따라 그 하나를 고른다
     final (String title, String message, String action, VoidCallback onAction) =
         hasQuery
@@ -2119,7 +2152,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                                           ),
                                                       decoration: BoxDecoration(
                                                         // DESIGN.md: 장기 같은 분류 뱃지는 중립 회색
-                                                        color: AppColors.bgMuted,
+                                                        color:
+                                                            AppColors.bgMuted,
                                                         borderRadius:
                                                             BorderRadius.circular(
                                                               20,
@@ -2128,7 +2162,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                                       child: const Text(
                                                         '장기',
                                                         style: TextStyle(
-                                                          color: AppColors.textSecondary,
+                                                          color:
+                                                              AppColors
+                                                                  .textSecondary,
                                                           fontSize: 11,
                                                           fontWeight:
                                                               FontWeight.w700,
@@ -2432,16 +2468,23 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             : (distanceKm < 10
                 ? distanceKm.toStringAsFixed(1)
                 : distanceKm.toStringAsFixed(0));
-    final String locationLine =
-        distanceText == null ? placeText : '$placeText · ${distanceText}km';
+    // 레퍼런스(급구)처럼 '누가 뽑는지'를 먼저. 회사명 없으면 주소
+    final company = (job.company ?? '').trim();
+    final String locationLine = [
+      company.isNotEmpty ? company : placeText,
+      if (distanceText != null) '${distanceText}km',
+      if (job.applicantCount > 0) '지원 ${job.applicantCount}명',
+    ].join(' · ');
 
     final nowUtc = DateTime.now().toUtc();
     final bool isPinned =
         job.pinnedUntil != null && job.pinnedUntil!.isAfter(nowUtc);
     final bool isUrgent =
-        job.endDate != null &&
-        !job.endDate!.isBefore(nowUtc) &&
-        job.endDate!.difference(nowUtc).inDays <= 2;
+        (job.endDate != null &&
+            !job.endDate!.isBefore(nowUtc) &&
+            job.endDate!.difference(nowUtc).inDays <= 2) ||
+        (job.expiresAt != null &&
+            job.expiresAt!.difference(nowUtc).inHours < 24);
 
     // 뱃지 색은 두 갈래만 쓴다.
     //   주황 = 시간이 급함 (긴급·마감임박)
@@ -2486,6 +2529,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       // 시간 미입력 공고는 "~"만 노출되던 문제 — 값 있을 때만 표시
       if (job.workingHours.replaceAll('~', '').trim().isNotEmpty)
         job.workingHours,
+      if (_hourlyFromDaily(job) case final h?) '시급 $h',
     ].join(' · ');
     final rawImage = job.imageUrls.isEmpty ? null : job.imageUrls.first;
 
@@ -2507,6 +2551,24 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       onTap: () => _openJobDetail(job),
       onBookmark: () => _toggleBookmark(job.id.toString()),
     );
+  }
+
+  /// 일급 ÷ 근무시간 → '11,250원' (레퍼런스의 '시급 13,000원'). 계산 못 하면 null.
+  /// 휴게시간은 모른다 — 공고에 없어서 단순 나눗셈. 야간(22:00~06:00)은 자정을 넘겨 계산.
+  String? _hourlyFromDaily(Job job) {
+    if (job.payType != '일급') return null;
+    final pay = int.tryParse(job.pay.replaceAll(_reNonDigit, '')) ?? 0;
+    final m = RegExp(
+      r'(\d{1,2}):(\d{2})\s*~\s*(\d{1,2}):(\d{2})',
+    ).firstMatch(job.workingHours);
+    if (pay <= 0 || m == null) return null;
+    final start = int.parse(m[1]!) * 60 + int.parse(m[2]!);
+    var end = int.parse(m[3]!) * 60 + int.parse(m[4]!);
+    if (end <= start) end += 24 * 60;
+    final hours = (end - start) / 60;
+    if (hours < 1) return null;
+    final hourly = (pay / hours / 10).round() * 10;
+    return '${NumberFormat('#,###').format(hourly)}원';
   }
 
   /// 검색창(펼쳤을 때) + 한 줄 알약 행: 범위 · AI 검색 · 필터 · 위치.
@@ -2551,10 +2613,14 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         Widget item(String title, String? sub, bool on, VoidCallback onTap) =>
             ListTile(
               title: Text(title, style: AppTextStyles.body1),
-              subtitle: sub == null ? null : Text(sub, style: AppTextStyles.caption),
+              subtitle:
+                  sub == null ? null : Text(sub, style: AppTextStyles.caption),
               trailing:
                   on
-                      ? const Icon(Icons.check_rounded, color: AppColors.primary)
+                      ? const Icon(
+                        Icons.check_rounded,
+                        color: AppColors.primary,
+                      )
                       : null,
               onTap: () {
                 Navigator.pop(ctx);
@@ -2568,13 +2634,22 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               const SizedBox(height: 8),
               item(
                 '내 주변 ${selectedDistance.toStringAsFixed(0)}km',
-                _myRegionLabel == null ? '거리를 조절할 수 있어요' : '$_myRegionLabel 기준 · 거리를 조절할 수 있어요',
-                _isNearScope, () {
-                if (!_isNearScope) _setScope('near');
-                setState(() => _distanceExpanded = true);
-              }),
+                _myRegionLabel == null
+                    ? '거리를 조절할 수 있어요'
+                    : '$_myRegionLabel 기준 · 거리를 조절할 수 있어요',
+                _isNearScope,
+                () {
+                  if (!_isNearScope) _setScope('near');
+                  setState(() => _distanceExpanded = true);
+                },
+              ),
               item('지역 선택', null, _scope == 'region', _openRegionPicker),
-              item('전국', null, _scope == 'nationwide', () => _setScope('nationwide')),
+              item(
+                '전국',
+                null,
+                _scope == 'nationwide',
+                () => _setScope('nationwide'),
+              ),
               item('현재 위치 다시 찾기', null, false, () async {
                 await _init();
                 _applyFiltersThrottled();
@@ -2596,7 +2671,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 const SizedBox(height: 8),
-                for (final t in const ['최신순', '거리순', '급여 높은 순'])
+                for (final t in const ['추천순', '최신순', '거리순', '급여 높은 순'])
                   ListTile(
                     title: Text(t, style: AppTextStyles.body1),
                     trailing:
@@ -2680,24 +2755,16 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       children: [
         if (showPartner)
           _buildPartnerRecruitCard(PartnerRecruitPost.wonderLotte),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const PushOffBanner(
-                message: '알림이 꺼져 있어요 · 켜면 근처 새 공고를 바로 받아요',
-                source: 'worker_home_banner',
-              ),
-              if (!isLoading &&
-                  _workerGender == null &&
-                  !_genderHintDismissed) ...[
-                const SizedBox(height: 8),
-                _buildGenderHintCard(),
-              ],
-            ],
-          ),
+        const PushOffBanner(
+          message: '알림이 꺼져 있어요 · 켜면 근처 새 공고를 바로 받아요',
+          source: 'worker_home_banner',
         ),
+        if (!isLoading && _workerGender == null && !_genderHintDismissed)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+            child: _buildGenderHintCard(),
+          ),
+        const SizedBox(height: 12),
         const AdBannerWidget(placement: 'app_home_worker'),
         const SizedBox(height: 12),
       ],
@@ -2806,4 +2873,3 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 // ─────────────────────────────────────────────
 // AI 추천 가로 스크롤 스트립
 // ─────────────────────────────────────────────
-
