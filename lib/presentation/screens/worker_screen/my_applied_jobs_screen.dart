@@ -69,17 +69,6 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
     return const [];
   }
 
-  int _payToInt(String s) {
-    final onlyNum = s.replaceAll(RegExp(r'[^0-9]'), '');
-    return int.tryParse(onlyNum) ?? 0;
-  }
-
-  String _fmtPay(String s) {
-    final n = _payToInt(s);
-    if (n <= 0) return s; // 혹시 이상한 값이면 원본 유지
-    return NumberFormat('#,###').format(n);
-  }
-
   @override
   void initState() {
     super.initState();
