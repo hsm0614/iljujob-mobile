@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/widget/app_ui.dart';
+import 'package:iljujob/utils/apply_stage.dart';
 import 'package:iljujob/widget/job_list_tile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
@@ -30,6 +31,10 @@ class MyAppliedJobsScreen extends StatefulWidget {
 }
 
 class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
+  final Map<String, ApplyStage> _stageByJob = {};
+  ApplyStage _stage(Job j) =>
+      _stageByJob['${j.id}'] ?? applyStageOf(jobStatus: j.status);
+
   // Tabs
   int _tabIndex = 0; // 0=지원현황, 1=찜한공고
 
@@ -43,7 +48,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
   Set<String> hiddenJobIds = {}; // 로컬 숨김
   bool isLoading = true;
   // Filters
-  String filterStatus = '전체'; // 전체 | applied | confirmed | closed
+  String filterStatus = '전체'; // 전체 | todo | waiting | done (apply_stage.dart group)
   String searchQuery = '';
 
   // Review status
@@ -156,6 +161,23 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
               .map((item) => Job.fromJson(item))
               .where((job) => job.status != 'deleted'),
         );
+        // 상태(답장 여부·출근확정)는 Job 모델 밖 값이라 따로 들고 있는다
+        _stageByJob
+          ..clear()
+          ..addEntries(
+            (raw as List).whereType<Map>().map(
+              (r) => MapEntry(
+                '${r['id']}',
+                applyStageOf(
+                  jobStatus: '${r['status'] ?? ''}',
+                  workStatus: r['work_status'] as String?,
+                  isConfirmed: '${r['is_confirmed']}' == '1',
+                  isCompleted: '${r['is_completed']}' == '1',
+                  clientReplied: '${r['client_replied']}' == '1',
+                ),
+              ),
+            ),
+          );
 
         // 후기 여부 미리 로딩
         reviewStatusMap.clear();
@@ -670,40 +692,28 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
     );
   }
 
+  /// 상태 묶음 칩: 전체 · 할 일 · 답장 대기 · 끝남 (개수 함께). 할 일이 있으면 그게 먼저 보인다
   Widget _statusChips() {
     Widget chip(String key, String label) {
       final selected = filterStatus == key;
-      return GestureDetector(
-        onTap: () {
-          setState(() => filterStatus = key);
-          _applyFilters();
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          decoration: BoxDecoration(
-            color: selected ? kBrandBlue : Colors.white,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: selected ? kBrandBlue : AppColors.border,
-            ),
-            boxShadow:
-                selected
-                    ? [
-                      BoxShadow(
-                        color: kBrandBlue.withValues(alpha: 0.20),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                    : [],
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : AppColors.textSecondary,
+      final n = _activityCount(key);
+      return Material(
+        color: selected ? AppColors.primaryLight : AppColors.bgMuted,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.full),
+          onTap: () {
+            setState(() => filterStatus = key);
+            _applyFilters();
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            child: Text(
+              '$label $n',
+              style: AppTextStyles.captionBold.copyWith(
+                fontSize: 13,
+                color: selected ? AppColors.primary : AppColors.textSecondary,
+              ),
             ),
           ),
         ),
@@ -715,142 +725,26 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
       child: Align(
         alignment: Alignment.centerLeft,
         child: Wrap(
-          spacing: 10,
+          spacing: 6,
           children: [
             chip('전체', '전체'),
-            chip('applied', '지원중'),
-            chip('confirmed', '출근 확정'),
-            chip('closed', '마감'),
+            chip('todo', '할 일'),
+            chip('waiting', '답장 대기'),
+            chip('done', '끝남'),
           ],
         ),
       ),
     );
   }
 
-  bool _matchesActivityFilter(Job job, String key) {
-    final status = job.status;
-    if (key == 'applied') return status == 'active';
-    if (key == 'confirmed') return status == 'hired' || status == 'confirmed';
-    if (key == 'closed') return status == 'closed';
-    return true;
-  }
+  bool _matchesActivityFilter(Job job, String key) =>
+      key == '전체' || _stage(job).group == key;
 
   int _activityCount(String key) =>
       appliedJobs
           .where((job) => job.status != 'deleted')
           .where((job) => _matchesActivityFilter(job, key))
           .length;
-
-  Widget _activitySummary() {
-    Widget item({
-      required String label,
-      required int count,
-      required Color color,
-      required IconData icon,
-    }) {
-      return Expanded(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, size: 17, color: color),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$count건',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.textPrimary,
-                        height: 1.1,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Row(
-        children: [
-          item(
-            label: '지원중',
-            count: _activityCount('applied'),
-            color: kBrandBlue,
-            icon: Icons.send_rounded,
-          ),
-          const SizedBox(width: 8),
-          item(
-            label: '출근 확정',
-            count: _activityCount('confirmed'),
-            color: AppColors.success,
-            icon: Icons.verified_rounded,
-          ),
-          const SizedBox(width: 8),
-          item(
-            label: '마감',
-            count: _activityCount('closed'),
-            color: AppColors.textTertiary,
-            icon: Icons.flag_rounded,
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _statusText(Job job) {
-    if (job.status == 'deleted') return '삭제됨';
-    if (job.status == 'hired' || job.status == 'confirmed') return '출근 확정';
-    if (job.status != 'active') return '마감';
-    // '지원중' 은 공고가 살아있다는 뜻일 뿐이라, 지원자 입장에선 아무 정보가 아니다.
-    // 최소한 얼마나 지났는지는 알려준다.
-    final at = job.appliedAt;
-    if (at == null) return '지원중';
-    final days = DateTime.now().toUtc().difference(at.toUtc()).inDays;
-    if (days <= 0) return '오늘 지원';
-    if (days == 1) return '지원 1일째';
-    return '지원 $days일째';
-  }
-
-  Color _statusColor(Job job) {
-    if (job.status == 'deleted') return AppColors.textTertiary;
-    if (job.status == 'active') return AppColors.primary;
-    if (job.status == 'hired' || job.status == 'confirmed')
-      return AppColors.success;
-    return AppColors.textTertiary;
-  }
 
   Widget _emptyView({required bool forBookmark}) {
     return AppEmptyState(
@@ -884,8 +778,9 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
     final end =
         job.endDate != null ? DateFormat('MM.dd').format(job.endDate!) : '';
 
-    final statusText = _statusText(job);
-    final statusColor = _statusColor(job);
+    final stage = _stage(job);
+    final statusText = stage.label;
+    final statusColor = stage.color;
 
     // 이미지 (있으면)
     Widget thumb() {
@@ -1013,6 +908,21 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                         ),
                       ),
 
+                    // 지금 해야 할 일 — 상태와 같은 기준(apply_stage.dart)
+                    if (!bookmarkedTab && stage.next != null) ...[
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => _openChatRoom(job),
+                        child: Text(
+                          '${stage.next} ›',
+                          style: AppTextStyles.captionBold.copyWith(
+                            fontSize: 13,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 10),
 
                     // Bottom actions (지원현황 탭에서만)
@@ -1148,7 +1058,6 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                     _headerSearch(),
                     _topTabs(),
                     if (_tabIndex == 0) ...[
-                      _activitySummary(),
                       _statusChips(),
                     ] else
                       const SizedBox(height: 12),

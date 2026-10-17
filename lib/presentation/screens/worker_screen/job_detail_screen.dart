@@ -29,6 +29,8 @@ import 'package:iljujob/widget/ad_banner_widget.dart';
 import 'package:iljujob/widget/push_permission.dart';
 import 'ai_interview_prep_sheet.dart';
 import 'recent_jobs_screen.dart';
+import 'my_applied_jobs_screen.dart';
+import 'package:iljujob/utils/apply_stage.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import '../../../config/messages.dart';
 
@@ -617,178 +619,56 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     );
   }
 
-  Future<bool> _showChatMoveNoticeDialog() async {
-    if (!mounted) return false;
-
-    final result = await showModalBottomSheet<bool>(
+  /// 지원 완료 안내. 상태 이름·다음 할 일은 내 활동과 같은 기준(apply_stage.dart).
+  /// 반환: 'chat'(채팅으로) · 'activity'(내 활동으로) · null(닫기)
+  Future<String?> _showApplyDoneSheet() async {
+    if (!mounted) return null;
+    const stage = ApplyStage.waiting;
+    return showModalBottomSheet<String>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent, // 바깥은 투명
-      builder: (context) {
-        return SafeArea(
-          child: Container(
-            margin: const EdgeInsets.all(12),
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.12),
-                  blurRadius: 16,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 상단 그립바
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.textDisabled,
-                      borderRadius: BorderRadius.circular(999),
+      builder:
+          (ctx) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    size: 44,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    '지원했어요',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.h2,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '지금 상태: ${stage.label}\n사장님이 답하면 알림으로 알려드려요.',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.body2,
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    height: 52,
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(ctx, 'chat'),
+                      child: Text(stage.next!),
                     ),
                   ),
-                ),
-                const SizedBox(height: 16),
-
-                // 아이콘 + 타이틀
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: kBrand.withOpacity(0.08),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.chat_bubble_outline_rounded,
-                        color: kBrand,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        '지원이 완료되었어요!',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                          fontFamily: 'Jalnan2TTF',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                // 본문 텍스트
-                const Text(
-                  '이 공고에 대한 채팅방이 열렸어요.\n'
-                  '사장님과 바로 대화하면서 급여, 근무 조건,\n'
-                  '위치 등을 한 번 더 확인해보는 걸 추천해요 🙂',
-                  style: TextStyle(
-                    fontSize: 14,
-                    height: 1.5,
-                    color: Color(0xFF444444),
+                  const SizedBox(height: 4),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, 'activity'),
+                    child: const Text('내 활동에서 상태 확인'),
                   ),
-                ),
-
-                const SizedBox(height: 18),
-
-                // 라벨/뱃지 느낌 한 줄
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.flash_on_rounded, size: 16, color: kBrand),
-                      SizedBox(width: 6),
-                      Text(
-                        '빠른 응답일수록 채용 가능성이 커져요',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: kBrand,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // 버튼 두 개
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        style: OutlinedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(46),
-                          side: BorderSide(color: AppColors.textDisabled),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).pop(false);
-                        },
-                        child: const Text(
-                          '나중에 보기',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kBrand,
-                          minimumSize: const Size.fromHeight(46),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          elevation: 0,
-                        ),
-                        onPressed: () {
-                          Navigator.of(context).pop(true);
-                        },
-                        child: const Text(
-                          '채팅방으로 이동',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        );
-      },
     );
-
-    return result ?? false;
   }
 
   Future<void> _applyToJob() async {
@@ -860,8 +740,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           'worker_apply_complete',
           params: {'job_id': widget.job.id, 'category': widget.job.category},
         );
-        _showSnack(Msg.applyDone);
-
         // ✅ apply 로그 추가
         final jobIdInt = int.tryParse(widget.job.id.toString());
         if (jobIdInt != null) {
@@ -879,14 +757,16 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
         final roomId = await startChatRoom(workerId, jobId, clientId);
         if (roomId != null) {
-          // ✅ 채팅방 이동 안내 다이얼로그 먼저 띄우기
-          final goToChat = await _showChatMoveNoticeDialog();
-          if (!goToChat) {
-            // 사용자가 "나중에 보기"를 눌렀을 때: 여기서 끝, 화면 유지
+          // 지원 완료 안내 → 채팅 / 내 활동 / 닫기(화면 유지)
+          final choice = await _showApplyDoneSheet();
+          if (!mounted || choice == null) return;
+          if (choice == 'activity') {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const MyAppliedJobsScreen()),
+            );
             return;
           }
-
-          if (!mounted) return;
 
           Navigator.push(
             context,
@@ -916,7 +796,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             ),
           );
         } else {
-          _showSnack(Msg.chatCreateFailed);
+          // 지원은 됐다 — 안내 시트가 없으니 지원 사실을 같이 알린다
+          _showSnack('${Msg.applyDone} ${Msg.chatCreateFailed}');
         }
       } else if (response.statusCode == 409) {
         _showSnack(Msg.applyDuplicate);

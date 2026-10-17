@@ -1,5 +1,6 @@
 // lib/presentation/chat/work_confirmation_card.dart
 import 'package:flutter/material.dart';
+import 'package:iljujob/utils/apply_stage.dart';
 import 'package:intl/intl.dart';
 import '../../config/app_theme.dart';
 import '../../data/services/work_confirmation_service.dart';
@@ -223,18 +224,8 @@ class WorkConfirmationCard extends StatelessWidget {
     }
   }
 
-  String _statusLabel(String s) => switch (s) {
-    'proposed' => '제안됨',
-    'accepted' => '수락됨',
-    'scheduled' => '예정',
-    'day_before_confirmed' => '전날 확인',
-    'day_of_confirmed' => '당일 확인',
-    'checked_in' => '출근 확인',
-    'completed' => '근무 완료',
-    'cancelled' => '취소됨',
-    'no_show' => '노쇼',
-    _ => s,
-  };
+  // 내 활동과 같은 이름 (utils/apply_stage.dart)
+  String _statusLabel(String s) => workStatusLabel(s);
 
   Color _statusColor(String s) => switch (s) {
     'proposed' => AppColors.pending,
