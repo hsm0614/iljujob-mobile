@@ -269,7 +269,7 @@ class AppBottomNavItem extends StatelessWidget {
                       isActive ? activeIcon : icon,
                       size: 21,
                       color:
-                          isActive ? AppColors.primary : AppColors.textDisabled,
+                          isActive ? AppColors.primary : AppColors.textSecondary,
                     ),
                     if (badgeLabel != null)
                       Positioned(
@@ -304,7 +304,7 @@ class AppBottomNavItem extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                  color: isActive ? AppColors.primary : AppColors.textDisabled,
+                  color: isActive ? AppColors.primary : AppColors.textSecondary,
                 ),
               ),
             ],

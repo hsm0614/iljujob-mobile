@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../worker_calendar_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../data/services/job_service.dart';
+import 'job_detail_screen.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'home_main_screen.dart';
@@ -52,6 +54,23 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _maybeShowPromoIfHomeTab(),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openPendingApplyJob());
+  }
+
+  /// 비로그인 상태에서 '지원하기'를 누르고 가입했다면 그 공고로 돌려보낸다 (한 번만)
+  Future<void> _openPendingApplyJob() async {
+    final prefs = await SharedPreferences.getInstance();
+    final id = prefs.getString(JobDetailScreen.pendingApplyJobKey);
+    if (id == null) return;
+    await prefs.remove(JobDetailScreen.pendingApplyJobKey);
+    try {
+      final job = await JobService.fetchJobById(id);
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => JobDetailScreen(job: job)),
+      );
+    } catch (_) {}
   }
 
   @override

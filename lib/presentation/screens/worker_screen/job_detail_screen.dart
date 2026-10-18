@@ -41,6 +41,9 @@ class JobDetailScreen extends StatefulWidget {
 
   const JobDetailScreen({super.key, required this.job});
 
+  /// 비로그인 '지원하기' → 가입 후 돌아올 공고 id (HomeScreen 이 읽고 지운다)
+  static const pendingApplyJobKey = 'pending_apply_job_id';
+
   @override
   State<JobDetailScreen> createState() => _JobDetailScreenState();
 }
@@ -59,7 +62,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   double? _distanceMeters;
   String? _nearStationName;
   int? _nearStationWalkMin;
-  bool _locContextLoading = false;
 
   Future<void> _loadSuspension() async {
     try {
@@ -179,22 +181,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return '새 공고';
   }
 
-  List<String> _jobKeywords(Job job) {
-    final k = <String>[];
-    if ((job.category).trim().isNotEmpty) k.add(job.category.trim());
-    if (job.isSameDayPay == true) k.add('당일지급');
-    if ((job.payType).trim().isNotEmpty && !isNegotiablePayType(job.payType)) {
-      k.add(job.payType.trim());
-    }
-    final hours = (job.workingHours).trim();
-    if (hours.isNotEmpty) k.add(hours);
-    final period = _getWorkingPeriodText(job).trim();
-    if (period.isNotEmpty && period != '근무 기간 미정') k.add(period);
-
-    // 너무 길면 정리
-    return k.take(6).toList();
-  }
-
   String _shortLocationText() {
     final city = widget.job.locationCity.trim();
     if (city.isNotEmpty) return city;
@@ -256,7 +242,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     final lng = double.tryParse(widget.job.lng.toString()) ?? 0;
     if (lat == 0 || lng == 0) return;
 
-    setState(() => _locContextLoading = true);
 
     try {
       // 1) 내 위치 -> 거리 계산
@@ -293,7 +278,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     } catch (_) {
       // 실패해도 UI는 계속 돌아가게
     } finally {
-      if (mounted) setState(() => _locContextLoading = false);
+      if (mounted) setState(() {}); // 가까운 역 정보 반영
     }
   }
 
@@ -873,6 +858,73 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     }
   }
 
+  Widget _buildGuestApplyBar() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.bgCard,
+        border: Border(top: BorderSide(color: AppColors.borderSub)),
+      ),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: SizedBox(
+            height: 52,
+            child: FilledButton(
+              onPressed: isClosed ? null : _askSignupToApply,
+              child: Text(isClosed ? '마감된 공고' : '지원하기'),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _askSignupToApply() async {
+    final go = await showModalBottomSheet<bool>(
+      context: context,
+      builder:
+          (ctx) => SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    '가입하고 지원하기',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.h2,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '가입은 1분이면 끝나요.\n가입하면 이 공고로 바로 돌아와요.',
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.body2,
+                  ),
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    height: 52,
+                    child: FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('가입하기'),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('더 둘러보기'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+    );
+    if (go != true || !mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(JobDetailScreen.pendingApplyJobKey, '${widget.job.id}');
+    if (!mounted) return;
+    Navigator.pushNamed(context, '/signup-choice');
+  }
+
   Widget _buildApplyButton() {
     if (isLoading) return const SizedBox();
 
@@ -1088,7 +1140,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
       decoration: BoxDecoration(
-        color: isButtonDisabled ? AppColors.bgMuted : AppColors.primaryLight,
+        color: AppColors.bgMuted, // 안내 문구는 누를 수 없다 — 파랑 금지
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -1096,7 +1148,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           Icon(
             icon,
             size: 17,
-            color: isButtonDisabled ? AppColors.textSecondary : kBrand,
+            color: AppColors.textSecondary,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -1105,11 +1157,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               style: TextStyle(
                 fontSize: 13,
                 height: 1.25,
-                color:
-                    isButtonDisabled
-                        ? AppColors.textSecondary
-                        : AppColors.primaryDark,
-                fontWeight: FontWeight.w700,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -1200,7 +1249,10 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   Widget _buildReviewSummary() {
-    if (reviewSummary == null) return const SizedBox();
+    // 후기 0건이면 막대 3개가 전부 0 — 숨기는 게 '0'을 보여주는 것보다 낫다
+    if (reviewSummary == null || ((reviewSummary!['total'] as num?) ?? 0) == 0) {
+      return const SizedBox.shrink();
+    }
 
     final tags = reviewSummary!['tags'] as Map<String, dynamic>;
     final satisfaction = reviewSummary!['satisfaction'] as Map<String, dynamic>;
@@ -1208,10 +1260,10 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '알바 후기',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-        ),
+        const SizedBox(height: 16),
+        const Divider(height: 1),
+        const SizedBox(height: 12),
+        const Text('알바 후기', style: AppTextStyles.h3),
         const SizedBox(height: 10),
 
         // 🔹 태그 시각화
@@ -1373,7 +1425,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ),
                 ],
               ),
-      bottomNavigationBar: userType == 'worker' ? _buildApplyButton() : null,
+      // 구직자: 지원 버튼. 비로그인: 같은 자리에 지원하기 → 가입 후 이 공고로 돌아온다.
+      // (예전엔 비로그인이면 버튼이 아예 없어 둘러보던 신규 구직자가 지원할 길이 없었다)
+      bottomNavigationBar:
+          userType == 'worker'
+              ? _buildApplyButton()
+              : userType == null && !isLoading
+              ? _buildGuestApplyBar()
+              : null,
     );
   }
 
@@ -1497,7 +1556,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   Widget _buildStatsSection() {
     final label = _interestLabel(viewCount, bookmarkCount, applicantCount);
-    final keywords = _jobKeywords(widget.job);
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1507,26 +1565,24 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         children: [
           Row(
             children: [
-              const Text(
-                '공고 통계',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
-              ),
+              const Text('공고 통계', style: AppTextStyles.h3),
               const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
                   vertical: 5,
                 ),
+                // 누를 수 없는 분류 — 파랑 대신 중립 (CTA Blue 규칙)
                 decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
+                  color: AppColors.bgMuted,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
                   label,
                   style: const TextStyle(
                     fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: kBrand,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ),
@@ -1545,15 +1601,15 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               ),
               _verticalDivider(),
               _statItem(
-                icon: Icons.favorite,
-                iconColor: Colors.red,
+                icon: Icons.favorite_border_rounded,
+                iconColor: AppColors.textTertiary,
                 label: '저장',
                 valueText: _formatCount(bookmarkCount),
               ),
               _verticalDivider(),
               _statItem(
-                icon: Icons.group,
-                iconColor: AppColors.primary,
+                icon: Icons.group_outlined,
+                iconColor: AppColors.textTertiary,
                 label: '지원',
                 valueText: _formatCount(applicantCount),
                 emphasize: true,
@@ -1561,56 +1617,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             ],
           ),
 
-          const SizedBox(height: 12),
-
-          // ✅ “낮은 수치”를 숫자 말고 ‘키워드’로 보강
-          if (keywords.isNotEmpty) ...[
-            Row(
-              children: const [
-                Icon(
-                  Icons.local_offer_outlined,
-                  size: 16,
-                  color: AppColors.textSecondary,
-                ),
-                SizedBox(width: 6),
-                Text(
-                  '이 공고 키워드',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children:
-                  keywords.map((t) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.bgPage,
-                        borderRadius: BorderRadius.circular(999),
-                        border: Border.all(color: AppColors.border),
-                      ),
-                      child: Text(
-                        t,
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF263144),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-            ),
-          ],
         ],
       ),
     );
@@ -1660,13 +1666,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     final lng = double.tryParse(widget.job.lng.toString()) ?? 0;
     final address = widget.job.location.toString().trim();
 
-    String distanceText() {
-      final m = _distanceMeters;
-      if (m == null) return '';
-      if (m >= 1000) return '내 위치에서 ${(m / 1000).toStringAsFixed(1)}km';
-      return '내 위치에서 ${m.toStringAsFixed(0)}m';
-    }
-
     String stationText() {
       if (_nearStationName == null || _nearStationName!.isEmpty) return '';
       final w = _nearStationWalkMin;
@@ -1680,10 +1679,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '근무 위치',
-          style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
-        ),
+        const Text('근무 위치', style: AppTextStyles.h3),
         const SizedBox(height: 6),
         const Text(
           '정확한 위치는 사장님과 대화하면서 한 번 더 확인해보는 게 좋아요 😊',
@@ -1691,63 +1687,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         ),
         const SizedBox(height: 10),
 
-        // ✅ 맥락 바 (역/거리)
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: AppColors.border),
+        // 거리는 맨 위 요약에 이미 있다 — 여기선 거기 없는 '가까운 역'만 (2026-10 평가: 거리 3번 반복)
+        if (stationText().isNotEmpty)
+          Text(
+            stationText(),
+            style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary),
           ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: kBrand.withOpacity(0.10),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.place_outlined,
-                  color: kBrand,
-                  size: 18,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      stationText().isNotEmpty ? stationText() : '근무지 위치 정보',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      distanceText().isNotEmpty ? distanceText() : ' ',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (_locContextLoading)
-                const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-            ],
-          ),
-        ),
 
         // 근무지가 여러 곳인 공고. 아래 지도·길찾기·주소복사는 전부 대표 근무지
         // 기준이라, 나머지를 안 보여주면 구직자가 다른 지점으로 갈 수 있다.
@@ -1979,6 +1924,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ),
                   child: CircleAvatar(
                     radius: 26,
+                    backgroundColor: AppColors.bgMuted,
                     backgroundImage:
                         clientProfile != null &&
                                 clientProfile!['logo_url'] != null
@@ -2000,10 +1946,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       // 회사명
                       Text(
                         _getCompanyName(),
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w800,
-                        ),
+                        style: AppTextStyles.h3,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -2082,124 +2025,43 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             const SizedBox(height: 16),
             const Divider(height: 1),
 
-            // ===== 하단 통계 카드 2개 =====
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                // 등록한 공고
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(16),
-                      onTap: () {
-                        if (userType == 'worker' &&
-                            widget.job.clientId != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder:
-                                  (_) => ClientJobListScreen(
-                                    clientId: widget.job.clientId!,
-                                  ),
+            // 이 회사의 다른 공고. 예전 '등록한 공고 0 · 채용 확정 0' 타일은 서버가 숫자를 안 줘 늘 0이었다
+            if (((clientProfile?['job_count'] as num?) ?? 0) > 1 &&
+                userType == 'worker' &&
+                widget.job.clientId != null) ...[
+              const SizedBox(height: 4),
+              InkWell(
+                onTap:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (_) => ClientJobListScreen(
+                              clientId: widget.job.clientId!,
                             ),
-                          );
-                        }
-                      },
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryLight,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.assignment_outlined,
-                              size: 24,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            '${clientProfile?['job_count'] ?? 0}',
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '등록한 공고',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
                       ),
                     ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Row(
+                    children: [
+                      Text(
+                        '이 회사 공고 ${clientProfile!['job_count']}개 보기',
+                        style: AppTextStyles.body1.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const Spacer(),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        color: AppColors.textTertiary,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 12),
-                // 채용 확정
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 18),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: Colors.green.shade50,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.check_circle_outline,
-                            size: 24,
-                            color: Colors.green,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          '${clientProfile?['hire_count'] ?? 0}',
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '채용 확정',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-            const Divider(height: 1),
-
-            // 리뷰 요약 섹션
-            const SizedBox(height: 12),
+              ),
+            ],
+            // 리뷰 요약 섹션 (후기 없으면 구분선까지 숨김)
             _buildReviewSummary(),
           ],
         ),

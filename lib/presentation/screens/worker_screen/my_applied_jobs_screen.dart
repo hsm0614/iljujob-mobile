@@ -1055,9 +1055,11 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : Column(
                   children: [
-                    _headerSearch(),
+                    // 지원 0건이면 검색창·'0'짜리 칩 없이 빈 화면 안내만 (평가 2026-10)
+                    if (appliedJobs.isNotEmpty || bookmarkedJobs.isNotEmpty)
+                      _headerSearch(),
                     _topTabs(),
-                    if (_tabIndex == 0) ...[
+                    if (_tabIndex == 0 && appliedJobs.isNotEmpty) ...[
                       _statusChips(),
                     ] else
                       const SizedBox(height: 12),
