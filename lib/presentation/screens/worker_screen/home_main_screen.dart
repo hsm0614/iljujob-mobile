@@ -1301,6 +1301,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                       },
                     ),
                   ),
+                if (!isLoading &&
+                    filteredJobs.isNotEmpty &&
+                    filteredJobs.length < 8 &&
+                    _scope != 'nationwide')
+                  SliverToBoxAdapter(child: _buildFewJobsFooter()),
                 const SliverToBoxAdapter(child: SizedBox(height: 24)),
               ],
             ),
@@ -2381,13 +2386,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       opBadges.add(const JobSignalBadge(label: '마감임박', signal: JobSignal.time));
     }
     // 급여 형태(일급/주급/월급)는 가격 옆 칩으로만 표시 — 상단 뱃지 중복 제거
+    // 인증 업체는 첫 줄 회사명 앞 초록 체크로 (뱃지 자리를 업종 태그에 준다)
     if (job.isSameDayPay == true) {
       opBadges.add(
         const JobSignalBadge(label: '당일지급', signal: JobSignal.money),
-      );
-    } else if (job.isCertifiedCompany == true) {
-      opBadges.add(
-        const JobSignalBadge(label: '안심기업', signal: JobSignal.trust),
       );
     }
     if (job.jobType == 'long') {
@@ -2399,8 +2401,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     // 전부 상단 위치줄·뱃지·AI 요약에 이미 있는 내용이라 카드만 길어졌다.
 
     final schedule = [
+      if (_weekdaysText(job.weekdays) case final w?) w,
       if (job.startDate != null && job.endDate != null)
-        '${_formatDate(job.startDate!)} ~ ${_formatDate(job.endDate!)}',
+        _formatDate(job.startDate!) == _formatDate(job.endDate!)
+            ? _formatDate(job.startDate!) // 하루짜리는 '10.19' 한 번만
+            : '${_formatDate(job.startDate!)} ~ ${_formatDate(job.endDate!)}',
       // 시간 미입력 공고는 "~"만 노출되던 문제 — 값 있을 때만 표시
       if (job.workingHours.replaceAll('~', '').trim().isNotEmpty)
         job.workingHours,
@@ -2416,6 +2421,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       schedule: schedule.isEmpty ? null : schedule,
       location: locationLine,
       badges: displayBadges,
+      // 레퍼런스의 회색 태그(설거지·주방보조…). 업종 이름만 — 지금 데이터로 정확한 것
+      tags: [
+        if (_leafCategory(job.category) case final c when c.isNotEmpty) c,
+      ],
+      verified: job.isCertifiedCompany == true,
       imageUrl:
           rawImage == null
               ? null
@@ -2426,6 +2436,28 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       onTap: () => _openJobDetail(job),
       onBookmark: () => _toggleBookmark(job.id.toString()),
     );
+  }
+
+  /// '월,화,수,목,금' → '평일', 7일 → '매일', '협의: 주 3회 이상' → '주 3회 이상'. 없으면 null
+  static String? _weekdaysText(String? raw) {
+    final v = (raw ?? '').trim();
+    if (v.isEmpty) return null;
+    if (v.startsWith('협의')) {
+      final t = v.replaceFirst(RegExp(r'^협의\s*:?\s*'), '').trim();
+      return t.isEmpty ? '요일 협의' : t;
+    }
+    const order = '월화수목금토일';
+    final days =
+        v.split(',').map((e) => e.trim()).where(order.contains).toSet().toList()
+          ..sort((a, b) => order.indexOf(a).compareTo(order.indexOf(b)));
+    final joined = days.join();
+    if (joined == '월화수목금') return '평일';
+    if (joined == order) return '매일';
+    if (joined == '토일') return '주말';
+    if (days.length >= 3 && order.contains(joined)) {
+      return '${days.first}~${days.last}';
+    }
+    return days.join('·');
   }
 
   /// 일급 ÷ 근무시간 → '11,250원' (레퍼런스의 '시급 13,000원'). 계산 못 하면 null.
@@ -2756,6 +2788,58 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           _buildDistanceSlider(),
         ],
       ],
+    );
+  }
+
+  /// 공고가 적을 때 목록 끝: 화면이 비어 보이지 않게, 다음에 할 일을 준다
+  Widget _buildFewJobsFooter() {
+    // 반경 슬라이더 최대가 30km — 그보다 넓게는 '전국'으로
+    final wider = (selectedDistance * 2).clamp(5, 30).toDouble();
+    Widget row(IconData icon, String text, VoidCallback onTap) => InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, size: 20, color: AppColors.textSecondary),
+            const SizedBox(width: 12),
+            Expanded(child: Text(text, style: AppTextStyles.body1)),
+            const Icon(
+              Icons.chevron_right_rounded,
+              color: AppColors.textTertiary,
+            ),
+          ],
+        ),
+      ),
+    );
+    return Container(
+      margin: const EdgeInsets.only(top: 8),
+      color: AppColors.bgCard,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 18, 20, 4),
+            child: Text('이 근처엔 공고가 아직 적어요', style: AppTextStyles.h3),
+          ),
+          if (_isNearScope && wider > selectedDistance)
+            row(
+              Icons.zoom_out_map_rounded,
+              '반경 ${wider.toStringAsFixed(0)}km로 넓혀 보기',
+              () {
+                setState(() => selectedDistance = wider);
+                _loadJobs();
+              },
+            ),
+          row(Icons.public_rounded, '전국 공고 보기', () => _setScope('nationwide')),
+          row(
+            Icons.notifications_active_outlined,
+            '새 공고가 올라오면 알림 받기',
+            _enableJobAlerts,
+          ),
+          const SizedBox(height: 6),
+        ],
+      ),
     );
   }
 

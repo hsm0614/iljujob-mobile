@@ -130,7 +130,7 @@ class AppTextStyles {
 
   /// 탭 화면 제목(내 활동·채팅·마이·캘린더·사장님 탭) — 홈 로고와 같은 잘난체로 통일 (2026-10 대표 요청)
   static const tabTitle = TextStyle(
-    fontFamily: 'Jalnan2TTF', fontSize: 20,
+    fontFamily: 'Jalnan2TTF', fontSize: 18,
     color: AppColors.textPrimary, height: 1.1,
   );
   /// 화면 안 섹션 머리글('전체 공고' 등)
@@ -189,7 +189,7 @@ class AppTextStyles {
 
   // 공고 카드 전용
   static const jobTitle = TextStyle(
-    fontSize: 15, fontWeight: FontWeight.w600,
+    fontSize: 15, fontWeight: FontWeight.w700,
     color: AppColors.textPrimary, height: 1.3,
   );
   static const jobPay = TextStyle(
@@ -198,13 +198,13 @@ class AppTextStyles {
   );
   /// 목록 급여 — 카드에서 가장 무거운 요소. 자릿수를 맞춰 위아래 금액이 정렬된다.
   static const jobPayHero = TextStyle(
-    fontSize: 19, fontWeight: FontWeight.w800,
+    fontSize: 17, fontWeight: FontWeight.w800,
     color: AppColors.textPrimary, height: 1.1, letterSpacing: -0.4,
     fontFeatures: [FontFeature.tabularFigures()],
   );
   /// 공고 상세 급여 — C안의 큰 숫자는 상세에서만 쓴다
   static const jobPayDisplay = TextStyle(
-    fontSize: 28, fontWeight: FontWeight.w800,
+    fontSize: 24, fontWeight: FontWeight.w800,
     color: AppColors.textPrimary, height: 1.1, letterSpacing: -0.8,
     fontFeatures: [FontFeature.tabularFigures()],
   );

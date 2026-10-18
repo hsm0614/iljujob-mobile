@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import 'app_ui.dart';
 
 /// 공고 목록 한 줄 (2026-10 대표 레퍼런스: 흰 줄 + 구분선, 오른쪽 사진 + 아래 관심 버튼).
 /// 읽는 순서: 어디 → 제목 → 언제 → 급여 → 태그. 지원은 상세에서.
@@ -12,6 +13,10 @@ class JobListTile extends StatelessWidget {
   final String? schedule;
   final String location;
   final List<Widget> badges;
+  /// 회색 태그(업종 등). 뱃지 뒤에 같은 줄로
+  final List<String> tags;
+  /// 인증 업체면 첫 줄 앞에 초록 체크 (레퍼런스처럼 '안심기업' 뱃지 대신)
+  final bool verified;
   final String? imageUrl;
   final bool isBookmarked;
   final bool isApplied;
@@ -35,6 +40,8 @@ class JobListTile extends StatelessWidget {
     this.onBookmark,
     this.schedule,
     this.badges = const [],
+    this.tags = const [],
+    this.verified = false,
     this.imageUrl,
     this.isBookmarked = false,
     this.isApplied = false,
@@ -65,11 +72,25 @@ class JobListTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      head,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.jobMeta,
+                    Row(
+                      children: [
+                        if (verified) ...[
+                          const Icon(
+                            Icons.verified_rounded,
+                            size: 14,
+                            color: AppColors.badgeSameDay,
+                          ),
+                          const SizedBox(width: 3),
+                        ],
+                        Expanded(
+                          child: Text(
+                            head,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.jobMeta,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -113,9 +134,16 @@ class JobListTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    if (badges.isNotEmpty) ...[
+                    if (badges.isNotEmpty || tags.isNotEmpty) ...[
                       const SizedBox(height: 8),
-                      Wrap(spacing: 6, runSpacing: 4, children: badges),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          ...badges,
+                          for (final t in tags) JobSignalBadge(label: t),
+                        ],
+                      ),
                     ],
                   ],
                 ),
