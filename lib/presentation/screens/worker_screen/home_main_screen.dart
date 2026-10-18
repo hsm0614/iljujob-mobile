@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:kpostal/kpostal.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/models/job.dart';
@@ -291,7 +292,25 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   // main.dart 의 sendFcmTokenUnified 로 위임 (iOS APNS 대기·응답 확인·재시도 포함)
   Future<void> retryFcmTokenSend() => sendFcmTokenUnified();
 
+  // 일하고 싶은 위치(직접 고른 주소). 있으면 GPS 대신 '내 주변'의 중심 — 위치 권한이 없어도 된다
+  static const _kWorkLocKey = 'work_location'; // {"lat":..,"lng":..,"label":".."}
+
   Future<void> _init() async {
+    await _initGps();
+    try {
+      final raw = (await SharedPreferences.getInstance()).getString(_kWorkLocKey);
+      if (raw == null) return;
+      final d = jsonDecode(raw) as Map<String, dynamic>;
+      if (!mounted) return;
+      setState(() {
+        currentLatitude = (d['lat'] as num).toDouble();
+        currentLongitude = (d['lng'] as num).toDouble();
+        _myRegionLabel = d['label'] as String?;
+      });
+    } catch (_) {}
+  }
+
+  Future<void> _initGps() async {
     final prefs = await SharedPreferences.getInstance();
     // 기본은 '내 주변'. 앱바에는 내 위치의 시·군·구 이름을 보여준다(아래 위치 확인 뒤)
     _scope = prefs.getString(_kScopeKey) ?? 'near';
@@ -352,7 +371,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       }
 
       if (finalLat != 0.0 && finalLng != 0.0) {
-        _loadMyRegionLabel(finalLat, finalLng); // 기다리지 않는다 — 제목만 바뀐다
+        if (prefs.getString(_kWorkLocKey) == null) {
+          _loadMyRegionLabel(finalLat, finalLng); // 기다리지 않는다 — 제목만 바뀐다
+        }
         sendLocationToServer(finalLat, finalLng);
         await prefs.setDouble('currentLatitude', finalLat);
         await prefs.setDouble('currentLongitude', finalLng);
@@ -2460,60 +2481,189 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     );
   }
 
+  /// 앱바 제목 탭 → '일하고 싶은 위치를 설정해주세요' (급구 레퍼런스).
+  /// 주소 검색 · 현재 위치 · 주소 예시, 아래에 반경·지역·전국 보기.
   void _openScopeSheet() {
+    Widget example(String title, String sample) => Padding(
+      padding: const EdgeInsets.only(bottom: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: AppTextStyles.body1),
+          const SizedBox(height: 4),
+          Text('예시 : $sample', style: AppTextStyles.body2),
+        ],
+      ),
+    );
     showModalBottomSheet(
       context: context,
-      builder: (ctx) {
-        Widget item(String title, String? sub, bool on, VoidCallback onTap) =>
-            ListTile(
-              title: Text(title, style: AppTextStyles.body1),
-              subtitle:
-                  sub == null ? null : Text(sub, style: AppTextStyles.caption),
-              trailing:
-                  on
-                      ? const Icon(
-                        Icons.check_rounded,
-                        color: AppColors.primary,
-                      )
-                      : null,
-              onTap: () {
-                Navigator.pop(ctx);
-                onTap();
-              },
-            );
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 8),
-              item(
-                '내 주변 ${selectedDistance.toStringAsFixed(0)}km',
-                _myRegionLabel == null
-                    ? '거리를 조절할 수 있어요'
-                    : '$_myRegionLabel 기준 · 거리를 조절할 수 있어요',
-                _isNearScope,
-                () {
-                  if (!_isNearScope) _setScope('near');
-                  setState(() => _distanceExpanded = true);
-                },
+      isScrollControlled: true,
+      builder:
+          (ctx) => SafeArea(
+            child: SizedBox(
+              height: MediaQuery.of(ctx).size.height * 0.85,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+                children: [
+                  const Text('일하고 싶은 위치를 설정해주세요', style: AppTextStyles.h2),
+                  const SizedBox(height: 28),
+                  // 누르면 주소 검색(카카오 우편번호) 화면
+                  InkWell(
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _pickWorkAddress();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: AppColors.border),
+                        ),
+                      ),
+                      child: Text(
+                        '도로명, 지번, 건물명',
+                        style: AppTextStyles.body1.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 52,
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(
+                        backgroundColor: AppColors.primaryLight,
+                        foregroundColor: AppColors.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                      ),
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        await _useCurrentLocation();
+                      },
+                      icon: const Icon(Icons.my_location_rounded, size: 18),
+                      label: const Text('현재 위치로 주소찾기'),
+                    ),
+                  ),
+                  const SizedBox(height: 28),
+                  example('도로명 + 건물번호', '주흥1길 12, 부산 센텀중앙로 97'),
+                  example('동/읍/면/리 + 번지', '반포동 742-16, 재송동 1208-2'),
+                  example('건물명, 아파트명', '반포자이아파트, 센텀스카이비즈'),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      '반경 ${selectedDistance.toStringAsFixed(0)}km',
+                      style: AppTextStyles.body1,
+                    ),
+                    subtitle: Text(
+                      _myRegionLabel == null
+                          ? '내 주변 거리 조절'
+                          : '$_myRegionLabel 기준',
+                      style: AppTextStyles.caption,
+                    ),
+                    trailing: const Icon(Icons.chevron_right_rounded),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      if (!_isNearScope) _setScope('near');
+                      setState(() => _distanceExpanded = true);
+                    },
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('지역으로 보기', style: AppTextStyles.body1),
+                    trailing:
+                        _scope == 'region'
+                            ? const Icon(
+                              Icons.check_rounded,
+                              color: AppColors.primary,
+                            )
+                            : const Icon(Icons.chevron_right_rounded),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _openRegionPicker();
+                    },
+                  ),
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text('전국 공고 보기', style: AppTextStyles.body1),
+                    trailing:
+                        _scope == 'nationwide'
+                            ? const Icon(
+                              Icons.check_rounded,
+                              color: AppColors.primary,
+                            )
+                            : null,
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _setScope('nationwide');
+                    },
+                  ),
+                ],
               ),
-              item('지역 선택', null, _scope == 'region', _openRegionPicker),
-              item(
-                '전국',
-                null,
-                _scope == 'nationwide',
-                () => _setScope('nationwide'),
-              ),
-              item('현재 위치 다시 찾기', null, false, () async {
-                await _init();
-                _applyFiltersThrottled();
-              }),
-              const SizedBox(height: 8),
-            ],
+            ),
           ),
-        );
-      },
     );
+  }
+
+  /// 주소 검색으로 일하고 싶은 위치를 정한다 → '내 주변'의 중심이 그 주소가 된다
+  Future<void> _pickWorkAddress() async {
+    final r = await Navigator.push<Kpostal>(
+      context,
+      MaterialPageRoute(builder: (_) => KpostalView(useLocalServer: false)),
+    );
+    if (r == null || !mounted) return;
+    double lat = r.kakaoLatitude ?? r.latitude ?? 0;
+    double lng = r.kakaoLongitude ?? r.longitude ?? 0;
+    if (lat == 0 || lng == 0) {
+      // 기기 geocoder 실패 대비 — 서버(카카오 REST)로 한 번 더
+      try {
+        final resp = await AuthenticatedHttpClient.get(
+          Uri.parse(
+            '$baseUrl/api/job/geocode?address=${Uri.encodeQueryComponent(r.address)}',
+          ),
+        ).timeout(const Duration(seconds: 6));
+        if (resp.statusCode == 200) {
+          final d = jsonDecode(resp.body) as Map<String, dynamic>;
+          lat = (d['lat'] as num?)?.toDouble() ?? 0;
+          lng = (d['lng'] as num?)?.toDouble() ?? 0;
+        }
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    if (lat == 0 || lng == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('이 주소의 위치를 찾지 못했어요. 다른 주소로 해주세요.')),
+      );
+      return;
+    }
+    final label = [
+      r.sido,
+      r.sigungu,
+    ].where((e) => e.trim().isNotEmpty).join(' ');
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+      _kWorkLocKey,
+      jsonEncode({'lat': lat, 'lng': lng, 'label': label}),
+    );
+    setState(() {
+      currentLatitude = lat;
+      currentLongitude = lng;
+      _myRegionLabel = label.isEmpty ? null : label;
+    });
+    await _setScope('near'); // 다시 불러온다
+  }
+
+  /// 저장한 위치를 지우고 GPS 로 돌아간다
+  Future<void> _useCurrentLocation() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_kWorkLocKey);
+    setState(() => _myRegionLabel = null);
+    await _init();
+    await _setScope('near');
   }
 
   void _openSortSheet() {
