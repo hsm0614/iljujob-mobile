@@ -293,12 +293,15 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   Future<void> retryFcmTokenSend() => sendFcmTokenUnified();
 
   // 일하고 싶은 위치(직접 고른 주소). 있으면 GPS 대신 '내 주변'의 중심 — 위치 권한이 없어도 된다
-  static const _kWorkLocKey = 'work_location'; // {"lat":..,"lng":..,"label":".."}
+  static const _kWorkLocKey =
+      'work_location'; // {"lat":..,"lng":..,"label":".."}
 
   Future<void> _init() async {
     await _initGps();
     try {
-      final raw = (await SharedPreferences.getInstance()).getString(_kWorkLocKey);
+      final raw = (await SharedPreferences.getInstance()).getString(
+        _kWorkLocKey,
+      );
       if (raw == null) return;
       final d = jsonDecode(raw) as Map<String, dynamic>;
       if (!mounted) return;
@@ -1287,14 +1290,23 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                 ? _itemsToShow
                                 : filteredJobs.length;
                         final slotAt = visibleCount < 3 ? visibleCount : 3;
+                        // 6번째 공고 뒤(= 공고 3 + 자리 1 + 공고 3)
+                        final int? bannerAt = visibleCount >= 6 ? 7 : null;
                         return SliverList.builder(
-                          itemCount: visibleCount + 1,
+                          itemCount: visibleCount + (bannerAt == null ? 1 : 2),
                           itemBuilder: (context, index) {
-                            if (index == slotAt) return _buildFeedSlot();
+                            if (index == slotAt) {
+                              return _buildFeedSlot(
+                                bannerLater: bannerAt != null,
+                              );
+                            }
+                            if (index == bannerAt) return _buildBannerSlot();
                             final job =
-                                filteredJobs[index > slotAt
-                                    ? index - 1
-                                    : index];
+                                filteredJobs[index -
+                                    (index > slotAt ? 1 : 0) -
+                                    (bannerAt != null && index > bannerAt
+                                        ? 1
+                                        : 0)];
                             return _buildJobCard(job);
                           },
                         );
@@ -1435,27 +1447,25 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     );
   }
 
+  /// 성별 안내 — 알림 꺼짐 띠와 같은 회색 띠 (주황은 '시간 급함' 신호라 쓰지 않는다)
   Widget _buildGenderHintCard() {
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.warningLight,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.warningBorder),
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 10, 12, 10),
+      color: AppColors.bgMuted,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Icon(Icons.info_outline, size: 16, color: AppColors.warning),
+          const Icon(
+            Icons.info_outline,
+            size: 18,
+            color: AppColors.textSecondary,
+          ),
           const SizedBox(width: 8),
-          const Expanded(
+          Expanded(
             child: Text(
-              '프로필에서 성별을 설정하면 더 잘 맞는 공고를 추천해 드려요.',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.warningDark,
-                fontWeight: FontWeight.w500,
+              '프로필에서 성별을 설정하면 더 잘 맞는 공고를 추천해 드려요',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.textPrimary,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -1463,7 +1473,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             onTap: _dismissGenderHint,
             child: const Padding(
               padding: EdgeInsets.only(left: 8),
-              child: Icon(Icons.close, size: 16, color: AppColors.textTertiary),
+              child: Icon(
+                Icons.close,
+                size: 16,
+                color: AppColors.textSecondary,
+              ),
             ),
           ),
         ],
@@ -1709,8 +1723,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       decoration: BoxDecoration(
         color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        boxShadow: AppShadows.card,
-        border: Border.all(color: AppColors.borderSub),
+        border: Border.all(color: AppColors.border),
       ),
       child: TextField(
         controller: _searchController,
@@ -2034,7 +2047,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                         child: Text(
                                           errorMsg!,
                                           style: const TextStyle(
-                                            color: Colors.red,
+                                            color: AppColors.error,
                                           ),
                                         ),
                                       )
@@ -2266,11 +2279,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             ),
             Text(
               '${selectedDistance.toStringAsFixed(0)}km',
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.primary,
-              ),
+              style: AppTextStyles.h3, // 정보 — 파랑은 슬라이더(누르는 것)만
             ),
           ],
         ),
@@ -2295,7 +2304,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            color: AppColors.primaryLight,
+            color: AppColors.bgMuted,
             borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: Row(
@@ -2303,7 +2312,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               const Icon(
                 Icons.place_rounded,
                 size: 18,
-                color: AppColors.primary,
+                color: AppColors.textSecondary,
               ),
               const SizedBox(width: 6),
               Expanded(
@@ -2392,9 +2401,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         const JobSignalBadge(label: '당일지급', signal: JobSignal.money),
       );
     }
-    if (job.jobType == 'long') {
-      opBadges.add(const JobSignalBadge(label: '장기'));
-    }
+    // '장기'는 뺐다: 활성 공고 17개 중 12개(71%)에 붙어 구분이 안 된다 (Everyone-Has-It, 2026-10-19)
 
     final displayBadges = opBadges.take(2).toList();
     // 칩 줄(거리·당일지급·긴급·안심기업·매칭이유)은 제거했다 —
@@ -2422,9 +2429,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       location: locationLine,
       badges: displayBadges,
       // 레퍼런스의 회색 태그(설거지·주방보조…). 업종 이름만 — 지금 데이터로 정확한 것
-      tags: [
-        if (_leafCategory(job.category) case final c when c.isNotEmpty) c,
-      ],
+      tags: [if (_leafCategory(job.category) case final c when c.isNotEmpty) c],
       verified: job.isCertifiedCompany == true,
       imageUrl:
           rawImage == null
@@ -2844,7 +2849,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   }
 
   /// 목록 3번째 공고 뒤 한 칸: 알림 꺼짐 · 성별 안내 · 배너 · 파트너 광고
-  Widget _buildFeedSlot() {
+  /// [bannerLater] 공고가 6개 이상이면 배너는 6번째 공고 뒤로 (한 자리에 4개가 몰리지 않게)
+  Widget _buildFeedSlot({bool bannerLater = false}) {
     final showPartner = _partnerAdActive && !_partnerCardHidden;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2856,16 +2862,16 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           source: 'worker_home_banner',
         ),
         if (!isLoading && _workerGender == null && !_genderHintDismissed)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-            child: _buildGenderHintCard(),
-          ),
-        const SizedBox(height: 12),
-        const AdBannerWidget(placement: 'app_home_worker'),
-        const SizedBox(height: 12),
+          _buildGenderHintCard(),
+        if (!bannerLater) _buildBannerSlot(),
       ],
     );
   }
+
+  Widget _buildBannerSlot() => const Padding(
+    padding: EdgeInsets.symmetric(vertical: 12),
+    child: AdBannerWidget(placement: 'app_home_worker'),
+  );
 
   Widget _pill({
     required String label,
