@@ -1961,7 +1961,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                                 vertical: 0,
                               ),
                               child: const JobSignalBadge(
-                                label: '안심기업',
+                                label: '인증업체',
                                 signal: JobSignal.trust,
                                 icon: Icons.verified,
                                 pill: true,

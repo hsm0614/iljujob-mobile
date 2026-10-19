@@ -15,8 +15,7 @@ class JobListTile extends StatelessWidget {
   final List<Widget> badges;
   /// 회색 태그(업종 등). 뱃지 뒤에 같은 줄로
   final List<String> tags;
-  /// 인증 업체면 첫 줄 앞에 초록 체크 (레퍼런스처럼 '안심기업' 뱃지 대신)
-  final bool verified;
+
   final String? imageUrl;
   final bool isBookmarked;
   final bool isApplied;
@@ -41,7 +40,6 @@ class JobListTile extends StatelessWidget {
     this.schedule,
     this.badges = const [],
     this.tags = const [],
-    this.verified = false,
     this.imageUrl,
     this.isBookmarked = false,
     this.isApplied = false,
@@ -72,25 +70,11 @@ class JobListTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        if (verified) ...[
-                          const Icon(
-                            Icons.verified_rounded,
-                            size: 14,
-                            color: AppColors.badgeSameDay,
-                          ),
-                          const SizedBox(width: 3),
-                        ],
-                        Expanded(
-                          child: Text(
-                            head,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.jobMeta,
-                          ),
-                        ),
-                      ],
+                    Text(
+                      head,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.jobMeta,
                     ),
                     const SizedBox(height: 4),
                     Text(

@@ -1273,6 +1273,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                       ),
                     ),
                   ),
+                // 이미지 배너는 목록 맨 위 (대표 결정 2026-10-19). 배너 없으면 위젯이 스스로 숨는다
+                SliverToBoxAdapter(child: _buildBannerSlot()),
                 if (isLoading)
                   _buildSkeletonList()
                 else if (filteredJobs.isEmpty)
@@ -1290,23 +1292,16 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                 ? _itemsToShow
                                 : filteredJobs.length;
                         final slotAt = visibleCount < 3 ? visibleCount : 3;
-                        // 6번째 공고 뒤(= 공고 3 + 자리 1 + 공고 3)
-                        final int? bannerAt = visibleCount >= 6 ? 7 : null;
                         return SliverList.builder(
-                          itemCount: visibleCount + (bannerAt == null ? 1 : 2),
+                          itemCount: visibleCount + 1,
                           itemBuilder: (context, index) {
                             if (index == slotAt) {
-                              return _buildFeedSlot(
-                                bannerLater: bannerAt != null,
-                              );
+                              return _buildFeedSlot();
                             }
-                            if (index == bannerAt) return _buildBannerSlot();
                             final job =
-                                filteredJobs[index -
-                                    (index > slotAt ? 1 : 0) -
-                                    (bannerAt != null && index > bannerAt
-                                        ? 1
-                                        : 0)];
+                                filteredJobs[index > slotAt
+                                    ? index - 1
+                                    : index];
                             return _buildJobCard(job);
                           },
                         );
@@ -2395,10 +2390,14 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       opBadges.add(const JobSignalBadge(label: '마감임박', signal: JobSignal.time));
     }
     // 급여 형태(일급/주급/월급)는 가격 옆 칩으로만 표시 — 상단 뱃지 중복 제거
-    // 인증 업체는 첫 줄 회사명 앞 초록 체크로 (뱃지 자리를 업종 태그에 준다)
     if (job.isSameDayPay == true) {
       opBadges.add(
         const JobSignalBadge(label: '당일지급', signal: JobSignal.money),
+      );
+    }
+    if (job.isCertifiedCompany == true) {
+      opBadges.add(
+        const JobSignalBadge(label: '인증업체', signal: JobSignal.trust),
       );
     }
     // '장기'는 뺐다: 활성 공고 17개 중 12개(71%)에 붙어 구분이 안 된다 (Everyone-Has-It, 2026-10-19)
@@ -2430,7 +2429,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       badges: displayBadges,
       // 레퍼런스의 회색 태그(설거지·주방보조…). 업종 이름만 — 지금 데이터로 정확한 것
       tags: [if (_leafCategory(job.category) case final c when c.isNotEmpty) c],
-      verified: job.isCertifiedCompany == true,
       imageUrl:
           rawImage == null
               ? null
@@ -2849,8 +2847,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   }
 
   /// 목록 3번째 공고 뒤 한 칸: 알림 꺼짐 · 성별 안내 · 배너 · 파트너 광고
-  /// [bannerLater] 공고가 6개 이상이면 배너는 6번째 공고 뒤로 (한 자리에 4개가 몰리지 않게)
-  Widget _buildFeedSlot({bool bannerLater = false}) {
+  Widget _buildFeedSlot() {
     final showPartner = _partnerAdActive && !_partnerCardHidden;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2863,7 +2860,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         ),
         if (!isLoading && _workerGender == null && !_genderHintDismissed)
           _buildGenderHintCard(),
-        if (!bannerLater) _buildBannerSlot(),
+        const SizedBox(height: 12),
       ],
     );
   }
