@@ -216,9 +216,10 @@ class AppTextStyles {
     fontSize: 12, fontWeight: FontWeight.w600,
     color: AppColors.primary,
   );
+  // 회사명·거리·지원 N명은 지원 판단 정보 — 힌트 회색(#9CA3AF, 대비 2.5:1)이 아니라 본문 보조(4.8:1)
   static const jobMeta = TextStyle(
     fontSize: 12, fontWeight: FontWeight.w500,
-    color: AppColors.textTertiary,
+    color: AppColors.textSecondary,
   );
   static const jobLocation = TextStyle(
     fontSize: 12, fontWeight: FontWeight.w500,

@@ -495,14 +495,30 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     }
   }
 
+  /// 화면은 먼저 바꾸고, 저장이 실패하면 되돌리고 알린다 (예전엔 실패해도 켜진 것처럼 보였다)
   Future<void> setAvailableToday(bool available) async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('userId');
-    if (userId == null) return;
-    await http.patch(
-      Uri.parse('$baseUrl/api/worker/available-today'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'userId': userId, 'availableToday': available}),
+    var ok = false;
+    if (userId != null) {
+      try {
+        final res = await AuthenticatedHttpClient.patchJson(
+          Uri.parse('$baseUrl/api/worker/available-today'),
+          body: {'userId': userId, 'availableToday': available},
+        ).timeout(const Duration(seconds: 8));
+        ok = res.statusCode == 200;
+      } catch (_) {}
+    }
+    if (ok || !mounted) return;
+    setState(() => isAvailableToday = !available);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          userId == null
+              ? '로그인하면 오늘 근무 가능 상태를 켤 수 있어요.'
+              : '저장하지 못했어요. 잠시 후 다시 눌러주세요.',
+        ),
+      ),
     );
   }
 
@@ -2878,52 +2894,68 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     IconData? trailing,
   }) {
     final fg = selected ? AppColors.primary : AppColors.textSecondary;
-    return Material(
-      color: selected ? AppColors.primaryLight : AppColors.bgMuted,
-      borderRadius: BorderRadius.circular(AppRadius.full),
-      child: InkWell(
+    return _hitArea(
+      onTap,
+      Material(
+        color: selected ? AppColors.primaryLight : AppColors.bgMuted,
         borderRadius: BorderRadius.circular(AppRadius.full),
-        onTap: onTap,
-        child: Container(
-          height: 34,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          alignment: Alignment.center,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (icon != null) ...[
-                Icon(icon, size: 15, color: fg),
-                const SizedBox(width: 4),
-              ],
-              ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 120),
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.btnSm.copyWith(
-                    fontSize: 13,
-                    color: selected ? AppColors.primary : AppColors.textPrimary,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.full),
+          onTap: onTap,
+          child: Container(
+            height: 34,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            alignment: Alignment.center,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (icon != null) ...[
+                  Icon(icon, size: 15, color: fg),
+                  const SizedBox(width: 4),
+                ],
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 120),
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.btnSm.copyWith(
+                      fontSize: 13,
+                      color:
+                          selected ? AppColors.primary : AppColors.textPrimary,
+                    ),
                   ),
                 ),
-              ),
-              if (trailing != null) Icon(trailing, size: 16, color: fg),
-            ],
+                if (trailing != null) Icon(trailing, size: 16, color: fg),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
+  /// 보이는 칩은 34 그대로, 위아래 5px 투명 영역까지 눌리게 (터치 44)
+  Widget _hitArea(VoidCallback onTap, Widget child) => GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onTap: onTap,
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: child,
+    ),
+  );
+
   Widget _buildTodayToggle() {
-    return GestureDetector(
-      onTap: () {
-        setState(() => isAvailableToday = !isAvailableToday);
-        setAvailableToday(isAvailableToday);
-      },
-      child: AnimatedContainer(
+    void toggle() {
+      setState(() => isAvailableToday = !isAvailableToday);
+      setAvailableToday(isAvailableToday);
+    }
+
+    return _hitArea(
+      toggle,
+      AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        height: 32,
+        height: 34,
         padding: const EdgeInsets.symmetric(horizontal: 12),
         decoration: BoxDecoration(
           color:

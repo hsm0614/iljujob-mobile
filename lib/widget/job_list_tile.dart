@@ -13,15 +13,18 @@ class JobListTile extends StatelessWidget {
   final String? schedule;
   final String location;
   final List<Widget> badges;
+
   /// 회색 태그(업종 등). 뱃지 뒤에 같은 줄로
   final List<String> tags;
 
   final String? imageUrl;
   final bool isBookmarked;
   final bool isApplied;
+
   /// 지금 상단 고정 중(pinned_until > 지금)일 때만 true. 즉시게시·긴급호출(24시간) 공통
   final bool isPinned;
   final VoidCallback onTap;
+
   /// null이면 '관심' 버튼을 숨긴다 (최근 본 공고 등)
   final VoidCallback? onBookmark;
 
@@ -79,7 +82,7 @@ class JobListTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       title,
-                      maxLines: 1,
+                      maxLines: 2, // 긴 제목의 핵심 직무가 '월37…' 뒤로 숨던 것
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.jobTitle,
                     ),
@@ -89,9 +92,7 @@ class JobListTile extends StatelessWidget {
                         schedule!,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.jobMeta.copyWith(
-                          color: AppColors.textSecondary,
-                        ),
+                        style: AppTextStyles.jobMeta,
                       ),
                     ],
                     const SizedBox(height: 4),
@@ -137,33 +138,33 @@ class JobListTile extends StatelessWidget {
                 children: [
                   _Thumb(imageUrl: imageUrl, size: _thumb),
                   if (onBookmark != null) ...[
-                  const SizedBox(height: 6),
-                  SizedBox(
-                    width: _thumb,
-                    height: 30,
-                    child: OutlinedButton.icon(
-                      onPressed: onBookmark,
-                      style: OutlinedButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        foregroundColor:
-                            isBookmarked
-                                ? AppColors.badgeNew
-                                : AppColors.textSecondary,
-                        side: const BorderSide(color: AppColors.border),
-                        textStyle: AppTextStyles.captionBold,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                    const SizedBox(height: 6),
+                    SizedBox(
+                      width: _thumb,
+                      height: 40, // 터치 영역 (30이면 한 손으로 놓친다)
+                      child: OutlinedButton.icon(
+                        onPressed: onBookmark,
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.zero,
+                          foregroundColor:
+                              isBookmarked
+                                  ? AppColors.badgeNew
+                                  : AppColors.textSecondary,
+                          side: const BorderSide(color: AppColors.border),
+                          textStyle: AppTextStyles.captionBold,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
+                          ),
                         ),
+                        icon: Icon(
+                          isBookmarked
+                              ? Icons.favorite_rounded
+                              : Icons.favorite_border_rounded,
+                          size: 14,
+                        ),
+                        label: const Text('관심'),
                       ),
-                      icon: Icon(
-                        isBookmarked
-                            ? Icons.favorite_rounded
-                            : Icons.favorite_border_rounded,
-                        size: 14,
-                      ),
-                      label: const Text('관심'),
                     ),
-                  ),
                   ],
                 ],
               ),
