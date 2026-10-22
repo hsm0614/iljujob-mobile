@@ -6,7 +6,6 @@ import 'package:http/http.dart' as http;
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/widget/app_ui.dart';
 import 'package:iljujob/utils/apply_stage.dart';
-import 'package:iljujob/widget/job_list_tile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
@@ -48,7 +47,8 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
   Set<String> hiddenJobIds = {}; // 로컬 숨김
   bool isLoading = true;
   // Filters
-  String filterStatus = '전체'; // 전체 | todo | waiting | done (apply_stage.dart group)
+  String filterStatus =
+      '전체'; // 전체 | todo | waiting | done (apply_stage.dart group)
   String searchQuery = '';
 
   // Review status
@@ -748,7 +748,10 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
 
   Widget _emptyView({required bool forBookmark}) {
     return AppEmptyState(
-      icon: forBookmark ? Icons.favorite_border_rounded : Icons.work_outline_rounded,
+      icon:
+          forBookmark
+              ? Icons.favorite_border_rounded
+              : Icons.work_outline_rounded,
       title: forBookmark ? '찜한 공고가 아직 없어요' : '아직 지원한 알바가 없어요',
       message:
           forBookmark
@@ -782,24 +785,25 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
     final statusText = stage.label;
     final statusColor = stage.color;
 
-    // 이미지 (있으면)
+    // 실제 이미지가 있을 때만 썸네일을 사용한다.
     Widget thumb() {
-      // 사진이 없으면 빈칸 대신 알바일주 심볼 (2026-10)
       final fallback = ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: Image.asset(
-          JobListTile.defaultImage,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Container(
           width: 74,
           height: 74,
-          fit: BoxFit.cover,
+          color: AppColors.bgMuted,
+          child: const Icon(
+            Icons.work_outline_rounded,
+            color: AppColors.textTertiary,
+          ),
         ),
       );
-      if (job.imageUrls.isEmpty) return fallback;
       final raw = job.imageUrls.first;
       final url = raw.startsWith('http') ? raw : '$baseUrl$raw';
 
       return ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Image.network(
           url,
           width: 74,
@@ -957,12 +961,18 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                             icon: Icon(
                               Icons.edit_note,
                               size: 18,
-                              color: reviewed ? AppColors.textTertiary : kBrandBlue,
+                              color:
+                                  reviewed
+                                      ? AppColors.textTertiary
+                                      : kBrandBlue,
                             ),
                             label: Text(
                               reviewed ? '후기 작성 완료' : '후기 남기기',
                               style: TextStyle(
-                                color: reviewed ? AppColors.textTertiary : kBrandBlue,
+                                color:
+                                    reviewed
+                                        ? AppColors.textTertiary
+                                        : kBrandBlue,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -973,33 +983,19 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                 ),
               ),
 
-              const SizedBox(width: 12),
-
-              // Right: image + heart
-              Stack(
-                children: [
-                  thumb(),
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Icon(
-                      bookmarkedTab ? Icons.favorite : Icons.favorite_border,
-                      color:
-                          bookmarkedTab ? kBrandBlue : AppColors.textTertiary,
-                      size: 22,
-                    ),
-                  ),
-                ],
-              ),
+              if (job.imageUrls.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                thumb(),
+              ],
 
               // trailing actions (chat/hide)
               const SizedBox(width: 6),
               Column(
                 children: [
-                  if (bookmarkedTab && isDeleted) ...[
+                  if (bookmarkedTab) ...[
                     IconButton(
                       icon: const Icon(Icons.favorite, size: 22),
-                      color: Colors.redAccent,
+                      color: AppColors.primary,
                       tooltip: '찜 해제',
                       onPressed: () => _removeBookmark(job),
                     ),

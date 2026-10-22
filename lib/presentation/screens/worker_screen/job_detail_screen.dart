@@ -242,7 +242,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     final lng = double.tryParse(widget.job.lng.toString()) ?? 0;
     if (lat == 0 || lng == 0) return;
 
-
     try {
       // 1) 내 위치 -> 거리 계산
       // (권한/서비스 문제 있으면 실패해도 그냥 넘어가면 됨)
@@ -897,7 +896,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '가입은 1분이면 끝나요.\n가입하면 이 공고로 바로 돌아와요.',
+                    '가입하면 이 공고로 바로 돌아와 지원할 수 있어요.',
                     textAlign: TextAlign.center,
                     style: AppTextStyles.body2,
                   ),
@@ -920,7 +919,10 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     );
     if (go != true || !mounted) return;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(JobDetailScreen.pendingApplyJobKey, '${widget.job.id}');
+    await prefs.setString(
+      JobDetailScreen.pendingApplyJobKey,
+      '${widget.job.id}',
+    );
     if (!mounted) return;
     Navigator.pushNamed(context, '/signup-choice');
   }
@@ -1145,11 +1147,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       ),
       child: Row(
         children: [
-          Icon(
-            icon,
-            size: 17,
-            color: AppColors.textSecondary,
-          ),
+          Icon(icon, size: 17, color: AppColors.textSecondary),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -1250,7 +1248,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   Widget _buildReviewSummary() {
     // 후기 0건이면 막대 3개가 전부 0 — 숨기는 게 '0'을 보여주는 것보다 낫다
-    if (reviewSummary == null || ((reviewSummary!['total'] as num?) ?? 0) == 0) {
+    if (reviewSummary == null ||
+        ((reviewSummary!['total'] as num?) ?? 0) == 0) {
       return const SizedBox.shrink();
     }
 
@@ -1390,16 +1389,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       ),
                     ),
 
-                  // 🔹 이미지 캐러셀 (이미 _ImagesCarousel 존재하니까 이걸 활용)
-                  if (widget.job.imageUrls.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: _ImagesCarousel(
-                        imageUrls: widget.job.imageUrls,
-                        baseUrl: baseUrl,
-                      ),
-                    ),
-
                   // 섹션은 화면 끝까지 흰 면, 사이는 8px 회색 띠 (리디자인 2026-10)
                   _buildHeaderCard(postedLabel, postedUtc),
                   const SizedBox(height: 8),
@@ -1412,6 +1401,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     const SizedBox(height: 8),
                   ],
                   _buildJobCoreSection(),
+                  if (widget.job.imageUrls.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _ImagesCarousel(
+                      imageUrls: widget.job.imageUrls,
+                      baseUrl: baseUrl,
+                    ),
+                  ],
                   const SizedBox(height: 8),
                   _buildStatsSection(),
                   const SizedBox(height: 8),
@@ -1616,7 +1612,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               ),
             ],
           ),
-
         ],
       ),
     );
@@ -1864,7 +1859,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.place, size: 16, color: AppColors.textTertiary),
+                        const Icon(
+                          Icons.place,
+                          size: 16,
+                          color: AppColors.textTertiary,
+                        ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
@@ -1933,7 +1932,10 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     child:
                         (clientProfile == null ||
                                 clientProfile!['logo_url'] == null)
-                            ? const Icon(Icons.business, color: AppColors.textTertiary)
+                            ? const Icon(
+                              Icons.business,
+                              color: AppColors.textTertiary,
+                            )
                             : null,
                   ),
                 ),

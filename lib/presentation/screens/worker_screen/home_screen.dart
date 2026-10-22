@@ -33,6 +33,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 2;
+  bool _homeOpened = false;
+  late final Widget _homeMainScreen;
   int unreadCount = 0;
   String userPhone = '';
   String userType = 'worker';
@@ -49,6 +51,8 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _selectedIndex = widget.initialTabIndex;
+    _homeOpened = _selectedIndex == 2;
+    _homeMainScreen = HomeMainScreen(onAiRecommend: _openRecommendSheet);
     _initializeHomeScreen();
     _setupFirebaseMessagingListeners();
     WidgetsBinding.instance.addPostFrameCallback(
@@ -324,24 +328,40 @@ class _HomeScreenState extends State<HomeScreen> {
   // 탭 선택
   // ─────────────────────────────────────────────
   void _onItemTapped(int index) {
-    setState(() => _selectedIndex = index);
+    setState(() {
+      _selectedIndex = index;
+      if (index == 2) _homeOpened = true;
+    });
     if (index == 2) _maybeShowPromoIfHomeTab();
   }
 
-  List<Widget> _buildScreens() {
-    return [
-      const WorkerCalendarScreen(),
-      MyAppliedJobsScreen(onGoHome: () => _onItemTapped(2)),
-      HomeMainScreen(onAiRecommend: _openRecommendSheet),
-      ChatListScreen(onMessagesRead: _fetchUnreadCount),
-      const WorkerMyPageScreen(),
-    ];
+  Widget _screenForIndex(int index) {
+    return switch (index) {
+      0 => const WorkerCalendarScreen(),
+      1 => MyAppliedJobsScreen(onGoHome: () => _onItemTapped(2)),
+      3 => ChatListScreen(onMessagesRead: _fetchUnreadCount),
+      4 => const WorkerMyPageScreen(),
+      _ => const SizedBox.shrink(),
+    };
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _buildScreens()[_selectedIndex],
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (_homeOpened)
+            Offstage(
+              offstage: _selectedIndex != 2,
+              child: TickerMode(
+                enabled: _selectedIndex == 2,
+                child: _homeMainScreen,
+              ),
+            ),
+          if (_selectedIndex != 2) _screenForIndex(_selectedIndex),
+        ],
+      ),
       bottomNavigationBar: _buildBottomNav(),
     );
   }

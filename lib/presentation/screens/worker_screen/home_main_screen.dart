@@ -67,29 +67,101 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   bool isLoading = true;
   // ── 필터 규칙 (2026-10) ────────────────────────────────────
   // 기본값 = 조건 없음 + 추천순. 정렬은 칩 줄 한 곳에서만 바꾼다.
-  // 필터는 실제 공고 값으로 정확히 걸리는 것만: 급여 유형·업종(+ 칩 줄의 당일지급).
-  // 근무일은 대부분 비어 있어 필터로 두지 않는다.
+  // 필터는 실제 공고 값으로 정확히 걸리는 것만: 근무일·급여 유형·업종·당일지급.
   static const _defaultSort = '추천순';
   final Set<String> _payTypes = {}; // 시급·일급·주급·월급
   final Set<String> _categories = {}; // 업종 이름('이벤트·행사 > 행사스태프' → '행사스태프')
   bool _onlySameDayPay = false;
+  DateTime? _workDate;
   int get _sheetFilterCount => _payTypes.length + _categories.length;
   bool get _hasConditions =>
-      _sheetFilterCount > 0 || _onlySameDayPay || searchQuery.trim().isNotEmpty;
+      _sheetFilterCount > 0 ||
+      _onlySameDayPay ||
+      _workDate != null ||
+      searchQuery.trim().isNotEmpty;
 
   /// 업종 표기가 두 가지('행사스태프' / '이벤트·행사 > 행사스태프')라 마지막 이름으로 맞춘다
   static String _leafCategory(String c) => c.split('>').last.trim();
 
   /// 목록·필터 시트 개수·빈 화면 힌트가 모두 이 한 함수로 거른다 (결과가 서로 어긋나지 않게)
-  bool _passes(Job j, {Set<String>? pay, Set<String>? cat, bool? sameDay}) {
+  bool _passes(
+    Job j, {
+    Set<String>? pay,
+    Set<String>? cat,
+    bool? sameDay,
+    bool ignoreDate = false,
+  }) {
     pay ??= _payTypes;
     cat ??= _categories;
     sameDay ??= _onlySameDayPay;
     if (pay.isNotEmpty && !pay.contains(j.payType)) return false;
-    if (cat.isNotEmpty && !cat.contains(_leafCategory(j.category)))
+    if (cat.isNotEmpty && !cat.contains(_leafCategory(j.category))) {
       return false;
+    }
     if (sameDay && j.isSameDayPay != true) return false;
+    if (!ignoreDate && _workDate != null && !_worksOnDate(j, _workDate!)) {
+      return false;
+    }
     return true;
+  }
+
+  /// 근무 DATE는 모델에서 KST 자정의 UTC 시각으로 보관한다.
+  /// 달력 날짜는 시각 변환 후 연·월·일만 비교한다.
+  static DateTime _kstWorkDay(DateTime date) {
+    final kst = date.toUtc().add(const Duration(hours: 9));
+    return DateTime.utc(kst.year, kst.month, kst.day);
+  }
+
+  static bool _worksOnDate(Job job, DateTime selected) {
+    final day = DateTime.utc(selected.year, selected.month, selected.day);
+    final start = job.startDate == null ? null : _kstWorkDay(job.startDate!);
+    final end = job.endDate == null ? null : _kstWorkDay(job.endDate!);
+    if (start != null && day.isBefore(start)) return false;
+    if (end != null && day.isAfter(end)) return false;
+    // 기간의 한쪽만 있으면 확정된 하루로 해석하지 않는다.
+    if ((start == null) != (end == null)) return false;
+
+    final weekdays = (job.weekdays ?? '').trim();
+    if (weekdays.isNotEmpty) {
+      const names = ['월', '화', '수', '목', '금', '토', '일'];
+      if (!weekdays
+          .split(',')
+          .map((s) => s.trim())
+          .contains(names[day.weekday - 1])) {
+        return false;
+      }
+    }
+    // 날짜도 확정 요일도 없는 공고는 선택 날짜에 근무하는지 알 수 없다.
+    return start != null || weekdays.isNotEmpty;
+  }
+
+  Future<void> _pickWorkDate() async {
+    final nowKst = DateTime.now().toUtc().add(const Duration(hours: 9));
+    final first = DateTime(nowKst.year, nowKst.month, nowKst.day);
+    final last = DateTime(nowKst.year + 1, nowKst.month, nowKst.day);
+    final chosen = await showDatePicker(
+      context: context,
+      initialDate:
+          _workDate != null &&
+                  !_workDate!.isBefore(first) &&
+                  !_workDate!.isAfter(last)
+              ? _workDate!
+              : first,
+      firstDate: first,
+      lastDate: last,
+      helpText: '근무일 선택',
+      cancelText: '취소',
+      confirmText: '적용',
+    );
+    if (!mounted || chosen == null) return;
+    setState(() => _workDate = chosen);
+    _applyFiltersThrottled();
+  }
+
+  String get _workDateLabel {
+    final date = _workDate;
+    if (date == null) return '근무일';
+    return '${date.year}.${date.month}.${date.day}';
   }
 
   /// 홈 기본값으로 전부 되돌린다 (정렬 추천순, 조건 없음, 검색어 없음)
@@ -100,6 +172,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       _payTypes.clear();
       _categories.clear();
       _onlySameDayPay = false;
+      _workDate = null;
       searchQuery = '';
     });
     _applyFiltersThrottled();
@@ -108,6 +181,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   final ScrollController _scrollController = ScrollController();
   bool _loadingMore = false;
   bool isAvailableToday = false;
+  bool _isGuest = true;
   int _jobsReqSeq = 0;
   bool _isLoadingJobs = false;
   bool _distanceExpanded = false;
@@ -457,7 +531,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   Future<void> _loadBookmarks() async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('userId');
-    if (userId == null) return;
+    final token = await AuthenticatedHttpClient.accessToken();
+    final guest = userId == null || token.isEmpty;
+    if (mounted) setState(() => _isGuest = guest);
+    if (guest) return;
 
     final url1 = Uri.parse('$baseUrl/api/bookmark/list?userId=$userId');
     try {
@@ -559,7 +636,44 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   Future<void> _toggleBookmark(String jobId) async {
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('userId');
-    if (userId == null) return;
+    final token = await AuthenticatedHttpClient.accessToken();
+    if (userId == null || token.isEmpty) {
+      if (!mounted) return;
+      final join = await showModalBottomSheet<bool>(
+        context: context,
+        builder:
+            (ctx) => SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text('관심 공고 저장하기', style: AppTextStyles.h2),
+                    const SizedBox(height: 8),
+                    const Text(
+                      '가입하면 마음에 드는 공고를 저장할 수 있어요.',
+                      style: AppTextStyles.body2,
+                    ),
+                    const SizedBox(height: 20),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('가입하기'),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('계속 둘러보기'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+      );
+      if (join == true && mounted) {
+        Navigator.pushNamed(context, '/signup-choice');
+      }
+      return;
+    }
 
     final wasBookmarked = bookmarkedJobIds.contains(jobId);
     final endpoint = wasBookmarked ? 'remove' : 'add';
@@ -966,6 +1080,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     );
     final q = searchQuery.trim();
     final chips = <Widget>[
+      if (_workDate != null)
+        chip('근무일 $_workDateLabel', () => _workDate = null),
       if (q.isNotEmpty)
         chip('"$q"', () {
           _searchController.clear();
@@ -1235,20 +1351,21 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 color: AppColors.textPrimary,
               ),
             ),
-            IconButton(
-              tooltip: '알림',
-              onPressed:
-                  () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const NotificationInboxScreen(),
+            if (!_isGuest)
+              IconButton(
+                tooltip: '알림',
+                onPressed:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const NotificationInboxScreen(),
+                      ),
                     ),
-                  ),
-              icon: const Icon(
-                Icons.notifications_none_rounded,
-                color: AppColors.textPrimary,
+                icon: const Icon(
+                  Icons.notifications_none_rounded,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
             const SizedBox(width: 4),
           ],
         ),
@@ -1576,6 +1693,13 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   /// 조건에 맞는 공고가 없을 때: 조건마다 '풀면 N개'를 보여주고 누르면 그 조건만 푼다.
   Widget _buildNoMatchView(List<Job> base) {
     final hints = <(String, int, VoidCallback)>[];
+    if (_workDate != null) {
+      hints.add((
+        '근무일 $_workDateLabel',
+        base.where((j) => _passes(j, ignoreDate: true)).length,
+        () => _workDate = null,
+      ));
+    }
     if (_onlySameDayPay) {
       hints.add((
         '당일지급',
@@ -2749,7 +2873,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     );
   }
 
-  /// 칩 줄: 정렬 → 빠른 조건(당일지급) → 필터(n) → 오늘 근무 가능.
+  /// 칩 줄: 정렬 → 근무일 → 빠른 조건(당일지급) → 필터(n) → 오늘 근무 가능.
   /// 검색(일반·AI)은 앱바 검색 하나로 들어간다
   Widget _buildTopControlRow() {
     return Column(
@@ -2781,6 +2905,13 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 onTap: _openSortSheet,
               ),
               const SizedBox(width: 6),
+              _pill(
+                label: _workDateLabel,
+                icon: Icons.calendar_today_outlined,
+                selected: _workDate != null,
+                onTap: _pickWorkDate,
+              ),
+              const SizedBox(width: 6),
               // 빠른 조건: 한 번 누르면 바로 걸리고 다시 누르면 풀린다
               _pill(
                 label: '당일지급',
@@ -2798,7 +2929,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 onTap: _openFilterSheet,
               ),
               const SizedBox(width: 6),
-              _buildTodayToggle(),
+              if (!_isGuest) _buildTodayToggle(),
             ],
           ),
         ),
@@ -2851,11 +2982,12 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               },
             ),
           row(Icons.public_rounded, '전국 공고 보기', () => _setScope('nationwide')),
-          row(
-            Icons.notifications_active_outlined,
-            '새 공고가 올라오면 알림 받기',
-            _enableJobAlerts,
-          ),
+          if (!_isGuest)
+            row(
+              Icons.notifications_active_outlined,
+              '새 공고가 올라오면 알림 받기',
+              _enableJobAlerts,
+            ),
           const SizedBox(height: 6),
         ],
       ),

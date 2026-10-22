@@ -1161,7 +1161,7 @@ class _ChatListScreenState extends State<ChatListScreen>
           // 안에 TabBarView 를 넣었다. 그러면 안쪽 ListView 가 제스처를 먹어
           // 바깥 스크롤이 움직이지 않았고, 광고 배너를 스크롤로 치울 수 없었다.
           // NestedScrollView 는 헤더와 본문 스크롤을 이어 준다 —
-          // 배너는 위로 사라지고 검색바·탭만 고정으로 남으며 탭 스와이프도 유지된다.
+          // 검색바·탭은 고정으로 남고 탭 스와이프도 유지된다.
           child: NestedScrollView(
             headerSliverBuilder:
                 (context, innerBoxIsScrolled) => [
@@ -1194,12 +1194,11 @@ class _ChatListScreenState extends State<ChatListScreen>
                       ),
                     ),
                   ),
-                  // 배너를 탭 헤더보다 앞에 둔다. 스크롤하면 배너가 먼저 위로
-                  // 빠지고, 탭 헤더가 앱바 아래에 붙어 고정된다.
                   SliverToBoxAdapter(child: _buildNotificationBanner()),
-                  const SliverToBoxAdapter(
-                    child: AdBannerWidget(placement: 'app_chat_list'),
-                  ),
+                  if (!isLoading && chatRooms.isEmpty)
+                    const SliverToBoxAdapter(
+                      child: AdBannerWidget(placement: 'app_chat_list'),
+                    ),
                   SliverPersistentHeader(
                     pinned: true,
                     delegate: _TabHeaderDelegate(
@@ -1229,6 +1228,12 @@ class _ChatListScreenState extends State<ChatListScreen>
                         _PrettyListView(
                           items: filtered,
                           itemBuilder: (c) => _buildChatItem(c),
+                          afterFirst:
+                              q.isEmpty
+                                  ? const AdBannerWidget(
+                                    placement: 'app_chat_list',
+                                  )
+                                  : null,
                           emptyState:
                               q.isEmpty
                                   ? const _EmptyState()
@@ -1383,10 +1388,12 @@ class _PrettyListView extends StatelessWidget {
   final List<dynamic> items;
   final Widget Function(Map chat) itemBuilder;
   final Widget emptyState;
+  final Widget? afterFirst;
   const _PrettyListView({
     required this.items,
     required this.itemBuilder,
     this.emptyState = const _EmptyState(),
+    this.afterFirst,
   });
 
   @override
@@ -1396,9 +1403,13 @@ class _PrettyListView extends StatelessWidget {
     }
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
-      itemBuilder: (_, i) => itemBuilder(items[i] as Map),
+      itemBuilder: (_, i) {
+        if (afterFirst != null && i == 1) return afterFirst!;
+        final itemIndex = afterFirst != null && i > 1 ? i - 1 : i;
+        return itemBuilder(items[itemIndex] as Map);
+      },
       separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemCount: items.length,
+      itemCount: items.length + (afterFirst == null ? 0 : 1),
     );
   }
 }

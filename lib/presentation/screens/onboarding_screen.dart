@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iljujob/config/app_theme.dart';
+import 'worker_screen/home_main_screen.dart';
 import 'signup_client_screen/signup_client_choice_screen.dart';
 
 class OnboardingScreen extends StatelessWidget {
@@ -9,8 +10,9 @@ class OnboardingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final textScaler = MediaQuery.of(context).textScaler
-        .clamp(minScaleFactor: 1.0, maxScaleFactor: 1.2);
+    final textScaler = MediaQuery.of(
+      context,
+    ).textScaler.clamp(minScaleFactor: 1.0, maxScaleFactor: 1.2);
 
     return Scaffold(
       backgroundColor: AppColors.bgPage,
@@ -57,11 +59,12 @@ class OnboardingScreen extends StatelessWidget {
                       child: _TypeCard(
                         label: '알바생',
                         icon: Icons.person_outline_rounded,
-                        subtitle: '오늘 일하고\n오늘 받는 단기 알바',
+                        subtitle: '원하는 날짜의\n일급·주급 알바 찾기',
                         badge: null,
                         isHighlighted: false,
-                        onTap: () =>
-                            Navigator.pushNamed(context, '/signup-choice'),
+                        onTap:
+                            () =>
+                                Navigator.pushNamed(context, '/signup-choice'),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -69,31 +72,41 @@ class OnboardingScreen extends StatelessWidget {
                       child: _TypeCard(
                         label: '사장님',
                         icon: Icons.storefront_outlined,
-                        subtitle: '갑작스러운 결근도\n30분 내 해결',
+                        subtitle: '필요한 날에 맞춰\n구인 공고 등록하기',
                         // 두 카드는 같은 무게 — 구직자 쪽이 비활성처럼 보이던 문제(2026-10)
                         badge: null,
                         isHighlighted: false,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SignupClientChoiceScreen(),
-                          ),
-                        ),
+                        onTap:
+                            () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (_) => const SignupClientChoiceScreen(),
+                              ),
+                            ),
                       ),
                     ),
                   ],
                 ),
 
                 const Spacer(),
-
-                const Text(
-                  '전화번호 인증으로 바로 시작합니다.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textTertiary,
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: FilledButton(
+                    onPressed:
+                        () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const HomeMainScreen(),
+                          ),
+                        ),
+                    child: const Text('공고 먼저 보기'),
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 8),
+                const Text('지원할 때 가입할 수 있어요', style: AppTextStyles.caption),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -154,10 +167,7 @@ class _FeatureTags extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 6),
               child: Text(
                 '·',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textTertiary,
-                ),
+                style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
               ),
             ),
           _Tag(tags[i]),
@@ -237,9 +247,10 @@ class _TypeCardState extends State<_TypeCard> {
                   color: AppColors.bgCard,
                   borderRadius: BorderRadius.circular(AppRadius.xl),
                   border: Border.all(
-                    color: widget.isHighlighted
-                        ? AppColors.primaryMid
-                        : AppColors.border,
+                    color:
+                        widget.isHighlighted
+                            ? AppColors.primaryMid
+                            : AppColors.border,
                     width: widget.isHighlighted ? 1.5 : 1.0,
                   ),
                 ),
@@ -252,9 +263,10 @@ class _TypeCardState extends State<_TypeCard> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: widget.isHighlighted
-                            ? AppColors.primaryLight
-                            : AppColors.primaryLight,
+                        color:
+                            widget.isHighlighted
+                                ? AppColors.primaryLight
+                                : AppColors.primaryLight,
                         borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: Icon(
