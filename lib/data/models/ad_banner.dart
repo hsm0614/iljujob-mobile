@@ -8,6 +8,10 @@ class AdBanner {
   final String targetUrl;
   final int sortOrder;
 
+  /// 공고형 광고(app_partner_recruit) 목록 줄 문구. 이미지 배너는 null
+  final String? title;
+  final String? subtitle;
+
   AdBanner({
     required this.id,
     required this.partnerCode,
@@ -15,6 +19,8 @@ class AdBanner {
     required this.imageUrl,
     required this.targetUrl,
     required this.sortOrder,
+    this.title,
+    this.subtitle,
   });
 
   factory AdBanner.fromJson(Map<String, dynamic> json) {
@@ -25,6 +31,14 @@ class AdBanner {
       imageUrl: json['image_url'] ?? '',
       targetUrl: json['target_url'] ?? '',
       sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
+      title:
+          (json['title'] as String?)?.trim().isEmpty ?? true
+              ? null
+              : (json['title'] as String).trim(),
+      subtitle:
+          (json['subtitle'] as String?)?.trim().isEmpty ?? true
+              ? null
+              : (json['subtitle'] as String).trim(),
     );
   }
 }

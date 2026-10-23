@@ -10,6 +10,9 @@ import 'recent_jobs_screen.dart';
 import 'notification_inbox_screen.dart';
 import 'package:iljujob/config/constants.dart';
 import 'dart:convert';
+import 'package:iljujob/data/models/ad_banner.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'dart:math';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
@@ -212,7 +215,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   /// 어드민 '광고 배너(제휴)'의 `app_partner_recruit` 행이 활성인지.
   /// 계약 종료·사고 시 앱 배포 없이 즉시 내리기 위한 스위치.
   /// 기본 false — 서버 확인 전이나 조회 실패 시엔 노출하지 않는다(안전한 기본값).
-  bool _partnerAdActive = false;
+  // 공고형 광고(어드민 '앱·공고형 광고'). 여럿이면 접속마다 하나를 고른다
+  AdBanner? _jobAd;
   static const _kPartnerCardHiddenUntilKey = 'partner_card_hidden_until';
   static const _partnerCardHideDays = 7;
 
@@ -286,8 +290,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     final rows = await AdBannerService.instance.fetchBanners(
       'app_partner_recruit',
     );
-    if (!mounted) return;
-    setState(() => _partnerAdActive = rows.isNotEmpty);
+    if (!mounted || rows.isEmpty) return;
+    // ponytail: 무작위 = 기대값으로 균등 노출. 광고주별 노출 보장(가중치)이 필요해지면 sort_order 가중
+    setState(() => _jobAd = rows[Random().nextInt(rows.length)]);
   }
 
   Future<void> _loadPartnerCardHidden() async {
@@ -1457,33 +1462,47 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
   /// 파트너 채용공고 카드 (제휴 광고). 일반 공고 카드와 헷갈리지 않게
   /// '광고' 표기 + 파란 테두리로 구분한다.
-  Widget _buildPartnerRecruitCard(PartnerRecruitPost post) {
+  /// 공고형 광고 한 줄. 원더(wonder_lotte)만 앱 안 상세 화면, 나머지는 광고주 링크로
+  Widget _buildPartnerRecruitCard(AdBanner ad) {
+    const wonder = PartnerRecruitPost.wonderLotte;
+    final isWonder = ad.partnerCode == wonder.partnerCode;
+    final title = ad.title ?? (isWonder ? wonder.title : ad.partnerCode);
+    final subtitle =
+        ad.subtitle ??
+        (isWonder && wonder.benefits.items.isNotEmpty
+            ? '재택근무 · ${wonder.benefits.items.first.title}'
+            : null);
     // 배너와 같은 3단 집계: 노출(50% 이상 보였을 때) → 카드 탭 → 지원하기
     return VisibilityDetector(
-      key: Key('partner_card_${post.partnerCode}'),
+      key: Key('partner_card_${ad.partnerCode}'),
       onVisibilityChanged: (info) {
         if (info.visibleFraction < 0.5) return;
         AdBannerService.instance.logPartnerImpression(
-          post.partnerCode,
+          ad.partnerCode,
           placement: 'app_home_worker',
         );
       },
       child: GestureDetector(
         onTap: () {
           AdBannerService.instance.logPartnerClick(
-            post.partnerCode,
+            ad.partnerCode,
             placement: 'app_home_worker',
           );
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (_) => PartnerRecruitDetailScreen(
-                    post: post,
-                    placement: 'app_home_worker',
-                  ),
-            ),
-          );
+          if (isWonder) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder:
+                    (_) => const PartnerRecruitDetailScreen(
+                      post: wonder,
+                      placement: 'app_home_worker',
+                    ),
+              ),
+            );
+          } else if (Uri.tryParse(ad.targetUrl) case final uri?
+              when uri.hasScheme) {
+            launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
         },
         // 일반 공고 줄과 같은 모양 + '광고' 표기 (급구식). 파란 테두리 카드는 시선을 뺏었다
         child: Container(
@@ -1543,8 +1562,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     ),
                     const SizedBox(height: 5),
                     Text(
-                      post.title,
-                      maxLines: 1,
+                      title,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 15,
@@ -1554,10 +1573,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                       ),
                     ),
                     // 요약(업종·경력·근무지)은 상세화면에 있다. 카드엔 누를 이유 한 줄만.
-                    if (post.benefits.items.isNotEmpty) ...[
+                    if (subtitle != null) ...[
                       const SizedBox(height: 3),
                       Text(
-                        '재택근무 · ${post.benefits.items.first.title}',
+                        subtitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.jobMeta.copyWith(
@@ -2996,12 +3015,11 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
   /// 목록 3번째 공고 뒤 한 칸: 알림 꺼짐 · 성별 안내 · 배너 · 파트너 광고
   Widget _buildFeedSlot() {
-    final showPartner = _partnerAdActive && !_partnerCardHidden;
+    final jobAd = _partnerCardHidden ? null : _jobAd;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (showPartner)
-          _buildPartnerRecruitCard(PartnerRecruitPost.wonderLotte),
+        if (jobAd != null) _buildPartnerRecruitCard(jobAd),
         const PushOffBanner(
           message: '알림이 꺼져 있어요 · 켜면 근처 새 공고를 바로 받아요',
           source: 'worker_home_banner',
