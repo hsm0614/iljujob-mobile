@@ -2141,7 +2141,6 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
       backgroundColor: kBg,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0.8,
         titleSpacing: 16,
         title: const Text('프로필 수정'),
       ),

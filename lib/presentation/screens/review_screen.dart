@@ -185,7 +185,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
         backgroundColor: AppColors.bgPage,
         appBar: AppBar(
           backgroundColor: Colors.white,
-          elevation: 0.5,
           title: const Text('후기 보내기'),
           leading: IconButton(
             tooltip: '뒤로',

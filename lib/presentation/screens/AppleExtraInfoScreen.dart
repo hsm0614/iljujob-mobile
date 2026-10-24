@@ -145,7 +145,6 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
         backgroundColor: AppColors.bgPage,
         appBar: AppBar(
           elevation: 0,
-          centerTitle: true,
           title: const Text('기본 정보 및 프로필 설정'),
         ),
         body: Center(

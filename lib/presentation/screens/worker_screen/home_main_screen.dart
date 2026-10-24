@@ -2665,7 +2665,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               // 예전 로고처럼 파랑 (대표 요청 — DESIGN.md '제목 파랑 금지'의 예외: 홈 앱바 한 곳)
-              style: AppTextStyles.tabTitle.copyWith(color: AppColors.primary),
+              style: AppTextStyles.tabTitle,
             ),
           ),
           const SizedBox(width: 2),

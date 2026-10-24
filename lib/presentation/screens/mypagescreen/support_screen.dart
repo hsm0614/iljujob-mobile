@@ -14,7 +14,6 @@ class SupportScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('고객센터'),
         elevation: 0,
-        centerTitle: true,
       ),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),

@@ -129,9 +129,11 @@ class AppTextStyles {
   );
 
   /// 탭 화면 제목(내 활동·채팅·마이·캘린더·사장님 탭) — 홈 로고와 같은 잘난체로 통일 (2026-10 대표 요청)
+  // 탭 화면 앱바 제목: 장난체 파랑 — 홈·내 활동·채팅·마이·달력·사장님 탭 공통 (대표 결정 2026-10-24,
+  // DESIGN.md '제목 파랑 금지'의 예외는 탭 제목 한 곳)
   static const tabTitle = TextStyle(
     fontFamily: 'Jalnan2TTF', fontSize: 18,
-    color: AppColors.textPrimary, height: 1.1,
+    color: AppColors.primary, height: 1.1,
   );
   /// 화면 안 섹션 머리글('전체 공고' 등)
   static const sectionTitle = TextStyle(

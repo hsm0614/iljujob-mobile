@@ -33,8 +33,6 @@ class FaqScreen extends StatelessWidget {
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           elevation: 0,
-          backgroundColor: Colors.transparent,
-          centerTitle: true,
           title: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(

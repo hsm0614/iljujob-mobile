@@ -29,11 +29,7 @@ void checkToken(String token) {
   });
     return Scaffold(
       appBar: AppBar(
-  title: const Text(
-    '관리자 홈',
-    style: TextStyle(fontWeight: FontWeight.bold),
-  ),
-  backgroundColor: Colors.indigo,
+  title: const Text('관리자 홈'),
   actions: [
     IconButton(
       icon: const Icon(Icons.logout),

@@ -177,8 +177,6 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
       backgroundColor: _bg,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        foregroundColor: _brandBlue,
-        elevation: 0.4,
         title: Row(
           children: [
             const Text('지원자 목록'),

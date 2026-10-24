@@ -192,9 +192,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
       backgroundColor: _kBg,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0.5,
         // 제목에 브랜드 블루 금지 (디자인 가이드)
-        foregroundColor: _kText,
         title: const Text('공고 미리보기'),
         actions: [
           Container(

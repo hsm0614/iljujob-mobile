@@ -234,7 +234,6 @@ class _InquiryScreenState extends State<InquiryScreen> {
         extendBodyBehindAppBar: true,
         appBar: AppBar(
           elevation: 0,
-          backgroundColor: Colors.transparent,
           title: Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
@@ -247,7 +246,6 @@ class _InquiryScreenState extends State<InquiryScreen> {
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
           ),
-          centerTitle: true,
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(72), // ← 64에서 72로
             child: Padding(

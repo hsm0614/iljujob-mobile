@@ -304,7 +304,6 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
       backgroundColor: AppColors.bgMuted,
       appBar: AppBar(
         title: Text(_isEdit ? '경력 수정' : '경력 추가'),
-        centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(

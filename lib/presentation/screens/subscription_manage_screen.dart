@@ -233,7 +233,6 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
       backgroundColor: AppColors.bgPage,
       appBar: AlbailjuAppBar(
         title: '구독 관리',
-        brand: true,
         actions: [
           IconButton(
             tooltip: '새로고침',

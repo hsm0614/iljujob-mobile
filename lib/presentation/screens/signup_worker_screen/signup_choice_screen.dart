@@ -92,7 +92,6 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                   backgroundColor: AppColors.bgPage,
                   appBar: AppBar(
                     title: const Text('프로필 설정'),
-                    centerTitle: true,
                     elevation: 0,
                   ),
                   body: SingleChildScrollView(
@@ -275,7 +274,6 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
         backgroundColor: AppColors.bgPage,
         appBar: AppBar(
           title: const Text('가입 방법 선택'),
-          centerTitle: true,
           elevation: 0,
         ),
         body: Center(

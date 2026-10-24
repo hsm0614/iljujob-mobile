@@ -400,7 +400,6 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
         backgroundColor: const Color(0xFFEFF3F8),
         appBar: AppBar(
           title: const Text('기업 회원가입'),
-          centerTitle: true,
           elevation: 0,
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(4),

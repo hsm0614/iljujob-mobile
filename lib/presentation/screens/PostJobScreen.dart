@@ -42,7 +42,6 @@ class _PostJobScreenState extends State<PostJobScreen> {
         backgroundColor: AppColors.bgPage,
         appBar: AppBar(
           backgroundColor: Colors.white,
-          elevation: 0.5,
           titleSpacing: 0,
           title: Text(isRepost ? '공고 다시 올리기' : '알바 공고 작성'),
         ),

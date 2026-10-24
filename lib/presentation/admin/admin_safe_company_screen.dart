@@ -54,7 +54,6 @@ class _AdminSafeCompanyScreenState extends State<AdminSafeCompanyScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('안심기업 승인 관리'),
-        backgroundColor: Colors.indigo,
       ),
       body: isLoading
           ? const Center(child: CircularProgressIndicator())

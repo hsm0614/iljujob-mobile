@@ -934,7 +934,6 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
       backgroundColor: _bg,
       appBar: AppBar(
         title: const Text('이용권 구매'),
-        centerTitle: true,
         backgroundColor: AppColors.bgCard,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
