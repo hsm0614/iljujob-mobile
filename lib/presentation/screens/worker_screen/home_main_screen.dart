@@ -395,7 +395,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   Future<void> _initGps() async {
     final prefs = await SharedPreferences.getInstance();
     // 기본은 '내 주변'. 앱바에는 내 위치의 시·군·구 이름을 보여준다(아래 위치 확인 뒤)
-    _scope = prefs.getString(_kScopeKey) ?? 'near';
+    // 앱을 켤 때는 늘 내 위치부터. '전국'은 빈 화면·목록 끝에서 한 번 넓혀 보는 것이라 기억하지 않는다
+    // (예전엔 한 번 누르면 영구 기본값이 돼 '디폴트가 전국'으로 보였다 — 2026-10-24 대표 폰 실측)
+    final saved = prefs.getString(_kScopeKey);
+    _scope = saved == 'region' ? 'region' : 'near';
     _regionSido = prefs.getString(_kRegionSidoKey);
     _regionSigungu = prefs.getString(_kRegionSigunguKey);
     if (_scope == 'region' && (_regionSido ?? '').isEmpty) _scope = 'near';
