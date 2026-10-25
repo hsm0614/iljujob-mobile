@@ -479,7 +479,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                   const SizedBox(height: 14),
                   Text(
                     _errorMessage!,
-                    style: const TextStyle(color: Colors.red, fontSize: 13),
+                    style: const TextStyle(color: AppColors.error, fontSize: 13),
                   ),
                 ],
 

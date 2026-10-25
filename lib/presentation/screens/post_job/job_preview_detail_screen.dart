@@ -496,7 +496,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                                     height: 40,
                                     child: const Icon(
                                       Icons.location_on,
-                                      color: Colors.red,
+                                      color: AppColors.error,
                                       size: 40,
                                     ),
                                   ),
@@ -828,13 +828,13 @@ class _AiInsightCardState extends State<_AiInsightCard> {
       final ratio = widget.pay / pi.avgHourly;
       if (ratio >= 1.2) {
         payPosition = '평균보다 높아요';
-        payPosColor = Colors.green.shade600;
+        payPosColor = AppColors.badgeSameDay;
       } else if (ratio >= 0.95) {
         payPosition = '평균 수준이에요';
         payPosColor = _kBrand;
       } else {
         payPosition = '평균보다 낮아요';
-        payPosColor = Colors.orange.shade700;
+        payPosColor = AppColors.warningDark;
       }
     }
 
@@ -1019,7 +1019,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                               decoration: BoxDecoration(
                                 color:
                                     tip.impact == 'critical'
-                                        ? Colors.red.shade50
+                                        ? AppColors.errorLight
                                         : tip.impact == 'high'
                                         ? const Color(0xFFFFF8E1)
                                         : AppColors.bgPage,
@@ -1027,9 +1027,9 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                                 border: Border.all(
                                   color:
                                       tip.impact == 'critical'
-                                          ? Colors.red.shade200
+                                          ? AppColors.errorBorder
                                           : tip.impact == 'high'
-                                          ? Colors.orange.shade200
+                                          ? AppColors.warningBorder
                                           : _kBorder,
                                 ),
                               ),

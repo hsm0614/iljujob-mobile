@@ -1290,7 +1290,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         const Text('지원자 만족도', style: TextStyle(fontWeight: FontWeight.w600)),
 
         const SizedBox(height: 6),
-        _buildProgressRow('추천해요', satisfaction['recommend'], Colors.orange),
+        _buildProgressRow('추천해요', satisfaction['recommend'], AppColors.badgeUrgent),
         const SizedBox(height: 6),
         _buildProgressRow('만족해요', satisfaction['okay'], AppColors.textTertiary),
         const SizedBox(height: 6),
@@ -1534,7 +1534,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             ? widget.job.description!.trim()
             : isAgency
             ? '상세 설명이 많이 적혀 있지 않아요.\n아래에서 전화로 지원하거나 앱으로 지원할 수 있어요.'
-            : '상세 설명이 많이 적혀 있지 않아요.\n궁금한 점은 채팅으로 바로 물어보면 좋아요 👀';
+            : '상세 설명이 많이 적혀 있지 않아요.\n궁금한 점은 채팅으로 바로 물어보면 좋아요';
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1677,7 +1677,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         const Text('근무 위치', style: AppTextStyles.h3),
         const SizedBox(height: 6),
         const Text(
-          '정확한 위치는 사장님과 대화하면서 한 번 더 확인해보는 게 좋아요 😊',
+          '정확한 위치는 사장님과 대화하면서 한 번 더 확인해보는 게 좋아요',
           style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
         ),
         const SizedBox(height: 10),
@@ -1839,7 +1839,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     child: Icon(
                       Icons.location_pin,
                       size: 32,
-                      color: Colors.red,
+                      color: AppColors.error,
                     ),
                   ),
                 ),

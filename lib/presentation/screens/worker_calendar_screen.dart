@@ -462,7 +462,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         _safeSetState(() {
           _items = [];
           _invalidateCache();
-          _error = '로그인이 필요해요 🙏';
+          _error = '로그인이 필요해요';
         });
         return;
       }
@@ -473,7 +473,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
       _safeSetState(() {
         _items = result.ok ? result.items : [];
         _invalidateCache();
-        _error = result.ok ? null : (result.errorMessage ?? '조회가 실패했어요 😵');
+        _error = result.ok ? null : (result.errorMessage ?? '조회가 실패했어요');
       });
     } finally {
       if (mounted && generation == _fetchGeneration) {
@@ -514,7 +514,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
       return _FetchMonthResult(
         ok: false,
         items: const [],
-        errorMessage: '네트워크 오류가 났어요 🥲',
+        errorMessage: '네트워크 오류가 났어요',
       );
     }
   }
@@ -593,7 +593,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
   Future<void> _markCompleted(Map<String, dynamic> it) async {
     if (_actionInProgress) return;
     if (_isCancelled(it)) {
-      _snack('취소된 일정은 완료 처리 대신 삭제만 할 수 있어요 🗑');
+      _snack('취소된 일정은 완료 처리 대신 삭제만 할 수 있어요');
       return;
     }
     final id = _idOf(it);
@@ -646,7 +646,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
       message:
           source == 'job'
               ? '공고로 들어온 일정은 서버 정책상 삭제가 막혀있을 수도 있어요.\n그래도 삭제를 시도할게요.'
-              : '삭제한 일정은 복구가 어려워요 🥺',
+              : '삭제한 일정은 복구가 어려워요',
       okText: '삭제',
       danger: true,
     );
@@ -656,13 +656,13 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     try {
       final result = await _deleteBySource(source: source, id: id);
       if (result.ok) {
-        _snack('삭제됐어요 🗑');
+        _snack('삭제됐어요');
         await _fetchMonth(_focusedDay);
       } else {
         _snack(
           source == 'job'
-              ? '공고 일정 삭제가 제한되어 있어요 🥲\n(서버 정책/권한 문제일 수 있어요)'
-              : '삭제가 실패했어요 🥲',
+              ? '공고 일정 삭제가 제한되어 있어요\n(서버 정책/권한 문제일 수 있어요)'
+              : '삭제가 실패했어요',
         );
       }
     } finally {
@@ -680,7 +680,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
       return;
     }
     if (item != null && _isJobSource(item)) {
-      _snack('공고로 등록된 일정은 수정할 수 없어요 🙂\n(완료/삭제만 가능해요)');
+      _snack('공고로 등록된 일정은 수정할 수 없어요\n(완료/삭제만 가능해요)');
       return;
     }
 
@@ -765,7 +765,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
 
                       final sure = await _confirm(
                         title: '삭제할까요?',
-                        message: '삭제한 일정은 복구가 어려워요 🥺',
+                        message: '삭제한 일정은 복구가 어려워요',
                         okText: '삭제',
                         danger: true,
                       );
@@ -1181,7 +1181,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
   Widget _buildNoDaySelected() {
     return const Center(
       child: Text(
-        '날짜를 선택하면\n일정을 확인할 수 있어요 📅',
+        '날짜를 선택하면\n일정을 확인할 수 있어요',
         textAlign: TextAlign.center,
         style: TextStyle(
           color: AppColors.textSecondary,
@@ -1199,7 +1199,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     if (list.isEmpty) {
       return Center(
         child: Text(
-          '$title\n등록된 일정이 없어요 🙂\n오른쪽 아래 + 로 추가해봐요',
+          '$title\n등록된 일정이 없어요\n오른쪽 아래 + 로 추가해봐요',
           textAlign: TextAlign.center,
           style: const TextStyle(
             color: AppColors.textSecondary,
@@ -2212,7 +2212,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
     if (pay <= 0) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('금액을 입력해줘요 🙂')));
+      ).showSnackBar(const SnackBar(content: Text('금액을 입력해줘요')));
       return;
     }
 
@@ -2228,7 +2228,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
     if (_isRepeat && !widget.isEdit && _selectedWeekdays.isEmpty) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('요일을 하나 이상 선택해주세요 📅')));
+      ).showSnackBar(const SnackBar(content: Text('요일을 하나 이상 선택해주세요')));
       return;
     }
 

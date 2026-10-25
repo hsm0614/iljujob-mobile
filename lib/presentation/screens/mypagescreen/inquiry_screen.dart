@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:iljujob/widget/app_ui.dart';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -122,20 +123,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
 
       if (ok) {
         if (!mounted) return;
-        showDialog(
-          context: context,
-          builder:
-              (_) => AlertDialog(
-                title: const Text('접수 완료'),
-                content: const Text('문의를 접수했어요.\n빠르게 답변드릴게요.'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('확인'),
-                  ),
-                ],
-              ),
-        );
+        showAppSheet(context, title: '문의를 접수했어요', message: '빠르게 답변드릴게요.');
         _clearForm();
       } else {
         _showSnack('문의를 보내지 못했어요. 잠시 후 다시 시도해 주세요.');
@@ -268,14 +256,7 @@ class _InquiryScreenState extends State<InquiryScreen> {
           ),
         ),
         body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [AppColors.primary, Color(0xFF7CC7FF), Colors.white],
-              stops: [0, .25, .25],
-            ),
-          ),
+          decoration: const BoxDecoration(color: AppColors.bgCard),
           child: TabBarView(
             children: [_buildInquiryForm(), _buildInquiryList()],
           ),

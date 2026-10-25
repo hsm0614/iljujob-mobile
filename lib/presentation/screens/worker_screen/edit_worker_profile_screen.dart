@@ -201,7 +201,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
 
     if (_workerId == null) {
       if (mounted) setState(() => _initialLoading = false);
-      _toast('로그인 정보가 없어요 🙏');
+      _toast('로그인 정보가 없어요');
       return;
     }
 
@@ -292,7 +292,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
 
       _prefs?.setString('workerProfileImageUrl', _profileImageUrl);
     } catch (_) {
-      _toast('네트워크 오류가 났어요 🥲');
+      _toast('네트워크 오류가 났어요');
     }
   }
 
@@ -436,9 +436,9 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
       });
 
       _prefs?.setString('workerProfileImageUrl', _profileImageUrl);
-      _toast('저장 완료! ✅');
+      _toast('저장 완료!');
     } catch (e) {
-      _toast('저장 중 오류가 났어요 🥲');
+      _toast('저장 중 오류가 났어요');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -481,12 +481,12 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         setState(() {
           _experiences.removeWhere((e) => e.id == exp.id);
         });
-        _toast('삭제됐어요 🗑️');
+        _toast('삭제됐어요');
       } else {
         _toast('삭제 실패 (${resp.statusCode})');
       }
     } catch (e) {
-      _toast('네트워크 오류가 났어요 🥲');
+      _toast('네트워크 오류가 났어요');
     } finally {
       if (mounted) setState(() => _deletingExperienceIds.remove(exp.id));
     }
@@ -516,12 +516,12 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         setState(() {
           _licenses.removeWhere((x) => x.id == item.id);
         });
-        _toast('삭제됐어요 🗑️');
+        _toast('삭제됐어요');
       } else {
         _toast('삭제 실패 (${res.statusCode})');
       }
     } catch (e) {
-      _toast('네트워크 오류가 났어요 🥲');
+      _toast('네트워크 오류가 났어요');
     } finally {
       if (mounted) setState(() => _deletingLicenseIds.remove(item.id));
     }
@@ -667,7 +667,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                                         '',
                                       );
                                       if (digits.length != 8) {
-                                        _toast('취득일 형식을 확인해주세요 🙂');
+                                        _toast('취득일 형식을 확인해주세요');
                                         return;
                                       }
                                       try {
@@ -703,7 +703,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                                           );
                                         }
                                       } catch (e) {
-                                        _toast('네트워크 오류가 났어요 🥲');
+                                        _toast('네트워크 오류가 났어요');
                                       }
                                     }
                                     : null,
@@ -1179,7 +1179,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         _toast('탈퇴 실패 (${res.statusCode})');
       }
     } catch (e) {
-      _toast('네트워크 오류가 났어요 🥲');
+      _toast('네트워크 오류가 났어요');
     }
   }
 
@@ -2281,7 +2281,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
           const SizedBox(height: 8),
           Text(
             done >= total
-                ? '완성! 사장님에게 가장 신뢰가는 프로필이에요 👍'
+                ? '완성! 사장님에게 가장 신뢰가는 프로필이에요'
                 : '${next.first}만 채워도 사장님 신뢰가 올라가요',
             style: const TextStyle(
               fontSize: 12,

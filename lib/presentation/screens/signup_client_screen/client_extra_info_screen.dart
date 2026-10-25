@@ -83,7 +83,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
 
               // 헤더
               const Text(
-                '담당자 이름을\n알려주세요 👋',
+                '담당자 이름을\n알려주세요',
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
@@ -115,7 +115,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      '🙋 담당자 이름',
+                      '담당자 이름',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 13,

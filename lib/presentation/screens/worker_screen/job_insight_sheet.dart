@@ -245,7 +245,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
               '북마크',
               '$bookmarks개',
               Icons.bookmark_outline,
-              Colors.purple,
+              AppColors.primary,
             ),
           ],
         ),
@@ -253,7 +253,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
 
         // ── 지원율 ──
         if (views > 0) ...[
-          _sectionTitle('📊 전환율'),
+          _sectionTitle('전환율'),
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(16),
@@ -278,8 +278,8 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                         fontWeight: FontWeight.w800,
                         color:
                             applyRate >= d.benchApplyRate
-                                ? Colors.green.shade600
-                                : Colors.orange.shade700,
+                                ? AppColors.badgeSameDay
+                                : AppColors.warningDark,
                       ),
                     ),
                   ],
@@ -293,8 +293,8 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                     backgroundColor: _border,
                     valueColor: AlwaysStoppedAnimation(
                       applyRate >= d.benchApplyRate
-                          ? Colors.green.shade400
-                          : Colors.orange,
+                          ? AppColors.success
+                          : AppColors.badgeUrgent,
                     ),
                   ),
                 ),
@@ -308,7 +308,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                     ),
                     Text(
                       d.rateVsBench == 'above'
-                          ? '평균보다 높아요 🔥'
+                          ? '평균보다 높아요'
                           : d.rateVsBench == 'below'
                           ? '평균보다 낮아요'
                           : '평균 수준',
@@ -317,7 +317,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                         fontWeight: FontWeight.w600,
                         color:
                             d.rateVsBench == 'above'
-                                ? Colors.green.shade600
+                                ? AppColors.badgeSameDay
                                 : _label,
                       ),
                     ),
@@ -331,7 +331,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
 
         // ── 시급 비교 ──
         if (myHourly > 0 && avgHourly > 0) ...[
-          _sectionTitle('💰 시급 비교'),
+          _sectionTitle('시급 비교'),
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.all(16),
@@ -348,10 +348,10 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                   '평균 시급',
                   '${fmt.format(avgHourly)}원',
                   payLevel == 'low'
-                      ? Colors.red
+                      ? AppColors.error
                       : payLevel == 'high'
-                      ? Colors.green
-                      : Colors.orange,
+                      ? AppColors.success
+                      : AppColors.badgeUrgent,
                 ),
                 const SizedBox(height: 10),
                 _payCompareBar(myHourly, avgHourly),
@@ -364,7 +364,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
         ],
 
         // ── 지원자 비교 ──
-        _sectionTitle('👥 지원자 비교'),
+        _sectionTitle('지원자 비교'),
         const SizedBox(height: 10),
         Container(
           padding: const EdgeInsets.all(16),
@@ -380,8 +380,8 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                   '$applies명',
                   '내 공고 지원자',
                   applies >= avgApplicants
-                      ? Colors.green.shade600
-                      : Colors.orange,
+                      ? AppColors.badgeSameDay
+                      : AppColors.badgeUrgent,
                 ),
               ),
               Container(width: 1, height: 50, color: _border),
@@ -426,7 +426,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
 
         // ── AI 메시지 ──
         if (d.messages.isNotEmpty) ...[
-          _sectionTitle('🤖 AI 분석'),
+          _sectionTitle('AI 분석'),
           const SizedBox(height: 10),
           Container(
             width: double.infinity,
@@ -539,7 +539,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
       children: [
         _bar(myRatio.toDouble(), _blue),
         const SizedBox(height: 4),
-        _bar(avgRatio.toDouble(), Colors.orange),
+        _bar(avgRatio.toDouble(), AppColors.badgeUrgent),
         const SizedBox(height: 6),
         Row(
           children: [
@@ -547,7 +547,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
             const SizedBox(width: 4),
             const Text('내 시급', style: TextStyle(fontSize: 11, color: _label)),
             const SizedBox(width: 12),
-            _dot(Colors.orange),
+            _dot(AppColors.badgeUrgent),
             const SizedBox(width: 4),
             const Text('평균', style: TextStyle(fontSize: 11, color: _label)),
           ],
@@ -579,19 +579,19 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
     Color fg;
     switch (level) {
       case 'high':
-        text = '평균보다 ${fmt.format(diff)}원 높아요 🎉';
-        bg = Colors.green.withOpacity(0.1);
-        fg = Colors.green.shade700;
+        text = '평균보다 ${fmt.format(diff)}원 높아요';
+        bg = AppColors.success.withValues(alpha: 0.1);
+        fg = AppColors.badgeSameDay;
         break;
       case 'low':
-        text = '평균보다 ${fmt.format(diff)}원 낮아요 📢 시급 인상을 고려해보세요';
-        bg = Colors.red.withOpacity(0.1);
-        fg = Colors.red.shade700;
+        text = '평균보다 ${fmt.format(diff)}원 낮아요 시급 인상을 고려해보세요';
+        bg = AppColors.error.withValues(alpha: 0.1);
+        fg = AppColors.error;
         break;
       default:
-        text = '평균과 비슷한 시급이에요 👍';
-        bg = Colors.orange.withOpacity(0.1);
-        fg = Colors.orange.shade700;
+        text = '평균과 비슷한 시급이에요';
+        bg = AppColors.warningLight;
+        fg = AppColors.warningDark;
     }
     return Container(
       width: double.infinity,

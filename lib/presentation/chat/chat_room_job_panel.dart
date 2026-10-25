@@ -374,7 +374,7 @@ class _ClientActions extends StatelessWidget {
         _ActionButton(
           text: '알바 완료 처리',
           icon: Icons.check_circle_rounded,
-          color: Colors.green,
+          color: AppColors.success,
           onPressed: onMarkCompleted,
         ),
       );

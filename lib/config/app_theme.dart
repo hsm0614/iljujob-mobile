@@ -36,6 +36,8 @@ class AppColors {
 
   // ── Semantic ───────────────────────────────────────────
   static const error   = Color(0xFFDC2626);
+  static const errorLight  = Color(0xFFFEF2F2); // 오류 연한 바탕
+  static const errorBorder = Color(0xFFFECACA); // 오류 연한 테두리
   static const success = Color(0xFF10B981);
   static const warning = Color(0xFFF59E0B);
   static const warningDark = Color(0xFF92400E);

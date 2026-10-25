@@ -140,7 +140,7 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
                     ),
                     child: Row(
                       children: const [
-                        Text('🎁', style: TextStyle(fontSize: 18)),
+                        Icon(Icons.card_giftcard_rounded, size: 18, color: AppColors.primary),
                         SizedBox(width: 10),
                         Expanded(
                           child: Text(

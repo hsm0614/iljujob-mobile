@@ -1,5 +1,6 @@
 // lib/presentation/screens/pass_payment_success_screen.dart
 import 'package:flutter/material.dart';
+import 'package:iljujob/config/app_theme.dart';
 
 class PassPaymentSuccessScreen extends StatelessWidget {
   // 결제 성공 시 전달받을 결제 번호(imp_uid)입니다.
@@ -18,7 +19,7 @@ class PassPaymentSuccessScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.check_circle, color: Colors.green, size: 80),
+            const Icon(Icons.check_circle, color: AppColors.success, size: 80),
             const SizedBox(height: 20),
             const Text(
               '결제가 완료됐어요.',

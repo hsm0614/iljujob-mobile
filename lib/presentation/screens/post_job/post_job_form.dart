@@ -1478,7 +1478,7 @@ class _PostJobFormState extends State<PostJobForm>
                   ),
                   const SizedBox(height: 20),
                   const Text(
-                    '✏️ 작성 중인 공고가 있어요',
+                    '작성 중인 공고가 있어요',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w800,
@@ -4071,7 +4071,7 @@ class _PostJobFormState extends State<PostJobForm>
                           ? '이번 달 무료 작성 1회를 사용했습니다.'
                           : '공고문이 적용되었습니다.',
                     ),
-                    backgroundColor: Colors.green,
+                    backgroundColor: AppColors.success,
                   ),
                 );
               },
@@ -5002,17 +5002,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                       vertical: 18,
                     ),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors:
-                            (_urgentPassCount > 0 || _urgentPassCount == -1)
-                                ? [AppColors.urgentCall, AppColors.error]
-                                : [
-                                  const Color(0xFFF87171),
-                                  AppColors.urgentCall,
-                                ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
+                      color: AppColors.urgentCall,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(

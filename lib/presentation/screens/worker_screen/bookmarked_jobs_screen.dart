@@ -467,7 +467,7 @@ class _JobTile extends StatelessWidget {
                   IconButton(
                     icon: const Icon(
                       Icons.delete_outline,
-                      color: Colors.redAccent,
+                      color: AppColors.error,
                     ),
                     tooltip: '찜 삭제',
                     onPressed: onDelete,

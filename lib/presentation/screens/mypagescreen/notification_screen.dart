@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iljujob/config/app_theme.dart';
 import 'package:app_settings/app_settings.dart'; // ✅ 추가
 import '../../../data/services/notificaion_service.dart';
 
@@ -66,7 +67,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             onChanged(v);
             _saveSettings();
           },
-          activeThumbColor: Colors.red,
+          activeThumbColor: AppColors.primary,
         ),
         const Divider(height: 0),
       ],
@@ -84,7 +85,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
           onChanged: (_) {
             AppSettings.openAppSettings(); // ✅ 기기 설정 이동
           },
-          activeThumbColor: Colors.red,
+          activeThumbColor: AppColors.primary,
         ),
         const Divider(height: 0),
       ],

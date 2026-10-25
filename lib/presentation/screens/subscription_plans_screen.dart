@@ -2,6 +2,7 @@
 //
 // 알바일주 구독 플랜 선택 화면 (라이트/프로)
 import 'dart:async';
+import 'package:iljujob/widget/app_ui.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -266,32 +267,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
 
   void _showError(String msg) {
     if (!mounted) return;
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: const Text(
-              '오류',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
-            content: Text(msg),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  '확인',
-                  style: TextStyle(
-                    color: AppColors.primary,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
-    );
+    showAppSheet(context, title: '진행하지 못했어요', message: msg);
   }
 
   void _showSuccess() {

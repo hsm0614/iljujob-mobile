@@ -52,11 +52,11 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
       _Message(
         isUser: false,
         text:
-            '안녕하세요! 👋 저는 알바일주 AI 노무 상담사예요.\n\n'
+            '안녕하세요! 저는 알바일주 AI 노무 상담사예요.\n\n'
             '주휴수당, 최저임금, 임금체불, 산재보험 등\n'
             '노동법 관련 궁금한 점을 편하게 물어보세요.\n\n'
-            '⚠️ 법적 구속력이 있는 공식 답변이 아니므로\n'
-            '중요한 사안은 고용노동부(📞1350)를 이용하세요.',
+            '법적 구속력이 있는 공식 답변이 아니므로\n'
+            '중요한 사안은 고용노동부( 1350)를 이용하세요.',
       ),
     );
   }
@@ -121,7 +121,7 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
 
   void _showError(String msg) {
     setState(() {
-      _messages.add(_Message(isUser: false, text: '⚠️ $msg'));
+      _messages.add(_Message(isUser: false, text: '$msg'));
     });
   }
 
@@ -334,7 +334,7 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            '💬 자주 묻는 질문',
+            '자주 묻는 질문',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,

@@ -36,7 +36,7 @@ class EventDetailScreen extends StatelessWidget {
             // ✅ 이벤트 기간 상단 표시
             if (startDate.isNotEmpty && endDate.isNotEmpty)
               Text(
-                '📅 기간: $startDate ~ $endDate',
+                '기간: $startDate ~ $endDate',
                 style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
               ),
             const SizedBox(height: 16),

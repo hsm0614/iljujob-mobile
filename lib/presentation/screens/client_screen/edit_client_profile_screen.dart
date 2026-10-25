@@ -791,7 +791,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
     ),
     child: Row(
       children: [
-        const Icon(Icons.picture_as_pdf, color: Colors.red),
+        const Icon(Icons.picture_as_pdf, color: AppColors.error),
         const SizedBox(width: 8),
         Expanded(child: Text(name, overflow: TextOverflow.ellipsis)),
       ],

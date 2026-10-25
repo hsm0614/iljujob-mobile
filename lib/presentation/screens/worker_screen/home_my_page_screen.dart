@@ -1502,7 +1502,7 @@ class _TrustScoreCardState extends State<_TrustScoreCard> {
                           const SizedBox(height: 4),
                           Text(
                             isMax
-                                ? '최고 등급이에요! 계속 유지해주세요 🎉'
+                                ? '최고 등급이에요! 계속 유지해주세요'
                                 : '$nextGrade 등급까지 $remaining점 남았어요',
                             style: const TextStyle(
                               fontSize: 11,

@@ -140,7 +140,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
               ElevatedButton.icon(
                 icon: const Icon(Icons.block),
                 label: const Text('차단'),
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
                 onPressed: () async {
                   Navigator.pop(context);
 
@@ -291,7 +291,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
         actions: [
           IconButton(
             tooltip: '신고',
-            icon: const Icon(Icons.report, color: Colors.red),
+            icon: const Icon(Icons.report, color: AppColors.error),
             onPressed: () => _showReportDialog('worker', widget.workerId),
           ),
           IconButton(

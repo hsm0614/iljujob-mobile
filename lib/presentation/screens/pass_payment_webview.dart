@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:iljujob/widget/app_ui.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -48,7 +49,7 @@ class _PassPaymentWebViewState extends State<PassPaymentWebView> with WidgetsBin
 void initState() {
   super.initState();
 
-  WidgetsBinding.instance.addObserver(this); // ✅ observer 등록
+  WidgetsBinding.instance.addObserver(this); // observer 등록
 
   if (widget.uri != null) {
    debugPrint('🔗 딥링크 URI 감지됨: ${widget.uri}');
@@ -64,7 +65,7 @@ void initState() {
 
 @override
 void dispose() {
-  WidgetsBinding.instance.removeObserver(this); // ✅ 꼭 제거
+  WidgetsBinding.instance.removeObserver(this); // 꼭 제거
   super.dispose();
 }@override
 void didChangeAppLifecycleState(AppLifecycleState state) {
@@ -88,7 +89,7 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
       if (merchantUid != null && merchantUid.isNotEmpty) {
         debugPrint('🧾 merchant_uid 추출 성공: $merchantUid');
         _isVerifying = true;
-        _verifyWithServerByMerchantUid(merchantUid); // ✅ 서버에 직접 검증 요청
+        _verifyWithServerByMerchantUid(merchantUid); // 서버에 직접 검증 요청
       } else {
         debugPrint('❌ redirectUrl에 merchant_uid 없음: $redirectUrl');
         _showErrorDialog('결제 정보가 유효하지 않습니다.');
@@ -138,16 +139,16 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
   }
 
  if (url.contains('payment-success.html') && !_hasHandledResult) {
-  _hasHandledResult = true; // ✅ 중복 방지 플래그 먼저 설정
+  _hasHandledResult = true; // 중복 방지 플래그 먼저 설정
   debugPrint('🟢 payment-success.html 감지됨 → 서버 검증 실행');
 debugPrint('💬 imp_uid 있음 && _hasHandledResult=$_hasHandledResult');
   final uri = Uri.tryParse(url);
   final merchantUid = uri?.queryParameters['merchant_uid'];
 
   if (merchantUid != null && merchantUid.isNotEmpty) {
-    _handleDeepLink(uri!); // ✅ 딥링크 처리
+    _handleDeepLink(uri!); // 딥링크 처리
   } else {
-    _showErrorDialog('❌ 결제 정보 누락 (merchant_uid 없음)');
+    _showErrorDialog('결제 정보 누락 (merchant_uid 없음)');
     Navigator.pop(context, null);
   }
 
@@ -201,7 +202,7 @@ bool _isExternalScheme(String url) {
 
   final bool _hasHandledIntent = false;
   bool _hasHandledResult = false;
-  bool _isInternalRedirect = false; // ✅ 내부에서 보낸 success.html → 딥링크 구분용
+  bool _isInternalRedirect = false; // 내부에서 보낸 success.html → 딥링크 구분용
 
   NavigationDecision _handleNavigationRequest(NavigationRequest request) {
   final url = request.url;
@@ -312,7 +313,7 @@ if (url.startsWith('intent://')) {
   if (_controller == null) {
     debugPrint('🛑 _controller가 아직 null → WebView 오류화면 차단 실패 가능성');
   } else {
-    _controller!.loadRequest(Uri.parse('about:blank')); // ✅ WebView 오류 화면 덮기
+    _controller!.loadRequest(Uri.parse('about:blank')); // WebView 오류 화면 덮기
   }
 
   _launchIntentUri(url);
@@ -559,14 +560,7 @@ Future.delayed(const Duration(seconds: 2), () async {
 
   void _showErrorDialog(String msg) {
     if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('오류'),
-        content: Text(msg),
-        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('확인'))],
-      ),
-    );
+    showAppSheet(context, title: '진행하지 못했어요', message: msg);
   }
 
   void log(String tag, dynamic data) {

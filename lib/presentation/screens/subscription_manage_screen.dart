@@ -358,14 +358,7 @@ class _StatusCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors:
-              active
-                  ? [AppColors.primary, const Color(0xFF1A6FFF)]
-                  : [AppColors.textTertiary, AppColors.textSecondary],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: active ? AppColors.primary : AppColors.textTertiary,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -447,13 +440,13 @@ class _StatusCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.3),
+                    color: AppColors.warningBorder,
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: const Text(
                     '체험 중',
                     style: TextStyle(
-                      color: Colors.orange,
+                      color: AppColors.badgeUrgent,
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
                     ),

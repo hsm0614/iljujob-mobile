@@ -1,5 +1,6 @@
 // File: lib/presentation/screens/purchase_pass_screen.dart
 import 'dart:async';
+import 'package:iljujob/widget/app_ui.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -155,29 +156,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   // ─── 에러 다이얼로그 ──────────────────────────────────
   void _showErrorDialog(String msg) {
     if (!mounted) return;
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: const Text(
-              '오류',
-              style: TextStyle(fontWeight: FontWeight.w800),
-            ),
-            content: Text(msg),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text(
-                  '확인',
-                  style: TextStyle(color: _blue, fontWeight: FontWeight.w700),
-                ),
-              ),
-            ],
-          ),
-    );
+    showAppSheet(context, title: '진행하지 못했어요', message: msg);
   }
 
   // ─── iOS JWS 서버 검증 ────────────────────────────────
@@ -628,7 +607,11 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Center(
-                      child: Text('🎫', style: TextStyle(fontSize: 26)),
+                      child: Icon(
+                        Icons.confirmation_number_outlined,
+                        size: 26,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -1081,7 +1064,11 @@ class _InstantTabState extends State<_InstantTab> {
             ),
             child: Row(
               children: [
-                const Text('🎫', style: TextStyle(fontSize: 28)),
+                const Icon(
+                  Icons.confirmation_number_outlined,
+                  size: 28,
+                  color: AppColors.primary,
+                ),
                 const SizedBox(width: 12),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1389,7 +1376,6 @@ class _UrgentTab extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.urgentCall,
                     borderRadius: BorderRadius.circular(20),
-                    
                   ),
                   child: Row(
                     children: [
@@ -1659,7 +1645,6 @@ class _BottomCta extends StatelessWidget {
             decoration: BoxDecoration(
               color: active ? btnColor : _border,
               borderRadius: BorderRadius.circular(16),
-              
             ),
             child: Center(
               child:
@@ -1711,7 +1696,6 @@ class _BuyButton extends StatelessWidget {
         // 그라데이션·글로우 없이 단색 (리디자인 2026-10). gradient 첫 색만 쓴다
         color: isPurchasing ? _border : gradient.first,
         borderRadius: BorderRadius.circular(14),
-        
       ),
       child: Center(
         child:

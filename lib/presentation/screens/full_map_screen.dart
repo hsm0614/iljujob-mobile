@@ -102,7 +102,7 @@ class _FullMapScreenState extends State<FullMapScreen> {
           // (대응책) 중앙 고정 핀 위젯 — 네이티브 마커가 혹시 실패해도 핀은 보이게
           const IgnorePointer(
             child: Center(
-              child: Icon(Icons.location_pin, size: 34, color: Colors.red),
+              child: Icon(Icons.location_pin, size: 34, color: AppColors.error),
             ),
           ),
 

@@ -142,7 +142,7 @@ Widget _buildReportCard(Map<String, dynamic> report) {
             ],
           ),
           const SizedBox(height: 6),
-          Text('📝 사유: $reasonCategory${reasonDetail != null && reasonDetail.isNotEmpty ? ' - $reasonDetail' : ''}'),
+          Text('사유: $reasonCategory${reasonDetail != null && reasonDetail.isNotEmpty ? ' - $reasonDetail' : ''}'),
           const SizedBox(height: 6),
           Text('⏰ 날짜: $createdAt', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
         ],
@@ -158,11 +158,11 @@ Widget _buildReportCard(Map<String, dynamic> report) {
   switch (status) {
     case 'approved': // ✅ 추가
     case 'confirmed': // 기존 값
-      bgColor = Colors.green;
+      bgColor = AppColors.success;
       label = '조치 완료';
       break;
     case 'rejected':
-      bgColor = Colors.red;
+      bgColor = AppColors.error;
       label = '기각됨';
       break;
     default:

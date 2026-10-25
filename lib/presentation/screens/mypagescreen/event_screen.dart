@@ -315,7 +315,7 @@ class _EventCard extends StatelessWidget {
                       if (period.isNotEmpty) ...[
                         const SizedBox(width: 8),
                         Text(
-                          '📅 $period',
+                          '$period',
                           style: const TextStyle(fontSize: 12, color: Colors.black54),
                         ),
                       ],
@@ -436,7 +436,7 @@ class _ErrorState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, size: 56, color: Colors.redAccent),
+            const Icon(Icons.error_outline, size: 56, color: AppColors.error),
             const SizedBox(height: 12),
             Text(message, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),

@@ -382,11 +382,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                     vertical: 10,
                   ),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
-                      colors: [AppColors.primaryLight, AppColors.bgCard],
-                    ),
+                    color: AppColors.primaryLight,
                     borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: AppColors.primaryMid),
                   ),

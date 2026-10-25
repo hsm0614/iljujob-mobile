@@ -269,7 +269,9 @@ class AppBottomNavItem extends StatelessWidget {
                       isActive ? activeIcon : icon,
                       size: 21,
                       color:
-                          isActive ? AppColors.primary : AppColors.textSecondary,
+                          isActive
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
                     ),
                     if (badgeLabel != null)
                       Positioned(
@@ -323,6 +325,7 @@ class AppEmptyState extends StatelessWidget {
   final String? message;
   final String? actionLabel;
   final VoidCallback? onAction;
+
   /// 새로고침·다시 시도처럼 보조 행동이면 테두리 버튼
   final bool secondaryAction;
 
@@ -396,4 +399,80 @@ class AppEmptyState extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 확인·안내용 바텀시트 (가운데 AlertDialog 대신 — DESIGN.md 바텀시트 원칙).
+/// [cancelLabel] 이 없으면 버튼 하나짜리 안내. 확인을 누르면 true.
+/// 되돌릴 수 없는 경고(노쇼·차단·지원 취소)와 이미지 미리보기는 예외로 팝업을 쓴다.
+Future<bool> showAppSheet(
+  BuildContext context, {
+  required String title,
+  String? message,
+  String confirmLabel = '확인',
+  String? cancelLabel,
+  bool destructive = false,
+}) async {
+  final ok = await showModalBottomSheet<bool>(
+    context: context,
+    builder:
+        (ctx) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(title, style: AppTextStyles.h2),
+                if (message != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    message,
+                    style: AppTextStyles.body1.copyWith(
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    if (cancelLabel != null) ...[
+                      Expanded(
+                        child: SizedBox(
+                          height: 52,
+                          child: FilledButton(
+                            style: FilledButton.styleFrom(
+                              backgroundColor: AppColors.bgMuted,
+                              foregroundColor: AppColors.textPrimary,
+                            ),
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: Text(cancelLabel),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(
+                      child: SizedBox(
+                        height: 52,
+                        child: FilledButton(
+                          style:
+                              destructive
+                                  ? FilledButton.styleFrom(
+                                    backgroundColor: AppColors.error,
+                                  )
+                                  : null,
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: Text(confirmLabel),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+  );
+  return ok == true;
 }

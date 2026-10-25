@@ -163,14 +163,10 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                       padding: const EdgeInsets.all(18),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(18),
-                        gradient: LinearGradient(
-                          colors: [kBrand.withOpacity(0.15), Colors.white],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
+                        color: AppColors.primaryLight,
                       ),
                       child: const Text(
-                        '🍎 Apple로 가입을 마무리합니다.\n'
+                        'Apple로 가입을 마무리합니다.\n'
                         '필수 정보를 입력하고 프로필을 완성해주세요!',
                         style: TextStyle(
                           fontSize: 15,
@@ -201,7 +197,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                     const SizedBox(height: 16),
 
                     // 출생년도
-                    _sectionTitle('🎂 출생년도'),
+                    _sectionTitle('출생년도'),
                     TextFormField(
                       controller: _birthYearCtrl,
                       keyboardType: TextInputType.number,
@@ -221,7 +217,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                     const SizedBox(height: 24),
 
                     // 성별
-                    _sectionTitle('👤 성별'),
+                    _sectionTitle('성별'),
                     Wrap(
                       spacing: 10,
                       children: [
@@ -266,7 +262,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                     const SizedBox(height: 28),
 
                     // 강점
-                    _sectionTitle('💪 자신 있는 업무 (최대 2개)'),
+                    _sectionTitle('자신 있는 업무 (최대 2개)'),
                     Wrap(
                       spacing: 10,
                       runSpacing: 10,
@@ -302,7 +298,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                     const SizedBox(height: 28),
 
                     // 성격
-                    _sectionTitle('🌟 나를 표현하는 단어'),
+                    _sectionTitle('나를 표현하는 단어'),
                     Wrap(
                       spacing: 10,
                       runSpacing: 10,

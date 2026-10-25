@@ -436,23 +436,12 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
   }
 
   Future<void> _confirmDelete(String jobId) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('목록에서 숨기기'),
-            content: const Text('이 항목을 목록에서 숨길까요?\n(내역은 이 기기에서만 숨겨져요)'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('취소'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('숨기기', style: TextStyle(color: Colors.red)),
-              ),
-            ],
-          ),
+    final confirmed = await showAppSheet(
+      context,
+      title: '목록에서 숨길까요?',
+      message: '내역은 이 기기에서만 숨겨져요.',
+      cancelLabel: '취소',
+      confirmLabel: '숨기기',
     );
 
     if (confirmed == true) {
@@ -493,7 +482,10 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: const Text('지원 취소', style: TextStyle(color: Colors.red)),
+                child: const Text(
+                  '지원 취소',
+                  style: TextStyle(color: AppColors.error),
+                ),
               ),
             ],
           ),

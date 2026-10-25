@@ -192,16 +192,16 @@ class _WageReportScreenState extends State<WageReportScreen> {
               const SizedBox(height: 16),
               Row(
                 children: [
-                  _statItem('최저', r.minHourly, Colors.orange),
+                  _statItem('최저', r.minHourly, AppColors.badgeUrgent),
                   _statItem('평균', r.avgHourly, AppColors.primary),
-                  _statItem('최고', r.maxHourly, Colors.green),
+                  _statItem('최고', r.maxHourly, AppColors.success),
                 ],
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
                   _statItem('전국평균', r.nationAvg, AppColors.textTertiary),
-                  _statItem('고지원율', r.highApply, Colors.purple),
+                  _statItem('고지원율', r.highApply, AppColors.primary),
                   _statItem(
                     '추천시급',
                     r.recommendedHourly,
@@ -316,9 +316,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
                   height: 8,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(4),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFBFDBFE), AppColors.primary],
-                    ),
+                    color: AppColors.primary,
                   ),
                 ),
                 // 평균 마커
@@ -335,7 +333,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
                 Positioned(
                   left: (w * recRatio - 1).clamp(0, w - 2),
                   top: -4,
-                  child: Container(width: 2, height: 16, color: Colors.green),
+                  child: Container(width: 2, height: 16, color: AppColors.success),
                 ),
                 // 현재 급여 마커
                 if (currentRatio != null)
@@ -451,11 +449,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF16A34A), Color(0xFF15803D)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: AppColors.badgeSameDay,
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -561,8 +555,8 @@ class _WageReportScreenState extends State<WageReportScreen> {
 
   Color _percentileColor(int? pct) {
     if (pct == null) return AppColors.textTertiary;
-    if (pct >= 70) return Colors.green;
+    if (pct >= 70) return AppColors.success;
     if (pct >= 40) return AppColors.primary;
-    return Colors.orange;
+    return AppColors.badgeUrgent;
   }
 }

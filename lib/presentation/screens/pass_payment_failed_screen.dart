@@ -1,5 +1,6 @@
 // lib/presentation/screens/pass_payment_failed_screen.dart
 import 'package:flutter/material.dart';
+import 'package:iljujob/config/app_theme.dart';
 
 class PassPaymentFailedScreen extends StatelessWidget {
   final String? errorMsg;
@@ -17,7 +18,7 @@ class PassPaymentFailedScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error, color: Colors.red, size: 80),
+            const Icon(Icons.error, color: AppColors.error, size: 80),
             const SizedBox(height: 20),
             const Text(
               '결제에 실패했어요.',

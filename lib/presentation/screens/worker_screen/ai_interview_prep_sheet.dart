@@ -223,8 +223,8 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                   decoration: BoxDecoration(
                     color:
                         _isDailyLimit
-                            ? Colors.orange.shade50
-                            : Colors.red.shade50,
+                            ? AppColors.warningLight
+                            : AppColors.errorLight,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -236,8 +236,8 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                             : Icons.error_outline,
                         color:
                             _isDailyLimit
-                                ? Colors.orange.shade400
-                                : Colors.red.shade400,
+                                ? AppColors.warning
+                                : AppColors.error,
                         size: 20,
                       ),
                       const SizedBox(width: 10),
@@ -247,8 +247,8 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                           style: TextStyle(
                             color:
                                 _isDailyLimit
-                                    ? Colors.orange.shade700
-                                    : Colors.red.shade600,
+                                    ? AppColors.warningDark
+                                    : AppColors.error,
                             fontSize: 13,
                             height: 1.5,
                           ),

@@ -53,11 +53,7 @@ class FaqScreen extends StatelessWidget {
         ),
         body: Container(
           decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter, end: Alignment.bottomCenter,
-              colors: [AppColors.primary, Color(0xFF7CC7FF), Colors.white],
-              stops: [0, .25, .25],
-            ),
+            color: AppColors.bgCard,
           ),
           child: TabBarView(
             children: [
@@ -76,7 +72,7 @@ class FaqScreen extends StatelessWidget {
               _FaqSection(
                 titleIcon: Icons.business_rounded,
                 chipLabel: '기업',
-                chipColor: Colors.amber.withOpacity(.18),
+                chipColor: AppColors.warningLight,
                 hint: '기업 질문 검색…',
                 items: clientFaq,
               ),
@@ -315,7 +311,7 @@ class _FaqCardState extends State<_FaqCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(width: 2),
-                const Icon(Icons.lightbulb_rounded, size: 18, color: Colors.amber),
+                const Icon(Icons.lightbulb_rounded, size: 18, color: AppColors.warning),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(

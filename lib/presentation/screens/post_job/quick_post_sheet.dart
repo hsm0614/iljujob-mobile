@@ -883,7 +883,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                                 borderSide: BorderSide(
                                   color:
                                       _payWarning != null
-                                          ? Colors.red
+                                          ? AppColors.error
                                           : _border,
                                 ),
                               ),
@@ -891,7 +891,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                                 borderRadius: BorderRadius.circular(14),
                                 borderSide: BorderSide(
                                   color:
-                                      _payWarning != null ? Colors.red : _blue,
+                                      _payWarning != null ? AppColors.error : _blue,
                                   width: 1.5,
                                 ),
                               ),
@@ -927,14 +927,14 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                             decoration: BoxDecoration(
                               color: const Color(0xFFFFF3F0),
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.red.shade200),
+                              border: Border.all(color: AppColors.errorBorder),
                             ),
                             child: Row(
                               children: [
                                 const Icon(
                                   Icons.info_outline_rounded,
                                   size: 15,
-                                  color: Colors.red,
+                                  color: AppColors.error,
                                 ),
                                 const SizedBox(width: 6),
                                 Expanded(
@@ -943,7 +943,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                                     style: const TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.red,
+                                      color: AppColors.error,
                                     ),
                                   ),
                                 ),
@@ -1075,7 +1075,7 @@ class _JobSummaryCard extends StatelessWidget {
                 _InfoChip(
                   icon: Icons.attach_money_rounded,
                   label: '당일지급',
-                  color: Colors.green,
+                  color: AppColors.success,
                 ),
             ],
           ),
@@ -1284,16 +1284,16 @@ class _OptionCard extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: (badgeOk ? _blue : Colors.red).withOpacity(0.1),
+              color: (badgeOk ? _blue : AppColors.error).withOpacity(0.1),
               borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: badgeOk ? _blue : Colors.red),
+              border: Border.all(color: badgeOk ? _blue : AppColors.error),
             ),
             child: Text(
               badge,
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w700,
-                color: badgeOk ? _blue : Colors.red,
+                color: badgeOk ? _blue : AppColors.error,
               ),
             ),
           ),
