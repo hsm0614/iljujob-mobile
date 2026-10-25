@@ -12,6 +12,9 @@ class JobListTile extends StatelessWidget {
   final String title;
   final String? schedule;
   final String location;
+
+  /// 목록 마지막 줄이면 false — 마지막 항목 뒤엔 구분선을 긋지 않는다
+  final bool divider;
   final List<Widget> badges;
 
   /// 회색 태그(업종 등). 뱃지 뒤에 같은 줄로
@@ -41,6 +44,7 @@ class JobListTile extends StatelessWidget {
     required this.onTap,
     this.onBookmark,
     this.schedule,
+    this.divider = true,
     this.badges = const [],
     this.tags = const [],
     this.imageUrl,
@@ -64,8 +68,11 @@ class JobListTile extends StatelessWidget {
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
-          decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: AppColors.border)),
+          decoration: BoxDecoration(
+            border:
+                divider
+                    ? const Border(bottom: BorderSide(color: AppColors.border))
+                    : null,
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,

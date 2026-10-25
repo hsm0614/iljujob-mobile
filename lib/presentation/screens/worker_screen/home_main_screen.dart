@@ -1439,11 +1439,14 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                             if (index == slotAt) {
                               return _buildFeedSlot();
                             }
-                            final job =
-                                filteredJobs[index > slotAt
-                                    ? index - 1
-                                    : index];
-                            return _buildJobCard(job);
+                            final jobIdx = index > slotAt ? index - 1 : index;
+                            return _buildJobCard(
+                              filteredJobs[jobIdx],
+                              // 바로 뒤에 광고 자리가 오거나 목록 끝이면 구분선 없음
+                              last:
+                                  jobIdx == visibleCount - 1 ||
+                                  jobIdx == slotAt - 1,
+                            );
                           },
                         );
                       },
@@ -2489,7 +2492,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     );
   }
 
-  Widget _buildJobCard(Job job) {
+  Widget _buildJobCard(Job job, {bool last = false}) {
     final formattedPay = formatJobPay(job.pay, job.payType);
     final isNegotiablePay = isNegotiablePayType(job.payType);
     final jobIdInt = int.tryParse(job.id.toString());
@@ -2582,6 +2585,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     final rawImage = job.imageUrls.isEmpty ? null : job.imageUrls.first;
 
     return JobListTile(
+      divider: !last,
       pay: formattedPay,
       payType: job.payType,
       negotiablePay: isNegotiablePay,

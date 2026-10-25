@@ -19,10 +19,10 @@ class AppColors {
   static const primaryMid   = Color(0xFFBDD9FF); // 포커스 링/구분선
 
   // ── Neutral ────────────────────────────────────────────
-  static const bgPage    = Color(0xFFF4F6FA); // 페이지 배경 (카드 그림자 살리는 연회색)
-  static const bgBase    = Color(0xFFF4F6FA); // bgPage 별칭
+  static const bgPage    = Color(0xFFF2F4F6); // TDS grey100 // 페이지 배경 (카드 그림자 살리는 연회색)
+  static const bgBase    = Color(0xFFF2F4F6); // bgPage 별칭
   static const bgCard    = Color(0xFFFFFFFF); // 카드/시트 배경
-  static const bgMuted   = Color(0xFFF2F4F8); // 비활성 배경 (칩, 인풋)
+  static const bgMuted   = Color(0xFFF2F4F6); // TDS grey100 // 비활성 배경 (칩, 인풋)
 
   // ── Border ─────────────────────────────────────────────
   static const border    = Color(0xFFE5E8EB); // 일반 구분선
@@ -30,9 +30,9 @@ class AppColors {
 
   // ── Text ───────────────────────────────────────────────
   static const textPrimary   = Color(0xFF191F28); // 제목·강조
-  static const textSecondary = Color(0xFF6B7280); // 본문
-  static const textTertiary  = Color(0xFF9CA3AF); // 힌트·보조
-  static const textDisabled  = Color(0xFFD1D5DB); // 비활성
+  static const textSecondary = Color(0xFF6B7684); // TDS grey600 (흰 바탕 4.6:1) // 본문
+  static const textTertiary  = Color(0xFF8B95A1); // TDS grey500 // 힌트·보조
+  static const textDisabled  = Color(0xFFD1D6DB); // TDS grey300 // 비활성
 
   // ── Semantic ───────────────────────────────────────────
   static const error   = Color(0xFFDC2626);
@@ -144,15 +144,15 @@ class AppTextStyles {
   // 제목
   static const h1 = TextStyle(
     fontSize: 24, fontWeight: FontWeight.w800,
-    color: AppColors.textPrimary, height: 1.2,
+    color: AppColors.textPrimary, height: 1.2, letterSpacing: -0.5,
   );
   static const h2 = TextStyle(
     fontSize: 20, fontWeight: FontWeight.w700,
-    color: AppColors.textPrimary, height: 1.3,
+    color: AppColors.textPrimary, height: 1.3, letterSpacing: -0.4,
   );
   static const h3 = TextStyle(
     fontSize: 17, fontWeight: FontWeight.w700,
-    color: AppColors.textPrimary, height: 1.3,
+    color: AppColors.textPrimary, height: 1.3, letterSpacing: -0.25,
   );
 
   // 본문
@@ -196,7 +196,8 @@ class AppTextStyles {
   );
   static const jobPay = TextStyle(
     fontSize: 18, fontWeight: FontWeight.w800,
-    color: AppColors.textPrimary, height: 1.1,
+    color: AppColors.textPrimary, height: 1.1, letterSpacing: -0.4,
+    fontFeatures: [FontFeature.tabularFigures()],
   );
   /// 목록 급여 — 카드에서 가장 무거운 요소. 자릿수를 맞춰 위아래 금액이 정렬된다.
   static const jobPayHero = TextStyle(
@@ -276,6 +277,10 @@ class AppTheme {
   AppTheme._();
 
   static ThemeData get theme => ThemeData(
+        // 누를 때: 안드로이드 물결 대신 살짝 어두워짐 (토스 press overlay · 당근도 물결 없음)
+        splashFactory: NoSplash.splashFactory,
+        splashColor: Colors.transparent,
+        highlightColor: const Color(0x0F000000), // 검정 6%
         useMaterial3: true,
         // 알바일주는 라이트 전용이다. 화면 색이 하드코딩으로 흩어져 있어
         // 다크 팔레트를 얹으면 절반만 뒤집힌 화면이 나온다.
@@ -404,13 +409,17 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         ),
         // SnackBar
+        // 토스식 토스트: 진회색 알약 + 흰 15 세미볼드, 화면 양옆 16 띄움
         snackBarTheme: SnackBarThemeData(
           backgroundColor: AppColors.textPrimary,
-          contentTextStyle: const TextStyle(color: Colors.white, fontSize: 13),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
+          contentTextStyle: const TextStyle(
+            color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600, height: 1.4,
           ),
+          actionTextColor: AppColors.primaryMid,
+          behavior: SnackBarBehavior.floating,
+          insetPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         // BottomSheet
         bottomSheetTheme: const BottomSheetThemeData(
