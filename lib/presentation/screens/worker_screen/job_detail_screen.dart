@@ -39,7 +39,11 @@ const kBrand = AppColors.primary;
 class JobDetailScreen extends StatefulWidget {
   final Job job;
 
-  const JobDetailScreen({super.key, required this.job});
+  /// 목록의 '지원하기'로 열렸으면 true — 상세가 다 뜬 뒤 상세의 지원 흐름을 그대로 탄다
+  /// (로그인·마감·차단·정지·외부 신청 판단을 한 곳에서만 한다)
+  final bool autoApply;
+
+  const JobDetailScreen({super.key, required this.job, this.autoApply = false});
 
   /// 비로그인 '지원하기' → 가입 후 돌아올 공고 id (HomeScreen 이 읽고 지운다)
   static const pendingApplyJobKey = 'pending_apply_job_id';
@@ -149,12 +153,16 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       _checkAlreadyApplied(),
       _checkBlockStatus(),
       _loadSuspension(),
-    ]).whenComplete(_logDetailView);
+    ]).whenComplete(() {
+      _logDetailView();
+      if (widget.autoApply) _autoApplyFromList();
+    });
 
     // 첫 공고 상세를 본 구직자에게 한 번, 왜 알림이 필요한지 말하고 묻는다.
+    // 목록에서 바로 지원하는 경우엔 지원 흐름이 알림 권한을 따로 묻는다
     Future.delayed(const Duration(seconds: 2), () async {
       final prefs = await SharedPreferences.getInstance();
-      if (!mounted || prefs.getString('userType') != 'worker') return;
+      if (!mounted || widget.autoApply || prefs.getString('userType') != 'worker') return;
       await maybeShowPushPrimer(context);
     });
     _loadLocationContext();
@@ -653,6 +661,18 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             ),
           ),
     );
+  }
+
+  /// 상세 하단 버튼을 누른 것과 같은 판단. 지원할 수 없는 상태면 아무것도 하지 않고 상세에 머문다
+  Future<void> _autoApplyFromList() async {
+    if (!mounted) return;
+    final type = (await SharedPreferences.getInstance()).getString('userType');
+    if (!mounted) return;
+    if (type == null) return _askSignupToApply();
+    if (type != 'worker' || hasApplied || isClosed || isBlocked) return;
+    if (_suspension?.isSuspended ?? false) return;
+    if (widget.job.hasExternalApply) return _openExternalApplyPage();
+    await _applyToJob();
   }
 
   Future<void> _applyToJob() async {

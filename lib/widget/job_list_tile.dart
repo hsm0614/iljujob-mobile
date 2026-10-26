@@ -31,6 +31,9 @@ class JobListTile extends StatelessWidget {
   /// null이면 '관심' 버튼을 숨긴다 (최근 본 공고 등)
   final VoidCallback? onBookmark;
 
+  /// 목록의 '지원하기'. null이면 버튼 없음(최근 본 공고 등). 지원 완료면 비활성
+  final VoidCallback? onApply;
+
   static const _thumb = 80.0;
   static const defaultImage = 'assets/images/logo_mark.png';
 
@@ -43,6 +46,7 @@ class JobListTile extends StatelessWidget {
     required this.location,
     required this.onTap,
     this.onBookmark,
+    this.onApply,
     this.schedule,
     this.divider = true,
     this.badges = const [],
@@ -141,60 +145,79 @@ class JobListTile extends StatelessWidget {
                   ],
                 ),
               ),
-              if (hasImage || onBookmark != null) ...[
-                const SizedBox(width: 12),
-                Column(
+              // 오른쪽 칸은 모든 공고가 같다 (사진 있든 없든) — 사진 + 모서리 하트 + 지원하기
+              const SizedBox(width: 12),
+              SizedBox(
+                width: _thumb,
+                child: Column(
                   children: [
-                    if (hasImage) _Thumb(imageUrl: imageUrl!, size: _thumb),
-                    if (onBookmark != null) ...[
-                      if (hasImage) const SizedBox(height: 6),
-                      if (hasImage)
-                        SizedBox(
-                          width: _thumb,
-                          height: 44,
-                          child: OutlinedButton.icon(
-                            onPressed: onBookmark,
-                            style: OutlinedButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              foregroundColor:
-                                  isBookmarked
-                                      ? AppColors.badgeNew
-                                      : AppColors.textSecondary,
-                              side: const BorderSide(color: AppColors.border),
-                              textStyle: AppTextStyles.captionBold,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppRadius.sm,
+                    Stack(
+                      children: [
+                        _Thumb(
+                          imageUrl: hasImage ? imageUrl : null,
+                          size: _thumb,
+                        ),
+                        if (onBookmark != null)
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: onBookmark,
+                              child: Padding(
+                                // 보이는 원 28, 터치 영역 44
+                                padding: const EdgeInsets.all(8),
+                                child: Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xE6FFFFFF),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    isBookmarked
+                                        ? Icons.favorite_rounded
+                                        : Icons.favorite_border_rounded,
+                                    size: 17,
+                                    color:
+                                        isBookmarked
+                                            ? AppColors.badgeNew
+                                            : AppColors.textSecondary,
+                                    semanticLabel:
+                                        isBookmarked ? '관심 공고 해제' : '관심 공고 추가',
+                                  ),
                                 ),
                               ),
                             ),
-                            icon: Icon(
-                              isBookmarked
-                                  ? Icons.favorite_rounded
-                                  : Icons.favorite_border_rounded,
-                              size: 14,
+                          ),
+                      ],
+                    ),
+                    if (onApply != null) ...[
+                      const SizedBox(height: 6),
+                      SizedBox(
+                        width: _thumb,
+                        height: 40,
+                        child: FilledButton(
+                          // 한 화면에 여러 개라 꽉 찬 파랑 대신 연한 파랑 (주 행동 하나 원칙)
+                          style: FilledButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            backgroundColor: AppColors.primaryLight,
+                            foregroundColor: AppColors.primary,
+                            disabledBackgroundColor: AppColors.bgMuted,
+                            disabledForegroundColor: AppColors.textTertiary,
+                            textStyle: AppTextStyles.btnSm,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
                             ),
-                            label: const Text('관심'),
                           ),
-                        )
-                      else
-                        IconButton(
-                          tooltip: isBookmarked ? '관심 공고 해제' : '관심 공고 추가',
-                          onPressed: onBookmark,
-                          color:
-                              isBookmarked
-                                  ? AppColors.badgeNew
-                                  : AppColors.textSecondary,
-                          icon: Icon(
-                            isBookmarked
-                                ? Icons.favorite_rounded
-                                : Icons.favorite_border_rounded,
-                          ),
+                          onPressed: isApplied ? null : onApply,
+                          child: Text(isApplied ? '지원 완료' : '지원하기'),
                         ),
+                      ),
                     ],
                   ],
                 ),
-              ],
+              ),
             ],
           ),
         ),
@@ -204,31 +227,41 @@ class JobListTile extends StatelessWidget {
 }
 
 class _Thumb extends StatelessWidget {
-  final String imageUrl;
+  final String? imageUrl;
   final double size;
   const _Thumb({required this.imageUrl, required this.size});
 
   @override
   Widget build(BuildContext context) {
-    final fallback = Container(
-      width: size,
-      height: size,
-      color: AppColors.bgMuted,
-      child: const Icon(
-        Icons.work_outline_rounded,
-        color: AppColors.textTertiary,
+    // 사진이 없으면 알바일주 심볼 (대표 결정). 파란 바탕이 반복되면 시선이 쏠려
+    // 반전(연회색 바탕 + 파란 심볼): logo_mark R 채널 기준 선형 매핑
+    final fallback = ColorFiltered(
+      colorFilter: const ColorFilter.matrix(<double>[
+        -0.799, 0, 0, 0, 262.8, //
+        -0.463, 0, 0, 0, 256.0, //
+        0.031, 0, 0, 0, 247.2, //
+        0, 0, 0, 1, 0,
+      ]),
+      child: Image.asset(
+        JobListTile.defaultImage,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
       ),
     );
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.md),
-      child: Image.network(
-        imageUrl,
-        width: size,
-        height: size,
-        cacheWidth: (size * 3).round(),
-        fit: BoxFit.cover,
-        errorBuilder: (_, __, ___) => fallback,
-      ),
+      child:
+          imageUrl == null
+              ? fallback
+              : Image.network(
+                imageUrl!,
+                width: size,
+                height: size,
+                cacheWidth: (size * 3).round(),
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => fallback,
+              ),
     );
   }
 }

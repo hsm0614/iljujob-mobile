@@ -565,19 +565,18 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     }
   }
 
-  Future<void> _openJobDetail(Job job) async {
-    final result = await Navigator.push(
+  Future<void> _openJobDetail(Job job, {bool autoApply = false}) async {
+    await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => JobDetailScreen(job: job)),
+      MaterialPageRoute(
+        builder: (_) => JobDetailScreen(job: job, autoApply: autoApply),
+      ),
     );
-    if (result == true) {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getInt('userId');
-      if (userId != null) {
-        await fetchAppliedJobs(userId);
-        setState(() {});
-      }
-    }
+    // 상세에서 지원했을 수 있다 — 돌아오면 '지원 완료' 표시를 맞춘다
+    final userId = (await SharedPreferences.getInstance()).getInt('userId');
+    if (userId == null || !mounted) return;
+    await fetchAppliedJobs(userId);
+    if (mounted) setState(() {});
   }
 
   /// 화면은 먼저 바꾸고, 저장이 실패하면 되돌리고 알린다 (예전엔 실패해도 켜진 것처럼 보였다)
@@ -2604,6 +2603,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       isPinned: isPinned,
       onTap: () => _openJobDetail(job),
       onBookmark: () => _toggleBookmark(job.id.toString()),
+      onApply: () => _openJobDetail(job, autoApply: true),
     );
   }
 
@@ -3026,7 +3026,12 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (jobAd != null) _buildPartnerRecruitCard(jobAd),
+        // 광고는 공고와 섞여 보이지 않게 위아래 8px 회색 띠로 나눈다 (공고 사이는 1px 선)
+        if (jobAd != null) ...[
+          const SizedBox(height: 8),
+          _buildPartnerRecruitCard(jobAd),
+          const SizedBox(height: 8),
+        ],
         const PushOffBanner(
           message: '알림이 꺼져 있어요 · 켜면 근처 새 공고를 바로 받아요',
           source: 'worker_home_banner',
