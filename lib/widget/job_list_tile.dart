@@ -71,7 +71,7 @@ class JobListTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
+          padding: const EdgeInsets.fromLTRB(20, 14, 16, 14),
           decoration: BoxDecoration(
             border:
                 divider
@@ -85,11 +85,42 @@ class JobListTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      head,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.jobMeta,
+                    // 첫 줄 끝에 하트 — 사진 위에 얹으면 기본 이미지와 겹쳐 보였다
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            head,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.jobMeta,
+                          ),
+                        ),
+                        if (onBookmark != null)
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: onBookmark,
+                            child: SizedBox(
+                              width: 40,
+                              height: 28,
+                              child: Align(
+                                alignment: Alignment.centerRight,
+                                child: Icon(
+                                  isBookmarked
+                                      ? Icons.favorite_rounded
+                                      : Icons.favorite_border_rounded,
+                                  size: 20,
+                                  color:
+                                      isBookmarked
+                                          ? AppColors.badgeNew
+                                          : AppColors.textTertiary,
+                                  semanticLabel:
+                                      isBookmarked ? '관심 공고 해제' : '관심 공고 추가',
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -114,9 +145,10 @@ class JobListTile extends StatelessWidget {
                           TextSpan(
                             text: pay,
                             style:
+                                // '협의'는 정보가 없는데 급여 자리를 크게 차지했다 → 작은 회색 한 줄
                                 negotiablePay
-                                    ? AppTextStyles.body1.copyWith(
-                                      fontWeight: FontWeight.w700,
+                                    ? AppTextStyles.body2.copyWith(
+                                      fontWeight: FontWeight.w600,
                                       color: AppColors.textSecondary,
                                     )
                                     : AppTextStyles.jobPayHero,
@@ -151,47 +183,7 @@ class JobListTile extends StatelessWidget {
                 width: _thumb,
                 child: Column(
                   children: [
-                    Stack(
-                      children: [
-                        _Thumb(
-                          imageUrl: hasImage ? imageUrl : null,
-                          size: _thumb,
-                        ),
-                        if (onBookmark != null)
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              onTap: onBookmark,
-                              child: Padding(
-                                // 보이는 원 28, 터치 영역 44
-                                padding: const EdgeInsets.all(8),
-                                child: Container(
-                                  width: 28,
-                                  height: 28,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xE6FFFFFF),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    isBookmarked
-                                        ? Icons.favorite_rounded
-                                        : Icons.favorite_border_rounded,
-                                    size: 17,
-                                    color:
-                                        isBookmarked
-                                            ? AppColors.badgeNew
-                                            : AppColors.textSecondary,
-                                    semanticLabel:
-                                        isBookmarked ? '관심 공고 해제' : '관심 공고 추가',
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
+                    _Thumb(imageUrl: hasImage ? imageUrl : null, size: _thumb),
                     if (onApply != null) ...[
                       const SizedBox(height: 6),
                       SizedBox(

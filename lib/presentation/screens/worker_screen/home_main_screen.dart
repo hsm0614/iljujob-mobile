@@ -70,30 +70,21 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   bool isLoading = true;
   // ── 필터 규칙 (2026-10) ────────────────────────────────────
   // 기본값 = 조건 없음 + 추천순. 정렬은 칩 줄 한 곳에서만 바꾼다.
-  // 필터는 실제 공고 값으로 정확히 걸리는 것만: 근무일·급여 유형·업종·당일지급.
+  // 필터는 실제 공고 값으로 정확히 걸리는 것만: 급여 유형·업종·당일지급.
+  // 근무일은 넣지 않는다 — 입력된 공고가 적어 날짜를 고르면 목록이 거의 빈다(2026-10-26 재확인·삭제)
   static const _defaultSort = '추천순';
   final Set<String> _payTypes = {}; // 시급·일급·주급·월급
   final Set<String> _categories = {}; // 업종 이름('이벤트·행사 > 행사스태프' → '행사스태프')
   bool _onlySameDayPay = false;
-  DateTime? _workDate;
   int get _sheetFilterCount => _payTypes.length + _categories.length;
   bool get _hasConditions =>
-      _sheetFilterCount > 0 ||
-      _onlySameDayPay ||
-      _workDate != null ||
-      searchQuery.trim().isNotEmpty;
+      _sheetFilterCount > 0 || _onlySameDayPay || searchQuery.trim().isNotEmpty;
 
   /// 업종 표기가 두 가지('행사스태프' / '이벤트·행사 > 행사스태프')라 마지막 이름으로 맞춘다
   static String _leafCategory(String c) => c.split('>').last.trim();
 
   /// 목록·필터 시트 개수·빈 화면 힌트가 모두 이 한 함수로 거른다 (결과가 서로 어긋나지 않게)
-  bool _passes(
-    Job j, {
-    Set<String>? pay,
-    Set<String>? cat,
-    bool? sameDay,
-    bool ignoreDate = false,
-  }) {
+  bool _passes(Job j, {Set<String>? pay, Set<String>? cat, bool? sameDay}) {
     pay ??= _payTypes;
     cat ??= _categories;
     sameDay ??= _onlySameDayPay;
@@ -102,69 +93,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       return false;
     }
     if (sameDay && j.isSameDayPay != true) return false;
-    if (!ignoreDate && _workDate != null && !_worksOnDate(j, _workDate!)) {
-      return false;
-    }
     return true;
-  }
-
-  /// 근무 DATE는 모델에서 KST 자정의 UTC 시각으로 보관한다.
-  /// 달력 날짜는 시각 변환 후 연·월·일만 비교한다.
-  static DateTime _kstWorkDay(DateTime date) {
-    final kst = date.toUtc().add(const Duration(hours: 9));
-    return DateTime.utc(kst.year, kst.month, kst.day);
-  }
-
-  static bool _worksOnDate(Job job, DateTime selected) {
-    final day = DateTime.utc(selected.year, selected.month, selected.day);
-    final start = job.startDate == null ? null : _kstWorkDay(job.startDate!);
-    final end = job.endDate == null ? null : _kstWorkDay(job.endDate!);
-    if (start != null && day.isBefore(start)) return false;
-    if (end != null && day.isAfter(end)) return false;
-    // 기간의 한쪽만 있으면 확정된 하루로 해석하지 않는다.
-    if ((start == null) != (end == null)) return false;
-
-    final weekdays = (job.weekdays ?? '').trim();
-    if (weekdays.isNotEmpty) {
-      const names = ['월', '화', '수', '목', '금', '토', '일'];
-      if (!weekdays
-          .split(',')
-          .map((s) => s.trim())
-          .contains(names[day.weekday - 1])) {
-        return false;
-      }
-    }
-    // 날짜도 확정 요일도 없는 공고는 선택 날짜에 근무하는지 알 수 없다.
-    return start != null || weekdays.isNotEmpty;
-  }
-
-  Future<void> _pickWorkDate() async {
-    final nowKst = DateTime.now().toUtc().add(const Duration(hours: 9));
-    final first = DateTime(nowKst.year, nowKst.month, nowKst.day);
-    final last = DateTime(nowKst.year + 1, nowKst.month, nowKst.day);
-    final chosen = await showDatePicker(
-      context: context,
-      initialDate:
-          _workDate != null &&
-                  !_workDate!.isBefore(first) &&
-                  !_workDate!.isAfter(last)
-              ? _workDate!
-              : first,
-      firstDate: first,
-      lastDate: last,
-      helpText: '근무일 선택',
-      cancelText: '취소',
-      confirmText: '적용',
-    );
-    if (!mounted || chosen == null) return;
-    setState(() => _workDate = chosen);
-    _applyFiltersThrottled();
-  }
-
-  String get _workDateLabel {
-    final date = _workDate;
-    if (date == null) return '근무일';
-    return '${date.year}.${date.month}.${date.day}';
   }
 
   /// 홈 기본값으로 전부 되돌린다 (정렬 추천순, 조건 없음, 검색어 없음)
@@ -175,7 +104,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       _payTypes.clear();
       _categories.clear();
       _onlySameDayPay = false;
-      _workDate = null;
       searchQuery = '';
     });
     _applyFiltersThrottled();
@@ -959,6 +887,25 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     return tempJobs;
   }
 
+  /// 추천순에서 같은 회사 공고가 연달아 붙지 않게, 바로 뒤의 다른 회사 공고를 한 칸 당긴다.
+  /// 상단 고정 공고는 순서를 건드리지 않는다. 회사가 하나뿐인 구간은 그대로.
+  /// ponytail: 한 번 훑는 탐욕 방식(O(n²) 최악) — 목록이 50개라 충분, 수백 개면 회사별 라운드로빈으로
+  static void _spreadSameCompany(List<Job> jobs) {
+    String key(Job j) =>
+        (j.company ?? '').trim().isEmpty ? 'c${j.clientId}' : j.company!.trim();
+    final now = DateTime.now().toUtc();
+    bool pinned(Job j) => j.pinnedUntil != null && j.pinnedUntil!.isAfter(now);
+    for (var i = 1; i < jobs.length; i++) {
+      if (pinned(jobs[i]) || key(jobs[i]) != key(jobs[i - 1])) continue;
+      final k = jobs.indexWhere(
+        (j) => !pinned(j) && key(j) != key(jobs[i - 1]),
+        i + 1,
+      );
+      if (k == -1) break;
+      jobs.insert(i, jobs.removeAt(k));
+    }
+  }
+
   void _applyFilters() {
     final nowUtc = DateTime.now().toUtc();
 
@@ -1009,6 +956,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           if (c != 0) return c;
           return score(a).compareTo(score(b));
         });
+        _spreadSameCompany(tempJobs);
         break;
       case '거리순':
         // 좌표 없는 공고는 거리를 알 수 없으므로 항상 뒤로
@@ -1087,8 +1035,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     );
     final q = searchQuery.trim();
     final chips = <Widget>[
-      if (_workDate != null)
-        chip('근무일 $_workDateLabel', () => _workDate = null),
       if (q.isNotEmpty)
         chip('"$q"', () {
           _searchController.clear();
@@ -1717,13 +1663,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   /// 조건에 맞는 공고가 없을 때: 조건마다 '풀면 N개'를 보여주고 누르면 그 조건만 푼다.
   Widget _buildNoMatchView(List<Job> base) {
     final hints = <(String, int, VoidCallback)>[];
-    if (_workDate != null) {
-      hints.add((
-        '근무일 $_workDateLabel',
-        base.where((j) => _passes(j, ignoreDate: true)).length,
-        () => _workDate = null,
-      ));
-    }
     if (_onlySameDayPay) {
       hints.add((
         '당일지급',
@@ -2899,7 +2838,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     );
   }
 
-  /// 칩 줄: 정렬 → 근무일 → 빠른 조건(당일지급) → 필터(n) → 오늘 근무 가능.
+  /// 칩 줄: 정렬 → 빠른 조건(당일지급) → 필터(n) → 오늘 근무 가능. (한 줄에 다 들어가게 4개)
   /// 검색(일반·AI)은 앱바 검색 하나로 들어간다
   Widget _buildTopControlRow() {
     return Column(
@@ -2929,13 +2868,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 label: sortType,
                 trailing: Icons.keyboard_arrow_down_rounded,
                 onTap: _openSortSheet,
-              ),
-              const SizedBox(width: 6),
-              _pill(
-                label: _workDateLabel,
-                icon: Icons.calendar_today_outlined,
-                selected: _workDate != null,
-                onTap: _pickWorkDate,
               ),
               const SizedBox(width: 6),
               // 빠른 조건: 한 번 누르면 바로 걸리고 다시 누르면 풀린다
@@ -3044,7 +2976,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   }
 
   Widget _buildBannerSlot() => const Padding(
-    padding: EdgeInsets.symmetric(vertical: 12),
+    padding: EdgeInsets.symmetric(vertical: 4),
     child: AdBannerWidget(placement: 'app_home_worker'),
   );
 
