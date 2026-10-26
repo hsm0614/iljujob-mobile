@@ -6,6 +6,7 @@ class AdBanner {
   final String placement;
   final String imageUrl;
   final String targetUrl;
+  final String? title;
   final int sortOrder;
 
   AdBanner({
@@ -14,6 +15,7 @@ class AdBanner {
     required this.placement,
     required this.imageUrl,
     required this.targetUrl,
+    this.title,
     required this.sortOrder,
   });
 
@@ -24,6 +26,7 @@ class AdBanner {
       placement: json['placement'] ?? '',
       imageUrl: json['image_url'] ?? '',
       targetUrl: json['target_url'] ?? '',
+      title: json['title'] as String?,
       sortOrder: (json['sort_order'] as num?)?.toInt() ?? 0,
     );
   }

@@ -105,7 +105,9 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
           onVisibilityChanged: (info) => _onVisibilityChanged(info, banner),
           child: Semantics(
             button: true,
-            label: '원더 제휴 혜택 보기',
+            label: banner.title?.trim().isNotEmpty == true
+                ? '${banner.title!.trim()} 보기'
+                : '광고 배너 보기',
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.md),
               child: Stack(
