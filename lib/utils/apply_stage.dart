@@ -10,7 +10,7 @@ class ApplyStage {
   final Color color;
   const ApplyStage(this.label, this.next, this.color);
 
-  /// 내 활동 탭 묶음: 'todo'(내가 할 일 있음) · 'waiting'(사장님 답장 대기) · 'done'(끝남)
+  /// 내 활동 탭 묶음: 'todo'(내가 할 일 있음) · 'waiting'(사장님 답장 대기) · 'done'(지난 지원)
   String get group =>
       next == null
           ? 'done'

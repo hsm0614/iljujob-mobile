@@ -476,3 +476,104 @@ Future<bool> showAppSheet(
   );
   return ok == true;
 }
+
+/// 설정·메뉴 묶음 (2026-10 마이 리디자인, 토스·당근 설정 화면 참고).
+/// 화면 폭 가득 흰 블록 + 작은 회색 머리글. 블록 사이 간격은 바탕(bgPage)이 만든다.
+class AppMenuSection extends StatelessWidget {
+  final String? title;
+  final List<Widget> children;
+  const AppMenuSection({super.key, this.title, required this.children});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.bgCard,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (title != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
+              child: Text(
+                title!,
+                style: AppTextStyles.captionBold.copyWith(
+                  color: AppColors.textSecondary,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ...children,
+        ],
+      ),
+    );
+  }
+}
+
+/// 메뉴 한 줄. 아이콘은 회색 — 파랑은 누를 수 있는 '버튼'에만 (DESIGN.md CTA Blue).
+/// [trailing]이 없으면 오른쪽 화살표, [value]가 있으면 화살표 앞에 회색 값.
+class AppMenuRow extends StatelessWidget {
+  final IconData? icon;
+  final String label;
+  final String? subtitle;
+  final String? value;
+  final Widget? trailing;
+  final VoidCallback? onTap;
+
+  const AppMenuRow({
+    super.key,
+    this.icon,
+    required this.label,
+    this.subtitle,
+    this.value,
+    this.trailing,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 52),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: Row(
+            children: [
+              if (icon != null) ...[
+                Icon(icon, size: 22, color: AppColors.textSecondary),
+                const SizedBox(width: 14),
+              ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(label, style: AppTextStyles.body1),
+                    if (subtitle != null)
+                      Text(subtitle!, style: AppTextStyles.body2),
+                  ],
+                ),
+              ),
+              if (value != null) ...[
+                const SizedBox(width: 8),
+                Text(value!, style: AppTextStyles.body2),
+              ],
+              trailing ??
+                  (onTap == null
+                      ? const SizedBox.shrink()
+                      : const Padding(
+                        padding: EdgeInsets.only(left: 4),
+                        child: Icon(
+                          Icons.chevron_right_rounded,
+                          size: 20,
+                          color: AppColors.textTertiary,
+                        ),
+                      )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

@@ -15,9 +15,12 @@ import 'edit_worker_profile_screen.dart';
 import 'labor_consult_screen.dart';
 import '../../../config/app_theme.dart';
 import '../../../config/messages.dart';
+import '../../../widget/app_ui.dart';
 
 class WorkerMyPageScreen extends StatefulWidget {
-  const WorkerMyPageScreen({super.key});
+  /// 정산 박스를 누르면 캘린더 탭으로 (월별 정산이 거기 있다)
+  final VoidCallback? onGoCalendar;
+  const WorkerMyPageScreen({super.key, this.onGoCalendar});
 
   @override
   State<WorkerMyPageScreen> createState() => _WorkerMyPageScreenState();
@@ -362,24 +365,14 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
   }
 
   Future<void> _confirmLogout() async {
-    if (!mounted) return;
-
-    final ok = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true, // ✅ 중요 (안드로이드 하단 겹침 방지)
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder:
-          (_) => _ConfirmSheet(
-            title: '로그아웃할까요?',
-            message: '로그아웃하면 다시 로그인해야 해요.',
-            confirmText: '로그아웃',
-            confirmColor: AppColors.error,
-            icon: Icons.logout_rounded,
-          ),
+    final ok = await showAppSheet(
+      context,
+      title: '로그아웃할까요?',
+      message: '다시 쓰려면 전화번호로 로그인하면 돼요.',
+      confirmLabel: '로그아웃',
+      cancelLabel: '취소',
     );
-
-    if (ok != true) return;
+    if (!ok) return;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
@@ -392,24 +385,15 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
   }
 
   Future<void> _confirmWithdraw() async {
-    if (!mounted) return;
-
-    final ok = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true, // ✅ 중요
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder:
-          (_) => const _ConfirmSheet(
-            title: '정말 탈퇴할까요?',
-            message: '탈퇴하면 계정 정보가 삭제되고 복구가 어려워요.',
-            confirmText: '탈퇴하기',
-            confirmColor: AppColors.error,
-            icon: Icons.person_off_rounded,
-          ),
+    final ok = await showAppSheet(
+      context,
+      title: '정말 탈퇴할까요?',
+      message: '프로필·지원 내역·채팅이 모두 지워지고 되돌릴 수 없어요.',
+      confirmLabel: '탈퇴하기',
+      cancelLabel: '취소',
+      destructive: true,
     );
-
-    if (ok != true) return;
+    if (!ok) return;
     await _withdrawAccount();
   }
 
@@ -457,8 +441,10 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
     }
   }
 
+
   // =========================
-  // UI
+  // UI — 2026-10 리디자인: 떠 있는 카드·파란 아이콘 → 화면 폭 흰 블록 + 회색 아이콘 줄
+  // (토스·당근 마이). 같은 메뉴가 두 번(프로필 수정) 나오던 것도 정리
   // =========================
 
   @override
@@ -471,7 +457,6 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // 리디자인(2026-10): 215px 파란 헤더 → 흰 앱바 + 회색 바탕 위 프로필 카드
             const SliverAppBar(
               pinned: true,
               automaticallyImplyLeading: false,
@@ -482,1145 +467,458 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
               titleSpacing: 20,
               title: Text('마이', style: AppTextStyles.tabTitle),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: GestureDetector(
-                  onTap: _goEditProfile,
-                  child: _WorkerProfileCard(
-                    brandBlue: kBrandBlue,
-                    imageUrl: _fullImageUrl(_imagePath),
-                    displayName: _name,
-                    phoneText: _formatPhone(_phone),
-                    loading: _loading,
-                    loadingSettle: _loadingSettle,
-                    settledText: _formatMoney(_settledAmount),
-                    pendingText: _formatMoney(_pendingAmount),
-                    onEditProfile: _goEditProfile,
+            SliverList.list(
+              children: [
+                Container(
+                  color: AppColors.bgCard,
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: Column(
+                    children: [
+                      _ProfileHeader(
+                        imageUrl: _fullImageUrl(_imagePath),
+                        name: _name,
+                        phone: _formatPhone(_phone),
+                        loading: _loading,
+                        onTap: _goEditProfile,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _MoneyBox(
+                          loading: _loadingSettle,
+                          settled: _formatMoney(_settledAmount),
+                          pending: _formatMoney(_pendingAmount),
+                          onTap: widget.onGoCalendar,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _TrustRow(
+                          loading: _loadingScore,
+                          score: _totalScore,
+                          grade: _grade,
+                          onTap: _showScoreSheet,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
-            ),
-
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: _TrustScoreCard(
-                  loading: _loadingScore,
-                  score: _totalScore,
-                  grade: _grade,
-                  brandBlue: kBrandBlue,
-                  loginScore: _loginScore,
-                  statusUpdateScore: _statusUpdateScore,
-                  attendanceScore: _attendanceScore,
-                  responseScore: _responseScore,
-                  cancelPenalty: _cancelPenalty,
-                ),
-              ),
-            ),
-
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: _SectionCard(
-                  title: '내 알바 관리',
+                const SizedBox(height: 8),
+                AppMenuSection(
+                  title: '내 알바',
                   children: [
-                    _ItemTile(
-                      icon: Icons.edit_rounded,
-                      label: '프로필 수정',
-                      onTap: _goEditProfile,
-                    ),
-                    _ItemTile(
-                      icon: Icons.favorite_border,
-                      label: '찜한 공고',
+                    AppMenuRow(
+                      icon: Icons.favorite_border_rounded,
+                      label: '관심 공고',
                       onTap:
                           () =>
                               Navigator.pushNamed(context, '/bookmarked-jobs'),
                     ),
-                    _ItemTile(
-                      icon: Icons.my_location,
-                      label: '상시 위치 공유',
-                      onTap: _toggleAlwaysLocation,
-                      trailing: Switch(
-                        value: _alwaysLocation,
-                        onChanged: (_) => _toggleAlwaysLocation(),
-                      ),
-                    ),
-                    _ItemTile(
-                      icon: Icons.notifications_active,
+                    AppMenuRow(
+                      icon: Icons.notifications_none_rounded,
                       label: '알림 설정',
                       onTap:
                           () => Navigator.pushNamed(context, '/notifications'),
                     ),
-                    _ItemTile(
-                      icon: Icons.report,
+                    AppMenuRow(
+                      icon: Icons.near_me_outlined,
+                      label: '상시 위치 공유',
+                      subtitle: '앱을 닫아도 근처 사장님의 급구 연락을 받아요',
+                      onTap: _toggleAlwaysLocation,
+                      trailing: Switch.adaptive(
+                        value: _alwaysLocation,
+                        activeTrackColor: AppColors.primary,
+                        onChanged: (_) => _toggleAlwaysLocation(),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                AppMenuSection(
+                  title: '도움',
+                  children: [
+                    AppMenuRow(
+                      icon: Icons.balance_rounded,
+                      label: 'AI 노무 상담',
+                      subtitle: '임금·주휴수당·해고가 궁금할 때',
+                      onTap:
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const LaborConsultScreen(),
+                            ),
+                          ),
+                    ),
+                    AppMenuRow(
+                      icon: Icons.headset_mic_outlined,
+                      label: '고객센터',
+                      onTap: () => Navigator.pushNamed(context, '/support'),
+                    ),
+                    AppMenuRow(
+                      icon: Icons.campaign_outlined,
+                      label: '공지사항',
+                      onTap: () => Navigator.pushNamed(context, '/notices'),
+                    ),
+                    AppMenuRow(
+                      icon: Icons.card_giftcard_rounded,
+                      label: '이벤트',
+                      onTap: () => Navigator.pushNamed(context, '/events'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                AppMenuSection(
+                  title: '안전',
+                  children: [
+                    AppMenuRow(
+                      icon: Icons.flag_outlined,
                       label: '신고 내역',
                       onTap:
                           () => Navigator.pushNamed(context, '/report-history'),
                     ),
-                    _ItemTile(
-                      icon: Icons.block,
+                    AppMenuRow(
+                      icon: Icons.block_rounded,
                       label: '차단한 사용자',
                       onTap:
                           () => Navigator.pushNamed(context, '/blocked-users'),
                     ),
                   ],
                 ),
-              ),
-            ),
-
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: _SectionCard(
-                  title: '고객센터',
+                const SizedBox(height: 8),
+                AppMenuSection(
                   children: [
-                    _ItemTile(
-                      icon: Icons.campaign_rounded,
-                      label: '공지사항',
-                      onTap: () => Navigator.pushNamed(context, '/notices'),
-                    ),
-                    _ItemTile(
-                      icon: Icons.local_activity_outlined,
-                      label: '이벤트',
-                      onTap: () => Navigator.pushNamed(context, '/events'),
-                    ),
-                    _ItemTile(
-                      icon: Icons.support_agent_rounded,
-                      label: '고객센터',
-                      onTap: () => Navigator.pushNamed(context, '/support'),
-                    ),
-                    // 홈 상단에서 이동 — 첫 화면은 공고가 주인공
-                    _ItemTile(
-                      icon: Icons.balance_rounded,
-                      label: 'AI 노무 상담',
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const LaborConsultScreen(),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: _SectionCard(
-                  title: '서비스',
-                  children: const [
-                    _ItemTileStatic(
-                      icon: Icons.policy_rounded,
+                    AppMenuRow(
                       label: '약관 및 정책',
-                      routeName: '/terms-list',
+                      onTap: () => Navigator.pushNamed(context, '/terms-list'),
                     ),
-                    _ExpandableBizInfo(brandBlue: kBrandBlue),
+                    const _BizInfoRow(),
                   ],
                 ),
-              ),
-            ),
-
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                child: _SectionCard(
-                  title: '계정',
-                  children: [
-                    _ItemTile(
-                      icon: Icons.logout_rounded,
-                      label: '로그아웃',
-                      labelStyle: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.error,
+                // 계정 행동은 실수로 누르기 쉬운 빨간 줄 대신 맨 아래 작은 글자로 (토스·당근 공통)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 12, 8, 32),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      TextButton(
+                        onPressed: _confirmLogout,
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.textSecondary,
+                          textStyle: AppTextStyles.body2,
+                        ),
+                        child: const Text('로그아웃'),
                       ),
-                      trailing: const Icon(
-                        Icons.logout,
-                        size: 18,
-                        color: AppColors.error,
+                      const Text('|', style: AppTextStyles.caption),
+                      TextButton(
+                        onPressed: _confirmWithdraw,
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.textTertiary,
+                          textStyle: AppTextStyles.body2,
+                        ),
+                        child: const Text('회원 탈퇴'),
                       ),
-                      onTap: _confirmLogout,
-                    ),
-                    _ItemTile(
-                      icon: Icons.person_off_rounded,
-                      label: '회원 탈퇴',
-                      labelStyle: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.error,
-                      ),
-                      trailing: const Icon(
-                        Icons.delete_forever,
-                        size: 18,
-                        color: AppColors.error,
-                      ),
-                      onTap: _confirmWithdraw,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
       ),
     );
   }
-}
 
-/* --------------------------- Profile Card (with Settlement) --------------------------- */
-
-class _WorkerProfileCard extends StatelessWidget {
-  final Color brandBlue;
-  final String imageUrl;
-  final String displayName;
-  final String phoneText;
-  final bool loading;
-
-  final bool loadingSettle;
-  final String settledText;
-  final String pendingText;
-
-  final VoidCallback onEditProfile;
-
-  const _WorkerProfileCard({
-    required this.brandBlue,
-    required this.imageUrl,
-    required this.displayName,
-    required this.phoneText,
-    required this.loading,
-    required this.loadingSettle,
-    required this.settledText,
-    required this.pendingText,
-    required this.onEditProfile,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final hasImg = imageUrl.trim().isNotEmpty;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border),
-      ),
-      padding: const EdgeInsets.all(12),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Stack(
-                children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: AppColors.primaryLight,
-                    backgroundImage:
-                        (!loading && hasImg) ? NetworkImage(imageUrl) : null,
-                    child:
-                        (loading || !hasImg)
-                            ? const Icon(
-                              Icons.account_circle,
-                              size: 30,
-                              color: AppColors.textSecondary,
-                            )
-                            : null,
-                  ),
-                  Positioned(
-                    bottom: -2,
-                    right: -2,
-                    child: Material(
-                      color: Colors.white,
-                      shape: const CircleBorder(),
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: onEditProfile,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: brandBlue,
-                            shape: BoxShape.circle,
-                            boxShadow: const [
-                              BoxShadow(
-                                color: AppColors.textTertiary,
-                                blurRadius: 4,
-                              ),
-                            ],
-                          ),
-                          child: const Icon(
-                            Icons.edit_rounded,
-                            size: 16,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      loading ? '불러오는 중…' : displayName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w900,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _Pill(
-                      icon: Icons.call_rounded,
-                      text: loading ? '잠시만요' : phoneText,
-                      color: AppColors.primary,
-                      bg: AppColors.primaryLight,
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              FilledButton.tonalIcon(
-                onPressed: onEditProfile,
-                icon: const Icon(Icons.arrow_forward_ios, size: 16),
-                label: const Text('프로필 수정'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primaryLight,
-                  foregroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 10,
-                  ),
-                  textStyle: const TextStyle(fontWeight: FontWeight.w800),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  minimumSize: const Size(0, 40),
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 10),
-          Container(height: 1, color: AppColors.borderSub),
-          const SizedBox(height: 10),
-
-          // ✅ 카드 안쪽 정산완료/정산예정
-          Row(
-            children: [
-              Expanded(
-                child: _MiniStat(
-                  title: '정산 완료',
-                  value: loadingSettle ? '불러오는 중…' : settledText,
-                  icon: Icons.check_circle_rounded,
-                  accent: AppColors.primary,
-                  bg: AppColors.primaryLight,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _MiniStat(
-                  title: '정산 예정',
-                  value: loadingSettle ? '불러오는 중…' : pendingText,
-                  icon: Icons.schedule_rounded,
-                  accent: AppColors.primary,
-                  bg: AppColors.primaryLight,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MiniStat extends StatelessWidget {
-  final String title;
-  final String value;
-  final IconData icon;
-  final Color accent;
-  final Color bg;
-
-  const _MiniStat({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.accent,
-    required this.bg,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, c) {
-        return Container(
-          // ✅ height 고정 제거 (기기별로 더 안전)
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: accent.withOpacity(0.14)),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          child: Row(
-            children: [
-              Container(
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: accent, size: 18),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min, // ✅ 세로로 덜 먹게
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.textSecondary,
-                        height: 1.0, // ✅ 라인높이 줄임
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    // ✅ value가 길거나 공간이 작으면 자동 축소
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        value,
-                        maxLines: 1,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w900,
-                          color: AppColors.textPrimary,
-                          height: 1.0,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-}
-
-/* --------------------------- Common UI Widgets --------------------------- */
-
-class _Pill extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Color color;
-  final Color bg;
-
-  const _Pill({
-    required this.icon,
-    required this.text,
-    required this.color,
-    required this.bg,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 240),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(999),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: color),
-            const SizedBox(width: 6),
-            Flexible(
-              child: Text(
-                text,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontSize: 12.8,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  final String title;
-  final List<Widget> children;
-
-  const _SectionCard({required this.title, required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-            // 섹션 구분은 타이포 위계만으로 — 장식 세로바 제거
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ),
-          const Divider(height: 1),
-          ..._withDividers(children),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _withDividers(List<Widget> items) {
-    final out = <Widget>[];
-    for (var i = 0; i < items.length; i++) {
-      out.add(items[i]);
-      if (i != items.length - 1) out.add(const Divider(height: 1, indent: 56));
-    }
-    return out;
-  }
-}
-
-class _ItemTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final TextStyle? labelStyle;
-  final Widget? trailing;
-  final VoidCallback onTap;
-
-  const _ItemTile({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.labelStyle,
-    this.trailing,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: ListTile(
-          leading: Icon(icon, size: 22, color: AppColors.primary),
-          title: Text(
-            label,
-            style:
-                labelStyle ??
-                t.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-          ),
-          trailing:
-              trailing ??
-              const Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: AppColors.textTertiary,
-              ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 6,
-            vertical: 2,
-          ),
-          dense: true,
-          minLeadingWidth: 0,
-        ),
-      ),
-    );
-  }
-}
-
-class _ItemTileStatic extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String routeName;
-
-  const _ItemTileStatic({
-    required this.icon,
-    required this.label,
-    required this.routeName,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return _ItemTile(
-      icon: icon,
-      label: label,
-      onTap: () => Navigator.pushNamed(context, routeName),
-    );
-  }
-}
-
-class _ExpandableBizInfo extends StatelessWidget {
-  final Color brandBlue;
-  const _ExpandableBizInfo({required this.brandBlue});
-
-  @override
-  Widget build(BuildContext context) {
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        leading: Icon(Icons.info_outline_rounded, color: brandBlue),
-        title: const Text(
-          '사업자 정보',
-          style: TextStyle(fontWeight: FontWeight.w800),
-        ),
-        shape: const RoundedRectangleBorder(
-          side: BorderSide(color: Colors.transparent),
-        ),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-        children: const [
-          _BizInfoItem('법인명', '주식회사 찾다'),
-          _BizInfoItem('대표자', '황성민'),
-          _BizInfoItem('사업자등록번호', '480-88-03690'),
-          _BizInfoItem('법인등록번호', '120111-0146420'),
-          _BizInfoItem('통신판매업 번호', '2025-인천연수구-2179호'),
-          _BizInfoItem('이메일', 'hsm@outfind.co.kr'),
-          _BizInfoItem('고객센터', '070-4792-3001 / 010-4653-3002'),
-          _BizInfoItem('개업연월일', '2025년 05월 26일'),
-          _BizInfoItem('사업장 소재지', '인천광역시 연수구 하모니로178번길 22, 7층 707-나60호 (송도동)'),
-          _BizInfoItem('본점 소재지', '인천광역시 연수구 하모니로178번길 22, 7층 707-나60호 (송도동)'),
-          _BizInfoItem('업태', '정보통신업'),
-          _BizInfoItem('종목', '데이터베이스 및 온라인 정보제공업, 온라인활용마케팅 및 관련사업지원서비스'),
-        ],
-      ),
-    );
-  }
-}
-
-class _BizInfoItem extends StatelessWidget {
-  final String k;
-  final String v;
-  const _BizInfoItem(this.k, this.v);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 110,
-            child: Text(
-              k,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              v,
-              style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ConfirmSheet extends StatelessWidget {
-  final String title;
-  final String message;
-  final String confirmText;
-  final Color confirmColor;
-  final IconData icon;
-
-  const _ConfirmSheet({
-    required this.title,
-    required this.message,
-    required this.confirmText,
-    required this.confirmColor,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomSafe = MediaQuery.of(context).viewPadding.bottom;
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomSafe), // ✅ 여기!
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 42,
-            height: 5,
-            decoration: BoxDecoration(
-              color: AppColors.border,
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: confirmColor.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: confirmColor),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 13,
-              color: AppColors.textSecondary,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textPrimary,
-                    side: const BorderSide(color: AppColors.border),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text(
-                    '취소',
-                    style: TextStyle(fontWeight: FontWeight.w900),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: confirmColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    confirmText,
-                    style: const TextStyle(fontWeight: FontWeight.w900),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/* --------------------------- Trust Score Card --------------------------- */
-
-class _TrustScoreCard extends StatefulWidget {
-  final bool loading;
-  final int score;
-  final String grade;
-  final Color brandBlue;
-  final int loginScore;
-  final int statusUpdateScore;
-  final int attendanceScore;
-  final int responseScore;
-  final int cancelPenalty;
-
-  const _TrustScoreCard({
-    required this.loading,
-    required this.score,
-    required this.grade,
-    required this.brandBlue,
-    this.loginScore = 0,
-    this.statusUpdateScore = 0,
-    this.attendanceScore = 0,
-    this.responseScore = 0,
-    this.cancelPenalty = 0,
-  });
-
-  @override
-  State<_TrustScoreCard> createState() => _TrustScoreCardState();
-}
-
-class _TrustScoreCardState extends State<_TrustScoreCard> {
-  bool _expanded = true;
-
-  Color get _gradeColor {
-    switch (widget.grade) {
-      case 'S':
-        return AppColors.gradeS;
-      case 'A':
-        return AppColors.primary;
-      case 'B':
-        return AppColors.success;
-      case 'C':
-        return AppColors.textSecondary;
-      default:
-        return AppColors.textTertiary;
-    }
-  }
-
-  String get _gradeLabel {
-    switch (widget.grade) {
-      case 'S':
-        return '최고 신뢰';
-      case 'A':
-        return '높은 신뢰';
-      case 'B':
-        return '보통';
-      case 'C':
-        return '낮음';
-      default:
-        return '새로운 알바생';
-    }
-  }
-
-  // Returns (nextGrade, minScore, maxScore) for progress bar
-  (String, int, int) get _nextGradeInfo {
-    switch (widget.grade) {
-      case 'NEW':
-        return ('C', 0, 30);
-      case 'C':
-        return ('B', 30, 60);
-      case 'B':
-        return ('A', 60, 100);
-      case 'A':
-        return ('S', 100, 150);
-      default:
-        return ('S', 150, 150); // already S
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final (nextGrade, minScore, maxScore) = _nextGradeInfo;
-    final isMax = widget.grade == 'S';
-    final progress =
-        isMax
-            ? 1.0
-            : ((widget.score - minScore) / (maxScore - minScore)).clamp(
-              0.0,
-              1.0,
-            );
-    final remaining = isMax ? 0 : (maxScore - widget.score).clamp(0, 999);
-
-    return GestureDetector(
-      onTap: widget.loading ? null : () => _showDetailSheet(context),
-      child: Container(
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border),
-        ),
-        child:
-            widget.loading
-                ? const SizedBox(
-                  height: 72,
-                  child: Center(
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                )
-                : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // ─── 헤더: 등급 아이콘 + 점수 ───────────────────────────
-                    Row(
-                      children: [
-                        Container(
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            color: _gradeColor.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Center(
-                            child: Text(
-                              widget.grade,
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: _gradeColor,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                '내 신뢰도',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.textTertiary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.baseline,
-                                textBaseline: TextBaseline.alphabetic,
-                                children: [
-                                  Text(
-                                    '${widget.score}점',
-                                    style: const TextStyle(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w900,
-                                      color: AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    '· $_gradeLabel',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      color: _gradeColor,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                        IconButton(
-                          tooltip: _expanded ? '접기' : '펼치기',
-                          visualDensity: VisualDensity.compact,
-                          onPressed:
-                              () => setState(() => _expanded = !_expanded),
-                          icon: Icon(
-                            _expanded
-                                ? Icons.keyboard_arrow_up_rounded
-                                : Icons.keyboard_arrow_down_rounded,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    AnimatedCrossFade(
-                      firstChild: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 14),
-
-                          // ─── 진행 바 ─────────────────────────────────────────────
-                          Row(
-                            children: [
-                              Text(
-                                widget.grade,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: _gradeColor,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(
-                                    value: progress,
-                                    minHeight: 6,
-                                    backgroundColor: AppColors.border,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      _gradeColor,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                nextGrade,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textTertiary,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            isMax
-                                ? '최고 등급이에요! 계속 유지해주세요'
-                                : '$nextGrade 등급까지 $remaining점 남았어요',
-                            style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-
-                          // ─── 세부 점수 칩 ────────────────────────────────────────
-                          Wrap(
-                            spacing: 6,
-                            runSpacing: 6,
-                            children: [
-                              _ScoreChip(
-                                label: '접속',
-                                score: widget.loginScore,
-                                icon: Icons.wifi_rounded,
-                                color: AppColors.textSecondary,
-                              ),
-                              _ScoreChip(
-                                label: '활동',
-                                score: widget.statusUpdateScore,
-                                icon: Icons.touch_app_rounded,
-                                color: AppColors.textSecondary,
-                              ),
-                              _ScoreChip(
-                                label: '출근',
-                                score: widget.attendanceScore,
-                                icon: Icons.check_circle_outline_rounded,
-                                color: AppColors.textSecondary,
-                              ),
-                              _ScoreChip(
-                                label: '응답',
-                                score: widget.responseScore,
-                                icon: Icons.thumb_up_alt_outlined,
-                                color: AppColors.textSecondary,
-                              ),
-                              if (widget.cancelPenalty > 0)
-                                _ScoreChip(
-                                  label: '페널티',
-                                  score: -widget.cancelPenalty,
-                                  icon: Icons.warning_amber_rounded,
-                                  color: const Color(0xFFE55353),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 14),
-
-                          // ─── 점수 올리는 방법 ────────────────────────────────────
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: AppColors.bgPage,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text(
-                                  '이렇게 올릴 수 있어요',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                                SizedBox(height: 6),
-                                _TipRow(
-                                  icon: Icons.phone_iphone_rounded,
-                                  text: '앱에 자주 접속하기 (+3점/일)',
-                                ),
-                                _TipRow(
-                                  icon: Icons.search_rounded,
-                                  text: '공고 조회 · 북마크 · 채팅하기 (활동 점수 적립)',
-                                ),
-                                _TipRow(
-                                  icon: Icons.event_available_rounded,
-                                  text: '출근 확정 후 실제 출근하기 (+10점)',
-                                ),
-                                _TipRow(
-                                  icon: Icons.warning_amber_rounded,
-                                  text: '수락 후 취소/노쇼는 점수가 깎여요',
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      secondChild: const SizedBox.shrink(),
-                      crossFadeState:
-                          _expanded
-                              ? CrossFadeState.showFirst
-                              : CrossFadeState.showSecond,
-                      duration: const Duration(milliseconds: 180),
-                    ),
-                  ],
-                ),
-      ),
-    );
-  }
-
-  void _showDetailSheet(BuildContext context) {
+  void _showScoreSheet() {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.transparent,
       builder:
           (_) => _ScoreDetailSheet(
-            score: widget.score,
-            grade: widget.grade,
-            gradeColor: _gradeColor,
-            loginScore: widget.loginScore,
-            statusUpdateScore: widget.statusUpdateScore,
-            attendanceScore: widget.attendanceScore,
-            responseScore: widget.responseScore,
-            cancelPenalty: widget.cancelPenalty,
+            score: _totalScore,
+            grade: _grade,
+            loginScore: _loginScore,
+            statusUpdateScore: _statusUpdateScore,
+            attendanceScore: _attendanceScore,
+            responseScore: _responseScore,
+            cancelPenalty: _cancelPenalty,
           ),
+    );
+  }
+}
+
+/* --------------------------- 프로필 --------------------------- */
+
+class _ProfileHeader extends StatelessWidget {
+  final String imageUrl;
+  final String name;
+  final String phone;
+  final bool loading;
+  final VoidCallback onTap;
+
+  const _ProfileHeader({
+    required this.imageUrl,
+    required this.name,
+    required this.phone,
+    required this.loading,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImg = !loading && imageUrl.isNotEmpty;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 16, 16),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: AppColors.bgMuted,
+              backgroundImage: hasImg ? NetworkImage(imageUrl) : null,
+              child:
+                  hasImg
+                      ? null
+                      : const Icon(
+                        Icons.person_rounded,
+                        size: 32,
+                        color: AppColors.textDisabled,
+                      ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.h3,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(phone, style: AppTextStyles.body2),
+                ],
+              ),
+            ),
+            Text(
+              '프로필 수정',
+              style: AppTextStyles.body2.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: AppColors.textTertiary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 정산 완료·예정. 같은 숫자가 캘린더에 월별로 있어 누르면 캘린더로 (당근페이 잔액 박스 참고)
+class _MoneyBox extends StatelessWidget {
+  final bool loading;
+  final String settled;
+  final String pending;
+  final VoidCallback? onTap;
+
+  const _MoneyBox({
+    required this.loading,
+    required this.settled,
+    required this.pending,
+    this.onTap,
+  });
+
+  Widget _cell(String label, String value) => Expanded(
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: AppTextStyles.body2),
+        const SizedBox(height: 4),
+        Text(
+          loading ? '-' : value,
+          style: AppTextStyles.jobPayHero,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.bgMuted,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+          child: Row(
+            children: [
+              _cell('정산 완료', settled),
+              Container(width: 1, height: 32, color: AppColors.border),
+              const SizedBox(width: 16),
+              _cell('정산 예정', pending),
+              if (onTap != null)
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: AppColors.textTertiary,
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/* --------------------------- 신뢰도 --------------------------- */
+
+// 등급 기준은 CLAUDE.md·서버와 같다: NEW <20 · C 20~39 · B 40~69 · A 70~99 · S 100+
+// (전엔 진행 바만 30/60/100/150을 써서 'B 55점 → A까지 45점'처럼 틀리게 나왔다)
+Color _gradeColor(String grade) => switch (grade) {
+  'S' => AppColors.gradeS,
+  'A' => AppColors.gradeA,
+  'B' => AppColors.gradeB,
+  _ => AppColors.textSecondary,
+};
+
+String _gradeLabel(String grade) => switch (grade) {
+  'S' => '최고 신뢰',
+  'A' => '높은 신뢰',
+  'B' => '보통',
+  'C' => '낮음',
+  _ => '새로 온 알바생',
+};
+
+/// (다음 등급, 현재 구간 시작, 다음 등급 점수). S면 다음 등급 없음
+(String?, int, int) _nextGrade(String grade) => switch (grade) {
+  'NEW' => ('C', 0, 20),
+  'C' => ('B', 20, 40),
+  'B' => ('A', 40, 70),
+  'A' => ('S', 70, 100),
+  _ => (null, 100, 100),
+};
+
+class _TrustRow extends StatelessWidget {
+  final bool loading;
+  final int score;
+  final String grade;
+  final VoidCallback onTap;
+
+  const _TrustRow({
+    required this.loading,
+    required this.score,
+    required this.grade,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _gradeColor(grade);
+    final (next, from, to) = _nextGrade(grade);
+    final progress =
+        next == null ? 1.0 : ((score - from) / (to - from)).clamp(0.0, 1.0);
+
+    return InkWell(
+      onTap: loading ? null : onTap,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.border),
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        child:
+            loading
+                ? const SizedBox(
+                  height: 44,
+                  child: Center(
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+                : Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: color.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      // 'NEW'가 40px 칸에서 두 줄로 꺾이던 것
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          grade,
+                          maxLines: 1,
+                          style: AppTextStyles.h3.copyWith(
+                            color: color,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text.rich(
+                            TextSpan(
+                              children: [
+                                TextSpan(
+                                  text: '내 신뢰도 $score점',
+                                  style: AppTextStyles.jobTitle,
+                                ),
+                                TextSpan(
+                                  text: '  ${_gradeLabel(grade)}',
+                                  style: AppTextStyles.body2,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(AppRadius.full),
+                            child: LinearProgressIndicator(
+                              value: progress,
+                              minHeight: 4,
+                              backgroundColor: AppColors.bgMuted,
+                              valueColor: AlwaysStoppedAnimation(color),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            next == null
+                                ? '최고 등급이에요. 사장님 후보 목록 맨 위에 보여요'
+                                : '$next등급까지 ${to - score}점',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      size: 20,
+                      color: AppColors.textTertiary,
+                    ),
+                  ],
+                ),
+      ),
     );
   }
 }
@@ -1628,7 +926,6 @@ class _TrustScoreCardState extends State<_TrustScoreCard> {
 class _ScoreDetailSheet extends StatelessWidget {
   final int score;
   final String grade;
-  final Color gradeColor;
   final int loginScore;
   final int statusUpdateScore;
   final int attendanceScore;
@@ -1638,7 +935,6 @@ class _ScoreDetailSheet extends StatelessWidget {
   const _ScoreDetailSheet({
     required this.score,
     required this.grade,
-    required this.gradeColor,
     required this.loginScore,
     required this.statusUpdateScore,
     required this.attendanceScore,
@@ -1648,214 +944,121 @@ class _ScoreDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        20,
-        16,
-        20,
-        MediaQuery.of(context).padding.bottom + 24,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.black12,
-                borderRadius: BorderRadius.circular(99),
-              ),
+    final color = _gradeColor(grade);
+    return SafeArea(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('내 신뢰도 $score점', style: AppTextStyles.h2),
+            const SizedBox(height: 4),
+            Text(
+              '점수가 높을수록 사장님 긴급 호출 후보 목록 위쪽에 보여요.',
+              style: AppTextStyles.body2,
             ),
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: gradeColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Center(
-                  child: Text(
-                    grade,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: gradeColor,
-                    ),
-                  ),
-                ),
+            const SizedBox(height: 20),
+            _DetailRow('앱 접속', '하루 한 번 열면 +3점', loginScore),
+            _DetailRow('활동', '공고 보기·관심 공고·채팅', statusUpdateScore),
+            _DetailRow('응답', '긴급 호출에 답하면 오르고, 안 하면 내려가요', responseScore),
+            _DetailRow('출근', '출근 확정 후 실제 출근하면 +10점', attendanceScore),
+            _DetailRow(
+              '취소·노쇼',
+              '수락 후 취소 -3점 · 노쇼 -10점',
+              -cancelPenalty,
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.bgMuted,
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Column(
                 children: [
-                  const Text(
-                    '내 신뢰도 상세',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
+                  for (final (g, range) in const [
+                    ('S', '100점 이상'),
+                    ('A', '70 ~ 99점'),
+                    ('B', '40 ~ 69점'),
+                    ('C', '20 ~ 39점'),
+                    ('NEW', '20점 미만'),
+                  ])
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 3),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 44,
+                            child: Text(
+                              g,
+                              style: AppTextStyles.captionBold.copyWith(
+                                fontSize: 13,
+                                color: _gradeColor(g),
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              range,
+                              style: AppTextStyles.body2.copyWith(
+                                color:
+                                    g == grade
+                                        ? AppColors.textPrimary
+                                        : AppColors.textSecondary,
+                                fontWeight:
+                                    g == grade
+                                        ? FontWeight.w700
+                                        : FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                          if (g == grade)
+                            Text(
+                              '지금',
+                              style: AppTextStyles.captionBold.copyWith(
+                                color: color,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                  Text(
-                    '현재 $score점',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: gradeColor,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
                 ],
               ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            '획득/차감 내역',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
             ),
-          ),
-          const SizedBox(height: 10),
-          _DetailRow(
-            icon: Icons.wifi_rounded,
-            color: AppColors.textSecondary,
-            label: '앱 접속으로 얻은 점수',
-            score: loginScore,
-            desc: '하루 1회 접속 시 +3점',
-          ),
-          _DetailRow(
-            icon: Icons.touch_app_rounded,
-            color: AppColors.textSecondary,
-            label: '활동으로 얻은 점수',
-            score: statusUpdateScore,
-            desc: '공고 조회·북마크·채팅·응답 활동',
-          ),
-          _DetailRow(
-            icon: Icons.thumb_up_alt_outlined,
-            color: AppColors.textSecondary,
-            label: '응답으로 얻거나 깎인 점수',
-            score: responseScore,
-            desc: '긴급호출 응답/미응답 이력 반영',
-          ),
-          _DetailRow(
-            icon: Icons.check_circle_outline_rounded,
-            color: AppColors.textSecondary,
-            label: '출근 완료로 얻은 점수',
-            score: attendanceScore,
-            desc: '출근 확정 후 실제 출근 시 +10점',
-          ),
-          if (cancelPenalty > 0)
-            _DetailRow(
-              icon: Icons.warning_amber_rounded,
-              color: const Color(0xFFE55353),
-              label: '취소/노쇼로 깎인 점수',
-              score: -cancelPenalty,
-              desc: '수락 후 취소 또는 노쇼 확정 시 차감',
-            ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.bgPage,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '등급 기준',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _GradeRow('NEW', '0 ~ 19점', AppColors.textTertiary, grade),
-                _GradeRow('C', '20 ~ 39점', AppColors.textSecondary, grade),
-                _GradeRow('B', '40 ~ 69점', AppColors.success, grade),
-                _GradeRow('A', '70 ~ 99점', AppColors.primary, grade),
-                _GradeRow('S', '100점 이상', AppColors.gradeS, grade),
-              ],
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
 class _DetailRow extends StatelessWidget {
-  final IconData icon;
-  final Color color;
   final String label;
-  final int score;
   final String desc;
-  const _DetailRow({
-    required this.icon,
-    required this.color,
-    required this.label,
-    required this.score,
-    required this.desc,
-  });
+  final int score;
+  const _DetailRow(this.label, this.desc, this.score);
 
   @override
   Widget build(BuildContext context) {
-    final isNeg = score < 0;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 14),
       child: Row(
         children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, size: 18, color: color),
-          ),
-          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  desc,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
+                Text(label, style: AppTextStyles.body1),
+                Text(desc, style: AppTextStyles.body2),
               ],
             ),
           ),
+          const SizedBox(width: 12),
           Text(
-            isNeg ? '$score점' : '+$score점',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w800,
-              color: isNeg ? const Color(0xFFE55353) : color,
+            score < 0 ? '$score점' : '+$score점',
+            style: AppTextStyles.jobTitle.copyWith(
+              color: score < 0 ? AppColors.error : AppColors.textPrimary,
             ),
           ),
         ],
@@ -1864,130 +1067,79 @@ class _DetailRow extends StatelessWidget {
   }
 }
 
-class _GradeRow extends StatelessWidget {
-  final String gradeLabel;
-  final String range;
-  final Color color;
-  final String currentGrade;
-  const _GradeRow(this.gradeLabel, this.range, this.color, this.currentGrade);
+/* --------------------------- 사업자 정보 --------------------------- */
+
+class _BizInfoRow extends StatefulWidget {
+  const _BizInfoRow();
 
   @override
-  Widget build(BuildContext context) {
-    final isCurrent = gradeLabel == currentGrade;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: isCurrent ? 0.2 : 0.08),
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Center(
-              child: Text(
-                gradeLabel,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w900,
-                  color: color,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            range,
-            style: TextStyle(
-              fontSize: 12,
-              color: isCurrent ? color : AppColors.textSecondary,
-              fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w400,
-            ),
-          ),
-          if (isCurrent) ...[
-            const SizedBox(width: 6),
-            Text(
-              '← 현재',
-              style: TextStyle(
-                fontSize: 11,
-                color: color,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
+  State<_BizInfoRow> createState() => _BizInfoRowState();
 }
 
-class _ScoreChip extends StatelessWidget {
-  final String label;
-  final int score;
-  final IconData icon;
-  final Color color;
+class _BizInfoRowState extends State<_BizInfoRow> {
+  bool _open = false;
 
-  const _ScoreChip({
-    required this.label,
-    required this.score,
-    required this.icon,
-    required this.color,
-  });
+  static const _items = [
+    ('법인명', '주식회사 찾다'),
+    ('대표자', '황성민'),
+    ('사업자등록번호', '480-88-03690'),
+    ('법인등록번호', '120111-0146420'),
+    ('통신판매업 번호', '2025-인천연수구-2179호'),
+    ('이메일', 'hsm@outfind.co.kr'),
+    ('고객센터', '070-4792-3001 / 010-4653-3002'),
+    ('개업연월일', '2025년 05월 26일'),
+    ('사업장 소재지', '인천광역시 연수구 하모니로178번길 22, 7층 707-나60호 (송도동)'),
+    ('본점 소재지', '인천광역시 연수구 하모니로178번길 22, 7층 707-나60호 (송도동)'),
+    ('업태', '정보통신업'),
+    ('종목', '데이터베이스 및 온라인 정보제공업, 온라인활용마케팅 및 관련사업지원서비스'),
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final isNeg = score < 0;
-    final bg =
-        isNeg
-            ? const Color(0xFFE55353).withValues(alpha: 0.08)
-            : color.withValues(alpha: 0.08);
-    final fg = isNeg ? const Color(0xFFE55353) : color;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: fg),
-          const SizedBox(width: 4),
-          Text(
-            '$label ${isNeg ? score : '+$score'}',
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: fg,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppMenuRow(
+          label: '사업자 정보',
+          onTap: () => setState(() => _open = !_open),
+          trailing: Icon(
+            _open
+                ? Icons.keyboard_arrow_up_rounded
+                : Icons.keyboard_arrow_down_rounded,
+            size: 20,
+            color: AppColors.textTertiary,
+          ),
+        ),
+        if (_open)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: Column(
+              children: [
+                for (final (k, v) in _items)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 104,
+                          child: Text(k, style: AppTextStyles.caption),
+                        ),
+                        Expanded(
+                          child: Text(
+                            v,
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
           ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TipRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-
-  const _TipRow({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 4),
-      child: Row(
-        children: [
-          Icon(icon, size: 13, color: AppColors.primary),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-          ),
-        ],
-      ),
+      ],
     );
   }
 }

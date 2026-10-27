@@ -18,7 +18,14 @@ class InquiryScreen extends StatefulWidget {
   State<InquiryScreen> createState() => _InquiryScreenState();
 }
 
-class _InquiryScreenState extends State<InquiryScreen> {
+class _InquiryScreenState extends State<InquiryScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tab = TabController(length: 2, vsync: this);
+  // 목록은 탭을 다시 그릴 때마다 새로 부르지 않게 한 번 받아 둔다
+  late Future<List<Map<String, dynamic>>> _listFuture = _fetchInquiries();
+
+  void _reloadList() => setState(() => _listFuture = _fetchInquiries());
+
   // ── UI 상태
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
@@ -123,8 +130,14 @@ class _InquiryScreenState extends State<InquiryScreen> {
 
       if (ok) {
         if (!mounted) return;
-        showAppSheet(context, title: '문의를 접수했어요', message: '빠르게 답변드릴게요.');
         _clearForm();
+        _reloadList();
+        _tab.animateTo(1);
+        showAppSheet(
+          context,
+          title: '문의를 접수했어요',
+          message: '답변이 달리면 알림으로 알려 드려요.',
+        );
       } else {
         _showSnack('문의를 보내지 못했어요. 잠시 후 다시 시도해 주세요.');
       }
@@ -207,60 +220,37 @@ class _InquiryScreenState extends State<InquiryScreen> {
 
   @override
   void dispose() {
+    _tab.dispose();
     _titleController.dispose();
     _contentController.dispose();
     super.dispose();
   }
 
   // ───────────────────────── UI ─────────────────────────
+  // 2026-10 리디자인: 알약 탭·흰 바탕 위 흰 입력칸(칸이 안 보였다) → 밑줄 탭 + 회색 입력칸,
+  // 유형 드롭다운 → 칩, 카드 목록 → 흰 줄
 
   @override
   Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        extendBodyBehindAppBar: true,
-        appBar: AppBar(
-          elevation: 0,
-          title: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.white.withOpacity(0.25)),
-            ),
-            child: const Text(
-              '고객센터',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          bottom: PreferredSize(
-            preferredSize: const Size.fromHeight(72), // ← 64에서 72로
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-              child: _PillTabBar(
-                tabs: const [
-                  Tab(
-                    text: '1:1 문의하기',
-                    icon: Icon(Icons.edit_note_rounded, size: 18),
-                    iconMargin: EdgeInsets.zero, // ✅ 기본 10 하단여백 제거
-                  ),
-                  Tab(
-                    text: '내 문의 내역',
-                    icon: Icon(Icons.history_rounded, size: 18),
-                    iconMargin: EdgeInsets.zero, // ✅
-                  ),
-                ],
-              ),
-            ),
-          ),
+    return Scaffold(
+      backgroundColor: AppColors.bgCard,
+      appBar: AppBar(
+        title: const Text('1:1 문의'),
+        bottom: TabBar(
+          controller: _tab,
+          labelColor: AppColors.textPrimary,
+          unselectedLabelColor: AppColors.textTertiary,
+          labelStyle: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700),
+          unselectedLabelStyle: AppTextStyles.body1,
+          indicatorColor: AppColors.textPrimary,
+          indicatorSize: TabBarIndicatorSize.tab,
+          dividerColor: AppColors.border,
+          tabs: const [Tab(text: '문의하기'), Tab(text: '내 문의 내역')],
         ),
-        body: Container(
-          decoration: const BoxDecoration(color: AppColors.bgCard),
-          child: TabBarView(
-            children: [_buildInquiryForm(), _buildInquiryList()],
-          ),
-        ),
+      ),
+      body: TabBarView(
+        controller: _tab,
+        children: [_buildInquiryForm(), _buildInquiryList()],
       ),
     );
   }
@@ -268,81 +258,88 @@ class _InquiryScreenState extends State<InquiryScreen> {
   Widget _buildInquiryForm() {
     return SafeArea(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 유형
-              const Text(
-                '문의 유형 *',
-                style: TextStyle(fontWeight: FontWeight.w700),
+              const _Label('어떤 문의인가요?'),
+              Wrap(
+                spacing: 8,
+                children: [
+                  for (final t in _inquiryTypes)
+                    ChoiceChip(
+                      label: Text(t),
+                      selected: _selectedType == t,
+                      showCheckmark: false,
+                      onSelected: (_) => setState(() => _selectedType = t),
+                      labelStyle: AppTextStyles.btnMd.copyWith(
+                        color:
+                            _selectedType == t
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                      ),
+                      selectedColor: AppColors.primaryLight,
+                      backgroundColor: AppColors.bgCard,
+                      side: BorderSide(
+                        color:
+                            _selectedType == t
+                                ? AppColors.primary
+                                : AppColors.border,
+                      ),
+                      shape: const StadiumBorder(),
+                    ),
+                ],
               ),
-              const SizedBox(height: 8),
-              DropdownButtonFormField<String>(
-                initialValue: _selectedType,
-                items:
-                    ['선택해주세요', ..._inquiryTypes]
-                        .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                        .toList(),
-                onChanged: (v) => setState(() => _selectedType = v!),
-                decoration: _inputDecoration(),
-                validator:
-                    (v) =>
-                        (v == null || v == '선택해주세요') ? '문의 유형을 선택해주세요.' : null,
-              ),
-              const SizedBox(height: 16),
-
-              // 제목
-              _Labeled(
-                label: '문의 제목 *',
-                child: TextFormField(
-                  controller: _titleController,
-                  maxLength: _maxTitleLen,
-                  decoration: _inputDecoration(hint: '간단한 제목을 입력해주세요.'),
-                  validator: (v) {
-                    final s = (v ?? '').trim();
-                    if (s.isEmpty) return '제목을 입력해주세요.';
-                    if (s.length < 2) return '제목은 2자 이상 입력해주세요.';
-                    return null;
-                  },
-                ),
+              const SizedBox(height: 24),
+              const _Label('제목'),
+              TextFormField(
+                controller: _titleController,
+                maxLength: _maxTitleLen,
+                decoration: _inputDecoration(hint: '예) 지원 버튼이 눌리지 않아요'),
+                validator: (v) {
+                  final s = (v ?? '').trim();
+                  if (s.isEmpty) return '제목을 입력해 주세요.';
+                  if (s.length < 2) return '제목은 2자 이상 입력해 주세요.';
+                  return null;
+                },
               ),
               const SizedBox(height: 12),
-
-              // 내용
-              _Labeled(
-                label: '문의 내용 *',
-                child: TextFormField(
-                  controller: _contentController,
-                  maxLines: 8,
-                  maxLength: _maxContentLen,
-                  decoration: _inputDecoration(
-                    hint: '상세 내용을 입력해주세요. (스크린샷/오류 메시지 포함 권장)',
-                  ),
-                  validator: (v) {
-                    final s = (v ?? '').trim();
-                    if (s.isEmpty) return '내용을 입력해주세요.';
-                    if (s.length < 5) return '내용은 5자 이상 입력해주세요.';
-                    return null;
-                  },
+              const _Label('내용'),
+              TextFormField(
+                controller: _contentController,
+                maxLines: 8,
+                maxLength: _maxContentLen,
+                decoration: _inputDecoration(
+                  hint: '언제, 어떤 화면에서 무슨 일이 있었는지 적어 주시면 더 빨리 도와드릴 수 있어요.',
                 ),
+                validator: (v) {
+                  final s = (v ?? '').trim();
+                  if (s.isEmpty) return '내용을 입력해 주세요.';
+                  if (s.length < 5) return '내용은 5자 이상 입력해 주세요.';
+                  return null;
+                },
               ),
-              const SizedBox(height: 16),
-
-              // 첨부
-              const Text(
-                '사진 첨부 (선택, 최대 5장 / 5MB)',
-                style: TextStyle(fontWeight: FontWeight.w700),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const _Label('사진'),
+                  const SizedBox(width: 6),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Text(
+                      '선택 · ${_images.length}/$_maxImages',
+                      style: AppTextStyles.caption,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
               _buildImageGrid(),
-              const SizedBox(height: 24),
-
-              // 제출 버튼
+              const SizedBox(height: 32),
               SizedBox(
-                width: double.infinity,
+                height: 52,
                 child: FilledButton(
                   onPressed: _isSubmitting ? null : _submitInquiry,
                   child:
@@ -371,157 +368,172 @@ class _InquiryScreenState extends State<InquiryScreen> {
       spacing: 8,
       runSpacing: 8,
       children: [
+        if (canAdd)
+          InkWell(
+            onTap: _pickImageSource,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppColors.bgMuted,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+              ),
+              child: const Icon(
+                Icons.add_a_photo_outlined,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
         for (int i = 0; i < _images.length; i++)
           Stack(
+            clipBehavior: Clip.none,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 child: Image.file(
                   File(_images[i].path),
-                  width: 92,
-                  height: 92,
+                  width: 72,
+                  height: 72,
                   fit: BoxFit.cover,
                 ),
               ),
               Positioned(
-                right: -8,
-                top: -8,
-                child: IconButton(
-                  tooltip: '닫기',
-                  onPressed: () => setState(() => _images.removeAt(i)),
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.black.withOpacity(.55),
-                    visualDensity: VisualDensity.compact,
-                  ),
-                  icon: const Icon(
-                    Icons.close_rounded,
-                    color: Colors.white,
-                    size: 18,
+                right: -6,
+                top: -6,
+                child: GestureDetector(
+                  onTap: () => setState(() => _images.removeAt(i)),
+                  child: Container(
+                    width: 22,
+                    height: 22,
+                    decoration: const BoxDecoration(
+                      color: AppColors.textPrimary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close_rounded,
+                      size: 14,
+                      color: Colors.white,
+                      semanticLabel: '사진 빼기',
+                    ),
                   ),
                 ),
               ),
             ],
           ),
-        if (canAdd)
-          InkWell(
-            onTap: _pickImageSource,
-            borderRadius: BorderRadius.circular(10),
-            child: Container(
-              width: 92,
-              height: 92,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.black12),
-              ),
-              child: const Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(Icons.add_a_photo_rounded),
-                    SizedBox(height: 4),
-                    Text('추가', style: TextStyle(fontSize: 12)),
-                  ],
-                ),
-              ),
-            ),
-          ),
       ],
     );
   }
 
+  /// 서버는 '+09:00' 붙은 한국 시각 문자열을 준다 → 앞 10자리만
+  String _date(String raw) =>
+      raw.length >= 10 ? raw.substring(0, 10).replaceAll('-', '.') : raw;
+
+  bool _answered(String status) =>
+      const ['완료', '답변 완료', 'closed'].contains(status);
+
   Widget _buildInquiryList() {
-    return SafeArea(
-      child: RefreshIndicator(
-        onRefresh: () async => setState(() {}),
-        child: FutureBuilder<List<Map<String, dynamic>>>(
-          future: _fetchInquiries(),
-          builder: (context, snap) {
-            if (snap.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snap.hasError) {
-              return Center(child: Text(Msg.server));
-            }
-            final data = snap.data ?? [];
-            if (data.isEmpty) {
-              return const Center(child: Text('문의 내역이 없어요.'));
-            }
+    return RefreshIndicator(
+      onRefresh: () async {
+        _reloadList();
+        await _listFuture;
+      },
+      child: FutureBuilder<List<Map<String, dynamic>>>(
+        future: _listFuture,
+        builder: (context, snap) {
+          if (snap.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snap.hasError) {
+            return ListView(
+              children: [
+                const SizedBox(height: 80),
+                Center(child: Text(Msg.server, style: AppTextStyles.body2)),
+              ],
+            );
+          }
+          final data = snap.data ?? [];
+          if (data.isEmpty) {
+            return ListView(
+              children: const [
+                SizedBox(height: 60),
+                AppEmptyState(
+                  icon: Icons.mail_outline_rounded,
+                  title: '아직 남긴 문의가 없어요',
+                  message: '답변이 달리면 알림으로 알려 드려요.',
+                ),
+              ],
+            );
+          }
 
-            return ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              itemCount: data.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
-              itemBuilder: (context, i) {
-                final item = data[i];
-                final title = (item['title'] ?? '제목 없음').toString();
-                final type = (item['inquiryType'] ?? '').toString();
-                final status = (item['status'] ?? '진행 중').toString();
-                final createdAt = (item['createdAt'] ?? '').toString();
+          return ListView.builder(
+            itemCount: data.length,
+            itemBuilder: (context, i) {
+              final item = data[i];
+              final title = (item['title'] ?? '제목 없음').toString();
+              final type = (item['inquiryType'] ?? '').toString();
+              final status = (item['status'] ?? '진행 중').toString();
+              final answered = _answered(status);
+              final answer = (item['answer'] ?? '').toString().trim();
 
-                final answerPreview = (item['answer'] ?? '').toString();
-
-                return InkWell(
-                  onTap: () => _showInquiryDetail(item),
-                  borderRadius: BorderRadius.circular(14),
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.black12),
-                    ),
-                    child: Row(
-                      children: [
-                        const CircleAvatar(
-                          radius: 20,
-                          backgroundColor: AppColors.primary,
-                          child: Icon(
-                            Icons.question_answer_rounded,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                title,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                '$type · $createdAt',
-                                style: const TextStyle(
-                                  color: Colors.black54,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              if (answerPreview.isNotEmpty) ...[
-                                const SizedBox(height: 6),
-                                Text(
-                                  answerPreview.length > 60
-                                      ? '${answerPreview.substring(0, 60)}…'
-                                      : answerPreview,
-                                  style: const TextStyle(color: Colors.black87),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        _StatusBadge(status: status),
-                      ],
+              return InkWell(
+                onTap: () => _showInquiryDetail(item),
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+                  decoration: const BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(color: AppColors.borderSub),
                     ),
                   ),
-                );
-              },
-            );
-          },
-        ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              [
+                                if (type.isNotEmpty) type,
+                                _date((item['createdAt'] ?? '').toString()),
+                              ].join(' · '),
+                              style: AppTextStyles.jobMeta,
+                            ),
+                          ),
+                          Text(
+                            answered ? '답변 완료' : '답변 기다리는 중',
+                            style: AppTextStyles.captionBold.copyWith(
+                              fontSize: 12,
+                              color:
+                                  answered
+                                      ? AppColors.badgeSameDay
+                                      : AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.jobTitle,
+                      ),
+                      if (answer.isNotEmpty) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          answer,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.body2,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
@@ -529,79 +541,58 @@ class _InquiryScreenState extends State<InquiryScreen> {
   void _showInquiryDetail(Map<String, dynamic> inquiry) {
     final title = (inquiry['title'] ?? '제목 없음').toString();
     final type = (inquiry['inquiryType'] ?? '').toString();
-    final status = (inquiry['status'] ?? '진행 중').toString();
     final content = (inquiry['content'] ?? '내용 없음').toString();
-    final createdAt = (inquiry['createdAt'] ?? '').toString();
-
-    final answer = (inquiry['answer'] ?? '').toString();
+    final createdAt = _date((inquiry['createdAt'] ?? '').toString());
+    final answer = (inquiry['answer'] ?? '').toString().trim();
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       showDragHandle: true,
       builder:
-          (_) => Padding(
-            padding: EdgeInsets.only(
-              bottom: MediaQuery.of(context).viewInsets.bottom,
-            ),
-            child: SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 18,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      children: [
-                        _StatusBadge(status: status),
-                        const SizedBox(width: 8),
-                        Text(
-                          '$type · $createdAt',
-                          style: const TextStyle(
-                            color: Colors.black54,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      '문의 내용',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(content),
-                    const SizedBox(height: 14),
-                    if (answer.isNotEmpty) ...[
+          (_) => SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  [if (type.isNotEmpty) type, createdAt].join(' · '),
+                  style: AppTextStyles.jobMeta,
+                ),
+                const SizedBox(height: 4),
+                Text(title, style: AppTextStyles.h3),
+                const SizedBox(height: 12),
+                Text(content, style: AppTextStyles.body1),
+                const SizedBox(height: 20),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.bgMuted,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       const Text(
-                        '답변',
-                        style: TextStyle(fontWeight: FontWeight.w700),
+                        '알바일주 답변',
+                        style: AppTextStyles.captionBold,
                       ),
                       const SizedBox(height: 6),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(.05),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: AppColors.primary.withOpacity(.2),
-                          ),
+                      Text(
+                        answer.isEmpty ? '아직 답변 전이에요. 답변이 달리면 알림으로 알려 드려요.' : answer,
+                        style: AppTextStyles.body1.copyWith(
+                          color:
+                              answer.isEmpty
+                                  ? AppColors.textSecondary
+                                  : AppColors.textPrimary,
                         ),
-                        child: Text(answer),
                       ),
                     ],
-                    const SizedBox(height: 8),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
     );
@@ -610,127 +601,35 @@ class _InquiryScreenState extends State<InquiryScreen> {
   InputDecoration _inputDecoration({String? hint}) {
     return InputDecoration(
       hintText: hint,
+      hintStyle: AppTextStyles.body1.copyWith(color: AppColors.textTertiary),
+      hintMaxLines: 3,
       filled: true,
-      fillColor: Colors.white,
+      fillColor: AppColors.bgMuted,
+      counterStyle: AppTextStyles.caption,
       contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: BorderSide.none,
       ),
-    );
-  }
-}
-
-// ── 보조 위젯들 ─────────────────────────────────────────
-
-class _PillTabBar extends StatelessWidget {
-  final List<Widget> tabs;
-  const _PillTabBar({required this.tabs});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 52, // ← 44에서 52로
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: TabBar(
-        tabs: const [
-          Tab(
-            text: '1:1 문의하기',
-            icon: Icon(Icons.edit_note_rounded, size: 18),
-            iconMargin: EdgeInsets.zero,
-          ),
-          Tab(
-            text: '내 문의 내역',
-            icon: Icon(Icons.history_rounded, size: 18),
-            iconMargin: EdgeInsets.zero,
-          ),
-        ],
-        indicator: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(26),
-        ),
-        labelColor: Colors.white,
-        unselectedLabelColor: AppColors.primary,
-        indicatorSize: TabBarIndicatorSize.tab,
-        splashBorderRadius: BorderRadius.circular(26),
-        labelPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 0,
-        ), // ✅ 세로 여백 0
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderSide: const BorderSide(color: AppColors.primary),
       ),
     );
   }
 }
 
-class _TabItem extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  const _TabItem({required this.label, required this.icon});
+class _Label extends StatelessWidget {
+  final String text;
+  const _Label(this.text);
 
   @override
   Widget build(BuildContext context) {
-    return Tab(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [Icon(icon, size: 18), const SizedBox(width: 6), Text(label)],
-      ),
-    );
-  }
-}
-
-class _Labeled extends StatelessWidget {
-  final String label;
-  final Widget child;
-  const _Labeled({required this.label, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
-        const SizedBox(height: 8),
-        child,
-      ],
-    );
-  }
-}
-
-class _StatusBadge extends StatelessWidget {
-  final String status;
-  const _StatusBadge({required this.status});
-
-  @override
-  Widget build(BuildContext context) {
-    Color bg;
-    Color fg;
-    switch (status) {
-      case '완료':
-      case '답변 완료':
-      case 'closed':
-        bg = AppColors.gradeB.withOpacity(.12);
-        fg = const Color(0xFF16A34A);
-        break;
-      case '대기':
-      case '접수':
-      case 'pending':
-        bg = const Color(0xFFFFE08A).withOpacity(.35);
-        fg = const Color(0xFFB45309);
-        break;
-      default:
-        bg = AppColors.primary.withOpacity(.12);
-        fg = AppColors.primary;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: ShapeDecoration(color: bg, shape: const StadiumBorder()),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
       child: Text(
-        status,
-        style: TextStyle(color: fg, fontWeight: FontWeight.w700, fontSize: 12),
+        text,
+        style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }

@@ -343,7 +343,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       1 => MyAppliedJobsScreen(onGoHome: () => _onItemTapped(2)),
       3 => ChatListScreen(onMessagesRead: _fetchUnreadCount),
-      4 => const WorkerMyPageScreen(),
+      4 => WorkerMyPageScreen(onGoCalendar: () => _onItemTapped(0)),
       _ => const SizedBox.shrink(),
     };
   }

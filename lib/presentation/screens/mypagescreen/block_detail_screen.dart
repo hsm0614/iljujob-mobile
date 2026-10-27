@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../config/constants.dart'; // baseUrl이 정의되어 있다면 여기에 있어야 합니다.
 import 'dart:async';
+import '../../../config/app_theme.dart';
+import '../../../widget/app_ui.dart';
 import '../../../data/services/authenticated_http_client.dart';
 
 class BlockedUserListScreen extends StatefulWidget {
@@ -41,13 +43,22 @@ class _BlockedUserListScreenState extends State<BlockedUserListScreen> {
     }
   }
 
-  Future<void> _unblockUser(int targetId, String targetType) async {
+  Future<void> _unblockUser(Map<String, dynamic> user) async {
+    final ok = await showAppSheet(
+      context,
+      title: '${user['name'] ?? '이 사용자'}님 차단을 풀까요?',
+      message: '다시 채팅과 공고 제안을 주고받을 수 있어요.',
+      confirmLabel: '차단 해제',
+      cancelLabel: '취소',
+    );
+    if (!ok) return;
+
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('userId') ?? 0;
 
     await AuthenticatedHttpClient.postJson(
       Uri.parse('$baseUrl/api/user-block/unblock'),
-      body: {'userId': userId, 'targetId': targetId, 'targetType': targetType},
+      body: {'userId': userId, 'targetId': user['id'], 'targetType': user['type']},
     );
 
     _loadBlockedUsers(); // 차단 해제 후 다시 목록 불러오기
@@ -61,22 +72,32 @@ class _BlockedUserListScreenState extends State<BlockedUserListScreen> {
           isLoading
               ? const Center(child: CircularProgressIndicator())
               : blockedUsers.isEmpty
-              ? const Center(child: Text('차단한 사용자가 없어요.'))
-              : ListView.separated(
-                itemCount: blockedUsers.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
-                itemBuilder: (context, index) {
-                  final user = blockedUsers[index];
-                  return ListTile(
-                    leading: const Icon(Icons.person_off),
-                    title: Text(user['name'] ?? '이름 없음'),
-                    subtitle: Text(user['type'] == 'worker' ? '구직자' : '기업'),
-                    trailing: TextButton(
-                      child: const Text('차단 해제'),
-                      onPressed: () => _unblockUser(user['id'], user['type']),
-                    ),
-                  );
-                },
+              ? const AppEmptyState(
+                icon: Icons.block_rounded,
+                title: '차단한 사용자가 없어요',
+                message: '채팅방 오른쪽 위 메뉴에서 차단할 수 있어요.',
+              )
+              : ListView(
+                children: [
+                  AppMenuSection(
+                    children: [
+                      for (final user in blockedUsers)
+                        AppMenuRow(
+                          label: (user['name'] ?? '이름 없음').toString(),
+                          subtitle: user['type'] == 'worker' ? '구직자' : '사장님',
+                          trailing: TextButton(
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.textSecondary,
+                              backgroundColor: AppColors.bgMuted,
+                              textStyle: AppTextStyles.btnSm,
+                            ),
+                            onPressed: () => _unblockUser(user),
+                            child: const Text('차단 해제'),
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
               ),
     );
   }

@@ -56,7 +56,7 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
             '주휴수당, 최저임금, 임금체불, 산재보험 등\n'
             '노동법 관련 궁금한 점을 편하게 물어보세요.\n\n'
             '법적 구속력이 있는 공식 답변이 아니므로\n'
-            '중요한 사안은 고용노동부( 1350)를 이용하세요.',
+            '중요한 사안은 고용노동부(국번 없이 1350)를 이용하세요.',
       ),
     );
   }
@@ -142,47 +142,7 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
     return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        leading: IconButton(
-          tooltip: '뒤로',
-          icon: const Icon(Icons.arrow_back_ios_new, size: 18),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Row(
-          children: [
-            Container(
-              width: 32,
-              height: 32,
-              decoration: const BoxDecoration(
-                color: _blue,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.balance_rounded,
-                color: Colors.white,
-                size: 18,
-              ),
-            ),
-            const SizedBox(width: 10),
-            const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'AI 노무 상담사',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                Text(
-                  '노동법 궁금증을 해결해드려요',
-                  style: TextStyle(fontSize: 11, color: AppColors.textTertiary),
-                ),
-              ],
-            ),
-          ],
-        ),
+        title: const Text('AI 노무 상담'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16),
@@ -233,12 +193,12 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
               width: 28,
               height: 28,
               decoration: const BoxDecoration(
-                color: _blue,
+                color: AppColors.bgMuted,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.balance_rounded,
-                color: Colors.white,
+                color: AppColors.textSecondary,
                 size: 15,
               ),
             ),
@@ -268,13 +228,8 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
                     bottomLeft: Radius.circular(msg.isUser ? 16 : 4),
                     bottomRight: Radius.circular(msg.isUser ? 4 : 16),
                   ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 6,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
+                  border:
+                      msg.isUser ? null : Border.all(color: AppColors.border),
                 ),
                 child: Text(
                   msg.text,
@@ -302,12 +257,12 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
             width: 28,
             height: 28,
             decoration: const BoxDecoration(
-              color: _blue,
+              color: AppColors.bgMuted,
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.balance_rounded,
-              color: Colors.white,
+              color: AppColors.textSecondary,
               size: 15,
             ),
           ),
@@ -365,7 +320,7 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF4E5968),
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iljujob/config/app_theme.dart';
-import 'package:app_settings/app_settings.dart'; // ✅ 추가
+import 'package:app_settings/app_settings.dart';
+import 'package:iljujob/widget/app_ui.dart';
 import '../../../data/services/notificaion_service.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
@@ -46,89 +47,89 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
       'emailConsent': emailConsent,
     });
 
-    if (success && mounted) {
+    // 토글마다 '저장했어요'를 띄우면 시끄럽다 — 실패만 알린다
+    if (!success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('알림 설정을 저장했어요.')),
+        const SnackBar(content: Text('저장하지 못했어요. 잠시 후 다시 해 주세요.')),
       );
+      _loadSettings();
     }
   }
 
-  Widget _buildServerToggle(String title,
-      {required bool value, required Function(bool) onChanged, String? subtitle}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SwitchListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: subtitle != null ? Text(subtitle) : null,
-          value: value,
-          onChanged: (v) {
-            onChanged(v);
-            _saveSettings();
-          },
-          activeThumbColor: AppColors.primary,
-        ),
-        const Divider(height: 0),
-      ],
-    );
-  }
-
-  Widget _buildDeviceSettingTile() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SwitchListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-          title: const Text('기기 알림 설정', style: TextStyle(fontWeight: FontWeight.bold)),
-          value: true, // 항상 ON 상태처럼 보이게
-          onChanged: (_) {
-            AppSettings.openAppSettings(); // ✅ 기기 설정 이동
-          },
-          activeThumbColor: AppColors.primary,
-        ),
-        const Divider(height: 0),
-      ],
+  // 2026-10: 제목과 같은 이름의 토글이 한 번 더 나오던 것 · 늘 켜진 척하던 '기기 알림' 스위치 정리
+  Widget _toggle(
+    String title, {
+    String? subtitle,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return AppMenuRow(
+      label: title,
+      subtitle: subtitle,
+      onTap: () {
+        onChanged(!value);
+        _saveSettings();
+      },
+      trailing: Switch.adaptive(
+        value: value,
+        activeTrackColor: AppColors.primary,
+        onChanged: (v) {
+          onChanged(v);
+          _saveSettings();
+        },
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('알림설정'),
-        leading: IconButton(
-          tooltip: '뒤로',
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
+      appBar: AppBar(title: const Text('알림 설정')),
       body: ListView(
         children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-            child: Text('기기 알림 설정', style: TextStyle(fontWeight: FontWeight.bold)),
+          AppMenuSection(
+            children: [
+              AppMenuRow(
+                label: '휴대폰 알림 설정',
+                subtitle: '알림이 안 오면 여기서 알바일주 알림을 켜 주세요',
+                value: '열기',
+                onTap: AppSettings.openAppSettings,
+              ),
+            ],
           ),
-          _buildDeviceSettingTile(),
-
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-            child: Text('매칭 관련 알림 동의', style: TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 8),
+          AppMenuSection(
+            title: '활동 알림',
+            children: [
+              _toggle(
+                '지원·채팅 알림',
+                subtitle: '사장님 답장, 채용 확정, 출근 확인',
+                value: matchAlert,
+                onChanged: (v) => setState(() => matchAlert = v),
+              ),
+            ],
           ),
-          _buildServerToggle(
-            '매칭 관련 알림 동의',
-            value: matchAlert,
-            onChanged: (v) => setState(() => matchAlert = v),
-            subtitle: '매칭 완료, 취소, 채팅 등 활동 알림 수신',
+          const SizedBox(height: 8),
+          AppMenuSection(
+            title: '혜택·이벤트 소식',
+            children: [
+              _toggle(
+                '앱 푸시',
+                value: pushConsent,
+                onChanged: (v) => setState(() => pushConsent = v),
+              ),
+              _toggle(
+                '문자(SMS)',
+                value: smsConsent,
+                onChanged: (v) => setState(() => smsConsent = v),
+              ),
+              _toggle(
+                '이메일',
+                value: emailConsent,
+                onChanged: (v) => setState(() => emailConsent = v),
+              ),
+            ],
           ),
-
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-            child: Text('광고성 정보 수신 동의', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          _buildServerToggle('앱 푸시 수신 동의', value: pushConsent, onChanged: (v) => setState(() => pushConsent = v)),
-          _buildServerToggle('SMS/MMS 수신 동의', value: smsConsent, onChanged: (v) => setState(() => smsConsent = v)),
-          _buildServerToggle('이메일 수신 동의', value: emailConsent, onChanged: (v) => setState(() => emailConsent = v)),
         ],
       ),
     );

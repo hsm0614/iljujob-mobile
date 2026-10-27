@@ -690,7 +690,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
     );
   }
 
-  /// 상태 묶음 칩: 전체 · 할 일 · 답장 대기 · 끝남 (개수 함께). 할 일이 있으면 그게 먼저 보인다
+  /// 상태 묶음 칩: 전체 · 할 일 · 답장 대기 · 지난 지원 (개수 함께). 할 일이 있으면 그게 먼저 보인다
   Widget _statusChips() {
     Widget chip(String key, String label) {
       final selected = filterStatus == key;
@@ -728,7 +728,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
             chip('전체', '전체'),
             chip('todo', '할 일'),
             chip('waiting', '답장 대기'),
-            chip('done', '끝남'),
+            chip('done', '지난 지원'),
           ],
         ),
       ),
