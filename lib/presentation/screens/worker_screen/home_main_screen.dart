@@ -2456,8 +2456,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             : job.nearestFrom(currentLatitude, currentLongitude);
     final baseLocation = _trimProvince(nearest?.address ?? job.location);
     final extraCount = job.geoPoints.length - 1;
-    final String placeText =
-        extraCount > 0 ? '$baseLocation 외 $extraCount곳' : baseLocation;
 
     final String? distanceText =
         distanceKm == null
