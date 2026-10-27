@@ -177,7 +177,7 @@ class JobListTile extends StatelessWidget {
                   ],
                 ),
               ),
-              // 오른쪽 칸은 모든 공고가 같다 (사진 있든 없든) — 사진 + 모서리 하트 + 지원하기
+              // 오른쪽 칸 폭은 모든 공고가 같다 — 사진(없으면 낮은 띠) + 지원하기
               const SizedBox(width: 12),
               SizedBox(
                 width: _thumb,
@@ -222,6 +222,7 @@ class _Thumb extends StatelessWidget {
   final String? imageUrl;
   final double size;
   const _Thumb({required this.imageUrl, required this.size});
+  static const _compact = 48.0;
 
   @override
   Widget build(BuildContext context) {
@@ -234,25 +235,37 @@ class _Thumb extends StatelessWidget {
         -0.231, 0, 0, 0, 252.0, //
         0, 0, 0, 1, 0,
       ]),
-      child: Image.asset(
-        JobListTile.defaultImage,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-      ),
+      child: Image.asset(JobListTile.defaultImage, height: _compact),
+    );
+    // 사진 없는 기업이 대부분이라 정사각 심볼이 줄 높이를 다 먹었다 —
+    // 없으면 낮은 띠(폭 그대로, 높이 48)로 줄여 한 화면에 공고가 더 보이게
+    final placeholder = Container(
+      width: size,
+      height: _compact,
+      color: AppColors.bgMuted,
+      alignment: Alignment.center,
+      child: fallback,
     );
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.md),
       child:
           imageUrl == null
-              ? fallback
+              ? placeholder
               : Image.network(
                 imageUrl!,
                 width: size,
                 height: size,
                 cacheWidth: (size * 3).round(),
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => fallback,
+                errorBuilder:
+                    (_, __, ___) => SizedBox(
+                      width: size,
+                      height: size,
+                      child: ColoredBox(
+                        color: AppColors.bgMuted,
+                        child: Center(child: fallback),
+                      ),
+                    ),
               ),
     );
   }

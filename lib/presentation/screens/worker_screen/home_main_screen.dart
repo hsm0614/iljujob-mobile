@@ -2468,7 +2468,13 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     // 레퍼런스(급구)처럼 '누가 뽑는지'를 먼저. 회사명 없으면 주소
     final company = (job.company ?? '').trim();
     final String locationLine = [
-      company.isNotEmpty ? company : placeText,
+      // 주소 전체는 거리를 밀어내 잘린다 — 시·구까지만 ('경기 안산시 단원구')
+      company.isNotEmpty
+          ? company
+          : [
+            baseLocation.split(RegExp(r'\s+')).take(3).join(' '),
+            if (extraCount > 0) '외 $extraCount곳',
+          ].join(' '),
       if (distanceText != null) '${distanceText}km',
     ].join(' · ');
 
