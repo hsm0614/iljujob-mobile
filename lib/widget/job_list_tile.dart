@@ -225,13 +225,13 @@ class _Thumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 사진이 없으면 알바일주 심볼 (대표 결정). 파란 바탕이 반복되면 시선이 쏠려
-    // 반전(연회색 바탕 + 파란 심볼): logo_mark R 채널 기준 선형 매핑
+    // 사진이 없으면 알바일주 심볼 (대표 결정). 파란 심볼도 반복되면 시선이 쏠려
+    // 회색 톤(바탕 #F2F4F6 + 심볼 #B0B8C1): logo_mark R 채널(바탕 26 · 심볼 255) 선형 매핑
     final fallback = ColorFiltered(
       colorFilter: const ColorFilter.matrix(<double>[
-        -0.799, 0, 0, 0, 262.8, //
-        -0.463, 0, 0, 0, 256.0, //
-        0.031, 0, 0, 0, 247.2, //
+        -0.288, 0, 0, 0, 249.5, //
+        -0.262, 0, 0, 0, 250.8, //
+        -0.231, 0, 0, 0, 252.0, //
         0, 0, 0, 1, 0,
       ]),
       child: Image.asset(

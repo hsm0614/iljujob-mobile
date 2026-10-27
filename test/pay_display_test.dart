@@ -11,4 +11,17 @@ void main() {
     expect(formatJobPay('120000', '일급'), '120,000원');
     expect(formatJobPay('120000', '일급', includeType: true), '일급 120,000원');
   });
+
+  test('요일·시급·게시 시각 표기', () {
+    expect(formatWeekdays('월,화,수,목,금,토'), '월~토');
+    expect(formatWeekdays('월,화,수,목,금'), '평일');
+    expect(formatWeekdays('월,수'), '월·수');
+    expect(hourlyFromDaily('150000', '일급', '07:00 ~ 16:30'), '15,790원');
+    expect(hourlyFromDaily('150000', '시급', '07:00 ~ 16:30'), isNull);
+    final now = DateTime(2026, 10, 27, 15, 10);
+    expect(formatPostedAgo(DateTime(2026, 10, 27, 15, 5).toUtc(), now: now), '5분 전');
+    expect(formatPostedAgo(DateTime(2026, 10, 27, 9).toUtc(), now: now), '6시간 전');
+    expect(formatPostedAgo(DateTime(2026, 10, 26, 20).toUtc(), now: now), '어제');
+    expect(formatPostedAgo(DateTime(2026, 10, 10).toUtc(), now: now), '10월 10일');
+  });
 }

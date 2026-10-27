@@ -13,7 +13,6 @@ import 'dart:convert';
 import 'package:iljujob/data/models/ad_banner.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:math';
-import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'package:iljujob/data/services/log_service.dart';
@@ -500,10 +499,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         builder: (_) => JobDetailScreen(job: job, autoApply: autoApply),
       ),
     );
-    // 상세에서 지원했을 수 있다 — 돌아오면 '지원 완료' 표시를 맞춘다
+    // 상세에서 지원·관심 저장했을 수 있다 — 돌아오면 '지원 완료'·하트를 맞춘다
     final userId = (await SharedPreferences.getInstance()).getInt('userId');
     if (userId == null || !mounted) return;
-    await fetchAppliedJobs(userId);
+    await Future.wait([fetchAppliedJobs(userId), _loadBookmarks()]);
     if (mounted) setState(() {});
   }
 
@@ -2509,7 +2508,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     // 전부 상단 위치줄·뱃지·AI 요약에 이미 있는 내용이라 카드만 길어졌다.
 
     final schedule = [
-      if (_weekdaysText(job.weekdays) case final w?) w,
+      if (formatWeekdays(job.weekdays) case final w?) w,
       if (job.startDate != null && job.endDate != null)
         _formatDate(job.startDate!) == _formatDate(job.endDate!)
             ? _formatDate(job.startDate!) // 하루짜리는 '10.19' 한 번만
@@ -2517,7 +2516,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       // 시간 미입력 공고는 "~"만 노출되던 문제 — 값 있을 때만 표시
       if (job.workingHours.replaceAll('~', '').trim().isNotEmpty)
         job.workingHours,
-      if (_hourlyFromDaily(job) case final h?) '시급 $h',
+      if (hourlyFromDaily(job.pay, job.payType, job.workingHours) case final h?) '시급 $h',
     ].join(' · ');
     final rawImage = job.imageUrls.isEmpty ? null : job.imageUrls.first;
 
@@ -2543,46 +2542,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       onBookmark: () => _toggleBookmark(job.id.toString()),
       onApply: () => _openJobDetail(job, autoApply: true),
     );
-  }
-
-  /// '월,화,수,목,금' → '평일', 7일 → '매일', '협의: 주 3회 이상' → '주 3회 이상'. 없으면 null
-  static String? _weekdaysText(String? raw) {
-    final v = (raw ?? '').trim();
-    if (v.isEmpty) return null;
-    if (v.startsWith('협의')) {
-      final t = v.replaceFirst(RegExp(r'^협의\s*:?\s*'), '').trim();
-      return t.isEmpty ? '요일 협의' : t;
-    }
-    const order = '월화수목금토일';
-    final days =
-        v.split(',').map((e) => e.trim()).where(order.contains).toSet().toList()
-          ..sort((a, b) => order.indexOf(a).compareTo(order.indexOf(b)));
-    final joined = days.join();
-    if (joined == '월화수목금') return '평일';
-    if (joined == order) return '매일';
-    if (joined == '토일') return '주말';
-    if (days.length >= 3 && order.contains(joined)) {
-      return '${days.first}~${days.last}';
-    }
-    return days.join('·');
-  }
-
-  /// 일급 ÷ 근무시간 → '11,250원' (레퍼런스의 '시급 13,000원'). 계산 못 하면 null.
-  /// 휴게시간은 모른다 — 공고에 없어서 단순 나눗셈. 야간(22:00~06:00)은 자정을 넘겨 계산.
-  String? _hourlyFromDaily(Job job) {
-    if (job.payType != '일급') return null;
-    final pay = int.tryParse(job.pay.replaceAll(_reNonDigit, '')) ?? 0;
-    final m = RegExp(
-      r'(\d{1,2}):(\d{2})\s*~\s*(\d{1,2}):(\d{2})',
-    ).firstMatch(job.workingHours);
-    if (pay <= 0 || m == null) return null;
-    final start = int.parse(m[1]!) * 60 + int.parse(m[2]!);
-    var end = int.parse(m[3]!) * 60 + int.parse(m[4]!);
-    if (end <= start) end += 24 * 60;
-    final hours = (end - start) / 60;
-    if (hours < 1) return null;
-    final hourly = (pay / hours / 10).round() * 10;
-    return '${NumberFormat('#,###').format(hourly)}원';
   }
 
   /// 검색창(펼쳤을 때) + 한 줄 알약 행: 범위 · AI 검색 · 필터 · 위치.
