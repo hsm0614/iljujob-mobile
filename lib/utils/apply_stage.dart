@@ -12,13 +12,32 @@ class ApplyStage {
 
   /// 내 활동 탭 묶음: 'todo'(내가 할 일 있음) · 'waiting'(사장님 답장 대기) · 'done'(끝남)
   String get group =>
-      next == null ? 'done' : (this == waiting ? 'waiting' : 'todo');
+      next == null
+          ? 'done'
+          : (this == waiting || this == waitingLong ? 'waiting' : 'todo');
 
   static const waiting = ApplyStage(
     '답장 기다리는 중',
     '채팅에서 먼저 인사하기',
     AppColors.textSecondary,
   );
+
+  /// 하루 넘게 답이 없다 — 답장의 90%는 24시간 안에 온다(2026-10 실측).
+  /// 기다리게 두지 말고 다음 지원으로 보낸다
+  static const waitingLong = ApplyStage(
+    '답장 기다리는 중',
+    '근처 비슷한 공고 보기',
+    AppColors.textSecondary,
+  );
+}
+
+/// 사장님 답장 속도 (my-jobs 의 client_reply_*). 표본 3건 미만이거나 느리면 null —
+/// '느린 편' 같은 낙인은 공고가 적은 지역에서 지원 자체를 줄여서 안 쓴다
+String? replySpeedLabel(int n, int within1h, int within24h) {
+  if (n < 3) return null;
+  if (within1h * 2 >= n) return '보통 1시간 안에 답장해요';
+  if (within24h * 2 >= n) return '보통 하루 안에 답장해요';
+  return null;
 }
 
 /// 출근확정(work_confirmations.status) 이름 — 채팅 카드 칩과 내 활동이 공유
@@ -41,6 +60,8 @@ ApplyStage applyStageOf({
   bool isConfirmed = false,
   bool isCompleted = false,
   bool clientReplied = false,
+  DateTime? appliedAt,
+  DateTime? now,
 }) {
   switch (workStatus) {
     case 'proposed':
@@ -60,5 +81,6 @@ ApplyStage applyStageOf({
   if (clientReplied) {
     return const ApplyStage('사장님이 답장했어요', '채팅 확인하기', AppColors.primary);
   }
-  return ApplyStage.waiting;
+  final since = (now ?? DateTime.now()).difference(appliedAt ?? DateTime.now());
+  return since.inHours >= 24 ? ApplyStage.waitingLong : ApplyStage.waiting;
 }

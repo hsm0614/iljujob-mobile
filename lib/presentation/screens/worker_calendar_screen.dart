@@ -12,6 +12,8 @@ import '../../data/services/screen_analytics_service.dart';
 import '../widgets/albailju_common.dart';
 import '../../config/messages.dart';
 import '../../config/app_theme.dart';
+import '../../utils/apply_stage.dart';
+import 'worker_screen/job_detail_screen.dart';
 
 // =====================
 // 색상 팔레트
@@ -180,7 +182,15 @@ Future<DateTime?> showCalendarBottomPicker(
 // =====================
 class WorkerCalendarScreen extends StatefulWidget {
   final DateTime? initialFocusDay;
-  const WorkerCalendarScreen({super.key, this.initialFocusDay});
+  /// 빈 달력에서 다음 행동으로 — 탭 안에서만 넘어온다 (단독 화면이면 null)
+  final VoidCallback? onGoHome;
+  final VoidCallback? onGoActivity;
+  const WorkerCalendarScreen({
+    super.key,
+    this.initialFocusDay,
+    this.onGoHome,
+    this.onGoActivity,
+  });
 
   @override
   State<WorkerCalendarScreen> createState() => _WorkerCalendarScreenState();
@@ -205,6 +215,11 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
   // ── 진행 중인 fetch를 취소하기 위한 토큰
   int _fetchGeneration = 0;
 
+  // ── 지원했지만 아직 안 끝난 공고 (근무일이 있는 것만 달력에 흐리게)
+  // 직접 기록하는 사람은 90일에 15명뿐이라, 지원만으로도 달력이 차게 한다 (2026-10)
+  final Map<DateTime, List<(Job, ApplyStage)>> _appliedByDay = {};
+  int _waitingCount = 0;
+
   // ──────────────────────────────────────────
   // 초기화
   // ──────────────────────────────────────────
@@ -215,6 +230,48 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     _focusedDay = _dateOnly(widget.initialFocusDay ?? DateTime.now());
     _selectedDay = _dateOnly(_focusedDay);
     _fetchMonth(_focusedDay);
+    _loadApplied();
+  }
+
+  Future<void> _loadApplied() async {
+    try {
+      final res = await AuthenticatedHttpClient.get(
+        Uri.parse('$baseUrl/api/applications/my-jobs'),
+      );
+      if (res.statusCode != 200) return;
+      final byDay = <DateTime, List<(Job, ApplyStage)>>{};
+      var waiting = 0;
+      for (final r in (jsonDecode(res.body) as List).whereType<Map>()) {
+        final row = Map<String, dynamic>.from(r);
+        final stage = applyStageOf(
+          jobStatus: '${row['status'] ?? ''}',
+          workStatus: row['work_status'] as String?,
+          isConfirmed: '${row['is_confirmed']}' == '1',
+          isCompleted: '${row['is_completed']}' == '1',
+          clientReplied: '${row['client_replied']}' == '1',
+          appliedAt: DateTime.tryParse('${row['applied_at']}'),
+        );
+        if (stage.group == 'done') continue;
+        if (stage.group == 'waiting') waiting++;
+        final job = Job.fromJson(row);
+        final start = job.startDate;
+        if (start == null) continue;
+        final first = _dateOnly(start);
+        final last = _dateOnly(job.endDate ?? start);
+        // 장기 공고의 긴 기간은 달력을 덮는다 — 2주까지만
+        for (var d = first;
+            !d.isAfter(last) && d.difference(first).inDays < 14;
+            d = d.add(const Duration(days: 1))) {
+          (byDay[d] ??= []).add((job, stage));
+        }
+      }
+      _safeSetState(() {
+        _appliedByDay
+          ..clear()
+          ..addAll(byDay);
+        _waitingCount = waiting;
+      });
+    } catch (_) {}
   }
 
   // ──────────────────────────────────────────
@@ -798,7 +855,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     return Scaffold(
       backgroundColor: kBg,
       appBar: AlbailjuAppBar(
-        title: '내 정산 달력',
+        title: '캘린더',
         brand: true,
         actions: [
           IconButton(
@@ -832,9 +889,13 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                     child: Column(
                       children: [
                         if (_error != null) _warningBox(_error!),
-                        _buildSummaryCard(total),
-                        _buildMonthInsightCard(),
-                        _buildBreakdownCard(),
+                        if (_items.where((it) => !_isCancelled(it)).isEmpty)
+                          _buildEmptyMonth()
+                        else ...[
+                          _buildSummaryCard(total),
+                          _buildMonthInsightCard(),
+                          _buildBreakdownCard(),
+                        ],
                         const SizedBox(height: 12),
                         _buildCalendar(),
                         const SizedBox(height: 10),
@@ -850,6 +911,87 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
   // ──────────────────────────────────────────
   // 섹션 위젯
   // ──────────────────────────────────────────
+
+  /// 이번 달 기록이 없을 때. 예전엔 0원 타일 3개 + 0% 막대 + 빈 안내가 화면 절반이었다
+  Widget _buildEmptyMonth() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: _cardDecoration(),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('이번 달 근무 기록이 없어요', style: AppTextStyles.h3),
+            const SizedBox(height: 6),
+            const Text(
+              '일한 날을 기록하면 이번 달 번 돈이 자동으로 계산돼요.',
+              style: AppTextStyles.body2,
+            ),
+            if (_waitingCount > 0 && widget.onGoActivity != null) ...[
+              const SizedBox(height: 14),
+              InkWell(
+                onTap: widget.onGoActivity,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.bgMuted,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '답장 기다리는 지원 $_waitingCount건',
+                          style: AppTextStyles.body2.copyWith(
+                            color: AppColors.textPrimary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const Icon(
+                        Icons.chevron_right_rounded,
+                        size: 20,
+                        color: AppColors.textTertiary,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed:
+                        () => _openEditSheet(
+                          forceDate: _selectedDay ?? _dateOnly(DateTime.now()),
+                        ),
+                    child: const Text('근무 기록하기'),
+                  ),
+                ),
+                if (widget.onGoHome != null) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: FilledButton(
+                      onPressed: widget.onGoHome,
+                      child: const Text('근처 공고 보기'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildSummaryCard(int total) {
     return Padding(
@@ -1127,11 +1269,29 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         calendarBuilders: CalendarBuilders(
           markerBuilder: (context, day, _) {
             final bucket = _sumByDay[_dateOnly(day)];
-            if (bucket == null) return const SizedBox.shrink();
-            final scheduled = bucket['scheduled'] ?? 0;
-            final completed = bucket['completed'] ?? 0;
-            if (scheduled <= 0 && completed <= 0)
-              return const SizedBox.shrink();
+            final scheduled = bucket?['scheduled'] ?? 0;
+            final completed = bucket?['completed'] ?? 0;
+            if (scheduled <= 0 && completed <= 0) {
+              if (!_appliedByDay.containsKey(_dateOnly(day))) {
+                return const SizedBox.shrink();
+              }
+              // 지원만 한 날 — 금액 대신 회색 점 (확정 전이라 돈으로 안 셈)
+              return Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  width: 5,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color:
+                        isSameDay(day, _selectedDay)
+                            ? Colors.white
+                            : AppColors.textTertiary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              );
+            }
 
             final showAmount = scheduled > 0 ? scheduled : completed;
             final markerColor =
@@ -1195,6 +1355,63 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
   Widget _buildDayList(DateTime day) {
     final list = _itemsOf(day);
     final title = DateFormat('yyyy.MM.dd (E)', 'ko_KR').format(day);
+    final applied = _appliedByDay[_dateOnly(day)] ?? const [];
+
+    if (list.isEmpty && applied.isNotEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: AppTextStyles.h3),
+          const SizedBox(height: 4),
+          const Text('이날 근무하는 공고에 지원했어요', style: AppTextStyles.caption),
+          const SizedBox(height: 8),
+          for (final (job, stage) in applied)
+            InkWell(
+              onTap:
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => JobDetailScreen(job: job),
+                    ),
+                  ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            job.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.body1.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            job.workingHours,
+                            style: AppTextStyles.caption,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      stage.label,
+                      style: AppTextStyles.captionBold.copyWith(
+                        color: stage.color,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+        ],
+      );
+    }
 
     if (list.isEmpty) {
       return Center(
@@ -1654,14 +1871,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
   BoxDecoration _cardDecoration() => BoxDecoration(
     color: kCard,
     borderRadius: BorderRadius.circular(18),
-    border: Border.all(color: kBorder),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withOpacity(0.04),
-        blurRadius: 18,
-        offset: const Offset(0, 10),
-      ),
-    ],
+    border: Border.all(color: AppColors.borderSub),
   );
 
   Widget _warningBox(String text) {
@@ -1799,11 +2009,8 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color:
-              strong ? kBrandBlue.withOpacity(0.10) : AppColors.bgPage,
+          color: AppColors.bgMuted,
           borderRadius: BorderRadius.circular(14),
-          border:
-              strong ? Border.all(color: kBrandBlue.withOpacity(0.18)) : null,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

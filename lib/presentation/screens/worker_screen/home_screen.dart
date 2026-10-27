@@ -337,7 +337,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _screenForIndex(int index) {
     return switch (index) {
-      0 => const WorkerCalendarScreen(),
+      0 => WorkerCalendarScreen(
+        onGoHome: () => _onItemTapped(2),
+        onGoActivity: () => _onItemTapped(1),
+      ),
       1 => MyAppliedJobsScreen(onGoHome: () => _onItemTapped(2)),
       3 => ChatListScreen(onMessagesRead: _fetchUnreadCount),
       4 => const WorkerMyPageScreen(),
