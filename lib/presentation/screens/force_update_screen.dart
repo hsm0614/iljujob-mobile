@@ -35,7 +35,7 @@ class ForceUpdateScreen extends StatelessWidget {
               const Text(
                 '업데이트가 필요해요',
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: AppFontSize.h1,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
                 ),
@@ -45,7 +45,7 @@ class ForceUpdateScreen extends StatelessWidget {
                 '더 나은 서비스 제공을 위해\n최신 버전으로 업데이트해 주세요.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: AppFontSize.body1,
                   color: Colors.white70,
                   height: 1.6,
                 ),
@@ -66,7 +66,7 @@ class ForceUpdateScreen extends StatelessWidget {
                   ),
                   child: const Text(
                     '지금 업데이트',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                    style: TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w800),
                   ),
                 ),
               ),

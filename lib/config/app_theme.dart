@@ -119,6 +119,27 @@ class AppRadius {
 }
 
 // ─────────────────────────────────────────────────────────
+// 글자 크기 단계 (2026-10). 화면마다 숫자를 직접 쓰다 19·21·22·26pt가 섞였다 —
+// 크기는 이 단계만 쓴다. 가능하면 AppTextStyles 를 먼저 쓰고, 굵기·색만 바꿀 때 이걸 쓴다.
+// 11pt 하한(DESIGN.md) — 그보다 작은 단계는 없다.
+// ─────────────────────────────────────────────────────────
+class AppFontSize {
+  AppFontSize._();
+  static const double caption = 11;
+  static const double meta = 12;
+  static const double body2 = 13;
+  static const double button = 14;
+  static const double body1 = 15;
+  static const double buttonLg = 16;
+  static const double title = 17;
+  static const double titleLg = 18;
+  static const double h2 = 20;
+  static const double h1 = 24;
+  static const double display = 28;
+  static const double hero = 46;
+}
+
+// ─────────────────────────────────────────────────────────
 // 텍스트 스타일 토큰
 // ─────────────────────────────────────────────────────────
 class AppTextStyles {
@@ -283,6 +304,13 @@ class AppTheme {
         splashFactory: NoSplash.splashFactory,
         splashColor: Colors.transparent,
         highlightColor: const Color(0x0F000000), // 검정 6%
+        // 화면 전환: 안드로이드도 iOS처럼 오른쪽에서 밀려 들어온다 (기본은 확대·페이드라 플랫폼마다 달랐다)
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
+        ),
         useMaterial3: true,
         // 알바일주는 라이트 전용이다. 화면 색이 하드코딩으로 흩어져 있어
         // 다크 팔레트를 얹으면 절반만 뒤집힌 화면이 나온다.

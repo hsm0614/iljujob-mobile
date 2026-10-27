@@ -23,7 +23,7 @@ class PassPaymentSuccessScreen extends StatelessWidget {
             const SizedBox(height: 20),
             const Text(
               '결제가 완료됐어요.',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: AppFontSize.h2, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             Text('결제 번호: $impUid'),

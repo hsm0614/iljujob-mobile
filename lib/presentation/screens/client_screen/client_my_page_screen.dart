@@ -614,7 +614,7 @@ class _ProfileCard extends StatelessWidget {
                             Text(
                               subscriptionPlan!.toUpperCase(),
                               style: const TextStyle(
-                                fontSize: 11,
+                                fontSize: AppFontSize.caption,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
                               ),
@@ -706,14 +706,14 @@ class _TwoLine extends StatelessWidget {
         children: [
           TextSpan(
             text: '$subtitle: ',
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            style: const TextStyle(color: AppColors.textSecondary, fontSize: AppFontSize.body2),
           ),
           TextSpan(
             text: title,
             style: const TextStyle(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w700,
-              fontSize: 15,
+              fontSize: AppFontSize.body1,
             ),
           ),
         ],
@@ -759,7 +759,7 @@ class _ChipText extends StatelessWidget {
                     text,
                     maxLines: 1,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -772,7 +772,7 @@ class _ChipText extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: AppFontSize.body2,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -807,7 +807,7 @@ class _SectionCard extends StatelessWidget {
               child: Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: AppFontSize.buttonLg,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
                 ),
@@ -932,13 +932,13 @@ class _BizInfoItem extends StatelessWidget {
             width: 110,
             child: Text(
               k,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 14),
+              style: const TextStyle(color: AppColors.textSecondary, fontSize: AppFontSize.button),
             ),
           ),
           Expanded(
             child: Text(
               v,
-              style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+              style: const TextStyle(fontSize: AppFontSize.button, color: AppColors.textPrimary),
             ),
           ),
         ],
@@ -961,7 +961,7 @@ class _StatusPill extends StatelessWidget {
       child: Text(
         text,
         style: const TextStyle(
-          fontSize: 12,
+          fontSize: AppFontSize.meta,
           fontWeight: FontWeight.w700,
           color: AppColors.primary,
         ),
@@ -1026,14 +1026,14 @@ class _ConfirmSheet extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+            style: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
           Text(
             message,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: AppFontSize.body2,
               color: AppColors.textSecondary,
               height: 1.35,
             ),

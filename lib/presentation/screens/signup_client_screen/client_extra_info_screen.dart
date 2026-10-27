@@ -85,7 +85,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
               const Text(
                 '담당자 이름을\n알려주세요',
                 style: TextStyle(
-                  fontSize: 26,
+                  fontSize: AppFontSize.h1,
                   fontWeight: FontWeight.w800,
                   height: 1.3,
                   color: AppColors.textPrimary,
@@ -95,7 +95,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
               const Text(
                 '지원자와의 채팅 및 고객센터 안내에 사용돼요.',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppFontSize.button,
                   color: AppColors.textSecondary,
                   height: 1.5,
                 ),
@@ -118,7 +118,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                       '담당자 이름',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        fontSize: 13,
+                        fontSize: AppFontSize.body2,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -192,7 +192,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                           : const Text(
                             '완료하고 시작하기',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: AppFontSize.buttonLg,
                               fontWeight: FontWeight.w700,
                             ),
                           ),

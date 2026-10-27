@@ -22,7 +22,7 @@ class PassPaymentFailedScreen extends StatelessWidget {
             const SizedBox(height: 20),
             const Text(
               '결제에 실패했어요.',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: AppFontSize.h2, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             if (errorMsg != null) Text('오류 메시지: $errorMsg'),

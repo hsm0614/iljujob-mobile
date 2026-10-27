@@ -144,7 +144,7 @@ class _RecommendedSectionState extends State<RecommendedSection> {
               const SizedBox(height: 10),
               const Text(
                 'AI가 나에게 맞는 공고를 찾는 중이에요...',
-                style: TextStyle(color: Colors.black54, fontSize: 13),
+                style: TextStyle(color: Colors.black54, fontSize: AppFontSize.body2),
               ),
             ],
           ),
@@ -173,14 +173,14 @@ class _RecommendedSectionState extends State<RecommendedSection> {
                   SizedBox(width: 8),
                   Text(
                     '아직 추천 공고가 없어요',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                    style: TextStyle(fontSize: AppFontSize.button, fontWeight: FontWeight.w800),
                   ),
                 ],
               ),
               const SizedBox(height: 6),
               const Text(
                 '프로필(성별/희망직종)과 위치를 채우면 추천 정확도가 확 올라가요.',
-                style: TextStyle(fontSize: 13, color: Colors.black54, height: 1.2),
+                style: TextStyle(fontSize: AppFontSize.body2, color: Colors.black54, height: 1.2),
               ),
               const SizedBox(height: 12),
               Align(
@@ -214,12 +214,12 @@ class _RecommendedSectionState extends State<RecommendedSection> {
           if (widget.showHeader) ...[
             const Text(
               'AI 맞춤 추천',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              style: TextStyle(fontSize: AppFontSize.titleLg, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 6),
             Text(
               '총 ${items.length}개 추천',
-              style: const TextStyle(fontSize: 13, color: Colors.black54),
+              style: const TextStyle(fontSize: AppFontSize.body2, color: Colors.black54),
             ),
             const SizedBox(height: 10),
           ],
@@ -295,12 +295,12 @@ class _AiJobCard extends StatelessWidget {
                 title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                style: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 6),
               Text(
                 meta,
-                style: const TextStyle(fontSize: 13, color: Colors.black54),
+                style: const TextStyle(fontSize: AppFontSize.body2, color: Colors.black54),
               ),
 
               if (shown.isNotEmpty) ...[
@@ -369,7 +369,7 @@ class _ReasonChip extends StatelessWidget {
       child: Text(
         text,
         style: const TextStyle(
-          fontSize: 12,
+          fontSize: AppFontSize.meta,
           fontWeight: FontWeight.w800,
           color: Color(0xFF1E2A3A),
         ),

@@ -44,7 +44,7 @@ Future<void> showFreeLimitSheet(BuildContext context, String message) {
             '이번 달 무료 등록을 다 쓰셨어요',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 17,
+              fontSize: AppFontSize.title,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
             ),
@@ -54,7 +54,7 @@ Future<void> showFreeLimitSheet(BuildContext context, String message) {
             message,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: AppFontSize.body2,
               color: AppColors.textSecondary,
               height: 1.5,
             ),

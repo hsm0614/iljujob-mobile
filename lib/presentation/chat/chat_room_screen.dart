@@ -398,7 +398,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
               Text(
                 _jobPanelExpanded ? '접기' : '공고 보기',
                 style: const TextStyle(
-                  fontSize: 12,
+                  fontSize: AppFontSize.meta,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primary,
                 ),
@@ -540,7 +540,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 17,
+                        fontSize: AppFontSize.title,
                         fontWeight: FontWeight.w800,
                       ),
                       textAlign: TextAlign.center,
@@ -549,7 +549,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     const Text(
                       '솔직한 평가가 더 나은 매칭을 만들어요',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppFontSize.meta,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -579,7 +579,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     Text(
                       _ratingLabel(rating),
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppFontSize.body2,
                         fontWeight: FontWeight.w700,
                         color:
                             isGood ? AppColors.success : AppColors.urgentCall,
@@ -619,7 +619,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                 child: Text(
                                   tag,
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: AppFontSize.meta,
                                     fontWeight: FontWeight.w600,
                                     color:
                                         active
@@ -658,7 +658,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                           child: const Text(
                             '평가 제출',
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: AppFontSize.body1,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -671,7 +671,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                         '나중에 할게요',
                         style: TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 13,
+                          fontSize: AppFontSize.body2,
                         ),
                       ),
                     ),
@@ -737,7 +737,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                             Text(
                               '캘린더에서 확인할까요?',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: AppFontSize.buttonLg,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -745,7 +745,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                             Text(
                               '앱 내 캘린더에서 근무 일정을 확인해요',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: AppFontSize.meta,
                                 color: AppColors.textSecondary,
                               ),
                             ),
@@ -888,7 +888,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                         child: Text(
                           '이미 캘린더에 등록된 일정이에요',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: AppFontSize.buttonLg,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -901,7 +901,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                         ? '이 공고는 근무확정(캘박) 상태라 바로 지원 취소가 불가해요.\n먼저 "캘박 취소"를 하거나 캘린더에서 일정을 확인해 주세요.'
                         : '이 공고는 근무확정(캘박) 상태라 바로 지원 취소가 불가해요.\n현재는 취소 가능 시간이 지나 캘박 취소도 제한될 수 있어요.\n캘린더에서 일정을 확인해 주세요.',
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       height: 1.4,
                       color: AppColors.textSecondary,
                     ),
@@ -978,11 +978,11 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
             ),
             title: const Text(
               '노쇼 신고',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              style: TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w700),
             ),
             content: const Text(
               '해당 알바생이 출근하지 않았나요?\n노쇼 처리 시 알바생 신뢰도 점수가 크게 감소합니다.',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
             ),
             actions: [
               TextButton(
@@ -1066,7 +1066,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                             '노쇼 처리됐어요',
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              fontSize: 16,
+                              fontSize: AppFontSize.buttonLg,
                               color: AppColors.textPrimary,
                             ),
                           ),
@@ -1074,7 +1074,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                           Text(
                             '즉시게시 이용권 1개가 자동 환급됩니다.',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: AppFontSize.body2,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -1119,7 +1119,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
-                            fontSize: 15,
+                            fontSize: AppFontSize.body1,
                           ),
                         ),
                       ],
@@ -1136,7 +1136,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
-                        fontSize: 14,
+                        fontSize: AppFontSize.button,
                       ),
                     ),
                   ),
@@ -1204,7 +1204,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
             child: Text(
               '$peer이 알림을 꺼둔 상태라 확인이 늦을 수 있어요.',
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: AppFontSize.body2,
                 fontWeight: FontWeight.w600,
                 color: AppColors.textSecondary,
                 height: 1.4,
@@ -1237,7 +1237,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
             Text(
               '긴급호출 수락 완료',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: AppFontSize.body2,
                 fontWeight: FontWeight.w700,
                 color: Color(0xFF15803D),
               ),
@@ -1260,7 +1260,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
             SizedBox(width: 8),
             Text(
               '긴급호출을 거절했어요.',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -1286,7 +1286,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
               Text(
                 '긴급 호출이 왔어요!',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppFontSize.button,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
                 ),
@@ -1296,7 +1296,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
           const SizedBox(height: 4),
           const Text(
             '사장님이 지금 바로 일할 분을 찾고 있어요.\n수락하면 바로 연결됩니다.',
-            style: TextStyle(fontSize: 12, color: Colors.white70, height: 1.4),
+            style: TextStyle(fontSize: AppFontSize.meta, color: Colors.white70, height: 1.4),
           ),
           const SizedBox(height: 12),
           Row(
@@ -1415,7 +1415,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     child: const Text(
                       'T I P',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFontSize.caption,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary,
                       ),
@@ -1427,7 +1427,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
               Text(
                 isClient ? '여기서 첫 채용 대화를 시작해 보세요' : '여기서 첫 인사를 남겨보세요',
                 style: const TextStyle(
-                  fontSize: 15,
+                  fontSize: AppFontSize.body1,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
                 ),
@@ -1436,7 +1436,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
               RichText(
                 text: TextSpan(
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: AppFontSize.body2,
                     height: 1.4,
                     color: AppColors.textSecondary,
                   ),
@@ -1465,7 +1465,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                   const Text(
                     '알바일주 데이터 기준',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: AppFontSize.caption,
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -1491,7 +1491,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     icon: const Icon(Icons.edit_rounded, size: 14),
                     label: const Text(
                       '첫 메시지 쓰기',
-                      style: TextStyle(fontSize: 12),
+                      style: TextStyle(fontSize: AppFontSize.meta),
                     ),
                   ),
                 ],
@@ -1768,7 +1768,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                     Text(
                                       '새 메시지',
                                       style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: AppFontSize.body2,
                                         fontWeight: FontWeight.w700,
                                         color: Colors.white,
                                       ),
@@ -1850,7 +1850,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                                             : '지원을 취소해서 메시지를 보낼 수 없어요')
                                                         : '지금은 메시지를 보낼 수 없어요')),
                                         hintStyle: const TextStyle(
-                                          fontSize: 14,
+                                          fontSize: AppFontSize.button,
                                           color: AppColors.textTertiary,
                                         ),
                                       ),
@@ -1929,7 +1929,7 @@ class _CalRow extends StatelessWidget {
         child: Text(
           text,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: AppFontSize.body2,
             color: AppColors.textSecondary,
             fontWeight: FontWeight.w500,
           ),

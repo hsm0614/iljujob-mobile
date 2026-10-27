@@ -363,7 +363,7 @@ class _MessageBubble extends StatelessWidget {
                     child: Text(
                       targetName,
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFontSize.caption,
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
@@ -426,7 +426,7 @@ class _MessageBubble extends StatelessWidget {
                               : SelectableText(
                                 messageText,
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: AppFontSize.button,
                                   color:
                                       isMe
                                           ? Colors.white
@@ -460,7 +460,7 @@ class _MessageBubble extends StatelessWidget {
                                 Text(
                                   '전송 안 됨 · 탭해서 재전송',
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: AppFontSize.caption,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.error,
                                   ),
@@ -472,7 +472,7 @@ class _MessageBubble extends StatelessWidget {
                           ? const Text(
                             '전송 중…',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: AppFontSize.caption,
                               color: AppColors.textTertiary,
                             ),
                           )
@@ -486,7 +486,7 @@ class _MessageBubble extends StatelessWidget {
                               Text(
                                 DateFormat('a h:mm', 'ko_KR').format(when),
                                 style: const TextStyle(
-                                  fontSize: 11,
+                                  fontSize: AppFontSize.caption,
                                   color: AppColors.textSecondary,
                                 ),
                               ),
@@ -498,7 +498,7 @@ class _MessageBubble extends StatelessWidget {
                                       ? '읽음'
                                       : '안읽음',
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: AppFontSize.caption,
                                     color:
                                         (msg['is_read'] == 1 ||
                                                 msg['is_read'] == true)
@@ -555,7 +555,7 @@ class _BotMessageBubble extends StatelessWidget {
                   Text(
                     '일주봇',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppFontSize.meta,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
                     ),
@@ -567,7 +567,7 @@ class _BotMessageBubble extends StatelessWidget {
                 message,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSize.body2,
                   color: AppColors.textSecondary,
                   height: 1.5,
                 ),
@@ -617,7 +617,7 @@ class _HireNudgeBubble extends StatelessWidget {
                   Text(
                     '출근 확정을 제안해보세요',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
                     ),
@@ -629,7 +629,7 @@ class _HireNudgeBubble extends StatelessWidget {
                 '일정을 확정하면 전날 알림과\n출근 자동 확인이 진행돼요.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSize.body2,
                   height: 1.4,
                   color: AppColors.textSecondary,
                 ),
@@ -655,7 +655,7 @@ class _HireNudgeBubble extends StatelessWidget {
                   label: const Text(
                     '출근 확정 제안하기',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
                     ),

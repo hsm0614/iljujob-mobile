@@ -583,14 +583,14 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: AppFontSize.buttonLg,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   _maskPhone(phone),
-                  style: const TextStyle(color: Colors.black54, fontSize: 13),
+                  style: const TextStyle(color: Colors.black54, fontSize: AppFontSize.body2),
                 ),
               ],
             ),
@@ -649,7 +649,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       ),
       child: Text(
         text,
-        style: TextStyle(fontSize: 13, color: fg, height: 1.4),
+        style: TextStyle(fontSize: AppFontSize.body2, color: fg, height: 1.4),
       ),
     );
   }
@@ -840,7 +840,7 @@ class _SectionCard extends StatelessWidget {
                   title,
                   style: const TextStyle(
                     fontFamily: 'Jalnan2TTF',
-                    fontSize: 15,
+                    fontSize: AppFontSize.body1,
                     color: Colors.black87,
                   ),
                 ),
@@ -985,7 +985,7 @@ class _SheetHeader extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: Text(
             title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+            style: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w900),
           ),
         ),
       ],
@@ -1065,14 +1065,14 @@ class _ConfirmSheet extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+            style: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 6),
           Text(
             message,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: AppFontSize.body2,
               color: AppColors.textSecondary,
               height: 1.35,
             ),

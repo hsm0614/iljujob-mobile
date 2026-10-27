@@ -1253,7 +1253,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       children: [
         Text(
           title,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+          style: const TextStyle(fontSize: AppFontSize.button, fontWeight: FontWeight.w600),
         ),
         const SizedBox(width: 6),
         Container(
@@ -1503,7 +1503,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                   Text(
                                     '닫기',
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: AppFontSize.meta,
                                       fontWeight: FontWeight.w700,
                                       color: AppColors.textSecondary,
                                     ),
@@ -1527,7 +1527,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: AppFontSize.body1,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                         height: 1.3,
@@ -1844,7 +1844,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         decoration: InputDecoration(
           hintText: '공고 제목, 업종, 지역으로 검색',
           hintStyle: const TextStyle(
-            fontSize: 14,
+            fontSize: AppFontSize.button,
             color: AppColors.textTertiary,
             fontWeight: FontWeight.w400,
           ),
@@ -1869,7 +1869,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
         ),
-        style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+        style: const TextStyle(fontSize: AppFontSize.button, color: AppColors.textPrimary),
       ),
     );
   }
@@ -1930,7 +1930,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                       const Text(
                                         'AI 자연어 검색',
                                         style: TextStyle(
-                                          fontSize: 16,
+                                          fontSize: AppFontSize.buttonLg,
                                           fontWeight: FontWeight.w800,
                                         ),
                                       ),
@@ -1945,7 +1945,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                   const Text(
                                     '말하듯이 검색하세요',
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: AppFontSize.meta,
                                       color: AppColors.textSecondary,
                                     ),
                                   ),
@@ -1987,7 +1987,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                                   child: Text(
                                                     ex,
                                                     style: const TextStyle(
-                                                      fontSize: 12,
+                                                      fontSize: AppFontSize.meta,
                                                       color: AppColors.primary,
                                                       fontWeight:
                                                           FontWeight.w600,
@@ -2009,7 +2009,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                           decoration: InputDecoration(
                                             hintText: '예) 내일 오전 강남 카페 알바',
                                             hintStyle: const TextStyle(
-                                              fontSize: 14,
+                                              fontSize: AppFontSize.button,
                                               color: AppColors.textTertiary,
                                             ),
                                             border: OutlineInputBorder(
@@ -2036,7 +2036,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                                   vertical: 12,
                                                 ),
                                           ),
-                                          style: const TextStyle(fontSize: 14),
+                                          style: const TextStyle(fontSize: AppFontSize.button),
                                           onSubmitted: (_) async {
                                             if (ctrl.text.trim().isEmpty ||
                                                 searching) {
@@ -2165,7 +2165,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                           '위에서 자연어로 검색해보세요.',
                                           style: TextStyle(
                                             color: AppColors.textSecondary,
-                                            fontSize: 14,
+                                            fontSize: AppFontSize.button,
                                           ),
                                         ),
                                       )
@@ -2379,7 +2379,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           children: [
             const Text(
               '거리 설정',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: AppFontSize.body1),
             ),
             TextButton(
               onPressed: () => setState(() => _distanceExpanded = false),
@@ -2427,7 +2427,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 child: Text(
                   _distanceHint(selectedDistance),
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: AppFontSize.body2,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
@@ -2986,7 +2986,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.btnSm.copyWith(
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       color:
                           selected ? AppColors.primary : AppColors.textPrimary,
                     ),

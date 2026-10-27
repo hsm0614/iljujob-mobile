@@ -363,7 +363,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+            style: const TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
           ),
         ),
         TextButton(
@@ -382,7 +382,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
           ),
           child: const Text(
             '보기',
-            style: TextStyle(fontSize: 12, color: kBrand),
+            style: TextStyle(fontSize: AppFontSize.meta, color: kBrand),
           ),
         ),
       ],
@@ -430,7 +430,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
             const Text(
               '사장님 전화번호로\n시작해요',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: AppFontSize.h1,
                 fontWeight: FontWeight.w800,
                 height: 1.3,
                 color: AppColors.textPrimary,
@@ -439,7 +439,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
             const SizedBox(height: 8),
             const Text(
               '기존 회원이면 자동으로 로그인돼요.',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 20),
             _card(
@@ -448,7 +448,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                 children: [
                   const Text(
                     '휴대폰 번호',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: AppFontSize.body2),
                   ),
                   const SizedBox(height: 8),
                   TextField(
@@ -494,7 +494,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                         : const Text(
                           'PASS 본인인증 하기',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: AppFontSize.buttonLg,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -520,7 +520,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
             const Text(
               '담당자 정보를\n입력해주세요',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: AppFontSize.h1,
                 fontWeight: FontWeight.w800,
                 height: 1.3,
                 color: AppColors.textPrimary,
@@ -529,7 +529,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
             const SizedBox(height: 8),
             const Text(
               '채팅 및 고객센터 안내에 사용돼요.',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 20),
 
@@ -539,7 +539,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                 children: [
                   const Text(
                     '담당자 이름',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: AppFontSize.body2),
                   ),
                   const SizedBox(height: 8),
                   TextField(
@@ -610,7 +610,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                           const Text(
                             '약관 전체 동의',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: AppFontSize.button,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
                             ),
@@ -679,7 +679,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                         : const Text(
                           '동의하고 가입 완료',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: AppFontSize.buttonLg,
                             fontWeight: FontWeight.w700,
                           ),
                         ),

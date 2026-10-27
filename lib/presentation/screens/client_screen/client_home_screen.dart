@@ -187,14 +187,14 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   const SizedBox(height: 12),
                   const Text(
                     '공고 삭제',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                    style: TextStyle(fontSize: AppFontSize.titleLg, fontWeight: FontWeight.w800),
                   ),
                   const SizedBox(height: 8),
                   const Text(
                     '이 공고를 삭제할까요?\n삭제하면 되돌릴 수 없어요.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppFontSize.button,
                       height: 1.35,
                       color: AppColors.textSecondary,
                     ),
@@ -861,7 +861,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         '맞춤 인재 기능은 구독 전용입니다',
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: AppFontSize.buttonLg,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -940,7 +940,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: AppFontSize.meta,
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w700,
                       ),
@@ -949,7 +949,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     Text(
                       NumberFormat.decimalPattern().format(value),
                       style: const TextStyle(
-                        fontSize: 18,
+                        fontSize: AppFontSize.titleLg,
                         fontWeight: FontWeight.w900,
                         height: 1.1,
                       ),
@@ -1006,7 +1006,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   child: RichText(
                     text: TextSpan(
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFontSize.button,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                         height: 1.4,
@@ -1068,13 +1068,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 children: [
                   Text(
                     '안심기업 인증',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900),
+                    style: TextStyle(fontSize: AppFontSize.body2, fontWeight: FontWeight.w900),
                   ),
                   SizedBox(height: 2),
                   Text(
                     '인증을 완료하면 지원 전환율이 올라갈 수 있어요.',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppFontSize.meta,
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -1117,12 +1117,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           border: Border.all(color: AppColors.border),
         ),
         child: TextField(
-          style: const TextStyle(fontSize: 14),
+          style: const TextStyle(fontSize: AppFontSize.button),
           decoration: InputDecoration(
             prefixIcon: const Icon(Icons.search, size: 20),
             hintText: '공고 제목 또는 지역을 검색해 주세요',
             hintStyle: const TextStyle(
-              fontSize: 14,
+              fontSize: AppFontSize.button,
               color: AppColors.textTertiary,
             ),
             border: InputBorder.none,
@@ -1163,7 +1163,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               child: Text(
                 label,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSize.body2,
                   fontWeight: FontWeight.w900,
                   color: selected ? AppColors.primary : AppColors.textSecondary,
                 ),
@@ -1231,7 +1231,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   Text(
                     sortType,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -1300,7 +1300,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               '첫 공고를 올리고 지원자를 받아보세요',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 20,
+                fontSize: AppFontSize.h2,
                 fontWeight: FontWeight.w900,
                 color: AppColors.textPrimary,
               ),
@@ -1310,7 +1310,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               '근무 조건을 입력해 공고를 등록하면 지원자를 확인할 수 있어요.',
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: AppFontSize.button,
                 height: 1.45,
                 color: AppColors.textSecondary,
               ),
@@ -1355,7 +1355,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           Text(
             '총 $totalCount개 공고 · $currentPage/$totalPages페이지',
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: AppFontSize.meta,
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w600,
             ),
@@ -1467,7 +1467,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           child: Text(
             '$page',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppFontSize.meta,
               fontWeight: FontWeight.w900,
               color: isCurrent ? Colors.white : AppColors.textSecondary,
             ),
@@ -1495,7 +1495,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           Text(
             text,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: AppFontSize.caption,
               fontWeight: FontWeight.w600,
               color: color.withValues(alpha: 0.85),
               height: 1.0,
@@ -1517,7 +1517,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: AppFontSize.body2,
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w600,
             ),
@@ -1569,7 +1569,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                           Text(
                             '공고 관리',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: AppFontSize.titleLg,
                               fontWeight: FontWeight.w800,
                               color: AppColors.textPrimary,
                             ),
@@ -1578,7 +1578,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                           Text(
                             '지원자 확인, 수정, 인사이트를 이곳에서 관리합니다.',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: AppFontSize.meta,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -1814,7 +1814,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 const Text(
                   '즉시게시로 전환할까요?',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: AppFontSize.titleLg,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),
@@ -1827,7 +1827,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       ? '구독 혜택으로 즉시 게시됩니다. 이용권 차감 없이 지금 바로 공고를 노출합니다.'
                       : '즉시게시 이용권 1개를 사용해 12시간 기다리지 않고 바로 노출합니다.\n노출 기간이 3일에서 7일로 늘어납니다.',
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: AppFontSize.button,
                     color: AppColors.textSecondary,
                     height: 1.5,
                   ),
@@ -1914,7 +1914,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   const Text(
                     '이용권이 없어요',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: AppFontSize.titleLg,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
                     ),
@@ -1923,7 +1923,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   const Text(
                     '즉시게시 이용권을 구매하거나 구독 플랜을 이용해보세요.',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppFontSize.button,
                       color: AppColors.textSecondary,
                       height: 1.5,
                     ),
@@ -2028,7 +2028,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: AppFontSize.body1,
                         fontWeight: FontWeight.w900,
                         color:
                             isClosed
@@ -2134,7 +2134,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         Text(
                           '긴급 호출 발송',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppFontSize.meta,
                             fontWeight: FontWeight.w800,
                             color: AppColors.urgentCall,
                           ),
@@ -2173,7 +2173,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                           child: Text(
                             '${publishRemainText(job)} 대기 중',
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: AppFontSize.meta,
                               color: Color(0xFFB45309),
                               fontWeight: FontWeight.w600,
                             ),
@@ -2182,7 +2182,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         const Text(
                           '지금 올리기 →',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppFontSize.meta,
                             color: AppColors.primary,
                             fontWeight: FontWeight.w700,
                           ),
@@ -2214,7 +2214,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     final primaryAction = _primaryJobAction(job);
 
     final titleStyle = TextStyle(
-      fontSize: 16,
+      fontSize: AppFontSize.buttonLg,
       fontWeight: FontWeight.w800,
       color: isClosed ? AppColors.textDisabled : AppColors.textPrimary,
       decoration: isClosed ? TextDecoration.lineThrough : null,
@@ -2342,7 +2342,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       height: 1.35,
                     ),
                   ),
@@ -2374,7 +2374,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                             child: Text(
                               '${publishRemainText(job)} 대기 중',
                               style: const TextStyle(
-                                fontSize: 13,
+                                fontSize: AppFontSize.body2,
                                 color: Color(0xFFB45309),
                                 fontWeight: FontWeight.w600,
                               ),
@@ -2383,7 +2383,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                           const Text(
                             '지금 올리기 →',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: AppFontSize.body2,
                               color: AppColors.primary,
                               fontWeight: FontWeight.w700,
                             ),
@@ -2558,7 +2558,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       icon: Icon(icon, size: 18, color: c),
       label: Text(
         label,
-        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
+        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: AppFontSize.meta),
       ),
     );
   }
@@ -2633,7 +2633,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               label,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 13,
+                fontSize: AppFontSize.body2,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -2708,11 +2708,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           indicatorColor: AppColors.primary,
           labelStyle: const TextStyle(
             fontWeight: FontWeight.w700,
-            fontSize: 13,
+            fontSize: AppFontSize.body2,
           ),
           unselectedLabelStyle: const TextStyle(
             fontWeight: FontWeight.w500,
-            fontSize: 13,
+            fontSize: AppFontSize.body2,
           ),
           tabs: const [Tab(text: '전체'), Tab(text: '일급'), Tab(text: '주급')],
         ),
@@ -2837,7 +2837,7 @@ class _PrimaryJobActionButton extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFontSize.button,
                         fontWeight: FontWeight.w900,
                         color: action.color,
                       ),
@@ -2848,7 +2848,7 @@ class _PrimaryJobActionButton extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: AppFontSize.meta,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textSecondary,
                       ),
@@ -2908,7 +2908,7 @@ class _EmptyBenefitChip extends StatelessWidget {
           Text(
             label,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: AppFontSize.meta,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
             ),

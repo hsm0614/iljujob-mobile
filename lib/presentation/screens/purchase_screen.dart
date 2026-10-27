@@ -452,7 +452,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
               const Text(
                 '긴급 호출 이용권 지급 완료!',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: AppFontSize.h2,
                   fontWeight: FontWeight.w900,
                   color: _text,
                 ),
@@ -460,7 +460,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
               const SizedBox(height: 8),
               const Text(
                 '공고 등록 후 긴급 호출을 발송해보세요.',
-                style: TextStyle(fontSize: 14, color: _sub),
+                style: TextStyle(fontSize: AppFontSize.button, color: _sub),
               ),
               const SizedBox(height: 20),
               // 구독 넛지
@@ -495,7 +495,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                           Text(
                             '반복 채용은 구독으로',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: AppFontSize.body2,
                               fontWeight: FontWeight.w800,
                               color: _blue,
                             ),
@@ -504,7 +504,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                           Text(
                             '구독은 즉시게시와 먼저 연락·지도 알림을 제공합니다. 긴급호출은 별도예요.',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: AppFontSize.meta,
                               color: _sub,
                               height: 1.5,
                             ),
@@ -622,7 +622,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                         Text(
                           '즉시 게시 이용권 $count회',
                           style: const TextStyle(
-                            fontSize: 17,
+                            fontSize: AppFontSize.title,
                             fontWeight: FontWeight.w800,
                             color: _text,
                           ),
@@ -632,7 +632,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                           '회당 ${formatPrice((price / count).floor())}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: 13, color: _label),
+                          style: const TextStyle(fontSize: AppFontSize.body2, color: _label),
                         ),
                       ],
                     ),
@@ -645,7 +645,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 22,
+                          fontSize: AppFontSize.h2,
                           fontWeight: FontWeight.w900,
                           color: _blue,
                         ),
@@ -654,7 +654,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                         Text(
                           '$discount% 할인',
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: AppFontSize.meta,
                             color: AppColors.urgentCall,
                             fontWeight: FontWeight.w700,
                           ),
@@ -777,7 +777,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                         const Text(
                           '긴급 호출 이용권 1회',
                           style: TextStyle(
-                            fontSize: 17,
+                            fontSize: AppFontSize.title,
                             fontWeight: FontWeight.w800,
                             color: _text,
                           ),
@@ -785,7 +785,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                         const SizedBox(height: 3),
                         const Text(
                           '반경 5km 알바생 최대 10명 발송',
-                          style: TextStyle(fontSize: 13, color: _label),
+                          style: TextStyle(fontSize: AppFontSize.body2, color: _label),
                         ),
                         const SizedBox(height: 4),
                         Row(
@@ -801,7 +801,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                                   ? '현재 호출 가능한 알바생 $_nearbyCount명'
                                   : '근처 알바생 수 조회 중...',
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: AppFontSize.meta,
                                 color: _green,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -814,7 +814,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                   const Text(
                     '₩13,900',
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: AppFontSize.h2,
                       fontWeight: FontWeight.w900,
                       color: _red,
                     ),
@@ -874,7 +874,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                       child: Text(
                         '구독은 먼저 연락·지도 알림을 제공하며 긴급호출 이용권은 별도예요.',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: AppFontSize.caption,
                           color: _blue,
                           fontWeight: FontWeight.w600,
                           height: 1.4,
@@ -928,7 +928,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
           indicatorWeight: 2,
           labelStyle: const TextStyle(
             fontWeight: FontWeight.w700,
-            fontSize: 14,
+            fontSize: AppFontSize.button,
           ),
           tabs: const [Tab(text: '즉시 게시'), Tab(text: '긴급 호출')],
         ),
@@ -964,7 +964,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                         Text(
                           '긴급 호출 — 갑작스러운 결근, 30분 내 대타 구하기',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppFontSize.meta,
                             fontWeight: FontWeight.w700,
                             color: AppColors.urgentCall,
                           ),
@@ -973,7 +973,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                         Text(
                           '반경 5km 알바생에게 직접 메시지 · 응답 0명이면 100% 환급',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: AppFontSize.caption,
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -1076,7 +1076,7 @@ class _InstantTabState extends State<_InstantTab> {
                     const Text(
                       '보유 즉시 게시 이용권',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppFontSize.meta,
                         color: Colors.white70,
                         fontWeight: FontWeight.w500,
                       ),
@@ -1085,7 +1085,7 @@ class _InstantTabState extends State<_InstantTab> {
                     Text(
                       '${widget.remainingCount}개',
                       style: const TextStyle(
-                        fontSize: 26,
+                        fontSize: AppFontSize.h1,
                         fontWeight: FontWeight.w900,
                         color: _white,
                         height: 1,
@@ -1174,7 +1174,7 @@ class _InstantTabState extends State<_InstantTab> {
                                       child: Text(
                                         '$count',
                                         style: TextStyle(
-                                          fontSize: 18,
+                                          fontSize: AppFontSize.titleLg,
                                           fontWeight: FontWeight.w900,
                                           color: isSelected ? _white : _text,
                                         ),
@@ -1185,7 +1185,7 @@ class _InstantTabState extends State<_InstantTab> {
                                   Text(
                                     '회 이용권',
                                     style: TextStyle(
-                                      fontSize: 17,
+                                      fontSize: AppFontSize.title,
                                       fontWeight: FontWeight.w800,
                                       color: isSelected ? _blue : _text,
                                     ),
@@ -1209,7 +1209,7 @@ class _InstantTabState extends State<_InstantTab> {
                                 child: Text(
                                   tag,
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: AppFontSize.caption,
                                     fontWeight: FontWeight.w700,
                                     color: tagColor,
                                   ),
@@ -1221,7 +1221,7 @@ class _InstantTabState extends State<_InstantTab> {
                         Text(
                           desc,
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: AppFontSize.meta,
                             color: _label,
                             height: 1.4,
                           ),
@@ -1341,7 +1341,7 @@ class _UrgentTab extends StatelessWidget {
                       const Text(
                         '긴급 호출이란?',
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: AppFontSize.body1,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
                         ),
@@ -1350,7 +1350,7 @@ class _UrgentTab extends StatelessWidget {
                       const Text(
                         '알바생이 갑자기 결근하거나 급하게 인력이 필요할 때 사용하는 기능이에요. 공고 위치 기준 반경 5km 내 활동 중인 알바생에게 사장님이 직접 인앱 메시지를 보낼 수 있어요.',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: AppFontSize.body2,
                           color: AppColors.textSecondary,
                           height: 1.55,
                         ),
@@ -1391,7 +1391,7 @@ class _UrgentTab extends StatelessWidget {
                           const Text(
                             '보유 긴급 호출 이용권',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: AppFontSize.meta,
                               color: Colors.white70,
                               fontWeight: FontWeight.w500,
                             ),
@@ -1400,7 +1400,7 @@ class _UrgentTab extends StatelessWidget {
                           Text(
                             '$remainingCount개',
                             style: const TextStyle(
-                              fontSize: 26,
+                              fontSize: AppFontSize.h1,
                               fontWeight: FontWeight.w900,
                               color: _white,
                               height: 1,
@@ -1453,14 +1453,14 @@ class _UrgentTab extends StatelessWidget {
                                 Text(
                                   '긴급 호출 이용권',
                                   style: TextStyle(
-                                    fontSize: 17,
+                                    fontSize: AppFontSize.title,
                                     fontWeight: FontWeight.w800,
                                     color: _text,
                                   ),
                                 ),
                                 Text(
                                   '단건 구매 · 1회 사용',
-                                  style: TextStyle(fontSize: 12, color: _label),
+                                  style: TextStyle(fontSize: AppFontSize.meta, color: _label),
                                 ),
                               ],
                             ),
@@ -1468,7 +1468,7 @@ class _UrgentTab extends StatelessWidget {
                           const Text(
                             '₩13,900',
                             style: TextStyle(
-                              fontSize: 24,
+                              fontSize: AppFontSize.h1,
                               fontWeight: FontWeight.w900,
                               color: AppColors.urgentCall,
                             ),
@@ -1529,7 +1529,7 @@ class _UrgentTab extends StatelessWidget {
                             const Text(
                               '반복 채용은 구독으로',
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: AppFontSize.body2,
                                 fontWeight: FontWeight.w800,
                                 color: _blue,
                               ),
@@ -1538,7 +1538,7 @@ class _UrgentTab extends StatelessWidget {
                             const Text(
                               '라이트는 즉시게시 3회, 프로는 즉시게시 무제한입니다. 긴급호출은 별도예요.',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: AppFontSize.meta,
                                 color: _sub,
                                 height: 1.5,
                               ),
@@ -1553,7 +1553,7 @@ class _UrgentTab extends StatelessWidget {
                               child: const Text(
                                 '구독 보러가기 →',
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: AppFontSize.meta,
                                   fontWeight: FontWeight.w700,
                                   color: _blue,
                                 ),
@@ -1597,7 +1597,7 @@ class _MiniChip extends StatelessWidget {
     child: Text(
       label,
       style: const TextStyle(
-        fontSize: 11,
+        fontSize: AppFontSize.caption,
         fontWeight: FontWeight.w600,
         color: AppColors.urgentCall,
       ),
@@ -1660,7 +1660,7 @@ class _BottomCta extends StatelessWidget {
                       : Text(
                         label,
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: AppFontSize.body1,
                           fontWeight: FontWeight.w800,
                           color: active ? _white : _label,
                         ),
@@ -1711,7 +1711,7 @@ class _BuyButton extends StatelessWidget {
                 : Text(
                   label,
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: AppFontSize.body1,
                     fontWeight: FontWeight.w800,
                     color: _white,
                   ),
@@ -1743,7 +1743,7 @@ class _PriceChip extends StatelessWidget {
     child: Text(
       label,
       style: TextStyle(
-        fontSize: 12,
+        fontSize: AppFontSize.meta,
         color: color,
         fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
       ),
@@ -1778,7 +1778,7 @@ class _BenefitRow extends StatelessWidget {
         child: Text(
           text,
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: AppFontSize.body2,
             color: _sub,
             fontWeight: FontWeight.w500,
           ),

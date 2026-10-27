@@ -64,7 +64,7 @@ class _NoticeListScreenState extends State<NoticeListScreen> {
         onRefresh: _loadData,
         child:
             _isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const AppSkeletonList(rows: 8)
                 : _error != null
                 ? AppEmptyState(
                   icon: Icons.wifi_off_rounded,

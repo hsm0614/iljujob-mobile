@@ -738,7 +738,7 @@ class _PostJobFormState extends State<PostJobForm>
                 msg,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 15,
+                  fontSize: AppFontSize.body1,
                   fontWeight: FontWeight.w600,
                   color: _text,
                   height: 1.5,
@@ -760,7 +760,7 @@ class _PostJobFormState extends State<PostJobForm>
                   ),
                   child: const Text(
                     '확인',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: AppFontSize.body1),
                   ),
                 ),
               ),
@@ -954,7 +954,7 @@ class _PostJobFormState extends State<PostJobForm>
                   Text(
                     isUrgent ? '긴급 공고 등록 완료!' : '공고 등록 완료!',
                     style: const TextStyle(
-                      fontSize: 22,
+                      fontSize: AppFontSize.h2,
                       fontWeight: FontWeight.w900,
                       color: _text,
                     ),
@@ -968,7 +968,7 @@ class _PostJobFormState extends State<PostJobForm>
                         : '지금 바로 구직자에게 노출됩니다.',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: AppFontSize.button,
                       color: _sub,
                       height: 1.55,
                     ),
@@ -1023,7 +1023,7 @@ class _PostJobFormState extends State<PostJobForm>
                         isUrgent ? '긴급 호출 발송하기' : '내 공고 보러가기',
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
-                          fontSize: 16,
+                          fontSize: AppFontSize.buttonLg,
                         ),
                       ),
                     ),
@@ -1480,7 +1480,7 @@ class _PostJobFormState extends State<PostJobForm>
                   const Text(
                     '작성 중인 공고가 있어요',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: AppFontSize.titleLg,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
                     ),
@@ -1489,7 +1489,7 @@ class _PostJobFormState extends State<PostJobForm>
                   const Text(
                     '이전에 입력하던 내용을 이어서 작성할까요?',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppFontSize.button,
                       color: AppColors.textSecondary,
                     ),
                   ),
@@ -1589,7 +1589,7 @@ class _PostJobFormState extends State<PostJobForm>
                 Text(
                   '공고를 등록하고 있어요',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: AppFontSize.body1,
                     fontWeight: FontWeight.w700,
                     color: _text,
                   ),
@@ -1597,7 +1597,7 @@ class _PostJobFormState extends State<PostJobForm>
                 SizedBox(height: 4),
                 Text(
                   '사진이 있으면 조금 걸릴 수 있어요',
-                  style: TextStyle(fontSize: 12, color: _sub),
+                  style: TextStyle(fontSize: AppFontSize.meta, color: _sub),
                 ),
               ],
             ),
@@ -1658,7 +1658,7 @@ class _PostJobFormState extends State<PostJobForm>
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontSize: 22,
+                            fontSize: AppFontSize.h2,
                             fontWeight: FontWeight.w800,
                             color: _text,
                             letterSpacing: -0.3,
@@ -1671,7 +1671,7 @@ class _PostJobFormState extends State<PostJobForm>
                         // 바는 75%인데 텍스트만 6/6이라 서로 다른 말을 한다.
                         '${_q + 1}/${_totalQ + 2}',
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: AppFontSize.meta,
                           color: _label,
                           fontWeight: FontWeight.w700,
                         ),
@@ -1681,7 +1681,7 @@ class _PostJobFormState extends State<PostJobForm>
                   const SizedBox(height: 4),
                   Text(
                     _qSubs[_q],
-                    style: const TextStyle(fontSize: 13, color: _label),
+                    style: const TextStyle(fontSize: AppFontSize.body2, color: _label),
                   ),
                 ],
               ),
@@ -1755,7 +1755,7 @@ class _PostJobFormState extends State<PostJobForm>
                 Text(
                   '이전 공고 불러오기',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: AppFontSize.body2,
                     color: _sub,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1781,14 +1781,14 @@ class _PostJobFormState extends State<PostJobForm>
           if (_canNext) _nextQ();
         },
         style: const TextStyle(
-          fontSize: 18,
+          fontSize: AppFontSize.titleLg,
           fontWeight: FontWeight.w600,
           color: _text,
         ),
         decoration: InputDecoration(
           hintText: '예) 물류창고 일일 상·하차 알바',
           hintStyle: const TextStyle(
-            fontSize: 16,
+            fontSize: AppFontSize.buttonLg,
             color: _label,
             fontWeight: FontWeight.w400,
           ),
@@ -1925,7 +1925,7 @@ class _PostJobFormState extends State<PostJobForm>
                             cat.name,
                             textAlign: TextAlign.center,
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: AppFontSize.caption,
                               fontWeight:
                                   isSel ? FontWeight.w700 : FontWeight.w500,
                               color:
@@ -1955,7 +1955,7 @@ class _PostJobFormState extends State<PostJobForm>
                                 _category,
                                 // 9px → 11px (최소 가독 크기)
                                 style: const TextStyle(
-                                  fontSize: 11,
+                                  fontSize: AppFontSize.caption,
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -2003,7 +2003,7 @@ class _PostJobFormState extends State<PostJobForm>
                                 Text(
                                   cat.name,
                                   style: const TextStyle(
-                                    fontSize: 12,
+                                    fontSize: AppFontSize.meta,
                                     fontWeight: FontWeight.w700,
                                     color: _blue,
                                   ),
@@ -2090,7 +2090,7 @@ class _PostJobFormState extends State<PostJobForm>
                                           child: Text(
                                             s,
                                             style: TextStyle(
-                                              fontSize: 13,
+                                              fontSize: AppFontSize.body2,
                                               fontWeight:
                                                   sel
                                                       ? FontWeight.w700
@@ -2186,7 +2186,7 @@ class _PostJobFormState extends State<PostJobForm>
       label: Text(
         _gpsLoading ? '위치 찾는 중…' : '현재 위치로 설정',
         style: const TextStyle(
-          fontSize: 14,
+          fontSize: AppFontSize.button,
           fontWeight: FontWeight.w700,
           color: _blue,
         ),
@@ -2225,7 +2225,7 @@ class _PostJobFormState extends State<PostJobForm>
               child: Text(
                 label,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppFontSize.button,
                   fontWeight: FontWeight.w700,
                   color: sel ? Colors.white : _text,
                 ),
@@ -2335,7 +2335,7 @@ class _PostJobFormState extends State<PostJobForm>
         const Text(
           '추가 근무지',
           style: TextStyle(
-            fontSize: 11,
+            fontSize: AppFontSize.caption,
             fontWeight: FontWeight.w700,
             color: _text,
           ),
@@ -2348,7 +2348,7 @@ class _PostJobFormState extends State<PostJobForm>
         const Text(
           '근무지가 여러 곳이면 추가하세요. 각 지역 구직자에게 노출됩니다.\n'
           '무료 공고는 2곳까지, 즉시게시·긴급호출은 5곳까지 노출돼요.',
-          style: TextStyle(fontSize: 13, height: 1.45, color: _label),
+          style: TextStyle(fontSize: AppFontSize.body2, height: 1.45, color: _label),
         ),
         const SizedBox(height: 10),
         for (int i = 0; i < _extraLocations.length; i++)
@@ -2369,7 +2369,7 @@ class _PostJobFormState extends State<PostJobForm>
                     child: Text(
                       _extraLocations[i].address,
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: AppFontSize.body1,
                         fontWeight: FontWeight.w600,
                         color: _text,
                       ),
@@ -2483,7 +2483,7 @@ class _PostJobFormState extends State<PostJobForm>
                       const Text(
                         '근무지 주소',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: AppFontSize.caption,
                           fontWeight: FontWeight.w700,
                           color: _text,
                         ),
@@ -2492,7 +2492,7 @@ class _PostJobFormState extends State<PostJobForm>
                       Text(
                         _location.isNotEmpty ? _location : '주소를 검색해주세요',
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: AppFontSize.body1,
                           fontWeight: FontWeight.w600,
                           color: _location.isNotEmpty ? _text : _label,
                         ),
@@ -2614,7 +2614,7 @@ class _PostJobFormState extends State<PostJobForm>
                           const Text(
                             '근무 날짜',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: AppFontSize.caption,
                               color: _text,
                               fontWeight: FontWeight.w700,
                             ),
@@ -2625,7 +2625,7 @@ class _PostJobFormState extends State<PostJobForm>
                                 ? df.format(_startDate!)
                                 : '날짜를 선택해주세요',
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: AppFontSize.body1,
                               color: _startDate != null ? _text : _label,
                               fontWeight: FontWeight.w800,
                             ),
@@ -2694,7 +2694,7 @@ class _PostJobFormState extends State<PostJobForm>
                             child: Text(
                               d,
                               style: TextStyle(
-                                fontSize: 15,
+                                fontSize: AppFontSize.body1,
                                 fontWeight: FontWeight.w800,
                                 color: sel ? Colors.white : _sub,
                               ),
@@ -2709,10 +2709,10 @@ class _PostJobFormState extends State<PostJobForm>
             TextField(
               controller: _negoCtrl,
               onChanged: (v) => setState(() => _negotiationText = v),
-              style: const TextStyle(fontSize: 15, color: _text),
+              style: const TextStyle(fontSize: AppFontSize.body1, color: _text),
               decoration: InputDecoration(
                 hintText: '예) 주 3회, 주중 오후 가능',
-                hintStyle: const TextStyle(fontSize: 14, color: _label),
+                hintStyle: const TextStyle(fontSize: AppFontSize.button, color: _label),
                 filled: true,
                 fillColor: _bg,
                 contentPadding: const EdgeInsets.symmetric(
@@ -2735,7 +2735,7 @@ class _PostJobFormState extends State<PostJobForm>
             const SizedBox(height: 6),
             Text(
               '비워두면 요일 협의로 등록돼요.',
-              style: TextStyle(fontSize: 11, color: _label),
+              style: TextStyle(fontSize: AppFontSize.caption, color: _label),
             ),
           ],
         ],
@@ -2812,7 +2812,7 @@ class _PostJobFormState extends State<PostJobForm>
               overflow: TextOverflow.ellipsis,
               // _blue는 이 연한 파랑 위에서 3.1:1 — 12px 텍스트엔 AA 미달
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: AppFontSize.meta,
                 fontWeight: FontWeight.w800,
                 color: AppColors.primaryDark,
               ),
@@ -2881,7 +2881,7 @@ class _PostJobFormState extends State<PostJobForm>
                                   '근무 시간 설정',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
-                                    fontSize: 16,
+                                    fontSize: AppFontSize.buttonLg,
                                     fontWeight: FontWeight.bold,
                                     color: _text,
                                   ),
@@ -2927,7 +2927,7 @@ class _PostJobFormState extends State<PostJobForm>
                                     : '$h시간 $m분';
                               })()})',
                               style: const TextStyle(
-                                fontSize: 15,
+                                fontSize: AppFontSize.body1,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -2967,11 +2967,11 @@ class _PostJobFormState extends State<PostJobForm>
                                     // #9CA3AF는 흰 배경 2.54:1 — AA 미달.
                                     // 스크롤로 골라야 하는 숫자라 읽혀야 한다.
                                     normalTextStyle: const TextStyle(
-                                      fontSize: 16,
+                                      fontSize: AppFontSize.buttonLg,
                                       color: AppColors.textSecondary,
                                     ),
                                     highlightedTextStyle: const TextStyle(
-                                      fontSize: 18,
+                                      fontSize: AppFontSize.titleLg,
                                       color: _blue,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -3014,11 +3014,11 @@ class _PostJobFormState extends State<PostJobForm>
                                     // #9CA3AF는 흰 배경 2.54:1 — AA 미달.
                                     // 스크롤로 골라야 하는 숫자라 읽혀야 한다.
                                     normalTextStyle: const TextStyle(
-                                      fontSize: 16,
+                                      fontSize: AppFontSize.buttonLg,
                                       color: AppColors.textSecondary,
                                     ),
                                     highlightedTextStyle: const TextStyle(
-                                      fontSize: 18,
+                                      fontSize: AppFontSize.titleLg,
                                       color: _blue,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -3087,7 +3087,7 @@ class _PostJobFormState extends State<PostJobForm>
                           child: const Text(
                             '확인',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: AppFontSize.buttonLg,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -3148,7 +3148,7 @@ class _PostJobFormState extends State<PostJobForm>
                       child: Text(
                         t,
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: AppFontSize.button,
                           fontWeight: FontWeight.w700,
                           color: sel ? Colors.white : _sub,
                         ),
@@ -3172,7 +3172,7 @@ class _PostJobFormState extends State<PostJobForm>
             ),
             child: const Text(
               '금액은 공고에 급여 협의로 표시됩니다. 상세 정산 방식은 본문에 적어주세요.',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
             ),
           )
         else
@@ -3237,7 +3237,7 @@ class _PostJobFormState extends State<PostJobForm>
                   child: Text(
                     _payWarning!,
                     style: const TextStyle(
-                      fontSize: 12,
+                      fontSize: AppFontSize.meta,
                       fontWeight: FontWeight.w600,
                       color: AppColors.error,
                     ),
@@ -3313,7 +3313,7 @@ class _PostJobFormState extends State<PostJobForm>
                                 '임금 AI 리포트는 구독자 전용이에요',
                                 style: TextStyle(
                                   fontWeight: FontWeight.w700,
-                                  fontSize: 16,
+                                  fontSize: AppFontSize.buttonLg,
                                   color: AppColors.textPrimary,
                                 ),
                               ),
@@ -3322,7 +3322,7 @@ class _PostJobFormState extends State<PostJobForm>
                                 '업종·지역·경쟁 공고 시급을 분석해\n적정 급여를 AI가 추천해 드려요.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: AppFontSize.body2,
                                   color: AppColors.textSecondary,
                                   height: 1.5,
                                 ),
@@ -3352,7 +3352,7 @@ class _PostJobFormState extends State<PostJobForm>
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w700,
-                                      fontSize: 15,
+                                      fontSize: AppFontSize.body1,
                                     ),
                                   ),
                                 ),
@@ -3366,7 +3366,7 @@ class _PostJobFormState extends State<PostJobForm>
                                     '닫기',
                                     style: TextStyle(
                                       color: AppColors.textSecondary,
-                                      fontSize: 14,
+                                      fontSize: AppFontSize.button,
                                     ),
                                   ),
                                 ),
@@ -3412,7 +3412,7 @@ class _PostJobFormState extends State<PostJobForm>
                     Text(
                       '이 업종 임금 AI 리포트 보기',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppFontSize.meta,
                         // #9CA3AF는 이 배경에서 2.5:1 — AA 미달
                         color:
                             _subscriptionPlan != null
@@ -3468,14 +3468,14 @@ class _PostJobFormState extends State<PostJobForm>
                         Text(
                           '당일지급',
                           style: TextStyle(
-                            fontSize: 15,
+                            fontSize: AppFontSize.body1,
                             fontWeight: FontWeight.w700,
                             color: _text,
                           ),
                         ),
                         Text(
                           '근무 당일 현금 지급',
-                          style: TextStyle(fontSize: 12, color: _label),
+                          style: TextStyle(fontSize: AppFontSize.meta, color: _label),
                         ),
                       ],
                     ),
@@ -3560,7 +3560,7 @@ class _PostJobFormState extends State<PostJobForm>
                           Text(
                             '공고문을 정리하고 있어요…',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: AppFontSize.button,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
@@ -3583,7 +3583,7 @@ class _PostJobFormState extends State<PostJobForm>
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 14,
+                                fontSize: AppFontSize.button,
                                 fontWeight: FontWeight.w800,
                                 color: Colors.white,
                               ),
@@ -3602,7 +3602,7 @@ class _PostJobFormState extends State<PostJobForm>
                             child: Text(
                               _description.isNotEmpty ? '다시 생성' : '생성하기',
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: AppFontSize.meta,
                                 fontWeight: FontWeight.w800,
                                 color: _blue,
                               ),
@@ -3625,7 +3625,7 @@ class _PostJobFormState extends State<PostJobForm>
                                   ? '이번 달 소진'
                                   : '이번 달 $_aiQuotaRemaining회',
                               style: const TextStyle(
-                                fontSize: 11,
+                                fontSize: AppFontSize.caption,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
                               ),
@@ -3648,13 +3648,13 @@ class _PostJobFormState extends State<PostJobForm>
             minLines: 6,
             keyboardType: TextInputType.multiline,
             textAlignVertical: TextAlignVertical.top,
-            style: const TextStyle(fontSize: 14, color: _text, height: 1.6),
+            style: const TextStyle(fontSize: AppFontSize.button, color: _text, height: 1.6),
             decoration: InputDecoration(
               border: InputBorder.none,
               contentPadding: const EdgeInsets.all(14),
               hintText: '근무 내용, 환경, 혜택 등을 자유롭게 적어주세요',
               hintStyle: const TextStyle(
-                fontSize: 13,
+                fontSize: AppFontSize.body2,
                 color: _label,
                 height: 1.6,
               ),
@@ -3679,7 +3679,7 @@ class _PostJobFormState extends State<PostJobForm>
                     const Text(
                       '상시모집',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppFontSize.body2,
                         fontWeight: FontWeight.w700,
                         color: _sub,
                       ),
@@ -3687,7 +3687,7 @@ class _PostJobFormState extends State<PostJobForm>
                     const SizedBox(height: 2),
                     const Text(
                       '종료일 없이 계속 모집합니다',
-                      style: TextStyle(fontSize: 11, color: _label),
+                      style: TextStyle(fontSize: AppFontSize.caption, color: _label),
                     ),
                   ],
                 ),
@@ -3733,7 +3733,7 @@ class _PostJobFormState extends State<PostJobForm>
           const Text(
             '자격요건 (선택)',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: AppFontSize.body2,
               fontWeight: FontWeight.w700,
               color: _sub,
             ),
@@ -3750,14 +3750,14 @@ class _PostJobFormState extends State<PostJobForm>
               controller: _requiredCertsCtrl,
               onChanged: (_) => _scheduleDraftSave(),
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: AppFontSize.button,
                 fontWeight: FontWeight.w600,
                 color: _text,
               ),
               decoration: const InputDecoration(
                 border: InputBorder.none,
                 hintText: '예) 건설업 이수증, 현장 경력 1개월',
-                hintStyle: TextStyle(fontSize: 13, color: _label),
+                hintStyle: TextStyle(fontSize: AppFontSize.body2, color: _label),
               ),
             ),
           ),
@@ -3766,7 +3766,7 @@ class _PostJobFormState extends State<PostJobForm>
           const Text(
             '복리후생 (선택)',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: AppFontSize.body2,
               fontWeight: FontWeight.w700,
               color: _sub,
             ),
@@ -3783,14 +3783,14 @@ class _PostJobFormState extends State<PostJobForm>
               controller: _welfareCtrl,
               onChanged: (_) => _scheduleDraftSave(),
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: AppFontSize.button,
                 fontWeight: FontWeight.w600,
                 color: _text,
               ),
               decoration: const InputDecoration(
                 border: InputBorder.none,
                 hintText: '예) 4대보험, 안전장구류 지급, 식대 별도',
-                hintStyle: TextStyle(fontSize: 13, color: _label),
+                hintStyle: TextStyle(fontSize: AppFontSize.body2, color: _label),
               ),
             ),
           ),
@@ -3802,7 +3802,7 @@ class _PostJobFormState extends State<PostJobForm>
             const Text(
               '사진',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: AppFontSize.body2,
                 fontWeight: FontWeight.w700,
                 color: _sub,
               ),
@@ -3817,13 +3817,13 @@ class _PostJobFormState extends State<PostJobForm>
               ),
               child: const Text(
                 '선택',
-                style: TextStyle(fontSize: 11, color: _label),
+                style: TextStyle(fontSize: AppFontSize.caption, color: _label),
               ),
             ),
             const Spacer(),
             Text(
               '$total / 10',
-              style: const TextStyle(fontSize: 12, color: _label),
+              style: const TextStyle(fontSize: AppFontSize.meta, color: _label),
             ),
           ],
         ),
@@ -3853,7 +3853,7 @@ class _PostJobFormState extends State<PostJobForm>
                         size: 24,
                       ),
                       SizedBox(height: 4),
-                      Text('추가', style: TextStyle(fontSize: 11, color: _label)),
+                      Text('추가', style: TextStyle(fontSize: AppFontSize.caption, color: _label)),
                     ],
                   ),
                 ),
@@ -3953,7 +3953,7 @@ class _PostJobFormState extends State<PostJobForm>
                   'AI 공고문 작성 횟수를 모두 사용했어요',
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: 16,
+                    fontSize: AppFontSize.buttonLg,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -3961,7 +3961,7 @@ class _PostJobFormState extends State<PostJobForm>
                 Text(
                   resetInfo,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: AppFontSize.body2,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -3969,7 +3969,7 @@ class _PostJobFormState extends State<PostJobForm>
                 const Text(
                   '라이트는 월 3회, 프로는 무제한으로 사용할 수 있어요',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: AppFontSize.meta,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -3993,7 +3993,7 @@ class _PostJobFormState extends State<PostJobForm>
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w700,
-                        fontSize: 15,
+                        fontSize: AppFontSize.body1,
                       ),
                     ),
                   ),
@@ -4007,7 +4007,7 @@ class _PostJobFormState extends State<PostJobForm>
                       '닫기',
                       style: TextStyle(
                         color: AppColors.textSecondary,
-                        fontSize: 14,
+                        fontSize: AppFontSize.button,
                       ),
                     ),
                   ),
@@ -4109,7 +4109,7 @@ class _NextBtn extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+        style: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w800),
       ),
     ),
   );
@@ -4156,7 +4156,7 @@ class _TimeInputCard extends StatelessWidget {
                     Text(
                       label,
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFontSize.caption,
                         color: _text,
                         fontWeight: FontWeight.w700,
                       ),
@@ -4167,7 +4167,7 @@ class _TimeInputCard extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: AppFontSize.body1,
                         color: hasValue ? _text : _label,
                         fontWeight: FontWeight.w900,
                       ),
@@ -4210,7 +4210,7 @@ class _ToggleBtn extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: AppFontSize.button,
               fontWeight: FontWeight.w700,
               color: selected ? _blue : _sub,
             ),
@@ -4351,7 +4351,7 @@ class _ExternalApplyOption extends StatelessWidget {
                       Text(
                         '별도 페이지로 지원을 받을래요',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: AppFontSize.button,
                           fontWeight: FontWeight.w800,
                           color: _text,
                         ),
@@ -4359,7 +4359,7 @@ class _ExternalApplyOption extends StatelessWidget {
                       SizedBox(height: 3),
                       Text(
                         '유료 공고에서만 가능 · 공고 상세 확인 후 외부 페이지로 이동',
-                        style: TextStyle(fontSize: 11, color: _sub),
+                        style: TextStyle(fontSize: AppFontSize.caption, color: _sub),
                       ),
                     ],
                   ),
@@ -4376,7 +4376,7 @@ class _ExternalApplyOption extends StatelessWidget {
               autocorrect: false,
               onChanged: onUrlChanged,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: AppFontSize.body2,
                 fontWeight: FontWeight.w600,
                 color: _text,
               ),
@@ -4385,7 +4385,7 @@ class _ExternalApplyOption extends StatelessWidget {
                 fillColor: Colors.white,
                 hintText: 'https://example.com/apply',
                 hintStyle: const TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSize.body2,
                   color: AppColors.textTertiary,
                 ),
                 prefixIcon: const Icon(
@@ -4449,7 +4449,7 @@ class _LaborNoticeState extends State<_LaborNotice> {
                   const Expanded(
                     child: Text(
                       '공고 등록 시 알바 준수사항에 동의합니다',
-                      style: TextStyle(fontSize: 12, color: _sub),
+                      style: TextStyle(fontSize: AppFontSize.meta, color: _sub),
                     ),
                   ),
                   Icon(
@@ -4467,10 +4467,10 @@ class _LaborNoticeState extends State<_LaborNotice> {
           ListTile(
             dense: true,
             leading: const Icon(Icons.gavel_rounded, size: 16, color: _blue),
-            title: const Text('최저임금법 준수', style: TextStyle(fontSize: 12)),
+            title: const Text('최저임금법 준수', style: TextStyle(fontSize: AppFontSize.meta)),
             subtitle: const Text(
               '2026년 기준 시급 10,320원 이상',
-              style: TextStyle(fontSize: 11),
+              style: TextStyle(fontSize: AppFontSize.caption),
             ),
             trailing: const Icon(Icons.chevron_right, size: 14),
             onTap:
@@ -4488,10 +4488,10 @@ class _LaborNoticeState extends State<_LaborNotice> {
           ListTile(
             dense: true,
             leading: const Icon(Icons.schedule_rounded, size: 16, color: _blue),
-            title: const Text('근로기준법 준수', style: TextStyle(fontSize: 12)),
+            title: const Text('근로기준법 준수', style: TextStyle(fontSize: AppFontSize.meta)),
             subtitle: const Text(
               '근무시간·휴게시간 법적 기준 준수',
-              style: TextStyle(fontSize: 11),
+              style: TextStyle(fontSize: AppFontSize.caption),
             ),
             trailing: const Icon(Icons.chevron_right, size: 14),
             onTap:
@@ -4513,10 +4513,10 @@ class _LaborNoticeState extends State<_LaborNotice> {
               size: 16,
               color: _blue,
             ),
-            title: const Text('고용차별 금지', style: TextStyle(fontSize: 12)),
+            title: const Text('고용차별 금지', style: TextStyle(fontSize: AppFontSize.meta)),
             subtitle: const Text(
               '성별·연령·외모 등 차별 금지',
-              style: TextStyle(fontSize: 11),
+              style: TextStyle(fontSize: AppFontSize.caption),
             ),
             trailing: const Icon(Icons.chevron_right, size: 14),
             onTap:
@@ -4746,7 +4746,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                       : '무료로 올리면 ${kstWhenLabel(freePublish, now)}에 공개돼요',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 17,
+                    fontSize: AppFontSize.title,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),
@@ -4764,7 +4764,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                           '$paidWho 지금 공개하고 $paidPushText',
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: AppFontSize.body2,
                     color: AppColors.textSecondary,
                     height: 1.5,
                   ),
@@ -5036,7 +5036,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                                   const Text(
                                     '긴급 호출',
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: AppFontSize.buttonLg,
                                       fontWeight: FontWeight.w800,
                                       color: Colors.white,
                                     ),
@@ -5062,7 +5062,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                                           ? '${_urgentPassCount}회 보유'
                                           : '₩13,900',
                                       style: const TextStyle(
-                                        fontSize: 11,
+                                        fontSize: AppFontSize.caption,
                                         fontWeight: FontWeight.w700,
                                         color: Colors.white,
                                       ),
@@ -5074,7 +5074,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                               Text(
                                 _urgentBenefitText,
                                 style: TextStyle(
-                                  fontSize: 12,
+                                  fontSize: AppFontSize.meta,
                                   color: Colors.white.withValues(alpha: 0.88),
                                 ),
                               ),
@@ -5100,7 +5100,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                     padding: EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
                       '또는 일반 등록',
-                      style: TextStyle(fontSize: 12, color: _sub),
+                      style: TextStyle(fontSize: AppFontSize.meta, color: _sub),
                     ),
                   ),
                   Expanded(child: Divider(color: _border)),
@@ -5123,7 +5123,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                   child: Text(
                     '공개 시점',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppFontSize.button,
                       fontWeight: FontWeight.w700,
                       color: _text,
                     ),
@@ -5204,7 +5204,7 @@ class _PublishSheetState extends State<_PublishSheet> {
               Text(
                 _paidPassCount == -1 ? '즉시게시로 등록할까요?' : '이용권 1회 차감',
                 style: const TextStyle(
-                  fontSize: 16,
+                  fontSize: AppFontSize.buttonLg,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -5214,7 +5214,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                     ? '구독 혜택으로 즉시 노출됩니다.\n이용권 차감 없이 진행됩니다.'
                     : '이 공고를 등록하면 보유 이용권이\n1회 차감됩니다. 진행하시겠어요?',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: Colors.black87),
+                style: const TextStyle(fontSize: AppFontSize.button, color: Colors.black87),
               ),
               if (widget.externalApplyEnabled) ...[
                 const SizedBox(height: 12),
@@ -5237,7 +5237,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                         child: Text(
                           '구직자는 공고 정보를 본 뒤 외부 신청 페이지로 이동합니다.',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppFontSize.meta,
                             fontWeight: FontWeight.w700,
                             color: _blue,
                           ),
@@ -5309,7 +5309,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: AppFontSize.body2,
                     fontWeight: FontWeight.w700,
                     color: sel ? _blue : _text,
                   ),
@@ -5317,7 +5317,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                 Text(
                   sub,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppFontSize.caption,
                     color: sel ? _blue.withOpacity(0.7) : _label,
                   ),
                 ),
@@ -5368,7 +5368,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                     ? DateFormat('M월 d일', 'ko_KR').format(_scheduledDate!)
                     : '날짜',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSize.body2,
                   fontWeight: FontWeight.w600,
                   color: _scheduledDate != null ? _text : _label,
                 ),
@@ -5417,7 +5417,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                     ? '${_scheduledTime!.hour.toString().padLeft(2, '0')}:${_scheduledTime!.minute.toString().padLeft(2, '0')}'
                     : '시간',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSize.body2,
                   fontWeight: FontWeight.w600,
                   color: _scheduledTime != null ? _text : _label,
                 ),
@@ -5488,7 +5488,7 @@ class _CompareCard extends StatelessWidget {
                         child: Text(
                           '기본',
                           style: const TextStyle(
-                            fontSize: 11,
+                            fontSize: AppFontSize.caption,
                             fontWeight: FontWeight.w600,
                             color: _sub,
                           ),
@@ -5510,7 +5510,7 @@ class _CompareCard extends StatelessWidget {
                           child: const Text(
                             '즉시게시',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: AppFontSize.caption,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
@@ -5533,7 +5533,7 @@ class _CompareCard extends StatelessWidget {
                           child: const Text(
                             '긴급호출',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: AppFontSize.caption,
                               fontWeight: FontWeight.w700,
                               color: Colors.white,
                             ),
@@ -5578,7 +5578,7 @@ class _CompareCard extends StatelessWidget {
                         const Text(
                           '무료 등록',
                           style: TextStyle(
-                            fontSize: 14,
+                            fontSize: AppFontSize.button,
                             fontWeight: FontWeight.w700,
                             color: _text,
                           ),
@@ -5597,7 +5597,7 @@ class _CompareCard extends StatelessWidget {
                               // 12시간 지연을 '몇 시'로 보여준다. 경고가 아니라 사실이라 회색.
                               '${kstWhenLabel(freePublish, now)} 공개',
                               style: const TextStyle(
-                                fontSize: 11,
+                                fontSize: AppFontSize.caption,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.textSecondary,
                               ),
@@ -5639,7 +5639,7 @@ class _CompareCard extends StatelessWidget {
                               ? '즉시게시 · 이용권 사용'
                               : '즉시게시 · ₩8,900',
                           style: const TextStyle(
-                            fontSize: 14,
+                            fontSize: AppFontSize.button,
                             fontWeight: FontWeight.w700,
                             color: Colors.white,
                           ),
@@ -5648,7 +5648,7 @@ class _CompareCard extends StatelessWidget {
                         Text(
                           paidOk ? '지금 공개 · 추가 결제 없음' : '지금 공개 · 알림 2회',
                           style: const TextStyle(
-                            fontSize: 11,
+                            fontSize: AppFontSize.caption,
                             color: Colors.white70,
                           ),
                         ),
@@ -5664,7 +5664,7 @@ class _CompareCard extends StatelessWidget {
                               ? '이용권 $paidPassCount개 보유'
                               : '이용권 없음 · 구매하기',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: AppFontSize.caption,
                             color: Colors.white.withValues(alpha: 0.85),
                           ),
                         ),
@@ -5705,7 +5705,7 @@ class _CompareRow extends StatelessWidget {
           child: Text(
             label,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: AppFontSize.meta,
               fontWeight: FontWeight.w500,
               color: _sub,
             ),
@@ -5717,7 +5717,7 @@ class _CompareRow extends StatelessWidget {
             child: Text(
               free,
               textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 11, color: _label),
+              style: const TextStyle(fontSize: AppFontSize.caption, color: _label),
             ),
           ),
         ),
@@ -5728,7 +5728,7 @@ class _CompareRow extends StatelessWidget {
               paid,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: AppFontSize.caption,
                 fontWeight: FontWeight.w600,
                 color: highlight ? _blue : _label,
               ),
@@ -5742,7 +5742,7 @@ class _CompareRow extends StatelessWidget {
               urgent,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: AppFontSize.caption,
                 fontWeight: FontWeight.w600,
                 color: highlight ? AppColors.urgentCall : _label,
               ),

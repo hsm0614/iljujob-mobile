@@ -192,7 +192,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
                 child: Text(
                   '${applicants.length}명',
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: AppFontSize.meta,
                     fontWeight: FontWeight.w700,
                     color: _brandBlue,
                   ),
@@ -218,7 +218,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
                   Text(
                     'AI 정렬됨',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: AppFontSize.caption,
                       fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
@@ -295,13 +295,13 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
             SizedBox(height: 12),
             Text(
               '아직 지원자가 없어요.',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: AppFontSize.titleLg, fontWeight: FontWeight.w600),
             ),
             SizedBox(height: 6),
             Text(
               '조금만 더 기다리면\n알바일주에서 알바생들이 찾아올 거예요.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: Colors.black54),
+              style: TextStyle(fontSize: AppFontSize.button, color: Colors.black54),
             ),
           ],
         ),
@@ -365,7 +365,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
                         child: Text(
                           '$rank',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: AppFontSize.caption,
                             fontWeight: FontWeight.w800,
                             color: rank <= 3 ? scoreColor : _label,
                           ),
@@ -400,7 +400,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
                             Text(
                               name,
                               style: const TextStyle(
-                                fontSize: 15,
+                                fontSize: AppFontSize.body1,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -408,7 +408,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
                             Text(
                               '($originalName)',
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: AppFontSize.meta,
                                 color: AppColors.textSecondary,
                               ),
                             ),
@@ -426,7 +426,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
                             Text(
                               '지원일 ${formatDate(createdAt)}',
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: AppFontSize.meta,
                                 color: Colors.black54,
                               ),
                             ),
@@ -454,7 +454,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
                     label: const Text(
                       '채팅',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppFontSize.meta,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -480,7 +480,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
                               Text(
                                 '매칭률',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: AppFontSize.caption,
                                   color: _label,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -489,7 +489,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
                               Text(
                                 '$scoreInt%',
                                 style: TextStyle(
-                                  fontSize: 15,
+                                  fontSize: AppFontSize.body1,
                                   fontWeight: FontWeight.w800,
                                   color: scoreColor,
                                 ),
@@ -561,7 +561,7 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
                                 child: Text(
                                   '${_reasonIcon(r)} $r',
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: AppFontSize.caption,
                                     fontWeight: FontWeight.w600,
                                     color: scoreColor,
                                   ),
@@ -590,12 +590,12 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(icon, style: const TextStyle(fontSize: 11)),
+          Text(icon, style: const TextStyle(fontSize: AppFontSize.caption)),
           const SizedBox(width: 3),
           Text(
             text,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: AppFontSize.caption,
               fontWeight: FontWeight.w600,
               color: _text,
             ),

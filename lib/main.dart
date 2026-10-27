@@ -945,7 +945,7 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
             const SizedBox(height: 12),
             const Text(
               '업데이트가 있어요',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              style: TextStyle(fontSize: AppFontSize.titleLg, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 6),
             Text(
@@ -954,7 +954,7 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
                   : '더 빠르고 편해진 알바일주를 써보세요.',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: AppFontSize.body2,
                 height: 1.35,
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w700,
@@ -1012,7 +1012,7 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
               const Text(
                 '업데이트는 스토어에서 진행됩니다.',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: AppFontSize.caption,
                   color: AppColors.textTertiary,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1043,7 +1043,7 @@ class _ReleaseNotesBox extends StatelessWidget {
       child: Text(
         t,
         style: const TextStyle(
-          fontSize: 12,
+          fontSize: AppFontSize.meta,
           height: 1.35,
           color: AppColors.textSecondary,
           fontWeight: FontWeight.w700,

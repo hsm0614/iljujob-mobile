@@ -70,7 +70,7 @@ class _BlockedUserListScreenState extends State<BlockedUserListScreen> {
       appBar: AppBar(title: const Text('차단한 사용자')),
       body:
           isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const AppSkeletonList(rows: 3, avatar: false)
               : blockedUsers.isEmpty
               ? const AppEmptyState(
                 icon: Icons.block_rounded,

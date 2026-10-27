@@ -994,7 +994,7 @@ class _ScoreDetailSheet extends StatelessWidget {
                             child: Text(
                               g,
                               style: AppTextStyles.captionBold.copyWith(
-                                fontSize: 13,
+                                fontSize: AppFontSize.body2,
                                 color: _gradeColor(g),
                               ),
                             ),

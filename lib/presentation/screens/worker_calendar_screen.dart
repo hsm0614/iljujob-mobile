@@ -1,3 +1,4 @@
+import 'package:iljujob/widget/app_ui.dart';
 import 'dart:async';
 import 'dart:convert';
 
@@ -80,7 +81,7 @@ Future<DateTime?> showCalendarBottomPicker(
                     '날짜 선택',
                     style: TextStyle(
                       fontFamily: 'Jalnan2TTF',
-                      fontSize: 18,
+                      fontSize: AppFontSize.titleLg,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -883,7 +884,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
           padding: EdgeInsets.only(bottom: bottomSystem),
           child:
               _loading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const AppSkeletonList(rows: 4)
                   : SingleChildScrollView(
                     padding: const EdgeInsets.only(bottom: 88),
                     child: Column(
@@ -1063,7 +1064,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                       const Text(
                         '이번 달 근무 관리',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: AppFontSize.body2,
                           fontWeight: FontWeight.w900,
                           color: kText,
                         ),
@@ -1074,7 +1075,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 11,
+                          fontSize: AppFontSize.caption,
                           color: kMuted,
                           fontWeight: FontWeight.w800,
                         ),
@@ -1142,7 +1143,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: next == null ? 13 : 12,
+                            fontSize: next == null ? AppFontSize.body2 : AppFontSize.meta,
                             color: next == null ? kText : kMuted,
                             fontWeight: FontWeight.w800,
                           ),
@@ -1156,7 +1157,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: next == null ? 12 : 13,
+                            fontSize: next == null ? AppFontSize.meta : AppFontSize.body2,
                             color: next == null ? kMuted : kText,
                             fontWeight:
                                 next == null
@@ -1185,7 +1186,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                     child: Text(
                       '지난 근무 중 아직 완료 처리되지 않은 일정이 있어요. 완료된 근무는 밀어서 완료 처리하면 일한 금액에 반영돼요.',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFontSize.caption,
                         height: 1.35,
                         color: AppColors.warningDark,
                         fontWeight: FontWeight.w800,
@@ -1315,7 +1316,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                 child: Text(
                   NumberFormat.compact(locale: 'ko_KR').format(showAmount),
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppFontSize.caption,
                     color: isSelected ? Colors.white : markerColor,
                     fontWeight: FontWeight.w900,
                   ),
@@ -1440,7 +1441,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: AppFontSize.button,
             fontWeight: FontWeight.w900,
             color: kText,
           ),
@@ -1545,7 +1546,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 14,
+                              fontSize: AppFontSize.button,
                               fontWeight: FontWeight.w900,
                               color: kText,
                             ),
@@ -1559,7 +1560,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                    fontSize: 12,
+                                    fontSize: AppFontSize.meta,
                                     color: kMuted,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -1570,7 +1571,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                                 Text(
                                   '${start.isEmpty ? '--:--' : start}~${end.isEmpty ? '--:--' : end}',
                                   style: const TextStyle(
-                                    fontSize: 11,
+                                    fontSize: AppFontSize.caption,
                                     color: kMuted,
                                     fontWeight: FontWeight.w700,
                                   ),
@@ -1598,7 +1599,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                                   child: Text(
                                     '${NumberFormat('#,###').format(amount)}원',
                                     style: const TextStyle(
-                                      fontSize: 14,
+                                      fontSize: AppFontSize.button,
                                       fontWeight: FontWeight.w900,
                                       color: kText,
                                     ),
@@ -1676,7 +1677,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
             Text(
               label,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: AppFontSize.meta,
                 color: color,
                 fontWeight: FontWeight.w700,
               ),
@@ -1762,7 +1763,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
               const Text(
                 '이번달 근무 현황',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: AppFontSize.buttonLg,
                   fontWeight: FontWeight.w900,
                   color: kText,
                 ),
@@ -1806,7 +1807,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                         child: Text(
                           '확인 필요 = 날짜가 지났는데 아직 완료 처리가 안 된 근무예요.\n실제로 일했다면 아래 목록에서 완료 버튼을 눌러주세요.',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppFontSize.meta,
                             color: AppColors.warningDark,
                             height: 1.45,
                             fontWeight: FontWeight.w700,
@@ -1842,7 +1843,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         Text(
           label,
           style: TextStyle(
-            fontSize: 14,
+            fontSize: AppFontSize.button,
             color: bold ? kText : kMuted,
             fontWeight: bold ? FontWeight.w900 : FontWeight.w700,
           ),
@@ -1851,7 +1852,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         Text(
           '$count건',
           style: const TextStyle(
-            fontSize: 13,
+            fontSize: AppFontSize.body2,
             color: kMuted,
             fontWeight: FontWeight.w700,
           ),
@@ -1860,7 +1861,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         Text(
           '${NumberFormat('#,###').format(amount)}원',
           style: TextStyle(
-            fontSize: 14,
+            fontSize: AppFontSize.button,
             color: bold ? kText : color,
             fontWeight: FontWeight.w900,
           ),
@@ -1896,7 +1897,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
               text,
               style: const TextStyle(
                 color: AppColors.warningDark,
-                fontSize: 12,
+                fontSize: AppFontSize.meta,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -1928,7 +1929,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                   child: Text(
                     '이번 달 공고별 정산',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       fontWeight: FontWeight.w900,
                       color: kText,
                     ),
@@ -1946,7 +1947,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                   child: Text(
                     '총 $dayCount일 근무',
                     style: const TextStyle(
-                      fontSize: 11,
+                      fontSize: AppFontSize.caption,
                       fontWeight: FontWeight.w900,
                       color: kBrandBlue,
                     ),
@@ -1975,7 +1976,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: AppFontSize.meta,
                           fontWeight: FontWeight.w700,
                           color: kText,
                         ),
@@ -1984,7 +1985,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                     Text(
                       '${NumberFormat('#,###').format(e.value)}원',
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: AppFontSize.meta,
                         fontWeight: FontWeight.w900,
                         color: kText,
                       ),
@@ -1997,7 +1998,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
               Text(
                 '+ $extra개 더',
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: AppFontSize.caption,
                   color: kMuted,
                   fontWeight: FontWeight.w700,
                 ),
@@ -2022,7 +2023,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
             Text(
               label,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: AppFontSize.meta,
                 color: kMuted,
                 fontWeight: FontWeight.w800,
               ),
@@ -2036,7 +2037,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                 '${NumberFormat('#,###').format(amount)}원',
                 // 금액은 다크 잉크 — 강조는 배경 틴트로만
                 style: const TextStyle(
-                  fontSize: 15,
+                  fontSize: AppFontSize.body1,
                   fontWeight: FontWeight.w900,
                   color: kText,
                 ),
@@ -2064,7 +2065,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 12, color: fg, fontWeight: FontWeight.w900),
+        style: TextStyle(fontSize: AppFontSize.meta, color: fg, fontWeight: FontWeight.w900),
       ),
     );
   }
@@ -2143,7 +2144,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontFamily: 'Jalnan2TTF',
-                      fontSize: 16,
+                      fontSize: AppFontSize.buttonLg,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
                     ),
@@ -2153,7 +2154,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                     message,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       height: 1.35,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textSecondary,

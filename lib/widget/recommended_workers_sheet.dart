@@ -164,7 +164,7 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
                 const Text(
                   '맞춤 인재',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: AppFontSize.titleLg,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),
@@ -180,7 +180,7 @@ class _RecommendedWorkersSheetState extends State<RecommendedWorkersSheet> {
                     child: Text(
                       '${_items.length}명',
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFontSize.caption,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary,
                       ),
@@ -358,7 +358,7 @@ class _SortChip extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppFontSize.meta,
               fontWeight: FontWeight.w700,
               color: selected ? Colors.white : AppColors.textSecondary,
             ),
@@ -495,7 +495,7 @@ class _WorkerCard extends StatelessWidget {
         child: Text(
           displayName.isNotEmpty ? displayName[0] : '?',
           style: const TextStyle(
-            fontSize: 16,
+            fontSize: AppFontSize.buttonLg,
             fontWeight: FontWeight.w700,
             color: AppColors.primary,
           ),
@@ -568,7 +568,7 @@ class _WorkerCard extends StatelessWidget {
                       child: Text(
                         grade,
                         style: const TextStyle(
-                          fontSize: 8,
+                          fontSize: AppFontSize.caption,
                           fontWeight: FontWeight.w900,
                           color: Colors.white,
                           height: 1,
@@ -586,7 +586,7 @@ class _WorkerCard extends StatelessWidget {
                     Text(
                       displayName,
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: AppFontSize.body1,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
@@ -597,7 +597,7 @@ class _WorkerCard extends StatelessWidget {
                         child: Text(
                           subParts.join(' · '),
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: AppFontSize.meta,
                             color: AppColors.textSecondary,
                           ),
                         ),
@@ -611,7 +611,7 @@ class _WorkerCard extends StatelessWidget {
                         Text(
                           '${dist.toStringAsFixed(1)}km',
                           style: const TextStyle(
-                            fontSize: 12,
+                            fontSize: AppFontSize.meta,
                             color: AppColors.textTertiary,
                           ),
                         ),
@@ -634,7 +634,7 @@ class _WorkerCard extends StatelessWidget {
                     Text(
                       '${matchPct.toStringAsFixed(0)}%',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: AppFontSize.buttonLg,
                         fontWeight: FontWeight.w800,
                         color: matchColor,
                       ),
@@ -642,7 +642,7 @@ class _WorkerCard extends StatelessWidget {
                     Text(
                       '매칭',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFontSize.caption,
                         fontWeight: FontWeight.w600,
                         color: matchColor.withValues(alpha: 0.8),
                       ),
@@ -672,7 +672,7 @@ class _WorkerCard extends StatelessWidget {
                       ? '이 공고에 지원해서 대화가 열려 있어요'
                       : '보낸 초대를 수락해서 대화가 열려 있어요',
                   style: const TextStyle(
-                    fontSize: 11,
+                    fontSize: AppFontSize.caption,
                     fontWeight: FontWeight.w600,
                     color: AppColors.gradeB,
                   ),
@@ -699,7 +699,7 @@ class _WorkerCard extends StatelessWidget {
                       child: Text(
                         r,
                         style: const TextStyle(
-                          fontSize: 11,
+                          fontSize: AppFontSize.caption,
                           fontWeight: FontWeight.w600,
                           color: AppColors.primary,
                         ),
@@ -720,7 +720,7 @@ class _WorkerCard extends StatelessWidget {
                 child: const Text(
                   '프로필 보기',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: AppFontSize.body2,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textSecondary,
                     decoration: TextDecoration.underline,
@@ -770,7 +770,7 @@ class _WorkerCard extends StatelessWidget {
               Text(
                 label,
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSize.body2,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
@@ -838,7 +838,7 @@ class _CandidateSearchFieldState extends State<_CandidateSearchField> {
               onChanged: widget.onChanged,
               textInputAction: TextInputAction.search,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: AppFontSize.button,
                 color: AppColors.textPrimary,
               ),
               decoration: const InputDecoration(
@@ -846,7 +846,7 @@ class _CandidateSearchFieldState extends State<_CandidateSearchField> {
                 border: InputBorder.none,
                 hintText: '이름으로 찾기',
                 hintStyle: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppFontSize.button,
                   color: AppColors.textTertiary,
                 ),
               ),
@@ -881,7 +881,7 @@ class _NoSearchResult extends StatelessWidget {
             "'$query'와 일치하는 인재가 없어요",
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: AppFontSize.button,
               fontWeight: FontWeight.w600,
               color: AppColors.textSecondary,
             ),
@@ -913,7 +913,7 @@ class _EmptyView extends StatelessWidget {
               const Text(
                 '추천 인재가 없어요',
                 style: TextStyle(
-                  fontSize: 16,
+                  fontSize: AppFontSize.buttonLg,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textPrimary,
                 ),
@@ -922,7 +922,7 @@ class _EmptyView extends StatelessWidget {
               const Text(
                 '조건에 맞는 구직자가 나타나면\n자동으로 표시돼요.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
+                style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary, height: 1.5),
               ),
             ],
           ),
@@ -949,7 +949,7 @@ class _ErrorView extends StatelessWidget {
                 message,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                    fontSize: 14, color: AppColors.textSecondary),
+                    fontSize: AppFontSize.button, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(

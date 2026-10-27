@@ -129,7 +129,7 @@ if (widget.address?.trim().isNotEmpty ?? false)
             Expanded(
               child: Text(
                 widget.address!.trim(), // 이쁘게 적힌 주소
-                style: const TextStyle(fontSize: 14),
+                style: const TextStyle(fontSize: AppFontSize.button),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -160,7 +160,7 @@ else
             Expanded(
               child: Text(
                 '위치: ${widget.lat.toStringAsFixed(6)}, ${widget.lng.toStringAsFixed(6)}',
-                style: const TextStyle(fontSize: 14),
+                style: const TextStyle(fontSize: AppFontSize.button),
               ),
             ),
           ],

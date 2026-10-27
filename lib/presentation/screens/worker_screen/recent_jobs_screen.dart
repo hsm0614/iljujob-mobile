@@ -53,7 +53,7 @@ class _RecentJobsScreenState extends State<RecentJobsScreen> {
         future: _jobs,
         builder: (context, snap) {
           if (!snap.hasData) {
-            return const Center(child: CircularProgressIndicator());
+            return const AppSkeletonList();
           }
           final jobs = snap.data!;
           if (jobs.isEmpty) {

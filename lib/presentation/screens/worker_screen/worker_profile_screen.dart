@@ -224,7 +224,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                 const SizedBox(height: 8),
                 const Text(
                   '※ 신고된 내용은 운영 정책에 따라 24시간 이내에 조치됩니다.',
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -353,7 +353,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                           ? '강점, 희망 분야, 경력, 자격증까지 확인할 수 있습니다.'
                           : '이 알바생은 이력서 열람에 동의하지 않았습니다.\n기본 정보만 확인할 수 있어요.',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppFontSize.meta,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -468,13 +468,13 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                   title,
                   style: const TextStyle(
                     fontWeight: FontWeight.w700,
-                    fontSize: 15,
+                    fontSize: AppFontSize.body1,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   desc,
-                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
                 ),
               ],
             ),
@@ -510,7 +510,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
             Text(
               count,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: AppFontSize.button,
                 fontWeight: FontWeight.bold,
                 color: color,
               ),
@@ -518,7 +518,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
             const SizedBox(height: 2),
             Text(
               label,
-              style: const TextStyle(fontSize: 11),
+              style: const TextStyle(fontSize: AppFontSize.caption),
               textAlign: TextAlign.center,
             ),
           ],
@@ -634,7 +634,7 @@ class _SectionTitle extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           text,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppFontSize.buttonLg),
         ),
         const SizedBox(width: 8),
         Expanded(

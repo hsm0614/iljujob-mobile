@@ -103,7 +103,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
       padding: const EdgeInsets.only(top: 14, bottom: 8),
       child: Text(
         text,
-        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: AppFontSize.buttonLg),
       ),
     );
   }
@@ -142,7 +142,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                 const SizedBox(height: 12),
                 const Text(
                   '일한 연도 선택',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: AppFontSize.buttonLg),
                 ),
                 const SizedBox(height: 8),
                 Expanded(
@@ -161,7 +161,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                           child: Text(
                             y,
                             style: TextStyle(
-                              fontSize: selected ? 18 : 16,
+                              fontSize: selected ? AppFontSize.titleLg : AppFontSize.buttonLg,
                               fontWeight:
                                   selected ? FontWeight.w800 : FontWeight.w500,
                               color: selected ? kBrand : Colors.black87,
@@ -470,7 +470,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                       : Text(
                         _isEdit ? '수정 완료' : '입력 완료',
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: AppFontSize.buttonLg,
                           fontWeight: FontWeight.w700,
                         ),
                       ),

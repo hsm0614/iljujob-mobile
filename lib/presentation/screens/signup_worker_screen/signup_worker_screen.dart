@@ -467,7 +467,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
           label,
           style: const TextStyle(
             fontWeight: FontWeight.w700,
-            fontSize: 15,
+            fontSize: AppFontSize.body1,
             color: AppColors.textPrimary,
           ),
         ),
@@ -667,7 +667,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                                   vertical: 14,
                                 ),
                                 textStyle: const TextStyle(
-                                  fontSize: 16,
+                                  fontSize: AppFontSize.buttonLg,
                                   fontWeight: FontWeight.bold,
                                 ),
                                 shape: RoundedRectangleBorder(
@@ -714,7 +714,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               const Text(
                 '알바일주 가입을 환영합니다',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: AppFontSize.h2,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
                 ),
@@ -723,7 +723,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               const Text(
                 '전화번호 인증만으로 바로 시작할 수 있어요.',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppFontSize.button,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -766,7 +766,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                           : const Text(
                             '본인인증 하기',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: AppFontSize.buttonLg,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -776,7 +776,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               const Text(
                 '인증 후 기존 회원이라면 자동 로그인, 신규 회원이면 다음 단계로 이어집니다.',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSize.body2,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -800,7 +800,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               const Text(
                 '기본 정보를 입력해주세요',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: AppFontSize.h2,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
                 ),
@@ -809,7 +809,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               const Text(
                 '이름과 성별, 출생년도를 정확히 입력해 주세요.',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppFontSize.button,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -920,7 +920,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                           : const Text(
                             '다음',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: AppFontSize.buttonLg,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -1085,7 +1085,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                             : const Text(
                               '가입 완료',
                               style: TextStyle(
-                                fontSize: 16,
+                                fontSize: AppFontSize.buttonLg,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),

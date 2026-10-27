@@ -186,7 +186,9 @@ class JobListTile extends StatelessWidget {
                     _Thumb(imageUrl: hasImage ? imageUrl : null, size: _thumb),
                     if (onApply != null) ...[
                       const SizedBox(height: 6),
-                      SizedBox(
+                      AppPressScale(
+                        haptic: !isApplied,
+                        child: SizedBox(
                         width: _thumb,
                         height: 40,
                         child: FilledButton(
@@ -205,6 +207,7 @@ class JobListTile extends StatelessWidget {
                           onPressed: isApplied ? null : onApply,
                           child: Text(isApplied ? '지원 완료' : '지원하기'),
                         ),
+                      ),
                       ),
                     ],
                   ],

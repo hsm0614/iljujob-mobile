@@ -442,7 +442,7 @@ class _InquiryScreenState extends State<InquiryScreen>
         future: _listFuture,
         builder: (context, snap) {
           if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const AppSkeletonList(rows: 4);
           }
           if (snap.hasError) {
             return ListView(
@@ -502,7 +502,7 @@ class _InquiryScreenState extends State<InquiryScreen>
                           Text(
                             answered ? '답변 완료' : '답변 기다리는 중',
                             style: AppTextStyles.captionBold.copyWith(
-                              fontSize: 12,
+                              fontSize: AppFontSize.meta,
                               color:
                                   answered
                                       ? AppColors.badgeSameDay

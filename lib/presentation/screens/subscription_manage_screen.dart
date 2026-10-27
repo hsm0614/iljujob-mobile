@@ -321,7 +321,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
                           label: const Text(
                             '구독 시작하기',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: AppFontSize.buttonLg,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -387,7 +387,7 @@ class _StatusCard extends StatelessWidget {
                 active ? '구독 활성' : '구독 없음',
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 18,
+                  fontSize: AppFontSize.titleLg,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -407,7 +407,7 @@ class _StatusCard extends StatelessWidget {
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                     ),
                   ),
                 ),
@@ -426,7 +426,7 @@ class _StatusCard extends StatelessWidget {
                     '기존 권리 유지',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 11,
+                      fontSize: AppFontSize.caption,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -447,7 +447,7 @@ class _StatusCard extends StatelessWidget {
                     '체험 중',
                     style: TextStyle(
                       color: AppColors.badgeUrgent,
-                      fontSize: 11,
+                      fontSize: AppFontSize.caption,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -465,7 +465,7 @@ class _StatusCard extends StatelessWidget {
               '구독하면 즉시게시와 AI 공고문 작성 혜택을 사용할 수 있어요.',
               style: TextStyle(
                 color: Colors.white70,
-                fontSize: 13,
+                fontSize: AppFontSize.body2,
                 height: 1.5,
               ),
             ),
@@ -482,14 +482,14 @@ class _StatusCard extends StatelessWidget {
           width: 70,
           child: Text(
             k,
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
+            style: const TextStyle(color: Colors.white70, fontSize: AppFontSize.body2),
           ),
         ),
         Text(
           v,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 13,
+            fontSize: AppFontSize.body2,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -594,7 +594,7 @@ class _BenefitSection extends StatelessWidget {
               Text(
                 active && label.isNotEmpty ? '$label 플랜 혜택' : '구독 혜택',
                 style: const TextStyle(
-                  fontSize: 15,
+                  fontSize: AppFontSize.body1,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
                 ),
@@ -639,7 +639,7 @@ class _BenefitRow extends StatelessWidget {
           Text(
             benefit.label,
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: AppFontSize.button,
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w500,
             ),
@@ -716,12 +716,12 @@ class _ManageSection extends StatelessWidget {
           ),
           title: Text(
             title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+            style: const TextStyle(fontSize: AppFontSize.button, fontWeight: FontWeight.w700),
           ),
           subtitle: Text(
             subtitle,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: AppFontSize.meta,
               color: AppColors.textSecondary,
             ),
           ),
@@ -777,7 +777,7 @@ class _PolicySection extends StatelessWidget {
           ),
           title: const Text(
             '해지 · 환불 · 문의',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+            style: TextStyle(fontSize: AppFontSize.button, fontWeight: FontWeight.w700),
           ),
           childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
           children: [
@@ -790,7 +790,7 @@ class _PolicySection extends StatelessWidget {
                       '• 자동 갱신되지 않으며 기간이 끝난 뒤 다시 결제할 수 있습니다.\n'
                       '• 환불과 결제 영수증은 고객센터로 문의해주세요.',
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: AppFontSize.body2,
                 color: AppColors.textSecondary,
                 height: 1.6,
               ),
@@ -815,7 +815,7 @@ class _PolicySection extends StatelessWidget {
                       vertical: 8,
                     ),
                     textStyle: const TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -845,7 +845,7 @@ class _PolicySection extends StatelessWidget {
                       vertical: 8,
                     ),
                     textStyle: const TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

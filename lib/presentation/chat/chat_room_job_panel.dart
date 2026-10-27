@@ -136,7 +136,7 @@ class ChatRoomJobPanel extends StatelessWidget {
                   _title,
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 15,
+                    fontSize: AppFontSize.body1,
                   ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
@@ -160,7 +160,7 @@ class ChatRoomJobPanel extends StatelessWidget {
                   ),
                   label: const Text(
                     '상세',
-                    style: TextStyle(fontSize: 11, color: AppColors.primary),
+                    style: TextStyle(fontSize: AppFontSize.caption, color: AppColors.primary),
                   ),
                 ),
             ],
@@ -351,7 +351,7 @@ class _ClientActions extends StatelessWidget {
               Text(
                 helperText,
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: AppFontSize.caption,
                   color: AppColors.primaryDark,
                   fontWeight: FontWeight.w600,
                 ),
@@ -391,7 +391,7 @@ class _ClientActions extends StatelessWidget {
             style: TextStyle(
               color: AppColors.textSecondary,
               fontWeight: FontWeight.bold,
-              fontSize: 12,
+              fontSize: AppFontSize.meta,
             ),
           ),
         ),
@@ -503,7 +503,7 @@ class _WorkerActions extends StatelessWidget {
             label: const Text(
               '캘린더에 추가하기',
               style: TextStyle(
-                fontSize: 13,
+                fontSize: AppFontSize.body2,
                 fontWeight: FontWeight.w800,
                 color: Colors.white,
               ),
@@ -525,7 +525,7 @@ class _WorkerActions extends StatelessWidget {
             icon: const Icon(Icons.calendar_month_rounded, size: 16),
             label: const Text(
               '캘린더',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              style: TextStyle(fontSize: AppFontSize.body2, fontWeight: FontWeight.w600),
             ),
           ),
         );
@@ -551,7 +551,7 @@ class _WorkerActions extends StatelessWidget {
                       : const Icon(Icons.event_busy_rounded, size: 16),
               label: const Text(
                 '일정 취소',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                style: TextStyle(fontSize: AppFontSize.body2, fontWeight: FontWeight.w600),
               ),
             ),
           );
@@ -593,7 +593,7 @@ class _WorkerActions extends StatelessWidget {
           label: const Text(
             '출근 확인',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: AppFontSize.body2,
               fontWeight: FontWeight.w800,
               color: Colors.white,
             ),
@@ -630,7 +630,7 @@ class _WorkerActions extends StatelessWidget {
           icon: const Icon(Icons.cancel_outlined, size: 16),
           label: Text(
             _isCancelled ? '지원 취소됨' : '지원 취소',
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            style: const TextStyle(fontSize: AppFontSize.body2, fontWeight: FontWeight.w600),
           ),
         ),
       );
@@ -648,7 +648,7 @@ class _WorkerActions extends StatelessWidget {
         label: Text(
           hasReviewed ? '후기 작성 완료' : '후기 남기기',
           style: TextStyle(
-            fontSize: 13,
+            fontSize: AppFontSize.body2,
             color: hasReviewed ? AppColors.textTertiary : AppColors.primary,
           ),
         ),
@@ -685,7 +685,7 @@ class _InfoBit extends StatelessWidget {
           child: Text(
             text,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: AppFontSize.caption,
               fontWeight: FontWeight.w600,
               color: color,
             ),
@@ -736,7 +736,7 @@ class _Pill extends StatelessWidget {
           Text(
             text,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: AppFontSize.body2,
               fontWeight: FontWeight.w600,
               color: fg ?? AppColors.primaryDark,
             ),
@@ -786,7 +786,7 @@ class _ActionButton extends StatelessWidget {
         style: TextStyle(
           color: disabled ? AppColors.textTertiary : Colors.white,
           fontWeight: FontWeight.w700,
-          fontSize: 13,
+          fontSize: AppFontSize.body2,
           letterSpacing: -0.3,
         ),
       ),
@@ -836,7 +836,7 @@ class ChatRoomConsentBanner extends StatelessWidget {
           const Expanded(
             child: Text(
               '사장님의 대화 요청입니다.\n수락 시 채팅이 시작되고 연락이 가능해요.',
-              style: TextStyle(fontSize: 12, color: AppColors.primaryDark),
+              style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.primaryDark),
             ),
           ),
           const SizedBox(width: 8),
@@ -848,7 +848,7 @@ class ChatRoomConsentBanner extends StatelessWidget {
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: const Text('거절', style: TextStyle(fontSize: 12)),
+            child: const Text('거절', style: TextStyle(fontSize: AppFontSize.meta)),
           ),
           const SizedBox(width: 4),
           ElevatedButton(
@@ -873,7 +873,7 @@ class ChatRoomConsentBanner extends StatelessWidget {
                         color: Colors.white,
                       ),
                     )
-                    : const Text('수락', style: TextStyle(fontSize: 12)),
+                    : const Text('수락', style: TextStyle(fontSize: AppFontSize.meta)),
           ),
         ],
       ),
@@ -913,7 +913,7 @@ class ChatRoomWaitingBanner extends StatelessWidget {
           Expanded(
             child: Text(
               '구직자의 수락을 기다리는 중입니다.\n수락되면 바로 채팅이 가능해요.',
-              style: TextStyle(fontSize: 12, color: AppColors.warningDark),
+              style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.warningDark),
             ),
           ),
         ],
@@ -961,7 +961,7 @@ class ChatRoomCancelledBanner extends StatelessWidget {
             child: Text(
               '알바생이 이 공고에 대한 지원을 취소했어요.\n'
               '지금 다른 공고도 한 번 올려보실래요?',
-              style: TextStyle(fontSize: 12, color: AppColors.error),
+              style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.error),
             ),
           ),
           const SizedBox(width: 8),
@@ -977,7 +977,7 @@ class ChatRoomCancelledBanner extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
-            child: const Text('공고 더 쓰기', style: TextStyle(fontSize: 11)),
+            child: const Text('공고 더 쓰기', style: TextStyle(fontSize: AppFontSize.caption)),
           ),
         ],
       ),

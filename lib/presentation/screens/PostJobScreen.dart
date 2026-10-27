@@ -123,7 +123,7 @@ class _LeaveConfirmSheet extends StatelessWidget {
           const Text(
             '작성 중인 공고가 있어요',
             style: TextStyle(
-              fontSize: 18,
+              fontSize: AppFontSize.titleLg,
               fontWeight: FontWeight.w800,
               fontFamily: 'Jalnan2TTF',
               color: AppColors.textPrimary,
@@ -136,7 +136,7 @@ class _LeaveConfirmSheet extends StatelessWidget {
             '나가도 입력한 내용은 임시 저장돼요.\n다음에 이어서 작성할 수 있어요.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: AppFontSize.button,
               color: AppColors.textSecondary,
               height: 1.5,
             ),
@@ -159,7 +159,7 @@ class _LeaveConfirmSheet extends StatelessWidget {
               ),
               child: const Text(
                 '계속 작성하기',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                style: TextStyle(fontSize: AppFontSize.body1, fontWeight: FontWeight.w700),
               ),
             ),
           ),
@@ -177,7 +177,7 @@ class _LeaveConfirmSheet extends StatelessWidget {
               ),
               child: const Text(
                 '나가기',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                style: TextStyle(fontSize: AppFontSize.button, fontWeight: FontWeight.w600),
               ),
             ),
           ),

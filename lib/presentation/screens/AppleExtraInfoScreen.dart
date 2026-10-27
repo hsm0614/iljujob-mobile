@@ -169,7 +169,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                         'Apple로 가입을 마무리합니다.\n'
                         '필수 정보를 입력하고 프로필을 완성해주세요!',
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: AppFontSize.body1,
                           color: AppColors.textPrimary,
                           fontWeight: FontWeight.w600,
                         ),
@@ -352,7 +352,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                         child: Text(
                           _loading ? '저장 중...' : '완료하고 시작하기',
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: AppFontSize.buttonLg,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -365,7 +365,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                         '입력한 정보는 프로필에 반영되고,\n언제든 수정할 수 있어요.',
                         style: TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 13,
+                          fontSize: AppFontSize.body2,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -405,7 +405,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(
         text,
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+        style: const TextStyle(fontSize: AppFontSize.body1, fontWeight: FontWeight.w800),
       ),
     );
   }

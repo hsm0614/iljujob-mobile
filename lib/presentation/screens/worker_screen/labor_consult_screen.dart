@@ -149,7 +149,7 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
             child: Center(
               child: Text(
                 '잔여 $_remaining회',
-                style: const TextStyle(fontSize: 12, color: _label),
+                style: const TextStyle(fontSize: AppFontSize.meta, color: _label),
               ),
             ),
           ),
@@ -234,7 +234,7 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
                 child: Text(
                   msg.text,
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: AppFontSize.button,
                     height: 1.55,
                     color: msg.isUser ? Colors.white : AppColors.textPrimary,
                   ),
@@ -291,7 +291,7 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
           const Text(
             '자주 묻는 질문',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppFontSize.meta,
               fontWeight: FontWeight.w700,
               color: _label,
             ),
@@ -318,7 +318,7 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
                           child: Text(
                             q,
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: AppFontSize.meta,
                               fontWeight: FontWeight.w600,
                               color: AppColors.textSecondary,
                             ),
@@ -353,10 +353,10 @@ class _LaborConsultScreenState extends State<LaborConsultScreen> {
                   controller: _ctrl,
                   minLines: 1,
                   maxLines: 4,
-                  style: const TextStyle(fontSize: 14),
+                  style: const TextStyle(fontSize: AppFontSize.button),
                   decoration: const InputDecoration(
                     hintText: '노동법 궁금한 점을 질문해보세요',
-                    hintStyle: TextStyle(fontSize: 13, color: _label),
+                    hintStyle: TextStyle(fontSize: AppFontSize.body2, color: _label),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(
                       horizontal: 16,

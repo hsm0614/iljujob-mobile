@@ -165,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: Text(
                               p.checkboxLabel,
-                              style: const TextStyle(fontSize: 14),
+                              style: const TextStyle(fontSize: AppFontSize.button),
                             ),
                           ),
                           if (p.deeplink != null)
@@ -539,7 +539,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                         Text(
                           'AI 맞춤 추천',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: AppFontSize.titleLg,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -547,7 +547,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                         Text(
                           '프로필과 위치를 기준으로 공고를 추천합니다.',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: AppFontSize.body2,
                             color: AppColors.textSecondary,
                             height: 1.2,
                           ),
@@ -608,7 +608,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                           child: Text(
                             label,
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: AppFontSize.body2,
                               fontWeight: FontWeight.w800,
                               color:
                                   selected
@@ -655,7 +655,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                         child: Text(
                           '거리, 일정, 선호 조건, 최근 지원 이력을 반영합니다.',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: AppFontSize.body2,
                             color: AppColors.textPrimary,
                             height: 1.2,
                           ),
@@ -674,7 +674,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                   opacity: 0.55,
                   child: Text(
                     '추천 결과는 조건에 따라 달라질 수 있어요.',
-                    style: TextStyle(fontSize: 12),
+                    style: TextStyle(fontSize: AppFontSize.meta),
                   ),
                 ),
               ]),

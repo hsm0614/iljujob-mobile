@@ -382,7 +382,7 @@ class _JobHeaderCard extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: AppFontSize.buttonLg,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -427,7 +427,7 @@ class _SectionCard extends StatelessWidget {
         children: [
           Text(
             title,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
+            style: const TextStyle(fontSize: AppFontSize.body1, fontWeight: FontWeight.w900),
           ),
           if (subTitle != null) ...[
             const SizedBox(height: 6),
@@ -487,7 +487,7 @@ class _SatisfactionRow extends StatelessWidget {
                         borderRadius: BorderRadius.circular(18),
                       ),
                       alignment: Alignment.center,
-                      child: Text(e.$2, style: const TextStyle(fontSize: 26)),
+                      child: Text(e.$2, style: const TextStyle(fontSize: AppFontSize.h1)),
                     ),
                     const SizedBox(height: 8),
                     Text(

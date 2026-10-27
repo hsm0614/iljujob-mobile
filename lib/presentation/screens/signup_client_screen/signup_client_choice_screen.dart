@@ -40,7 +40,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
             : BorderSide.none,
       ),
       minimumSize: const Size.fromHeight(52),
-      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      textStyle: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w700),
     );
   }
 
@@ -224,7 +224,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                   const Text(
                     '알바일주 시작하기',
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: AppFontSize.h2,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
                     ),
@@ -233,7 +233,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                   const SizedBox(height: 8),
                   const Text(
                     '카카오/애플로 간편하게 가입하고\n바로 공고를 올려보세요.',
-                    style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                    style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -307,7 +307,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                   const SizedBox(height: 20),
                   const Text(
                     '※ 공고 등록 후 지원자와 채팅으로 바로 연결됩니다.',
-                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                    style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                 ],

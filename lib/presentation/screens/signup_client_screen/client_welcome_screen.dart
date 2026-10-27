@@ -78,7 +78,7 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
                   const Text(
                     '가입 완료!',
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: AppFontSize.display,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
                     ),
@@ -88,7 +88,7 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
                     '지금 근처에서 알바를 구하는 분들이\n공고를 기다리고 있어요.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: AppFontSize.body1,
                       color: AppColors.textSecondary,
                       height: 1.6,
                     ),
@@ -146,7 +146,7 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
                           child: Text(
                             '첫 공고는 무료예요. 지금 바로 올려보세요!',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: AppFontSize.button,
                               color: AppColors.warningDark,
                               fontWeight: FontWeight.w600,
                               height: 1.4,
@@ -188,7 +188,7 @@ WidgetsBinding.instance.addPostFrameCallback((_) {
                       label: const Text(
                         '지금 바로 공고 올리기',
                         style: TextStyle(
-                          fontSize: 17,
+                          fontSize: AppFontSize.title,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -211,7 +211,7 @@ WidgetsBinding.instance.addPostFrameCallback((_) {
                     ),
                     child: const Text(
                       '나중에 올리기',
-                      style: TextStyle(fontSize: 14),
+                      style: TextStyle(fontSize: AppFontSize.button),
                     ),
                   ),
 
@@ -256,7 +256,7 @@ class _StatCard extends StatelessWidget {
           Text(
             number,
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: AppFontSize.titleLg,
               fontWeight: FontWeight.w800,
               color: AppColors.primary,
             ),
@@ -266,7 +266,7 @@ class _StatCard extends StatelessWidget {
             label,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: AppFontSize.caption,
               color: AppColors.textSecondary,
               height: 1.4,
             ),

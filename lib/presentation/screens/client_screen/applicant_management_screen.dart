@@ -432,7 +432,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 const Text(
                   '지원자 연락처 보기',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: AppFontSize.titleLg,
                     fontWeight: FontWeight.w900,
                     color: AppColors.textPrimary,
                   ),
@@ -441,7 +441,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 const Text(
                   '채용 연락, 일정 조율, 출근확정, 분쟁 및 노쇼 확인 목적에 한해 이용해 주세요.',
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: AppFontSize.body2,
                     height: 1.45,
                     color: AppColors.textSecondary,
                   ),
@@ -562,7 +562,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                     child: Text(
                       '선택 지원자 ${selected.length}명에게 메시지',
                       style: const TextStyle(
-                        fontSize: 17,
+                        fontSize: AppFontSize.title,
                         fontWeight: FontWeight.w800,
                         color: AppColors.textPrimary,
                       ),
@@ -575,7 +575,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 group.jobTitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 14),
               TextField(
@@ -758,7 +758,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
             Text(
               value,
               style: const TextStyle(
-                fontSize: 20,
+                fontSize: AppFontSize.h2,
                 fontWeight: FontWeight.w700,
                 color: AppColors.textPrimary,
               ),
@@ -766,7 +766,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
             const SizedBox(height: 4),
             Text(
               label,
-              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+              style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -813,7 +813,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                     Text(
                       '아직 지원자가 없어요',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppFontSize.body2,
                         color: AppColors.textTertiary,
                       ),
                     ),
@@ -858,7 +858,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                             ? '접기'
                             : '${group.applicants.length - _applicantsPreview}명 더보기',
                         style: const TextStyle(
-                          fontSize: 13,
+                          fontSize: AppFontSize.body2,
                           color: _blue,
                           fontWeight: FontWeight.w600,
                         ),
@@ -920,7 +920,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                     Text(
                       group.jobTitle,
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: AppFontSize.body1,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
@@ -943,7 +943,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: AppFontSize.meta,
                                 color: _inkSecondary,
                               ),
                             ),
@@ -962,7 +962,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                                 ? group.startDate!.substring(0, 10)
                                 : group.startDate!,
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: AppFontSize.meta,
                               color: _inkSecondary,
                             ),
                           ),
@@ -988,7 +988,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 child: Text(
                   '${group.activeApplicants.length}명',
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: AppFontSize.meta,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textSecondary,
                   ),
@@ -1080,7 +1080,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: AppFontSize.caption,
             fontWeight: FontWeight.w700,
             color:
                 selected && enabled
@@ -1114,7 +1114,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: AppFontSize.caption,
               fontWeight: FontWeight.w800,
               color: color,
             ),
@@ -1159,7 +1159,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: AppFontSize.body1,
                         fontWeight: FontWeight.w700,
                         color: _inkSecondary,
                       ),
@@ -1167,7 +1167,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: const TextStyle(fontSize: 12, color: _inkSecondary),
+                      style: const TextStyle(fontSize: AppFontSize.meta, color: _inkSecondary),
                     ),
                   ],
                 ),
@@ -1262,7 +1262,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                fontSize: 15,
+                                fontSize: AppFontSize.body1,
                                 fontWeight: FontWeight.w800,
                                 color: AppColors.textPrimary,
                               ),
@@ -1287,7 +1287,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                           _timeAgo(applicant.appliedAt),
                         ].join(' · '),
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: AppFontSize.meta,
                           color: _inkSecondary,
                         ),
                       ),
@@ -1325,7 +1325,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: const TextStyle(
-                                    fontSize: 12,
+                                    fontSize: AppFontSize.meta,
                                     fontWeight: FontWeight.w800,
                                     color: AppColors.textSecondary,
                                   ),
@@ -1343,7 +1343,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                                   child: Text(
                                     phoneLoading ? '확인 중' : '연락처 보기',
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: AppFontSize.meta,
                                       fontWeight: FontWeight.w900,
                                       color:
                                           phoneLoading
@@ -1370,7 +1370,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                                       Text(
                                         '복사',
                                         style: TextStyle(
-                                          fontSize: 12,
+                                          fontSize: AppFontSize.meta,
                                           fontWeight: FontWeight.w900,
                                           color: _blue,
                                         ),
@@ -1403,7 +1403,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                     applicant.actionLabel,
                     maxLines: 1,
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppFontSize.meta,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
                     ),
@@ -1459,7 +1459,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   child: Text(
                     '$page',
                     style: TextStyle(
-                      fontSize: 14,
+                      fontSize: AppFontSize.button,
                       fontWeight: FontWeight.w600,
                       color:
                           isSelected ? Colors.white : AppColors.textSecondary,
@@ -1534,7 +1534,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       child: Text(
         applicant.workerName.isNotEmpty ? applicant.workerName[0] : '?',
         style: TextStyle(
-          fontSize: 14,
+          fontSize: AppFontSize.button,
           fontWeight: FontWeight.w600,
           color: c[1],
         ),
@@ -1561,7 +1561,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
           Text(
             '${applicant.activityGrade} · ${applicant.safeActivityScore}점',
             style: TextStyle(
-              fontSize: 11,
+              fontSize: AppFontSize.caption,
               fontWeight: FontWeight.w800,
               color: applicant.activityGradeColor,
             ),
@@ -1603,7 +1603,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 11,
+          fontSize: AppFontSize.caption,
           color: fg,
           fontWeight: FontWeight.w800,
         ),
@@ -1626,7 +1626,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
           Text(
             label,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: AppFontSize.caption,
               color: AppColors.textSecondary,
               fontWeight: FontWeight.w700,
             ),

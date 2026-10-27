@@ -861,7 +861,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 19,
+                    fontSize: AppFontSize.titleLg,
                     fontWeight: FontWeight.w900,
                     color: _textMain,
                   ),
@@ -870,7 +870,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                 Text(
                   subtitle,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: AppFontSize.body2,
                     height: 1.35,
                     color: _textSub,
                     fontWeight: FontWeight.w600,
@@ -1002,7 +1002,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                             Text(
                               _maskName(worker.name),
                               style: const TextStyle(
-                                fontSize: 17,
+                                fontSize: AppFontSize.title,
                                 fontWeight: FontWeight.w900,
                                 color: _textMain,
                               ),
@@ -1011,7 +1011,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                             Text(
                               '${_distanceLabel(worker.distanceM)} · 활동등급 ${worker.grade}',
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: AppFontSize.meta,
                                 color: _textSub,
                               ),
                             ),
@@ -1029,7 +1029,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                           child: Text(
                             worker.grade,
                             style: TextStyle(
-                              fontSize: 15,
+                              fontSize: AppFontSize.body1,
                               fontWeight: FontWeight.w900,
                               color: gradeColor,
                             ),
@@ -1050,7 +1050,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                       ),
                       child: const Text(
                         '이미 이 공고로 메시지를 보낸 알바생입니다.',
-                        style: TextStyle(fontSize: 12, color: _textSub),
+                        style: TextStyle(fontSize: AppFontSize.meta, color: _textSub),
                       ),
                     ),
                   ],
@@ -1106,7 +1106,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                     const SizedBox(height: 10),
                     const Text(
                       '게시 중인 공고와 남은 먼저 연락하기 제공량을 확인해 주세요.',
-                      style: TextStyle(fontSize: 12, color: _textSub),
+                      style: TextStyle(fontSize: AppFontSize.meta, color: _textSub),
                     ),
                   ],
                 ],
@@ -1196,7 +1196,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
               child: const Text(
                 '무료 공고는 12시간 후, 즉시게시는 결제 즉시 노출됩니다',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: AppFontSize.caption,
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1226,7 +1226,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                 child: Text(
                   '먼저 연락 $_directMonthlyRemaining명(이 공고 ${_directJobRemaining[_selectedJob!.id] ?? 0}명) · 지도 알림 $_pushMonthlyRemaining회(이 공고 ${_pushJobRemaining[_selectedJob!.id] ?? 0}회)',
                   style: const TextStyle(
-                    fontSize: 11,
+                    fontSize: AppFontSize.caption,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -1274,7 +1274,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                       child: _chipContainer(
                         child: const Text(
                           '등록된 공고 없음',
-                          style: TextStyle(fontSize: 12, color: _textSub),
+                          style: TextStyle(fontSize: AppFontSize.meta, color: _textSub),
                         ),
                       ),
                     )
@@ -1330,7 +1330,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                                       ? '${job.title.substring(0, 11)}…'
                                       : job.title,
                                   style: TextStyle(
-                                    fontSize: 13,
+                                    fontSize: AppFontSize.body2,
                                     fontWeight: FontWeight.w600,
                                     color: sel ? Colors.white : _textMain,
                                   ),
@@ -1354,7 +1354,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                                     child: Text(
                                       '${job.applicantCount}',
                                       style: TextStyle(
-                                        fontSize: 11,
+                                        fontSize: AppFontSize.caption,
                                         fontWeight: FontWeight.w700,
                                         color: sel ? Colors.white : _primary,
                                       ),
@@ -1675,7 +1675,7 @@ class _ExpandableJobCardState extends State<_ExpandableJobCard> {
                     child: Text(
                       job.statusLabel,
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFontSize.caption,
                         fontWeight: FontWeight.w700,
                         color: job.pinColor,
                       ),
@@ -1686,7 +1686,7 @@ class _ExpandableJobCardState extends State<_ExpandableJobCard> {
                     child: Text(
                       job.title,
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: AppFontSize.body1,
                         fontWeight: FontWeight.w800,
                         color: _textMain,
                       ),
@@ -1709,7 +1709,7 @@ class _ExpandableJobCardState extends State<_ExpandableJobCard> {
                             ? '${widget.workerCount}명'
                             : '없음',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: AppFontSize.body2,
                           fontWeight: FontWeight.w700,
                           color: widget.workerCount > 0 ? _primary : _textSub,
                         ),
@@ -1717,7 +1717,7 @@ class _ExpandableJobCardState extends State<_ExpandableJobCard> {
                       const SizedBox(width: 2),
                       const Text(
                         '5km',
-                        style: TextStyle(fontSize: 11, color: _textSub),
+                        style: TextStyle(fontSize: AppFontSize.caption, color: _textSub),
                       ),
                     ],
                   ),
@@ -1806,7 +1806,7 @@ class _CollapsedMeta extends StatelessWidget {
                     const SizedBox(width: 3),
                     Text(
                       job.startDate,
-                      style: const TextStyle(fontSize: 12, color: _textSub),
+                      style: const TextStyle(fontSize: AppFontSize.meta, color: _textSub),
                     ),
                     const SizedBox(width: 8),
                   ],
@@ -1819,7 +1819,7 @@ class _CollapsedMeta extends StatelessWidget {
                     const SizedBox(width: 3),
                     Text(
                       job.timeRange,
-                      style: const TextStyle(fontSize: 12, color: _textSub),
+                      style: const TextStyle(fontSize: AppFontSize.meta, color: _textSub),
                     ),
                     const SizedBox(width: 8),
                   ],
@@ -1832,7 +1832,7 @@ class _CollapsedMeta extends StatelessWidget {
                     const SizedBox(width: 3),
                     Text(
                       _comma(job.hourlyWage),
-                      style: const TextStyle(fontSize: 12, color: _textSub),
+                      style: const TextStyle(fontSize: AppFontSize.meta, color: _textSub),
                     ),
                   ],
                 ],
@@ -1911,7 +1911,7 @@ class _ExpandedDetail extends StatelessWidget {
                   Text(
                     '시급 ${_comma(job.hourlyWage)}원',
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: AppFontSize.buttonLg,
                       fontWeight: FontWeight.w900,
                       color: _primary,
                     ),
@@ -1944,7 +1944,7 @@ class _ExpandedDetail extends StatelessWidget {
                           Text(
                             metaRows[i].$2,
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: AppFontSize.meta,
                               color: _textSub,
                               fontWeight: FontWeight.w700,
                             ),
@@ -1957,7 +1957,7 @@ class _ExpandedDetail extends StatelessWidget {
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
-                                fontSize: 13,
+                                fontSize: AppFontSize.body2,
                                 color: _textMain,
                                 fontWeight: FontWeight.w800,
                               ),
@@ -1979,7 +1979,7 @@ class _ExpandedDetail extends StatelessWidget {
             const Text(
               '공고 설명',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: AppFontSize.meta,
                 fontWeight: FontWeight.w800,
                 color: _textSub,
               ),
@@ -1996,7 +1996,7 @@ class _ExpandedDetail extends StatelessWidget {
               child: Text(
                 job.description,
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSize.body2,
                   color: _textMain,
                   height: 1.6,
                 ),
@@ -2142,7 +2142,7 @@ class _Btn extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: AppFontSize.body2,
                 fontWeight: FontWeight.w600,
                 color: fg,
               ),
@@ -2191,7 +2191,7 @@ class _JobMapCard extends StatelessWidget {
                 Text(
                   '긴급',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppFontSize.caption,
                     fontWeight: FontWeight.w800,
                     color:
                         isSelected ? Colors.white.withValues(alpha: 0.9) : _red,
@@ -2201,7 +2201,7 @@ class _JobMapCard extends StatelessWidget {
               Text(
                 job.hourlyWage > 0 ? '₩${_comma(job.hourlyWage)}' : job.title,
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSize.body2,
                   fontWeight: FontWeight.w900,
                   color: fg,
                 ),
@@ -2213,7 +2213,7 @@ class _JobMapCard extends StatelessWidget {
                       ? '${job.title.substring(0, 9)}…'
                       : job.title,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppFontSize.caption,
                     color: fg.withValues(alpha: 0.8),
                   ),
                 ),
@@ -2302,7 +2302,7 @@ class _WorkerDot extends StatelessWidget {
           _grade,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 11,
+            fontSize: AppFontSize.caption,
             fontWeight: FontWeight.w900,
             height: 1,
           ),

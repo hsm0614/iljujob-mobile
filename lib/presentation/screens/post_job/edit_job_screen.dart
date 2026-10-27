@@ -396,7 +396,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                   const SizedBox(height: 2),
                   const Text(
                     '근무 시간 설정',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 10),
 
@@ -416,7 +416,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                           Text(
                             '${fmt12(selectedStart)} ~ ${overnight ? '익일 ' : ''}${fmt12(selectedEnd)}',
                             style: const TextStyle(
-                              fontSize: 16,
+                              fontSize: AppFontSize.buttonLg,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -456,11 +456,11 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                   is24HourMode: false,
                                   minutesInterval: 10,
                                   normalTextStyle: const TextStyle(
-                                    fontSize: 16,
+                                    fontSize: AppFontSize.buttonLg,
                                     color: AppColors.textSecondary,
                                   ),
                                   highlightedTextStyle: const TextStyle(
-                                    fontSize: 18,
+                                    fontSize: AppFontSize.titleLg,
                                     color: brandBlue,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -493,11 +493,11 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                   is24HourMode: false,
                                   minutesInterval: 10,
                                   normalTextStyle: const TextStyle(
-                                    fontSize: 16,
+                                    fontSize: AppFontSize.buttonLg,
                                     color: AppColors.textSecondary,
                                   ),
                                   highlightedTextStyle: const TextStyle(
-                                    fontSize: 18,
+                                    fontSize: AppFontSize.titleLg,
                                     color: brandBlue,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -570,7 +570,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                         child: const Text(
                           '확인',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: AppFontSize.buttonLg,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -745,7 +745,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                   msg,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: AppFontSize.body1,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                     height: 1.5,
@@ -769,7 +769,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                       '확인',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        fontSize: 15,
+                        fontSize: AppFontSize.body1,
                       ),
                     ),
                   ),
@@ -905,7 +905,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 16,
+                        fontSize: AppFontSize.buttonLg,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
@@ -913,7 +913,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                     Text(
                       subtitle,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: AppFontSize.meta,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -1042,7 +1042,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
         child: const Text(
           '사진은 선택 사항이에요.\n현장 사진/근무복/약도 등을 올리면 지원율이 올라갑니다.',
           style: TextStyle(
-            fontSize: 12,
+            fontSize: AppFontSize.meta,
             color: AppColors.textSecondary,
             height: 1.35,
           ),
@@ -1174,7 +1174,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
           ),
           child: const Text(
             '날짜는 KST(UTC+9) 자정 기준으로 저장됩니다.',
-            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
           ),
         ),
       ],
@@ -1204,7 +1204,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
               child: Text(
                 value ?? '$label 선택',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppFontSize.button,
                   fontWeight: FontWeight.w700,
                   color:
                       value == null
@@ -1282,13 +1282,13 @@ class _EditJobScreenState extends State<EditJobScreen> {
                 children: [
                   const Text(
                     '근무 시간',
-                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     value,
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: AppFontSize.buttonLg,
                       fontWeight: FontWeight.w800,
                       color: has ? Colors.black : AppColors.textSecondary,
                     ),
@@ -1308,7 +1308,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                 ),
                 child: const Text(
                   'KST',
-                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800),
+                  style: TextStyle(fontSize: AppFontSize.meta, fontWeight: FontWeight.w800),
                 ),
               ),
             const SizedBox(width: 8),
@@ -1364,7 +1364,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
       dropdownColor: Colors.white,
       menuMaxHeight: 340,
       elevation: 6,
-      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+      style: const TextStyle(fontSize: AppFontSize.button, color: AppColors.textPrimary),
       decoration: _inputDeco('하는 일', hint: '업종을 선택하세요'),
       validator: (_) => category.trim().isEmpty ? '업종을 선택하세요' : null,
       items:
@@ -1579,7 +1579,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                   child: const Text(
                                     '금액은 공고에 급여 협의로 표시됩니다.',
                                     style: TextStyle(
-                                      fontSize: 13,
+                                      fontSize: AppFontSize.body2,
                                       color: AppColors.textSecondary,
                                     ),
                                   ),
@@ -1610,7 +1610,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                     errorText: _payWarning,
                                     helperText:
                                         '최저시급 ${_moneyFmt.format(minWagePerHour)}원 이상 권장',
-                                    helperStyle: const TextStyle(fontSize: 11),
+                                    helperStyle: const TextStyle(fontSize: AppFontSize.caption),
                                   ),
                                   validator: (v) {
                                     final raw = (v ?? '').replaceAll(
@@ -1682,7 +1682,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
               ),
               child: const Text(
                 '공고 수정 완료',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.bold),
               ),
             ),
           ),

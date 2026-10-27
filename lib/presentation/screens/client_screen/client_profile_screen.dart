@@ -156,7 +156,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                 const Text(
                   '※ 신고된 내용은 검토 후 24시간 이내에 조치됩니다.',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: AppFontSize.meta,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -283,7 +283,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 18,
+                          fontSize: AppFontSize.titleLg,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -301,7 +301,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                         child: const Text(
                           '안심기업',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppFontSize.meta,
                             fontWeight: FontWeight.w700,
                             color: AppColors.primary,
                           ),
@@ -405,7 +405,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
           const SizedBox(height: 12),
           Text(
             desc.isEmpty ? '아직 회사 소개가 작성되지 않았습니다.' : desc,
-            style: const TextStyle(fontSize: 14, height: 1.6),
+            style: const TextStyle(fontSize: AppFontSize.button, height: 1.6),
           ),
         ],
       ),
@@ -429,7 +429,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
 
   Widget _tinyMuted(String text) => Text(
     text,
-    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+    style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
   );
 
   Widget _statsCard() {
@@ -496,7 +496,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: AppFontSize.meta,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -504,7 +504,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                 Text(
                   value,
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: AppFontSize.titleLg,
                     fontWeight: FontWeight.w900,
                   ),
                 ),

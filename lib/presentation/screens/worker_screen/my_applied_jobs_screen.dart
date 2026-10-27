@@ -576,7 +576,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
               size: 20,
             ),
             hintText: '제목 또는 지역으로 검색',
-            hintStyle: TextStyle(color: AppColors.textTertiary, fontSize: 14),
+            hintStyle: TextStyle(color: AppColors.textTertiary, fontSize: AppFontSize.button),
             border: InputBorder.none,
             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             isDense: true,
@@ -608,7 +608,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFontSize.button,
                         fontWeight:
                             selected ? FontWeight.w700 : FontWeight.w500,
                         color:
@@ -631,7 +631,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                       child: Text(
                         '$count',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: AppFontSize.caption,
                           fontWeight: FontWeight.w700,
                           color:
                               selected ? Colors.white : AppColors.textTertiary,
@@ -686,7 +686,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
             child: Text(
               '$label $n',
               style: AppTextStyles.captionBold.copyWith(
-                fontSize: 13,
+                fontSize: AppFontSize.body2,
                 color: selected ? AppColors.primary : AppColors.textSecondary,
               ),
             ),
@@ -888,7 +888,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                         child: Text(
                           '${stage.next} ›',
                           style: AppTextStyles.captionBold.copyWith(
-                            fontSize: 13,
+                            fontSize: AppFontSize.body2,
                             color: AppColors.primary,
                           ),
                         ),
@@ -917,7 +917,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                         child: Text(
                           reviewed ? '후기 작성 완료' : '후기 남기기 ›',
                           style: AppTextStyles.captionBold.copyWith(
-                            fontSize: 13,
+                            fontSize: AppFontSize.body2,
                             color:
                                 reviewed
                                     ? AppColors.textTertiary
@@ -1016,7 +1016,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
         ),
         body:
             isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const AppSkeletonList()
                 : Column(
                   children: [
                     // 지원 0건이면 검색창·'0'짜리 칩 없이 빈 화면 안내만 (평가 2026-10)

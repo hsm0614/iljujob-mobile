@@ -403,7 +403,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                   const Text(
                     '공고 등록 완료!',
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: AppFontSize.h2,
                       fontWeight: FontWeight.w900,
                       color: _text,
                     ),
@@ -415,7 +415,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                         : '지금 바로 구직자에게 노출됩니다.',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: AppFontSize.button,
                       color: _sub,
                       height: 1.55,
                     ),
@@ -438,7 +438,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                         '내 공고 보러가기',
                         style: TextStyle(
                           fontWeight: FontWeight.w700,
-                          fontSize: 16,
+                          fontSize: AppFontSize.buttonLg,
                         ),
                       ),
                     ),
@@ -528,7 +528,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                 '등록 방식 선택',
                 // 제목에 브랜드 블루 금지 (디자인 가이드)
                 style: TextStyle(
-                  fontSize: 18,
+                  fontSize: AppFontSize.titleLg,
                   fontWeight: FontWeight.w800,
                   color: _text,
                 ),
@@ -536,7 +536,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
               const SizedBox(height: 6),
               const Text(
                 '동일한 공고를 새 날짜·급여로 재등록해요',
-                style: TextStyle(fontSize: 13, color: _sub),
+                style: TextStyle(fontSize: AppFontSize.body2, color: _sub),
               ),
               if (_reachableWorkersCount != null) ...[
                 const SizedBox(height: 14),
@@ -677,7 +677,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                         child: const Text(
                           '빠른 등록',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppFontSize.meta,
                             fontWeight: FontWeight.w800,
                             color: _blue,
                           ),
@@ -688,7 +688,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                         child: Text(
                           '날짜·급여만 바꾸고 바로 등록',
                           style: TextStyle(
-                            fontSize: 13,
+                            fontSize: AppFontSize.body2,
                             color: _label,
                             fontWeight: FontWeight.w500,
                           ),
@@ -743,7 +743,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                               child: Text(
                                 '→',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: AppFontSize.titleLg,
                                   color: _label.withOpacity(0.6),
                                 ),
                               ),
@@ -819,7 +819,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                                           child: Text(
                                             t,
                                             style: TextStyle(
-                                              fontSize: 14,
+                                              fontSize: AppFontSize.button,
                                               fontWeight: FontWeight.w700,
                                               color: sel ? Colors.white : _sub,
                                             ),
@@ -847,7 +847,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                             ),
                             child: const Text(
                               '금액은 공고에 급여 협의로 표시됩니다.',
-                              style: TextStyle(fontSize: 13, color: _sub),
+                              style: TextStyle(fontSize: AppFontSize.body2, color: _sub),
                             ),
                           )
                         else
@@ -855,20 +855,20 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                             controller: _payCtrl,
                             keyboardType: TextInputType.number,
                             style: const TextStyle(
-                              fontSize: 22,
+                              fontSize: AppFontSize.h2,
                               fontWeight: FontWeight.w800,
                               color: _text,
                             ),
                             decoration: InputDecoration(
                               hintText: '0',
                               hintStyle: const TextStyle(
-                                fontSize: 22,
+                                fontSize: AppFontSize.h2,
                                 fontWeight: FontWeight.w800,
                                 color: _border,
                               ),
                               suffixText: '원',
                               suffixStyle: const TextStyle(
-                                fontSize: 16,
+                                fontSize: AppFontSize.buttonLg,
                                 fontWeight: FontWeight.w700,
                                 color: _label,
                               ),
@@ -941,7 +941,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                                   child: Text(
                                     _payWarning!,
                                     style: const TextStyle(
-                                      fontSize: 12,
+                                      fontSize: AppFontSize.meta,
                                       fontWeight: FontWeight.w600,
                                       color: AppColors.error,
                                     ),
@@ -964,7 +964,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                             Text(
                               '2026년 최저시급 ${_fmt.format(_minWage)}원',
                               style: const TextStyle(
-                                fontSize: 11,
+                                fontSize: AppFontSize.caption,
                                 color: _label,
                               ),
                             ),
@@ -1030,7 +1030,7 @@ class _JobSummaryCard extends StatelessWidget {
                 child: Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: AppFontSize.buttonLg,
                     fontWeight: FontWeight.w800,
                     color: _text,
                   ),
@@ -1048,7 +1048,7 @@ class _JobSummaryCard extends StatelessWidget {
                 child: Text(
                   category,
                   style: const TextStyle(
-                    fontSize: 11,
+                    fontSize: AppFontSize.caption,
                     fontWeight: FontWeight.w700,
                     color: _blue,
                   ),
@@ -1093,7 +1093,7 @@ class _JobSummaryCard extends StatelessWidget {
               const Text(
                 '위 정보를 그대로 재사용해요',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: AppFontSize.caption,
                   color: _label,
                   fontWeight: FontWeight.w500,
                 ),
@@ -1121,7 +1121,7 @@ class _InfoChip extends StatelessWidget {
       Text(
         label,
         style: TextStyle(
-          fontSize: 12,
+          fontSize: AppFontSize.meta,
           color: color ?? _sub,
           fontWeight: FontWeight.w500,
         ),
@@ -1156,7 +1156,7 @@ class _DateRangeSummary extends StatelessWidget {
           Text(
             '${dfShort.format(start)} ~ ${dfShort.format(end)}  ·  총 $days일',
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: AppFontSize.meta,
               fontWeight: FontWeight.w600,
               color: _sub,
             ),
@@ -1180,7 +1180,7 @@ class _SectionTitle extends StatelessWidget {
       Text(
         label,
         style: const TextStyle(
-          fontSize: 14,
+          fontSize: AppFontSize.button,
           fontWeight: FontWeight.w700,
           color: _text,
         ),
@@ -1216,7 +1216,7 @@ class _DateTile extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 11,
+              fontSize: AppFontSize.caption,
               fontWeight: FontWeight.w600,
               color: value != null ? _blue : _label,
             ),
@@ -1225,7 +1225,7 @@ class _DateTile extends StatelessWidget {
           Text(
             value ?? '선택',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: AppFontSize.body2,
               fontWeight: FontWeight.w700,
               color: value != null ? _text : _label,
             ),
@@ -1271,13 +1271,13 @@ class _OptionCard extends StatelessWidget {
                 Text(
                   title,
                   style: const TextStyle(
-                    fontSize: 15,
+                    fontSize: AppFontSize.body1,
                     fontWeight: FontWeight.w700,
                     color: _text,
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(desc, style: const TextStyle(fontSize: 12, color: _label)),
+                Text(desc, style: const TextStyle(fontSize: AppFontSize.meta, color: _label)),
               ],
             ),
           ),
@@ -1291,7 +1291,7 @@ class _OptionCard extends StatelessWidget {
             child: Text(
               badge,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: AppFontSize.meta,
                 fontWeight: FontWeight.w700,
                 color: badgeOk ? _blue : AppColors.error,
               ),
@@ -1355,7 +1355,7 @@ class _BottomButtons extends StatelessWidget {
                     : const Text(
                       '등록 방식 선택 →',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: AppFontSize.buttonLg,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.2,
                       ),

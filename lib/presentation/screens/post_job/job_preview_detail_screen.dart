@@ -207,7 +207,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
               '미리보기',
               // Colors.orange는 흰 배경에서 2.15:1 — AA 미달
               style: TextStyle(
-                fontSize: 12,
+                fontSize: AppFontSize.meta,
                 fontWeight: FontWeight.w700,
                 color: AppColors.warningDark,
               ),
@@ -286,7 +286,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                           '내 근처 단기 알바',
                           // _kBrand는 #E7F0FF 위에서 3.05:1 — AA 미달
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: AppFontSize.caption,
                             fontWeight: FontWeight.w600,
                             color: AppColors.primaryDark,
                           ),
@@ -310,7 +310,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                         child: Text(
                           widget.category,
                           style: const TextStyle(
-                            fontSize: 11,
+                            fontSize: AppFontSize.caption,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -320,7 +320,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                         child: Text(
                           widget.title,
                           style: const TextStyle(
-                            fontSize: 19,
+                            fontSize: AppFontSize.titleLg,
                             fontWeight: FontWeight.w700,
                             fontFamily: 'Jalnan2TTF',
                             color: _kText,
@@ -341,7 +341,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                       Expanded(
                         child: Text(
                           widget.location,
-                          style: const TextStyle(fontSize: 13, color: _kLabel),
+                          style: const TextStyle(fontSize: AppFontSize.body2, color: _kLabel),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -371,7 +371,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                     '근무 정보',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 16,
+                      fontSize: AppFontSize.buttonLg,
                       color: _kText,
                     ),
                   ),
@@ -397,7 +397,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                       '상세 설명',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        fontSize: 14,
+                        fontSize: AppFontSize.button,
                         color: _kText,
                       ),
                     ),
@@ -405,7 +405,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                     Text(
                       widget.description.trim(),
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFontSize.button,
                         height: 1.6,
                         color: _kText,
                       ),
@@ -435,7 +435,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                               '공고 설명이 비어 있어요. 등록 전에 작성하는 걸 추천해요.',
                               // Colors.orange는 2.15:1 — AA 미달
                               style: TextStyle(
-                                fontSize: 13,
+                                fontSize: AppFontSize.body2,
                                 color: AppColors.warningDark,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -463,7 +463,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                     '근무 위치',
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 16,
+                      fontSize: AppFontSize.buttonLg,
                       color: _kText,
                     ),
                   ),
@@ -529,7 +529,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                                     child: Text(
                                       widget.location,
                                       style: const TextStyle(
-                                        fontSize: 12,
+                                        fontSize: AppFontSize.meta,
                                         color: _kText,
                                       ),
                                       maxLines: 1,
@@ -585,7 +585,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                               ? widget.companyName
                               : '회사명 미입력',
                           style: const TextStyle(
-                            fontSize: 15,
+                            fontSize: AppFontSize.body1,
                             fontWeight: FontWeight.w700,
                             color: _kText,
                           ),
@@ -595,7 +595,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                           widget.managerName.isNotEmpty
                               ? '담당자: ${widget.managerName}'
                               : '담당자 정보 없음',
-                          style: const TextStyle(fontSize: 13, color: _kLabel),
+                          style: const TextStyle(fontSize: AppFontSize.body2, color: _kLabel),
                         ),
                       ],
                     ),
@@ -627,7 +627,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                         '등록 전 확인해주세요',
                         // 섹션 헤더에 브랜드 블루 금지 (디자인 가이드)
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: AppFontSize.body2,
                           fontWeight: FontWeight.w700,
                           color: _kText,
                         ),
@@ -655,7 +655,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                             t,
                             // _kBrand는 #E7F0FF 위에서 2.95:1 — AA 미달
                             style: const TextStyle(
-                              fontSize: 12,
+                              fontSize: AppFontSize.meta,
                               color: _kText,
                             ),
                           ),
@@ -702,7 +702,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                   ),
                   child: const Text(
                     '수정하기',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: AppFontSize.body1),
                   ),
                 ),
               ),
@@ -723,7 +723,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                     '공고 등록하기',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 15,
+                      fontSize: AppFontSize.body1,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -744,7 +744,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
         child: Text(
           text,
           style: const TextStyle(
-            fontSize: 14,
+            fontSize: AppFontSize.button,
             color: _kText,
             fontWeight: FontWeight.w500,
           ),
@@ -808,7 +808,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
             const SizedBox(width: 12),
             const Text(
               '공고를 분석하고 있어요…',
-              style: TextStyle(fontSize: 13, color: _kLabel),
+              style: TextStyle(fontSize: AppFontSize.body2, color: _kLabel),
             ),
           ],
         ),
@@ -857,7 +857,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                 const Text(
                   '공고 분석',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: AppFontSize.button,
                     fontWeight: FontWeight.w700,
                     color: _kText,
                   ),
@@ -887,7 +887,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                     child: Text(
                       '${q.score}',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: AppFontSize.h2,
                         fontWeight: FontWeight.w800,
                         color: gradeColor,
                       ),
@@ -902,7 +902,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                       Text(
                         q.gradeLabel,
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: AppFontSize.body1,
                           fontWeight: FontWeight.w700,
                           color: gradeColor,
                         ),
@@ -987,7 +987,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                       child: Text(
                         '개선 포인트 ${q.tips.length}개',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: AppFontSize.caption,
                           color: gradeColor,
                           fontWeight: FontWeight.w700,
                         ),
@@ -1054,7 +1054,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                                     child: Text(
                                       tip.msg,
                                       style: const TextStyle(
-                                        fontSize: 12,
+                                        fontSize: AppFontSize.meta,
                                         color: _kText,
                                       ),
                                     ),
@@ -1084,7 +1084,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
       Expanded(
         child: Text(
           label,
-          style: const TextStyle(fontSize: 12, color: _kLabel),
+          style: const TextStyle(fontSize: AppFontSize.meta, color: _kLabel),
         ),
       ),
       // 12px 값 텍스트라 3:1(UI 컴포넌트)이 아니라 4.5:1이 기준이다.
@@ -1092,7 +1092,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
       Text(
         value,
         style: TextStyle(
-          fontSize: 12,
+          fontSize: AppFontSize.meta,
           fontWeight: FontWeight.w700,
           color: valueColor == _kBrand ? AppColors.primaryDark : valueColor,
         ),

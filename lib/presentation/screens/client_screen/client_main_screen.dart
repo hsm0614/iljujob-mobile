@@ -1,3 +1,4 @@
+import 'package:iljujob/config/app_theme.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -241,7 +242,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     '한정 이벤트 진행 중',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                    style: TextStyle(fontSize: AppFontSize.titleLg, fontWeight: FontWeight.w800),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -250,7 +251,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     '지금 참여하면 보너스 혜택을 드려요.',
-                    style: TextStyle(fontSize: 14, color: Colors.black54),
+                    style: TextStyle(fontSize: AppFontSize.button, color: Colors.black54),
                     textAlign: TextAlign.center,
                   ),
                 ),

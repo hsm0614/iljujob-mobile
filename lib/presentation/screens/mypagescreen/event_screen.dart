@@ -65,7 +65,7 @@ class _EventScreenState extends State<EventScreen> {
         onRefresh: _fetchEvents,
         child:
             isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const AppSkeletonList(rows: 4)
                 : error != null
                 ? AppEmptyState(
                   icon: Icons.wifi_off_rounded,

@@ -165,7 +165,7 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
                             if (!isNegotiablePayType(job.payType))
                               Text(
                                 '(${job.payType})',
-                                style: const TextStyle(fontSize: 12),
+                                style: const TextStyle(fontSize: AppFontSize.meta),
                               ),
                           ],
                         ),

@@ -624,7 +624,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                         Text(
                           isEdit ? '자격증 수정' : '자격증 추가',
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: AppFontSize.titleLg,
                             fontWeight: FontWeight.w700,
                             color: kText,
                           ),
@@ -719,7 +719,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                             child: Text(
                               isEdit ? '수정 완료' : '저장하기',
                               style: const TextStyle(
-                                fontSize: 15,
+                                fontSize: AppFontSize.body1,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -843,7 +843,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                               child: Text(
                                 '기본 정보 수정',
                                 style: TextStyle(
-                                  fontSize: 18,
+                                  fontSize: AppFontSize.titleLg,
                                   fontWeight: FontWeight.w700,
                                   color: kText,
                                 ),
@@ -1084,7 +1084,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontFamily: 'Jalnan2TTF',
-                      fontSize: 16,
+                      fontSize: AppFontSize.buttonLg,
                       fontWeight: FontWeight.w800,
                       color: kText,
                     ),
@@ -1094,7 +1094,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                     message,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       height: 1.35,
                       fontWeight: FontWeight.w700,
                       color: kMuted,
@@ -1178,13 +1178,13 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
             title,
             style: const TextStyle(
               fontWeight: FontWeight.w700,
-              fontSize: 14,
+              fontSize: AppFontSize.button,
               color: kText,
             ),
           ),
           if (sub != null) ...[
             const SizedBox(height: 4),
-            Text(sub, style: const TextStyle(fontSize: 13, color: kMuted)),
+            Text(sub, style: const TextStyle(fontSize: AppFontSize.body2, color: kMuted)),
           ],
         ],
       ),
@@ -1203,7 +1203,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
           ),
           if (sub != null) ...[
             const SizedBox(height: 3),
-            Text(sub, style: const TextStyle(fontSize: 13, color: kMuted)),
+            Text(sub, style: const TextStyle(fontSize: AppFontSize.body2, color: kMuted)),
           ],
         ],
       ),
@@ -1237,7 +1237,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: AppFontSize.meta,
             fontWeight: FontWeight.w700,
             color: kText,
           ),
@@ -1291,7 +1291,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
           text,
           style: TextStyle(
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            fontSize: 13,
+            fontSize: AppFontSize.body2,
             color: selected ? kBrandBlue : kMuted,
           ),
         ),
@@ -1385,7 +1385,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
             child: Text(
               text,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: AppFontSize.meta,
                 color: kMuted,
                 fontWeight: FontWeight.w500,
                 height: 1.35,
@@ -1459,7 +1459,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                 Text(
                   _nameCtrl.text.isNotEmpty ? _nameCtrl.text : '이름 미입력',
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: AppFontSize.buttonLg,
                     fontWeight: FontWeight.w700,
                     color: kText,
                   ),
@@ -1469,7 +1469,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                   _birthDisplayText(_birthYear),
                   // 데이터 값은 다크 잉크 — 파랑은 액션 전용
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: AppFontSize.body2,
                     color: kText,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1477,7 +1477,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                 const SizedBox(height: 2),
                 Text(
                   _phone.isNotEmpty ? _phone : '전화번호 미입력',
-                  style: const TextStyle(fontSize: 13, color: kMuted),
+                  style: const TextStyle(fontSize: AppFontSize.body2, color: kMuted),
                 ),
               ],
             ),
@@ -1518,7 +1518,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
               children: [
                 const Text(
                   '사장님이 가장 먼저 읽는 내용이에요. 2~3줄이면 충분해요!',
-                  style: TextStyle(fontSize: 13, color: kMuted),
+                  style: TextStyle(fontSize: AppFontSize.body2, color: kMuted),
                 ),
                 const SizedBox(height: 10),
                 Container(
@@ -1533,7 +1533,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                     maxLines: 7,
                     maxLength: 300,
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: AppFontSize.body1,
                       height: 1.5,
                       color: kText,
                     ),
@@ -1542,7 +1542,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                       hintStyle: TextStyle(color: AppColors.textTertiary),
                       border: InputBorder.none,
                       isDense: true,
-                      counterStyle: TextStyle(fontSize: 12, color: kMuted),
+                      counterStyle: TextStyle(fontSize: AppFontSize.meta, color: kMuted),
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
@@ -1749,7 +1749,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                           '이력서 열람 동의',
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
-                            fontSize: 14,
+                            fontSize: AppFontSize.button,
                             color: kText,
                           ),
                         ),
@@ -1800,7 +1800,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                     e.place,
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 15,
+                      fontSize: AppFontSize.body1,
                       color: kText,
                     ),
                   ),
@@ -1818,7 +1818,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                     Text(
                       e.description,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFontSize.button,
                         color: kMuted,
                         height: 1.3,
                       ),
@@ -1875,14 +1875,14 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                     l.name,
                     style: const TextStyle(
                       fontWeight: FontWeight.w700,
-                      fontSize: 15,
+                      fontSize: AppFontSize.body1,
                       color: kText,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${l.issuedAt} 취득',
-                    style: const TextStyle(color: kMuted, fontSize: 13),
+                    style: const TextStyle(color: kMuted, fontSize: AppFontSize.body2),
                   ),
                   // '증빙 첨부 준비중' 자리표시는 섹션 설명에 이미 있어 카드별 반복 제거
                 ],
@@ -1923,7 +1923,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         label,
         style: TextStyle(
           fontWeight: FontWeight.w700,
-          fontSize: 13,
+          fontSize: AppFontSize.body2,
           color: blue ? kBrandBlue : kMuted,
         ),
       ),
@@ -1945,7 +1945,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
             child: Text(
               label,
               style: const TextStyle(
-                fontSize: 14,
+                fontSize: AppFontSize.button,
                 color: kMuted,
                 height: 1.3,
               ),
@@ -2046,7 +2046,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                               : const Text(
                                 '저장하기',
                                 style: TextStyle(
-                                  fontSize: 16,
+                                  fontSize: AppFontSize.buttonLg,
                                   fontWeight: FontWeight.w800,
                                 ),
                               ),
@@ -2093,7 +2093,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
               const Text(
                 '프로필 완성도',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSize.body2,
                   fontWeight: FontWeight.w800,
                   color: kText,
                 ),
@@ -2102,7 +2102,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
               Text(
                 '$pct%',
                 style: const TextStyle(
-                  fontSize: 15,
+                  fontSize: AppFontSize.body1,
                   fontWeight: FontWeight.w700,
                   color: kText,
                 ),
@@ -2125,7 +2125,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                 ? '완성! 사장님에게 가장 신뢰가는 프로필이에요'
                 : '${next.first}만 채워도 사장님 신뢰가 올라가요',
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: AppFontSize.meta,
               color: kMuted,
               fontWeight: FontWeight.w600,
             ),
@@ -2233,7 +2233,7 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                         child: Text(
                           label(v),
                           style: const TextStyle(
-                            fontSize: 18,
+                            fontSize: AppFontSize.titleLg,
                             fontWeight: FontWeight.w700,
                             color: kText,
                           ),
@@ -2283,7 +2283,7 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                         child: Text(
                           title,
                           style: const TextStyle(
-                            fontSize: 17,
+                            fontSize: AppFontSize.title,
                             fontWeight: FontWeight.w700,
                             color: kText,
                           ),
@@ -2343,7 +2343,7 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                           pretty(temp),
                           style: const TextStyle(
                             fontWeight: FontWeight.w700,
-                            fontSize: 15,
+                            fontSize: AppFontSize.body1,
                             color: kText,
                           ),
                         ),

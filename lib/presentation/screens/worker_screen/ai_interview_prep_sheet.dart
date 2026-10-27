@@ -168,14 +168,14 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                       const Text(
                         'AI 면접 준비 도우미',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: AppFontSize.buttonLg,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       Text(
                         widget.jobTitle,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppFontSize.meta,
                           color: AppColors.textTertiary,
                         ),
                         maxLines: 1,
@@ -203,14 +203,14 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                       SizedBox(height: 16),
                       Text(
                         'AI가 면접 준비 가이드를 만들고 있어요...',
-                        style: TextStyle(color: Colors.black54, fontSize: 13),
+                        style: TextStyle(color: Colors.black54, fontSize: AppFontSize.body2),
                       ),
                       SizedBox(height: 6),
                       Text(
                         '보통 5~10초 걸려요',
                         style: TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 11,
+                          fontSize: AppFontSize.caption,
                         ),
                       ),
                       SizedBox(height: 24),
@@ -249,7 +249,7 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                                 _isDailyLimit
                                     ? AppColors.warningDark
                                     : AppColors.error,
-                            fontSize: 13,
+                            fontSize: AppFontSize.body2,
                             height: 1.5,
                           ),
                         ),
@@ -283,7 +283,7 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                   child: Text(
                     _result ?? '',
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: AppFontSize.button,
                       height: 1.65,
                       color: Color(0xFF1E2A3A),
                     ),
@@ -303,7 +303,7 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                       child: Text(
                         'AI가 생성한 내용이에요. 실제 면접과 다를 수 있어요.',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: AppFontSize.caption,
                           color: AppColors.textDisabled,
                         ),
                       ),

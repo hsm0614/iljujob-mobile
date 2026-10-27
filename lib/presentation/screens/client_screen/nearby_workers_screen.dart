@@ -127,7 +127,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                 const Text(
                   '긴급호출 문구 수정',
                   style: TextStyle(
-                    fontSize: 19,
+                    fontSize: AppFontSize.titleLg,
                     fontWeight: FontWeight.w900,
                     color: AppColors.textPrimary,
                   ),
@@ -136,7 +136,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                 Text(
                   '${_selected.length}명에게 채팅과 푸시로 함께 전달돼요.',
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: AppFontSize.body2,
                     height: 1.35,
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w600,
@@ -314,7 +314,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
               '긴급 호출',
               style: TextStyle(
                 fontFamily: 'Jalnan2TTF',
-                fontSize: 17,
+                fontSize: AppFontSize.title,
                 fontWeight: FontWeight.w900,
                 color: AppColors.primary,
               ),
@@ -322,7 +322,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
             Text(
               widget.jobTitle,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: AppFontSize.meta,
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w400,
               ),
@@ -374,7 +374,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                 Text(
                   '반경 5km 내 ${_workers.length}명',
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: AppFontSize.meta,
                     fontWeight: FontWeight.w700,
                     color: AppColors.pending,
                   ),
@@ -386,7 +386,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
           Text(
             '최대 $_maxSelect명 선택',
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: AppFontSize.meta,
               color: AppColors.textSecondary,
             ),
           ),
@@ -521,7 +521,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                           Text(
                             maskedName,
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: AppFontSize.button,
                               fontWeight: FontWeight.w700,
                               color:
                                   alreadySent
@@ -543,7 +543,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                               child: const Text(
                                 '오늘 가능',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: AppFontSize.caption,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
                                 ),
@@ -564,7 +564,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                               child: const Text(
                                 '발송됨',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: AppFontSize.caption,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textTertiary,
                                 ),
@@ -586,7 +586,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                             Text(
                               _distanceLabel(distance),
                               style: const TextStyle(
-                                fontSize: 11,
+                                fontSize: AppFontSize.caption,
                                 color: AppColors.textSecondary,
                               ),
                             ),
@@ -601,7 +601,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                           Text(
                             _lastActiveLabel(w['last_active_at']),
                             style: const TextStyle(
-                              fontSize: 11,
+                              fontSize: AppFontSize.caption,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -634,7 +634,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                               Text(
                                 grade,
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: AppFontSize.body2,
                                   fontWeight: FontWeight.w900,
                                   color: gradeColor,
                                 ),
@@ -642,7 +642,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                               Text(
                                 '$score',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: AppFontSize.caption,
                                   color: gradeColor,
                                 ),
                               ),
@@ -656,7 +656,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                         child: const Text(
                           '프로필',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: AppFontSize.caption,
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,
                           ),
@@ -695,7 +695,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
               child: Text(
                 '$count명 선택됨',
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSize.body2,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -728,7 +728,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                       : Text(
                         count > 0 ? '$count명에게 긴급 호출 발송' : '알바생을 선택해주세요',
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: AppFontSize.body1,
                           fontWeight: FontWeight.w700,
                           color:
                               count > 0

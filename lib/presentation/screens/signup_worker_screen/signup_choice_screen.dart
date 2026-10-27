@@ -38,7 +38,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       minimumSize: const Size.fromHeight(52),
-      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      textStyle: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w700),
     );
   }
 
@@ -288,7 +288,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                   const Text(
                     '알바일주 시작하기',
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: AppFontSize.h2,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
                     ),
@@ -297,7 +297,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                   const SizedBox(height: 8),
                   const Text(
                     '카카오/애플로 간편하게 가입하고 바로 시작하세요.\n전화번호 인증은 나중에 프로필에서 선택할 수 있어요.',
-                    style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                    style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
@@ -384,7 +384,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                   const SizedBox(height: 20),
                   const Text(
                     '가입 후 프로필을 채우면 사장님 연락을 더 많이 받을 수 있어요.',
-                    style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                    style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -422,7 +422,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
               // ─────────────────────────────
               const Text(
                 '성별',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: AppFontSize.button),
               ),
               const SizedBox(height: 12),
               Wrap(

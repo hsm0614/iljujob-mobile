@@ -115,14 +115,14 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                           const Text(
                             'AI 공고 인사이트',
                             style: TextStyle(
-                              fontSize: 17,
+                              fontSize: AppFontSize.title,
                               fontWeight: FontWeight.w800,
                               color: _text,
                             ),
                           ),
                           Text(
                             widget.jobTitle,
-                            style: const TextStyle(fontSize: 12, color: _label),
+                            style: const TextStyle(fontSize: AppFontSize.meta, color: _label),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ],
@@ -166,13 +166,13 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
           const SizedBox(height: 16),
           const Text(
             '구독자 전용 기능이에요',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+            style: TextStyle(fontSize: AppFontSize.title, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 8),
           const Text(
             '공고 인사이트는 구독 플랜에서\n이용할 수 있어요.',
             textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
+            style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary, height: 1.5),
           ),
           const SizedBox(height: 24),
           SizedBox(
@@ -188,7 +188,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 elevation: 0,
               ),
-              child: const Text('구독 플랜 보기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 15)),
+              child: const Text('구독 플랜 보기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: AppFontSize.body1)),
             ),
           ),
         ],
@@ -269,12 +269,12 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                   children: [
                     const Text(
                       '조회→지원 전환율',
-                      style: TextStyle(fontSize: 13, color: _label),
+                      style: TextStyle(fontSize: AppFontSize.body2, color: _label),
                     ),
                     Text(
                       '$applyRate%',
                       style: TextStyle(
-                        fontSize: 15,
+                        fontSize: AppFontSize.body1,
                         fontWeight: FontWeight.w800,
                         color:
                             applyRate >= d.benchApplyRate
@@ -304,7 +304,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                   children: [
                     Text(
                       '업종 평균 ${d.benchApplyRate}%',
-                      style: const TextStyle(fontSize: 11, color: _label),
+                      style: const TextStyle(fontSize: AppFontSize.caption, color: _label),
                     ),
                     Text(
                       d.rateVsBench == 'above'
@@ -313,7 +313,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                           ? '평균보다 낮아요'
                           : '평균 수준',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFontSize.caption,
                         fontWeight: FontWeight.w600,
                         color:
                             d.rateVsBench == 'above'
@@ -406,13 +406,13 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
             ),
             child: Row(
               children: [
-                const Text('⏰', style: TextStyle(fontSize: 16)),
+                const Text('⏰', style: TextStyle(fontSize: AppFontSize.buttonLg)),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     '$peakHour시에 알바생들이 가장 많이 공고를 봐요',
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       color: _text,
                       fontWeight: FontWeight.w500,
                     ),
@@ -447,14 +447,14 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                             children: [
                               Text(
                                 m.icon,
-                                style: const TextStyle(fontSize: 14),
+                                style: const TextStyle(fontSize: AppFontSize.button),
                               ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   m.text,
                                   style: const TextStyle(
-                                    fontSize: 13,
+                                    fontSize: AppFontSize.body2,
                                     color: _text,
                                     height: 1.5,
                                   ),
@@ -471,7 +471,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
           if (similarCount > 0)
             Text(
               '* 비슷한 공고 $similarCount개 기준',
-              style: const TextStyle(fontSize: 11, color: _label),
+              style: const TextStyle(fontSize: AppFontSize.caption, color: _label),
             ),
         ],
       ],
@@ -482,7 +482,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
   Widget _sectionTitle(String t) => Text(
     t,
     style: const TextStyle(
-      fontSize: 14,
+      fontSize: AppFontSize.button,
       fontWeight: FontWeight.w700,
       color: _text,
     ),
@@ -504,13 +504,13 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
               Text(
                 value,
                 style: TextStyle(
-                  fontSize: 15,
+                  fontSize: AppFontSize.body1,
                   fontWeight: FontWeight.w800,
                   color: color,
                 ),
               ),
               const SizedBox(height: 2),
-              Text(label, style: const TextStyle(fontSize: 11, color: _label)),
+              Text(label, style: const TextStyle(fontSize: AppFontSize.caption, color: _label)),
             ],
           ),
         ),
@@ -519,11 +519,11 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
   Widget _compareRow(String label, String value, Color? vc) => Row(
     mainAxisAlignment: MainAxisAlignment.spaceBetween,
     children: [
-      Text(label, style: const TextStyle(fontSize: 13, color: _label)),
+      Text(label, style: const TextStyle(fontSize: AppFontSize.body2, color: _label)),
       Text(
         value,
         style: TextStyle(
-          fontSize: 14,
+          fontSize: AppFontSize.button,
           fontWeight: FontWeight.w700,
           color: vc ?? _text,
         ),
@@ -545,11 +545,11 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
           children: [
             _dot(_blue),
             const SizedBox(width: 4),
-            const Text('내 시급', style: TextStyle(fontSize: 11, color: _label)),
+            const Text('내 시급', style: TextStyle(fontSize: AppFontSize.caption, color: _label)),
             const SizedBox(width: 12),
             _dot(AppColors.badgeUrgent),
             const SizedBox(width: 4),
-            const Text('평균', style: TextStyle(fontSize: 11, color: _label)),
+            const Text('평균', style: TextStyle(fontSize: AppFontSize.caption, color: _label)),
           ],
         ),
       ],
@@ -602,7 +602,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
       ),
       child: Text(
         text,
-        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: fg),
+        style: TextStyle(fontSize: AppFontSize.meta, fontWeight: FontWeight.w600, color: fg),
       ),
     );
   }
@@ -612,13 +612,13 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
       Text(
         value,
         style: TextStyle(
-          fontSize: 22,
+          fontSize: AppFontSize.h2,
           fontWeight: FontWeight.w800,
           color: color,
         ),
       ),
       const SizedBox(height: 4),
-      Text(label, style: const TextStyle(fontSize: 11, color: _label)),
+      Text(label, style: const TextStyle(fontSize: AppFontSize.caption, color: _label)),
     ],
   );
 }

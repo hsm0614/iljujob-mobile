@@ -70,7 +70,7 @@ class WorkConfirmationCard extends StatelessWidget {
                 const Text(
                   '출근 확정 카드',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: AppFontSize.button,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textPrimary,
                   ),
@@ -88,7 +88,7 @@ class WorkConfirmationCard extends StatelessWidget {
                   child: Text(
                     statusLabel,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: AppFontSize.caption,
                       fontWeight: FontWeight.w700,
                       color: statusColor,
                     ),
@@ -151,7 +151,7 @@ class WorkConfirmationCard extends StatelessWidget {
                       child: const Text(
                         '거절',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: AppFontSize.body2,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -174,7 +174,7 @@ class WorkConfirmationCard extends StatelessWidget {
                       child: const Text(
                         '수락하기',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: AppFontSize.body2,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -196,7 +196,7 @@ class WorkConfirmationCard extends StatelessWidget {
                   icon: const Icon(Icons.person_off_rounded, size: 15),
                   label: const Text(
                     '노쇼 신고',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: AppFontSize.body2, fontWeight: FontWeight.w600),
                   ),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.urgentCall,
@@ -252,12 +252,12 @@ class _Row extends StatelessWidget {
       const SizedBox(width: 6),
       Text(
         '$label  ',
-        style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
+        style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textTertiary),
       ),
       Text(
         value,
         style: const TextStyle(
-          fontSize: 13,
+          fontSize: AppFontSize.body2,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
@@ -558,7 +558,7 @@ class _ProposeWorkConfirmationSheetState
                           Text(
                             '출근 확정 제안',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: AppFontSize.buttonLg,
                               fontWeight: FontWeight.w800,
                               color: AppColors.textPrimary,
                             ),
@@ -567,7 +567,7 @@ class _ProposeWorkConfirmationSheetState
                           Text(
                             '알바생이 수락하면 근무가 확정돼요',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: AppFontSize.meta,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -608,7 +608,7 @@ class _ProposeWorkConfirmationSheetState
                             child: Text(
                               '장기 공고 (${widget.weekdays})입니다.\n출근 첫날 날짜를 선택해주세요.',
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: AppFontSize.meta,
                                 color: Color(0xFFEA580C),
                               ),
                             ),
@@ -764,7 +764,7 @@ class _ProposeWorkConfirmationSheetState
                             child: Text(
                               '예상 ${estHours!.toStringAsFixed(1)}시간  ·  총 ${NumberFormat('#,###').format(estPay)}원',
                               style: const TextStyle(
-                                fontSize: 12,
+                                fontSize: AppFontSize.meta,
                                 fontWeight: FontWeight.w700,
                                 color: Color(0xFF15803D),
                               ),
@@ -804,7 +804,7 @@ class _ProposeWorkConfirmationSheetState
                               : const Text(
                                 '제안 보내기',
                                 style: TextStyle(
-                                  fontSize: 15,
+                                  fontSize: AppFontSize.body1,
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0.3,
                                 ),
@@ -829,7 +829,7 @@ class _FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) => Text(
     text,
     style: const TextStyle(
-      fontSize: 13,
+      fontSize: AppFontSize.body2,
       fontWeight: FontWeight.w600,
       color: AppColors.textSecondary,
     ),
@@ -875,7 +875,7 @@ class _Tile extends StatelessWidget {
             child: Text(
               text,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: AppFontSize.body2,
                 fontWeight: isEmpty ? FontWeight.w400 : FontWeight.w600,
                 color:
                     isEmpty ? AppColors.textTertiary : AppColors.textPrimary,

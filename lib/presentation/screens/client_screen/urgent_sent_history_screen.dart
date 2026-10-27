@@ -210,7 +210,7 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
                     Text(
                       maskedName,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFontSize.button,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textPrimary,
                       ),
@@ -228,7 +228,7 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
                       child: Text(
                         grade,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: AppFontSize.caption,
                           fontWeight: FontWeight.w900,
                           color: gradeColor,
                         ),
@@ -240,7 +240,7 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
                 Text(
                   _relTime(log['sent_at']?.toString()),
                   style: const TextStyle(
-                    fontSize: 11,
+                    fontSize: AppFontSize.caption,
                     color: AppColors.textTertiary,
                   ),
                 ),
@@ -261,7 +261,7 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
                 child: Text(
                   _statusLabel(status),
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppFontSize.caption,
                     fontWeight: FontWeight.w700,
                     color: statusColor,
                   ),
@@ -283,7 +283,7 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
                     child: const Text(
                       '채팅 보기',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFontSize.caption,
                         fontWeight: FontWeight.w700,
                         color: AppColors.primary,
                       ),

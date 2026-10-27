@@ -53,7 +53,7 @@ class CancelApplicationDialog extends StatelessWidget {
                       Text(
                         '지원 취소하시겠어요?',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: AppFontSize.buttonLg,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
                         ),
@@ -63,7 +63,7 @@ class CancelApplicationDialog extends StatelessWidget {
                         '이 공고에 대한 지원이 취소되며,\n'
                         '다시 지원하려면 새로 지원해야 할 수 있어요.',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: AppFontSize.body2,
                           height: 1.4,
                           color: AppColors.textSecondary,
                         ),
@@ -93,7 +93,7 @@ class CancelApplicationDialog extends StatelessWidget {
                       '취소 이후에는 채팅만 남고,\n'
                       '해당 공고와의 매칭은 해제됩니다.',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppFontSize.meta,
                         height: 1.4,
                         color: AppColors.textSecondary,
                       ),
@@ -123,7 +123,7 @@ class CancelApplicationDialog extends StatelessWidget {
                     child: const Text(
                       '네, 지원을 취소할게요',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFontSize.button,
                         fontWeight: FontWeight.w700,
                         color: Colors.white,
                       ),
@@ -144,7 +144,7 @@ class CancelApplicationDialog extends StatelessWidget {
                     child: const Text(
                       '그냥 둘게요',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFontSize.button,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textSecondary,
                       ),
@@ -265,7 +265,7 @@ class AlbailjuChatAppBarTitle extends StatelessWidget {
           name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: AppTextStyles.h3.copyWith(fontSize: 16),
+          style: AppTextStyles.h3.copyWith(fontSize: AppFontSize.buttonLg),
         ),
         if (note != null)
           Text(

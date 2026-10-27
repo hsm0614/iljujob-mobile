@@ -157,7 +157,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
           Text(
             text,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppFontSize.meta,
               fontWeight: FontWeight.w600,
               color: fgColor ?? brandBlueDark,
               height: 1.0,
@@ -193,7 +193,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
             const Text(
               '작성한 공고가 없어요.',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: AppFontSize.buttonLg,
                 fontWeight: FontWeight.w800,
                 color: textDark,
               ),
@@ -202,7 +202,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
             const Text(
               '공고를 작성하면 여기에서\n이전 공고를 바로 불러올 수 있어요.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, height: 1.4, color: textMute),
+              style: TextStyle(fontSize: AppFontSize.body2, height: 1.4, color: textMute),
             ),
             const SizedBox(height: 16),
             OutlinedButton(
@@ -281,7 +281,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
-                          fontSize: 16,
+                          fontSize: AppFontSize.buttonLg,
                           fontWeight: FontWeight.w900,
                           color: textDark,
                           height: 1.15,
@@ -344,7 +344,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                       child: Text(
                         dateText,
                         style: const TextStyle(
-                          fontSize: 13,
+                          fontSize: AppFontSize.body2,
                           color: textMute,
                           fontWeight: FontWeight.w600,
                         ),
@@ -365,7 +365,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                       child: Text(
                         timeText,
                         style: const TextStyle(
-                          fontSize: 13,
+                          fontSize: AppFontSize.body2,
                           color: textMute,
                           fontWeight: FontWeight.w600,
                         ),
@@ -401,7 +401,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                           payType,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 12,
+                            fontSize: AppFontSize.meta,
                             fontWeight: FontWeight.w800,
                             height: 1.0,
                           ),
@@ -412,7 +412,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                         child: Text(
                           pay.isEmpty ? '급여 정보 없음' : '$pay원',
                           style: const TextStyle(
-                            fontSize: 15,
+                            fontSize: AppFontSize.body1,
                             fontWeight: FontWeight.w900,
                             color: textDark,
                           ),
@@ -468,7 +468,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                   Text(
                     '공고를 선택하면 날짜·급여만 바꿔서 바로 등록할 수 있어요',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppFontSize.meta,
                       fontWeight: FontWeight.w600,
                       color: AppColors.primary,
                     ),

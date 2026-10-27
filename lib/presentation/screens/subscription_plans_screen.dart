@@ -305,7 +305,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
               const Text(
                 '구독이 시작되었어요!',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: AppFontSize.h2,
                   fontWeight: FontWeight.w800,
                   fontFamily: 'Jalnan2TTF',
                   color: AppColors.textPrimary,
@@ -316,7 +316,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                 '${_plan.name} 플랜의 기간 혜택이 시작됐어요.\n즉시게시·먼저 연락·지도 알림 잔여량을 확인해 주세요.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 14,
+                  fontSize: AppFontSize.button,
                   color: AppColors.textSecondary,
                   height: 1.5,
                 ),
@@ -340,7 +340,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                   ),
                   child: const Text(
                     '확인',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                    style: TextStyle(fontSize: AppFontSize.body1, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
@@ -382,7 +382,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                     const Text(
                       '알바일주 구독으로\n더 빠르게 채용하세요',
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: AppFontSize.h2,
                         fontWeight: FontWeight.w900,
                         height: 1.3,
                         color: AppColors.textPrimary,
@@ -392,7 +392,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                     const Text(
                       '결제 기간 동안 먼저 연락하고 지도에서 알릴 수 있어요',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: AppFontSize.body2,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -513,7 +513,7 @@ class _PlanCard extends StatelessWidget {
                 Text(
                   plan.name,
                   style: TextStyle(
-                    fontSize: 16,
+                    fontSize: AppFontSize.buttonLg,
                     fontWeight: FontWeight.w800,
                     color: selected ? color : AppColors.textPrimary,
                   ),
@@ -532,7 +532,7 @@ class _PlanCard extends StatelessWidget {
                     child: const Text(
                       '추천',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFontSize.caption,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
                       ),
@@ -548,7 +548,7 @@ class _PlanCard extends StatelessWidget {
                             displayPrice ??
                             NumberFormat('#,###').format(plan.price),
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: AppFontSize.titleLg,
                           fontWeight: FontWeight.w900,
                           color: selected ? color : AppColors.textPrimary,
                         ),
@@ -561,7 +561,7 @@ class _PlanCard extends StatelessWidget {
                                 ? '원/월'
                                 : '/월',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppFontSize.meta,
                           fontWeight: FontWeight.w500,
                           color: AppColors.textSecondary,
                         ),
@@ -640,7 +640,7 @@ class _Chip extends StatelessWidget {
         Text(
           label,
           style: TextStyle(
-            fontSize: 11,
+            fontSize: AppFontSize.caption,
             fontWeight: FontWeight.w700,
             color: color,
           ),
@@ -691,7 +691,7 @@ class _CompareTable extends StatelessWidget {
                     child: Text(
                       '라이트',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFontSize.caption,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textSecondary,
                       ),
@@ -703,7 +703,7 @@ class _CompareTable extends StatelessWidget {
                     child: Text(
                       '프로',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFontSize.caption,
                         fontWeight: FontWeight.w700,
                         color: AppColors.pending,
                       ),
@@ -738,7 +738,7 @@ class _CompareTable extends StatelessWidget {
                       child: Text(
                         row[0],
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: AppFontSize.meta,
                           fontWeight: FontWeight.w600,
                           color: AppColors.textSecondary,
                         ),
@@ -755,14 +755,14 @@ class _CompareTable extends StatelessWidget {
                                 ? const Text(
                                   '-',
                                   style: TextStyle(
-                                    fontSize: 12,
+                                    fontSize: AppFontSize.meta,
                                     color: AppColors.textDisabled,
                                   ),
                                 )
                                 : Text(
                                   val,
                                   style: const TextStyle(
-                                    fontSize: 12,
+                                    fontSize: AppFontSize.meta,
                                     fontWeight: FontWeight.w700,
                                     color: AppColors.textPrimary,
                                   ),
@@ -787,7 +787,7 @@ class _Notice extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const style = TextStyle(
-      fontSize: 11,
+      fontSize: AppFontSize.caption,
       color: AppColors.textSecondary,
       height: 1.6,
     );
@@ -803,7 +803,7 @@ class _Notice extends StatelessWidget {
           const Text(
             '유의사항',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppFontSize.meta,
               fontWeight: FontWeight.w700,
               color: AppColors.textSecondary,
             ),
@@ -880,7 +880,7 @@ class _BottomCta extends StatelessWidget {
                         ? '${plan.name} App Store 가격 확인 후 구독'
                         : '${plan.name} 구독 시작 (${displayPrice ?? '${NumberFormat('#,###').format(plan.price)}원'}/월)',
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: AppFontSize.body1,
                       fontWeight: FontWeight.w800,
                     ),
                   ),

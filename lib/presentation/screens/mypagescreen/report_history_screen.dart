@@ -84,7 +84,7 @@ String url = selectedType == 'job'
           Expanded(
             child:
                 loading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const AppSkeletonList(rows: 4)
                     : allReports.isEmpty
                     ? const AppEmptyState(
                       icon: Icons.flag_outlined,
@@ -179,7 +179,7 @@ String url = selectedType == 'job'
               Text(
                 statusLabel,
                 style: AppTextStyles.captionBold.copyWith(
-                  fontSize: 12,
+                  fontSize: AppFontSize.meta,
                   color: statusColor,
                 ),
               ),

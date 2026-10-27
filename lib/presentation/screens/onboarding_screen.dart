@@ -42,7 +42,7 @@ class OnboardingScreen extends StatelessWidget {
                   child: Text(
                     '어떤 분이신가요?',
                     style: TextStyle(
-                      fontSize: 16,
+                      fontSize: AppFontSize.buttonLg,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
                     ),
@@ -130,7 +130,7 @@ class _BrandBlock extends StatelessWidget {
           '알바일주',
           style: TextStyle(
             fontFamily: 'Jalnan2TTF',
-            fontSize: 46,
+            fontSize: AppFontSize.hero,
             color: AppColors.primary,
             letterSpacing: 0.5,
           ),
@@ -139,7 +139,7 @@ class _BrandBlock extends StatelessWidget {
         Text(
           '필요한 날, 딱 맞는 알바',
           style: TextStyle(
-            fontSize: 15,
+            fontSize: AppFontSize.body1,
             color: AppColors.textSecondary,
             fontWeight: FontWeight.w500,
           ),
@@ -167,7 +167,7 @@ class _FeatureTags extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 6),
               child: Text(
                 '·',
-                style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
+                style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.textTertiary),
               ),
             ),
           _Tag(tags[i]),
@@ -187,7 +187,7 @@ class _Tag extends StatelessWidget {
     return Text(
       label,
       style: const TextStyle(
-        fontSize: 13,
+        fontSize: AppFontSize.body2,
         color: AppColors.textSecondary,
         fontWeight: FontWeight.w600,
       ),
@@ -283,7 +283,7 @@ class _TypeCardState extends State<_TypeCard> {
                       widget.label,
                       style: const TextStyle(
                         fontFamily: 'Jalnan2TTF',
-                        fontSize: 17,
+                        fontSize: AppFontSize.title,
                         color: AppColors.textPrimary,
                       ),
                     ),
@@ -294,7 +294,7 @@ class _TypeCardState extends State<_TypeCard> {
                     Text(
                       widget.subtitle,
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: AppFontSize.meta,
                         color: AppColors.textSecondary,
                         height: 1.55,
                       ),
@@ -343,7 +343,7 @@ class _TypeCardState extends State<_TypeCard> {
                     widget.badge!,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 11,
+                      fontSize: AppFontSize.caption,
                       fontWeight: FontWeight.w700,
                     ),
                   ),

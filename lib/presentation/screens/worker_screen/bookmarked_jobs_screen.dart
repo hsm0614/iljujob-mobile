@@ -183,7 +183,7 @@ class _BookmarkedJobsScreenState extends State<BookmarkedJobsScreen> {
       appBar: AppBar(title: const Text('관심 공고')),
       body:
           _isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const AppSkeletonList()
               : _isError
               ? AppEmptyState(
                 icon: Icons.wifi_off_rounded,

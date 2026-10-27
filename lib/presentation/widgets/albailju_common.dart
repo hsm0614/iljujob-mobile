@@ -136,7 +136,7 @@ class AlbailjuPostJobCta extends StatelessWidget {
                 label,
                 style: TextStyle(
                   fontFamily: 'Jalnan2TTF',
-                  fontSize: 13,
+                  fontSize: AppFontSize.body2,
                   fontWeight: FontWeight.w900,
                   color: fg,
                   height: 1.0,
@@ -194,7 +194,7 @@ class AlbailjuPostJobPrimaryButton extends StatelessWidget {
                 label,
                 style: const TextStyle(
                   fontFamily: 'Jalnan2TTF',
-                  fontSize: 16,
+                  fontSize: AppFontSize.buttonLg,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
                   height: 1.0,

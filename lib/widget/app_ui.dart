@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:iljujob/config/app_theme.dart';
 
 /// 공고 신호 뱃지. 색 의미가 고정돼 있다 (DESIGN.md — The Two-Signal Rule):
@@ -58,7 +59,7 @@ class JobSignalBadge extends StatelessWidget {
             label,
             style: TextStyle(
               color: _color,
-              fontSize: pill ? 12 : 10.5,
+              fontSize: pill ? AppFontSize.meta : AppFontSize.caption,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.2,
             ),
@@ -96,7 +97,7 @@ class AppPrimaryButton extends StatelessWidget {
       ),
     );
 
-    return SizedBox(
+    final button = SizedBox(
       width: double.infinity,
       height: height,
       child:
@@ -113,6 +114,7 @@ class AppPrimaryButton extends StatelessWidget {
                 style: style,
               ),
     );
+    return onPressed == null ? button : AppPressScale(child: button);
   }
 }
 
@@ -168,7 +170,7 @@ class AppActionBand extends StatelessWidget {
                     Text(
                       title,
                       style: AppTextStyles.h3.copyWith(
-                        fontSize: 15,
+                        fontSize: AppFontSize.body1,
                         fontWeight: FontWeight.w900,
                         height: 1.15,
                       ),
@@ -177,7 +179,7 @@ class AppActionBand extends StatelessWidget {
                     Text(
                       subtitle,
                       style: AppTextStyles.body2.copyWith(
-                        fontSize: 12,
+                        fontSize: AppFontSize.meta,
                         fontWeight: FontWeight.w600,
                         height: 1.25,
                       ),
@@ -290,7 +292,7 @@ class AppBottomNavItem extends StatelessWidget {
                             badgeLabel!,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 11,
+                              fontSize: AppFontSize.caption,
                               fontWeight: FontWeight.w700,
                               height: 1.1,
                             ),
@@ -304,7 +306,7 @@ class AppBottomNavItem extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: AppFontSize.caption,
                   fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                   color: isActive ? AppColors.primary : AppColors.textSecondary,
                 ),
@@ -453,7 +455,8 @@ Future<bool> showAppSheet(
                       const SizedBox(width: 8),
                     ],
                     Expanded(
-                      child: SizedBox(
+                      child: AppPressScale(
+                        child: SizedBox(
                         height: 52,
                         child: FilledButton(
                           style:
@@ -465,6 +468,7 @@ Future<bool> showAppSheet(
                           onPressed: () => Navigator.pop(ctx, true),
                           child: Text(confirmLabel),
                         ),
+                      ),
                       ),
                     ),
                   ],
@@ -499,7 +503,7 @@ class AppMenuSection extends StatelessWidget {
                 title!,
                 style: AppTextStyles.captionBold.copyWith(
                   color: AppColors.textSecondary,
-                  fontSize: 13,
+                  fontSize: AppFontSize.body2,
                 ),
               ),
             ),
@@ -573,6 +577,129 @@ class AppMenuRow extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// 목록 로딩 자리표시 (2026-10, 토스식 회색 줄). 가운데 빙글이 대신 — 무엇이 올지 모양을 먼저 보여준다.
+/// [avatar]: 채팅처럼 왼쪽 동그라미가 있는 목록. 천천히 밝아졌다 어두워진다(0.9초).
+class AppSkeletonList extends StatefulWidget {
+  final int rows;
+  final bool avatar;
+  const AppSkeletonList({super.key, this.rows = 6, this.avatar = false});
+
+  @override
+  State<AppSkeletonList> createState() => _AppSkeletonListState();
+}
+
+class _AppSkeletonListState extends State<AppSkeletonList>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  )..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  Widget _bar(double? w, double h) => Container(
+    width: w,
+    height: h,
+    decoration: BoxDecoration(
+      color: AppColors.bgMuted,
+      borderRadius: BorderRadius.circular(AppRadius.xs),
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: Tween(begin: 1.0, end: 0.45).animate(_c),
+      child: ListView.builder(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.zero,
+        itemCount: widget.rows,
+        itemBuilder:
+            (_, i) => Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (widget.avatar) ...[
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: const BoxDecoration(
+                        color: AppColors.bgMuted,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                  ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _bar(i.isEven ? 120 : 90, 12),
+                        const SizedBox(height: 8),
+                        _bar(double.infinity, 16),
+                        const SizedBox(height: 8),
+                        _bar(i.isEven ? 160 : 200, 12),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+      ),
+    );
+  }
+}
+
+/// 누르는 동안 살짝 작아지는 반응 (2026-10, 토스식). 손가락이 닿는 순간 반응해 '눌렸다'가 바로 느껴진다.
+/// 제스처를 가로채지 않는다(Listener) — 안쪽 InkWell·버튼은 그대로 동작한다.
+class AppPressScale extends StatefulWidget {
+  final Widget child;
+  final double scale;
+
+  /// 닿는 순간 가벼운 진동. 주요 버튼만 (목록 줄마다 울리면 시끄럽다)
+  final bool haptic;
+  const AppPressScale({
+    super.key,
+    required this.child,
+    this.scale = 0.97,
+    this.haptic = true,
+  });
+
+  @override
+  State<AppPressScale> createState() => _AppPressScaleState();
+}
+
+class _AppPressScaleState extends State<AppPressScale> {
+  bool _down = false;
+
+  void _set(bool v) {
+    if (_down != v) setState(() => _down = v);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Listener(
+      onPointerDown: (_) {
+        _set(true);
+        if (widget.haptic) HapticFeedback.selectionClick();
+      },
+      onPointerUp: (_) => _set(false),
+      onPointerCancel: (_) => _set(false),
+      child: AnimatedScale(
+        scale: _down ? widget.scale : 1,
+        duration: const Duration(milliseconds: 90),
+        curve: Curves.easeOut,
+        child: widget.child,
       ),
     );
   }

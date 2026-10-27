@@ -624,7 +624,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     '알림을 켜면 사장님 답장을 바로 받아요',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 17,
+                      fontSize: AppFontSize.title,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
                     ),
@@ -634,7 +634,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     '지금은 알림이 꺼져 있어 사장님이 연락해도\n모르고 지나칠 수 있어요.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       color: AppColors.textSecondary,
                       height: 1.5,
                     ),
@@ -660,7 +660,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       '알림 설정 열기',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        fontSize: 15,
+                        fontSize: AppFontSize.body1,
                       ),
                     ),
                   ),
@@ -1117,7 +1117,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   const SizedBox(width: 10),
                   // 지원하기 버튼
                   Expanded(
-                    child: SizedBox(
+                    child: AppPressScale(
+                      child: SizedBox(
                       height: 52,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
@@ -1155,12 +1156,13 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                               ? '앱으로 지원'
                               : '지원하고 채팅 시작',
                           style: const TextStyle(
-                            fontSize: 16,
+                            fontSize: AppFontSize.buttonLg,
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
+                    ),
                     ),
                   ),
                 ],
@@ -1179,7 +1181,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     Text(
                       '외부 페이지로 이동합니다',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppFontSize.meta,
                         fontWeight: FontWeight.w700,
                         color: AppColors.textSecondary,
                       ),
@@ -1233,7 +1235,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             child: Text(
               text,
               style: TextStyle(
-                fontSize: 13,
+                fontSize: AppFontSize.body2,
                 height: 1.25,
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w600,
@@ -1354,7 +1356,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 return Chip(
                   label: Text('${entry.key} (${entry.value})'),
                   backgroundColor: AppColors.border,
-                  labelStyle: const TextStyle(fontSize: 13),
+                  labelStyle: const TextStyle(fontSize: AppFontSize.body2),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
                     vertical: 4,
@@ -1388,7 +1390,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       children: [
         SizedBox(
           width: 80,
-          child: Text(label, style: const TextStyle(fontSize: 14)),
+          child: Text(label, style: const TextStyle(fontSize: AppFontSize.button)),
         ),
         Expanded(
           child: LinearProgressIndicator(
@@ -1399,7 +1401,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        Text('$count명', style: const TextStyle(fontSize: 13)),
+        Text('$count명', style: const TextStyle(fontSize: AppFontSize.body2)),
       ],
     );
   }
@@ -1431,7 +1433,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       ),
       body:
           isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const AppSkeletonList(rows: 4)
               : ListView(
                 padding: const EdgeInsets.only(bottom: 24),
                 children: [
@@ -1460,7 +1462,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                           Text(
                             '이 공고는 마감됐어요.',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: AppFontSize.button,
                               color: AppColors.textPrimary,
                               fontWeight: FontWeight.w700,
                             ),
@@ -1724,7 +1726,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 child: Text(
                   label,
                   style: const TextStyle(
-                    fontSize: 11,
+                    fontSize: AppFontSize.caption,
                     fontWeight: FontWeight.w700,
                     color: AppColors.textSecondary,
                   ),
@@ -1773,14 +1775,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           Text(
             valueText,
             style: TextStyle(
-              fontSize: emphasize ? 18 : 16,
+              fontSize: emphasize ? AppFontSize.titleLg : AppFontSize.buttonLg,
               fontWeight: emphasize ? FontWeight.w900 : FontWeight.w700,
             ),
           ),
           const SizedBox(height: 2),
           Text(
             label,
-            style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+            style: TextStyle(fontSize: AppFontSize.caption, color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -1847,7 +1849,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 Text(
                   '이 공고는 근무지가 ${widget.job.geoPoints.length}곳이에요',
                   style: const TextStyle(
-                    fontSize: 14,
+                    fontSize: AppFontSize.button,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),
@@ -1872,7 +1874,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                           child: Text(
                             loc.address,
                             style: const TextStyle(
-                              fontSize: 13,
+                              fontSize: AppFontSize.body2,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -1882,7 +1884,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   ),
                 const Text(
                   '어느 지점인지는 사장님과 대화하면서 정해요.',
-                  style: TextStyle(fontSize: 11, color: AppColors.textTertiary),
+                  style: TextStyle(fontSize: AppFontSize.caption, color: AppColors.textTertiary),
                 ),
               ],
             ),
@@ -2084,7 +2086,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                               clientProfile?['description'] ??
                                   widget.job.locationCity,
                               style: const TextStyle(
-                                fontSize: 13,
+                                fontSize: AppFontSize.body2,
                                 color: AppColors.textSecondary,
                               ),
                               maxLines: 1,
@@ -2115,7 +2117,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                         Text(
                           '사업자 정보',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppFontSize.meta,
                             color: AppColors.textPrimary,
                           ),
                         ),

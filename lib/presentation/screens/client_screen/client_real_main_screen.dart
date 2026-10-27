@@ -309,7 +309,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
     child: Text(
       text,
       style: const TextStyle(
-        fontSize: 12,
+        fontSize: AppFontSize.meta,
         color: kBrandBlue,
         fontWeight: FontWeight.w600,
       ),
@@ -377,7 +377,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
               const SizedBox(height: 12),
               const Text(
                 '조건에 맞는 공고가 없어요',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                style: TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 6),
               const Text('필터를 조정해보세요', style: TextStyle(color: kTextSecondary)),
@@ -435,7 +435,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
             borderSide: BorderSide.none,
           ),
         ),
-        style: const TextStyle(fontSize: 13),
+        style: const TextStyle(fontSize: AppFontSize.body2),
       ),
     );
   }
@@ -460,7 +460,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: AppFontSize.buttonLg,
                 fontWeight: FontWeight.w700,
                 color: kTextPrimary,
               ),
@@ -480,7 +480,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: AppFontSize.body1,
                       color: Colors.black87,
                       fontWeight: FontWeight.w500,
                     ),
@@ -523,7 +523,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
-                fontSize: 15,
+                fontSize: AppFontSize.body1,
                 color: kTextPrimary,
               ),
             ),
@@ -533,7 +533,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
             child: Text(
               job.location,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 13, color: kTextPrimary),
+              style: const TextStyle(fontSize: AppFontSize.body2, color: kTextPrimary),
             ),
           ),
           const SizedBox(width: 8),
@@ -602,7 +602,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
           children: [
             Text(
               '거리 설정: ${selectedDistance.toInt()}km 이내',
-              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: AppFontSize.button, fontWeight: FontWeight.w600),
             ),
             Slider(
               min: 1,
@@ -652,7 +652,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
               child: Text(
                 '보유 이용권: $_remainingPass개',
                 style: const TextStyle(
-                  fontSize: 15,
+                  fontSize: AppFontSize.body1,
                   fontWeight: FontWeight.w600,
                   color: kTextPrimary,
                 ),
@@ -777,7 +777,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
                       '공고 등록',
                       style: TextStyle(
                         color: kBrandBlue,
-                        fontSize: 14,
+                        fontSize: AppFontSize.button,
                         fontWeight: FontWeight.w800,
                         // 폰트 대소문자 혼용 때문에 적용 안될 수 있어서 통일 추천
                         fontFamily: 'Jalnan2TTF',
