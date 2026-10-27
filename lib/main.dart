@@ -431,6 +431,8 @@ Future<void> _handleNotificationData(Map<String, String> data) async {
     await _handleJobNotification(RemoteMessage(data: data));
   } else if (type == 'inquiry') {
     navigatorKey.currentState?.pushNamed('/inquiry');
+  } else if (type == 'repost_nudge' || type == 'zero_applicant_care') {
+    navigatorKey.currentState?.pushNamed('/post_job');
   } else if (data['chatRoomId'] != null || data['roomId'] != null) {
     // 채팅 초대·동의 결과 푸시는 예전 서버가 roomId 로만 보냈다(눌러도 안 열렸음).
     await _handleChatNotification(RemoteMessage(data: data));
@@ -541,6 +543,9 @@ Future<void> _handleInitialMessage(
       }
     } else if (type == 'inquiry') {
       navigator.pushNamed('/inquiry');
+    } else if (userType == 'client' &&
+        (type == 'repost_nudge' || type == 'zero_applicant_care')) {
+      navigator.pushNamed('/post_job');
     } else if (initialMessage.data['chatRoomId'] != null ||
         initialMessage.data['roomId'] != null) {
       final homeWithChatTab =
