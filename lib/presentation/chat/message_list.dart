@@ -281,21 +281,8 @@ class _DateDivider extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.border,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
+        // 회색 알약 → 글자만 (흰 바탕 채팅)
+        child: Text(label, style: AppTextStyles.caption),
       ),
     );
   }
@@ -425,12 +412,7 @@ class _MessageBubble extends StatelessWidget {
                                   ),
                                   width: 1,
                                 )
-                                : (!isMe
-                                    ? Border.all(
-                                      color: AppColors.border,
-                                      width: 0.8,
-                                    )
-                                    : null),
+                                : null,
                       ),
                       child:
                           hasImage

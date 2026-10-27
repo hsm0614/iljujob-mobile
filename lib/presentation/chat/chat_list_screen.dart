@@ -609,12 +609,12 @@ class _ChatListScreenState extends State<ChatListScreen>
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: AppColors.primaryLight,
+              color: AppColors.bgMuted,
               borderRadius: BorderRadius.circular(999),
             ),
             child: const Icon(
               Icons.notifications_none_rounded,
-              color: AppColors.primary,
+              color: AppColors.textSecondary,
               size: 17,
             ),
           ),
@@ -696,28 +696,6 @@ class _ChatListScreenState extends State<ChatListScreen>
         statusText.contains('채택');
   }
 
-  Widget _buildRoomBadge({
-    required String label,
-    required Color foreground,
-    required Color background,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: foreground,
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-
   Widget _buildChatItem(Map chat) {
     final unreadCount =
         userType == 'worker'
@@ -727,7 +705,6 @@ class _ChatListScreenState extends State<ChatListScreen>
     final isUrgent =
         chat['is_urgent_call'] == 1 || chat['is_urgent_call'] == true;
     final isConfirmed = _isConfirmedRoom(chat);
-    final showRoomBadges = hasUnread || isUrgent || isConfirmed;
 
     String resolveProfileImageUrl(String? url) {
       if (url == null || url.trim().isEmpty) return '';
@@ -841,14 +818,146 @@ class _ChatListScreenState extends State<ChatListScreen>
           ),
         ],
       ),
+      // 2026-10 리디자인(당근 채팅 목록): 떠 있는 카드·안읽음 파란 바탕·'새 메시지' 뱃지(숫자와 중복)·⋯ 버튼
+      // → 흰 줄 + 구분선. 누가(굵게) · 무슨 공고 · 마지막 말 순서. 더보기는 길게 누르기/밀기로
       child: Material(
-        color:
-            hasUnread
-                ? AppColors.primaryLight.withValues(alpha: 0.45)
-                : AppColors.bgCard,
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.bgCard,
         child: InkWell(
-          onTap: () {
+          onTap: () => _openRoom(chat),
+          onLongPress: () => _showChatActions(chat),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: AppColors.borderSub)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: AppColors.bgMuted,
+                  backgroundImage:
+                      profileImageUrl.isNotEmpty
+                          ? NetworkImage(profileImageUrl)
+                          : null,
+                  child:
+                      profileImageUrl.isEmpty
+                          ? Text(
+                            fallbackText.isNotEmpty ? fallbackText[0] : '?',
+                            style: AppTextStyles.h3.copyWith(
+                              color: AppColors.textTertiary,
+                            ),
+                          )
+                          : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              '$otherParty',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.jobTitle,
+                            ),
+                          ),
+                          if (isUrgent) ...[
+                            const SizedBox(width: 6),
+                            const JobSignalBadge(
+                              label: '긴급호출',
+                              signal: JobSignal.time,
+                            ),
+                          ],
+                          if (isConfirmed) ...[
+                            const SizedBox(width: 6),
+                            const JobSignalBadge(
+                              label: '출근확정',
+                              signal: JobSignal.money,
+                            ),
+                          ],
+                          if (userType == 'client' &&
+                              chat['user_available_today'] == 1) ...[
+                            const SizedBox(width: 6),
+                            const JobSignalBadge(
+                              label: '오늘 가능',
+                              signal: JobSignal.time,
+                            ),
+                          ],
+                          const Spacer(),
+                          if (lastTime.isNotEmpty)
+                            Text(lastTime, style: AppTextStyles.caption),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '$jobTitle',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.jobMeta,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              previewText,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.body2.copyWith(
+                                color:
+                                    lastMessage.isEmpty
+                                        ? AppColors.textTertiary
+                                        : hasUnread
+                                        ? AppColors.textPrimary
+                                        : AppColors.textSecondary,
+                                fontWeight:
+                                    hasUnread
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                          if (hasUnread)
+                            Container(
+                              margin: const EdgeInsets.only(left: 8),
+                              constraints: const BoxConstraints(minWidth: 20),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                // 안읽음은 '빨리 봐야 함' — 주황(시간 신호). 파랑은 누르는 것에만
+                                color: AppColors.badgeUrgent,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.full,
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                unreadCount > 99 ? '99+' : '$unreadCount',
+                                style: AppTextStyles.captionBold.copyWith(
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openRoom(Map chat) {
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -884,211 +993,6 @@ class _ChatListScreenState extends State<ChatListScreen>
                 widget.onMessagesRead?.call();
               }
             });
-          },
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: AppColors.primaryLight,
-                      backgroundImage:
-                          profileImageUrl.isNotEmpty
-                              ? NetworkImage(profileImageUrl)
-                              : null,
-                      child:
-                          profileImageUrl.isEmpty
-                              ? Text(
-                                (fallbackText.isNotEmpty
-                                    ? fallbackText[0]
-                                    : '?'),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.textSecondary,
-                                ),
-                              )
-                              : null,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // 제목 + 시간
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  jobTitle,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 16,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                              ),
-                              if (lastTime.isNotEmpty) ...[
-                                const SizedBox(width: 8),
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 2),
-                                  child: Text(
-                                    lastTime,
-                                    style: const TextStyle(
-                                      color: AppColors.textTertiary,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(width: 2),
-                              SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: IconButton(
-                                  tooltip: '채팅방 작업',
-                                  padding: EdgeInsets.zero,
-                                  icon: const Icon(
-                                    Icons.more_horiz_rounded,
-                                    color: AppColors.textTertiary,
-                                    size: 21,
-                                  ),
-                                  onPressed: () => _showChatActions(chat),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (showRoomBadges) ...[
-                            const SizedBox(height: 5),
-                            Wrap(
-                              spacing: 5,
-                              runSpacing: 5,
-                              children: [
-                                if (hasUnread)
-                                  _buildRoomBadge(
-                                    label: '새 메시지',
-                                    foreground: Colors.white,
-                                    background: AppColors.primary,
-                                  ),
-                                if (isConfirmed)
-                                  _buildRoomBadge(
-                                    label: '출근확정',
-                                    foreground: AppColors.success,
-                                    background: AppColors.success.withValues(
-                                      alpha: 0.12,
-                                    ),
-                                  ),
-                                if (isUrgent)
-                                  _buildRoomBadge(
-                                    label: '긴급호출',
-                                    foreground: AppColors.warningDark,
-                                    background: AppColors.warningLight,
-                                  ),
-                              ],
-                            ),
-                          ],
-                          const SizedBox(height: 4),
-                          // 상대 + 오늘가능
-                          Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  '$otherParty님',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                              if (userType == 'client' &&
-                                  chat['user_available_today'] == 1)
-                                Container(
-                                  margin: const EdgeInsets.only(left: 6),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: const Text(
-                                    '오늘 가능',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          // 마지막 메시지 + 안읽음
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  previewText,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color:
-                                        lastMessage.isEmpty
-                                            ? AppColors.textTertiary
-                                            : AppColors.textPrimary,
-                                    fontSize: 13,
-                                    fontWeight:
-                                        unreadCount > 0
-                                            ? FontWeight.w700
-                                            : FontWeight.w400,
-                                  ),
-                                ),
-                              ),
-                              if (unreadCount > 0)
-                                Container(
-                                  margin: const EdgeInsets.only(left: 8),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    unreadCount > 99
-                                        ? '99+'
-                                        : unreadCount.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   void _showSnackbar(String message) {
@@ -1151,7 +1055,7 @@ class _ChatListScreenState extends State<ChatListScreen>
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: AppColors.bgPage,
+        backgroundColor: AppColors.bgCard,
         body: RefreshIndicator(
           onRefresh: () async {
             await _fetchChatRooms();
@@ -1203,7 +1107,9 @@ class _ChatListScreenState extends State<ChatListScreen>
                     pinned: true,
                     delegate: _TabHeaderDelegate(
                       TabBar(
-                        indicatorColor: AppColors.primary,
+                        indicatorColor: AppColors.textPrimary,
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        dividerColor: AppColors.border,
                         labelColor: AppColors.textPrimary,
                         unselectedLabelColor: AppColors.textTertiary,
                         labelStyle: const TextStyle(
@@ -1333,19 +1239,12 @@ class _BadgeTab extends StatelessWidget {
           Text(label),
           if (count > 0) ...[
             const SizedBox(width: 5),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(99),
-              ),
-              child: Text(
-                count > 99 ? '99+' : '$count',
-                style: const TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
+            Text(
+              count > 99 ? '99+' : '$count',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: AppColors.badgeUrgent,
               ),
             ),
           ],
@@ -1401,14 +1300,18 @@ class _PrettyListView extends StatelessWidget {
     if (items.isEmpty) {
       return emptyState;
     }
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 120),
       itemBuilder: (_, i) {
-        if (afterFirst != null && i == 1) return afterFirst!;
+        if (afterFirst != null && i == 1) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: afterFirst!,
+          );
+        }
         final itemIndex = afterFirst != null && i > 1 ? i - 1 : i;
         return itemBuilder(items[itemIndex] as Map);
       },
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
       itemCount: items.length + (afterFirst == null ? 0 : 1),
     );
   }

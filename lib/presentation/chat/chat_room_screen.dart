@@ -380,7 +380,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
               const Icon(
                 Icons.work_outline_rounded,
                 size: 17,
-                color: AppColors.primary,
+                color: AppColors.textSecondary,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -388,9 +388,8 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
+                  style: AppTextStyles.body2.copyWith(
+                    fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -1552,7 +1551,8 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
           resizeToAvoidBottomInset: true,
-          backgroundColor: AppColors.bgPage,
+          // 회색 바탕 위 회색 말풍선은 구분이 약했다 — 흰 바탕 (당근·토스 채팅)
+          backgroundColor: AppColors.bgCard,
 
           // ── 앱바
           appBar: AlbailjuAppBar(
@@ -1593,6 +1593,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                   onTap: onProfileTap ?? () {},
                   child: CircleAvatar(
                     radius: 18,
+                    backgroundColor: AppColors.bgMuted,
                     backgroundImage:
                         (targetThumbnailUrl != null &&
                                 targetThumbnailUrl.isNotEmpty)
@@ -1601,7 +1602,10 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     child:
                         (targetThumbnailUrl == null ||
                                 targetThumbnailUrl.isEmpty)
-                            ? const Icon(Icons.person)
+                            ? const Icon(
+                              Icons.person_rounded,
+                              color: AppColors.textDisabled,
+                            )
                             : null,
                   ),
                 ),
@@ -1749,7 +1753,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                           child: Material(
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(999),
-                            elevation: 3,
+                            elevation: 1,
                             child: InkWell(
                               borderRadius: BorderRadius.circular(999),
                               onTap: () => _scrollToBottom(force: true),
@@ -1833,7 +1837,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                         border: InputBorder.none,
                                         hintText:
                                             ctrl.inputEnabled
-                                                ? '메시지를 입력하세요...'
+                                                ? '메시지 보내기'
                                                 : (ctrl.status == 'pending'
                                                     ? '상대방의 수락을 기다리는 중이에요'
                                                     : (ctrl.status ==

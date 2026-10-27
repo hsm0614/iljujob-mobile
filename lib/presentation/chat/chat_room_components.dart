@@ -244,104 +244,36 @@ class AlbailjuChatAppBarTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isPending = status == 'pending';
     final bool isBlocked = status == 'blocked';
-    final bool isActive = status == 'active';
     final bool isCancelled = status == 'cancelled' || status == 'canceled';
 
-    final String chipText;
-    final Color chipBg;
-    final Color chipFg;
+    // 2026-10: 거의 모든 방이 '채팅중'이라 초록 칩은 정보가 없었다 → 평소엔 이름만,
+    // 대기·취소·차단처럼 메시지를 못 보낼 때만 한 줄. 공고 제목은 바로 아래 공고 줄과 중복이라 뺐다
+    final String? note =
+        isPending
+            ? '수락 기다리는 중'
+            : isCancelled
+            ? '지원이 취소된 채팅'
+            : isBlocked
+            ? '차단된 채팅'
+            : null;
 
-    if (isPending) {
-      chipText = '대기중';
-      chipBg = const Color(0xFFFFF3E0);
-      chipFg = AppColors.warningDark;
-    } else if (isCancelled) {
-      chipText = '취소됨';
-      chipBg = const Color(0xFFFFEBEE);
-      chipFg = AppColors.error;
-    } else if (isBlocked) {
-      chipText = '차단됨';
-      chipBg = const Color(0xFFFFEBEE);
-      chipFg = AppColors.error;
-    } else if (isActive) {
-      chipText = '채팅중';
-      chipBg = const Color(0xFFE8F5E9);
-      chipFg = AppColors.badgeSameDay;
-    } else {
-      chipText = '알바일주';
-      chipBg = AppColors.bgMuted;
-      chipFg = AppColors.textSecondary;
-    }
-
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // 상태 칩
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-          decoration: BoxDecoration(
-            color: chipBg,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 5,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: chipFg,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
-                chipText,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: chipFg,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
-                ),
-              ),
-            ],
-          ),
+        Text(
+          name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.h3.copyWith(fontSize: 16),
         ),
-        const SizedBox(width: 8),
-
-        // 이름 + 공고 제목
-        Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                name,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontFamily: 'Jalnan2TTF',
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                  height: 1.1,
-                ),
-              ),
-              if (jobTitle.isNotEmpty) ...[
-                const SizedBox(height: 1),
-                Text(
-                  jobTitle,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.textTertiary,
-                    fontWeight: FontWeight.w400,
-                    height: 1.2,
-                  ),
-                ),
-              ],
-            ],
+        if (note != null)
+          Text(
+            note,
+            style: AppTextStyles.caption.copyWith(
+              color: isPending ? AppColors.badgeUrgent : AppColors.textSecondary,
+            ),
           ),
-        ),
       ],
     );
   }
