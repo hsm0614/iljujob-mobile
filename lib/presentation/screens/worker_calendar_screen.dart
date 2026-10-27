@@ -2493,14 +2493,6 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final bottomSystem = MediaQuery.of(context).padding.bottom;
 
-    final isCompleted = _status == _kCompleted;
-    final badgeText = isCompleted ? '완료' : '예정';
-    final badgeBg =
-        isCompleted
-            ? const Color(0xFFDCFCE7)
-            : widget.brandBlue.withOpacity(0.12);
-    final badgeFg = isCompleted ? AppColors.badgeSameDay : widget.brandBlue;
-
     return DraggableScrollableSheet(
       expand: false,
       initialChildSize: 0.78,
@@ -2540,70 +2532,12 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                   ),
                   const SizedBox(height: 10),
 
-                  // 헤더
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.isEdit ? '일정 수정' : '일정 추가',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontFamily: 'Jalnan2TTF',
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: badgeBg,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          badgeText,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: badgeFg,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                      ),
-                    ],
+                  // 헤더 — 2026-10: 잘난체 제목·상태 뱃지(아래 예정/완료와 중복) → 시스템 제목 한 줄
+                  Text(
+                    widget.isEdit ? '일정 수정' : '근무 일정 추가',
+                    style: AppTextStyles.h2,
                   ),
                   const SizedBox(height: 14),
-
-                  // 텍스트 입력 섹션
-                  _formCard(
-                    child: Column(
-                      children: [
-                        _field(
-                          label: '공고/메모',
-                          hint: '예) 카페 서빙, 쿠팡 상하차',
-                          controller: _titleCtrl,
-                        ),
-                        const SizedBox(height: 10),
-                        _field(
-                          label: '회사/가게',
-                          hint: '예) 알바일주 사장님',
-                          controller: _companyCtrl,
-                        ),
-                        const SizedBox(height: 10),
-                        _field(
-                          label: '금액(원)',
-                          hint: '예) 120,000',
-                          controller: _payCtrl,
-                          keyboardType: TextInputType.number,
-                          isMoney: true,
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
 
                   // 날짜/시간/상태 섹션
                   _formCard(
@@ -2617,7 +2551,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                           ).format(_workDate),
                           onTap: _pickDate,
                         ),
-                        const Divider(height: 18),
+                        const SizedBox(height: 8),
                         Row(
                           children: [
                             Expanded(
@@ -2637,27 +2571,62 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 12),
-                        Row(
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: AppColors.bgMuted,
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                          ),
+                          child: Row(
                           children: [
                             Expanded(
                               child: _statusChip(
-                                text: '예정',
+                                text: '아직 안 했어요',
                                 selected: _status != _kCompleted,
                                 onTap:
                                     () => setState(() => _status = _kScheduled),
                               ),
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 4),
                             Expanded(
                               child: _statusChip(
-                                text: '완료',
+                                text: '일 끝났어요',
                                 selected: _status == _kCompleted,
                                 onTap:
                                     () => setState(() => _status = _kCompleted),
                               ),
                             ),
                           ],
+                        ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // 텍스트 입력 섹션
+                  _formCard(
+                    child: Column(
+                      children: [
+                        _field(
+                          label: '무슨 일인가요?',
+                          hint: '예) 카페 서빙, 쿠팡 상하차',
+                          controller: _titleCtrl,
+                        ),
+                        const SizedBox(height: 10),
+                        _field(
+                          label: '일한 곳 (선택)',
+                          hint: '예) 송도 스타벅스',
+                          controller: _companyCtrl,
+                        ),
+                        const SizedBox(height: 10),
+                        _field(
+                          label: '받을 금액 (원)',
+                          hint: '예) 120,000',
+                          controller: _payCtrl,
+                          keyboardType: TextInputType.number,
+                          isMoney: true,
                         ),
                       ],
                     ),
@@ -2677,36 +2646,24 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      '반복 추가',
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w900,
-                                        color: kText,
-                                      ),
+                                      '매주 반복',
+                                      style: AppTextStyles.body1,
                                     ),
-                                    SizedBox(height: 2),
                                     Text(
-                                      '요일 반복 일정을 한 번에 추가해요',
-                                      style: TextStyle(
-                                        fontSize: 11,
-                                        color: kMuted,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                      '고른 요일마다 같은 일정을 한 번에 넣어요',
+                                      style: AppTextStyles.body2,
                                     ),
                                   ],
                                 ),
                               ),
-                              Switch(
+                              Switch.adaptive(
                                 value: _isRepeat,
                                 onChanged:
                                     (v) => setState(() {
                                       _isRepeat = v;
                                       if (!v) _repeatEndDate = null;
                                     }),
-                                activeThumbColor: widget.brandBlue,
-                                activeTrackColor: widget.brandBlue.withValues(
-                                  alpha: 0.4,
-                                ),
+                                activeTrackColor: widget.brandBlue,
                               ),
                             ],
                           ),
@@ -2724,12 +2681,10 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                               onTap: _pickEndDate,
                             ),
                             const SizedBox(height: 10),
-                            const Text(
-                              '요일 선택',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w900,
-                                color: kMuted,
+                            Text(
+                              '요일',
+                              style: AppTextStyles.body2.copyWith(
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -2756,18 +2711,10 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                                   horizontal: 12,
                                   vertical: 8,
                                 ),
-                                decoration: BoxDecoration(
-                                  color: widget.brandBlue.withOpacity(0.08),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
                                 child: Text(
                                   '총 ${_generateRepeatDates().length}개 일정이 추가돼요',
                                   textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w900,
-                                    color: widget.brandBlue,
-                                  ),
+                                  style: AppTextStyles.body2,
                                 ),
                               ),
                             ],
@@ -2875,17 +2822,9 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
   // ──────────────────────────────────────────
   // UI atoms
   // ──────────────────────────────────────────
-  Widget _formCard({required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.bgPage,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: child,
-    );
-  }
+  // 2026-10: 회색 상자 + 그 안의 흰 테두리 칸(이중 상자) → 상자 없이 회색 입력칸만
+  Widget _formCard({required Widget child}) =>
+      Padding(padding: const EdgeInsets.only(top: 8), child: child);
 
   Widget _field({
     required String label,
@@ -2899,35 +2838,31 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
       children: [
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-            color: kText,
-          ),
+          style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 6),
         TextField(
           controller: controller,
+          style: AppTextStyles.body1,
           keyboardType: keyboardType,
           inputFormatters: isMoney ? [_ThousandsSeparatorFormatter()] : null,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(
+            hintStyle: AppTextStyles.body1.copyWith(
               color: AppColors.textTertiary,
-              fontWeight: FontWeight.w700,
             ),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: AppColors.bgMuted,
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
+              horizontal: 14,
+              vertical: 14,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: kBorder),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               borderSide: BorderSide(color: widget.brandBlue, width: 1.4),
             ),
           ),
@@ -2943,19 +2878,16 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.bgMuted,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
         child: Row(
           children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                color: kMuted,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
+            Text(label, style: AppTextStyles.body2),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -2963,14 +2895,17 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.right,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
+                style: AppTextStyles.body1.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            const SizedBox(width: 6),
-            const Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary),
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: AppColors.textTertiary,
+            ),
           ],
         ),
       ),
@@ -2984,24 +2919,16 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: kBorder),
+          color: AppColors.bgMuted,
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Row(
           children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                color: kMuted,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
+            Text(label, style: AppTextStyles.body2),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -3009,14 +2936,11 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.right,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
+                style: AppTextStyles.body1.copyWith(
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
-            const SizedBox(width: 6),
-            Icon(Icons.schedule_rounded, size: 18, color: widget.brandBlue),
           ],
         ),
       ),
@@ -3030,24 +2954,20 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color:
-              selected
-                  ? widget.brandBlue.withValues(alpha: 0.12)
-                  : Colors.white,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: selected ? widget.brandBlue : kBorder),
+          color: selected ? AppColors.bgCard : AppColors.bgMuted,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          border:
+              selected ? Border.all(color: AppColors.border) : null,
         ),
         alignment: Alignment.center,
         child: Text(
           text,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-            color: selected ? widget.brandBlue : kMuted,
+          style: AppTextStyles.btnMd.copyWith(
+            color: selected ? AppColors.textPrimary : AppColors.textTertiary,
           ),
         ),
       ),
@@ -3056,7 +2976,6 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
 
   Widget _weekdayChip(int weekday, String label) {
     final selected = _selectedWeekdays.contains(weekday);
-    final isWeekend = weekday >= 6;
     return GestureDetector(
       onTap:
           () => setState(() {
@@ -3077,13 +2996,8 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
         alignment: Alignment.center,
         child: Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
-            color:
-                selected
-                    ? Colors.white
-                    : (isWeekend ? AppColors.urgentCall : kText),
+          style: AppTextStyles.btnMd.copyWith(
+            color: selected ? Colors.white : kText,
           ),
         ),
       ),

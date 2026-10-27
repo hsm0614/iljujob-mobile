@@ -395,125 +395,91 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  /// 카드 더보기 — 저빈도·파괴적 액션 모음 (바텀시트 원칙)
+  /// 더보기 (2026-10): 빨간 아이콘 목록 → 공고 이름 + 글자 줄.
+  /// 숨기기는 되돌리기 스낵바가 있어 확인 창 없이 바로 (메뉴→확인→되돌리기 3단계였다)
   void _showCardActions(Job job) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      showDragHandle: true,
       builder:
           (sheetContext) => SafeArea(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 8),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(999),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                  child: Text(
+                    job.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.body2,
                   ),
                 ),
-                const SizedBox(height: 8),
+                AppMenuRow(
+                  label: '목록에서 숨기기',
+                  subtitle: '이 기기에서만 안 보여요',
+                  trailing: const SizedBox.shrink(),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _hide(job.id);
+                  },
+                ),
                 if (job.status == 'active')
-                  ListTile(
-                    leading: const Icon(
-                      Icons.cancel_outlined,
-                      color: AppColors.error,
-                    ),
-                    title: const Text(
-                      '지원 취소',
-                      style: TextStyle(
-                        color: AppColors.error,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                  InkWell(
                     onTap: () {
                       Navigator.pop(sheetContext);
                       _confirmCancel(job);
                     },
-                  ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.visibility_off_outlined,
-                    color: AppColors.textSecondary,
-                  ),
-                  title: const Text(
-                    '목록에서 숨기기',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w600,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      child: Text(
+                        '지원 취소',
+                        style: AppTextStyles.body1.copyWith(
+                          color: AppColors.error,
+                        ),
+                      ),
                     ),
                   ),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    _confirmDelete(job.id);
-                  },
-                ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
               ],
             ),
           ),
     );
   }
 
-  Future<void> _confirmDelete(String jobId) async {
-    final confirmed = await showAppSheet(
-      context,
-      title: '목록에서 숨길까요?',
-      message: '내역은 이 기기에서만 숨겨져요.',
-      cancelLabel: '취소',
-      confirmLabel: '숨기기',
-    );
+  Future<void> _hide(String jobId) async {
+    hiddenJobIds.add(jobId);
+    await _saveHiddenIds();
+    _applyFilters();
 
-    if (confirmed == true) {
-      hiddenJobIds.add(jobId);
-      await _saveHiddenIds();
-      _applyFilters();
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('숨김 처리했어요.'),
-          action: SnackBarAction(
-            label: '되돌리기',
-            onPressed: () async {
-              hiddenJobIds.remove(jobId);
-              await _saveHiddenIds();
-              _applyFilters();
-            },
-          ),
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('목록에서 숨겼어요.'),
+        action: SnackBarAction(
+          label: '되돌리기',
+          onPressed: () async {
+            hiddenJobIds.remove(jobId);
+            await _saveHiddenIds();
+            _applyFilters();
+          },
         ),
-      );
-    }
+      ),
+    );
   }
 
   Future<void> _confirmCancel(Job job) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('지원 취소'),
-            content: const Text(
-              '이 공고 지원을 취소할까요?\n취소 후 다시 지원하려면 새로 지원해야 할 수 있어요.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('닫기'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text(
-                  '지원 취소',
-                  style: TextStyle(color: AppColors.error),
-                ),
-              ),
-            ],
-          ),
+    final confirmed = await showAppSheet(
+      context,
+      title: '이 공고 지원을 취소할까요?',
+      message: '취소한 지원은 되돌릴 수 없어요. 다시 하려면 새로 지원해야 해요.',
+      confirmLabel: '지원 취소',
+      cancelLabel: '닫기',
+      destructive: true,
     );
 
     if (confirmed == true) {
