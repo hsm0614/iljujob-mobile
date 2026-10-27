@@ -2460,7 +2460,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     final String locationLine = [
       company.isNotEmpty ? company : placeText,
       if (distanceText != null) '${distanceText}km',
-      if (job.applicantCount > 0) '지원 ${job.applicantCount}명',
     ].join(' · ');
 
     final nowUtc = DateTime.now().toUtc();
