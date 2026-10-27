@@ -33,6 +33,7 @@ class MyAppliedJobsScreen extends StatefulWidget {
 class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
   final Map<String, ApplyStage> _stageByJob = {};
   final Map<String, String> _replySpeedByJob = {};
+  final Set<String> _reviewableJobs = {};
   ApplyStage _stage(Job j) =>
       _stageByJob['${j.id}'] ?? applyStageOf(jobStatus: j.status);
 
@@ -181,6 +182,16 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                 ),
               ),
             ),
+          );
+        // 후기는 사장님이 답했고 근무일이 지난 공고만 (서버 reviewController와 같은 기준)
+        _reviewableJobs
+          ..clear()
+          ..addAll(
+            raw.whereType<Map>().where(
+              (r) =>
+                  '${r['client_replied']}' == '1' &&
+                  '${r['work_day_passed']}' == '1',
+            ).map((r) => '${r['id']}'),
           );
         _replySpeedByJob.clear();
         for (final r in raw.whereType<Map>()) {
@@ -917,8 +928,10 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                         ),
                       ),
                     ],
-                    // 끝난 지원만 후기 (지원 취소·숨기기는 ⋯ 더보기)
-                    if (done) ...[
+                    // 끝난 지원 중 사장님과 이야기했고 근무일이 지난 것만 후기 (지원 취소·숨기기는 ⋯ 더보기).
+                    // 작성한 후기는 기준과 상관없이 '작성 완료'로 보여준다
+                    if (done &&
+                        (reviewed || _reviewableJobs.contains('${job.id}'))) ...[
                       const SizedBox(height: 8),
                       GestureDetector(
                         behavior: HitTestBehavior.opaque,

@@ -1183,7 +1183,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                   SizedBox(width: 6),
                   Expanded(
                     child: Text(
-                      '지난 근무 중 아직 완료 처리되지 않은 일정이 있어요. 완료된 근무는 밀어서 완료 처리하면 정산 완료 금액에 반영돼요.',
+                      '지난 근무 중 아직 완료 처리되지 않은 일정이 있어요. 완료된 근무는 밀어서 완료 처리하면 일한 금액에 반영돼요.',
                       style: TextStyle(
                         fontSize: 11,
                         height: 1.35,
@@ -1329,10 +1329,17 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
   }
 
   Widget _buildDayPanel(DateTime? day) {
+    // 빈 달이면 위 안내 카드가 이미 할 일을 말한다 — 고른 날도 비었으면 '일정이 없어요'를 또 말하지 않는다
+    final monthEmpty = _items.where((it) => !_isCancelled(it)).isEmpty;
+    if (monthEmpty &&
+        (day == null ||
+            (_itemsOf(day).isEmpty &&
+                (_appliedByDay[_dateOnly(day)] ?? const []).isEmpty))) {
+      return const SizedBox.shrink();
+    }
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       padding: const EdgeInsets.all(12),
-      constraints: const BoxConstraints(minHeight: 180),
       decoration: _cardDecoration(),
       child: day == null ? _buildNoDaySelected() : _buildDayList(day),
     );
@@ -1414,15 +1421,12 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     }
 
     if (list.isEmpty) {
-      return Center(
+      // 세 줄·180px 빈 칸 → 한 줄
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
         child: Text(
-          '$title\n등록된 일정이 없어요\n오른쪽 아래 + 로 추가해봐요',
-          textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
-            height: 1.35,
-            fontWeight: FontWeight.w700,
-          ),
+          '${DateFormat('M월 d일', 'ko_KR').format(day)}은 일정이 없어요',
+          style: AppTextStyles.body2,
         ),
       );
     }
@@ -2515,7 +2519,11 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
             child: SafeArea(
               top: false,
               bottom: false,
-              child: ListView(
+              // 저장 버튼이 반복 설정 아래로 밀려 스크롤해야 보였다 → 입력만 스크롤, 버튼은 아래 고정
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ListView(
                 controller: scrollController,
                 padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
                 children: [
@@ -2768,10 +2776,16 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                       ),
                     ),
 
-                  const SizedBox(height: 14),
-
-                  // 버튼 영역
-                  Row(
+                ],
+                    ),
+                  ),
+                  // 버튼 영역 (고정)
+                  Container(
+                    padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+                    decoration: const BoxDecoration(
+                      border: Border(top: BorderSide(color: AppColors.borderSub)),
+                    ),
+                    child: Row(
                     children: [
                       if (widget.isEdit && widget.onDelete != null)
                         Expanded(
@@ -2847,6 +2861,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                         ),
                       ),
                     ],
+                  ),
                   ),
                 ],
               ),

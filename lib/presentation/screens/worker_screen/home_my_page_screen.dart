@@ -720,7 +720,8 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-/// 정산 완료·예정. 같은 숫자가 캘린더에 월별로 있어 누르면 캘린더로 (당근페이 잔액 박스 참고)
+/// 이번 달 근무 금액(완료·예정). 입금 확인 데이터가 아니라 근무 기록 합계라 '정산'이라 부르지 않는다.
+/// 같은 숫자가 캘린더에 월별로 있어 누르면 캘린더로 (당근페이 잔액 박스 참고)
 class _MoneyBox extends StatelessWidget {
   final bool loading;
   final String settled;
@@ -762,10 +763,10 @@ class _MoneyBox extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
           child: Row(
             children: [
-              _cell('정산 완료', settled),
+              _cell('이번 달 일한 금액', settled),
               Container(width: 1, height: 32, color: AppColors.border),
               const SizedBox(width: 16),
-              _cell('정산 예정', pending),
+              _cell('일할 예정', pending),
               if (onTap != null)
                 const Icon(
                   Icons.chevron_right_rounded,
