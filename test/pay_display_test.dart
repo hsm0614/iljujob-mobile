@@ -12,12 +12,14 @@ void main() {
     expect(formatJobPay('120000', '일급', includeType: true), '일급 120,000원');
   });
 
-  test('요일·시급·게시 시각 표기', () {
+  test('요일·지원 조건·게시 시각 표기', () {
     expect(formatWeekdays('월,화,수,목,금,토'), '월~토');
     expect(formatWeekdays('월,화,수,목,금'), '평일');
     expect(formatWeekdays('월,수'), '월·수');
-    expect(hourlyFromDaily('150000', '일급', '07:00 ~ 16:30'), '15,790원');
-    expect(hourlyFromDaily('150000', '시급', '07:00 ~ 16:30'), isNull);
+    expect(formatRequirements('기초안전보건교육 이수증,배치전검진'), '기초안전보건교육 이수증 · 배치전검진');
+    expect(formatRequirements('초보가능,'), '초보가능');
+    expect(formatRequirements('없음'), isNull);
+    expect(formatRequirements(null), isNull);
     final now = DateTime(2026, 10, 27, 15, 10);
     expect(formatPostedAgo(DateTime(2026, 10, 27, 15, 5).toUtc(), now: now), '5분 전');
     expect(formatPostedAgo(DateTime(2026, 10, 27, 9).toUtc(), now: now), '6시간 전');

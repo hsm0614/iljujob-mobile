@@ -2531,7 +2531,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       // 시간 미입력 공고는 "~"만 노출되던 문제 — 값 있을 때만 표시
       if (job.workingHours.replaceAll('~', '').trim().isNotEmpty)
         job.workingHours,
-      if (hourlyFromDaily(job.pay, job.payType, job.workingHours) case final h?) '시급 $h',
     ].join(' · ');
     final rawImage = job.imageUrls.isEmpty ? null : job.imageUrls.first;
 

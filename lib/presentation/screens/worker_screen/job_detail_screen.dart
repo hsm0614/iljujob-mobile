@@ -1492,6 +1492,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                   _buildStatsSection(),
                   const SizedBox(height: 8),
                   _buildClientSection(),
+                  // 면접 준비는 근무 조건을 다 읽은 뒤에 — 설명 바로 아래선 읽는 흐름을 끊었다
+                  if (userType == 'worker') ...[
+                    const SizedBox(height: 8),
+                    _buildInterviewPrepRow(),
+                  ],
                   const SizedBox(height: 16),
 
                   // 🔹 광고 배너 (원더 제휴)
@@ -1536,7 +1541,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     ];
     // 목록과 같은 값만 — 예전엔 회사명이 없으면 담당자 실명이 떠서 목록(주소)과 달랐다
     final company = (job.company ?? '').trim();
-    final hourly = hourlyFromDaily(job.pay, job.payType, job.workingHours);
+    final requirements = formatRequirements(job.requiredCerts);
 
     return Container(
       width: double.infinity,
@@ -1582,10 +1587,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 const SizedBox(width: 6),
                 Text(job.payType, style: AppTextStyles.jobPayUnit),
               ],
-              if (hourly != null) ...[
-                const SizedBox(width: 8),
-                Text('시급 $hourly', style: AppTextStyles.jobMeta),
-              ],
             ],
           ),
           const SizedBox(height: 16),
@@ -1594,6 +1595,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           _factRow(Icons.calendar_today_outlined, _getWorkingPeriodText(job)),
           if (hours != null) _factRow(Icons.schedule_outlined, hours),
           _factRow(Icons.near_me_outlined, _distanceOrLocationText()),
+          // 지원 조건(이수증·검진 등)은 긴 설명 속에 묻혀 지원 뒤에야 알게 됐다 — 지원 버튼 전에 보이게
+          if (requirements != null)
+            _factRow(Icons.assignment_outlined, '지원 조건 · $requirements'),
           _factRow(Icons.groups_outlined, _applicantSummaryText()),
           const SizedBox(height: 2),
           if (postedUtc != null)
@@ -1644,9 +1648,16 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           const Text('상세 설명', style: AppTextStyles.h3),
           const SizedBox(height: 10),
           Text(description, style: AppTextStyles.body1.copyWith(height: 1.65)),
-          if (userType == 'worker') ...[
-            const SizedBox(height: 16),
-            InkWell(
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInterviewPrepRow() {
+    return Container(
+      color: AppColors.bgCard,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: InkWell(
               onTap: _openInterviewPrep,
               borderRadius: BorderRadius.circular(AppRadius.md),
               child: Container(
@@ -1684,9 +1695,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 ),
               ),
             ),
-          ],
-        ],
-      ),
     );
   }
 

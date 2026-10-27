@@ -41,22 +41,16 @@ String? formatWeekdays(String? raw) {
   return days.join('·');
 }
 
-/// 일급 ÷ 근무시간 → '11,250원' (레퍼런스의 '시급 13,000원'). 계산 못 하면 null.
-/// 휴게시간은 모른다 — 공고에 없어서 단순 나눗셈. 야간(22:00~06:00)은 자정을 넘겨 계산.
-String? hourlyFromDaily(String pay, String payType, String workingHours) {
-  if (payType != '일급') return null;
-  final n = int.tryParse(pay.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-  final m = RegExp(
-    r'(\d{1,2}):(\d{2})\s*~\s*(\d{1,2}):(\d{2})',
-  ).firstMatch(workingHours);
-  if (n <= 0 || m == null) return null;
-  final start = int.parse(m[1]!) * 60 + int.parse(m[2]!);
-  var end = int.parse(m[3]!) * 60 + int.parse(m[4]!);
-  if (end <= start) end += 24 * 60;
-  final hours = (end - start) / 60;
-  if (hours < 1) return null;
-  final hourly = (n / hours / 10).round() * 10;
-  return '${NumberFormat('#,###').format(hourly)}원';
+/// 공고 '지원 조건'(사장님이 등록한 required_certs). '없음'·빈 값·끝 쉼표는 정리, 쉼표 구분은 ' · '로.
+/// 설명 본문에서 뽑지 않는다 — 등록 데이터만 쓴다.
+String? formatRequirements(String? raw) {
+  final parts =
+      (raw ?? '')
+          .split(RegExp(r'[,，]'))
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty && e != '없음')
+          .toList();
+  return parts.isEmpty ? null : parts.join(' · ');
 }
 
 /// 게시 시각 → '방금 전' · 'N분 전' · 'N시간 전' · '어제' · 'N일 전' · 'M월 D일'
