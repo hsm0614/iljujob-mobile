@@ -743,6 +743,25 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     if (type != 'worker' || hasApplied || isClosed || isBlocked) return;
     if (_suspension?.isSuspended ?? false) return;
     if (widget.job.hasExternalApply) return _openExternalApplyPage();
+    // 목록에서 바로 누른 지원은 조건을 읽기 전이다 — 급여·일정·장소를 보여주고 한 번 더 묻는다
+    // (확인 없이 보내면 조건이 안 맞아 취소·무응답이 늘어난다, 2026-10 평가)
+    final job = widget.job;
+    final pay = isNegotiablePayType(job.payType)
+        ? '급여 협의'
+        : '${job.payType} ${formatJobPay(job.pay, job.payType)}';
+    final when = [
+      _getWorkingPeriodText(job),
+      if (job.workingHours.replaceAll('~', '').trim().isNotEmpty)
+        job.workingHours,
+    ].join(' · ');
+    final ok = await showAppSheet(
+      context,
+      title: '이 조건으로 지원할까요?',
+      message: '$pay\n$when\n${_distanceOrLocationText()}',
+      confirmLabel: '지원하기',
+      cancelLabel: '공고 더 보기',
+    );
+    if (!ok || !mounted) return;
     await _applyToJob();
   }
 
@@ -1515,7 +1534,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         const JobSignalBadge(label: '인증업체', signal: JobSignal.trust),
       if (job.category.trim().isNotEmpty) JobSignalBadge(label: job.category),
     ];
-    final company = _getCompanyName();
+    // 목록과 같은 값만 — 예전엔 회사명이 없으면 담당자 실명이 떠서 목록(주소)과 달랐다
+    final company = (job.company ?? '').trim();
     final hourly = hourlyFromDaily(job.pay, job.payType, job.workingHours);
 
     return Container(
@@ -1529,7 +1549,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             Wrap(spacing: 6, runSpacing: 6, children: badges),
             const SizedBox(height: 10),
           ],
-          if (company != '회사 정보를 찾을 수 없습니다.') ...[
+          if (company.isNotEmpty) ...[
             Text(
               company,
               maxLines: 1,
@@ -1721,14 +1741,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 iconColor: AppColors.textTertiary,
                 label: '저장',
                 valueText: _formatCount(bookmarkCount),
-              ),
-              _verticalDivider(),
-              _statItem(
-                icon: Icons.group_outlined,
-                iconColor: AppColors.textTertiary,
-                label: '지원',
-                valueText: _formatCount(applicantCount),
-                emphasize: true,
               ),
             ],
           ),

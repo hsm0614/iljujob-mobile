@@ -520,7 +520,18 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         ok = res.statusCode == 200;
       } catch (_) {}
     }
-    if (ok || !mounted) return;
+    if (!mounted) return;
+    if (ok) {
+      // 필터가 아니라 내 상태라는 걸 켤 때 한 번 알려준다
+      if (available) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('오늘 가능을 켰어요. 급하게 사람을 찾는 사장님께 표시돼요.'),
+          ),
+        );
+      }
+      return;
+    }
     setState(() => isAvailableToday = !available);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
