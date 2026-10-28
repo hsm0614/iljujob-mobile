@@ -967,6 +967,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
               ),
             ],
             const SizedBox(height: 14),
+            // 반반 버튼 — 칸이 모자라면 줄바꿈 대신 글자를 줄인다 (FittedBox)
             Row(
               children: [
                 Expanded(
@@ -975,7 +976,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                         () => _openEditSheet(
                           forceDate: _selectedDay ?? _dateOnly(DateTime.now()),
                         ),
-                    child: const Text('근무 기록하기'),
+                    child: const FittedBox(child: Text('근무 기록하기', maxLines: 1)),
                   ),
                 ),
                 if (widget.onGoHome != null) ...[
@@ -983,7 +984,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                   Expanded(
                     child: FilledButton(
                       onPressed: widget.onGoHome,
-                      child: const Text('근처 공고 보기'),
+                      child: const FittedBox(child: Text('근처 공고 보기', maxLines: 1)),
                     ),
                   ),
                 ],
