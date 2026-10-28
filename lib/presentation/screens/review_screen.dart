@@ -160,8 +160,14 @@ class _ReviewScreenState extends State<ReviewScreen> {
           context,
         ).showSnackBar(const SnackBar(content: Text('후기를 등록했어요.')));
       } else {
+        // 서버가 거절 이유를 주면 그대로 (예: '근무일이 지난 뒤에 후기를 남길 수 있어요.')
+        String msg = Msg.reviewFailed;
+        try {
+          final m = jsonDecode(resp.body)['message'];
+          if (resp.statusCode == 403 && m is String && m.isNotEmpty) msg = m;
+        } catch (_) {}
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(Msg.reviewFailed)),
+          SnackBar(content: Text(msg)),
         );
       }
     } catch (e) {
