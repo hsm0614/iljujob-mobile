@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iljujob/utils/chat_stage.dart';
 import 'package:iljujob/widget/app_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -667,35 +668,6 @@ class _ChatListScreenState extends State<ChatListScreen>
     );
   }
 
-  bool _isTruthy(dynamic value) {
-    if (value == null) return false;
-    if (value is bool) return value;
-    if (value is num) return value != 0;
-    final text = value.toString().trim().toLowerCase();
-    return text == '1' || text == 'true' || text == 'yes' || text == 'y';
-  }
-
-  bool _isConfirmedRoom(Map chat) {
-    final statusText =
-        [
-          chat['application_status'],
-          chat['direct_message_status'],
-          chat['match_status'],
-          chat['status'],
-        ].where((v) => v != null).join(' ').toLowerCase();
-
-    return _isTruthy(chat['is_confirmed']) ||
-        _isTruthy(chat['is_hired']) ||
-        _isTruthy(chat['work_confirmed']) ||
-        chat['confirmed_at'] != null ||
-        statusText.contains('confirmed') ||
-        statusText.contains('accepted') ||
-        statusText.contains('hired') ||
-        statusText.contains('출근') ||
-        statusText.contains('확정') ||
-        statusText.contains('채택');
-  }
-
   Widget _buildChatItem(Map chat) {
     final unreadCount =
         userType == 'worker'
@@ -704,7 +676,16 @@ class _ChatListScreenState extends State<ChatListScreen>
     final hasUnread = unreadCount > 0;
     final isUrgent =
         chat['is_urgent_call'] == 1 || chat['is_urgent_call'] == true;
-    final isConfirmed = _isConfirmedRoom(chat);
+    // 방마다 '지금 단계' 하나 — 긴급호출 수락이 '출근확정'으로 보이던 것(상태 문자열에 accepted만 있어도 확정)
+    final stage = chatStageOf(
+      isWorker: userType == 'worker',
+      workStatus: chat['work_status']?.toString(),
+      workDate: chat['work_date']?.toString(),
+      urgentStatus: chat['direct_message_status']?.toString(),
+      isUrgent: isUrgent,
+      applicationStatus: chat['application_status']?.toString(),
+    );
+    final workDay = (chat['work_date'] ?? '').toString();
 
     String resolveProfileImageUrl(String? url) {
       if (url == null || url.trim().isEmpty) return '';
@@ -868,20 +849,6 @@ class _ChatListScreenState extends State<ChatListScreen>
                               style: AppTextStyles.jobTitle,
                             ),
                           ),
-                          if (isUrgent) ...[
-                            const SizedBox(width: 6),
-                            const JobSignalBadge(
-                              label: '긴급호출',
-                              signal: JobSignal.time,
-                            ),
-                          ],
-                          if (isConfirmed) ...[
-                            const SizedBox(width: 6),
-                            const JobSignalBadge(
-                              label: '출근확정',
-                              signal: JobSignal.money,
-                            ),
-                          ],
                           if (userType == 'client' &&
                               chat['user_available_today'] == 1) ...[
                             const SizedBox(width: 6),
@@ -898,8 +865,26 @@ class _ChatListScreenState extends State<ChatListScreen>
                         ],
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        '$jobTitle',
+                      // 단계(색) · 근무일 · 공고 — 같은 사장님 방이 여러 개여도 구별되게
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            if (stage != null)
+                              TextSpan(
+                                text: '${stage.label} · ',
+                                style: AppTextStyles.jobMeta.copyWith(
+                                  color: stage.color,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            if (workDay.length >= 10)
+                              TextSpan(
+                                text:
+                                    '${int.parse(workDay.substring(5, 7))}/${int.parse(workDay.substring(8, 10))} 근무 · ',
+                              ),
+                            TextSpan(text: '$jobTitle'),
+                          ],
+                        ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: AppTextStyles.jobMeta,
@@ -1311,13 +1296,15 @@ class _PrettyListView extends StatelessWidget {
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 120),
       itemBuilder: (_, i) {
-        if (afterFirst != null && i == 1) {
+        // 배너는 세 번째 대화 뒤 — 첫 대화 바로 뒤에 끼면 흐름이 끊겼다. 대화가 3개 미만이면 맨 끝
+        final slot = items.length < 3 ? items.length : 3;
+        if (afterFirst != null && i == slot) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 8),
             child: afterFirst!,
           );
         }
-        final itemIndex = afterFirst != null && i > 1 ? i - 1 : i;
+        final itemIndex = afterFirst != null && i > slot ? i - 1 : i;
         return itemBuilder(items[itemIndex] as Map);
       },
       itemCount: items.length + (afterFirst == null ? 0 : 1),

@@ -7,6 +7,8 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:iljujob/utils/pay_display.dart';
+import 'package:iljujob/utils/chat_stage.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:image_picker/image_picker.dart';
@@ -67,7 +69,13 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   final _scrollController = ScrollController();
   final _messageController = TextEditingController();
   final _inputFocusNode = FocusNode();
-  bool _jobPanelExpanded = true;
+  /// null = 자동: 채용이 확정돼 패널 버튼(캘린더·출근 확인)이 쓸모 있을 때만 펼친다.
+  /// 늘 펼쳐 두면 공고·안내가 메시지보다 앞서 대화와 근무 약속 카드가 화면 밖으로 밀렸다
+  bool? _jobPanelOpen;
+  bool get _jobPanelExpanded {
+    final ctrl = context.read<ChatRoomController>();
+    return _jobPanelOpen ?? (ctrl.isConfirmed && !ctrl.isCompleted);
+  }
 
   /// 위로 올려 읽는 중에 새 메시지가 도착했는지. 자동 스크롤을 막는 대신
   /// "새 메시지" 버튼으로 알린다.
@@ -369,7 +377,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
     return Material(
       color: AppColors.bgCard,
       child: InkWell(
-        onTap: () => setState(() => _jobPanelExpanded = !_jobPanelExpanded),
+        onTap: () => setState(() => _jobPanelOpen = !_jobPanelExpanded),
         child: Container(
           height: 42,
           padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -387,14 +395,28 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(
-                  title,
+                // 접혀 있어도 핵심 조건(급여)은 보이게: '공고 제목 · 41,280원 일급'
+                child: Text.rich(
+                  TextSpan(
+                    children: [
+                      TextSpan(
+                        text: title,
+                        style: AppTextStyles.body2.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      if (!_jobPanelExpanded &&
+                          (ctrl.jobSource['pay'] ?? '').toString().isNotEmpty)
+                        TextSpan(
+                          text:
+                              ' · ${formatJobPay(ctrl.jobSource['pay'].toString(), (ctrl.jobSource['pay_type'] ?? '').toString(), includeType: true)}',
+                          style: AppTextStyles.body2,
+                        ),
+                    ],
+                  ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.body2.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
                 ),
               ),
               const SizedBox(width: 8),
@@ -1228,10 +1250,24 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         widget.jobInfo['is_urgent_call'] == true;
     if (!isUrgent || ctrl.userType != 'worker') return const SizedBox.shrink();
     if (_urgentCallStatus == 'accepted') {
+      // '수락 완료'만 쓰면 출근까지 확정된 걸로 읽혔다 — 다음에 무엇을 기다리는지 말한다
+      final proposals = ctrl.workConfirmations;
+      final open = proposals.where(
+        (c) => c.status == 'proposed' && !isWorkDatePast(c.workDate),
+      );
+      if (open.isNotEmpty) {
+        return _statusStrip(
+          Icons.event_available_rounded,
+          '출근 제안이 왔어요 · 아래 카드에서 수락해 주세요',
+          AppColors.badgeUrgent,
+        );
+      }
+      // 근무 약속 카드가 이미 있으면 카드가 상태를 말한다
+      if (proposals.isNotEmpty) return const SizedBox.shrink();
       return _statusStrip(
-        Icons.check_circle_rounded,
-        '긴급호출을 수락했어요',
-        AppColors.badgeSameDay,
+        Icons.hourglass_empty_rounded,
+        '긴급호출에 응답했어요 · 사장님의 출근 제안을 기다리는 중',
+        AppColors.textSecondary,
       );
     }
     if (_urgentCallStatus == 'rejected') {

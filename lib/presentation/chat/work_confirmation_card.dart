@@ -1,5 +1,6 @@
 // lib/presentation/chat/work_confirmation_card.dart
 import 'package:flutter/material.dart';
+import 'package:iljujob/utils/chat_stage.dart';
 import 'package:iljujob/utils/apply_stage.dart';
 import 'package:intl/intl.dart';
 import '../../config/app_theme.dart';
@@ -24,20 +25,23 @@ class WorkConfirmationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isProposed = confirm.status == 'proposed';
-    final isPast = [
-      'cancelled',
-      'completed',
-      'no_show',
-    ].contains(confirm.status);
+    // 근무일이 지난 '제안'은 수락할 수 없다 — 6월 제안 카드에 지금도 '수락하기'가 떠 있었다
+    final expiredProposal =
+        confirm.status == 'proposed' && isWorkDatePast(confirm.workDate);
+    final isProposed = confirm.status == 'proposed' && !expiredProposal;
+    final isPast =
+        expiredProposal ||
+        ['cancelled', 'completed', 'no_show'].contains(confirm.status);
     final canReportNoShow = [
       'accepted',
       'scheduled',
       'day_before_confirmed',
       'day_of_confirmed',
     ].contains(confirm.status);
-    final statusLabel = _statusLabel(confirm.status);
-    final statusColor = _statusColor(confirm.status);
+    final statusLabel =
+        expiredProposal ? '지난 제안' : _statusLabel(confirm.status);
+    final statusColor =
+        expiredProposal ? AppColors.textTertiary : _statusColor(confirm.status);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
