@@ -928,7 +928,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
             const Text('이번 달 근무 기록이 없어요', style: AppTextStyles.h3),
             const SizedBox(height: 6),
             const Text(
-              '일한 날을 기록하면 이번 달 번 돈이 자동으로 계산돼요.',
+              '일한 날을 기록하면 번 돈이 자동으로 계산돼요.',
               style: AppTextStyles.body2,
             ),
             if (_waitingCount > 0 && widget.onGoActivity != null) ...[
