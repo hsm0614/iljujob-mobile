@@ -8,7 +8,6 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:iljujob/widget/app_motion.dart';
-import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/utils/chat_stage.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
@@ -70,14 +69,6 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   final _scrollController = ScrollController();
   final _messageController = TextEditingController();
   final _inputFocusNode = FocusNode();
-  /// null = 자동: 채용이 확정돼 패널 버튼(캘린더·출근 확인)이 쓸모 있을 때만 펼친다.
-  /// 늘 펼쳐 두면 공고·안내가 메시지보다 앞서 대화와 근무 약속 카드가 화면 밖으로 밀렸다
-  bool? _jobPanelOpen;
-  bool get _jobPanelExpanded {
-    final ctrl = context.read<ChatRoomController>();
-    return _jobPanelOpen ?? (ctrl.isConfirmed && !ctrl.isCompleted);
-  }
-
   /// 위로 올려 읽는 중에 새 메시지가 도착했는지. 자동 스크롤을 막는 대신
   /// "새 메시지" 버튼으로 알린다.
   bool _hasNewBelow = false;
@@ -366,81 +357,6 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
       'weekdays': str(pick(['weekdays'])),
       'thumbnailUrl': str(pick(['thumbnail_url', 'thumbnailUrl'])),
     };
-  }
-
-  Widget _buildJobPanelHandle(ChatRoomController ctrl, String jobTitle) {
-    final title =
-        jobTitle.isNotEmpty
-            ? jobTitle
-            : (ctrl.jobSource['title'] ?? ctrl.jobSource['job_title'] ?? '공고')
-                .toString();
-
-    return Material(
-      color: AppColors.bgCard,
-      child: InkWell(
-        onTap: () => setState(() => _jobPanelOpen = !_jobPanelExpanded),
-        child: Container(
-          height: 42,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: const BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: AppColors.borderSub, width: 1),
-            ),
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.work_outline_rounded,
-                size: 17,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                // 접혀 있어도 핵심 조건(급여)은 보이게: '공고 제목 · 41,280원 일급'
-                child: Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: title,
-                        style: AppTextStyles.body2.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      if (!_jobPanelExpanded &&
-                          (ctrl.jobSource['pay'] ?? '').toString().isNotEmpty)
-                        TextSpan(
-                          text:
-                              ' · ${formatJobPay(ctrl.jobSource['pay'].toString(), (ctrl.jobSource['pay_type'] ?? '').toString(), includeType: true)}',
-                          style: AppTextStyles.body2,
-                        ),
-                    ],
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _jobPanelExpanded ? '접기' : '공고 보기',
-                style: const TextStyle(
-                  fontSize: AppFontSize.meta,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
-              Icon(
-                _jobPanelExpanded
-                    ? Icons.keyboard_arrow_up_rounded
-                    : Icons.keyboard_arrow_down_rounded,
-                size: 18,
-                color: AppColors.primary,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 
   // ─────────────────────────────────────────────
@@ -1525,9 +1441,8 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
             children: [
               // 공고 요약 패널
               if (!ctrl.isLoadingJobInfo) ...[
-                _buildJobPanelHandle(ctrl, jobTitle),
-                if (_jobPanelExpanded)
-                  ChatRoomJobPanel(
+                // 접기 줄 없이 공고 카드 한 장 (2026-10 2차) — 카드가 작아 접을 이유가 없어졌다
+                ChatRoomJobPanel(
                     jobSource: ctrl.jobSource,
                     userType: ctrl.userType,
                     isConfirmed: ctrl.isConfirmed,
