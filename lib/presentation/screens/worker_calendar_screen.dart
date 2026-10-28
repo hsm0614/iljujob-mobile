@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_motion.dart';
 import 'package:flutter/services.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
@@ -1000,13 +1001,27 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: _cardDecoration(),
-        child: Row(
+        // 같은 크기 세 칸 → 이달 합계 큰 숫자 하나 + 완료·예정 한 줄 (2026-10, 화면의 포인트 하나)
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _moneyBox('예정', _scheduledTotal),
-            const SizedBox(width: 8),
-            _moneyBox('완료', _completedTotal),
-            const SizedBox(width: 8),
-            _moneyBox('합계', total, strong: true),
+            Text(
+              '${_focusedDay.month}월에 버는 돈',
+              style: AppTextStyles.body2,
+            ),
+            const SizedBox(height: 4),
+            AppCountUp(
+              key: ValueKey('${_focusedDay.year}-${_focusedDay.month}'),
+              value: total,
+              style: AppTextStyles.jobPayDisplay.copyWith(
+                fontSize: AppFontSize.display,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '일한 금액 ${NumberFormat('#,###').format(_completedTotal)}원 · 일할 예정 ${NumberFormat('#,###').format(_scheduledTotal)}원',
+              style: AppTextStyles.body2,
+            ),
           ],
         ),
       ),
@@ -2003,46 +2018,6 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _moneyBox(String label, int amount, {bool strong = false}) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.bgMuted,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: AppFontSize.meta,
-                color: kMuted,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 6),
-            FittedBox(
-              // ✅ 긴 숫자 오버플로우 방지
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                '${NumberFormat('#,###').format(amount)}원',
-                // 금액은 다크 잉크 — 강조는 배경 틴트로만
-                style: const TextStyle(
-                  fontSize: AppFontSize.body1,
-                  fontWeight: FontWeight.w900,
-                  color: kText,
-                ),
-              ),
-            ),
           ],
         ),
       ),

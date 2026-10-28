@@ -7,6 +7,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_motion.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/utils/chat_stage.dart';
 import 'package:iljujob/config/constants.dart';
@@ -722,151 +723,37 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   // 캘린더 추가 다이얼로그
   // ─────────────────────────────────────────────
 
+  /// 출근 확정 = 이 앱에서 가장 좋은 순간. 작은 팝업 대신 완료 화면 (2026-10)
   Future<void> _showAddToCalendarDialog(WorkConfirmation conf) async {
     if (!mounted) return;
     final fmt = NumberFormat('#,###');
-
-    await showDialog<void>(
-      context: context,
-      builder:
-          (ctx) => Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.calendar_today_rounded,
-                          color: AppColors.primary,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '캘린더에서 확인할까요?',
-                              style: TextStyle(
-                                fontSize: AppFontSize.buttonLg,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              '앱 내 캘린더에서 근무 일정을 확인해요',
-                              style: TextStyle(
-                                fontSize: AppFontSize.meta,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.bgPage,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        _CalRow(
-                          icon: Icons.business_rounded,
-                          text: conf.companyName ?? '사장님',
-                        ),
-                        const SizedBox(height: 6),
-                        _CalRow(
-                          icon: Icons.event_rounded,
-                          text: conf.workDate.split('T').first,
-                        ),
-                        const SizedBox(height: 6),
-                        _CalRow(
-                          icon: Icons.access_time_rounded,
-                          text:
-                              '${conf.startTime.substring(0, 5)} ~ ${conf.endTime.substring(0, 5)}',
-                        ),
-                        if (conf.location != null) ...[
-                          const SizedBox(height: 6),
-                          _CalRow(
-                            icon: Icons.location_on_rounded,
-                            text: conf.location!,
-                          ),
-                        ],
-                        const SizedBox(height: 6),
-                        _CalRow(
-                          icon: Icons.payments_rounded,
-                          text: '시급 ${fmt.format(conf.hourlyWage)}원',
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.of(ctx).pop(),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textSecondary,
-                            side: const BorderSide(color: AppColors.border),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          child: const Text(
-                            '나중에',
-                            style: TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(ctx).pop();
-                            _addToCalendar(conf);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          child: const Text(
-                            '캘린더 보기',
-                            style: TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
+    final day = DateTime.tryParse(conf.workDate.split('T').first);
+    final r = await showAppSuccess(
+      context,
+      title: '출근이 확정됐어요',
+      message: '근무 전날과 2시간 전에 알림으로 다시 알려드려요.',
+      facts: [
+        if (conf.companyName != null) ('근무지', conf.companyName!),
+        (
+          '날짜',
+          day == null
+              ? conf.workDate.split('T').first
+              : DateFormat('M월 d일 (E)', 'ko_KR').format(day),
+        ),
+        (
+          '시간',
+          '${conf.startTime.substring(0, 5)} ~ ${conf.endTime.substring(0, 5)}',
+        ),
+        // 예전 카드는 일급이 '시급' 칸에 들어갔다 (work_confirmation_card.dart 참고)
+        (
+          conf.hourlyWage >= 20000 ? '급여' : '시급',
+          '${fmt.format(conf.hourlyWage)}원',
+        ),
+      ],
+      primaryLabel: '캘린더에서 보기',
+      secondaryLabel: '채팅으로 돌아가기',
     );
+    if (r == 'primary') _addToCalendar(conf);
   }
 
   void _addToCalendar(WorkConfirmation conf) {
@@ -1924,33 +1811,4 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
       ),
     );
   }
-}
-
-// ─────────────────────────────────────────────
-// 캘린더 다이얼로그용 행 위젯
-// ─────────────────────────────────────────────
-
-class _CalRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  const _CalRow({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Icon(icon, size: 14, color: AppColors.primary),
-      const SizedBox(width: 8),
-      Expanded(
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: AppFontSize.body2,
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-    ],
-  );
 }

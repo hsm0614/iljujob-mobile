@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_motion.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:kpostal/kpostal.dart';
 import 'package:geolocator/geolocator.dart';
@@ -1395,12 +1396,17 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                               return _buildFeedSlot();
                             }
                             final jobIdx = index > slotAt ? index - 1 : index;
-                            return _buildJobCard(
-                              filteredJobs[jobIdx],
-                              // 바로 뒤에 광고 자리가 오거나 목록 끝이면 구분선 없음
-                              last:
-                                  jobIdx == visibleCount - 1 ||
-                                  jobIdx == slotAt - 1,
+                            // 처음 그려질 때 위에서부터 차례로 떠오른다 (같은 공고는 다시 재생 안 함)
+                            return AppFadeSlideIn(
+                              key: ValueKey('job_${filteredJobs[jobIdx].id}'),
+                              index: jobIdx,
+                              child: _buildJobCard(
+                                filteredJobs[jobIdx],
+                                // 바로 뒤에 광고 자리가 오거나 목록 끝이면 구분선 없음
+                                last:
+                                    jobIdx == visibleCount - 1 ||
+                                    jobIdx == slotAt - 1,
+                              ),
                             );
                           },
                         );

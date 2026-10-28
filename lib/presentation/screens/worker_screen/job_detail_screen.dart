@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_motion.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -31,7 +32,6 @@ import 'package:iljujob/widget/push_permission.dart';
 import 'ai_interview_prep_sheet.dart';
 import 'recent_jobs_screen.dart';
 import 'my_applied_jobs_screen.dart';
-import 'package:iljujob/utils/apply_stage.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import '../../../config/messages.dart';
 
@@ -684,54 +684,33 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   /// 지원 완료 안내. 상태 이름·다음 할 일은 내 활동과 같은 기준(apply_stage.dart).
   /// 반환: 'chat'(채팅으로) · 'activity'(내 활동으로) · null(닫기)
+  /// 지원 완료 — 바텀시트 대신 완료 화면 (2026-10). 무엇에 지원했는지 한 번 더 보여준다
   Future<String?> _showApplyDoneSheet() async {
     if (!mounted) return null;
-    const stage = ApplyStage.waiting;
-    return showModalBottomSheet<String>(
-      context: context,
-      builder:
-          (ctx) => SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Icon(
-                    Icons.check_circle_rounded,
-                    size: 44,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    '지원했어요',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.h2,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '지금 상태: ${stage.label}\n사장님이 답하면 알림으로 알려드려요.',
-                    textAlign: TextAlign.center,
-                    style: AppTextStyles.body2,
-                  ),
-                  const SizedBox(height: 20),
-                  SizedBox(
-                    height: 52,
-                    child: FilledButton(
-                      onPressed: () => Navigator.pop(ctx, 'chat'),
-                      child: Text(stage.next!),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, 'activity'),
-                    child: const Text('내 활동에서 상태 확인'),
-                  ),
-                ],
-              ),
-            ),
-          ),
+    final job = widget.job;
+    final hours = job.workingHours.replaceAll('~', '').trim();
+    final r = await showAppSuccess(
+      context,
+      title: '지원했어요',
+      message: '사장님이 답하면 알림으로 알려드려요.',
+      facts: [
+        ('공고', job.title),
+        (
+          '급여',
+          isNegotiablePayType(job.payType)
+              ? '급여 협의'
+              : '${job.payType} ${formatJobPay(job.pay, job.payType)}',
+        ),
+        if (hours.isNotEmpty) ('시간', job.workingHours),
+      ],
+      primaryLabel: '채팅 열기',
+      secondaryLabel: '내 활동에서 상태 확인',
     );
+    return switch (r) {
+      'primary' => 'chat',
+      'secondary' => 'activity',
+      _ => null,
+    };
   }
 
   /// 상세 하단 버튼을 누른 것과 같은 판단. 지원할 수 없는 상태면 아무것도 하지 않고 상세에 머문다

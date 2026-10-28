@@ -2,6 +2,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_motion.dart';
 import 'package:http/http.dart' as http;
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/widget/app_ui.dart';
@@ -1035,10 +1036,16 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                                 padding: const EdgeInsets.only(bottom: 24),
                                 itemCount: list.length,
                                 itemBuilder:
-                                    (context, i) => _jobRow(
-                                      list[i],
-                                      bookmarkedTab: _tabIndex == 1,
-                                      last: i == list.length - 1,
+                                    (context, i) => AppFadeSlideIn(
+                                      key: ValueKey(
+                                        'act_${_tabIndex}_${list[i].id}',
+                                      ),
+                                      index: i,
+                                      child: _jobRow(
+                                        list[i],
+                                        bookmarkedTab: _tabIndex == 1,
+                                        last: i == list.length - 1,
+                                      ),
                                     ),
                               ),
                     ),

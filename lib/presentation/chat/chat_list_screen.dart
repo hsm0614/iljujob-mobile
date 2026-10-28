@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_motion.dart';
 import 'package:iljujob/utils/chat_stage.dart';
 import 'package:iljujob/widget/app_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1305,7 +1306,12 @@ class _PrettyListView extends StatelessWidget {
           );
         }
         final itemIndex = afterFirst != null && i > slot ? i - 1 : i;
-        return itemBuilder(items[itemIndex] as Map);
+        final chat = items[itemIndex] as Map;
+        return AppFadeSlideIn(
+          key: ValueKey('room_in_${chat['id']}'),
+          index: itemIndex,
+          child: itemBuilder(chat),
+        );
       },
       itemCount: items.length + (afterFirst == null ? 0 : 1),
     );

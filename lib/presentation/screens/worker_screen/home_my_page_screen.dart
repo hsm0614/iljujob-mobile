@@ -16,6 +16,7 @@ import 'labor_consult_screen.dart';
 import '../../../config/app_theme.dart';
 import '../../../config/messages.dart';
 import '../../../widget/app_ui.dart';
+import '../../../widget/app_motion.dart';
 
 class WorkerMyPageScreen extends StatefulWidget {
   /// 정산 박스를 누르면 캘린더 탭으로 (월별 정산이 거기 있다)
@@ -52,7 +53,6 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
   int _responseScore = 0;
   int _cancelPenalty = 0;
 
-  final _moneyFmt = NumberFormat('#,###');
 
   bool _alwaysLocation = false;
 
@@ -124,7 +124,6 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
     return phone;
   }
 
-  String _formatMoney(int v) => '${_moneyFmt.format(v)}원';
 
   Future<int?> _userId() async {
     final prefs = await SharedPreferences.getInstance();
@@ -485,8 +484,8 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: _MoneyBox(
                           loading: _loadingSettle,
-                          settled: _formatMoney(_settledAmount),
-                          pending: _formatMoney(_pendingAmount),
+                          settled: _settledAmount,
+                          pending: _pendingAmount,
                           onTap: widget.onGoCalendar,
                         ),
                       ),
@@ -720,12 +719,13 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-/// 이번 달 근무 금액(완료·예정). 입금 확인 데이터가 아니라 근무 기록 합계라 '정산'이라 부르지 않는다.
-/// 같은 숫자가 캘린더에 월별로 있어 누르면 캘린더로 (당근페이 잔액 박스 참고)
+/// 이번 달 근무 금액 (2026-10): 같은 크기 두 칸 → 큰 숫자 하나(토스식 '화면의 포인트')
+/// + 예정 한 줄. 입금 확인 데이터가 아니라 근무 기록 합계라 '정산'이라 부르지 않는다.
+/// 같은 숫자가 캘린더에 월별로 있어 누르면 캘린더로
 class _MoneyBox extends StatelessWidget {
   final bool loading;
-  final String settled;
-  final String pending;
+  final int settled;
+  final int pending;
   final VoidCallback? onTap;
 
   const _MoneyBox({
@@ -735,42 +735,48 @@ class _MoneyBox extends StatelessWidget {
     this.onTap,
   });
 
-  Widget _cell(String label, String value) => Expanded(
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: AppTextStyles.body2),
-        const SizedBox(height: 4),
-        Text(
-          loading ? '-' : value,
-          style: AppTextStyles.jobPayHero,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    ),
-  );
-
   @override
   Widget build(BuildContext context) {
     return Material(
       color: AppColors.bgMuted,
-      borderRadius: BorderRadius.circular(AppRadius.md),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+          padding: const EdgeInsets.fromLTRB(18, 16, 12, 16),
           child: Row(
             children: [
-              _cell('이번 달 일한 금액', settled),
-              Container(width: 1, height: 32, color: AppColors.border),
-              const SizedBox(width: 16),
-              _cell('일할 예정', pending),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('이번 달 일한 금액', style: AppTextStyles.body2),
+                    const SizedBox(height: 4),
+                    loading
+                        ? Text('-', style: AppTextStyles.jobPayDisplay)
+                        : AppCountUp(
+                          value: settled,
+                          style: AppTextStyles.jobPayDisplay.copyWith(
+                            fontSize: AppFontSize.display,
+                          ),
+                        ),
+                    if (!loading && pending > 0) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        '일할 예정 ${NumberFormat('#,###').format(pending)}원 더 있어요',
+                        style: AppTextStyles.body2.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
               if (onTap != null)
                 const Icon(
                   Icons.chevron_right_rounded,
-                  size: 20,
+                  size: 22,
                   color: AppColors.textTertiary,
                 ),
             ],

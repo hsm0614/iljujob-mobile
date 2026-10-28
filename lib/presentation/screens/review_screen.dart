@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_motion.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
@@ -155,10 +156,14 @@ class _ReviewScreenState extends State<ReviewScreen> {
       setState(() => isSubmitting = false);
 
       if (resp.statusCode == 200) {
-        Navigator.pop(context, 'reviewed');
-        ScaffoldMessenger.of(
+        await showAppSuccess(
           context,
-        ).showSnackBar(const SnackBar(content: Text('후기를 등록했어요.')));
+          title: '후기를 남겼어요',
+          message: '다른 알바생이 이 가게를 고를 때 도움이 돼요.',
+          primaryLabel: '확인',
+        );
+        if (!mounted) return;
+        Navigator.pop(context, 'reviewed');
       } else {
         // 서버가 거절 이유를 주면 그대로 (예: '근무일이 지난 뒤에 후기를 남길 수 있어요.')
         String msg = Msg.reviewFailed;
