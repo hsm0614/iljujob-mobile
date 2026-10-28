@@ -10,6 +10,7 @@ import '../../../data/services/authenticated_http_client.dart';
 import '../../../data/services/screen_analytics_service.dart';
 import '../../../config/app_theme.dart';
 import '../../../config/messages.dart';
+import '../../../widget/dev_account_switch.dart';
 
 class ClientMyPageScreen extends StatefulWidget {
   const ClientMyPageScreen({super.key});
@@ -455,6 +456,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
               ),
             ),
 
+            const SliverToBoxAdapter(child: DevAccountSwitchButton()),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),

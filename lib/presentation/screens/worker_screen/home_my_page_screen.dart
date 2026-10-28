@@ -14,6 +14,7 @@ import '../../../data/services/background_location_service.dart';
 import 'edit_worker_profile_screen.dart';
 import 'labor_consult_screen.dart';
 import '../../../config/app_theme.dart';
+import '../../../widget/dev_account_switch.dart';
 import '../../../config/messages.dart';
 import '../../../widget/app_ui.dart';
 import '../../../widget/app_motion.dart';
@@ -593,6 +594,7 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
                     const _BizInfoRow(),
                   ],
                 ),
+                const DevAccountSwitchButton(),
                 // 계정 행동은 실수로 누르기 쉬운 빨간 줄 대신 맨 아래 작은 글자로 (토스·당근 공통)
                 Padding(
                   padding: const EdgeInsets.fromLTRB(8, 12, 8, 32),
