@@ -406,13 +406,15 @@ class AppTheme {
           filled: true,
           fillColor: AppColors.bgMuted,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          // 회색 채움 칸이 기본 — 테두리까지 그리면 회색 상자 안에 테두리 칸이 또 생겼다
+          // (채팅 검색·입력창). 포커스일 때만 파란 테두리
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
-            borderSide: const BorderSide(color: AppColors.border),
+            borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
-            borderSide: const BorderSide(color: AppColors.border),
+            borderSide: BorderSide.none,
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),

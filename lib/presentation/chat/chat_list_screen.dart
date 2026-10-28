@@ -857,6 +857,9 @@ class _ChatListScreenState extends State<ChatListScreen>
                     children: [
                       Row(
                         children: [
+                          Expanded(
+                            child: Row(
+                              children: [
                           Flexible(
                             child: Text(
                               '$otherParty',
@@ -887,7 +890,9 @@ class _ChatListScreenState extends State<ChatListScreen>
                               signal: JobSignal.time,
                             ),
                           ],
-                          const Spacer(),
+                              ],
+                            ),
+                          ),
                           if (lastTime.isNotEmpty)
                             Text(lastTime, style: AppTextStyles.caption),
                         ],
@@ -1196,7 +1201,10 @@ class _SearchFieldState extends State<_SearchField> {
               controller: controller,
               decoration: const InputDecoration(
                 hintText: '채팅 검색',
+                filled: false,
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
               ),
               onChanged: (v) {
                 widget.onChanged(v);

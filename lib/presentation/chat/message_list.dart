@@ -335,6 +335,8 @@ class _MessageBubble extends StatelessWidget {
               onTap: onProfileTap ?? () {},
               child: CircleAvatar(
                 radius: 16,
+                // 앱바 아바타와 같은 회색 (기본값은 연파랑이라 둘이 달랐다)
+                backgroundColor: AppColors.bgMuted,
                 backgroundImage:
                     (targetThumbnailUrl != null &&
                             targetThumbnailUrl!.isNotEmpty)
@@ -342,7 +344,11 @@ class _MessageBubble extends StatelessWidget {
                         : null,
                 child:
                     (targetThumbnailUrl == null || targetThumbnailUrl!.isEmpty)
-                        ? const Icon(Icons.person, size: 16)
+                        ? const Icon(
+                          Icons.person_rounded,
+                          size: 18,
+                          color: AppColors.textDisabled,
+                        )
                         : null,
               ),
             ),

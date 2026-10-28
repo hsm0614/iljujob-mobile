@@ -393,6 +393,11 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: AppColors.border),
       ),
+      // 앱 기본 입력칸이 테두리 없음으로 바뀌어(2026-10) 흰 칸은 테두리를 직접 지정
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: AppColors.border),
+      ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: BorderSide(color: kBrand.withOpacity(0.8), width: 1.5),

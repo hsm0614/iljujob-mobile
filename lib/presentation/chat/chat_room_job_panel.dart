@@ -89,11 +89,6 @@ class ChatRoomJobPanel extends StatelessWidget {
     return null;
   }
 
-  String get _title {
-    final t = _pick(['title', 'job_title'])?.toString().trim() ?? '';
-    return t.isNotEmpty ? t : '공고 제목 없음';
-  }
-
   String get _payText {
     final raw = _pick(['pay', 'salary', 'wage'])?.toString() ?? '0';
     final v = int.tryParse(raw) ?? 0;
@@ -127,77 +122,39 @@ class ChatRoomJobPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 제목 + 상세보기
+          // 2026-10: 위 공고 줄과 같은 제목·파란 급여·테두리 바 → 한 줄 요약 + 공고 보기
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
                 child: Text(
-                  _title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: AppFontSize.body1,
-                  ),
-                  overflow: TextOverflow.ellipsis,
+                  [
+                    _payText,
+                    if (_timeText.isNotEmpty) _timeText,
+                    if (_periodText.isNotEmpty && _periodText != '기간 미정')
+                      _periodText,
+                  ].join(' · '),
                   maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.body2.copyWith(
+                    color: AppColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
               if (onOpenJobDetail != null)
-                TextButton.icon(
+                TextButton(
                   onPressed: onOpenJobDetail,
                   style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 0,
-                    ),
-                    minimumSize: Size.zero,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    minimumSize: const Size(0, 36),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    foregroundColor: AppColors.primary,
+                    textStyle: AppTextStyles.btnSm,
                   ),
-                  icon: const Icon(
-                    Icons.open_in_new_rounded,
-                    size: 14,
-                    color: AppColors.primary,
-                  ),
-                  label: const Text(
-                    '상세',
-                    style: TextStyle(fontSize: AppFontSize.caption, color: AppColors.primary),
-                  ),
+                  child: const Text('공고 보기'),
                 ),
             ],
           ),
-
-          // 공고 정보 바
-          Container(
-            margin: const EdgeInsets.only(top: 6, bottom: 2),
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-            decoration: BoxDecoration(
-              color: AppColors.bgMuted,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: Row(
-              children: [
-                _InfoBit(
-                  icon: Icons.monetization_on_rounded,
-                  text: _payText,
-                  color: AppColors.primary,
-                ),
-                _InfoDivider(),
-                _InfoBit(
-                  icon: Icons.calendar_today_outlined,
-                  text: _periodText,
-                  color: AppColors.textSecondary,
-                ),
-                _InfoDivider(),
-                _InfoBit(
-                  icon: Icons.access_time_outlined,
-                  text: _timeText,
-                  color: AppColors.textSecondary,
-                ),
-              ],
-            ),
-          ),
-
           const SizedBox(height: 6),
 
           // 액션 버튼
@@ -614,46 +571,39 @@ class _WorkerActions extends StatelessWidget {
       );
     }
 
-    // ── 지원 취소 (활성 상태에서만 — 마감·완료된 공고엔 취소할 지원이 없음)
-    if (status == 'active' || _isCancelled) {
+    // 진행 중엔 '지원 취소', 끝난 뒤엔 '후기' — 둘이 같이 보이면 서로 모순이었다.
+    // 후기 자격(사장님 답장·근무일 지남)은 서버가 한 번 더 막는다 (reviewController)
+    final ended = isCompleted || checkedIn || status != 'active';
+
+    if (!ended && !_isCancelled) {
+      // 파괴적이지만 자주 쓰지 않는 행동 — 빨간 테두리 알약 대신 회색 글자 (누르면 확인 시트)
       add(
-        OutlinedButton.icon(
-          onPressed: (workLoading || _isCancelled) ? null : onCancelApplication,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.error,
-            side: const BorderSide(color: AppColors.error),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(999),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        TextButton(
+          onPressed: workLoading ? null : onCancelApplication,
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.textSecondary,
+            textStyle: AppTextStyles.btnSm,
           ),
-          icon: const Icon(Icons.cancel_outlined, size: 16),
-          label: Text(
-            _isCancelled ? '지원 취소됨' : '지원 취소',
-            style: const TextStyle(fontSize: AppFontSize.body2, fontWeight: FontWeight.w600),
+          child: const Text('지원 취소'),
+        ),
+      );
+    } else if (_isCancelled) {
+      add(Text('지원을 취소했어요', style: AppTextStyles.caption));
+    }
+
+    if (ended && !_isCancelled) {
+      add(
+        TextButton(
+          onPressed: hasReviewed ? null : onGoReview,
+          style: TextButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            disabledForegroundColor: AppColors.textTertiary,
+            textStyle: AppTextStyles.btnSm,
           ),
+          child: Text(hasReviewed ? '후기 작성 완료' : '후기 남기기'),
         ),
       );
     }
-
-    // ── 후기
-    add(
-      TextButton.icon(
-        onPressed: hasReviewed ? null : onGoReview,
-        icon: Icon(
-          Icons.edit_note,
-          size: 18,
-          color: hasReviewed ? AppColors.textTertiary : AppColors.primary,
-        ),
-        label: Text(
-          hasReviewed ? '후기 작성 완료' : '후기 남기기',
-          style: TextStyle(
-            fontSize: AppFontSize.body2,
-            color: hasReviewed ? AppColors.textTertiary : AppColors.primary,
-          ),
-        ),
-      ),
-    );
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -666,47 +616,6 @@ class _WorkerActions extends StatelessWidget {
 // ─────────────────────────────────────────────
 // 공고 정보 바 위젯
 // ─────────────────────────────────────────────
-
-class _InfoBit extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Color color;
-  const _InfoBit({required this.icon, required this.text, required this.color});
-
-  @override
-  Widget build(BuildContext context) => Expanded(
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 12, color: color),
-        const SizedBox(width: 4),
-        Flexible(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: AppFontSize.caption,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _InfoDivider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 1,
-    height: 14,
-    color: AppColors.textDisabled,
-    margin: const EdgeInsets.symmetric(horizontal: 4),
-  );
-}
 
 // ─────────────────────────────────────────────
 // 공용 Pill 위젯

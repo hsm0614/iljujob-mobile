@@ -68,7 +68,7 @@ class WorkConfirmationCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 const Text(
-                  '출근 확정 카드',
+                  '근무 약속',
                   style: TextStyle(
                     fontSize: AppFontSize.button,
                     fontWeight: FontWeight.w700,
@@ -116,7 +116,9 @@ class WorkConfirmationCard extends StatelessWidget {
             const SizedBox(height: 8),
             _Row(
               icon: Icons.payments_rounded,
-              label: '시급',
+              // ponytail: 예전 카드는 일급이 '시급' 칸에 들어갔다 — 2만 원 이상이면 '급여'로만 표기.
+              // 정확히 하려면 카드에 pay_type 저장 필요
+              label: confirm.hourlyWage >= 20000 ? '급여' : '시급',
               value: '${NumberFormat('#,###').format(confirm.hourlyWage)}원',
             ),
             if (confirm.location != null && confirm.location!.isNotEmpty) ...[

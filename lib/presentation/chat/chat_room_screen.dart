@@ -229,14 +229,17 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
             workerId: workerId,
             clientId: clientId,
             jobLocation: jobSource['location']?.toString(),
-            defaultWage: int.tryParse(
-              (jobSource['pay'] ??
-                      jobSource['hourly_wage'] ??
-                      jobSource['wage'] ??
-                      '')
-                  .toString()
-                  .replaceAll(RegExp(r'[^0-9]'), ''),
-            ),
+            // 일급 공고의 급여(예: 41,280원)가 '시급' 칸에 들어가 시간을 곱한 예상 금액이
+            // 터무니없이 나왔다(운영 카드 61건 중 31건이 2만 원 이상 '시급'). 시급 공고일 때만 채운다
+            defaultWage:
+                jobSource['pay_type']?.toString() == '시급'
+                    ? int.tryParse(
+                      (jobSource['pay'] ?? '').toString().replaceAll(
+                        RegExp(r'[^0-9]'),
+                        '',
+                      ),
+                    )
+                    : null,
             defaultStartTime: jobSource['start_time']?.toString(),
             defaultEndTime: jobSource['end_time']?.toString(),
             weekdays: jobSource['weekdays']?.toString(),
@@ -1182,37 +1185,40 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   }
 
   // 상대가 알림을 못 받는 상태 안내. 회색 톤으로 조용히 — 경고가 아니라 정보.
-  Widget _buildPeerUnreachableBanner(ChatRoomController ctrl) {
-    final peer = ctrl.userType == 'worker' ? '사장님' : '알바생';
+  /// 상태 안내 한 줄 (2026-10). 테두리 상자 두 개가 쌓여 대화가 아래로 밀렸다 → 화면 폭 얇은 띠
+  Widget _statusStrip(IconData icon, String text, Color color) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.bgPage,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      decoration: const BoxDecoration(
+        color: AppColors.bgMuted,
+        border: Border(bottom: BorderSide(color: AppColors.borderSub)),
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.notifications_off_outlined,
-            size: 16,
-            color: AppColors.textSecondary,
-          ),
-          const SizedBox(width: 8),
+          Icon(icon, size: 15, color: color),
+          const SizedBox(width: 6),
           Expanded(
             child: Text(
-              '$peer이 알림을 꺼둔 상태라 확인이 늦을 수 있어요.',
-              style: const TextStyle(
-                fontSize: AppFontSize.body2,
+              text,
+              style: AppTextStyles.caption.copyWith(
+                fontSize: AppFontSize.meta,
+                color: color,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-                height: 1.4,
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPeerUnreachableBanner(ChatRoomController ctrl) {
+    final peer = ctrl.userType == 'worker' ? '사장님' : '알바생';
+    return _statusStrip(
+      Icons.notifications_off_outlined,
+      '$peer이 알림을 꺼둬서 확인이 늦을 수 있어요',
+      AppColors.textSecondary,
     );
   }
 
@@ -1222,48 +1228,17 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         widget.jobInfo['is_urgent_call'] == true;
     if (!isUrgent || ctrl.userType != 'worker') return const SizedBox.shrink();
     if (_urgentCallStatus == 'accepted') {
-      return Container(
-        margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFFDCFCE7),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF86EFAC)),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.check_circle_rounded, color: AppColors.gradeB, size: 18),
-            SizedBox(width: 8),
-            Text(
-              '긴급호출 수락 완료',
-              style: TextStyle(
-                fontSize: AppFontSize.body2,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF15803D),
-              ),
-            ),
-          ],
-        ),
+      return _statusStrip(
+        Icons.check_circle_rounded,
+        '긴급호출을 수락했어요',
+        AppColors.badgeSameDay,
       );
     }
     if (_urgentCallStatus == 'rejected') {
-      return Container(
-        margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.bgMuted,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.block_rounded, color: AppColors.textTertiary, size: 18),
-            SizedBox(width: 8),
-            Text(
-              '긴급호출을 거절했어요.',
-              style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
-            ),
-          ],
-        ),
+      return _statusStrip(
+        Icons.block_rounded,
+        '긴급호출을 거절했어요',
+        AppColors.textSecondary,
       );
     }
     if (_urgentCallStatus != 'sent') return const SizedBox.shrink();
@@ -1281,7 +1256,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         children: [
           const Row(
             children: [
-              Icon(Icons.bolt_rounded, size: 17, color: AppColors.badgeUrgent),
+              Icon(Icons.bolt_rounded, size: 17, color: Colors.white),
               SizedBox(width: 6),
               Text(
                 '긴급 호출이 왔어요!',
@@ -1834,7 +1809,11 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                           (_) =>
                                               FocusScope.of(context).unfocus(),
                                       decoration: InputDecoration(
+                                        filled: false,
                                         border: InputBorder.none,
+                                        enabledBorder: InputBorder.none,
+                                        focusedBorder: InputBorder.none,
+                                        disabledBorder: InputBorder.none,
                                         hintText:
                                             ctrl.inputEnabled
                                                 ? '메시지 보내기'
