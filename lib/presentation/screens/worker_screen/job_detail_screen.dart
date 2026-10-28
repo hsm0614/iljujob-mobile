@@ -1049,7 +1049,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             children: [
               // 정상 상태 안내('채팅방이 바로 열려요')는 버튼 이름과 같은 말이라 뺐다.
               // 막힌 이유(마감·차단·정지·지원함)만 띠로 알린다.
-              if (isButtonDisabled || hasExternalApply) ...[
+              // 마감은 버튼('마감된 공고')이 이미 말한다 — 지원한 공고일 때만 띠로 채팅 안내
+              if ((isButtonDisabled || hasExternalApply) &&
+                  !(isClosed && !hasApplied)) ...[
                 _buildApplyHint(isButtonDisabled: isButtonDisabled),
                 const SizedBox(height: 8),
               ],
@@ -1416,40 +1418,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               : ListView(
                 padding: const EdgeInsets.only(bottom: 24),
                 children: [
-                  if (isClosed)
-                    Container(
-                      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 12,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.error.withValues(alpha: 0.06),
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        border: Border.all(
-                          color: AppColors.error.withValues(alpha: 0.22),
-                        ),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(
-                            Icons.block_rounded,
-                            size: 18,
-                            color: AppColors.error,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            '이 공고는 마감됐어요.',
-                            style: TextStyle(
-                              fontSize: AppFontSize.button,
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
                   // 섹션은 화면 끝까지 흰 면, 사이는 8px 회색 띠 (리디자인 2026-10)
                   _buildHeaderCard(postedLabel, postedUtc),
                   const SizedBox(height: 8),
