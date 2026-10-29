@@ -36,4 +36,13 @@ void main() {
     expect(formatWorkDays(null, null, '토,일'), '주말');
     expect(formatWorkDays(null, null, null), isNull);
   });
+
+  test('급여 단위 의심 — 서버 기준과 같다', () {
+    expect(payUnitSuspect('시급', 12000), isNull);
+    expect(payUnitSuspect('시급', 150000), contains('일급 금액'));
+    expect(payUnitSuspect('일급', 1000000), isNull); // 경계는 통과
+    expect(payUnitSuspect('일급', 3000000), contains('월급 금액'));
+    expect(payUnitSuspect('월급', 300000), contains('시급이나 일급'));
+    expect(payUnitSuspect('협의', 0), isNull);
+  });
 }

@@ -82,3 +82,21 @@ String? formatWorkDays(DateTime? start, DateTime? end, String? weekdays) {
   if (s.year == e.year && s.month == e.month && s.day == e.day) return md(s);
   return '${md(s)} ~ ${md(e, month: e.month != s.month)}';
 }
+
+/// 급여 단위 오입력 의심 — 서버 utils/jobPay.js PAY_UNIT_LIMITS와 같은 기준(바꾸면 둘 다).
+/// 끝(등록 방식 선택 뒤)에서야 서버가 되묻던 걸 급여 입력 자리에서 먼저 묻는다.
+/// 60일간 되물음 10건 중 5건이 거기서 등록을 포기했다(2026-10-29).
+String? payUnitSuspect(String? payType, int pay) {
+  const limits = {
+    '시급': (max: 100000, min: 0, hint: '일급'),
+    '일급': (max: 1000000, min: 0, hint: '월급'),
+    '주급': (max: 3000000, min: 0, hint: '월급'),
+    '월급': (max: 20000000, min: 500000, hint: '시급이나 일급'),
+  };
+  final l = limits[(payType ?? '').trim()];
+  if (l == null || pay <= 0) return null;
+  if (pay > l.max || pay < l.min) {
+    return '$payType ${NumberFormat('#,###').format(pay)}원이 맞나요? ${l.hint} 금액은 아닌지 확인해 주세요.';
+  }
+  return null;
+}

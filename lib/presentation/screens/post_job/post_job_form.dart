@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iljujob/widget/app_ui.dart';
+import 'package:iljujob/widget/job_list_tile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:io';
@@ -154,7 +155,11 @@ class _PostJobFormState extends State<PostJobForm>
   // AI 할당량: -1=무제한(pro), 0=소진, N=잔여
   String? _subscriptionPlan;
   int _aiQuotaRemaining = 0;
-  bool _aiQuotaLoaded = false; // 조회 전엔 0이 '다 씀'이 아니라 '모름'
+  bool _aiQuotaLoaded = false;
+  // 급여 단위 의심을 사장님이 '맞아요'로 확인한 값 ('일급:3000000'). 금액·단위가 바뀌면 다시 묻는다
+  String? _payUnitAckFor;
+  String? get _payUnitMsg => isNegotiablePayType(_payType) ? null : payUnitSuspect(_payType, _pay);
+  bool get _payUnitOk => _payUnitMsg == null || _payUnitAckFor == '$_payType:$_pay'; // 조회 전엔 0이 '다 씀'이 아니라 '모름'
   String _aiQuotaResetText = '';
   String? _payWarning;
   SuspensionState? _suspension;
@@ -178,6 +183,7 @@ class _PostJobFormState extends State<PostJobForm>
       case 3:
         return '근무 날짜와 시간을 입력해주세요';
       case 4:
+        if (_pay > 0 && _payWarning == null && !_payUnitOk) return '급여 단위를 확인해주세요';
         return _payWarning != null ? '급여를 확인해주세요' : '급여를 입력해주세요';
       default:
         return '다음';
@@ -203,7 +209,7 @@ class _PostJobFormState extends State<PostJobForm>
             (_timeNegotiable || (_startTime != null && _endTime != null));
       case 4:
         return isNegotiablePayType(_payType) ||
-            (_pay > 0 && _payWarning == null);
+            (_pay > 0 && _payWarning == null && _payUnitOk);
       case 5:
         return true;
       default:
@@ -774,7 +780,8 @@ class _PostJobFormState extends State<PostJobForm>
     if (_isSubmitting || _submitLock) return;
     _submitLock = true;
     try {
-      await _submitOnce(isPaid: isPaid, passType: passType);
+      // 급여 단계에서 '맞아요'를 눌렀으면 서버가 같은 걸 또 묻지 않게 확인 표시를 같이 보낸다
+      await _submitOnce(isPaid: isPaid, passType: passType, payUnitConfirmed: _payUnitAckFor == '$_payType:$_pay');
     } finally {
       _submitLock = false;
     }
@@ -1143,7 +1150,14 @@ class _PostJobFormState extends State<PostJobForm>
           suspendedReason: null,
         );
     if (!guardSuspended(context, susp)) return;
+    // 미리보기 화면 → 등록 방식 시트(2화면)를 '확인하고 올리기' 한 화면으로 합쳤다(2026-10).
+    // 퍼널 이벤트는 그대로 둘 다 남긴다(preview_view → publish_options_view 연속성).
     _trackPost('job_post_preview_view');
+    _showPublishSheet();
+  }
+
+  /// 전체 화면 미리보기(구직자 상세 모양) — '확인하고 올리기'에서 링크로만 연다
+  void _openFullPreview() {
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -1165,8 +1179,6 @@ class _PostJobFormState extends State<PostJobForm>
                       ? (_endDate != null ? _dateToYmd(_endDate!) : null)
                       : null,
               weekdays: _isShortTerm ? [] : _weekdays,
-              // 23:00~00:00 을 '오후 11:00 ~ 오전 12:00'으로만 쓰면 자정인지
-              // 정오인지 구분이 안 된다. 시간 설정 시트와 동일하게 '익일'을 붙인다.
               workingTime:
                   _timeNegotiable
                       ? '시간 협의'
@@ -1179,12 +1191,78 @@ class _PostJobFormState extends State<PostJobForm>
               pay: isNegotiablePayType(_payType) ? 0 : _pay,
               description: _description,
               images: _images,
-              onSubmit: () {
-                Navigator.pop(context);
-                _showPublishSheet();
-              },
+              onSubmit: () => Navigator.pop(context),
             ),
       ),
+    );
+  }
+
+  /// '확인하고 올리기' 맨 위 — 알바생 홈에 실제로 보일 카드 그대로 + 빠진 것 안내(최대 2줄)
+  Widget _publishHeader(BuildContext ctx) {
+    String hhmm(TimeOfDay t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+    final schedule = [
+      if (formatWorkDays(_isShortTerm ? _startDate : null, _isShortTerm ? _endDate : null, _isShortTerm ? null : _weekdays.join(',')) case final d?) d,
+      if (_timeNegotiable)
+        '시간 협의'
+      else if (_startTime != null && _endTime != null)
+        '${hhmm(_startTime!)}~${hhmm(_endTime!)}',
+    ].join(' · ');
+    final tips = [
+      if (_images.isEmpty && _imageUrls.isEmpty) '사진이 없어요 · 일하는 곳 사진을 넣을 수 있어요',
+      if (_description.trim().length < 20) '설명이 짧아요 · 하는 일과 준비물을 적어 주세요',
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            const Expanded(child: Text('알바생에게 이렇게 보여요', style: AppTextStyles.body2)),
+            GestureDetector(
+              onTap: _openFullPreview,
+              child: Text('전체 보기 >', style: AppTextStyles.body2.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: IgnorePointer(
+            child: JobListTile(
+              pay: formatJobPay('$_pay', _payType),
+              payType: _payType,
+              negotiablePay: isNegotiablePayType(_payType),
+              title: _title,
+              schedule: schedule.isEmpty ? null : schedule,
+              location: _location,
+              divider: false,
+              badges: [if (_isSameDayPay) const JobSignalBadge(label: '당일지급', signal: JobSignal.money)],
+              onTap: () {},
+            ),
+          ),
+        ),
+        for (final t in tips)
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: GestureDetector(
+              onTap: () => Navigator.pop(ctx), // 고치러 6단계로
+              child: Row(
+                children: [
+                  const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.textTertiary),
+                  const SizedBox(width: 6),
+                  Expanded(child: Text(t, style: AppTextStyles.body2)),
+                  Text('고치기', style: AppTextStyles.body2.copyWith(color: AppColors.primary)),
+                ],
+              ),
+            ),
+          ),
+        const SizedBox(height: 20),
+        const Divider(height: 1, color: AppColors.borderSub),
+        const SizedBox(height: 4),
+      ],
     );
   }
 
@@ -1194,16 +1272,15 @@ class _PostJobFormState extends State<PostJobForm>
     // 조회를 시트 앞에서 await하면 최대 8초+ 먹통이 된다(C2).
     // 시트를 먼저 띄우고 조회는 시트가 직접 하도록 넘긴다.
     if (!mounted) return;
-    showModalBottomSheet(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
-      ),
-      backgroundColor: Colors.white,
-      builder:
-          (ctx) => _PublishSheet(
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (ctx) => Scaffold(
+              backgroundColor: AppColors.bgCard,
+              appBar: AppBar(title: const Text('확인하고 올리기')),
+              body: _PublishSheet(
+            header: _publishHeader(ctx),
             fetchPassCounts: _fetchPassCounts,
             fetchFreeQuota: JobService.fetchFreeQuota,
             nationwideHint: hasNationwideHint(_titleCtrl.text, _descCtrl.text),
@@ -1282,6 +1359,8 @@ class _PostJobFormState extends State<PostJobForm>
               }
             },
           ),
+            ),
+      ),
     );
   }
 
@@ -1639,11 +1718,11 @@ class _PostJobFormState extends State<PostJobForm>
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.full),
-              // 입력 6단계 뒤에도 미리보기·등록방식 2화면이 더 있다.
+              // 입력 6단계 뒤에 '확인하고 올리기' 1화면이 더 있다(미리보기·등록 방식을 합침, 2026-10).
               // 분모를 6으로 두면 마지막 입력에서 100%가 되어, 결제 결정이
               // 남은 지점에서 "다 끝났다"는 신호를 준다(목표 경사 붕괴).
               child: LinearProgressIndicator(
-                value: (_q + 1) / (_totalQ + 2),
+                value: (_q + 1) / (_totalQ + 1),
                 minHeight: 4,
                 backgroundColor: AppColors.border,
                 valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
@@ -1676,7 +1755,7 @@ class _PostJobFormState extends State<PostJobForm>
                       Text(
                         // 진행바 분모와 같아야 한다. 6으로 두면 마지막 입력에서
                         // 바는 75%인데 텍스트만 6/6이라 서로 다른 말을 한다.
-                        '${_q + 1}/${_totalQ + 2}',
+                        '${_q + 1}/${_totalQ + 1}',
                         style: const TextStyle(
                           fontSize: AppFontSize.meta,
                           color: AppColors.textSecondary,
@@ -3267,6 +3346,29 @@ class _PostJobFormState extends State<PostJobForm>
           ),
         ],
 
+        // ── 급여 단위 되묻기 (입력 자리에서)
+        if (_payUnitMsg case final msg? when _payUnitAckFor != '$_payType:$_pay') ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+            decoration: BoxDecoration(
+              color: AppColors.warningLight,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(msg, style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary)),
+                ),
+                TextButton(
+                  onPressed: () => setState(() => _payUnitAckFor = '$_payType:$_pay'),
+                  child: const Text('맞아요'),
+                ),
+              ],
+            ),
+          ),
+        ],
+
         // ── 임금 AI 리포트 버튼
         if (_category.isNotEmpty) ...[
           const SizedBox(height: 10),
@@ -4511,7 +4613,10 @@ class _PublishSheet extends StatefulWidget {
   final VoidCallback onUrgentSubmit;
   final VoidCallback onBuyPass;
   final bool externalApplyEnabled;
+  /// 맨 위에 붙는 공고 요약(전체 화면으로 열 때)
+  final Widget? header;
   const _PublishSheet({
+    this.header,
     required this.fetchPassCounts,
     required this.fetchFreeQuota,
     required this.fetchReachableWorkerCount,
@@ -4749,25 +4854,19 @@ class _PublishSheetState extends State<_PublishSheet> {
       ),
     );
 
+    // 전체 화면이라 버튼을 맨 아래에 붙인다
     return Column(
-      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Flexible(
+        Expanded(
           child: SingleChildScrollView(
             controller: _scrollCtrl,
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(AppRadius.full)),
-                  ),
-                ),
-                const SizedBox(height: 20),
+                if (widget.header != null) ...[const SizedBox(height: 4), widget.header!],
+                const SizedBox(height: 16),
                 Text('어떻게 올릴까요?', style: AppTextStyles.h2),
                 const SizedBox(height: 4),
                 Text(
