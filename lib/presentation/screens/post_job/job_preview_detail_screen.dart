@@ -542,7 +542,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                 ],
 
                 // ③ 유료 등록 시 차이 — 값은 등록방식 시트의 비교표와 반드시 일치해야 함
-                //    (즉시게시 = 7일 노출·상단 고정 없음 / 긴급호출 = 24시간 상단 고정)
+                //    (즉시게시 = 즉시 공개·상단 고정 없음 / 긴급호출 = 24시간 상단 고정)
                 _insightRow(
                   icon: Icons.vertical_align_top_rounded,
                   label: '즉시게시로 등록 시',
