@@ -704,3 +704,158 @@ class _AppPressScaleState extends State<AppPressScale> {
     );
   }
 }
+
+/// 마이 상단 프로필 줄 (알바생·사장님 공용). 누르면 프로필 수정.
+class AppProfileHeader extends StatelessWidget {
+  final String imageUrl;
+  final String title;
+  final String subtitle;
+  final IconData fallbackIcon;
+  final bool loading;
+  final VoidCallback onTap;
+
+  const AppProfileHeader({
+    super.key,
+    required this.imageUrl,
+    required this.title,
+    required this.subtitle,
+    this.fallbackIcon = Icons.person_rounded,
+    required this.loading,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasImg = !loading && imageUrl.isNotEmpty;
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 16, 16),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 28,
+              backgroundColor: AppColors.bgMuted,
+              backgroundImage: hasImg ? NetworkImage(imageUrl) : null,
+              child:
+                  hasImg
+                      ? null
+                      : Icon(
+                        fallbackIcon,
+                        size: 32,
+                        color: AppColors.textDisabled,
+                      ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.h3,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTextStyles.body2),
+                ],
+              ),
+            ),
+            Text(
+              '프로필 수정',
+              style: AppTextStyles.body2.copyWith(
+                color: AppColors.textSecondary,
+              ),
+            ),
+            const Icon(
+              Icons.chevron_right_rounded,
+              size: 20,
+              color: AppColors.textTertiary,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 이번 달 근무 금액 (2026-10): 같은 크기 두 칸 → 큰 숫자 하나(토스식 '화면의 포인트')
+/// + 예정 한 줄. 입금 확인 데이터가 아니라 근무 기록 합계라 '정산'이라 부르지 않는다.
+/// 같은 숫자가 캘린더에 월별로 있어 누르면 캘린더로
+
+/// 마이 맨 아래 사업자 정보 (전자상거래법 표시, 알바생·사장님 공용)
+class AppBizInfoRow extends StatefulWidget {
+  const AppBizInfoRow({super.key});
+
+  @override
+  State<AppBizInfoRow> createState() => AppBizInfoRowState();
+}
+
+class AppBizInfoRowState extends State<AppBizInfoRow> {
+  bool _open = false;
+
+  static const _items = [
+    ('법인명', '주식회사 찾다'),
+    ('대표자', '황성민'),
+    ('사업자등록번호', '480-88-03690'),
+    ('법인등록번호', '120111-0146420'),
+    ('통신판매업 번호', '2025-인천연수구-2179호'),
+    ('이메일', 'hsm@outfind.co.kr'),
+    ('고객센터', '070-4792-3001 / 010-4653-3002'),
+    ('개업연월일', '2025년 05월 26일'),
+    ('사업장 소재지', '인천광역시 연수구 하모니로178번길 22, 7층 707-나60호 (송도동)'),
+    ('본점 소재지', '인천광역시 연수구 하모니로178번길 22, 7층 707-나60호 (송도동)'),
+    ('업태', '정보통신업'),
+    ('종목', '데이터베이스 및 온라인 정보제공업, 온라인활용마케팅 및 관련사업지원서비스'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AppMenuRow(
+          label: '사업자 정보',
+          onTap: () => setState(() => _open = !_open),
+          trailing: Icon(
+            _open
+                ? Icons.keyboard_arrow_up_rounded
+                : Icons.keyboard_arrow_down_rounded,
+            size: 20,
+            color: AppColors.textTertiary,
+          ),
+        ),
+        if (_open)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: Column(
+              children: [
+                for (final (k, v) in _items)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 3),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 104,
+                          child: Text(k, style: AppTextStyles.caption),
+                        ),
+                        Expanded(
+                          child: Text(
+                            v,
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+}

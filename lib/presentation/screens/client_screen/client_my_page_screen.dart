@@ -11,6 +11,8 @@ import '../../../data/services/screen_analytics_service.dart';
 import '../../../config/app_theme.dart';
 import '../../../config/messages.dart';
 import '../../../widget/dev_account_switch.dart';
+import '../../../widget/app_ui.dart';
+import '../../../widget/app_motion.dart';
 
 class ClientMyPageScreen extends StatefulWidget {
   const ClientMyPageScreen({super.key});
@@ -19,10 +21,6 @@ class ClientMyPageScreen extends StatefulWidget {
 }
 
 class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
-  // ===== Branding =====
-  static const Color brandBlue = AppColors.primary;
-  static const Color brandBlueLight = AppColors.primary;
-
   // ===== Profile State =====
   String companyName = '회사명';
   String managerName = '담당자명';
@@ -32,6 +30,11 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
   // ===== Subscription =====
   bool _subLoading = true;
   SubscriptionStatus? _sub;
+
+  // ===== 이용권 (/api/pass/remain — 즉시게시 -1 = 프로 무제한) =====
+  bool _passLoading = true;
+  int _instant = 0;
+  int _urgent = 0;
 
   // Helpers
   String _getFullImageUrl(String path) {
@@ -72,6 +75,21 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
     ScreenAnalyticsService.instance.logScreenView('client_my_page');
     _loadProfileInfo();
     _loadSubscription();
+    _loadPasses();
+  }
+
+  Future<void> _loadPasses() async {
+    try {
+      final res = await AuthenticatedHttpClient.get(
+        Uri.parse('$baseUrl/api/pass/remain'),
+      ).timeout(const Duration(seconds: 8));
+      if (res.statusCode == 200) {
+        final d = jsonDecode(res.body);
+        _instant = int.tryParse('${d['instant'] ?? d['remaining'] ?? 0}') ?? 0;
+        _urgent = int.tryParse('${d['urgent'] ?? 0}') ?? 0;
+      }
+    } catch (_) {}
+    if (mounted) setState(() => _passLoading = false);
   }
 
   Future<void> _loadSubscription() async {
@@ -90,17 +108,20 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
   }
 
   Future<void> _refreshAll() async {
-    await Future.wait([_loadProfileInfo(), _loadSubscription()]);
+    await Future.wait([_loadProfileInfo(), _loadSubscription(), _loadPasses()]);
   }
 
-  String _subSummaryText() {
-    if (_subLoading) return '조회 중...';
-    if (!(_sub?.active ?? false)) return '미구독';
-    final plan = (_sub!.plan ?? '구독').toUpperCase();
+  /// '스탠다드 구독 중 · 12일 남음' / null(구독 안 함)
+  String? _subLine() {
+    if (!(_sub?.active ?? false)) return null;
+    const names = {'lite': '라이트', 'standard': '스탠다드', 'pro': '프로'};
+    final raw = (_sub!.plan ?? '').toLowerCase();
+    final name = names.entries
+        .firstWhere((e) => raw.contains(e.key), orElse: () => const MapEntry('', '구독'))
+        .value;
     final d = _sub!.expiresAt;
-    final days = (d != null) ? d.difference(DateTime.now()).inDays : null;
-    final left = (days != null) ? 'D-$days' : '';
-    return '$plan $left';
+    final left = d == null ? '' : ' · ${d.difference(DateTime.now()).inDays}일 남음';
+    return '$name 구독 중$left';
   }
 
   Future<void> _loadProfileInfo() async {
@@ -179,24 +200,14 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
   // =========================
 
   Future<void> _confirmLogout() async {
-    if (!mounted) return;
-
-    final ok = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true, // 안드로이드 하단 가드
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder:
-          (_) => _ConfirmSheet(
-            title: '로그아웃할까요?',
-            message: '로그아웃하면 다시 로그인해야 해요.',
-            confirmText: '로그아웃',
-            confirmColor: AppColors.error,
-            icon: Icons.logout_rounded,
-          ),
+    final ok = await showAppSheet(
+      context,
+      title: '로그아웃할까요?',
+      message: '다시 로그인하면 이어서 쓸 수 있어요.',
+      confirmLabel: '로그아웃',
+      cancelLabel: '취소',
     );
-
-    if (ok != true) return;
+    if (!ok) return;
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
@@ -209,24 +220,15 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
   }
 
   Future<void> _confirmWithdraw() async {
-    if (!mounted) return;
-
-    final ok = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true, // 안드로이드 하단 가드
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder:
-          (_) => _ConfirmSheet(
-            title: '정말 탈퇴할까요?',
-            message: '탈퇴하면 계정 정보가 삭제되고 복구가 어려워요.',
-            confirmText: '탈퇴하기',
-            confirmColor: AppColors.error,
-            icon: Icons.person_off_rounded,
-          ),
+    final ok = await showAppSheet(
+      context,
+      title: '정말 탈퇴할까요?',
+      message: '남은 이용권이 사라지고 계정을 되돌릴 수 없어요.',
+      confirmLabel: '탈퇴하기',
+      cancelLabel: '취소',
+      destructive: true,
     );
-
-    if (ok != true) return;
+    if (!ok) return;
     await _withdrawAccount();
   }
 
@@ -283,7 +285,6 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
       final ok = res.statusCode >= 200 && res.statusCode < 300; // 200/204 모두 성공
       if (!ok) {
         if (!mounted) return;
-        final msg = res.body.isNotEmpty ? res.body : '(empty body)';
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text(Msg.withdrawFailed)),
         );
@@ -311,16 +312,22 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
     }
   }
 
+  // 2026-10 리디자인: 알바생 마이와 같은 뼈대 (화면 폭 흰 블록 + 회색 아이콘 줄, 토스·당근 마이).
+  // 알바생의 '이번 달 일한 금액' 자리에 사장님은 '남은 이용권' — 공고 올릴 때 가장 먼저 궁금한 것.
   @override
   Widget build(BuildContext context) {
+    final contact = [
+      if (managerName != '담당자명') managerName,
+      if (phoneNumber != '전화번호') _formatPhone(phoneNumber),
+    ].join(' · ');
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       body: RefreshIndicator(
         onRefresh: _refreshAll,
-        color: brandBlue,
+        color: AppColors.primary,
         child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // 리디자인(2026-10): 200px 파란 헤더 → 흰 앱바 + 회색 바탕 위 프로필 카드
             const SliverAppBar(
               pinned: true,
               automaticallyImplyLeading: false,
@@ -331,169 +338,152 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
               titleSpacing: 20,
               title: Text('마이', style: AppTextStyles.tabTitle),
             ),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-                child: _ProfileCard(
-                  brandBlue: brandBlue,
-                  brandBlueLight: brandBlueLight,
-                  logoUrl: _getFullImageUrl(logoUrl),
-                  companyName: companyName,
-                  managerName: managerName,
-                  phoneNumber: _formatPhone(phoneNumber),
-                  subscriptionPlan:
-                      _sub?.active == true ? (_sub!.plan ?? '') : null,
-                  onEdit: () => Navigator.pushNamed(context, '/edit_profile'),
+            SliverList.list(
+              children: [
+                Container(
+                  color: AppColors.bgCard,
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: Column(
+                    children: [
+                      AppProfileHeader(
+                        imageUrl: _getFullImageUrl(logoUrl),
+                        title: companyName,
+                        subtitle: contact.isEmpty ? '프로필을 채워 주세요' : contact,
+                        fallbackIcon: Icons.storefront_rounded,
+                        loading: false,
+                        onTap: () async {
+                          await Navigator.pushNamed(context, '/edit_profile');
+                          if (mounted) _loadProfileInfo();
+                        },
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: _PassBox(
+                          loading: _passLoading,
+                          instant: _instant,
+                          urgent: _urgent,
+                          subLine: _subLoading ? null : _subLine(),
+                          onTap: () async {
+                            await Navigator.pushNamed(context, '/purchase-pass');
+                            if (mounted) _refreshAll();
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ),
-
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: _SectionCard(
-                  title: '사장님 관리',
+                const SizedBox(height: 8),
+                AppMenuSection(
+                  title: '이용권·구독',
                   children: [
-                    _ItemTile(
-                      icon: Icons.workspace_premium,
-                      label: '구독 관리',
-                      trailing: _StatusPill(text: _subSummaryText()),
+                    AppMenuRow(
+                      icon: Icons.confirmation_number_outlined,
+                      label: '이용권 구매',
+                      onTap: () async {
+                        await Navigator.pushNamed(context, '/purchase-pass');
+                        if (mounted) _refreshAll();
+                      },
+                    ),
+                    AppMenuRow(
+                      icon: Icons.workspace_premium_outlined,
+                      label: (_sub?.active ?? false) ? '구독 관리' : '구독하기',
+                      subtitle:
+                          (_sub?.active ?? false) ? null : '매달 이용권을 더 싸게 받아요',
                       onTap: () async {
                         await Navigator.pushNamed(
                           context,
-                          '/subscription/manage',
+                          (_sub?.active ?? false)
+                              ? '/subscription/manage'
+                              : '/subscribe',
                         );
-                        if (mounted) _loadSubscription();
+                        if (mounted) _refreshAll();
                       },
                     ),
-                    if (!(_sub?.active ?? false))
-                      _ItemTile(
-                        icon: Icons.credit_card,
-                        label: '구독하기',
-                        onTap: () async {
-                          final ok = await Navigator.pushNamed(
-                            context,
-                            '/subscribe',
-                          );
-                          if (ok == true && mounted) _loadSubscription();
-                        },
-                      ),
-                    _ItemTile(
-                      icon: Icons.credit_card,
-                      label: '이용권 구매',
-                      onTap:
-                          () => Navigator.pushNamed(context, '/purchase-pass'),
-                    ),
-                    _ItemTile(
-                      icon: Icons.notifications_active,
+                    AppMenuRow(
+                      icon: Icons.notifications_none_rounded,
                       label: '알림 설정',
                       onTap:
                           () => Navigator.pushNamed(context, '/notifications'),
                     ),
-                    _ItemTile(
+                  ],
+                ),
+                const SizedBox(height: 8),
+                AppMenuSection(
+                  title: '도움',
+                  children: [
+                    AppMenuRow(
+                      icon: Icons.headset_mic_outlined,
+                      label: '고객센터',
+                      onTap: () => Navigator.pushNamed(context, '/support'),
+                    ),
+                    AppMenuRow(
+                      icon: Icons.campaign_outlined,
+                      label: '공지사항',
+                      onTap: () => Navigator.pushNamed(context, '/notices'),
+                    ),
+                    AppMenuRow(
+                      icon: Icons.card_giftcard_rounded,
+                      label: '이벤트',
+                      onTap: () => Navigator.pushNamed(context, '/events'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                AppMenuSection(
+                  title: '안전',
+                  children: [
+                    AppMenuRow(
                       icon: Icons.flag_outlined,
                       label: '신고 내역',
                       onTap:
                           () => Navigator.pushNamed(context, '/report-history'),
                     ),
-                    _ItemTile(
-                      icon: Icons.block,
+                    AppMenuRow(
+                      icon: Icons.block_rounded,
                       label: '차단한 사용자',
                       onTap:
                           () => Navigator.pushNamed(context, '/blocked-users'),
                     ),
                   ],
                 ),
-              ),
-            ),
-
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: _SectionCard(
-                  title: '고객센터',
+                const SizedBox(height: 8),
+                AppMenuSection(
                   children: [
-                    _ItemTile(
-                      icon: Icons.campaign,
-                      label: '공지사항',
-                      onTap: () => Navigator.pushNamed(context, '/notices'),
-                    ),
-                    _ItemTile(
-                      icon: Icons.local_activity_outlined,
-                      label: '이벤트',
-                      onTap: () => Navigator.pushNamed(context, '/events'),
-                    ),
-                    _ItemTile(
-                      icon: Icons.support_agent,
-                      label: '고객센터',
-                      onTap: () => Navigator.pushNamed(context, '/support'),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                child: _SectionCard(
-                  title: '서비스',
-                  children: [
-                    _ItemTile(
-                      icon: Icons.policy,
+                    AppMenuRow(
                       label: '약관 및 정책',
                       onTap: () => Navigator.pushNamed(context, '/terms-list'),
                     ),
-                    _ExpandableBizInfo(brandBlue: brandBlue),
+                    const AppBizInfoRow(),
                   ],
                 ),
-              ),
-            ),
-
-            const SliverToBoxAdapter(child: DevAccountSwitchButton()),
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                child: _SectionCard(
-                  title: '계정',
-                  children: [
-                    _ItemTile(
-                      icon: Icons.logout,
-                      label: '로그아웃',
-                      labelStyle: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.error,
+                const DevAccountSwitchButton(),
+                // 계정 행동은 맨 아래 작은 글자로 (알바생 마이와 같음)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 12, 8, 32),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      TextButton(
+                        onPressed: _confirmLogout,
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.textSecondary,
+                          textStyle: AppTextStyles.body2,
+                        ),
+                        child: const Text('로그아웃'),
                       ),
-                      trailing: const Icon(
-                        Icons.logout,
-                        size: 18,
-                        color: AppColors.error,
+                      const Text('|', style: AppTextStyles.caption),
+                      TextButton(
+                        onPressed: _confirmWithdraw,
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.textTertiary,
+                          textStyle: AppTextStyles.body2,
+                        ),
+                        child: const Text('회원 탈퇴'),
                       ),
-                      onTap: _confirmLogout,
-                    ),
-                    _ItemTile(
-                      icon: Icons.person_off_rounded,
-                      label: '회원 탈퇴',
-                      labelStyle: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.error,
-                      ),
-                      trailing: const Icon(
-                        Icons.delete_forever,
-                        size: 18,
-                        color: AppColors.error,
-                      ),
-                      onTap: _confirmWithdraw,
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
@@ -502,586 +492,87 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
   }
 }
 
-/* --------------------------- Widgets --------------------------- */
-
-class _ProfileCard extends StatelessWidget {
-  final Color brandBlue;
-  final Color brandBlueLight;
-  final String logoUrl;
-  final String companyName;
-  final String managerName;
-  final String phoneNumber;
-  final String? subscriptionPlan;
-  final VoidCallback onEdit;
-
-  const _ProfileCard({
-    required this.brandBlue,
-    required this.brandBlueLight,
-    required this.logoUrl,
-    required this.companyName,
-    required this.managerName,
-    required this.phoneNumber,
-    required this.onEdit,
-    this.subscriptionPlan,
+/// 남은 이용권 — 숫자 두 개가 이 화면의 포인트. 누르면 이용권 구매.
+class _PassBox extends StatelessWidget {
+  final bool loading;
+  final int instant; // -1 = 무제한(프로)
+  final int urgent;
+  final String? subLine;
+  final VoidCallback onTap;
+  const _PassBox({
+    required this.loading,
+    required this.instant,
+    required this.urgent,
+    required this.subLine,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    final hasLogo = logoUrl.isNotEmpty;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Row(
+    Widget cell(String label, int n) => Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Stack(
-            children: [
-              CircleAvatar(
-                radius: 30,
-                backgroundColor: AppColors.primaryLight,
-                backgroundImage: hasLogo ? NetworkImage(logoUrl) : null,
-                child:
-                    hasLogo
-                        ? null
-                        : const Icon(
-                          Icons.business,
-                          size: 30,
-                          color: AppColors.textSecondary,
-                        ),
-              ),
-              Positioned(
-                bottom: -2,
-                right: -2,
-                child: Material(
-                  color: Colors.white,
-                  shape: const CircleBorder(),
-                  child: InkWell(
-                    customBorder: const CircleBorder(),
-                    onTap: onEdit,
-                    child: Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: brandBlue,
-                        shape: BoxShape.circle,
-                        boxShadow: const [
-                          BoxShadow(color: AppColors.textTertiary, blurRadius: 4),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.edit,
-                        size: 16,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 14),
-          Expanded(
+          Text(label, style: AppTextStyles.body2),
+          const SizedBox(height: 4),
+          loading
+              ? Text('-', style: AppTextStyles.h1)
+              : n < 0
+              ? Text('무제한', style: AppTextStyles.h1)
+              : AppCountUp(value: n, suffix: '개', style: AppTextStyles.h1),
+        ],
+      ),
+    );
+
+    return AppPressScale(
+      haptic: false,
+      child: Material(
+        color: AppColors.bgMuted,
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 16, 14, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
                     Expanded(
-                      child: _TwoLine(title: companyName, subtitle: '회사명'),
-                    ),
-                    if (subscriptionPlan != null &&
-                        subscriptionPlan!.isNotEmpty)
-                      Container(
-                        margin: const EdgeInsets.only(left: 6),
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 7,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.pending,
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(
-                              Icons.workspace_premium_rounded,
-                              size: 11,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              subscriptionPlan!.toUpperCase(),
-                              style: const TextStyle(
-                                fontSize: AppFontSize.caption,
-                                fontWeight: FontWeight.w800,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
+                      child: Text(
+                        '남은 이용권',
+                        style: AppTextStyles.body2.copyWith(
+                          color: AppColors.textPrimary,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  children: [
-                    _ChipText(
-                      text: managerName,
-                      icon: Icons.person,
-                      maxWidth: 160,
-                      ensureVisible: false,
                     ),
-                    _ChipText(
-                      text: phoneNumber,
-                      icon: Icons.call,
-                      maxWidth: 220,
-                      ensureVisible: true,
+                    Text(
+                      '구매',
+                      style: AppTextStyles.body2.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      size: 20,
+                      color: AppColors.textTertiary,
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [cell('즉시 게시', instant), cell('긴급 호출', urgent)],
+                ),
+                if (subLine != null) ...[
+                  const SizedBox(height: 12),
+                  Text(subLine!, style: AppTextStyles.body2),
+                ],
               ],
             ),
           ),
-          Flexible(
-            fit: FlexFit.loose,
-            child: LayoutBuilder(
-              builder: (_, c) {
-                final narrow = c.maxWidth < 120;
-                if (narrow) {
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: IconButton.filledTonal(
-                      onPressed: onEdit,
-                      icon: const Icon(Icons.arrow_forward_ios, size: 16),
-                    ),
-                  );
-                }
-                return Align(
-                  alignment: Alignment.centerRight,
-                  child: FittedBox(
-                    child: FilledButton.tonalIcon(
-                      onPressed: onEdit,
-                      icon: const Icon(Icons.arrow_forward_ios, size: 16),
-                      label: const Text('프로필'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.primaryLight,
-                        foregroundColor: brandBlue,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 10,
-                        ),
-                        textStyle: const TextStyle(fontWeight: FontWeight.w600),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        minimumSize: const Size(0, 40),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TwoLine extends StatelessWidget {
-  final String title;
-  final String subtitle;
-  const _TwoLine({required this.title, required this.subtitle});
-
-  @override
-  Widget build(BuildContext context) {
-    return RichText(
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      text: TextSpan(
-        children: [
-          TextSpan(
-            text: '$subtitle: ',
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: AppFontSize.body2),
-          ),
-          TextSpan(
-            text: title,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontWeight: FontWeight.w700,
-              fontSize: AppFontSize.body1,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _ChipText extends StatelessWidget {
-  final String text;
-  final IconData icon;
-  final double maxWidth;
-  final bool ensureVisible;
-
-  const _ChipText({
-    required this.text,
-    required this.icon,
-    this.maxWidth = 160,
-    this.ensureVisible = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: maxWidth),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.primaryLight,
-          borderRadius: BorderRadius.circular(999),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 14, color: AppColors.primary),
-            const SizedBox(width: 6),
-            if (ensureVisible)
-              Expanded(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    text,
-                    maxLines: 1,
-                    style: const TextStyle(
-                      fontSize: AppFontSize.body2,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              )
-            else
-              Flexible(
-                child: Text(
-                  text,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: AppFontSize.body2,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionCard extends StatelessWidget {
-  final String title;
-  final List<Widget> children;
-  const _SectionCard({required this.title, required this.children});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-            // 섹션 구분은 타이포 위계만으로 — 장식 세로바 제거
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: AppFontSize.buttonLg,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ),
-          const Divider(height: 1),
-          ..._withDividers(children),
-        ],
-      ),
-    );
-  }
-
-  List<Widget> _withDividers(List<Widget> items) {
-    final List<Widget> out = [];
-    for (var i = 0; i < items.length; i++) {
-      out.add(items[i]);
-      if (i != items.length - 1) out.add(const Divider(height: 1, indent: 56));
-    }
-    return out;
-  }
-}
-
-class _ItemTile extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final TextStyle? labelStyle;
-  final Widget? trailing;
-  final VoidCallback onTap;
-
-  const _ItemTile({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-    this.labelStyle,
-    this.trailing,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context).textTheme;
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: ListTile(
-          leading: Icon(icon, size: 22, color: AppColors.primary),
-          title: Text(
-            label,
-            style:
-                labelStyle ??
-                t.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-          ),
-          trailing:
-              trailing ??
-              const Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: AppColors.textTertiary,
-              ),
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 6,
-            vertical: 2,
-          ),
-          dense: true,
-          minLeadingWidth: 0,
-        ),
-      ),
-    );
-  }
-}
-
-class _ExpandableBizInfo extends StatelessWidget {
-  final Color brandBlue;
-  const _ExpandableBizInfo({required this.brandBlue});
-
-  @override
-  Widget build(BuildContext context) {
-    return Theme(
-      data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-      child: ExpansionTile(
-        leading: Icon(Icons.info_outline, color: brandBlue),
-        title: const Text(
-          '사업자 정보',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
-        shape: const RoundedRectangleBorder(
-          side: BorderSide(color: Colors.transparent),
-        ),
-        childrenPadding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-        children: const [
-          _BizInfoItem('법인명', '주식회사 찾다'),
-          _BizInfoItem('대표자', '황성민'),
-          _BizInfoItem('사업자등록번호', '480-88-03690'),
-          _BizInfoItem('법인등록번호', '120111-0146420'),
-          _BizInfoItem('통신판매업 번호', '2025-인천연수구-2179호'),
-          _BizInfoItem('이메일', 'hsm@outfind.co.kr'),
-          _BizInfoItem('고객센터', '070-4792-3001 / 010-4653-3002'),
-          _BizInfoItem('개업연월일', '2025년 05월 26일'),
-          _BizInfoItem('사업장 소재지', '인천광역시 연수구 하모니로178번길 22, 7층 707-나60호 (송도동)'),
-          _BizInfoItem('본점 소재지', '인천광역시 연수구 하모니로178번길 22, 7층 707-나60호 (송도동)'),
-          _BizInfoItem('업태', '정보통신업'),
-          _BizInfoItem('종목', '데이터베이스 및 온라인 정보제공업, 온라인활용마케팅 및 관련사업지원서비스'),
-        ],
-      ),
-    );
-  }
-}
-
-class _BizInfoItem extends StatelessWidget {
-  final String k;
-  final String v;
-  const _BizInfoItem(this.k, this.v);
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 110,
-            child: Text(
-              k,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: AppFontSize.button),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              v,
-              style: const TextStyle(fontSize: AppFontSize.button, color: AppColors.textPrimary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _StatusPill extends StatelessWidget {
-  final String text;
-  const _StatusPill({required this.text});
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: AppFontSize.meta,
-          fontWeight: FontWeight.w700,
-          color: AppColors.primary,
-        ),
-      ),
-    );
-  }
-}
-
-/* --------------------------- Confirm Bottom Sheet (Android Safe) --------------------------- */
-
-class _ConfirmSheet extends StatelessWidget {
-  final String title;
-  final String message;
-  final String confirmText;
-  final Color confirmColor;
-  final IconData icon;
-
-  const _ConfirmSheet({
-    required this.title,
-    required this.message,
-    required this.confirmText,
-    required this.confirmColor,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomSafe = MediaQuery.of(context).viewPadding.bottom;
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        16,
-        12,
-        16,
-        16 + bottomSafe,
-      ), // 안드로이드 가림 방지 핵심
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 42,
-            height: 5,
-            decoration: BoxDecoration(
-              color: AppColors.border,
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: confirmColor.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: confirmColor),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: AppFontSize.body2,
-              color: AppColors.textSecondary,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textPrimary,
-                    side: const BorderSide(color: AppColors.border),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text(
-                    '취소',
-                    style: TextStyle(fontWeight: FontWeight.w900),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: confirmColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    confirmText,
-                    style: const TextStyle(fontWeight: FontWeight.w900),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
       ),
     );
   }
