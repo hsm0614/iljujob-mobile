@@ -8,6 +8,7 @@ import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/presentation/chat/chat_room_screen.dart';
 import '../../../config/messages.dart';
 import '../../../config/app_theme.dart';
+import '../../../widget/app_ui.dart';
 
 class ApplicantListScreen extends StatefulWidget {
   const ApplicantListScreen({super.key});
@@ -22,11 +23,6 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
   bool _aiSorted = false; // AI 정렬 여부
   String? jobId;
 
-  static const Color _brandBlue = AppColors.primary;
-  static const Color _bg = AppColors.bgPage;
-  static const Color _border = AppColors.border;
-  static const Color _text = AppColors.textPrimary;
-  static const Color _label = AppColors.textTertiary;
 
   String formatDate(String isoDate) {
     try {
@@ -34,14 +30,6 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
     } catch (_) {
       return isoDate;
     }
-  }
-
-  String maskName(String name) {
-    if (name.isEmpty) return name;
-    if (name.length == 2) return '${name[0]}*';
-    if (name.length > 2)
-      return '${name[0]}${'*' * (name.length - 2)}${name[name.length - 1]}';
-    return name;
   }
 
   @override
@@ -145,163 +133,144 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
     );
   }
 
-  // ── AI 스코어 색상 ──────────────────────────────────────
-  Color _scoreColor(double score) {
-    if (score >= 0.80) return AppColors.success; // 초록
-    if (score >= 0.60) return AppColors.primary; // 파랑
-    if (score >= 0.40) return AppColors.warning; // 노랑
-    return AppColors.textTertiary; // 회색
-  }
-
-  // ── reasons 아이콘 매핑 ─────────────────────────────────
-  Map<String, String> get _reasonIcons => {
-    '가까움': '📍',
-    '위치': '📍',
-    '직종': '💼',
-    '의미유사': '💼',
-    '시급상위': '💰',
-    '시간대겹침': '🕐',
-    '완료이력좋음': '⭐',
+  // AI 이유 → 사람 말 (홈 공고 카드 AI 요약과 같은 표기, test/ai_summary_test.dart)
+  static const _reasonLabel = {
+    '가까움': '가까워요',
+    '시간대겹침': '시간대가 맞아요',
+    '시급상위': '시급이 높아요',
+    '완료이력좋음': '근무 이력이 좋아요',
+    '의미유사': '업무가 잘 맞아요',
   };
 
-  String _reasonIcon(String reason) {
-    for (final entry in _reasonIcons.entries) {
-      if (reason.contains(entry.key)) return entry.value;
-    }
-    return '✅';
+  String _timeAgo(String iso) {
+    final t = DateTime.tryParse(iso)?.toLocal();
+    if (t == null) return '';
+    final d = DateTime.now().difference(t);
+    if (d.inMinutes < 60) return '${d.inMinutes.clamp(1, 59)}분 전';
+    if (d.inHours < 24) return '${d.inHours}시간 전';
+    if (d.inDays < 7) return '${d.inDays}일 전';
+    return formatDate(iso);
   }
 
+  // 지원자 관리와 같은 행·같은 버튼 (2026-10). 예전엔 가린 이름 옆에 실명을 괄호로 같이 찍고,
+  // 이모지 칩·매칭률 막대·순위 원이 붙어 있었다.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: Row(
-          children: [
-            const Text('지원자 목록'),
-            const SizedBox(width: 8),
-            // 지원자 수 배지
-            if (applicants.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                decoration: BoxDecoration(
-                  color: _brandBlue.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(99),
-                ),
-                child: Text(
-                  '${applicants.length}명',
-                  style: const TextStyle(
-                    fontSize: AppFontSize.meta,
-                    fontWeight: FontWeight.w700,
-                    color: _brandBlue,
-                  ),
-                ),
-              ),
-          ],
-        ),
-        actions: [
-          // AI 정렬 배지
-          if (_aiSorted)
-            Container(
-              margin: const EdgeInsets.only(right: 16),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(99),
-              ),
-              child: const Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.auto_awesome, size: 12),
-                  SizedBox(width: 4),
-                  Text(
-                    'AI 정렬됨',
-                    style: TextStyle(
-                      fontSize: AppFontSize.caption,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
+      backgroundColor: AppColors.bgPage,
+      appBar: AppBar(title: Text(applicants.isEmpty ? '지원자' : '지원자 ${applicants.length}명')),
       body:
           isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const AppSkeletonList(avatar: true)
               : applicants.isEmpty
-              ? _buildEmptyState()
+              ? const AppEmptyState(
+                icon: Icons.people_alt_outlined,
+                title: '아직 지원자가 없어요',
+                message: '지원이 오면 알림으로 알려드릴게요',
+              )
               : RefreshIndicator(
                 onRefresh: () => _loadApplicants(jobId!),
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  itemCount: applicants.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) {
-                    final a = applicants[index];
-                    final int? workerId = int.tryParse(
-                      (a['worker_id'] ?? '').toString(),
-                    );
-                    if (workerId == null) return const SizedBox.shrink();
-
-                    final double? aiScore =
-                        a['ai_score'] != null
-                            ? double.tryParse(a['ai_score'].toString())
-                            : null;
-                    final List reasons = (a['ai_reasons'] as List?) ?? [];
-                    final double? distKm =
-                        a['dist_km'] != null
-                            ? double.tryParse(a['dist_km'].toString())
-                            : null;
-
-                    return _buildApplicantCard(
-                      rank: index + 1,
-                      workerId: workerId,
-                      name: maskName((a['name'] ?? '이름 비공개').toString()),
-                      originalName: (a['name'] ?? '이름 비공개').toString(),
-                      createdAt: (a['created_at'] ?? '').toString(),
-                      profileUrl: a['profile_image_url'] as String?,
-                      aiScore: aiScore,
-                      reasons: reasons.cast<String>(),
-                      distKm: distKm,
-                      completedCount:
-                          int.tryParse(
-                            (a['completed_count'] ?? '0').toString(),
-                          ) ??
-                          0,
-                      mannerPoint:
-                          int.tryParse((a['manner_point'] ?? '0').toString()) ??
-                          0,
-                    );
-                  },
+                child: ListView(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  children: [
+                    if (_aiSorted)
+                      const Padding(
+                        padding: EdgeInsets.fromLTRB(20, 14, 20, 6),
+                        child: Text('이 공고와 잘 맞는 순서로 보여드려요', style: AppTextStyles.body2),
+                      ),
+                    Container(
+                      color: AppColors.bgCard,
+                      child: Column(
+                        children: [
+                          for (final a in applicants)
+                            if (int.tryParse('${a['worker_id']}') case final id?) _row(a, id),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
+  Widget _row(dynamic a, int workerId) {
+    final name = (a['name'] ?? '이름 비공개').toString();
+    final img = (a['profile_image_url'] ?? '').toString();
+    final by = int.tryParse('${a['birth_year'] ?? ''}'.padRight(4).substring(0, 4).trim());
+    final g = a['gender'];
+    final confirmed = a['is_confirmed'] == 1 || a['is_confirmed'] == true;
+    final completed = a['is_completed'] == 1 || a['is_completed'] == true;
+    final score = double.tryParse('${a['ai_score'] ?? ''}');
+    final dist = double.tryParse('${a['dist_km'] ?? ''}');
+    final reasons = [
+      for (final r in ((a['ai_reasons'] as List?) ?? []).take(2))
+        if (_reasonLabel[r] case final l?) r == '가까움' && dist != null ? '$l (${dist < 1 ? '${(dist * 1000).round()}m' : '${dist.toStringAsFixed(1)}km'})' : l,
+    ];
+    final meta = [
+      if (by != null && by > 1900) '${DateTime.now().year - by}세',
+      if (g == 'male') '남' else if (g == 'female') '여',
+      '${_timeAgo((a['created_at'] ?? '').toString())} 지원',
+    ].where((x) => x.trim().isNotEmpty).join(' · ');
+    // 퍼센트는 0.7 이상일 때만 — 낮은 점수를 숫자로 보이면 오히려 깎아내린다(홈 AI 요약과 같은 규칙)
+    final fit = [
+      if (score != null && score >= 0.7) '${(score * 100).round()}% 맞음',
+      ...reasons,
+    ].join(' · ');
+
+    return InkWell(
+      onTap: () => Navigator.pushNamed(context, '/worker-profile', arguments: workerId),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.people_outline, size: 52, color: AppColors.textTertiary),
-            SizedBox(height: 12),
-            Text(
-              '아직 지원자가 없어요.',
-              style: TextStyle(fontSize: AppFontSize.titleLg, fontWeight: FontWeight.w600),
+        padding: const EdgeInsets.fromLTRB(20, 14, 16, 14),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: AppColors.bgMuted,
+              backgroundImage: img.isNotEmpty ? NetworkImage(img) : null,
+              child: img.isEmpty
+                  ? Text(name.isNotEmpty ? name[0] : '?', style: AppTextStyles.body1.copyWith(color: AppColors.textSecondary))
+                  : null,
             ),
-            SizedBox(height: 6),
-            Text(
-              '조금만 더 기다리면\n알바일주에서 알바생들이 찾아올 거예요.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: AppFontSize.button, color: Colors.black54),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      AppGradeBadge(score: int.tryParse('${a['activity_score'] ?? 0}') ?? 0),
+                      if (completed || confirmed) ...[
+                        const SizedBox(width: 4),
+                        JobSignalBadge(label: completed ? '근무 완료' : '출근 확정', signal: JobSignal.trust),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(meta, style: AppTextStyles.body2),
+                  if (fit.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(fit, style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary)),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child:
+                  confirmed || completed
+                      ? OutlinedButton(style: _rowBtn, onPressed: () => _goToChatRoom(workerId), child: const Text('채팅'))
+                      : ElevatedButton(style: _rowBtn, onPressed: () => _goToChatRoom(workerId), child: const Text('채팅')),
             ),
           ],
         ),
@@ -309,299 +278,9 @@ class _ApplicantListScreenState extends State<ApplicantListScreen> {
     );
   }
 
-  Widget _buildApplicantCard({
-    required int rank,
-    required int workerId,
-    required String name,
-    required String originalName,
-    required String createdAt,
-    String? profileUrl,
-    double? aiScore,
-    List<String> reasons = const [],
-    double? distKm,
-    int completedCount = 0,
-    int mannerPoint = 0,
-  }) {
-    final hasAi = aiScore != null;
-    final scoreInt = hasAi ? (aiScore * 100).round() : null;
-    final scoreColor = hasAi ? _scoreColor(aiScore) : _label;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color:
-              hasAi && aiScore >= 0.80 ? scoreColor.withOpacity(0.4) : _border,
-          width: hasAi && aiScore >= 0.80 ? 1.5 : 0.8,
-        ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap:
-            () => Navigator.pushNamed(
-              context,
-              '/worker-profile',
-              arguments: workerId,
-            ),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // ── 상단 행 ──────────────────────────────────
-              Row(
-                children: [
-                  // 순위 배지
-                  if (hasAi) ...[
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: rank <= 3 ? scoreColor.withOpacity(0.15) : _bg,
-                        shape: BoxShape.circle,
-                      ),
-                      child: Center(
-                        child: Text(
-                          '$rank',
-                          style: TextStyle(
-                            fontSize: AppFontSize.caption,
-                            fontWeight: FontWeight.w800,
-                            color: rank <= 3 ? scoreColor : _label,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-
-                  // 프로필 이미지
-                  CircleAvatar(
-                    radius: 22,
-                    backgroundImage:
-                        (profileUrl?.isNotEmpty == true)
-                            ? NetworkImage(profileUrl!)
-                            : null,
-                    backgroundColor: const Color(0xFFE9ECF2),
-                    child:
-                        (profileUrl == null || profileUrl.isEmpty)
-                            ? const Icon(Icons.person, color: Colors.white)
-                            : null,
-                  ),
-                  const SizedBox(width: 12),
-
-                  // 이름 + 지원일
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Text(
-                              name,
-                              style: const TextStyle(
-                                fontSize: AppFontSize.body1,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '($originalName)',
-                              style: const TextStyle(
-                                fontSize: AppFontSize.meta,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 3),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.schedule,
-                              size: 13,
-                              color: Colors.black45,
-                            ),
-                            const SizedBox(width: 3),
-                            Text(
-                              '지원일 ${formatDate(createdAt)}',
-                              style: const TextStyle(
-                                fontSize: AppFontSize.meta,
-                                color: Colors.black54,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // 채팅 버튼
-                  TextButton.icon(
-                    onPressed: () => _goToChatRoom(workerId),
-                    style: TextButton.styleFrom(
-                      backgroundColor: _brandBlue.withOpacity(0.08),
-                      foregroundColor: _brandBlue,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                    icon: const Icon(Icons.chat_bubble_outline, size: 16),
-                    label: const Text(
-                      '채팅',
-                      style: TextStyle(
-                        fontSize: AppFontSize.meta,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              // ── AI 스코어 영역 ────────────────────────────
-              if (hasAi) ...[
-                const SizedBox(height: 12),
-                const Divider(height: 1, color: AppColors.bgMuted),
-                const SizedBox(height: 10),
-
-                Row(
-                  children: [
-                    // 매칭률 + 프로그레스바
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                '매칭률',
-                                style: TextStyle(
-                                  fontSize: AppFontSize.caption,
-                                  color: _label,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                '$scoreInt%',
-                                style: TextStyle(
-                                  fontSize: AppFontSize.body1,
-                                  fontWeight: FontWeight.w800,
-                                  color: scoreColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 6),
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(99),
-                            child: LinearProgressIndicator(
-                              value: aiScore,
-                              minHeight: 6,
-                              backgroundColor: _bg,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                scoreColor,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-
-                    // 거리 + 완료이력 + 매너점수
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        if (distKm != null)
-                          _infoChip(
-                            '📍',
-                            distKm < 1
-                                ? '${(distKm * 1000).round()}m'
-                                : '${distKm.toStringAsFixed(1)}km',
-                          ),
-                        if (completedCount > 0) ...[
-                          const SizedBox(height: 4),
-                          _infoChip('✅', '완료 $completedCount회'),
-                        ],
-                        if (mannerPoint > 0) ...[
-                          const SizedBox(height: 4),
-                          _infoChip('👍', '매너 $mannerPoint'),
-                        ],
-                      ],
-                    ),
-                  ],
-                ),
-
-                // reasons 배지
-                if (reasons.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children:
-                        reasons
-                            .map(
-                              (r) => Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 3,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: scoreColor.withOpacity(0.08),
-                                  borderRadius: BorderRadius.circular(99),
-                                  border: Border.all(
-                                    color: scoreColor.withOpacity(0.3),
-                                  ),
-                                ),
-                                child: Text(
-                                  '${_reasonIcon(r)} $r',
-                                  style: TextStyle(
-                                    fontSize: AppFontSize.caption,
-                                    fontWeight: FontWeight.w600,
-                                    color: scoreColor,
-                                  ),
-                                ),
-                              ),
-                            )
-                            .toList(),
-                  ),
-                ],
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _infoChip(String icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: _bg,
-        borderRadius: BorderRadius.circular(99),
-        border: Border.all(color: _border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(icon, style: const TextStyle(fontSize: AppFontSize.caption)),
-          const SizedBox(width: 3),
-          Text(
-            text,
-            style: const TextStyle(
-              fontSize: AppFontSize.caption,
-              fontWeight: FontWeight.w600,
-              color: _text,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  static final ButtonStyle _rowBtn = ButtonStyle(
+    minimumSize: const WidgetStatePropertyAll(Size(64, 38)),
+    padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 14)),
+    textStyle: WidgetStatePropertyAll(AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600)),
+  );
 }

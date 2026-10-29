@@ -885,3 +885,32 @@ class AppBizInfoRowState extends State<AppBizInfoRow> {
     );
   }
 }
+
+/// 알바생 활동등급 배지 — S 주황 · A 파랑 · B 초록 · C/NEW 회색 (CLAUDE.md 활동등급 규격).
+/// 지원자 관리·공고별 지원자 목록이 같이 쓴다.
+class AppGradeBadge extends StatelessWidget {
+  final int score;
+  const AppGradeBadge({super.key, required this.score});
+
+  static String gradeOf(int s) => s >= 100 ? 'S' : s >= 70 ? 'A' : s >= 40 ? 'B' : s >= 20 ? 'C' : 'NEW';
+
+  @override
+  Widget build(BuildContext context) {
+    final g = gradeOf(score);
+    final (fg, bg) = switch (g) {
+      'S' => (AppColors.gradeS, const Color(0xFFFFF0E6)),
+      'A' => (AppColors.primary, AppColors.primaryLight),
+      'B' => (AppColors.gradeB, const Color(0xFFE8F7EF)),
+      'C' => (AppColors.textSecondary, AppColors.bgMuted),
+      _ => (AppColors.textTertiary, AppColors.bgPage),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(AppRadius.full)),
+      child: Text(
+        '$g · $score점',
+        style: TextStyle(fontSize: AppFontSize.caption, fontWeight: FontWeight.w700, color: fg),
+      ),
+    );
+  }
+}

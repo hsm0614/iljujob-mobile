@@ -19,7 +19,6 @@ import 'package:iljujob/widget/picker_sheets.dart';
 class _Tx {
   static final _ymd = DateFormat('yyyy-MM-dd');
 
-
   /// UTC -> KST
   static DateTime? toKst(DateTime? utc) =>
       utc?.toUtc().add(const Duration(hours: 9));
@@ -30,10 +29,13 @@ class _Tx {
     return (k == null) ? '' : _ymd.format(k);
   }
 
-
   /// UI 표기
-  static String formatKstDate(DateTime? utc) =>
-      utc == null ? '' : _ymd.format(toKst(utc)!);
+  static String formatKstDate(DateTime? utc) {
+    final k = toKst(utc);
+    if (k == null) return '';
+    const wd = ['월', '화', '수', '목', '금', '토', '일'];
+    return '${k.month}월 ${k.day}일(${wd[k.weekday - 1]})';
+  }
 
   /// TimeOfDay <-> "HH:mm"
   static String fmtHmOf(TimeOfDay? t) =>
@@ -151,15 +153,16 @@ class _EditJobScreenState extends State<EditJobScreen> {
 
         category = job.category.toString();
         payType = job.payType.toString();
-        _pay.text =
-            isNegotiablePayType(payType) ? '' : job.pay.toString();
+        _pay.text = isNegotiablePayType(payType) ? '' : job.pay.toString();
 
         location = job.location.toString();
         _location.text = location;
 
         // Short-term vs weekdays (weekdays field can be String or null)
         final wdRaw = (job.weekdays ?? '').toString();
-        isShortTerm = wdRaw.trim().isEmpty;
+        // 공고 종류는 job_type으로 — 요일 유무로 정하면 단기인데 요일도 있는 공고(실데이터 6건)가
+        // 요일 모드로 열려, 저장하면 날짜가 지워지고 장기 공고로 바뀌었다
+        isShortTerm = job.jobType != 'long';
         selectedWeekdays =
             wdRaw
                 .split(',')
@@ -237,7 +240,6 @@ class _EditJobScreenState extends State<EditJobScreen> {
     );
     if (picked != null) onSelected(_d0(picked));
   }
-
 
   void _openStartDatePicker() {
     final min = _today0;
@@ -378,7 +380,9 @@ class _EditJobScreenState extends State<EditJobScreen> {
                               height: 5,
                               decoration: BoxDecoration(
                                 color: const Color(0x1F000000),
-                                borderRadius: BorderRadius.circular(AppRadius.full),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.full,
+                                ),
                               ),
                             ),
                           ),
@@ -395,7 +399,10 @@ class _EditJobScreenState extends State<EditJobScreen> {
                   const SizedBox(height: 2),
                   const Text(
                     '근무 시간 설정',
-                    style: TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: AppFontSize.buttonLg,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 10),
 
@@ -422,7 +429,9 @@ class _EditJobScreenState extends State<EditJobScreen> {
                           const SizedBox(height: 6),
                           Text(
                             '총 근무시간 ${durationLabel(duration)}',
-                            style: const TextStyle(color: AppColors.textSecondary),
+                            style: const TextStyle(
+                              color: AppColors.textSecondary,
+                            ),
                           ),
                         ],
                       ),
@@ -546,7 +555,9 @@ class _EditJobScreenState extends State<EditJobScreen> {
                           if (toMinutes(selectedStart) ==
                               toMinutes(selectedEnd)) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('시작 시간과 종료 시간이 같아요.')),
+                              const SnackBar(
+                                content: Text('시작 시간과 종료 시간이 같아요.'),
+                              ),
                             );
                             return;
                           }
@@ -557,11 +568,8 @@ class _EditJobScreenState extends State<EditJobScreen> {
                           _validatePay();
                           Navigator.pop(context);
                         },
-                        style: ElevatedButton.styleFrom(
-                          elevation: 2,
-                        ),
-                        child: const Text(
-                          '확인'),
+                        style: ElevatedButton.styleFrom(elevation: 2),
+                        child: const Text('확인'),
                       ),
                     ),
                   ),
@@ -695,7 +703,9 @@ class _EditJobScreenState extends State<EditJobScreen> {
           (ctx) => Container(
             decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(AppRadius.xxl),
+              ),
             ),
             padding: EdgeInsets.fromLTRB(
               24,
@@ -744,8 +754,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(ctx),
-                    child: const Text(
-                      '확인'),
+                    child: const Text('확인'),
                   ),
                 ),
               ],
@@ -765,7 +774,10 @@ class _EditJobScreenState extends State<EditJobScreen> {
     );
   }
 
+  bool _saving = false;
+
   Future<void> _submit() async {
+    if (_saving) return;
     FocusScope.of(context).unfocus();
 
     final ok = _formKey.currentState?.validate() ?? false;
@@ -821,6 +833,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
       'lng': _pickedLng,
     }..removeWhere((k, v) => v == null);
 
+    setState(() => _saving = true);
     try {
       await JobService.updateJobWithImages(
         id: jobId,
@@ -831,13 +844,15 @@ class _EditJobScreenState extends State<EditJobScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('공고 수정 완료')));
+      ).showSnackBar(const SnackBar(content: Text('공고를 수정했어요')));
       Navigator.pop(context);
     } catch (e) {
       // 원시 예외 문자열은 사장님에게 의미가 없다. 로그로만 남긴다.
       debugPrint('❌ 공고 수정 실패: $e');
       if (!mounted) return;
       _showError('공고를 수정하지 못했어요.\n잠시 후 다시 시도해주세요.');
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 
@@ -845,58 +860,28 @@ class _EditJobScreenState extends State<EditJobScreen> {
   Widget _sectionCard({
     required String title,
     required String subtitle,
-    required IconData icon,
+    IconData? icon,
     required Widget child,
     Widget? trailing,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border),
-      ),
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 8),
+      color: AppColors.bgCard,
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  color: AppColors.bgMuted,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                child: Icon(icon, color: AppColors.primary, size: 20),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: AppFontSize.buttonLg,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(
-                        fontSize: AppFontSize.meta,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              Expanded(child: Text(title, style: AppTextStyles.h3)),
               if (trailing != null) trailing,
             ],
           ),
+          if (subtitle.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(subtitle, style: AppTextStyles.body2),
+          ],
           const SizedBox(height: 14),
           child,
         ],
@@ -905,29 +890,21 @@ class _EditJobScreenState extends State<EditJobScreen> {
   }
 
   InputDecoration _inputDeco(String label, {String? hint, Widget? suffix}) {
+    OutlineInputBorder line(Color c, [double w = 1]) => OutlineInputBorder(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      borderSide: BorderSide(color: c, width: w),
+    );
     return InputDecoration(
       labelText: label,
       hintText: hint,
       filled: true,
-      fillColor: AppColors.bgPage,
+      fillColor: AppColors.bgMuted,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       suffixIcon: suffix,
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: const BorderSide(color: AppColors.border),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: const BorderSide(color: AppColors.error),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: const BorderSide(color: AppColors.error, width: 1.6),
-      ),
+      enabledBorder: line(Colors.transparent),
+      focusedBorder: line(AppColors.primary, 1.5),
+      errorBorder: line(AppColors.error),
+      focusedErrorBorder: line(AppColors.error, 1.5),
     );
   }
 
@@ -973,8 +950,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
         onTap: onTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
-          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
           decoration: BoxDecoration(
             color: selected ? AppColors.primary : Colors.white,
             border: Border.all(
@@ -984,8 +960,9 @@ class _EditJobScreenState extends State<EditJobScreen> {
           ),
           child: Text(
             label,
-            style: TextStyle(
-              fontWeight: FontWeight.w800,
+            textAlign: TextAlign.center,
+            style: AppTextStyles.body2.copyWith(
+              fontWeight: FontWeight.w600,
               color: selected ? Colors.white : AppColors.textPrimary,
             ),
           ),
@@ -1005,24 +982,8 @@ class _EditJobScreenState extends State<EditJobScreen> {
 
   Widget _imageThumbs() {
     final total = existingImageUrls.length + newImages.length;
-    if (total == 0) {
-      return Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.bgMuted,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: const Text(
-          '사진은 선택 사항이에요.\n현장 사진/근무복/약도 등을 올리면 지원율이 올라갑니다.',
-          style: TextStyle(
-            fontSize: AppFontSize.meta,
-            color: AppColors.textSecondary,
-            height: 1.35,
-          ),
-        ),
-      );
-    }
+    // 제목 아래 안내와 같은 말을 회색 상자로 한 번 더 하던 것 — 비어 있으면 아무것도 안 그린다
+    if (total == 0) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1113,6 +1074,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
   }
 
   Widget _dateRow() {
+    // 개발용 'YYYY-MM-DD' 대신 '11월 7일(토)' — 기기 시간대와 무관하게 KST로
     final startYmd = _Tx.formatKstDate(startDateUtc);
     final endYmd = _Tx.formatKstDate(endDateUtc);
 
@@ -1138,19 +1100,6 @@ class _EditJobScreenState extends State<EditJobScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: AppColors.bgMuted,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: const Text(
-            '날짜는 KST(UTC+9) 자정 기준으로 저장됩니다.',
-            style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
-          ),
-        ),
       ],
     );
   }
@@ -1160,35 +1109,38 @@ class _EditJobScreenState extends State<EditJobScreen> {
     String? value,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
+    return Material(
+      color: AppColors.bgMuted,
       borderRadius: BorderRadius.circular(AppRadius.md),
-      child: Ink(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-        decoration: BoxDecoration(
-          color: AppColors.bgMuted,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            const Icon(Icons.calendar_today, size: 18, color: AppColors.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                value ?? '$label 선택',
-                style: TextStyle(
-                  fontSize: AppFontSize.button,
-                  fontWeight: FontWeight.w700,
-                  color:
-                      value == null
-                          ? AppColors.textSecondary
-                          : AppColors.textPrimary,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.calendar_today_outlined,
+                size: 18,
+                color: AppColors.textSecondary,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  value ?? '$label 선택',
+                  style: TextStyle(
+                    fontSize: AppFontSize.button,
+                    fontWeight: FontWeight.w600,
+                    color:
+                        value == null
+                            ? AppColors.textSecondary
+                            : AppColors.textPrimary,
+                  ),
                 ),
               ),
-            ),
-            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-          ],
+              const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+            ],
+          ),
         ),
       ),
     );
@@ -1198,96 +1150,56 @@ class _EditJobScreenState extends State<EditJobScreen> {
     return Wrap(
       spacing: 8,
       runSpacing: 8,
-      children:
-          weekdays.map((day) {
-            final sel = selectedWeekdays.contains(day);
-            return FilterChip(
-              label: Text(day),
-              selected: sel,
-              selectedColor: AppColors.primary.withOpacity(0.15),
-              checkmarkColor: AppColors.primary,
-              onSelected: (v) {
-                setState(() {
-                  if (v) {
-                    if (!selectedWeekdays.contains(day)) {
-                      selectedWeekdays.add(day);
-                    }
-                  } else {
-                    selectedWeekdays.remove(day);
-                  }
-                });
-                _validatePay();
-              },
-            );
-          }).toList(),
+      children: [
+        for (final day in weekdays)
+          _toggleChip(
+            label: day,
+            selected: selectedWeekdays.contains(day),
+            onTap: () {
+              setState(() {
+                if (!selectedWeekdays.remove(day)) selectedWeekdays.add(day);
+              });
+              _validatePay();
+            },
+          ),
+      ],
     );
   }
 
   Widget _timeRangeRow() {
     final has = startTime != null && endTime != null;
-    final value =
-        has ? '${_Tx.fmtHmOf(startTime)} ~ ${_Tx.fmtHmOf(endTime)}' : '선택하기';
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      onTap: _openTimePicker,
-      child: Ink(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                color: AppColors.bgMuted,
-                borderRadius: BorderRadius.circular(AppRadius.md),
+    return Material(
+      color: AppColors.bgMuted,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        onTap: _openTimePicker,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          child: Row(
+            children: [
+              const Icon(
+                Icons.schedule_outlined,
+                size: 18,
+                color: AppColors.textSecondary,
               ),
-              child: const Icon(Icons.access_time, size: 20, color: AppColors.primary),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '근무 시간',
-                    style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  has
+                      ? '${_Tx.fmtHmOf(startTime)} ~ ${_Tx.fmtHmOf(endTime)}'
+                      : '근무 시간 선택',
+                  style: TextStyle(
+                    fontSize: AppFontSize.button,
+                    fontWeight: FontWeight.w600,
+                    color:
+                        has ? AppColors.textPrimary : AppColors.textSecondary,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: AppFontSize.buttonLg,
-                      fontWeight: FontWeight.w800,
-                      color: has ? Colors.black : AppColors.textSecondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (has)
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                child: const Text(
-                  'KST',
-                  style: TextStyle(fontSize: AppFontSize.meta, fontWeight: FontWeight.w800),
                 ),
               ),
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-          ],
+              const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+            ],
+          ),
         ),
       ),
     );
@@ -1307,10 +1219,8 @@ class _EditJobScreenState extends State<EditJobScreen> {
                   label: t,
                   selected: payType == t,
                   onTap: () {
-                    setState(() {
-                      payType = t;
-                      _pay.clear();
-                    });
+                    // 단위만 바꿔도 금액은 둔다 — 잘못 고른 단위를 고칠 때마다 다시 치게 했다
+                    setState(() => payType = t);
                     _validatePay();
                   },
                 ),
@@ -1338,7 +1248,10 @@ class _EditJobScreenState extends State<EditJobScreen> {
       dropdownColor: Colors.white,
       menuMaxHeight: 340,
       elevation: 6,
-      style: const TextStyle(fontSize: AppFontSize.button, color: AppColors.textPrimary),
+      style: const TextStyle(
+        fontSize: AppFontSize.button,
+        color: AppColors.textPrimary,
+      ),
       decoration: _inputDeco('하는 일', hint: '업종을 선택하세요'),
       validator: (_) => category.trim().isEmpty ? '업종을 선택하세요' : null,
       items:
@@ -1383,11 +1296,12 @@ class _EditJobScreenState extends State<EditJobScreen> {
 
     return UnfocusOnTap(
       child: Scaffold(
+        backgroundColor: AppColors.bgPage,
         resizeToAvoidBottomInset: true,
         appBar: AppBar(title: const Text('공고 수정'), elevation: 0),
         body: SingleChildScrollView(
           controller: _scroll,
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+          padding: const EdgeInsets.only(top: 8, bottom: 24),
           child: Form(
             key: _formKey,
             child: Column(
@@ -1450,9 +1364,11 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                         setState(() {
                                           location = result.address;
                                           _location.text = result.address;
-                                          _pickedLat = result.kakaoLatitude ??
+                                          _pickedLat =
+                                              result.kakaoLatitude ??
                                               result.latitude;
-                                          _pickedLng = result.kakaoLongitude ??
+                                          _pickedLng =
+                                              result.kakaoLongitude ??
                                               result.longitude;
                                         });
                                       },
@@ -1470,17 +1386,17 @@ class _EditJobScreenState extends State<EditJobScreen> {
                   title: '사진',
                   subtitle: '선택사항 · 현장 사진이 있으면 지원이 더 잘 와요',
                   icon: Icons.photo_library_outlined,
-                  trailing: ElevatedButton.icon(
+                  // 선택 항목이라 큰 파란 버튼 대신 글자 버튼
+                  trailing: TextButton(
                     onPressed: _pickImages,
-                    icon: const Icon(Icons.image, size: 18),
-                    label: const Text('추가'),
+                    child: const Text('사진 추가'),
                   ),
                   child: _imageThumbs(),
                 ),
 
                 _sectionCard(
                   title: '근무 기간',
-                  subtitle: '단기(날짜) / 장기(요일) 중 선택',
+                  subtitle: '',
                   icon: Icons.event_available_outlined,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1510,14 +1426,14 @@ class _EditJobScreenState extends State<EditJobScreen> {
 
                 _sectionCard(
                   title: '근무 시간',
-                  subtitle: '안드/IOS 동일 UI로 설정됩니다',
+                  subtitle: '',
                   icon: Icons.access_time_rounded,
                   child: _timeRangeRow(),
                 ),
 
                 _sectionCard(
                   title: '급여',
-                  subtitle: '입력한 시간/기간에 따라 최저시급을 자동 체크합니다',
+                  subtitle: '최저시급보다 낮으면 알려드려요',
                   icon: Icons.payments_outlined,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1533,7 +1449,9 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                   padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
                                     color: AppColors.primaryLight,
-                                    borderRadius: BorderRadius.circular(AppRadius.md),
+                                    borderRadius: BorderRadius.circular(
+                                      AppRadius.md,
+                                    ),
                                     border: Border.all(
                                       color: AppColors.primaryMid,
                                     ),
@@ -1572,7 +1490,9 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                     errorText: _payWarning,
                                     helperText:
                                         '최저시급 ${_moneyFmt.format(minWagePerHour)}원 이상 권장',
-                                    helperStyle: const TextStyle(fontSize: AppFontSize.caption),
+                                    helperStyle: const TextStyle(
+                                      fontSize: AppFontSize.caption,
+                                    ),
                                   ),
                                   validator: (v) {
                                     final raw = (v ?? '').replaceAll(
@@ -1629,8 +1549,8 @@ class _EditJobScreenState extends State<EditJobScreen> {
         ),
         bottomNavigationBar: AppBottomBar(
           child: AppPrimaryButton(
-            label: '공고 수정 완료',
-            height: 52,
+            label: '저장하기',
+            loading: _saving,
             onPressed: _submit,
           ),
         ),

@@ -86,36 +86,6 @@ class ApplicantModel {
     return 'NEW';
   }
 
-  Color get activityGradeColor {
-    switch (activityGrade) {
-      case 'S':
-        return AppColors.gradeS;
-      case 'A':
-        return AppColors.primary;
-      case 'B':
-        return AppColors.gradeB; // CLAUDE.md 활동등급 규격
-      case 'C':
-        return AppColors.textSecondary;
-      default:
-        return AppColors.textTertiary;
-    }
-  }
-
-  Color get activityGradeBg {
-    switch (activityGrade) {
-      case 'S':
-        return const Color(0xFFFFF0E6);
-      case 'A':
-        return AppColors.primaryLight;
-      case 'B':
-        return const Color(0xFFE8F7EF);
-      case 'C':
-        return AppColors.bgMuted;
-      default:
-        return AppColors.bgPage;
-    }
-  }
-
   bool get isNew => !isConfirmed && !isCanceled;
   int get age => birthYear != null ? DateTime.now().year - birthYear! : 0;
   String get genderLabel =>
@@ -927,7 +897,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      _activityGradeBadge(applicant),
+                      AppGradeBadge(score: applicant.safeActivityScore),
                       if (status != null) ...[const SizedBox(width: 4), status],
                     ],
                   ),
@@ -1101,35 +1071,6 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
           fontWeight: FontWeight.w600,
           color: c[1],
         ),
-      ),
-    );
-  }
-
-  Widget _activityGradeBadge(ApplicantModel applicant) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-      decoration: BoxDecoration(
-        color: applicant.activityGradeBg,
-        borderRadius: BorderRadius.circular(AppRadius.full),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.workspace_premium_rounded,
-            size: 11,
-            color: applicant.activityGradeColor,
-          ),
-          const SizedBox(width: 3),
-          Text(
-            '${applicant.activityGrade} · ${applicant.safeActivityScore}점',
-            style: TextStyle(
-              fontSize: AppFontSize.caption,
-              fontWeight: FontWeight.w800,
-              color: applicant.activityGradeColor,
-            ),
-          ),
-        ],
       ),
     );
   }
