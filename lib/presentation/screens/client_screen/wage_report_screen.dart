@@ -1,6 +1,7 @@
 // 임금 AI 리포트 화면 — 사장님이 급여 설정 전 시장 데이터 + AI 분석 확인
 
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:intl/intl.dart';
 import '../../../data/services/ai_labor_service.dart';
 import '../../../config/app_theme.dart';
@@ -66,8 +67,6 @@ class _WageReportScreenState extends State<WageReportScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         title: const Text('임금 AI 리포트'),
         actions: [
           IconButton(
@@ -78,7 +77,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
         ],
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          ? const AppSkeletonList(rows: 4)
           : _needsSubscription
               ? _buildSubscriptionGate()
               : _error != null

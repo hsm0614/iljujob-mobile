@@ -299,8 +299,6 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgBase,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         titleSpacing: 0,
         leading: IconButton(
           tooltip: '뒤로',
@@ -336,9 +334,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
       ),
       body:
           _loading
-              ? const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              )
+              ? const AppSkeletonList(avatar: true)
               : _workers.isEmpty
               ? _buildEmpty()
               : Column(

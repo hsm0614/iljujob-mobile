@@ -917,9 +917,6 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
       backgroundColor: _bg,
       appBar: AppBar(
         title: const Text('이용권 구매'),
-        backgroundColor: AppColors.bgCard,
-        elevation: 0,
-        surfaceTintColor: Colors.transparent,
         bottom: TabBar(
           controller: _tabCtrl,
           labelColor: _blue,
@@ -1604,55 +1601,15 @@ class _BottomCta extends StatelessWidget {
     this.onTap,
   });
 
+  // 공용 하단 띠·주 버튼으로 (2026-10). [color]는 받지만 쓰지 않는다 — 누르는 건 파랑 하나(CTA Blue).
   @override
   Widget build(BuildContext context) {
-    final active = isSelected && !isPurchasing && onTap != null;
-    final btnColor = color ?? _blue;
-    return Container(
-      decoration: BoxDecoration(
-        color: _white,
-        border: Border(top: BorderSide(color: _border)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 16,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        minimum: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-        child: GestureDetector(
-          onTap: onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            height: 54,
-            decoration: BoxDecoration(
-              color: active ? btnColor : _border,
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
-            child: Center(
-              child:
-                  isPurchasing
-                      ? const SizedBox(
-                        width: 22,
-                        height: 22,
-                        child: CircularProgressIndicator(
-                          color: _white,
-                          strokeWidth: 2.5,
-                        ),
-                      )
-                      : Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: AppFontSize.body1,
-                          fontWeight: FontWeight.w800,
-                          color: active ? _white : _label,
-                        ),
-                      ),
-            ),
-          ),
-        ),
+    return AppBottomBar(
+      child: AppPrimaryButton(
+        label: label,
+        height: 52,
+        loading: isPurchasing,
+        onPressed: isSelected ? onTap : null,
       ),
     );
   }

@@ -41,7 +41,6 @@ class _PostJobScreenState extends State<PostJobScreen> {
       child: Scaffold(
         backgroundColor: AppColors.bgPage,
         appBar: AppBar(
-          backgroundColor: Colors.white,
           titleSpacing: 0,
           title: Text(isRepost ? '공고 다시 올리기' : '알바 공고 작성'),
         ),
@@ -125,7 +124,6 @@ class _LeaveConfirmSheet extends StatelessWidget {
             style: TextStyle(
               fontSize: AppFontSize.titleLg,
               fontWeight: FontWeight.w800,
-              fontFamily: 'Jalnan2TTF',
               color: AppColors.textPrimary,
             ),
           ),

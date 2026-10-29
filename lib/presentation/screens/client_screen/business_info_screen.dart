@@ -352,8 +352,6 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
         backgroundColor: Colors.white,
         appBar: AppBar(
           title: const Text('사업자 인증'),
-          backgroundColor: Colors.white,
-          elevation: 0,
           leading: IconButton(
             tooltip: '뒤로',
             icon: const Icon(Icons.arrow_back),

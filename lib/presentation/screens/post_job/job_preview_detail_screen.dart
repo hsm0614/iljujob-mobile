@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -191,7 +192,6 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
     return Scaffold(
       backgroundColor: _kBg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
         // 제목에 브랜드 블루 금지 (디자인 가이드)
         title: const Text('공고 미리보기'),
         actions: [
@@ -671,66 +671,35 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
       ),
 
       // ── 하단 버튼 ─────────────────────────────────────────
-      bottomNavigationBar: SafeArea(
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 12,
-                offset: const Offset(0, -4),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Expanded(
+      bottomNavigationBar: AppBottomBar(
+        child: Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 52,
                 child: OutlinedButton(
                   onPressed: () {
                     Navigator.pop(context);
                     widget.onEdit?.call();
                   },
                   style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: _kBorder),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    foregroundColor: _kText,
+                    side: const BorderSide(color: AppColors.border),
+                    foregroundColor: AppColors.textPrimary,
                   ),
-                  child: const Text(
-                    '수정하기',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: AppFontSize.body1),
-                  ),
+                  child: const Text('수정하기'),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 2,
-                child: ElevatedButton(
-                  onPressed: widget.onSubmit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _kBrand,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Text(
-                    '공고 등록하기',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: AppFontSize.body1,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              flex: 2,
+              child: AppPrimaryButton(
+                label: '공고 등록하기',
+                height: 52,
+                onPressed: widget.onSubmit,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -75,6 +75,8 @@ class AppPrimaryButton extends StatelessWidget {
   final String label;
   final IconData? icon;
   final double height;
+  /// 처리 중 — 누를 수 없고 글자 대신 작은 원
+  final bool loading;
 
   const AppPrimaryButton({
     super.key,
@@ -82,6 +84,7 @@ class AppPrimaryButton extends StatelessWidget {
     required this.label,
     this.icon,
     this.height = 48,
+    this.loading = false,
   });
 
   @override
@@ -97,15 +100,26 @@ class AppPrimaryButton extends StatelessWidget {
       ),
     );
 
+    final onPressed = loading ? null : this.onPressed;
     final button = SizedBox(
       width: double.infinity,
       height: height,
       child:
-          icon == null
+          icon == null || loading
               ? ElevatedButton(
                 onPressed: onPressed,
                 style: style,
-                child: Text(label),
+                child:
+                    loading
+                        ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: AppColors.textTertiary,
+                          ),
+                        )
+                        : Text(label),
               )
               : ElevatedButton.icon(
                 onPressed: onPressed,
@@ -115,6 +129,31 @@ class AppPrimaryButton extends StatelessWidget {
               ),
     );
     return onPressed == null ? button : AppPressScale(child: button);
+  }
+}
+
+/// 화면 맨 아래 고정 버튼 띠 (저장·공고 등록·구매 공용). 흰 바탕 + 위 구분선, 그림자 없음.
+/// 보통 `bottomNavigationBar: AppBottomBar(child: AppPrimaryButton(..., height: 52))`
+class AppBottomBar extends StatelessWidget {
+  final Widget child;
+  const AppBottomBar({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.bgCard,
+        border: Border(top: BorderSide(color: AppColors.borderSub)),
+      ),
+      child: SafeArea(
+        top: false,
+        minimum: const EdgeInsets.only(bottom: 8),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: child,
+        ),
+      ),
+    );
   }
 }
 

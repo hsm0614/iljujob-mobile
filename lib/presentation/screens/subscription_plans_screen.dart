@@ -356,8 +356,6 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgBase,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         leading: IconButton(
           tooltip: '뒤로',
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
@@ -837,61 +835,19 @@ class _BottomCta extends StatelessWidget {
     required this.onPurchase,
   });
 
+  // 공용 하단 띠·주 버튼으로 (2026-10). 플랜별 버튼 색(프로 주황·라이트 회색) → 파랑 하나(CTA Blue).
   @override
   Widget build(BuildContext context) {
-    final color = _planColor(plan.key);
-    return Container(
-      padding: EdgeInsets.fromLTRB(
-        16,
-        12,
-        16,
-        MediaQuery.of(context).padding.bottom + 12,
-      ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: AppColors.border)),
-      ),
-      child: SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: processing ? null : onPurchase,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: color,
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: AppColors.bgMuted,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 14),
-          ),
-          child:
-              processing
-                  ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                  : Text(
-                    displayPrice == '가격 확인 중'
-                        ? '${plan.name} App Store 가격 확인 후 구독'
-                        : '${plan.name} 구독 시작 (${displayPrice ?? '${NumberFormat('#,###').format(plan.price)}원'}/월)',
-                    style: const TextStyle(
-                      fontSize: AppFontSize.body1,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-        ),
+    return AppBottomBar(
+      child: AppPrimaryButton(
+        label:
+            displayPrice == '가격 확인 중'
+                ? '${plan.name} App Store 가격 확인 후 구독'
+                : '${plan.name} 구독 시작 (${displayPrice ?? '${NumberFormat('#,###').format(plan.price)}원'}/월)',
+        height: 52,
+        loading: processing,
+        onPressed: onPurchase,
       ),
     );
-  }
-
-  Color _planColor(String key) {
-    if (key == 'pro') return AppColors.pending;
-    if (key == 'standard') return AppColors.primary;
-    return AppColors.textSecondary;
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math';
 import '../../../data/models/job.dart';
@@ -704,8 +705,6 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
       ),
 
       appBar: AppBar(
-        elevation: 0,
-        centerTitle: false,
         title: const Text('알바 공고 리스트'),
         actions: [
           Padding(
@@ -794,7 +793,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
 
       body:
           isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const AppSkeletonList(rows: 4)
               : Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                 child: Column(

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
@@ -1404,7 +1405,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(body: AppSkeletonList(rows: 4));
     }
 
     return UnfocusOnTap(
@@ -1665,26 +1666,11 @@ class _EditJobScreenState extends State<EditJobScreen> {
             ),
           ),
         ),
-        bottomNavigationBar: SafeArea(
-          minimum: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: SizedBox(
-            width: double.infinity,
+        bottomNavigationBar: AppBottomBar(
+          child: AppPrimaryButton(
+            label: '공고 수정 완료',
             height: 52,
-            child: ElevatedButton(
-              onPressed: _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: brandBlue,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                elevation: 1,
-              ),
-              child: const Text(
-                '공고 수정 완료',
-                style: TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.bold),
-              ),
-            ),
+            onPressed: _submit,
           ),
         ),
       ),

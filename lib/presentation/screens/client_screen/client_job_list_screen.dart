@@ -76,8 +76,6 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
       onTap: () => FocusScope.of(context).unfocus(), // 키보드 내림
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
           title: const Text('등록한 공고'),
         ),
         body: Column(
@@ -116,7 +114,7 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
                 future: _jobsFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const AppSkeletonList();
                   }
 
                   if (_filteredJobs.isEmpty) {

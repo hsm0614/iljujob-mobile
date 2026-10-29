@@ -127,9 +127,6 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
         leading: IconButton(
           tooltip: '뒤로',
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
@@ -141,9 +138,7 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
       ),
       body:
           _loading
-              ? const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              )
+              ? const AppSkeletonList()
               : _logs.isEmpty
               ? _buildEmpty()
               : RefreshIndicator(

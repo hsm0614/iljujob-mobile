@@ -2755,8 +2755,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               ),
             if (isLoading)
               const SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(child: CircularProgressIndicator()),
+                child: AppSkeletonList(rows: 4), // 안에 ListView라 hasScrollBody 기본(true)
               )
             else if (jobs.isEmpty)
               _buildEmptyJobsState(hasAnyJobs: myJobs.isNotEmpty)

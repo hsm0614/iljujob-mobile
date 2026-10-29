@@ -1,5 +1,6 @@
 // lib/screens/payment/subscription_manage_screen.dart
 import 'dart:async';
+import 'package:iljujob/widget/app_ui.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -243,9 +244,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
       ),
       body:
           _loading
-              ? const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              )
+              ? const AppSkeletonList(rows: 4)
               : RefreshIndicator(
                 onRefresh: _refresh,
                 child: ListView(

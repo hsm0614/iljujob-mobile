@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:flutter/material.dart';
 import '../../../config/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -514,14 +515,11 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
         title: const Text('기업 프로필'),
       ),
       body:
           isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const AppSkeletonList(rows: 4)
               : profile == null
               ? const Center(child: Text('기업 정보를 불러올 수 없어요.'))
               : SingleChildScrollView(

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:iljujob/widget/app_ui.dart';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -384,19 +385,13 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       return;
     }
 
-    final ok = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder:
-          (_) => _ConfirmSheet(
-            title: '저장하지 않고 나갈까요?',
-            message: '변경 사항이 저장되지 않습니다.',
-            confirmText: '나가기',
-            confirmColor: AppColors.error,
-            icon: Icons.warning_amber_rounded,
-          ),
+    final ok = await showAppSheet(
+      context,
+      title: '저장하지 않고 나갈까요?',
+      message: '바꾼 내용은 저장되지 않아요.',
+      confirmLabel: '나가기',
+      cancelLabel: '계속 수정',
+      destructive: true,
     );
 
     if (ok == true && mounted) Navigator.pop(context);
@@ -410,9 +405,6 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       backgroundColor: kBg,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
         leading: IconButton(
           tooltip: '뒤로',
           icon: const Icon(Icons.arrow_back),
@@ -423,26 +415,18 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       ),
 
       // 저장 버튼을 하단 고정 + SafeArea로 올림 (안드 뒤로가기 영역 회피)
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          color: kBg,
-          padding: EdgeInsets.fromLTRB(
-            16,
-            10,
-            16,
-            12 + (bottomSafe > 0 ? 0 : 0),
-          ),
-          child: _SaveButton(
-            busy: _saving,
-            onPressed: _canSave ? _saveProfile : null,
-          ),
+      bottomNavigationBar: AppBottomBar(
+        child: AppPrimaryButton(
+          label: '저장하기',
+          loading: _saving,
+          height: 52,
+          onPressed: _canSave ? _saveProfile : null,
         ),
       ),
 
       body:
           isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const AppSkeletonList(rows: 4)
               : RefreshIndicator(
                 color: kBrand,
                 onRefresh: _loadProfile,
@@ -906,46 +890,6 @@ class _LabeledField extends StatelessWidget {
   }
 }
 
-class _SaveButton extends StatelessWidget {
-  final bool busy;
-  final VoidCallback? onPressed;
-
-  const _SaveButton({required this.busy, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon:
-            busy
-                ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-                : const Icon(Icons.save_outlined),
-        label: Text(busy ? '저장 중…' : '저장하기'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _EditClientProfileScreenState.kBrand,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          elevation: 0,
-        ),
-      ),
-    );
-  }
-}
-
-/* --------------------------- Bottom Sheets --------------------------- */
-
 class _BottomSheetCard extends StatelessWidget {
   final Widget child;
   const _BottomSheetCard({required this.child});
@@ -1016,110 +960,3 @@ class _SheetTile extends StatelessWidget {
 
 /* --------------------------- Confirm Sheet --------------------------- */
 
-class _ConfirmSheet extends StatelessWidget {
-  final String title;
-  final String message;
-  final String confirmText;
-  final Color confirmColor;
-  final IconData icon;
-
-  const _ConfirmSheet({
-    required this.title,
-    required this.message,
-    required this.confirmText,
-    required this.confirmColor,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomSafe = MediaQuery.of(context).viewPadding.bottom;
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-      ),
-      padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomSafe),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 42,
-            height: 5,
-            decoration: BoxDecoration(
-              color: AppColors.border,
-              borderRadius: BorderRadius.circular(AppRadius.full),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: confirmColor.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(AppRadius.lg),
-            ),
-            child: Icon(icon, color: confirmColor),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w800),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: AppFontSize.body2,
-              color: AppColors.textSecondary,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textPrimary,
-                    side: const BorderSide(color: AppColors.border),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                  ),
-                  child: const Text(
-                    '취소',
-                    style: TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: confirmColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    confirmText,
-                    style: const TextStyle(fontWeight: FontWeight.w800),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}

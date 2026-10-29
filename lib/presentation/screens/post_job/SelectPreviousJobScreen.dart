@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -441,10 +442,6 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
     return Scaffold(
       backgroundColor: bg,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.white,
-        centerTitle: false,
         // quickMode일 때 타이틀 다르게
         title: Text(widget.quickMode ? '빠른 등록 · 공고 선택' : '기존 공고 선택'),
         leading: IconButton(
@@ -479,7 +476,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
           Expanded(
             child:
                 isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const AppSkeletonList()
                     : myJobs.isEmpty
                     ? _emptyState()
                     : ListView.separated(

@@ -696,7 +696,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       ),
       body:
           _loading
-              ? const Center(child: CircularProgressIndicator())
+              ? const AppSkeletonList(avatar: true)
               : _error != null
               ? _buildError()
               : _groups.isEmpty
