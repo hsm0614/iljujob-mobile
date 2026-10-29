@@ -106,22 +106,22 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
   }
 
   String _getWorkingPeriodText(Job job) {
-    // 장기 알바
-    if (formatWeekdays(job.weekdays) case final w?) return w;
-
-    // 단기 알바
-    if (job.startDate != null && job.endDate != null) {
-      final start = _formatDate(job.startDate!);
-      final end = _formatDate(job.endDate!);
-      return '$start ~ $end';
-    }
-
-    return '근무 기간 미정';
+    // 단기는 날짜가 먼저 — 요일부터 보면 11/7~8 공고가 '주말'로만 보였다(내 공고 카드와 같은 표기)
+    final text =
+        job.jobType == 'long'
+            ? formatWeekdays(job.weekdays)
+            : formatWorkDays(job.startDate, job.endDate, job.weekdays);
+    return text ?? '근무 기간 미정';
   }
 
-  String _formatDate(DateTime date) {
-    final local = date.toLocal(); // ✅ 로컬(KST)로 변환
-    return '${local.month}월 ${local.day}일';
+  /// 내 공고를 보는 사장님 — 읽기보다 관리 화면
+  bool get _isOwner => userType == 'client' && widget.job.clientId == myUserId;
+
+  /// 근무 마지막 날이 지나서야 공개되는 공고(내 공고 카드와 같은 기준)
+  bool get _publishTooLate {
+    final j = widget.job;
+    return j.isScheduled && j.publishAt != null && j.endDate != null &&
+        !j.publishAt!.isBefore(j.endDate!.add(const Duration(days: 1)));
   }
 
   Future<void> _loadBookmarked() async {
@@ -1406,7 +1406,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     ),
                   ],
                   const SizedBox(height: 8),
-                  _buildStatsSection(),
+                  _isOwner ? _buildOwnerStatsLine() : _buildStatsSection(),
                   const SizedBox(height: 8),
                   _buildClientSection(),
                   // 면접 준비는 근무 조건을 다 읽은 뒤에 — 설명 바로 아래선 읽는 흐름을 끊었다
@@ -1414,19 +1414,22 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                     const SizedBox(height: 8),
                     _buildInterviewPrepRow(),
                   ],
-                  const SizedBox(height: 16),
-
-                  // 🔹 광고 배너 (원더 제휴)
-                  const AdBannerWidget(
-                    placement: 'app_job_detail',
-                    margin: EdgeInsets.symmetric(horizontal: 16),
-                  ),
+                  // 🔹 광고 배너 (원더 제휴) — 내 공고 관리 화면 끝을 광고로 맺지 않는다
+                  if (!_isOwner) ...[
+                    const SizedBox(height: 16),
+                    const AdBannerWidget(
+                      placement: 'app_job_detail',
+                      margin: EdgeInsets.symmetric(horizontal: 16),
+                    ),
+                  ],
                 ],
               ),
       // 구직자: 지원 버튼. 비로그인: 같은 자리에 지원하기 → 가입 후 이 공고로 돌아온다.
       // (예전엔 비로그인이면 버튼이 아예 없어 둘러보던 신규 구직자가 지원할 길이 없었다)
       bottomNavigationBar:
-          userType == 'worker'
+          _isOwner && !isLoading
+              ? _buildOwnerBar()
+              : userType == 'worker'
               ? _buildApplyButton()
               : userType == null && !isLoading
               ? _buildGuestApplyBar()
@@ -1444,6 +1447,14 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             ? null
             : job.workingHours;
     final badges = <Widget>[
+      if (_isOwner)
+        isClosed
+            ? const JobSignalBadge(label: '마감')
+            : _publishTooLate
+            ? const JobSignalBadge(label: '공개 전에 근무가 끝나요', signal: JobSignal.time)
+            : job.isScheduled
+            ? const JobSignalBadge(label: '공개 대기')
+            : const JobSignalBadge(label: '모집중', signal: JobSignal.trust),
       if (job.isUrgent)
         const JobSignalBadge(
           label: '긴급',
@@ -1612,6 +1623,51 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 ),
               ),
             ),
+    );
+  }
+
+  // 사장님: 읽은 뒤 바로 할 일 — 예전엔 하단 버튼이 없어 뒤로 가서 ⋯ 메뉴를 찾아야 했다
+  Widget _buildOwnerBar() {
+    final job = widget.job;
+    return AppBottomBar(
+      child: Row(
+        children: [
+          if (!isClosed) ...[
+            Expanded(
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(minimumSize: const Size(0, 52)),
+                onPressed: () => Navigator.pushNamed(context, '/edit_job', arguments: job.id),
+                child: const Text('공고 수정'),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Expanded(
+            flex: 2,
+            child: AppPrimaryButton(
+              label: applicantCount > 0 ? '지원자 $applicantCount명 보기' : '지원자 보기',
+              onPressed: () => Navigator.pushNamed(context, '/applicants', arguments: job.id),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOwnerStatsLine() {
+    return Container(
+      color: AppColors.bgCard,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
+        children: [
+          const Text('공고 반응', style: AppTextStyles.body2),
+          const Spacer(),
+          Text(
+            '열람 ${_formatCount(viewCount)} · 저장 ${_formatCount(bookmarkCount)} · 지원 $applicantCount',
+            style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1824,7 +1880,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             );
           },
           child: Container(
-            height: 200,
+            height: _isOwner ? 120 : 200, // 사장님은 자기 근무지 — 지원 현황보다 앞서 크게 보일 이유가 없다
             width: double.infinity,
             decoration: BoxDecoration(
               border: Border.all(color: AppColors.textDisabled),
