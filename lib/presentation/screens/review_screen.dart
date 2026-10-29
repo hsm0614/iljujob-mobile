@@ -293,18 +293,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       child: OutlinedButton(
                         onPressed:
                             isSubmitting ? null : () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          side: const BorderSide(color: AppColors.border),
-                          foregroundColor: AppColors.textPrimary,
-                        ),
                         child: const Text(
-                          '나중에',
-                          style: TextStyle(fontWeight: FontWeight.w700),
-                        ),
+                          '나중에'),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -313,13 +303,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         onPressed:
                             (_isValid && !isSubmitting) ? _submitReview : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: kBrandBlue,
                           disabledBackgroundColor: const Color(0xFFB7C7FF),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          elevation: 0,
                         ),
                         child:
                             isSubmitting
@@ -332,9 +316,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                                   ),
                                 )
                                 : const Text(
-                                  '작성 완료',
-                                  style: TextStyle(fontWeight: FontWeight.w800),
-                                ),
+                                  '작성 완료'),
                       ),
                     ),
                   ],

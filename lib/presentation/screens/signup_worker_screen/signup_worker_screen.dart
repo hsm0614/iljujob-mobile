@@ -661,17 +661,9 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                                         _submitSignupData();
                                       },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
                                 textStyle: const TextStyle(
                                   fontSize: AppFontSize.buttonLg,
                                   fontWeight: FontWeight.bold,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
                               child: const Text('동의하고 가입하기'),
@@ -764,12 +756,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                             ),
                           )
                           : const Text(
-                            '본인인증 하기',
-                            style: TextStyle(
-                              fontSize: AppFontSize.buttonLg,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                            '본인인증 하기'),
                 ),
               ),
               const SizedBox(height: 12),
@@ -918,12 +905,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                             ),
                           )
                           : const Text(
-                            '다음',
-                            style: TextStyle(
-                              fontSize: AppFontSize.buttonLg,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                            '다음'),
                 ),
               ),
               const SizedBox(height: 24),
@@ -1083,12 +1065,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                               ),
                             )
                             : const Text(
-                              '가입 완료',
-                              style: TextStyle(
-                                fontSize: AppFontSize.buttonLg,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                              '가입 완료'),
                   ),
                 ),
               ],

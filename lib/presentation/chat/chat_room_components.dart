@@ -114,32 +114,16 @@ class CancelApplicationDialog extends StatelessWidget {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.error,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
                     ),
                     onPressed: () => Navigator.of(context).pop(true),
                     child: const Text(
-                      '네, 지원을 취소할게요',
-                      style: TextStyle(
-                        fontSize: AppFontSize.button,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
+                      '네, 지원을 취소할게요'),
                   ),
                 ),
                 const SizedBox(height: 8),
                 SizedBox(
                   height: 44,
                   child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.border),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
                     onPressed: () => Navigator.of(context).pop(false),
                     child: const Text(
                       '그냥 둘게요',

@@ -934,14 +934,6 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(sheetContext),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.textSecondary,
-                          side: const BorderSide(color: AppColors.border),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                        ),
                         child: const Text('취소'),
                       ),
                     ),
@@ -953,18 +945,8 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                               sheetContext,
                               controller.text.trim(),
                             ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                        ),
                         child: Text(
-                          actionLabel,
-                          style: const TextStyle(fontWeight: FontWeight.w800),
-                        ),
+                          actionLabel),
                       ),
                     ),
                   ],
@@ -1095,10 +1077,6 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                                 ),
                               );
                             },
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppColors.border),
-                              foregroundColor: AppColors.textPrimary,
-                            ),
                             child: const Text('프로필 보기'),
                           ),
                         ),

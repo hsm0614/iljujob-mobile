@@ -419,22 +419,8 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: () => Navigator.pop(sheetCtx),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                      ),
                       child: const Text(
-                        '내 공고 보러가기',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: AppFontSize.buttonLg,
-                        ),
-                      ),
+                        '내 공고 보러가기'),
                     ),
                   ),
                 ],
@@ -1332,9 +1318,6 @@ class _BottomButtons extends StatelessWidget {
               foregroundColor: canSubmit ? Colors.white : AppColors.textSecondary,
               elevation: canSubmit ? 2 : 0,
               shadowColor: AppColors.primary.withOpacity(0.3),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-              ),
             ),
             child:
                 isSubmitting
@@ -1347,13 +1330,7 @@ class _BottomButtons extends StatelessWidget {
                       ),
                     )
                     : const Text(
-                      '등록 방식 선택 →',
-                      style: TextStyle(
-                        fontSize: AppFontSize.buttonLg,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.2,
-                      ),
-                    ),
+                      '등록 방식 선택 →'),
           ),
         ),
       ),

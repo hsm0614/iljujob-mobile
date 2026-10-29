@@ -58,16 +58,9 @@ class ForceUpdateScreen extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: AppColors.primary,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
                   ),
                   child: const Text(
-                    '지금 업데이트',
-                    style: TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w800),
-                  ),
+                    '지금 업데이트'),
                 ),
               ),
             ],

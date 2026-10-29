@@ -158,11 +158,6 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
                     width: double.infinity,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.lg)),
                         minimumSize: const Size.fromHeight(56),
                         shadowColor: AppColors.primary.withValues(alpha: 0.4),
                       ),
@@ -180,12 +175,7 @@ WidgetsBinding.instance.addPostFrameCallback((_) {
                       },
                       icon: const Icon(Icons.add_circle_outline, size: 22),
                       label: const Text(
-                        '지금 바로 공고 올리기',
-                        style: TextStyle(
-                          fontSize: AppFontSize.title,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                        '지금 바로 공고 올리기'),
                     ),
                   ),
                   const SizedBox(height: 12),

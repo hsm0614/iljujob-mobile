@@ -574,13 +574,6 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                       );
                     }
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: kBrand,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
                   child: const Text('완료하고 시작하기'),
                 ),
               ),

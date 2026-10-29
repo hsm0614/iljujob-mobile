@@ -658,14 +658,6 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
               icon: const Icon(Icons.add_card, size: 18, color: AppColors.primary),
               label: const Text('구매', style: TextStyle(color: AppColors.primary)),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: AppColors.primary),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
                 backgroundColor: Colors.white,
               ),
             ),

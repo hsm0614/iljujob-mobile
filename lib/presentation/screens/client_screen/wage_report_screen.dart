@@ -149,19 +149,8 @@ class _WageReportScreenState extends State<WageReportScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () => Navigator.pushNamed(context, '/subscribe'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  elevation: 0,
-                ),
                 child: const Text(
-                  '구독 플랜 보기',
-                  style: TextStyle(fontSize: AppFontSize.body1, fontWeight: FontWeight.w700),
-                ),
+                  '구독 플랜 보기'),
               ),
             ),
           ],

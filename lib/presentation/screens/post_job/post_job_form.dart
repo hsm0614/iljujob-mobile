@@ -772,19 +772,8 @@ class _PostJobFormState extends State<PostJobForm>
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () => Navigator.pop(ctx),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                  ),
                   child: const Text(
-                    '확인',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: AppFontSize.body1),
-                  ),
+                    '확인'),
                 ),
               ),
             ],
@@ -1036,20 +1025,9 @@ class _PostJobFormState extends State<PostJobForm>
                       style: ElevatedButton.styleFrom(
                         backgroundColor:
                             isUrgent ? AppColors.urgentCall : AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                        elevation: 0,
                       ),
                       child: Text(
-                        isUrgent ? '긴급 호출 발송하기' : '내 공고 보러가기',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: AppFontSize.buttonLg,
-                        ),
-                      ),
+                        isUrgent ? '긴급 호출 발송하기' : '내 공고 보러가기'),
                     ),
                   ),
                 ],
@@ -1136,9 +1114,6 @@ class _PostJobFormState extends State<PostJobForm>
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(ctx, false),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
                         child: const Text('고칠게요'),
                       ),
                     ),
@@ -1146,9 +1121,6 @@ class _PostJobFormState extends State<PostJobForm>
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () => Navigator.pop(ctx, true),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
                         child: const Text('맞아요'),
                       ),
                     ),
@@ -1601,12 +1573,6 @@ class _PostJobFormState extends State<PostJobForm>
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => Navigator.pop(ctx, false),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
-                          ),
                           child: const Text('새로 시작'),
                         ),
                       ),
@@ -1614,18 +1580,8 @@ class _PostJobFormState extends State<PostJobForm>
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () => Navigator.pop(ctx, true),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
-                          ),
                           child: const Text(
-                            '이어서 작성',
-                            style: TextStyle(fontWeight: FontWeight.w700),
-                          ),
+                            '이어서 작성'),
                         ),
                       ),
                     ],
@@ -1907,7 +1863,18 @@ class _PostJobFormState extends State<PostJobForm>
                           ? '정지된 계정'
                           : '확인하고 올리기',
                 )
-                : _NextBtn(onTap: _canNext ? _nextQ : null, label: _nextLabel),
+                : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 못 넘어가는 이유는 버튼 위 한 줄로 — 버튼 글자는 '다음' 하나
+                    if (!_canNext)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Text(_nextLabel, style: AppTextStyles.body2),
+                      ),
+                    _NextBtn(onTap: _canNext ? _nextQ : null),
+                  ],
+                ),
           ),
         ],
       ),
@@ -2376,8 +2343,6 @@ class _PostJobFormState extends State<PostJobForm>
       ),
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(48),
-        side: const BorderSide(color: AppColors.primary),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       ),
     ),
   );
@@ -2585,14 +2550,8 @@ class _PostJobFormState extends State<PostJobForm>
               canAdd ? '근무지 추가' : '최대 ${_maxExtraLocations + 1}곳까지 가능해요',
             ),
             style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.textSecondary,
               backgroundColor: Colors.white,
-              side: const BorderSide(color: AppColors.border),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
               minimumSize: const Size.fromHeight(44),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               textStyle: AppTextStyles.body2.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -3239,21 +3198,8 @@ class _PostJobFormState extends State<PostJobForm>
                             _validatePay();
                             Navigator.pop(ctx);
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
-                          ),
                           child: const Text(
-                            '확인',
-                            style: TextStyle(
-                              fontSize: AppFontSize.buttonLg,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                            '확인'),
                         ),
                       ),
                     ),
@@ -3518,23 +3464,8 @@ class _PostJobFormState extends State<PostJobForm>
                                       '/subscription/manage',
                                     );
                                   },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 14,
-                                    ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(AppRadius.md),
-                                    ),
-                                  ),
                                   child: const Text(
-                                    '구독 시작하기',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.w700,
-                                      fontSize: AppFontSize.body1,
-                                    ),
-                                  ),
+                                    '구독 시작하기'),
                                 ),
                               ),
                               const SizedBox(height: 10),
@@ -4100,21 +4031,8 @@ class _PostJobFormState extends State<PostJobForm>
                       Navigator.pop(context);
                       Navigator.pushNamed(context, '/subscription/manage');
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                    ),
                     child: const Text(
-                      '구독 플랜 보기',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: AppFontSize.body1,
-                      ),
-                    ),
+                      '구독 플랜 보기'),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -4211,26 +4129,12 @@ class _NextBtn extends StatelessWidget {
   final VoidCallback? onTap;
   final String label;
   const _NextBtn({required this.onTap, this.label = '다음'});
+  // 모양은 테마 주 버튼 — 비활성은 연한 파랑(회색 버튼에 긴 문장을 넣던 것 대신 위에 안내 한 줄)
   @override
   Widget build(BuildContext context) => SizedBox(
     width: double.infinity,
-    child: ElevatedButton(
-      onPressed: onTap,
-      style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        // onTap이 null이면 눌리지 않는다는 게 보여야 한다.
-        disabledBackgroundColor: AppColors.border,
-        disabledForegroundColor: AppColors.textSecondary,
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-        elevation: 0,
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w800),
-      ),
-    ),
+    height: 54,
+    child: ElevatedButton(onPressed: onTap, child: Text(label)),
   );
 }
 
@@ -4813,24 +4717,38 @@ class _PublishSheetState extends State<_PublishSheet> {
           ? '$n개 보유'
           : price;
 
-  ({String label, VoidCallback? onTap, bool loading}) get _cta {
-    if (_passCountLoading && _choice != 'free') return (label: '이용권 확인 중', onTap: null, loading: true);
-    if (_passCountFailed && _choice != 'free') return (label: '이용권 다시 확인하기', onTap: _loadCounts, loading: false);
+  /// 하단 버튼 — 버튼 글자는 행동만, 무엇이 나가는지(이용권·결제 금액·공개 시각)는 버튼 위 한 줄(note)로.
+  /// '이용권 사고 바로 올리기'처럼 결제를 돌려 말하던 문구를 정리했다(대표 10/29).
+  ({String label, String? note, VoidCallback? onTap, bool loading}) get _cta {
+    if (_passCountLoading && _choice != 'free') return (label: '바로 올리기', note: null, onTap: null, loading: true);
+    if (_passCountFailed && _choice != 'free') {
+      return (label: '다시 확인하기', note: '보유 이용권을 확인하지 못했어요', onTap: _loadCounts, loading: false);
+    }
     switch (_choice) {
       case 'urgent':
-        return _urgentOk
-            ? (label: _urgentPassCount == -1 ? '긴급 호출로 올리기' : '긴급 호출로 올리기 · 이용권 1개 사용', onTap: widget.onUrgentSubmit, loading: false)
-            : (label: '이용권 사고 긴급 호출로 올리기', onTap: widget.onBuyPass, loading: false);
-      case 'free':
-        return _freeExhausted
-            ? (label: '이번 달 무료 등록을 다 썼어요', onTap: null, loading: false)
-            : (label: '무료로 올리기', onTap: widget.onFreeSubmit, loading: false);
-      default:
-        if (!_paidOk) return (label: '이용권 사고 바로 올리기', onTap: widget.onBuyPass, loading: false);
-        if (!_canConfirm) return (label: '공개할 날짜·시간을 골라 주세요', onTap: null, loading: false);
-        final what = _paidPassCount == -1 ? '' : ' · 이용권 1개 사용';
+        if (!_urgentOk) {
+          return (label: '결제하고 긴급 호출하기', note: '긴급 호출 이용권 13,900원 · 아무도 답하지 않으면 환급돼요', onTap: widget.onBuyPass, loading: false);
+        }
         return (
-          label: _isScheduled ? '$_scheduledLabel 예약 공개$what' : '지금 바로 올리기$what',
+          label: '긴급 호출로 올리기',
+          note: _urgentPassCount == -1 ? '구독 혜택으로 올려요' : '긴급 호출 이용권 $_urgentPassCount개 중 1개를 써요',
+          onTap: widget.onUrgentSubmit,
+          loading: false,
+        );
+      case 'free':
+        final now = kstNow();
+        return _freeExhausted
+            ? (label: '무료로 올리기', note: '이번 달 무료 등록을 다 썼어요', onTap: null, loading: false)
+            : (label: '무료로 올리기', note: '${kstWhenLabel(freePublishAt(now), now)}에 공개돼요', onTap: widget.onFreeSubmit, loading: false);
+      default:
+        if (!_paidOk) {
+          return (label: '결제하고 바로 올리기', note: '즉시 게시 이용권 8,900원', onTap: widget.onBuyPass, loading: false);
+        }
+        if (!_canConfirm) return (label: '예약하기', note: '공개할 날짜와 시간을 골라 주세요', onTap: null, loading: false);
+        final note = _paidPassCount == -1 ? '구독 혜택으로 올려요' : '즉시 게시 이용권 $_paidPassCount개 중 1개를 써요';
+        return (
+          label: _isScheduled ? '$_scheduledLabel에 올리기' : '바로 올리기',
+          note: note,
           onTap: _exec,
           loading: false,
         );
@@ -5019,11 +4937,21 @@ class _PublishSheetState extends State<_PublishSheet> {
         ),
         Padding(
           padding: EdgeInsets.fromLTRB(20, 8, 20, pad + 12),
-          child: AppPrimaryButton(
-            label: cta.label,
-            height: 54,
-            loading: cta.loading,
-            onPressed: cta.onTap,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (cta.note != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(cta.note!, textAlign: TextAlign.center, style: AppTextStyles.body2),
+                ),
+              AppPrimaryButton(
+                label: cta.label,
+                height: 54,
+                loading: cta.loading,
+                onPressed: cta.onTap,
+              ),
+            ],
           ),
         ),
       ],

@@ -522,22 +522,13 @@ class _WorkerActions extends StatelessWidget {
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.error,
                 side: const BorderSide(color: AppColors.error),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
               ),
               icon:
                   workLoading
                       ? _loadingDot(AppColors.error)
                       : const Icon(Icons.event_busy_rounded, size: 16),
               label: const Text(
-                '일정 취소',
-                style: TextStyle(fontSize: AppFontSize.body2, fontWeight: FontWeight.w600),
-              ),
+                '일정 취소'),
             ),
           );
         }
@@ -561,11 +552,6 @@ class _WorkerActions extends StatelessWidget {
           onPressed: checkinLoading ? null : onCheckin,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.success,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(999),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
           ),
           icon:
               checkinLoading
@@ -576,13 +562,7 @@ class _WorkerActions extends StatelessWidget {
                     color: Colors.white,
                   ),
           label: const Text(
-            '출근 확인',
-            style: TextStyle(
-              fontSize: AppFontSize.body2,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-            ),
-          ),
+            '출근 확인'),
         ),
       );
     } else if (checkedIn) {
@@ -708,10 +688,6 @@ class _ActionButton extends StatelessWidget {
     return ElevatedButton.icon(
       style: ElevatedButton.styleFrom(
         backgroundColor: disabled ? AppColors.border : color,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        elevation: 0,
         shadowColor: Colors.transparent,
       ),
       icon: Icon(
@@ -792,14 +768,8 @@ class ChatRoomConsentBanner extends StatelessWidget {
           ElevatedButton(
             onPressed: busy ? null : onAccept,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(999),
-              ),
             ),
             child:
                 busy
@@ -811,7 +781,7 @@ class ChatRoomConsentBanner extends StatelessWidget {
                         color: Colors.white,
                       ),
                     )
-                    : const Text('수락', style: TextStyle(fontSize: AppFontSize.meta)),
+                    : const Text('수락'),
           ),
         ],
       ),
@@ -946,9 +916,6 @@ class _SmallAction extends StatelessWidget {
           disabledBackgroundColor: AppColors.bgMuted,
           padding: const EdgeInsets.symmetric(horizontal: 12),
           textStyle: AppTextStyles.btnSm,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-          ),
         ),
         child:
             loading

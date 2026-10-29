@@ -178,14 +178,6 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(sheetContext),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.textSecondary,
-                          side: const BorderSide(color: AppColors.border),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                        ),
                         child: const Text('취소'),
                       ),
                     ),
@@ -197,18 +189,8 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                               sheetContext,
                               controller.text.trim(),
                             ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                        ),
                         child: const Text(
-                          '긴급 호출 보내기',
-                          style: TextStyle(fontWeight: FontWeight.w800),
-                        ),
+                          '긴급 호출 보내기'),
                       ),
                     ),
                   ],
@@ -703,13 +685,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor:
                     count > 0 ? AppColors.urgentCall : AppColors.bgMuted,
-                foregroundColor: Colors.white,
                 disabledBackgroundColor: AppColors.bgMuted,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               child:
                   _sending

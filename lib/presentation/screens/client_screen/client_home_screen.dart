@@ -203,14 +203,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => Navigator.pop(dCtx, false),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.lg),
-                            ),
-                            side: const BorderSide(color: AppColors.border),
-                            foregroundColor: AppColors.textPrimary,
-                          ),
                           child: const Text('취소'),
                         ),
                       ),
@@ -219,13 +211,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         child: ElevatedButton(
                           onPressed: () => Navigator.pop(dCtx, true),
                           style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.lg),
-                            ),
                             backgroundColor: AppColors.error,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
                           ),
                           child: const Text('삭제'),
                         ),
@@ -864,17 +850,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                          ),
                           onPressed: () {
                             Navigator.pop(ctx);
                             Navigator.pushNamed(context, '/subscribe');
                           },
                           child: const Text(
-                            '구독하기',
-                            style: TextStyle(color: Colors.white),
-                          ),
+                            '구독하기'),
                         ),
                       ),
                     ],
@@ -1489,13 +1470,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(context, false),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          side: const BorderSide(color: AppColors.border),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                        ),
                         child: const Text(
                           '취소',
                           style: TextStyle(color: AppColors.textSecondary),
@@ -1506,21 +1480,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () => Navigator.pop(context, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                          elevation: 0,
-                        ),
                         child: Text(
-                          v3Available || isUnlimited ? '즉시 게시' : '이용권 사용',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                          v3Available || isUnlimited ? '즉시 게시' : '이용권 사용'),
                       ),
                     ),
                   ],
@@ -1595,21 +1556,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                           ),
                         );
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                        elevation: 0,
-                      ),
                       child: const Text(
-                        '이용권 구매하기',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                        '이용권 구매하기'),
                     ),
                   ),
                   const SizedBox(height: 10),

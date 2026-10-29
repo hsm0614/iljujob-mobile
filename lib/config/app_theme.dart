@@ -299,6 +299,19 @@ class AppDecorations {
 class AppTheme {
   AppTheme._();
 
+  static final ButtonStyle _primaryButtonStyle = ElevatedButton.styleFrom(
+    backgroundColor: AppColors.primary,
+    foregroundColor: Colors.white,
+    disabledBackgroundColor: const Color(0xFFC4DCFF), // 파랑 35% — 비활성도 '파란 버튼'으로 읽힌다
+    disabledForegroundColor: Colors.white,
+    elevation: 0,
+    shadowColor: Colors.transparent,
+    minimumSize: const Size(64, 52),
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    textStyle: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w600),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+  );
+
   static ThemeData get theme => ThemeData(
         fontFamily: 'Pretendard', // 갤럭시·아이폰 같은 모양으로 (pubspec 주석 참고)
         // 누를 때: 안드로이드 물결 대신 살짝 어두워짐 (토스 press overlay · 당근도 물결 없음)
@@ -358,48 +371,29 @@ class AppTheme {
             borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
         ),
-        filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: AppColors.bgMuted,
-            disabledForegroundColor: AppColors.textTertiary,
-            textStyle: AppTextStyles.btnLg,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-          ),
-        ),
-        // ElevatedButton
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            textStyle: AppTextStyles.btnLg,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
-          ),
-        ),
-        // OutlinedButton
+        // ── 버튼 3종 (2026-10, 토스 TDS식) — 모양은 여기서만 정한다. 화면에서 styleFrom으로 다시 정하지 말 것
+        //   주 버튼(Filled·Elevated): 파랑 채움 · 흰 글자 16/w600 · 높이 52 · 비활성은 연한 파랑(회색 아님)
+        //   보조 버튼(Outlined): 회색 채움 · 검정 글자 · 테두리 없음
+        //   글자 버튼(Text): 파란 글자
+        filledButtonTheme: FilledButtonThemeData(style: _primaryButtonStyle),
+        elevatedButtonTheme: ElevatedButtonThemeData(style: _primaryButtonStyle),
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.primary),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            textStyle: AppTextStyles.btnMd,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
+            backgroundColor: AppColors.bgMuted,
+            foregroundColor: AppColors.textPrimary,
+            disabledForegroundColor: AppColors.textDisabled,
+            side: BorderSide.none,
+            elevation: 0,
+            minimumSize: const Size(64, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            textStyle: const TextStyle(fontSize: AppFontSize.body1, fontWeight: FontWeight.w600),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
           ),
         ),
-        // TextButton
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
             foregroundColor: AppColors.primary,
-            textStyle: AppTextStyles.btnMd,
+            textStyle: const TextStyle(fontSize: AppFontSize.body1, fontWeight: FontWeight.w600),
           ),
         ),
         // InputDecoration

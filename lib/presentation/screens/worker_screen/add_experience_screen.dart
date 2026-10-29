@@ -185,10 +185,6 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                           onPressed: () => Navigator.pop(context),
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: kBorder),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           child: const Text('취소'),
                         ),
@@ -201,14 +197,6 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                             setState(() => selectedYear = temp);
                             Navigator.pop(context);
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: kBrand,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
                           child: const Text('선택'),
                         ),
                       ),
@@ -453,13 +441,6 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
             height: 52,
             child: ElevatedButton(
               onPressed: isSaving ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kBrand,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
               child:
                   isSaving
                       ? const SizedBox(
@@ -468,12 +449,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                       : Text(
-                        _isEdit ? '수정 완료' : '입력 완료',
-                        style: const TextStyle(
-                          fontSize: AppFontSize.buttonLg,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                        _isEdit ? '수정 완료' : '입력 완료'),
             ),
           ),
         ),

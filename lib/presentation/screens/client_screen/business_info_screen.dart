@@ -133,12 +133,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                           },
                           style: _primaryButtonStyle(),
                           child: const Text(
-                            '확인',
-                            style: TextStyle(
-                              fontSize: AppFontSize.buttonLg,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                            '확인'),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -520,13 +515,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                         _loading ? null : (_verified ? _saveAndGo : _lookup),
                     style: _primaryButtonStyle(),
                     child: Text(
-                      _verified ? '공고 등록하기' : '사업자 확인하기',
-                      style: const TextStyle(
-                        fontSize: AppFontSize.buttonLg,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
+                      _verified ? '공고 등록하기' : '사업자 확인하기'),
                   ),
                 ),
               ],

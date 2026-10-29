@@ -971,15 +971,9 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
                     onPressed: force ? null : () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(46),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      side: const BorderSide(color: AppColors.border),
                     ),
                     child: Text(
-                      force ? '필수 업데이트' : '나중에',
-                      style: const TextStyle(fontWeight: FontWeight.w900),
-                    ),
+                      force ? '필수 업데이트' : '나중에'),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -990,20 +984,10 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
                       if (!force && context.mounted) Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
                       minimumSize: const Size.fromHeight(46),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 0,
                     ),
                     child: const Text(
-                      '업데이트하기',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                      ),
-                    ),
+                      '업데이트하기'),
                   ),
                 ),
               ],

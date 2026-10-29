@@ -359,16 +359,9 @@ class _ChatListScreenState extends State<ChatListScreen>
                   onPressed: () => Navigator.of(context).pop(true),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.error,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
                   ),
                   child: const Text(
-                    '나가기',
-                    style: TextStyle(fontSize: AppFontSize.body1, fontWeight: FontWeight.w700),
-                  ),
+                    '나가기'),
                 ),
               ),
               const SizedBox(height: 10),
@@ -1509,34 +1502,18 @@ class CancelApplicationDialog extends StatelessWidget {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.error,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
                     ),
                     onPressed: () {
                       Navigator.of(context).pop(true);
                     },
                     child: const Text(
-                      '네, 지원을 취소할게요',
-                      style: TextStyle(
-                        fontSize: AppFontSize.button,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
+                      '네, 지원을 취소할게요'),
                   ),
                 ),
                 const SizedBox(height: 8),
                 SizedBox(
                   height: 44,
                   child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.border),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
                     onPressed: () {
                       Navigator.of(context).pop(false);
                     },

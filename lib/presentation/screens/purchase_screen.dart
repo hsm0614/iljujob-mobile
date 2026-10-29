@@ -510,12 +510,6 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () => Navigator.pop(ctx),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                      ),
                       child: const Text('나중에'),
                     ),
                   ),
@@ -526,19 +520,8 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                         Navigator.pop(ctx);
                         Navigator.pushNamed(context, '/subscribe');
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                        ),
-                        elevation: 0,
-                      ),
                       child: const Text(
-                        '구독 보러가기',
-                        style: TextStyle(fontWeight: FontWeight.w700),
-                      ),
+                        '구독 보러가기'),
                     ),
                   ),
                 ],

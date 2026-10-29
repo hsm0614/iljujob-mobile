@@ -707,22 +707,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                                       }
                                     }
                                     : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: kBrandBlue,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
                             child: Text(
-                              isEdit ? '수정 완료' : '저장하기',
-                              style: const TextStyle(
-                                fontSize: AppFontSize.body1,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                              isEdit ? '수정 완료' : '저장하기'),
                           ),
                         ),
                       ],
@@ -970,19 +956,11 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                               child: OutlinedButton(
                                 onPressed: () => Navigator.pop(ctx),
                                 style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
                                   side: const BorderSide(color: kBorder),
                                   foregroundColor: kText,
                                 ),
                                 child: const Text(
-                                  '취소',
-                                  style: TextStyle(fontWeight: FontWeight.w700),
-                                ),
+                                  '취소'),
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -996,21 +974,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                                   });
                                   Navigator.pop(ctx);
                                 },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: kBrandBlue,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
                                 child: const Text(
-                                  '적용하기',
-                                  style: TextStyle(fontWeight: FontWeight.w700),
-                                ),
+                                  '적용하기'),
                               ),
                             ),
                           ],
@@ -1108,17 +1073,11 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: kText,
                             side: const BorderSide(color: kBorder),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
                             backgroundColor: kBg,
                           ),
                           onPressed: () => Navigator.pop(ctx, false),
                           child: const Text(
-                            '취소',
-                            style: TextStyle(fontWeight: FontWeight.w700),
-                          ),
+                            '취소'),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -1126,18 +1085,10 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: confirmColor,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
                           ),
                           onPressed: () => Navigator.pop(ctx, true),
                           child: Text(
-                            confirmLabel,
-                            style: const TextStyle(fontWeight: FontWeight.w700),
-                          ),
+                            confirmLabel),
                         ),
                       ),
                     ],
@@ -1962,14 +1913,10 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
       child: OutlinedButton.icon(
         onPressed: onPressed,
         icon: const Icon(Icons.add_rounded, size: 18),
-        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
+        label: Text(label),
         style: OutlinedButton.styleFrom(
           foregroundColor: kText,
           side: const BorderSide(color: kBorder),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
         ),
       ),
     );
@@ -2025,14 +1972,6 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                     height: 52,
                     child: ElevatedButton(
                       onPressed: _saving ? null : _saveProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kBrandBlue,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
                       child:
                           _saving
                               ? const SizedBox(
@@ -2044,12 +1983,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                                 ),
                               )
                               : const Text(
-                                '저장하기',
-                                style: TextStyle(
-                                  fontSize: AppFontSize.buttonLg,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
+                                '저장하기'),
                     ),
                   ),
                 ),
@@ -2301,20 +2235,9 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                         onPressed: () => Navigator.pop(ctx, temp),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: brand,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
-                          ),
                         ),
                         child: const Text(
-                          '완료',
-                          style: TextStyle(fontWeight: FontWeight.w700),
-                        ),
+                          '완료'),
                       ),
                     ],
                   ),

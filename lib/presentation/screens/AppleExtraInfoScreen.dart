@@ -341,21 +341,10 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                       child: ElevatedButton(
                         onPressed: _loading ? null : _submitAll,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: kBrand,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
                           minimumSize: const Size.fromHeight(52),
                         ),
                         child: Text(
-                          _loading ? '저장 중...' : '완료하고 시작하기',
-                          style: const TextStyle(
-                            fontSize: AppFontSize.buttonLg,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                          _loading ? '저장 중...' : '완료하고 시작하기'),
                       ),
                     ),
                     const SizedBox(height: 24),

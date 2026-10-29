@@ -2116,19 +2116,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                                     });
                                                   }
                                                 },
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: AppColors.primary,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 12,
-                                          ),
-                                        ),
                                         child:
                                             searching
                                                 ? const SizedBox(
@@ -2141,11 +2128,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                                                       ),
                                                 )
                                                 : const Text(
-                                                  '검색',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w800,
-                                                  ),
-                                                ),
+                                                  '검색'),
                                       ),
                                     ],
                                   ),
@@ -2352,13 +2335,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                               sigungu: pickedGu,
                             );
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
-                          ),
                           child: Text(
                             '이 지역 공고 보기',
                             style: AppTextStyles.btnLg.copyWith(

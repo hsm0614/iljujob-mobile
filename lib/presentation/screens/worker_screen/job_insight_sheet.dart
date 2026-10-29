@@ -182,13 +182,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                 Navigator.pop(context);
                 Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionPlansScreen()));
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                elevation: 0,
-              ),
-              child: const Text('구독 플랜 보기', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: AppFontSize.body1)),
+              child: const Text('구독 플랜 보기'),
             ),
           ),
         ],

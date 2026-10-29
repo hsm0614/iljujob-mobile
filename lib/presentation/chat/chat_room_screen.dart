@@ -588,22 +588,8 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                         width: double.infinity,
                         child: ElevatedButton(
                           onPressed: submit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
                           child: const Text(
-                            '평가 제출',
-                            style: TextStyle(
-                              fontSize: AppFontSize.body1,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
+                            '평가 제출'),
                         ),
                       ),
                     const SizedBox(height: 4),
@@ -739,12 +725,6 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppColors.border),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
                           onPressed: () => Navigator.of(context).pop(false),
                           child: const Text(
                             '닫기',
@@ -758,21 +738,9 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
                           onPressed: () => Navigator.of(context).pop(true),
                           child: const Text(
-                            '캘린더로 이동',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                          ),
+                            '캘린더로 이동'),
                         ),
                       ),
                     ],
@@ -1124,15 +1092,9 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: Colors.white54),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                   child: const Text(
-                    '거절',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
+                    '거절'),
                 ),
               ),
               const SizedBox(width: 10),
@@ -1146,11 +1108,6 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: AppColors.urgentCall,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                   child:
                       _urgentCallBusy
@@ -1163,9 +1120,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                             ),
                           )
                           : const Text(
-                            '수락하기',
-                            style: TextStyle(fontWeight: FontWeight.w900),
-                          ),
+                            '수락하기'),
                 ),
               ),
             ],

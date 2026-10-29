@@ -396,14 +396,6 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                           )
                           : const Icon(Icons.auto_awesome),
                   label: Text(isGenerating ? 'AI 생성 중...' : '공고문 생성하기'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
                 ),
               ),
 
@@ -545,9 +537,6 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                         onPressed: _generateDescription,
                         icon: const Icon(Icons.refresh),
                         label: const Text('다시 생성'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -558,8 +547,6 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                         label: const Text('적용하기'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
                     ),
@@ -689,19 +676,8 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                     Navigator.pop(bCtx);
                     Navigator.pushNamed(ctx, '/subscribe');
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
                   child: const Text(
-                    '구독 플랜 보기',
-                    style: TextStyle(fontSize: AppFontSize.body1, fontWeight: FontWeight.w700),
-                  ),
+                    '구독 플랜 보기'),
                 ),
               ),
             ],

@@ -77,20 +77,11 @@ Widget _confirmButton(BuildContext ctx, {required VoidCallback? onPressed}) =>
         child: ElevatedButton(
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: _blue,
-            foregroundColor: Colors.white,
             disabledBackgroundColor: _border,
             disabledForegroundColor: AppColors.textSecondary,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
           ),
           child: const Text(
-            '선택 완료',
-            style: TextStyle(fontSize: AppFontSize.body1, fontWeight: FontWeight.w700),
-          ),
+            '선택 완료'),
         ),
       ),
     );

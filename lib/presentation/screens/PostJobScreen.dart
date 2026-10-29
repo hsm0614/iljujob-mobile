@@ -122,19 +122,8 @@ class _LeaveConfirmSheet extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () => Navigator.of(context).pop(false),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-              ),
               child: const Text(
-                '계속 작성하기',
-                style: TextStyle(fontSize: AppFontSize.body1, fontWeight: FontWeight.w700),
-              ),
+                '계속 작성하기'),
             ),
           ),
           const SizedBox(height: 10),

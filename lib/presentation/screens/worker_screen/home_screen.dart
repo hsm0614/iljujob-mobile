@@ -180,25 +180,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           const SizedBox(width: 8),
                           ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                            ),
                             onPressed: () async {
                               if (dontShow) await promoService.snooze(p);
                               if (!context.mounted) return;
                               Navigator.pop(context);
                             },
                             child: const Text(
-                              '닫기',
-                              style: TextStyle(color: Colors.white),
-                            ),
+                              '닫기'),
                           ),
                         ],
                       ),

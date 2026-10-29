@@ -646,11 +646,6 @@ class _HireNudgeBubble extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: onConfirmHire,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                   ),
                   icon: const Icon(
@@ -659,13 +654,7 @@ class _HireNudgeBubble extends StatelessWidget {
                     color: Colors.white,
                   ),
                   label: const Text(
-                    '출근 확정 제안하기',
-                    style: TextStyle(
-                      fontSize: AppFontSize.body2,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
+                    '출근 확정 제안하기'),
                 ),
               ),
             ],

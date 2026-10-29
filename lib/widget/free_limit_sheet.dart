@@ -65,13 +65,6 @@ Future<void> showFreeLimitSheet(BuildContext context, String message) {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(ctx),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: AppColors.border),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
                   child: const Text(
                     '닫기',
                     style: TextStyle(
@@ -99,17 +92,9 @@ Future<void> showFreeLimitSheet(BuildContext context, String message) {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: blue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
                   ),
                   child: const Text(
-                    '즉시게시로 올리기',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
+                    '즉시게시로 올리기'),
                 ),
               ),
             ],

@@ -298,13 +298,6 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
                         width: double.infinity,
                         height: 52,
                         child: FilledButton.icon(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
-                          ),
                           onPressed: () async {
                             final result = await Navigator.pushNamed(
                               context,
@@ -318,12 +311,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
                           },
                           icon: const Icon(Icons.workspace_premium_rounded),
                           label: const Text(
-                            '구독 시작하기',
-                            style: TextStyle(
-                              fontSize: AppFontSize.buttonLg,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                            '구독 시작하기'),
                         ),
                       ),
                   ],
@@ -797,15 +785,6 @@ class _PolicySection extends StatelessWidget {
                   label: Text(isStoreBilling ? '구독 관리 열기' : '결제 방식 확인'),
                   onPressed: onOpenStore,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
                     textStyle: const TextStyle(
                       fontSize: AppFontSize.body2,
                       fontWeight: FontWeight.w600,
@@ -827,15 +806,6 @@ class _PolicySection extends StatelessWidget {
                     launchUrl(uri);
                   },
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textSecondary,
-                    side: const BorderSide(color: AppColors.textDisabled),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
                     textStyle: const TextStyle(
                       fontSize: AppFontSize.body2,
                       fontWeight: FontWeight.w600,

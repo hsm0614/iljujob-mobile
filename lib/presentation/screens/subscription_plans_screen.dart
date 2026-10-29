@@ -329,19 +329,8 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                     Navigator.pop(context);
                     Navigator.pop(context, true);
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                  ),
                   child: const Text(
-                    '확인',
-                    style: TextStyle(fontSize: AppFontSize.body1, fontWeight: FontWeight.w700),
-                  ),
+                    '확인'),
                 ),
               ),
             ],

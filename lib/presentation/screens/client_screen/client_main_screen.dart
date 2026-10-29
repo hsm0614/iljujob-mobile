@@ -273,12 +273,6 @@ class _ClientMainScreenState extends State<ClientMainScreen>
                             // 서버와 동기화하고 싶으면: 이후 첫 /promo 호출 시 헤더 x-promo-skip-until 로 전달됨
                             if (mounted) Navigator.of(dialogCtx).pop();
                           },
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
-                          ),
                           child: Text(checkboxLabel),
                         ),
                       ),
@@ -287,12 +281,6 @@ class _ClientMainScreenState extends State<ClientMainScreen>
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => Navigator.of(dialogCtx).pop(),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
-                          ),
                           child: Text(dismissLabel),
                         ),
                       ),

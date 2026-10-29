@@ -203,14 +203,6 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
             OutlinedButton(
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primaryDark,
-                side: const BorderSide(color: AppColors.primaryMid),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
               ),
               onPressed: () => Navigator.pop(context),
               child: const Text('닫기'),

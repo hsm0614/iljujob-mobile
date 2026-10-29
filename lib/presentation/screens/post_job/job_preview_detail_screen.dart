@@ -677,10 +677,6 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                     Navigator.pop(context);
                     widget.onEdit?.call();
                   },
-                  style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: AppColors.border),
-                    foregroundColor: AppColors.textPrimary,
-                  ),
                   child: const Text('수정하기'),
                 ),
               ),

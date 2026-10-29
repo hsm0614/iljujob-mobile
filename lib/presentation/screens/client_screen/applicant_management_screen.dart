@@ -443,14 +443,6 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(ctx, false),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.textSecondary,
-                          side: const BorderSide(color: AppColors.border),
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                        ),
                         child: const Text('취소'),
                       ),
                     ),
@@ -458,19 +450,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () => Navigator.pop(ctx, true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(vertical: 13),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                        ),
                         child: const Text(
-                          '확인하고 보기',
-                          style: TextStyle(fontWeight: FontWeight.w800),
-                        ),
+                          '확인하고 보기'),
                       ),
                     ),
                   ],
@@ -601,19 +582,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                     if (text.isEmpty) return;
                     Navigator.pop(ctx, text);
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                  ),
                   child: const Text(
-                    '메시지 발송',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
+                    '메시지 발송'),
                 ),
               ),
             ],

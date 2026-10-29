@@ -168,12 +168,6 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
                     minimumSize: const Size.fromHeight(54),
                   ),
                   onPressed: _isLoading ? null : _submit,
@@ -188,12 +182,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                             ),
                           )
                           : const Text(
-                            '완료하고 시작하기',
-                            style: TextStyle(
-                              fontSize: AppFontSize.buttonLg,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                            '완료하고 시작하기'),
                 ),
               ),
             ],

@@ -2142,21 +2142,13 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                       Expanded(
                         child: OutlinedButton(
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textPrimary,
-                            side: const BorderSide(color: AppColors.border),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
                             backgroundColor: AppColors.bgPage,
                           ),
                           onPressed:
                               () =>
                                   Navigator.pop(sheetCtx, false), // ✅ sheetCtx
                           child: const Text(
-                            '취소',
-                            style: TextStyle(fontWeight: FontWeight.w900),
-                          ),
+                            '취소'),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -2164,19 +2156,11 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: accent,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            elevation: 0,
                           ),
                           onPressed:
                               () => Navigator.pop(sheetCtx, true), // ✅ sheetCtx
                           child: Text(
-                            okText,
-                            style: const TextStyle(fontWeight: FontWeight.w900),
-                          ),
+                            okText),
                         ),
                       ),
                     ],
@@ -2717,10 +2701,6 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.error,
                               side: const BorderSide(color: Color(0xFFFCA5A5)),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
                             ),
                             onPressed:
                                 _saving
@@ -2743,9 +2723,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                                       }
                                     },
                             child: const Text(
-                              '삭제',
-                              style: TextStyle(fontWeight: FontWeight.w900),
-                            ),
+                              '삭제'),
                           ),
                         ),
                       if (widget.isEdit && widget.onDelete != null)
@@ -2755,11 +2733,6 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: widget.brandBlue,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
                           ),
                           onPressed: _saving ? null : _save,
                           child:
@@ -2777,11 +2750,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                                         ? '저장'
                                         : (_isRepeat && _repeatEndDate != null
                                             ? '${_generateRepeatDates().length}일 추가'
-                                            : '추가'),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w900,
-                                    ),
-                                  ),
+                                            : '추가')),
                         ),
                       ),
                     ],

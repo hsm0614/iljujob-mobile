@@ -83,22 +83,14 @@ class AppPrimaryButton extends StatelessWidget {
     required this.onPressed,
     required this.label,
     this.icon,
-    this.height = 48,
+    this.height = 52,
     this.loading = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    final style = ElevatedButton.styleFrom(
-      backgroundColor: AppColors.primary,
-      foregroundColor: Colors.white,
-      disabledBackgroundColor: AppColors.textDisabled,
-      elevation: 0,
-      textStyle: AppTextStyles.btnLg,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-    );
+    // 모양은 테마(_primaryButtonStyle) 하나에서 — 여기서 다시 정하지 않는다
+    const ButtonStyle? style = null;
 
     final onPressed = loading ? null : this.onPressed;
     final button = SizedBox(
@@ -116,7 +108,7 @@ class AppPrimaryButton extends StatelessWidget {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: AppColors.textTertiary,
+                            color: Colors.white,
                           ),
                         )
                         : Text(label),
@@ -416,12 +408,7 @@ class AppEmptyState extends StatelessWidget {
                         ? OutlinedButton(
                           onPressed: onAction,
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textPrimary,
-                            side: const BorderSide(color: AppColors.border),
                             padding: const EdgeInsets.symmetric(horizontal: 20),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
                           ),
                           child: Text(actionLabel!),
                         )

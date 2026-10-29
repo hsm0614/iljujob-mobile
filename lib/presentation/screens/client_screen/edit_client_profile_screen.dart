@@ -727,13 +727,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                 icon: const Icon(Icons.open_in_new),
                 label: const Text('기존 파일 열기'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.primary,
-                  side: const BorderSide(color: AppColors.primaryMid),
                   backgroundColor: AppColors.primaryLight,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
               ),
             ),
@@ -746,14 +740,6 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                         : null,
                 icon: const Icon(Icons.close),
                 label: const Text('선택 해제'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: AppColors.textSecondary,
-                  side: BorderSide(color: AppColors.textDisabled),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
               ),
             ),
           ],

@@ -200,9 +200,6 @@ class JobListTile extends StatelessWidget {
                             disabledBackgroundColor: AppColors.bgMuted,
                             disabledForegroundColor: AppColors.textTertiary,
                             textStyle: AppTextStyles.btnSm,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                            ),
                           ),
                           onPressed: isApplied ? null : onApply,
                           child: Text(isApplied ? '지원 완료' : '지원하기'),

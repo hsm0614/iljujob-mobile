@@ -418,14 +418,8 @@ class _PartnerRecruitDetailScreenState
             child: ElevatedButton(
               onPressed: _applying ? null : _onApply,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
                 disabledBackgroundColor: AppColors.primary.withValues(
                   alpha: 0.5,
-                ),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
               child: _applying

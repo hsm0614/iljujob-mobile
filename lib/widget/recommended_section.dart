@@ -192,9 +192,7 @@ class _RecommendedSectionState extends State<RecommendedSection> {
                     icon: const Icon(Icons.refresh_rounded, size: 18),
                     label: const Text('다시 불러오기'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
                       side: BorderSide(color: AppColors.primary.withOpacity(.35)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
                 ),
@@ -319,12 +317,6 @@ class _AiJobCard extends StatelessWidget {
                 height: 40,
                 child: ElevatedButton(
                   onPressed: loading ? null : onTap,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -335,11 +327,11 @@ class _AiJobCard extends StatelessWidget {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         ),
                         const SizedBox(width: 10),
-                        const Text('불러오는 중...', style: TextStyle(fontWeight: FontWeight.w800)),
+                        const Text('불러오는 중...'),
                       ] else ...[
                         const Icon(Icons.send_rounded, size: 18),
                         const SizedBox(width: 8),
-                        const Text('지원하기', style: TextStyle(fontWeight: FontWeight.w900)),
+                        const Text('지원하기'),
                       ],
                     ],
                   ),

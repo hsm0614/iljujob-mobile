@@ -318,17 +318,10 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                     onPressed: _generate,
                     icon: const Icon(Icons.refresh_rounded, size: 16),
                     label: const Text(
-                      '다시 생성',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
+                      '다시 생성'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
                       side: BorderSide(
                         color: AppColors.primary.withOpacity(0.4),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                   ),

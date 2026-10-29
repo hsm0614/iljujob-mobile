@@ -490,12 +490,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                           ),
                         )
                         : const Text(
-                          'PASS 본인인증 하기',
-                          style: TextStyle(
-                            fontSize: AppFontSize.buttonLg,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                          'PASS 본인인증 하기'),
               ),
             ),
           ],
@@ -675,12 +670,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                           ),
                         )
                         : const Text(
-                          '동의하고 가입 완료',
-                          style: TextStyle(
-                            fontSize: AppFontSize.buttonLg,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                          '동의하고 가입 완료'),
               ),
             ),
             const SizedBox(height: 20),

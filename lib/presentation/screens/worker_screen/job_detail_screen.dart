@@ -647,22 +647,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                         type: AppSettingsType.notification,
                       );
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
                     child: const Text(
-                      '알림 설정 열기',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: AppFontSize.body1,
-                      ),
-                    ),
+                      '알림 설정 열기'),
                   ),
                   const SizedBox(height: 6),
                   TextButton(
@@ -1063,13 +1049,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                         height: 50,
                         child: OutlinedButton.icon(
                           onPressed: () => _callAgencyPhone(agencyPhone),
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppColors.primary),
-                            foregroundColor: AppColors.primary,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
                           icon: const Icon(Icons.call_outlined, size: 18),
                           label: Text('전화로 지원', style: AppTextStyles.btnLg),
                         ),
@@ -1103,13 +1082,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       height: 52,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: kBrand,
                           disabledBackgroundColor: AppColors.bgMuted,
                           disabledForegroundColor: AppColors.textTertiary,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
-                          elevation: 0,
                         ),
                         onPressed:
                             isButtonDisabled
@@ -1135,13 +1109,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                               ? '정지된 계정'
                               : isAgency
                               ? '앱으로 지원'
-                              : '지원하고 채팅 시작',
-                          style: const TextStyle(
-                            fontSize: AppFontSize.buttonLg,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
+                              : '지원하고 채팅 시작'),
                       ),
                     ),
                     ),
@@ -1893,10 +1861,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(44),
-                  side: BorderSide(color: AppColors.textDisabled),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                 ),
                 onPressed:
                     () =>
@@ -1913,10 +1877,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               child: OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size.fromHeight(44),
-                  side: BorderSide(color: AppColors.textDisabled),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
                 ),
                 onPressed: () => _copyAddress(copyText),
                 icon: const Icon(

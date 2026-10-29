@@ -558,21 +558,10 @@ class _EditJobScreenState extends State<EditJobScreen> {
                           Navigator.pop(context);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(AppRadius.md),
-                          ),
                           elevation: 2,
                         ),
                         child: const Text(
-                          '확인',
-                          style: TextStyle(
-                            fontSize: AppFontSize.buttonLg,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                          '확인'),
                       ),
                     ),
                   ),
@@ -755,22 +744,8 @@ class _EditJobScreenState extends State<EditJobScreen> {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(ctx),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                    ),
                     child: const Text(
-                      '확인',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: AppFontSize.body1,
-                      ),
-                    ),
+                      '확인'),
                   ),
                 ),
               ],
@@ -1499,18 +1474,6 @@ class _EditJobScreenState extends State<EditJobScreen> {
                     onPressed: _pickImages,
                     icon: const Icon(Icons.image, size: 18),
                     label: const Text('추가'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 10,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      elevation: 0,
-                    ),
                   ),
                   child: _imageThumbs(),
                 ),

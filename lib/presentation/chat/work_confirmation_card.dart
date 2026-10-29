@@ -146,21 +146,8 @@ class WorkConfirmationCard extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: onReject,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textSecondary,
-                        side: const BorderSide(color: AppColors.border),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
                       child: const Text(
-                        '거절',
-                        style: TextStyle(
-                          fontSize: AppFontSize.body2,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                        '거절'),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -168,22 +155,8 @@ class WorkConfirmationCard extends StatelessWidget {
                     flex: 2,
                     child: ElevatedButton(
                       onPressed: onAccept,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
                       child: const Text(
-                        '수락하기',
-                        style: TextStyle(
-                          fontSize: AppFontSize.body2,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                        '수락하기'),
                     ),
                   ),
                 ],
@@ -201,16 +174,10 @@ class WorkConfirmationCard extends StatelessWidget {
                   onPressed: onNoShow,
                   icon: const Icon(Icons.person_off_rounded, size: 15),
                   label: const Text(
-                    '노쇼 신고',
-                    style: TextStyle(fontSize: AppFontSize.body2, fontWeight: FontWeight.w600),
-                  ),
+                    '노쇼 신고'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.urgentCall,
                     side: const BorderSide(color: AppColors.urgentCall),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                 ),
               ),
@@ -788,14 +755,7 @@ class _ProposeWorkConfirmationSheetState
                     child: ElevatedButton(
                       onPressed: _canSubmit && !_loading ? _submit : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
                         disabledBackgroundColor: AppColors.border,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
                       ),
                       child:
                           _loading
@@ -808,13 +768,7 @@ class _ProposeWorkConfirmationSheetState
                                 ),
                               )
                               : const Text(
-                                '제안 보내기',
-                                style: TextStyle(
-                                  fontSize: AppFontSize.body1,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.3,
-                                ),
-                              ),
+                                '제안 보내기'),
                     ),
                   ),
                   const SizedBox(height: 4),
