@@ -157,6 +157,7 @@ class _PostJobFormState extends State<PostJobForm>
   String? _subscriptionPlan;
   int _aiQuotaRemaining = 0;
   bool _aiQuotaLoaded = false;
+  bool _descAutoFilled = false; // 설명을 자동으로 채웠는지 — 안내 한 줄
   // 1단계 '최근에 올린 공고' (서버 원본 — _fillFromJob이 원본 키를 읽는다). 다시 올리기·수정이 아닐 때만
   List<Map<String, dynamic>> _recentJobs = [];
   // 급여 단위 의심을 사장님이 '맞아요'로 확인한 값 ('일급:3000000'). 금액·단위가 바뀌면 다시 묻는다
@@ -321,9 +322,11 @@ class _PostJobFormState extends State<PostJobForm>
     await _fadeCtrl.reverse();
     setState(() {
       _q++;
+      if (_q == _totalQ - 1) _autoFillDescription();
     });
     _scheduleDraftSave();
     _fadeCtrl.forward();
+    _scrollToCurrent();
   }
 
   Future<void> _prevQ() async {
@@ -336,6 +339,7 @@ class _PostJobFormState extends State<PostJobForm>
     setState(() => _q--);
     _scheduleDraftSave();
     _fadeCtrl.forward();
+    _scrollToCurrent();
   }
 
   // ── 날짜 유틸 ──
@@ -1705,6 +1709,98 @@ class _PostJobFormState extends State<PostJobForm>
     ),
   );
 
+  final GlobalKey _currentKey = GlobalKey();
+
+  static const _doneLabels = ['제목', '업종', '근무지', '일정', '급여', '내용'];
+
+  String _doneValue(int i) {
+    String hhmm(TimeOfDay t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
+    switch (i) {
+      case 0:
+        return _title;
+      case 1:
+        return _category;
+      case 2:
+        return _extraLocations.isEmpty ? _location : '$_location 외 ${_extraLocations.length}곳';
+      case 3:
+        final day =
+            _isShortTerm
+                ? formatWorkDays(_startDate, _endDate, null)
+                : (_longTermMode == '요일 지정' ? formatWeekdays(_weekdays.join(',')) : '요일 협의');
+        final time =
+            _timeNegotiable
+                ? '시간 협의'
+                : (_startTime != null && _endTime != null)
+                ? '${hhmm(_startTime!)}~${hhmm(_endTime!)}'
+                : '';
+        return [if (day != null) day, if (time.isNotEmpty) time].join(' · ');
+      case 4:
+        return [formatJobPay('$_pay', _payType, includeType: true), if (_isSameDayPay) '당일지급'].join(' · ');
+      default:
+        return '';
+    }
+  }
+
+  Widget _doneRow(int i) => InkWell(
+    onTap: () => _goToStep(i),
+    child: Container(
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.borderSub))),
+      child: Row(
+        children: [
+          SizedBox(width: 64, child: Text(_doneLabels[i], style: AppTextStyles.body2)),
+          Expanded(
+            child: Text(
+              _doneValue(i),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text('수정', style: AppTextStyles.body2.copyWith(color: AppColors.primary)),
+        ],
+      ),
+    ),
+  );
+
+  void _scrollToCurrent() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _currentKey.currentContext;
+      if (ctx == null || !mounted) return;
+      // 맨 위에 딱 붙이면 바로 앞 답(요약 줄)이 가려진다 — 조금 아래에 멈춘다
+      Scrollable.ensureVisible(ctx, alignment: 0.12, duration: const Duration(milliseconds: 320), curve: Curves.easeOutCubic);
+    });
+  }
+
+  Future<void> _goToStep(int i) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await _fadeCtrl.reverse();
+    setState(() => _q = i);
+    _scheduleDraftSave();
+    _fadeCtrl.forward();
+    _scrollToCurrent();
+  }
+
+  /// 설명이 비어 있으면 앞에서 입력한 것으로 미리 써 둔다(급구식). AI 횟수를 쓰지 않는다 — 고치기만 하면 된다
+  void _autoFillDescription() {
+    if (_description.trim().isNotEmpty) return;
+    final when = _doneValue(3);
+    final pay = _doneValue(4);
+    final text = [
+      if (_category.isNotEmpty) '$_category 업무를 함께할 분을 찾아요.',
+      '',
+      if (when.isNotEmpty) '· 일정: $when',
+      if (pay.isNotEmpty) '· 급여: $pay',
+      if (_location.isNotEmpty) '· 장소: $_location',
+      '',
+      '궁금한 점은 채팅으로 편하게 물어봐 주세요.',
+    ].join('\n').trim();
+    _descCtrl.text = text;
+    _description = text;
+    _descAutoFilled = true;
+  }
+
   Widget _buildBody() {
     return SafeArea(
       child: Column(
@@ -1750,61 +1846,46 @@ class _PostJobFormState extends State<PostJobForm>
               ),
             ),
           ),
-          FadeTransition(
-            opacity: _fadeAnim,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(22, 14, 22, 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          _qTitles[_q],
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: AppFontSize.h2,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
-                            letterSpacing: -0.3,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        // 진행바 분모와 같아야 한다. 6으로 두면 마지막 입력에서
-                        // 바는 75%인데 텍스트만 6/6이라 서로 다른 말을 한다.
-                        '${_q + 1}/${_totalQ + 1}',
-                        style: const TextStyle(
-                          fontSize: AppFontSize.meta,
-                          color: AppColors.textSecondary,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (_qSubs[_q].isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    _qSubs[_q],
-                    style: const TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
-                  ),
-                  ],
-                ],
-              ),
-            ),
-          ),
+          // 급구식 쌓이는 폼 (2026-10, 대표): 답한 단계는 위에 요약 한 줄로 남고, 지금 질문이 아래에 펼쳐진다.
+          // 넘어가면 새 질문까지 내려간다(_scrollToCurrent). 요약 줄을 누르면 그 단계로 돌아가 고친다.
           Expanded(
-            child: FadeTransition(
-              opacity: _fadeAnim,
-              child: SingleChildScrollView(
-                controller: _contentScrollCtrl,
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
-                child: _buildQ(),
+            child: SingleChildScrollView(
+              controller: _contentScrollCtrl,
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  for (var i = 0; i < _q; i++) _doneRow(i),
+                  if (_q > 0) const SizedBox(height: 20),
+                  KeyedSubtree(
+                    key: _currentKey,
+                    child: FadeTransition(
+                      opacity: _fadeAnim,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(child: Text(_qTitles[_q], style: AppTextStyles.h2)),
+                              const SizedBox(width: 12),
+                              // 진행바 분모와 같아야 한다(마지막 '확인하고 올리기' 포함)
+                              Text('${_q + 1}/${_totalQ + 1}', style: AppTextStyles.caption),
+                            ],
+                          ),
+                          if (_qSubs[_q].isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(_qSubs[_q], style: AppTextStyles.body2),
+                          ],
+                          const SizedBox(height: 14),
+                          _buildQ(),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // 지금 질문을 화면 위쪽으로 올릴 수 있게 아래 여유
+                  SizedBox(height: _q == 0 ? 0 : 160),
+                ],
               ),
             ),
           ),
@@ -3710,6 +3791,10 @@ class _PostJobFormState extends State<PostJobForm>
           ),
         ),
 
+        if (_descAutoFilled) ...[
+          const SizedBox(height: 6),
+          const Text('앞에서 입력한 내용으로 미리 써 두었어요 · 자유롭게 고쳐 주세요', style: AppTextStyles.caption),
+        ],
         // ── 장기 공고 전용 필드 ──────────────────────────
         if (!_isShortTerm) ...[
           const SizedBox(height: 20),
