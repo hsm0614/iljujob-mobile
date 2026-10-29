@@ -12,6 +12,7 @@ import '../../chat/chat_room_screen.dart'; // 경로 맞게 수정
 import '../../widgets/albailju_common.dart';
 import '../../../config/app_theme.dart';
 import '../../../config/messages.dart';
+import '../../../utils/pay_display.dart';
 
 // ─── 모델 ────────────────────────────────────────────────────────
 
@@ -196,7 +197,6 @@ class JobApplicantGroup {
 }
 
 // ─── 상수 ────────────────────────────────────────────────────────
-const _greenBg = Color(0xFFE8F7EF);
 const int _jobsPerPage = 5;
 const int _applicantsPreview = 3;
 
@@ -216,10 +216,11 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   String? _error;
   List<JobApplicantGroup> _groups = [];
   int _totalCount = 0;
-  int _unreadCount = 0;
   int _currentPage = 1;
   final Map<int, bool> _expanded = {};
   final Map<int, Set<int>> _selectedByJob = {};
+  /// 여러 명에게 메시지 — 선택 중인 공고(한 번에 하나)
+  int? _selectingJob;
   final Map<int, String> _visiblePhones = {};
   final Set<int> _phoneLoading = {};
 
@@ -264,17 +265,17 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       setState(() {
         _groups = groups;
         _totalCount = summary['total'] ?? 0;
-        _unreadCount = summary['unread'] ?? 0;
         _loading = false;
         _currentPage = 1;
         _selectedByJob.clear();
+        _selectingJob = null;
       });
     } on AuthSessionExpiredException {
       _redirectToOnboarding();
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = '잠시 후 다시 시도해 주세요.'; // 'Exception: 서버 오류 (500)'가 그대로 보이던 것. 제목이 이미 '불러오지 못했어요'
         _loading = false;
       });
     }
@@ -300,8 +301,9 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
 
   Future<void> _goToChat(
     ApplicantModel applicant,
-    JobApplicantGroup group,
-  ) async {
+    JobApplicantGroup group, {
+    bool retried = false,
+  }) async {
     try {
       // 서버가 /api/chat/get-room에 참여자 검증을 건다 — 맨몸 http.get이면 401이다
       final res = await AuthenticatedHttpClient.get(
@@ -337,10 +339,15 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 ),
           ),
         ).then((_) => _fetch());
-      } else if (res.statusCode == 404) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('아직 채팅방이 없어요.')));
+      } else if (res.statusCode == 404 && !retried) {
+        // 지원은 했는데 방이 없는 건(구버전 지원 경로, 90일 598건 중 5건) — 예전엔 '아직 채팅방이 없어요'에서 막혔다
+        final created = await AuthenticatedHttpClient.postJson(
+          Uri.parse('$baseUrl/api/chat/start'),
+          body: {'workerId': applicant.workerId, 'jobId': group.jobId},
+        );
+        if (!mounted) return;
+        if (created.statusCode != 200 && created.statusCode != 201) throw Exception('채팅방 생성 실패');
+        await _goToChat(applicant, group, retried: true);
       } else {
         throw Exception('채팅방 조회 실패');
       }
@@ -366,20 +373,6 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         selected.remove(applicant.workerId);
       } else {
         selected.add(applicant.workerId);
-      }
-    });
-  }
-
-  void _toggleAllApplicants(JobApplicantGroup group) {
-    setState(() {
-      final selected = _selectedSet(group.jobId);
-      final ids = group.activeApplicants.map((a) => a.workerId).toSet();
-      if (selected.length == ids.length) {
-        selected.clear();
-      } else {
-        selected
-          ..clear()
-          ..addAll(ids);
       }
     });
   }
@@ -617,13 +610,25 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       ).timeout(const Duration(seconds: 12));
       if (!mounted) return;
       final body = jsonDecode(res.body) as Map<String, dynamic>;
+      if (res.statusCode == 409) {
+        // 고른 사람 모두 대화가 끝났거나 막힌 방 — 서버 문구를 그대로
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(body['message']?.toString() ?? Msg.messageSendFailed)));
+        return;
+      }
       if (res.statusCode != 200) {
         throw Exception(body['message']?.toString() ?? '발송 실패');
       }
-      setState(() => _selectedSet(group.jobId).clear());
+      setState(() {
+        _selectedSet(group.jobId).clear();
+        _selectingJob = null;
+      });
+      final skipped = (body['skipped'] as num?)?.toInt() ?? 0;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${body['sent'] ?? workerIds.length}명에게 메시지를 보냈어요.'),
+          content: Text(
+            '${body['sent'] ?? workerIds.length}명에게 메시지를 보냈어요.'
+            '${skipped > 0 ? ' 대화가 끝난 $skipped명은 빠졌어요.' : ''}',
+          ),
         ),
       );
       await _fetch();
@@ -642,6 +647,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final selecting = _selectingJob != null;
+    final selectedCount = selecting ? _selectedSet(_selectingJob!).length : 0;
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       appBar: AlbailjuAppBar(
@@ -668,67 +675,47 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   children: [
                     Expanded(
                       child: ListView(
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                         children: [
                           _buildSummaryRow(),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 12),
                           ..._pagedGroups.map(_buildJobCard),
                         ],
                       ),
                     ),
-                    if (_totalPages > 1) _buildPagination(),
-                    const SizedBox(height: 8),
+                    if (_totalPages > 1 && !selecting) _buildPagination(),
                   ],
                 ),
               ),
+      // 여러 명 선택 중일 때만 — 평소엔 행마다 체크박스·'메시지' 칩이 떠 있던 것(늘 비활성이라 버튼처럼 안 보였다)
+      bottomNavigationBar:
+          selecting
+              ? AppBottomBar(
+                child: AppPrimaryButton(
+                  label: selectedCount > 0 ? '$selectedCount명에게 메시지 보내기' : '메시지 보낼 사람을 골라 주세요',
+                  loading: _bulkSending,
+                  onPressed:
+                      selectedCount > 0
+                          ? () => _showBulkMessageSheet(_groups.firstWhere((g) => g.jobId == _selectingJob))
+                          : null,
+                ),
+              )
+              : null,
     );
   }
 
-  // ─── 요약 카드 ───────────────────────────────────────────────────
-
+  // ─── 요약 한 줄 ──────────────────────────────────────────────────
+  // 큰 숫자 상자 3개였던 것 → 한 줄. '미확인'은 실제로는 '채용 확정 전'이라 이름도 바꿨다.
   Widget _buildSummaryRow() {
-    final completedCount = _groups.fold(
-      0,
-      (s, g) => s + g.applicants.where((a) => a.isCompleted).length,
-    );
-    // 숫자는 전부 잉크색. 파랑은 누를 수 있는 것에만 쓰고(CTA Blue Rule),
-    // 초록 계열은 돈·신뢰 신호 전용이다(Two-Signal Rule) — '완료' 같은
-    // 분류에 쓰면 한 화면에서 색끼리 경쟁해 전부 무시된다.
-    return Row(
-      children: [
-        _summaryCard('전체', '$_totalCount명'),
-        const SizedBox(width: 10),
-        _summaryCard('미확인', '$_unreadCount명'),
-        const SizedBox(width: 10),
-        _summaryCard('완료', '$completedCount명'),
-      ],
-    );
-  }
-
-  Widget _summaryCard(String label, String value) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Column(
+    final pending = _groups.fold(0, (s, g) => s + g.pendingCount);
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Text.rich(
+        TextSpan(
+          style: AppTextStyles.body2,
           children: [
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: AppFontSize.h2,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
-            ),
+            TextSpan(text: '지원자 $_totalCount명', style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
+            if (pending > 0) TextSpan(text: ' · 채용 확정 전 $pending명'),
           ],
         ),
       ),
@@ -740,99 +727,37 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   Widget _buildJobCard(JobApplicantGroup group) {
     final isExpanded = _expanded[group.jobId] ?? false;
     final hasMore = group.applicants.length > _applicantsPreview;
-    final showList =
-        isExpanded
-            ? group.applicants
-            : group.applicants.take(_applicantsPreview).toList();
+    final showList = isExpanded ? group.applicants : group.applicants.take(_applicantsPreview).toList();
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 공고 헤더
           _buildJobCardHeader(group),
-
-          // 지원자 없음
           if (group.applicants.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(
-                      Icons.inbox_rounded,
-                      size: 28,
-                      color: AppColors.textDisabled,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '아직 지원자가 없어요',
-                      style: TextStyle(
-                        fontSize: AppFontSize.body2,
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 4, 16, 20),
+              child: Text('아직 지원자가 없어요', style: AppTextStyles.body2),
             )
           else ...[
-            ...showList.asMap().entries.map(
-              (e) => _buildApplicantRow(
-                e.value,
-                group,
-                isLast: e.key == showList.length - 1 && !hasMore,
-              ),
-            ),
-
-            // 더보기 / 접기
+            for (final (i, a) in showList.indexed)
+              _buildApplicantRow(a, group, isLast: i == showList.length - 1 && !hasMore),
             if (hasMore)
               InkWell(
-                onTap:
-                    () => setState(() => _expanded[group.jobId] = !isExpanded),
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(AppRadius.lg),
-                ),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.bgPage,
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(AppRadius.lg),
+                onTap: () => setState(() => _expanded[group.jobId] = !isExpanded),
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(AppRadius.lg)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  child: Center(
+                    child: Text(
+                      isExpanded ? '접기' : '${group.applicants.length - _applicantsPreview}명 더보기',
+                      style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
                     ),
-                    border: Border(
-                      top: BorderSide(color: AppColors.bgPage),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        isExpanded
-                            ? '접기'
-                            : '${group.applicants.length - _applicantsPreview}명 더보기',
-                        style: const TextStyle(
-                          fontSize: AppFontSize.body2,
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(
-                        isExpanded
-                            ? Icons.keyboard_arrow_up_rounded
-                            : Icons.keyboard_arrow_down_rounded,
-                        size: 18,
-                        color: AppColors.primary,
-                      ),
-                    ],
                   ),
                 ),
               ),
@@ -843,243 +768,61 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   }
 
   Widget _buildJobCardHeader(JobApplicantGroup group) {
-    final hasNew = group.newCount > 0;
-    final selectedCount = _selectedSet(group.jobId).length;
-    final allSelected =
-        group.activeApplicants.isNotEmpty &&
-        selectedCount == group.activeApplicants.length;
+    final closed = group.jobStatus != 'active';
+    final selectingThis = _selectingJob == group.jobId;
+    final start = group.startDate != null && group.startDate!.length >= 10
+        ? DateTime.tryParse(group.startDate!.substring(0, 10))
+        : null;
+    final meta = [
+      if (group.locationCity?.isNotEmpty ?? false) group.locationCity!,
+      if (formatWorkDays(start, null, null) case final d?) d,
+      '${group.activeApplicants.length}명 지원',
+    ].join(' · ');
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-      decoration: BoxDecoration(
-        color: hasNew ? AppColors.primaryLight : AppColors.bgMuted,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
-        border: Border(bottom: BorderSide(color: AppColors.bgPage)),
-      ),
-      child: Column(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 8, 8),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              // 공고 활성 상태 도트
-              Container(
-                width: 8,
-                height: 8,
-                margin: const EdgeInsets.only(right: 10),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color:
-                      group.jobStatus == 'active'
-                          ? AppColors.gradeB
-                          : AppColors.textTertiary,
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
                   children: [
-                    Text(
-                      group.jobTitle,
-                      style: const TextStyle(
-                        fontSize: AppFontSize.body1,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                    if (closed) ...[const JobSignalBadge(label: '마감'), const SizedBox(width: 6)],
+                    Flexible(
+                      child: Text(
+                        group.jobTitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.body1.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: closed ? AppColors.textSecondary : AppColors.textPrimary,
+                        ),
                       ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 3),
-                    Row(
-                      children: [
-                        if (group.locationCity != null) ...[
-                          Icon(
-                            Icons.location_on_rounded,
-                            size: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 2),
-                          Flexible(
-                            child: Text(
-                              group.locationCity!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: AppFontSize.meta,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                        ],
-                        if (group.startDate != null) ...[
-                          Icon(
-                            Icons.calendar_today_rounded,
-                            size: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 2),
-                          Text(
-                            group.startDate!.length >= 10
-                                ? group.startDate!.substring(0, 10)
-                                : group.startDate!,
-                            style: const TextStyle(
-                              fontSize: AppFontSize.meta,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ],
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              // 지원자 수 뱃지
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                // 인원수만. '신규 N'은 아래 '처리 필요 N명' 칩과 정의가 사실상
-                // 같아서 둘 다 붙이면 같은 정보를 두 번 말한다(Everyone-Has-It Rule).
-                decoration: BoxDecoration(
-                  color: AppColors.bgMuted,
-                  borderRadius: BorderRadius.circular(AppRadius.full),
-                ),
-                child: Text(
-                  '${group.activeApplicants.length}명',
-                  style: const TextStyle(
-                    fontSize: AppFontSize.meta,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          // 취소만 남은 공고엔 선택·메시지가 의미 없다
-          if (group.activeApplicants.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                // 뱃지 색은 두 갈래뿐이다 — 주황=시간이 급함, 초록계열=돈·신뢰.
-                // 파랑은 누를 수 있는 것 전용이라 정보 칩에는 쓰지 않는다.
-                if (group.pendingCount > 0)
-                  _headerSignalChip(
-                    icon: Icons.priority_high_rounded,
-                    label: '처리 필요 ${group.pendingCount}명',
-                    color: AppColors.badgeUrgent,
-                    background: AppColors.warningLight,
-                  ),
-                if (group.confirmedCount > 0)
-                  _headerSignalChip(
-                    icon: Icons.check_circle_outline_rounded,
-                    label: '출근 확정 ${group.confirmedCount}명',
-                    color: AppColors.badgeSameDay,
-                    background: _greenBg,
-                  ),
+                const SizedBox(height: 4),
+                Text(meta, style: AppTextStyles.body2),
               ],
             ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                _smallActionChip(
-                  label: allSelected ? '선택 해제' : '전체 선택',
-                  selected: allSelected,
-                  color: AppColors.primary,
-                  onTap: () => _toggleAllApplicants(group),
-                ),
-                const SizedBox(width: 8),
-                _smallActionChip(
-                  label: selectedCount > 0 ? '메시지 $selectedCount' : '메시지',
-                  selected: selectedCount > 0,
-                  color: AppColors.badgeSameDay,
-                  onTap:
-                      selectedCount > 0 && !_bulkSending
-                          ? () => _showBulkMessageSheet(group)
-                          : null,
-                ),
-                const Spacer(),
-              ],
+          ),
+          // 2명 이상일 때만 — 한 명이면 그냥 채팅하면 된다
+          if (group.activeApplicants.length >= 2)
+            TextButton(
+              onPressed: () => setState(() {
+                if (selectingThis) {
+                  _selectingJob = null;
+                  _selectedByJob.clear();
+                } else {
+                  _selectedByJob.clear();
+                  _selectingJob = group.jobId;
+                }
+              }),
+              child: Text(selectingThis ? '선택 취소' : '여러 명에게 메시지'),
             ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _smallActionChip({
-    required String label,
-    required bool selected,
-    required Color color,
-    VoidCallback? onTap,
-  }) {
-    final enabled = onTap != null;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color:
-              selected && enabled
-                  ? color
-                  : enabled
-                  ? Colors.white
-                  : AppColors.bgPage,
-          borderRadius: BorderRadius.circular(AppRadius.full),
-          border: Border.all(
-            color:
-                selected && enabled
-                    ? color
-                    : enabled
-                    ? AppColors.textDisabled
-                    : AppColors.bgPage,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: AppFontSize.caption,
-            fontWeight: FontWeight.w700,
-            color:
-                selected && enabled
-                    ? Colors.white
-                    : enabled
-                    ? AppColors.textSecondary
-                    : AppColors.textTertiary,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _headerSignalChip({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required Color background,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(AppRadius.full),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: AppFontSize.caption,
-              fontWeight: FontWeight.w800,
-              color: color,
-            ),
-          ),
         ],
       ),
     );
@@ -1090,10 +833,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   /// 취소한 지원자. 목록에서 지우지 않고 회색으로 남긴다 — 조용히 사라지면
   /// 사장님은 지원자가 왔다 간 사실 자체를 모른다(채팅방만 남아 더 헷갈린다).
   /// 선택·연락처·채팅 액션은 전부 뺀다. 더 이상 진행할 게 없는 상대다.
-  Widget _buildCanceledApplicantRow(
-    ApplicantModel applicant, {
-    required bool isLast,
-  }) {
+  Widget _buildCanceledApplicantRow(ApplicantModel applicant) {
     final when = applicant.canceledAt;
     final subtitle = [
       if (applicant.age > 0) '${applicant.age}세',
@@ -1101,51 +841,30 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       when != null ? '${_timeAgo(when)} 취소' : '지원 취소',
     ].join(' · ');
 
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          child: Row(
-            children: [
-              // 체크박스 자리를 비워 활성 지원자와 세로선을 맞춘다
-              const SizedBox(width: 34),
-              Opacity(opacity: 0.45, child: _buildAvatar(applicant)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      applicant.workerName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: AppFontSize.body1,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      subtitle,
-                      style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
-                    ),
-                  ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+      child: Row(
+        children: [
+          Opacity(opacity: 0.45, child: _buildAvatar(applicant)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  applicant.workerName,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
                 ),
-              ),
-              const SizedBox(width: 8),
-              _statusChip(applicant),
-            ],
+                const SizedBox(height: 2),
+                Text(subtitle, style: AppTextStyles.body2),
+              ],
+            ),
           ),
-        ),
-        if (!isLast)
-          const Divider(
-            height: 1,
-            thickness: 0.5,
-            indent: 46,
-            color: AppColors.bgPage,
-          ),
-      ],
+          const JobSignalBadge(label: '지원 취소'),
+        ],
+      ),
     );
   }
 
@@ -1154,236 +873,119 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     JobApplicantGroup group, {
     required bool isLast,
   }) {
-    if (applicant.isCanceled) {
-      return _buildCanceledApplicantRow(applicant, isLast: isLast);
-    }
+    if (applicant.isCanceled) return _buildCanceledApplicantRow(applicant);
+    final selecting = _selectingJob == group.jobId;
     final selected = _isSelected(group, applicant);
     final visiblePhone = _visiblePhones[applicant.applicationId];
     final phoneLoading = _phoneLoading.contains(applicant.applicationId);
-    final actionColor =
+    final meta = [
+      if (applicant.age > 0) '${applicant.age}세',
+      if (applicant.genderLabel.isNotEmpty) applicant.genderLabel,
+      '${_timeAgo(applicant.appliedAt)} 지원',
+    ].join(' · ');
+    // 상태 배지는 확정·완료만. '처리 필요'는 거의 모든 행에 붙어 정보가 없었다(Everyone-Has-It)
+    final status =
         applicant.isCompleted
-            ? AppColors.badgeSameDay
-            : AppColors.primary; // 확정 상태도 버튼은 CTA 파랑
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              GestureDetector(
-                onTap: () => _toggleApplicant(group, applicant),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 140),
-                  width: 24,
-                  height: 24,
-                  margin: const EdgeInsets.only(right: 10),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: selected ? AppColors.primary : Colors.white,
-                    border: Border.all(
-                      color:
-                          selected
-                              ? AppColors.primary
-                              : applicant.isNew
-                              ? AppColors.primary
-                              : AppColors.textDisabled,
-                      width: 1.5,
-                    ),
-                  ),
-                  child:
-                      selected
-                          ? const Icon(
-                            Icons.check_rounded,
-                            size: 15,
-                            color: Colors.white,
-                          )
-                          : null,
+            ? const JobSignalBadge(label: '근무 완료', signal: JobSignal.trust)
+            : applicant.isConfirmed
+            ? const JobSignalBadge(label: '출근 확정', signal: JobSignal.trust)
+            : null;
+
+    return InkWell(
+      // 선택 중이면 행 전체가 체크, 아니면 프로필(채팅 전 지원자 확인)
+      onTap: selecting ? () => _toggleApplicant(group, applicant) : () => _goToWorkerProfile(applicant),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (selecting) ...[
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Icon(
+                  selected ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                  size: 24,
+                  color: selected ? AppColors.primary : AppColors.textDisabled,
                 ),
               ),
-              GestureDetector(
-                onTap: () => _goToWorkerProfile(applicant),
-                child: _buildAvatar(applicant),
-              ),
-              const SizedBox(width: 12),
-              // 이름·활동등급 영역 탭 = 프로필 상세 (채팅 전 지원자 검증)
-              Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => _goToWorkerProfile(applicant),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(width: 10),
+            ],
+            _buildAvatar(applicant),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              applicant.workerName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: AppFontSize.body1,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 3),
-                          const Icon(
-                            Icons.chevron_right_rounded,
-                            size: 16,
-                            color: AppColors.textTertiary,
-                          ),
-                          const Spacer(),
-                          _statusChip(applicant),
-                        ],
-                      ),
-                      const SizedBox(height: 5),
-                      Text(
-                        [
-                          if (applicant.age > 0) '${applicant.age}세',
-                          if (applicant.genderLabel.isNotEmpty)
-                            applicant.genderLabel,
-                          _timeAgo(applicant.appliedAt),
-                        ].join(' · '),
-                        style: const TextStyle(
-                          fontSize: AppFontSize.meta,
-                          color: AppColors.textSecondary,
+                      Flexible(
+                        child: Text(
+                          applicant.workerName,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                         ),
                       ),
-                      const SizedBox(height: 7),
-                      // 지원 시각은 바로 위 메타줄에 이미 있다. 같은 값을 칩으로
-                      // 한 번 더 붙이면 화면만 시끄러워진다.
+                      const SizedBox(width: 6),
                       _activityGradeBadge(applicant),
-                      if (applicant.workerPhoneMasked.isNotEmpty ||
-                          visiblePhone != null) ...[
-                        const SizedBox(height: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.bgMuted,
-                            borderRadius: BorderRadius.circular(AppRadius.sm),
-                            border: Border.all(color: AppColors.border),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                      if (status != null) ...[const SizedBox(width: 4), status],
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(meta, style: AppTextStyles.body2),
+                  if (!selecting && (applicant.workerPhoneMasked.isNotEmpty || visiblePhone != null))
+                    // 번호는 글자 한 줄 + 오른쪽 글자 링크. 회색 상자에 테두리까지 있던 것을 걷어냈다
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap:
+                          phoneLoading
+                              ? null
+                              : visiblePhone != null
+                              ? () => _copyApplicantPhone(visiblePhone)
+                              : () => _showApplicantPhone(applicant),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text.rich(
+                          TextSpan(
+                            style: AppTextStyles.body2,
                             children: [
-                              const Icon(
-                                Icons.phone_iphone_rounded,
-                                size: 14,
-                                color: AppColors.textSecondary,
+                              TextSpan(text: visiblePhone ?? applicant.workerPhoneMasked),
+                              const TextSpan(text: '  '),
+                              TextSpan(
+                                text: phoneLoading ? '확인 중' : visiblePhone != null ? '복사' : '번호 보기',
+                                style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
                               ),
-                              const SizedBox(width: 5),
-                              // 좁은 화면에서 번호가 '연락처 보기'를 밀어내 28px 넘쳤다.
-                              // 번호만 줄어들게 두고 버튼은 온전히 남긴다.
-                              Flexible(
-                                child: Text(
-                                  visiblePhone ?? applicant.workerPhoneMasked,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: AppFontSize.meta,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ),
-                              if (visiblePhone == null) ...[
-                                const SizedBox(width: 8),
-                                GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onTap:
-                                      phoneLoading
-                                          ? null
-                                          : () =>
-                                              _showApplicantPhone(applicant),
-                                  child: Text(
-                                    phoneLoading ? '확인 중' : '연락처 보기',
-                                    style: TextStyle(
-                                      fontSize: AppFontSize.meta,
-                                      fontWeight: FontWeight.w800,
-                                      color:
-                                          phoneLoading
-                                              ? AppColors.textTertiary
-                                              : AppColors.primary,
-                                    ),
-                                  ),
-                                ),
-                              ] else ...[
-                                const SizedBox(width: 8),
-                                GestureDetector(
-                                  behavior: HitTestBehavior.opaque,
-                                  onTap:
-                                      () => _copyApplicantPhone(visiblePhone),
-                                  child: const Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.copy_rounded,
-                                        size: 13,
-                                        color: AppColors.primary,
-                                      ),
-                                      SizedBox(width: 3),
-                                      Text(
-                                        '복사',
-                                        style: TextStyle(
-                                          fontSize: AppFontSize.meta,
-                                          fontWeight: FontWeight.w800,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
                             ],
                           ),
                         ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: () => _goToChat(applicant, group),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: actionColor,
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
-                  child: Text(
-                    applicant.actionLabel,
-                    maxLines: 1,
-                    style: TextStyle(
-                      fontSize: AppFontSize.meta,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      ),
                     ),
-                  ),
-                ),
+                ],
+              ),
+            ),
+            if (!selecting) ...[
+              const SizedBox(width: 8),
+              // 채용 전 = 할 일이라 파랑, 확정 뒤엔 보조(회색). 라벨은 하는 일 하나 — '완료 확인'·'확정 확인'도 결국 채팅방이었다
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child:
+                    applicant.isConfirmed || applicant.isCompleted
+                        ? OutlinedButton(style: _rowBtn, onPressed: () => _goToChat(applicant, group), child: const Text('채팅'))
+                        : ElevatedButton(style: _rowBtn, onPressed: () => _goToChat(applicant, group), child: const Text('채팅')),
               ),
             ],
-          ),
+          ],
         ),
-        if (!isLast)
-          Divider(
-            height: 1,
-            thickness: 0.5,
-            indent: 46,
-            color: AppColors.bgPage,
-          ),
-      ],
+      ),
     );
   }
+
+  // 행 안 작은 버튼 — 색·모양은 테마, 크기만 줄인다
+  static final ButtonStyle _rowBtn = ButtonStyle(
+    minimumSize: const WidgetStatePropertyAll(Size(64, 38)),
+    padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 14)),
+    textStyle: WidgetStatePropertyAll(AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600)),
+  );
 
   // ─── 페이지네이션 ────────────────────────────────────────────────
 
@@ -1528,46 +1130,6 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _statusChip(ApplicantModel applicant) {
-    if (applicant.isCanceled) {
-      return _chip(applicant.statusLabel, AppColors.bgMuted, AppColors.textSecondary);
-    }
-    if (applicant.isCompleted) {
-      return _chip(
-        applicant.statusLabel,
-        _greenBg,
-        AppColors.badgeSameDay,
-      );
-    }
-    if (applicant.isConfirmed) {
-      return _chip(
-        applicant.statusLabel,
-        AppColors.bgMuted,
-        AppColors.textPrimary,
-      );
-    }
-    if (applicant.isNew) return _chip(applicant.statusLabel, AppColors.primaryLight, AppColors.primary);
-    return _chip('확인', AppColors.bgMuted, AppColors.textSecondary);
-  }
-
-  Widget _chip(String label, Color bg, Color fg) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(AppRadius.full),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: AppFontSize.caption,
-          color: fg,
-          fontWeight: FontWeight.w800,
-        ),
       ),
     );
   }
