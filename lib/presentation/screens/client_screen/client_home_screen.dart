@@ -164,7 +164,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           (dCtx) => Dialog(
             insetPadding: const EdgeInsets.symmetric(horizontal: 18),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(18, 16, 18, 14),
@@ -791,7 +791,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               heightFactor: 0.90,
               child: ClipRRect(
                 borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(16),
+                  top: Radius.circular(AppRadius.lg),
                 ),
                 child: Material(
                   color: AppColors.bgCard,
@@ -819,7 +819,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       useSafeArea: true,
       backgroundColor: Colors.transparent,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       builder: (ctx) {
         final mq = MediaQuery.of(ctx);
@@ -829,7 +829,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         return FractionallySizedBox(
           heightFactor: 0.62,
           child: ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
             child: Material(
               color: AppColors.bgCard,
               child: SafeArea(
@@ -950,7 +950,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       NumberFormat.decimalPattern().format(value),
                       style: const TextStyle(
                         fontSize: AppFontSize.titleLg,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w800,
                         height: 1.1,
                       ),
                     ),
@@ -1068,7 +1068,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 children: [
                   Text(
                     '안심기업 인증',
-                    style: TextStyle(fontSize: AppFontSize.body2, fontWeight: FontWeight.w900),
+                    style: TextStyle(fontSize: AppFontSize.body2, fontWeight: FontWeight.w800),
                   ),
                   SizedBox(height: 2),
                   Text(
@@ -1164,7 +1164,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 label,
                 style: TextStyle(
                   fontSize: AppFontSize.body2,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w800,
                   color: selected ? AppColors.primary : AppColors.textSecondary,
                 ),
               ),
@@ -1301,7 +1301,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: AppFontSize.h2,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
               ),
             ),
@@ -1451,7 +1451,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 2),
       child: InkWell(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         onTap: isCurrent ? null : () => _goToPage(page),
         child: Container(
           width: 38,
@@ -1468,7 +1468,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             '$page',
             style: TextStyle(
               fontSize: AppFontSize.meta,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w800,
               color: isCurrent ? Colors.white : AppColors.textSecondary,
             ),
           ),
@@ -1691,7 +1691,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       title: const Text(
                         '삭제',
                         style: TextStyle(
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w800,
                           color: AppColors.error,
                         ),
                       ),
@@ -1791,7 +1791,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder:
           (_) => Padding(
@@ -1842,7 +1842,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           side: const BorderSide(color: AppColors.border),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                         ),
                         child: const Text(
@@ -1859,7 +1859,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                           backgroundColor: AppColors.primary,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                           elevation: 0,
                         ),
@@ -1891,7 +1891,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         context: context,
         backgroundColor: Colors.white,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
         ),
         builder:
             (_) => Padding(
@@ -1948,7 +1948,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         backgroundColor: AppColors.primary,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         elevation: 0,
                       ),
@@ -2029,7 +2029,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: AppFontSize.body1,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w800,
                         color:
                             isClosed
                                 ? AppColors.textDisabled
@@ -2117,7 +2117,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     padding: const EdgeInsets.symmetric(vertical: 9),
                     decoration: BoxDecoration(
                       color: AppColors.urgentCall.withValues(alpha: 0.07),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                       border: Border.all(
                         color: AppColors.urgentCall.withValues(alpha: 0.25),
                       ),
@@ -2156,7 +2156,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.warningLight,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                       border: Border.all(
                         color: AppColors.pending.withValues(alpha: 0.35),
                       ),
@@ -2359,7 +2359,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.warningLight,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                         border: Border.all(color: AppColors.warningBorder),
                       ),
                       child: Row(
@@ -2552,13 +2552,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         foregroundColor: c,
         side: const BorderSide(color: AppColors.border),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       ),
       onPressed: onTap,
       icon: Icon(icon, size: 18, color: c),
       label: Text(
         label,
-        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: AppFontSize.meta),
+        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: AppFontSize.meta),
       ),
     );
   }
@@ -2805,15 +2805,15 @@ class _PrimaryJobActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: action.color.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: InkWell(
         onTap: action.onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
           width: double.infinity,
           padding: const EdgeInsets.fromLTRB(12, 11, 12, 11),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(color: action.color.withValues(alpha: 0.22)),
           ),
           child: Row(
@@ -2823,7 +2823,7 @@ class _PrimaryJobActionButton extends StatelessWidget {
                 height: 34,
                 decoration: BoxDecoration(
                   color: action.color,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Icon(action.icon, color: Colors.white, size: 18),
               ),
@@ -2838,7 +2838,7 @@ class _PrimaryJobActionButton extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: AppFontSize.button,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w800,
                         color: action.color,
                       ),
                     ),

@@ -202,7 +202,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
 
         return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           insetPadding: const EdgeInsets.symmetric(
             horizontal: 20,
@@ -216,7 +216,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
                 // 이미지
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
+                    top: Radius.circular(AppRadius.lg),
                   ),
                   child: Container(
                     color: Colors.black,
@@ -251,7 +251,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     '지금 참여하면 보너스 혜택을 드려요.',
-                    style: TextStyle(fontSize: AppFontSize.button, color: Colors.black54),
+                    style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -276,7 +276,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                           ),
                           child: Text(checkboxLabel),
@@ -290,7 +290,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                           ),
                           child: Text(dismissLabel),

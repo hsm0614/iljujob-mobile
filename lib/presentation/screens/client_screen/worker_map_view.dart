@@ -847,7 +847,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (sheetContext) {
         final bottomInset = MediaQuery.of(sheetContext).viewInsets.bottom;
@@ -862,7 +862,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                   title,
                   style: const TextStyle(
                     fontSize: AppFontSize.titleLg,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                     color: _textMain,
                   ),
                 ),
@@ -890,15 +890,15 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                     fillColor: AppColors.bgMuted,
                     contentPadding: const EdgeInsets.all(14),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       borderSide: const BorderSide(color: _border),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       borderSide: const BorderSide(color: _border),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       borderSide: const BorderSide(color: _primary, width: 1.5),
                     ),
                   ),
@@ -914,7 +914,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                           side: const BorderSide(color: _border),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                         ),
                         child: const Text('취소'),
@@ -933,12 +933,12 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                         ),
                         child: Text(
                           actionLabel,
-                          style: const TextStyle(fontWeight: FontWeight.w900),
+                          style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
                       ),
                     ),
@@ -967,7 +967,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       builder:
           (_) => SafeArea(
@@ -1003,7 +1003,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                               _maskName(worker.name),
                               style: const TextStyle(
                                 fontSize: AppFontSize.title,
-                                fontWeight: FontWeight.w900,
+                                fontWeight: FontWeight.w800,
                                 color: _textMain,
                               ),
                             ),
@@ -1030,7 +1030,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                             worker.grade,
                             style: TextStyle(
                               fontSize: AppFontSize.body1,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w800,
                               color: gradeColor,
                             ),
                           ),
@@ -1045,7 +1045,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: AppColors.bgMuted,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                         border: Border.all(color: _border),
                       ),
                       child: const Text(
@@ -1191,7 +1191,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: const Color(0xFF1C1C1E).withValues(alpha: 0.72),
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppRadius.xl),
               ),
               child: const Text(
                 '무료 공고는 12시간 후, 즉시게시는 결제 즉시 노출됩니다',
@@ -1251,7 +1251,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius: BorderRadius.circular(AppRadius.xl),
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(alpha: 0.08),
@@ -1294,7 +1294,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                             padding: const EdgeInsets.symmetric(horizontal: 14),
                             decoration: BoxDecoration(
                               color: sel ? job.pinColor : Colors.white,
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(AppRadius.xl),
                               border: Border.all(
                                 color: sel ? Colors.transparent : _border,
                               ),
@@ -1349,7 +1349,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                                                 alpha: 0.25,
                                               )
                                               : _primary.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(999),
+                                      borderRadius: BorderRadius.circular(AppRadius.full),
                                     ),
                                     child: Text(
                                       '${job.applicantCount}',
@@ -1400,7 +1400,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppRadius.xl),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.08),
@@ -1463,7 +1463,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
     decoration: BoxDecoration(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
+      borderRadius: BorderRadius.circular(AppRadius.xl),
       boxShadow: [
         BoxShadow(color: Colors.black.withValues(alpha: 0.07), blurRadius: 8),
       ],
@@ -1625,7 +1625,7 @@ class _ExpandableJobCardState extends State<_ExpandableJobCard> {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.10),
@@ -1670,7 +1670,7 @@ class _ExpandableJobCardState extends State<_ExpandableJobCard> {
                     ),
                     decoration: BoxDecoration(
                       color: job.pinColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(6),
+                      borderRadius: BorderRadius.circular(AppRadius.xs),
                     ),
                     child: Text(
                       job.statusLabel,
@@ -1901,7 +1901,7 @@ class _ExpandedDetail extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
                 color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(color: _primary.withValues(alpha: 0.25)),
               ),
               child: Row(
@@ -1912,7 +1912,7 @@ class _ExpandedDetail extends StatelessWidget {
                     '시급 ${_comma(job.hourlyWage)}원',
                     style: const TextStyle(
                       fontSize: AppFontSize.buttonLg,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w800,
                       color: _primary,
                     ),
                   ),
@@ -1929,7 +1929,7 @@ class _ExpandedDetail extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               decoration: BoxDecoration(
                 color: AppColors.bgMuted,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(color: _border),
               ),
               child: Column(
@@ -1990,7 +1990,7 @@ class _ExpandedDetail extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(color: _border),
               ),
               child: Text(
@@ -2131,7 +2131,7 @@ class _Btn extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 11),
         decoration: BoxDecoration(
           color: bg,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: filled ? null : Border.all(color: dis ? _border : color),
         ),
         child: Row(
@@ -2173,7 +2173,7 @@ class _JobMapCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
           decoration: BoxDecoration(
             color: bg,
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(color: border, width: isSelected ? 1.5 : 1),
             boxShadow: [
               BoxShadow(
@@ -2202,7 +2202,7 @@ class _JobMapCard extends StatelessWidget {
                 job.hourlyWage > 0 ? '₩${_comma(job.hourlyWage)}' : job.title,
                 style: TextStyle(
                   fontSize: AppFontSize.body2,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w800,
                   color: fg,
                 ),
               ),
@@ -2303,7 +2303,7 @@ class _WorkerDot extends StatelessWidget {
           style: const TextStyle(
             color: Colors.white,
             fontSize: AppFontSize.caption,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w800,
             height: 1,
           ),
         ),

@@ -285,15 +285,15 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
       prefixIcon: icon != null ? Icon(icon) : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: const BorderSide(color: AppColors.border),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: const BorderSide(color: AppColors.border),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         borderSide: const BorderSide(color: kBrand, width: 1.5),
       ),
     );
@@ -304,7 +304,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
       backgroundColor: enabled ? kBrand : const Color(0xFF93C5FD),
       foregroundColor: Colors.white,
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       minimumSize: const Size.fromHeight(52),
     );
   }
@@ -313,7 +313,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.border),
       ),
       padding: const EdgeInsets.all(16),
@@ -559,7 +559,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 border: Border.all(color: AppColors.border),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -578,7 +578,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                             _allAgreed
                                 ? AppColors.primaryLight
                                 : AppColors.bgPage,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       child: Row(
                         children: [

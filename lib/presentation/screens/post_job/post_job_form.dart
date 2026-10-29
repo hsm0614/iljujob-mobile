@@ -700,7 +700,7 @@ class _PostJobFormState extends State<PostJobForm>
         (ctx) => Container(
           decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
           ),
           padding: EdgeInsets.fromLTRB(
             24,
@@ -716,7 +716,7 @@ class _PostJobFormState extends State<PostJobForm>
                 height: 4,
                 decoration: BoxDecoration(
                   color: AppColors.border,
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
                 ),
               ),
               const SizedBox(height: 20),
@@ -755,7 +755,7 @@ class _PostJobFormState extends State<PostJobForm>
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                   ),
                   child: const Text(
@@ -909,7 +909,7 @@ class _PostJobFormState extends State<PostJobForm>
         enableDrag: false,
         useSafeArea: true,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
         ),
         backgroundColor: Colors.white,
         builder:
@@ -933,7 +933,7 @@ class _PostJobFormState extends State<PostJobForm>
                               : isDelayed
                               ? AppColors.warningLight
                               : AppColors.primaryLight,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
                     ),
                     child: Icon(
                       isUrgent
@@ -955,7 +955,7 @@ class _PostJobFormState extends State<PostJobForm>
                     isUrgent ? '긴급 공고 등록 완료!' : '공고 등록 완료!',
                     style: const TextStyle(
                       fontSize: AppFontSize.h2,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w800,
                       color: _text,
                     ),
                   ),
@@ -1015,7 +1015,7 @@ class _PostJobFormState extends State<PostJobForm>
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 15),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         elevation: 0,
                       ),
@@ -1084,7 +1084,7 @@ class _PostJobFormState extends State<PostJobForm>
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
       ),
       builder:
           (ctx) => Padding(
@@ -1201,7 +1201,7 @@ class _PostJobFormState extends State<PostJobForm>
       useSafeArea: true,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
       ),
       backgroundColor: Colors.white,
       builder:
@@ -1454,7 +1454,7 @@ class _PostJobFormState extends State<PostJobForm>
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       isDismissible: false,
       enableDrag: false,
@@ -1471,8 +1471,8 @@ class _PostJobFormState extends State<PostJobForm>
                       width: 40,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: Colors.black12,
-                        borderRadius: BorderRadius.circular(99),
+                        color: AppColors.border,
+                        borderRadius: BorderRadius.circular(AppRadius.full),
                       ),
                     ),
                   ),
@@ -1502,7 +1502,7 @@ class _PostJobFormState extends State<PostJobForm>
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                           ),
                           child: const Text('새로 시작'),
@@ -1517,7 +1517,7 @@ class _PostJobFormState extends State<PostJobForm>
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                           ),
                           child: const Text(
@@ -1575,7 +1575,7 @@ class _PostJobFormState extends State<PostJobForm>
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: const Column(
               mainAxisSize: MainAxisSize.min,
@@ -1631,7 +1631,7 @@ class _PostJobFormState extends State<PostJobForm>
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(99),
+              borderRadius: BorderRadius.circular(AppRadius.full),
               // 입력 6단계 뒤에도 미리보기·등록방식 2화면이 더 있다.
               // 분모를 6으로 두면 마지막 입력에서 100%가 되어, 결제 결정이
               // 남은 지점에서 "다 끝났다"는 신호를 준다(목표 경사 붕괴).
@@ -1745,7 +1745,7 @@ class _PostJobFormState extends State<PostJobForm>
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: _bg,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(color: _border),
             ),
             child: const Row(
@@ -1799,14 +1799,14 @@ class _PostJobFormState extends State<PostJobForm>
             vertical: 18,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: const BorderSide(color: _border),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             borderSide: const BorderSide(color: _blue, width: 1.5),
           ),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
         ),
       ),
       const SizedBox(height: 24),
@@ -1886,7 +1886,7 @@ class _PostJobFormState extends State<PostJobForm>
                                 : isOpen
                                 ? AppColors.primaryLight
                                 : AppColors.bgPage,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
                         border: Border.all(
                           color:
                               isSel
@@ -1910,7 +1910,7 @@ class _PostJobFormState extends State<PostJobForm>
                                       : isOpen
                                       ? _blue.withOpacity(0.08)
                                       : Colors.white,
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
                             ),
                             child: Center(
                               child: Icon(
@@ -1949,7 +1949,7 @@ class _PostJobFormState extends State<PostJobForm>
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(99),
+                                borderRadius: BorderRadius.circular(AppRadius.full),
                               ),
                               child: Text(
                                 _category,
@@ -1987,7 +1987,7 @@ class _PostJobFormState extends State<PostJobForm>
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
                           color: AppColors.primaryLight,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(AppRadius.lg),
                           border: Border.all(
                             color: _blue.withOpacity(0.12),
                             width: 1,
@@ -2194,7 +2194,7 @@ class _PostJobFormState extends State<PostJobForm>
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(48),
         side: const BorderSide(color: _blue),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       ),
     ),
   );
@@ -2219,7 +2219,7 @@ class _PostJobFormState extends State<PostJobForm>
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: sel ? _blue : _bg,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(color: sel ? _blue : _border),
               ),
               child: Text(
@@ -2358,7 +2358,7 @@ class _PostJobFormState extends State<PostJobForm>
               padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 border: Border.all(color: _border),
               ),
               child: Row(
@@ -2407,7 +2407,7 @@ class _PostJobFormState extends State<PostJobForm>
               backgroundColor: Colors.white,
               side: const BorderSide(color: _border),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
               ),
               minimumSize: const Size.fromHeight(44),
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -2463,7 +2463,7 @@ class _PostJobFormState extends State<PostJobForm>
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: _location.isNotEmpty ? AppColors.primaryLight : _bg,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(color: _location.isNotEmpty ? _blue : _border),
             ),
             child: Row(
@@ -2594,7 +2594,7 @@ class _PostJobFormState extends State<PostJobForm>
                 ),
                 decoration: BoxDecoration(
                   color: _startDate != null ? AppColors.primaryLight : _bg,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(
                     color: _startDate != null ? _blue : _border,
                   ),
@@ -2688,7 +2688,7 @@ class _PostJobFormState extends State<PostJobForm>
                           decoration: BoxDecoration(
                             color: sel ? _blue : _bg,
                             border: Border.all(color: sel ? _blue : _border),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                           child: Center(
                             child: Text(
@@ -2720,15 +2720,15 @@ class _PostJobFormState extends State<PostJobForm>
                   vertical: 14,
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   borderSide: const BorderSide(color: _border),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   borderSide: const BorderSide(color: _blue, width: 1.5),
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
             ),
@@ -2802,7 +2802,7 @@ class _PostJobFormState extends State<PostJobForm>
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
             decoration: BoxDecoration(
               color: _blue.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: Text(
               '근무시간 ${fmtTime(_startTime)} ~ '
@@ -2858,7 +2858,7 @@ class _PostJobFormState extends State<PostJobForm>
       enableDrag: false,
       useSafeArea: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder:
           (ctx) => StatefulBuilder(
@@ -2912,7 +2912,7 @@ class _PostJobFormState extends State<PostJobForm>
                             padding: const EdgeInsets.all(12),
                             decoration: BoxDecoration(
                               color: AppColors.primaryLight,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                             child: Text(
                               '${fmt12(s)} ~ ${toMin(e) <= toMin(s) ? "익일 " : ""}${fmt12(e)}  '
@@ -3081,7 +3081,7 @@ class _PostJobFormState extends State<PostJobForm>
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                           ),
                           child: const Text(
@@ -3142,7 +3142,7 @@ class _PostJobFormState extends State<PostJobForm>
                       ),
                       decoration: BoxDecoration(
                         color: sel ? _blue : _bg,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                         border: Border.all(color: sel ? _blue : _border),
                       ),
                       child: Text(
@@ -3167,7 +3167,7 @@ class _PostJobFormState extends State<PostJobForm>
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(color: AppColors.primary.withOpacity(0.18)),
             ),
             child: const Text(
@@ -3202,7 +3202,7 @@ class _PostJobFormState extends State<PostJobForm>
               filled: true,
               fillColor: _bg,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -3221,7 +3221,7 @@ class _PostJobFormState extends State<PostJobForm>
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: const Color(0xFFFEF2F2),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               border: Border.all(color: const Color(0xFFFECACA)),
             ),
             child: Row(
@@ -3285,7 +3285,7 @@ class _PostJobFormState extends State<PostJobForm>
                           decoration: const BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(24),
+                              top: Radius.circular(AppRadius.xxl),
                             ),
                           ),
                           padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
@@ -3344,7 +3344,7 @@ class _PostJobFormState extends State<PostJobForm>
                                       vertical: 14,
                                     ),
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(AppRadius.md),
                                     ),
                                   ),
                                   child: const Text(
@@ -3387,7 +3387,7 @@ class _PostJobFormState extends State<PostJobForm>
                       _subscriptionPlan != null
                           ? AppColors.primaryLight
                           : AppColors.bgMuted,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   border: Border.all(
                     color:
                         _subscriptionPlan != null
@@ -3455,7 +3455,7 @@ class _PostJobFormState extends State<PostJobForm>
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: _isSameDayPay ? AppColors.primaryLight : _bg,
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(color: _isSameDayPay ? _blue : _border),
                 ),
                 child: Row(
@@ -3541,7 +3541,7 @@ class _PostJobFormState extends State<PostJobForm>
               margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
                 color: AppColors.primary,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child:
                   _isAIGenerating
@@ -3597,7 +3597,7 @@ class _PostJobFormState extends State<PostJobForm>
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white,
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
                             ),
                             child: Text(
                               _description.isNotEmpty ? '다시 생성' : '생성하기',
@@ -3616,7 +3616,7 @@ class _PostJobFormState extends State<PostJobForm>
                             ),
                             decoration: BoxDecoration(
                               color: Colors.white.withValues(alpha: 0.25),
-                              borderRadius: BorderRadius.circular(6),
+                              borderRadius: BorderRadius.circular(AppRadius.xs),
                             ),
                             child: Text(
                               _aiQuotaRemaining == -1
@@ -3639,7 +3639,7 @@ class _PostJobFormState extends State<PostJobForm>
         Container(
           decoration: BoxDecoration(
             color: _bg,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(color: _border),
           ),
           child: TextField(
@@ -3703,7 +3703,7 @@ class _PostJobFormState extends State<PostJobForm>
                     width: 46,
                     height: 26,
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(999),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
                       color: _isAlwaysOpen ? _blue : _border,
                     ),
                     child: AnimatedAlign(
@@ -3742,7 +3742,7 @@ class _PostJobFormState extends State<PostJobForm>
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(color: _border),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
@@ -3775,7 +3775,7 @@ class _PostJobFormState extends State<PostJobForm>
           Container(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
               border: Border.all(color: _border),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
@@ -3812,7 +3812,7 @@ class _PostJobFormState extends State<PostJobForm>
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: _bg,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
                 border: Border.all(color: _border),
               ),
               child: const Text(
@@ -3841,7 +3841,7 @@ class _PostJobFormState extends State<PostJobForm>
                   margin: const EdgeInsets.only(right: 8),
                   decoration: BoxDecoration(
                     color: _bg,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(color: _border),
                   ),
                   child: const Column(
@@ -3926,7 +3926,7 @@ class _PostJobFormState extends State<PostJobForm>
           (_) => Container(
             decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
             ),
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
             child: Column(
@@ -3985,7 +3985,7 @@ class _PostJobFormState extends State<PostJobForm>
                       backgroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
                     child: const Text(
@@ -4104,7 +4104,7 @@ class _NextBtn extends StatelessWidget {
         disabledBackgroundColor: _border,
         disabledForegroundColor: _label,
         padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
         elevation: 0,
       ),
       child: Text(
@@ -4138,7 +4138,7 @@ class _TimeInputCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           decoration: BoxDecoration(
             color: hasValue ? AppColors.primaryLight : _bg,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(color: hasValue ? _blue : _border),
           ),
           child: Row(
@@ -4169,7 +4169,7 @@ class _TimeInputCard extends StatelessWidget {
                       style: TextStyle(
                         fontSize: AppFontSize.body1,
                         color: hasValue ? _text : _label,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ],
@@ -4201,7 +4201,7 @@ class _ToggleBtn extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
           decoration: BoxDecoration(
             color: selected ? AppColors.primaryLight : _bg,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
               color: selected ? _blue : _border,
               width: selected ? 1.5 : 1,
@@ -4239,7 +4239,7 @@ class _SmallToggle extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
             color: selected ? _blue : _bg,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(color: selected ? _blue : _border),
           ),
           child: Center(
@@ -4269,7 +4269,7 @@ class _ImgThumb extends StatelessWidget {
         width: 80,
         height: 80,
         margin: const EdgeInsets.only(right: 8),
-        child: ClipRRect(borderRadius: BorderRadius.circular(10), child: img),
+        child: ClipRRect(borderRadius: BorderRadius.circular(AppRadius.sm), child: img),
       ),
       // 탭 영역 44×44 확보. Stack이 clipBehavior:none이라 바깥으로 빼면 히트테스트가
       // 안 먹으므로, 히트박스는 썸네일 안쪽(right:8 = 이미지 우측 끝)에 둔다.
@@ -4289,7 +4289,7 @@ class _ImgThumb extends StatelessWidget {
                 alignment: Alignment.topRight,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: Colors.black54,
+                    color: AppColors.textSecondary,
                     shape: BoxShape.circle,
                   ),
                   child: Padding(
@@ -4326,14 +4326,14 @@ class _ExternalApplyOption extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: enabled ? AppColors.primaryLight : _bg,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: enabled ? _blue : _border),
       ),
       child: Column(
         children: [
           InkWell(
             onTap: () => onChanged(!enabled),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             child: Row(
               children: [
                 Icon(
@@ -4398,15 +4398,15 @@ class _ExternalApplyOption extends StatelessWidget {
                   vertical: 13,
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   borderSide: const BorderSide(color: _border),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   borderSide: const BorderSide(color: _border),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                   borderSide: const BorderSide(color: _blue, width: 1.4),
                 ),
               ),
@@ -4429,7 +4429,7 @@ class _LaborNoticeState extends State<_LaborNotice> {
   Widget build(BuildContext context) => Container(
     decoration: BoxDecoration(
       color: _bg,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       border: Border.all(color: _border),
     ),
     child: Column(
@@ -4702,7 +4702,7 @@ class _PublishSheetState extends State<_PublishSheet> {
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder:
           (ctx) => Padding(
@@ -4783,7 +4783,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           side: const BorderSide(color: AppColors.border),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                         ),
                         child: Text(
@@ -4808,7 +4808,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                         ),
                         child: const Text(
@@ -4870,8 +4870,8 @@ class _PublishSheetState extends State<_PublishSheet> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.black12,
-                borderRadius: BorderRadius.circular(99),
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(AppRadius.full),
               ),
             ),
             const SizedBox(height: 20),
@@ -4884,7 +4884,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -4921,7 +4921,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                         widget.nationwideOn
                             ? AppColors.primaryLight
                             : AppColors.bgMuted,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(
                       color:
                           widget.nationwideOn
@@ -5003,14 +5003,8 @@ class _PublishSheetState extends State<_PublishSheet> {
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.urgentCall,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.urgentCall.withValues(alpha: 0.30),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
+                      // 색 그림자(글로우) 제거 — DESIGN.md Paper-Thin
                     ),
                     child: Row(
                       children: [
@@ -5018,7 +5012,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                           padding: const EdgeInsets.all(9),
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(alpha: 0.20),
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
                           ),
                           child: const Icon(
                             Icons.bolt_rounded,
@@ -5051,7 +5045,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                                       color: Colors.white.withValues(
                                         alpha: 0.25,
                                       ),
-                                      borderRadius: BorderRadius.circular(99),
+                                      borderRadius: BorderRadius.circular(AppRadius.full),
                                     ),
                                     child: Text(
                                       _passCountFailed
@@ -5214,7 +5208,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                     ? '구독 혜택으로 즉시 노출됩니다.\n이용권 차감 없이 진행됩니다.'
                     : '이 공고를 등록하면 보유 이용권이\n1회 차감됩니다. 진행하시겠어요?',
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: AppFontSize.button, color: Colors.black87),
+                style: const TextStyle(fontSize: AppFontSize.button, color: AppColors.textPrimary),
               ),
               if (widget.externalApplyEnabled) ...[
                 const SizedBox(height: 12),
@@ -5226,7 +5220,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.primaryLight,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(color: AppColors.primaryMid),
                   ),
                   child: const Row(
@@ -5256,7 +5250,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                       ),
                       child: const Text('아니요'),
@@ -5271,7 +5265,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                       ),
                       child: const Text('예, 진행할게요'),
@@ -5293,7 +5287,7 @@ class _PublishSheetState extends State<_PublishSheet> {
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
         decoration: BoxDecoration(
           color: sel ? AppColors.primaryLight : _bg,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: sel ? _blue : _border,
             width: sel ? 1.5 : 1,
@@ -5351,7 +5345,7 @@ class _PublishSheetState extends State<_PublishSheet> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         decoration: BoxDecoration(
           color: _scheduledDate != null ? AppColors.primaryLight : _bg,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: _scheduledDate != null ? _blue : _border),
         ),
         child: Row(
@@ -5400,7 +5394,7 @@ class _PublishSheetState extends State<_PublishSheet> {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         decoration: BoxDecoration(
           color: _scheduledTime != null ? AppColors.primaryLight : _bg,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: _scheduledTime != null ? _blue : _border),
         ),
         child: Row(
@@ -5471,7 +5465,7 @@ class _CompareCard extends StatelessWidget {
         Container(
           decoration: BoxDecoration(
             color: _bg,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(color: _border),
           ),
           child: Column(
@@ -5505,7 +5499,7 @@ class _CompareCard extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: _blue,
-                            borderRadius: BorderRadius.circular(99),
+                            borderRadius: BorderRadius.circular(AppRadius.full),
                           ),
                           child: const Text(
                             '즉시게시',
@@ -5528,7 +5522,7 @@ class _CompareCard extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.urgentCall,
-                            borderRadius: BorderRadius.circular(99),
+                            borderRadius: BorderRadius.circular(AppRadius.full),
                           ),
                           child: const Text(
                             '긴급호출',
@@ -5570,7 +5564,7 @@ class _CompareCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       border: Border.all(color: _border),
                     ),
                     child: Column(
@@ -5626,7 +5620,7 @@ class _CompareCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     decoration: BoxDecoration(
                       color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: Column(
                       children: [

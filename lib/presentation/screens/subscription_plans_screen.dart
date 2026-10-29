@@ -282,7 +282,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
         return Container(
           decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
           ),
           padding: EdgeInsets.fromLTRB(20, 28, 20, 24 + bottom),
           child: Column(
@@ -335,7 +335,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                   ),
                   child: const Text(
@@ -383,7 +383,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                       '알바일주 구독으로\n더 빠르게 채용하세요',
                       style: TextStyle(
                         fontSize: AppFontSize.h2,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w800,
                         height: 1.3,
                         color: AppColors.textPrimary,
                       ),
@@ -527,7 +527,7 @@ class _PlanCard extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       color: color,
-                      borderRadius: BorderRadius.circular(99),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
                     ),
                     child: const Text(
                       '추천',
@@ -549,7 +549,7 @@ class _PlanCard extends StatelessWidget {
                             NumberFormat('#,###').format(plan.price),
                         style: TextStyle(
                           fontSize: AppFontSize.titleLg,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w800,
                           color: selected ? color : AppColors.textPrimary,
                         ),
                       ),
@@ -630,7 +630,7 @@ class _Chip extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(
       color: color.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(99),
+      borderRadius: BorderRadius.circular(AppRadius.full),
     ),
     child: Row(
       mainAxisSize: MainAxisSize.min,
@@ -861,7 +861,7 @@ class _BottomCta extends StatelessWidget {
             disabledBackgroundColor: AppColors.bgMuted,
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             padding: const EdgeInsets.symmetric(vertical: 14),
           ),

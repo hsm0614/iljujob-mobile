@@ -144,7 +144,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
         color: bgColor ?? AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppRadius.full),
         border: Border.all(color: AppColors.primaryMid),
       ),
       child: Row(
@@ -180,7 +180,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
               height: 64,
               decoration: BoxDecoration(
                 color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 border: Border.all(color: AppColors.primaryMid),
               ),
               child: const Icon(
@@ -210,7 +210,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                 foregroundColor: brandBlueDark,
                 side: const BorderSide(color: AppColors.primaryMid),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
@@ -250,14 +250,14 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         onTap:
             () =>
                 _onJobSelected(job), // 변경된 부분 (기존: Navigator.pop(context, job))
         child: Ink(
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
             border: Border.all(color: border),
             boxShadow: const [
               BoxShadow(
@@ -282,7 +282,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: AppFontSize.buttonLg,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w800,
                           color: textDark,
                           height: 1.15,
                         ),
@@ -295,7 +295,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                       height: 34,
                       decoration: BoxDecoration(
                         color: AppColors.primaryLight,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                         border: Border.all(color: AppColors.primaryMid),
                       ),
                       child: Icon(
@@ -383,7 +383,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.primaryLight,
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(color: AppColors.primaryMid),
                   ),
                   child: Row(
@@ -395,7 +395,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: brandBlue,
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
                         child: Text(
                           payType,
@@ -413,7 +413,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                           pay.isEmpty ? '급여 정보 없음' : '$pay원',
                           style: const TextStyle(
                             fontSize: AppFontSize.body1,
-                            fontWeight: FontWeight.w900,
+                            fontWeight: FontWeight.w800,
                             color: textDark,
                           ),
                         ),

@@ -241,14 +241,8 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
         color: AppColors.primary,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        // 색 그림자(글로우) 제거 — DESIGN.md Paper-Thin
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -296,7 +290,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(.9),
-                          borderRadius: BorderRadius.circular(999),
+                          borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
                         child: const Text(
                           '안심기업',
@@ -341,7 +335,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                 icon: isBlocked ? Icons.block_flipped : Icons.block,
                 label: isBlocked ? '해제' : '차단',
                 bg: Colors.white,
-                fg: isBlocked ? AppColors.textTertiary : Colors.black87,
+                fg: isBlocked ? AppColors.textTertiary : AppColors.textPrimary,
                 onTap: _toggleBlockStatus,
               ),
             ],
@@ -360,10 +354,10 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
   }) {
     return Material(
       color: bg,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           child: Row(
@@ -389,7 +383,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -416,7 +410,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
     decoration: BoxDecoration(
       color: const Color(0xFFE9F2FF),
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
     ),
     child: Text(
       text,
@@ -438,7 +432,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
       margin: const EdgeInsets.only(bottom: 32),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -475,7 +469,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.bgMuted,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -484,7 +478,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: AppColors.primary.withOpacity(.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Icon(icon, color: AppColors.primary),
           ),
@@ -505,7 +499,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                   value,
                   style: const TextStyle(
                     fontSize: AppFontSize.titleLg,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
               ],

@@ -346,7 +346,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
       enableDrag: true,
       useSafeArea: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (context) {
         return StatefulBuilder(
@@ -379,7 +379,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                               height: 5,
                               decoration: BoxDecoration(
                                 color: const Color(0x1F000000),
-                                borderRadius: BorderRadius.circular(999),
+                                borderRadius: BorderRadius.circular(AppRadius.full),
                               ),
                             ),
                           ),
@@ -408,7 +408,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         color: AppColors.bgMuted,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -563,7 +563,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                           elevation: 2,
                         ),
@@ -707,7 +707,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
           (ctx) => Container(
             decoration: const BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
             ),
             padding: EdgeInsets.fromLTRB(
               24,
@@ -723,7 +723,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                   height: 4,
                   decoration: BoxDecoration(
                     color: AppColors.border,
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -762,7 +762,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                     ),
                     child: const Text(
@@ -880,7 +880,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -893,7 +893,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                 height: 36,
                 decoration: BoxDecoration(
                   color: cardBg,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Icon(icon, color: brandBlue, size: 20),
               ),
@@ -939,19 +939,19 @@ class _EditJobScreenState extends State<EditJobScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       suffixIcon: suffix,
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         borderSide: const BorderSide(color: AppColors.border),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         borderSide: const BorderSide(color: brandBlue, width: 1.6),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         borderSide: const BorderSide(color: AppColors.error),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         borderSide: const BorderSide(color: AppColors.error, width: 1.6),
       ),
     );
@@ -1006,7 +1006,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
             border: Border.all(
               color: selected ? brandBlue : AppColors.border,
             ),
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(AppRadius.full),
           ),
           child: Text(
             label,
@@ -1036,7 +1036,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
           color: cardBg,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: AppColors.border),
         ),
         child: const Text(
@@ -1080,7 +1080,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                 clipBehavior: Clip.none,
                 children: [
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     child:
                         isExisting
                             ? Image.network(
@@ -1169,7 +1169,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
             color: cardBg,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(color: AppColors.border),
           ),
           child: const Text(
@@ -1188,12 +1188,12 @@ class _EditJobScreenState extends State<EditJobScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: Ink(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
           color: cardBg,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: AppColors.border),
         ),
         child: Row(
@@ -1255,13 +1255,13 @@ class _EditJobScreenState extends State<EditJobScreen> {
         has ? '${_Tx.fmtHmOf(startTime)} ~ ${_Tx.fmtHmOf(endTime)}' : '선택하기';
 
     return InkWell(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       onTap: _openTimePicker,
       child: Ink(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(color: AppColors.border),
         ),
         child: Row(
@@ -1271,7 +1271,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
               height: 40,
               decoration: BoxDecoration(
                 color: cardBg,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: const Icon(Icons.access_time, size: 20, color: brandBlue),
             ),
@@ -1304,7 +1304,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                 ),
                 decoration: BoxDecoration(
                   color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
                 ),
                 child: const Text(
                   'KST',
@@ -1360,7 +1360,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
       initialValue: category.trim().isEmpty ? null : category,
       isExpanded: true,
       icon: const Icon(Icons.keyboard_arrow_down_rounded),
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(AppRadius.lg),
       dropdownColor: Colors.white,
       menuMaxHeight: 340,
       elevation: 6,
@@ -1508,7 +1508,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                         vertical: 10,
                       ),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       elevation: 0,
                     ),
@@ -1571,7 +1571,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                   padding: const EdgeInsets.all(14),
                                   decoration: BoxDecoration(
                                     color: AppColors.primaryLight,
-                                    borderRadius: BorderRadius.circular(12),
+                                    borderRadius: BorderRadius.circular(AppRadius.md),
                                     border: Border.all(
                                       color: AppColors.primaryMid,
                                     ),
@@ -1676,7 +1676,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                 backgroundColor: brandBlue,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 elevation: 1,
               ),

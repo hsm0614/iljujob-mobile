@@ -118,7 +118,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
               height: 64,
               decoration: BoxDecoration(
                 color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(AppRadius.xl),
               ),
               child: const Icon(
                 Icons.workspace_premium_rounded,
@@ -131,7 +131,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
               '구독자 전용 기능이에요',
               style: TextStyle(
                 fontSize: AppFontSize.title,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w800,
                 color: AppColors.textPrimary,
               ),
             ),
@@ -155,7 +155,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   elevation: 0,
                 ),
@@ -231,7 +231,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
                     ),
                     child: const Text(
                       'AI 분석',
@@ -315,7 +315,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
                 Container(
                   height: 8,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
                     color: AppColors.primary,
                   ),
                 ),
@@ -389,7 +389,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Row(
@@ -450,7 +450,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.badgeSameDay,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Row(
         children: [
@@ -484,7 +484,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
               color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppRadius.xl),
             ),
             child: const Text(
               '적용하기',
@@ -543,7 +543,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(

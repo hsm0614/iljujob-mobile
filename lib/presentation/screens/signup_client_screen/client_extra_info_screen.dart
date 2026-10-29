@@ -107,7 +107,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                   border: Border.all(color: AppColors.border),
                 ),
                 padding: const EdgeInsets.all(16),
@@ -139,19 +139,19 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                           vertical: 14,
                         ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                           borderSide: const BorderSide(
                             color: AppColors.border,
                           ),
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                           borderSide: const BorderSide(
                             color: AppColors.border,
                           ),
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                           borderSide: const BorderSide(
                             color: kBrand,
                             width: 1.5,
@@ -174,7 +174,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     minimumSize: const Size.fromHeight(54),
                   ),

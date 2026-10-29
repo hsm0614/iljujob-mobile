@@ -303,7 +303,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                           ),
                           onPressed: () async {
@@ -359,15 +359,8 @@ class _StatusCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: active ? AppColors.primary : AppColors.textTertiary,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: (active ? AppColors.primary : AppColors.textTertiary)
-                .withValues(alpha: 0.3),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
+        borderRadius: BorderRadius.circular(AppRadius.xl),
+        // 색 그림자(글로우) 제거 — DESIGN.md Paper-Thin
       ),
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -400,7 +393,7 @@ class _StatusCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                   child: Text(
                     label,
@@ -420,7 +413,7 @@ class _StatusCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                   child: const Text(
                     '기존 권리 유지',
@@ -441,7 +434,7 @@ class _StatusCard extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: AppColors.warningBorder,
-                    borderRadius: BorderRadius.circular(999),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                   child: const Text(
                     '체험 중',
@@ -576,7 +569,7 @@ class _BenefitSection extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.border),
       ),
       padding: const EdgeInsets.all(18),
@@ -631,7 +624,7 @@ class _BenefitRow extends StatelessWidget {
             height: 32,
             decoration: BoxDecoration(
               color: benefit.color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: Icon(benefit.icon, color: benefit.color, size: 17),
           ),
@@ -668,7 +661,7 @@ class _ManageSection extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -710,7 +703,7 @@ class _ManageSection extends StatelessWidget {
             height: 38,
             decoration: BoxDecoration(
               color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: Icon(icon, color: AppColors.primary, size: 20),
           ),
@@ -756,7 +749,7 @@ class _PolicySection extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.border),
       ),
       child: Theme(
@@ -767,7 +760,7 @@ class _PolicySection extends StatelessWidget {
             height: 38,
             decoration: BoxDecoration(
               color: AppColors.bgPage,
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
             ),
             child: const Icon(
               Icons.description_outlined,
@@ -808,7 +801,7 @@ class _PolicySection extends StatelessWidget {
                     foregroundColor: AppColors.primary,
                     side: const BorderSide(color: AppColors.primary),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,
@@ -838,7 +831,7 @@ class _PolicySection extends StatelessWidget {
                     foregroundColor: AppColors.textSecondary,
                     side: const BorderSide(color: AppColors.textDisabled),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 14,

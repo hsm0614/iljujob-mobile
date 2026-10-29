@@ -521,7 +521,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.border),
       ),
       padding: const EdgeInsets.all(14),
@@ -538,7 +538,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                         ? const Icon(
                           Icons.business,
                           size: 32,
-                          color: Colors.black54,
+                          color: AppColors.textSecondary,
                         )
                         : null,
               ),
@@ -584,13 +584,13 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: AppFontSize.buttonLg,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   _maskPhone(phone),
-                  style: const TextStyle(color: Colors.black54, fontSize: AppFontSize.body2),
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: AppFontSize.body2),
                 ),
               ],
             ),
@@ -645,7 +645,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(
         text,
@@ -670,7 +670,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
           isPdfLocal
               ? _pdfRow(selectedCertificateFile!.name)
               : ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 child: Image.file(
                   File(selectedCertificateFile!.path!),
                   height: 120,
@@ -683,7 +683,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         preview = _pdfRow('업로드된 사업자등록증 (PDF)');
       } else {
         preview = ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           child: Image(
             height: 120,
             width: double.infinity,
@@ -701,7 +701,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: AppColors.bgMuted,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: const Text(
                     '파일을 불러오지 못했어요.',
@@ -716,7 +716,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         height: 90,
         decoration: BoxDecoration(
           color: AppColors.bgMuted,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: AppColors.border),
         ),
         alignment: Alignment.center,
@@ -751,7 +751,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                   side: const BorderSide(color: AppColors.primaryMid),
                   backgroundColor: AppColors.primaryLight,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -767,10 +767,10 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                 icon: const Icon(Icons.close),
                 label: const Text('선택 해제'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.black54,
+                  foregroundColor: AppColors.textSecondary,
                   side: BorderSide(color: AppColors.textDisabled),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -786,7 +786,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
       color: const Color(0xFFFFF1F2),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       border: Border.all(color: const Color(0xFFFECACA)),
     ),
     child: Row(
@@ -817,7 +817,7 @@ class _SectionCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.border),
       ),
       padding: const EdgeInsets.all(14),
@@ -831,7 +831,7 @@ class _SectionCard extends StatelessWidget {
                 height: 18,
                 decoration: BoxDecoration(
                   color: _EditClientProfileScreenState.kBrand,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
               ),
               const SizedBox(width: 10),
@@ -841,7 +841,7 @@ class _SectionCard extends StatelessWidget {
                   style: const TextStyle(
                     fontFamily: 'Jalnan2TTF',
                     fontSize: AppFontSize.body1,
-                    color: Colors.black87,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ),
@@ -884,14 +884,14 @@ class _LabeledField extends StatelessWidget {
                 vertical: 12,
               ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 borderSide: BorderSide(color: AppColors.textDisabled),
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 borderSide: const BorderSide(
                   color: _EditClientProfileScreenState.kBrand,
                   width: 1.3,
@@ -935,7 +935,7 @@ class _SaveButton extends StatelessWidget {
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           elevation: 0,
         ),
@@ -956,7 +956,7 @@ class _BottomSheetCard extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       padding: EdgeInsets.fromLTRB(16, 10, 16, 16 + bottomSafe),
       child: child,
@@ -977,7 +977,7 @@ class _SheetHeader extends StatelessWidget {
           height: 5,
           decoration: BoxDecoration(
             color: AppColors.border,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(AppRadius.full),
           ),
         ),
         const SizedBox(height: 10),
@@ -985,7 +985,7 @@ class _SheetHeader extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: Text(
             title,
-            style: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w900),
+            style: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w800),
           ),
         ),
       ],
@@ -1038,7 +1038,7 @@ class _ConfirmSheet extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomSafe),
       child: Column(
@@ -1049,7 +1049,7 @@ class _ConfirmSheet extends StatelessWidget {
             height: 5,
             decoration: BoxDecoration(
               color: AppColors.border,
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(AppRadius.full),
             ),
           ),
           const SizedBox(height: 12),
@@ -1058,14 +1058,14 @@ class _ConfirmSheet extends StatelessWidget {
             height: 52,
             decoration: BoxDecoration(
               color: confirmColor.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Icon(icon, color: confirmColor),
           ),
           const SizedBox(height: 12),
           Text(
             title,
-            style: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w900),
+            style: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
           Text(
@@ -1088,12 +1088,12 @@ class _ConfirmSheet extends StatelessWidget {
                     side: const BorderSide(color: AppColors.border),
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                   ),
                   child: const Text(
                     '취소',
-                    style: TextStyle(fontWeight: FontWeight.w900),
+                    style: TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
               ),
@@ -1106,13 +1106,13 @@ class _ConfirmSheet extends StatelessWidget {
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     elevation: 0,
                   ),
                   child: Text(
                     confirmText,
-                    style: const TextStyle(fontWeight: FontWeight.w900),
+                    style: const TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ),
               ),

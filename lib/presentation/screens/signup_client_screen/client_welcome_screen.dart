@@ -59,13 +59,7 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
                     decoration: BoxDecoration(
                       color: AppColors.primaryLight,
                       shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.15),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
+                      // 색 그림자(글로우) 제거 — DESIGN.md Paper-Thin
                     ),
                     child: const Icon(
                       Icons.check_circle_outline_rounded,

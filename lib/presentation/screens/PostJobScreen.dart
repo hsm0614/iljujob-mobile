@@ -53,7 +53,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
               child: Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                   border: Border.all(color: AppColors.border),
                 ),
                 child: Padding(
@@ -86,7 +86,7 @@ class _LeaveConfirmSheet extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
       ),
       padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottomSafe),
       child: Column(
@@ -98,7 +98,7 @@ class _LeaveConfirmSheet extends StatelessWidget {
             height: 4,
             decoration: BoxDecoration(
               color: AppColors.border,
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(AppRadius.full),
             ),
           ),
           const SizedBox(height: 20),
@@ -109,7 +109,7 @@ class _LeaveConfirmSheet extends StatelessWidget {
             height: 56,
             decoration: BoxDecoration(
               color: AppColors.primary.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: const Icon(
               Icons.edit_note_rounded,
@@ -154,7 +154,7 @@ class _LeaveConfirmSheet extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
               child: const Text(
@@ -172,7 +172,7 @@ class _LeaveConfirmSheet extends StatelessWidget {
                 foregroundColor: AppColors.textSecondary,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
               child: const Text(

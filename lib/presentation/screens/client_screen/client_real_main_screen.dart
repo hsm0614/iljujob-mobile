@@ -16,15 +16,15 @@ import '../../../config/app_theme.dart';
 import '../../../config/messages.dart';
 
 const kBrandBlue = AppColors.primary;
-const kTextPrimary = Colors.black87;
-const kTextSecondary = Colors.black54;
+const kTextPrimary = AppColors.textPrimary;
+const kTextSecondary = AppColors.textSecondary;
 
 class ClientRealMainScreen extends StatefulWidget {
   const ClientRealMainScreen({super.key});
 
   static const Color kBrandBlue = AppColors.primary;
-  static const Color kTextPrimary = Colors.black87;
-  static const Color kTextSecondary = Colors.black54;
+  static const Color kTextPrimary = AppColors.textPrimary;
+  static const Color kTextSecondary = AppColors.textSecondary;
   @override
   State<ClientRealMainScreen> createState() => _ClientRealMainScreenState();
 }
@@ -303,7 +303,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(
       color: kBrandBlue.withOpacity(.08),
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(AppRadius.full),
       border: Border.all(color: kBrandBlue.withOpacity(.28)),
     ),
     child: Text(
@@ -323,7 +323,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
           height: 36,
           padding: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(color: AppColors.textDisabled),
           ),
           child: DropdownButtonHideUnderline(
@@ -345,13 +345,13 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
         Tooltip(
           message: compactView ? 'Compact View' : 'List View',
           child: InkWell(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             onTap: () => setState(() => compactView = !compactView),
             child: Container(
               height: 36,
               padding: const EdgeInsets.symmetric(horizontal: 10),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 border: Border.all(color: AppColors.textDisabled),
               ),
               child: Icon(
@@ -431,7 +431,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
           filled: true,
           fillColor: AppColors.bgMuted,
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             borderSide: BorderSide.none,
           ),
         ),
@@ -446,7 +446,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         side: BorderSide(color: AppColors.border),
       ),
       child: Padding(
@@ -471,7 +471,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
                 const Icon(
                   Icons.place_outlined,
                   size: 15,
-                  color: Colors.black54,
+                  color: AppColors.textSecondary,
                 ),
                 const SizedBox(width: 4),
                 Expanded(
@@ -481,7 +481,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       fontSize: AppFontSize.body1,
-                      color: Colors.black87,
+                      color: AppColors.textPrimary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -627,7 +627,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         side: BorderSide(color: AppColors.border),
       ),
       child: Padding(
@@ -669,7 +669,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
                   vertical: 8,
                 ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 backgroundColor: Colors.white,
               ),
@@ -692,7 +692,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
             backgroundColor: Colors.white,
             enableDrag: false, // ← 맵 제스처랑 충돌 방지
             shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
             ),
             builder: (context) => const WorkerMapScreen(),
           );
@@ -711,7 +711,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: InkWell(
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(AppRadius.full),
               onTap: () async {
                 final prefs = await SharedPreferences.getInstance();
                 final clientId = prefs.getInt('userId')?.toString();
@@ -757,7 +757,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
                   color: kBrandBlue.withOpacity(.08),
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
                   border: Border.all(color: kBrandBlue.withOpacity(.35)),
                 ),
                 child: Row(

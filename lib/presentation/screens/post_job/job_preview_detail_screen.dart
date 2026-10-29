@@ -200,7 +200,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
               color: AppColors.warningLight,
-              borderRadius: BorderRadius.circular(99),
+              borderRadius: BorderRadius.circular(AppRadius.full),
               border: Border.all(color: AppColors.warningBorder),
             ),
             child: const Text(
@@ -233,7 +233,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder:
                     (_, i) => ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       child: Image.file(
                         widget.images[i],
                         width: 200,
@@ -265,7 +265,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 border: Border.all(color: AppColors.border),
               ),
               child: Column(
@@ -280,7 +280,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.primaryLight,
-                          borderRadius: BorderRadius.circular(99),
+                          borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
                         child: const Text(
                           '내 근처 단기 알바',
@@ -305,7 +305,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                         ),
                         decoration: BoxDecoration(
                           color: AppColors.border,
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(AppRadius.xs),
                         ),
                         child: Text(
                           widget.category,
@@ -361,7 +361,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 border: Border.all(color: _kBorder),
               ),
               child: Column(
@@ -419,7 +419,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: AppColors.warningLight,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                         border: Border.all(color: AppColors.warningBorder),
                       ),
                       child: const Row(
@@ -469,7 +469,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                   ),
                   const SizedBox(height: 10),
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     child: SizedBox(
                       height: 200,
                       child: Stack(
@@ -515,7 +515,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.92),
-                                borderRadius: BorderRadius.circular(10),
+                                borderRadius: BorderRadius.circular(AppRadius.sm),
                               ),
                               child: Row(
                                 children: [
@@ -557,7 +557,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
                 border: Border.all(color: _kBorder),
               ),
               child: Row(
@@ -614,7 +614,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
                 color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -696,7 +696,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     side: const BorderSide(color: _kBorder),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     foregroundColor: _kText,
                   ),
@@ -715,7 +715,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                     backgroundColor: _kBrand,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     elevation: 0,
                   ),
@@ -792,7 +792,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(color: _kBorder),
         ),
         child: Row(
@@ -841,7 +841,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: _kBorder),
       ),
       child: Column(
@@ -909,7 +909,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                       ),
                       const SizedBox(height: 2),
                       ClipRRect(
-                        borderRadius: BorderRadius.circular(99),
+                        borderRadius: BorderRadius.circular(AppRadius.full),
                         child: LinearProgressIndicator(
                           value: q.score / 100,
                           minHeight: 6,
@@ -982,7 +982,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                       ),
                       decoration: BoxDecoration(
                         color: gradeColor.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(AppRadius.xs),
                       ),
                       child: Text(
                         '개선 포인트 ${q.tips.length}개',
@@ -1023,7 +1023,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                                         : tip.impact == 'high'
                                         ? const Color(0xFFFFF8E1)
                                         : AppColors.bgPage,
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(AppRadius.sm),
                                 border: Border.all(
                                   color:
                                       tip.impact == 'critical'

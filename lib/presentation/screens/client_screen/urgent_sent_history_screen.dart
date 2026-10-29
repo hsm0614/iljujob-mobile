@@ -176,7 +176,7 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: AppColors.border),
       ),
       child: Row(
@@ -223,13 +223,13 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
                       ),
                       decoration: BoxDecoration(
                         color: gradeColor.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(99),
+                        borderRadius: BorderRadius.circular(AppRadius.full),
                       ),
                       child: Text(
                         grade,
                         style: TextStyle(
                           fontSize: AppFontSize.caption,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w800,
                           color: gradeColor,
                         ),
                       ),
@@ -256,7 +256,7 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: statusColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(99),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
                 ),
                 child: Text(
                   _statusLabel(status),
@@ -278,7 +278,7 @@ class _UrgentSentHistoryScreenState extends State<UrgentSentHistoryScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withValues(alpha: 0.08),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     child: const Text(
                       '채팅 보기',

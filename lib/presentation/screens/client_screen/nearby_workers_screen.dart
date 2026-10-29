@@ -113,7 +113,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (sheetContext) {
         final bottomInset = MediaQuery.of(sheetContext).viewInsets.bottom;
@@ -128,7 +128,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                   '긴급호출 문구 수정',
                   style: TextStyle(
                     fontSize: AppFontSize.titleLg,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -156,15 +156,15 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                     fillColor: AppColors.bgMuted,
                     contentPadding: const EdgeInsets.all(14),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       borderSide: const BorderSide(color: AppColors.border),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       borderSide: const BorderSide(color: AppColors.border),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       borderSide: const BorderSide(
                         color: AppColors.primary,
                         width: 1.5,
@@ -183,7 +183,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                           side: const BorderSide(color: AppColors.border),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                         ),
                         child: const Text('취소'),
@@ -202,12 +202,12 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                         ),
                         child: const Text(
                           '긴급 호출 보내기',
-                          style: TextStyle(fontWeight: FontWeight.w900),
+                          style: TextStyle(fontWeight: FontWeight.w800),
                         ),
                       ),
                     ),
@@ -315,7 +315,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
               style: TextStyle(
                 fontFamily: 'Jalnan2TTF',
                 fontSize: AppFontSize.title,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w800,
                 color: AppColors.primary,
               ),
             ),
@@ -361,7 +361,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: const Color(0xFFFFF3E0),
-              borderRadius: BorderRadius.circular(99),
+              borderRadius: BorderRadius.circular(AppRadius.full),
             ),
             child: Row(
               children: [
@@ -538,7 +538,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(99),
+                                borderRadius: BorderRadius.circular(AppRadius.full),
                               ),
                               child: const Text(
                                 '오늘 가능',
@@ -559,7 +559,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: AppColors.bgMuted,
-                                borderRadius: BorderRadius.circular(99),
+                                borderRadius: BorderRadius.circular(AppRadius.full),
                               ),
                               child: const Text(
                                 '발송됨',
@@ -635,7 +635,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                                 grade,
                                 style: TextStyle(
                                   fontSize: AppFontSize.body2,
-                                  fontWeight: FontWeight.w900,
+                                  fontWeight: FontWeight.w800,
                                   color: gradeColor,
                                 ),
                               ),
@@ -711,7 +711,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                 disabledBackgroundColor: AppColors.bgMuted,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),

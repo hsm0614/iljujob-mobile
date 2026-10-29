@@ -416,7 +416,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
         return Container(
           decoration: const BoxDecoration(
             color: _white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
           ),
           padding: EdgeInsets.fromLTRB(24, 8, 24, pad + 24),
           child: Column(
@@ -429,7 +429,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                   height: 4,
                   decoration: BoxDecoration(
                     color: _border,
-                    borderRadius: BorderRadius.circular(99),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                 ),
               ),
@@ -438,7 +438,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                 height: 60,
                 decoration: BoxDecoration(
                   color: AppColors.warningLight,
-                  borderRadius: BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child: const Center(
                   child: Icon(
@@ -453,7 +453,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                 '긴급 호출 이용권 지급 완료!',
                 style: TextStyle(
                   fontSize: AppFontSize.h2,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w800,
                   color: _text,
                 ),
               ),
@@ -469,7 +469,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                   border: Border.all(color: _blue.withOpacity(0.25)),
                 ),
                 child: Row(
@@ -479,7 +479,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         color: _blue,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       child: const Icon(
                         Icons.workspace_premium_rounded,
@@ -524,7 +524,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                       ),
                       child: const Text('나중에'),
@@ -542,7 +542,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                         foregroundColor: _white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         elevation: 0,
                       ),
@@ -580,7 +580,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
         return Container(
           decoration: const BoxDecoration(
             color: _white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
           ),
           padding: EdgeInsets.fromLTRB(24, 8, 24, pad),
           child: Column(
@@ -593,7 +593,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                   height: 4,
                   decoration: BoxDecoration(
                     color: _border,
-                    borderRadius: BorderRadius.circular(99),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                 ),
               ),
@@ -604,7 +604,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     height: 52,
                     decoration: BoxDecoration(
                       color: _blue,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                     ),
                     child: const Center(
                       child: Icon(
@@ -646,7 +646,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                         overflow: TextOverflow.ellipsis,
                         style: const TextStyle(
                           fontSize: AppFontSize.h2,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w800,
                           color: _blue,
                         ),
                       ),
@@ -668,7 +668,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: _bg,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child: const Column(
                   children: [
@@ -735,7 +735,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
         return Container(
           decoration: const BoxDecoration(
             color: _white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+            borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
           ),
           padding: EdgeInsets.fromLTRB(24, 8, 24, pad),
           child: Column(
@@ -748,7 +748,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                   height: 4,
                   decoration: BoxDecoration(
                     color: _border,
-                    borderRadius: BorderRadius.circular(99),
+                    borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                 ),
               ),
@@ -759,7 +759,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     height: 52,
                     decoration: BoxDecoration(
                       color: AppColors.warningLight,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                     ),
                     child: const Center(
                       child: Icon(
@@ -815,7 +815,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     '₩13,900',
                     style: TextStyle(
                       fontSize: AppFontSize.h2,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w800,
                       color: _red,
                     ),
                   ),
@@ -826,7 +826,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.warningLight,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
                   border: Border.all(color: _red.withOpacity(0.15)),
                 ),
                 child: const Column(
@@ -860,7 +860,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                 ),
                 decoration: BoxDecoration(
                   color: _blueLight,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Row(
                   children: [
@@ -948,7 +948,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     padding: const EdgeInsets.all(7),
                     decoration: BoxDecoration(
                       color: AppColors.warningLight,
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     child: const Icon(
                       Icons.bolt_rounded,
@@ -1053,14 +1053,8 @@ class _InstantTabState extends State<_InstantTab> {
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: _blue,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: _blue.withOpacity(0.3),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              // 색 그림자(글로우) 제거 — DESIGN.md Paper-Thin
             ),
             child: Row(
               children: [
@@ -1086,7 +1080,7 @@ class _InstantTabState extends State<_InstantTab> {
                       '${widget.remainingCount}개',
                       style: const TextStyle(
                         fontSize: AppFontSize.h1,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w800,
                         color: _white,
                         height: 1,
                       ),
@@ -1131,7 +1125,7 @@ class _InstantTabState extends State<_InstantTab> {
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
                     color: isSelected ? _blueLight : _white,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
                     border: Border.all(
                       color:
                           isSelected
@@ -1141,16 +1135,7 @@ class _InstantTabState extends State<_InstantTab> {
                               : _border,
                       width: isSelected ? 2 : 1,
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color:
-                            isSelected
-                                ? _blue.withOpacity(0.12)
-                                : Colors.black.withOpacity(0.04),
-                        blurRadius: isSelected ? 16 : 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
+                    // 색 그림자(글로우) 제거 — DESIGN.md Paper-Thin
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(18),
@@ -1168,14 +1153,14 @@ class _InstantTabState extends State<_InstantTab> {
                                     height: 40,
                                     decoration: BoxDecoration(
                                       color: isSelected ? _blue : _bg,
-                                      borderRadius: BorderRadius.circular(12),
+                                      borderRadius: BorderRadius.circular(AppRadius.md),
                                     ),
                                     child: Center(
                                       child: Text(
                                         '$count',
                                         style: TextStyle(
                                           fontSize: AppFontSize.titleLg,
-                                          fontWeight: FontWeight.w900,
+                                          fontWeight: FontWeight.w800,
                                           color: isSelected ? _white : _text,
                                         ),
                                       ),
@@ -1201,7 +1186,7 @@ class _InstantTabState extends State<_InstantTab> {
                                 ),
                                 decoration: BoxDecoration(
                                   color: tagColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(99),
+                                  borderRadius: BorderRadius.circular(AppRadius.full),
                                   border: Border.all(
                                     color: tagColor.withOpacity(0.3),
                                   ),
@@ -1332,7 +1317,7 @@ class _UrgentTab extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                     border: Border.all(color: AppColors.border),
                   ),
                   child: Column(
@@ -1375,7 +1360,7 @@ class _UrgentTab extends StatelessWidget {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: AppColors.urgentCall,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
                   ),
                   child: Row(
                     children: [
@@ -1401,7 +1386,7 @@ class _UrgentTab extends StatelessWidget {
                             '$remainingCount개',
                             style: const TextStyle(
                               fontSize: AppFontSize.h1,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w800,
                               color: _white,
                               height: 1,
                             ),
@@ -1418,7 +1403,7 @@ class _UrgentTab extends StatelessWidget {
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
                     color: _white,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
                     border: Border.all(color: AppColors.urgentCall, width: 1.5),
                     boxShadow: [
                       BoxShadow(
@@ -1437,7 +1422,7 @@ class _UrgentTab extends StatelessWidget {
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
                               color: AppColors.warningLight,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                             child: const Icon(
                               Icons.bolt_rounded,
@@ -1469,7 +1454,7 @@ class _UrgentTab extends StatelessWidget {
                             '₩13,900',
                             style: TextStyle(
                               fontSize: AppFontSize.h1,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w800,
                               color: AppColors.urgentCall,
                             ),
                           ),
@@ -1510,7 +1495,7 @@ class _UrgentTab extends StatelessWidget {
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
                     color: AppColors.primaryLight,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
                     border: Border.all(color: _blue.withOpacity(0.2)),
                   ),
                   child: Row(
@@ -1592,7 +1577,7 @@ class _MiniChip extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(
       color: AppColors.warningLight,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(AppRadius.xs),
     ),
     child: Text(
       label,
@@ -1644,7 +1629,7 @@ class _BottomCta extends StatelessWidget {
             height: 54,
             decoration: BoxDecoration(
               color: active ? btnColor : _border,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.lg),
             ),
             child: Center(
               child:
@@ -1695,7 +1680,7 @@ class _BuyButton extends StatelessWidget {
       decoration: BoxDecoration(
         // 그라데이션·글로우 없이 단색 (리디자인 2026-10). gradient 첫 색만 쓴다
         color: isPurchasing ? _border : gradient.first,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Center(
         child:
@@ -1738,7 +1723,7 @@ class _PriceChip extends StatelessWidget {
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(
       color: bgColor,
-      borderRadius: BorderRadius.circular(99),
+      borderRadius: BorderRadius.circular(AppRadius.full),
     ),
     child: Text(
       label,
@@ -1769,7 +1754,7 @@ class _BenefitRow extends StatelessWidget {
         height: 30,
         decoration: BoxDecoration(
           color: iconColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Icon(icon, size: 16, color: iconColor),
       ),

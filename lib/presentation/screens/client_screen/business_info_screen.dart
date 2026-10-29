@@ -65,7 +65,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder:
           (ctx) => StatefulBuilder(
@@ -417,7 +417,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.bgPage,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                       border: Border.all(color: AppColors.border),
                     ),
                     child: Row(
@@ -490,7 +490,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE9F3FF),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     child: const Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -558,11 +558,11 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
           vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: const BorderSide(color: kBrandBlue, width: 2),
         ),
       ),
@@ -577,11 +577,11 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
       fillColor: const Color(0xFFF6F8FA),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         borderSide: const BorderSide(color: kBrandBlue, width: 1.5),
       ),
     );
@@ -593,7 +593,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
       disabledBackgroundColor: kBrandBlue.withOpacity(0.4),
       foregroundColor: Colors.white,
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
     );
   }
 

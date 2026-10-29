@@ -94,7 +94,7 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
                         hintText: '공고 제목 검색',
                         prefixIcon: const Icon(Icons.search),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                       ),
                     ),

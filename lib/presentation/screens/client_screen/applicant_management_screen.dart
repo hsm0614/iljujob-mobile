@@ -419,7 +419,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       builder: (ctx) {
         return SafeArea(
@@ -433,7 +433,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   '지원자 연락처 보기',
                   style: TextStyle(
                     fontSize: AppFontSize.titleLg,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -457,7 +457,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                           side: const BorderSide(color: AppColors.border),
                           padding: const EdgeInsets.symmetric(vertical: 13),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                         ),
                         child: const Text('취소'),
@@ -473,7 +473,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 13),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                         ),
                         child: const Text(
@@ -544,7 +544,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       builder: (ctx) {
         final bottom = MediaQuery.of(ctx).viewInsets.bottom;
@@ -588,15 +588,15 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   filled: true,
                   fillColor: AppColors.bgMuted,
                   border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     borderSide: const BorderSide(color: AppColors.border),
                   ),
                   enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     borderSide: const BorderSide(color: AppColors.border),
                   ),
                   focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     borderSide: const BorderSide(color: _blue, width: 1.4),
                   ),
                 ),
@@ -616,7 +616,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                   ),
                   child: const Text(
@@ -750,7 +750,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: AppColors.border),
         ),
         child: Column(
@@ -788,7 +788,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.border),
       ),
       child: Column(
@@ -836,7 +836,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 onTap:
                     () => setState(() => _expanded[group.jobId] = !isExpanded),
                 borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(18),
+                  bottom: Radius.circular(AppRadius.lg),
                 ),
                 child: Container(
                   width: double.infinity,
@@ -844,7 +844,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.bgPage,
                     borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(18),
+                      bottom: Radius.circular(AppRadius.lg),
                     ),
                     border: Border(
                       top: BorderSide(color: AppColors.bgPage),
@@ -892,7 +892,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
       decoration: BoxDecoration(
         color: hasNew ? AppColors.primaryLight : AppColors.bgMuted,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
         border: Border(bottom: BorderSide(color: AppColors.bgPage)),
       ),
       child: Column(
@@ -983,7 +983,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 // 같아서 둘 다 붙이면 같은 정보를 두 번 말한다(Everyone-Has-It Rule).
                 decoration: BoxDecoration(
                   color: AppColors.bgMuted,
-                  borderRadius: BorderRadius.circular(999),
+                  borderRadius: BorderRadius.circular(AppRadius.full),
                 ),
                 child: Text(
                   '${group.activeApplicants.length}명',
@@ -1067,7 +1067,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   : enabled
                   ? Colors.white
                   : AppColors.bgPage,
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(AppRadius.full),
           border: Border.all(
             color:
                 selected && enabled
@@ -1104,7 +1104,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
       decoration: BoxDecoration(
         color: background,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppRadius.full),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1305,7 +1305,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.bgMuted,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(AppRadius.sm),
                             border: Border.all(color: AppColors.border),
                           ),
                           child: Row(
@@ -1344,7 +1344,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                                     phoneLoading ? '확인 중' : '연락처 보기',
                                     style: TextStyle(
                                       fontSize: AppFontSize.meta,
-                                      fontWeight: FontWeight.w900,
+                                      fontWeight: FontWeight.w800,
                                       color:
                                           phoneLoading
                                               ? AppColors.textTertiary
@@ -1371,7 +1371,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                                         '복사',
                                         style: TextStyle(
                                           fontSize: AppFontSize.meta,
-                                          fontWeight: FontWeight.w900,
+                                          fontWeight: FontWeight.w800,
                                           color: _blue,
                                         ),
                                       ),
@@ -1397,7 +1397,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   ),
                   decoration: BoxDecoration(
                     color: actionColor,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: Text(
                     applicant.actionLabel,
@@ -1450,7 +1450,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 3),
                 decoration: BoxDecoration(
                   color: isSelected ? _blue : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
                   border: Border.all(
                     color: isSelected ? _blue : AppColors.textDisabled,
                   ),
@@ -1490,7 +1490,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         width: 36,
         height: 36,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           border: Border.all(color: AppColors.textDisabled),
         ),
         child: Icon(
@@ -1547,7 +1547,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
         color: applicant.activityGradeBg,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppRadius.full),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1598,7 +1598,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppRadius.full),
       ),
       child: Text(
         label,
@@ -1616,7 +1616,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
         color: AppColors.bgPage,
-        borderRadius: BorderRadius.circular(999),
+        borderRadius: BorderRadius.circular(AppRadius.full),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,

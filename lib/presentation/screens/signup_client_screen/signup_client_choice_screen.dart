@@ -34,7 +34,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
       foregroundColor: fg ?? Colors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         side: borderColor != null
             ? BorderSide(color: borderColor)
             : BorderSide.none,
@@ -241,7 +241,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                   Container(
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(AppRadius.lg),
                       border: Border.all(color: AppColors.border),
                     ),
                     padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
@@ -261,7 +261,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                           label: Text(_loading ? '처리 중...' : '카카오로 시작하기'),
                           style: _btnStyle(
                             bg: const Color(0xFFFFE812),
-                            fg: Colors.black87,
+                            fg: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -279,7 +279,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
                               color: AppColors.bgMuted,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                             ),
                             child: const Center(
                               child: Text(

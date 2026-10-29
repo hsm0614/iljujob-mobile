@@ -368,7 +368,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
         useSafeArea: true,
         backgroundColor: Colors.white,
         shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
         ),
         builder:
             (sheetCtx) => Padding(
@@ -389,7 +389,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                           isDelayed
                               ? AppColors.warningLight
                               : AppColors.primaryLight,
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
                     ),
                     child: Icon(
                       isDelayed
@@ -404,7 +404,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                     '공고 등록 완료!',
                     style: TextStyle(
                       fontSize: AppFontSize.h2,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w800,
                       color: _text,
                     ),
                   ),
@@ -431,7 +431,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 15),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                       ),
                       child: const Text(
@@ -515,7 +515,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
       useSafeArea: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
       ),
       builder: (ctx) {
         final safePad = MediaQuery.of(ctx).padding.bottom;
@@ -636,7 +636,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
       ),
       child: DraggableScrollableSheet(
         expand: false,
@@ -654,7 +654,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                     height: 4,
                     decoration: BoxDecoration(
                       color: _border,
-                      borderRadius: BorderRadius.circular(99),
+                      borderRadius: BorderRadius.circular(AppRadius.full),
                     ),
                   ),
                 ),
@@ -672,7 +672,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                         ),
                         decoration: BoxDecoration(
                           color: _blue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                         child: const Text(
                           '빠른 등록',
@@ -840,7 +840,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
                               color: AppColors.primaryLight,
-                              borderRadius: BorderRadius.circular(14),
+                              borderRadius: BorderRadius.circular(AppRadius.md),
                               border: Border.all(
                                 color: const Color(0xFFD6E7FF),
                               ),
@@ -879,7 +879,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                                 vertical: 16,
                               ),
                               enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(AppRadius.md),
                                 borderSide: BorderSide(
                                   color:
                                       _payWarning != null
@@ -888,7 +888,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                                 ),
                               ),
                               focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(AppRadius.md),
                                 borderSide: BorderSide(
                                   color:
                                       _payWarning != null ? AppColors.error : _blue,
@@ -896,7 +896,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                                 ),
                               ),
                               border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(14),
+                                borderRadius: BorderRadius.circular(AppRadius.md),
                               ),
                             ),
                             onChanged: (v) {
@@ -926,7 +926,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                             ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFFFF3F0),
-                              borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(AppRadius.sm),
                               border: Border.all(color: AppColors.errorBorder),
                             ),
                             child: Row(
@@ -1017,7 +1017,7 @@ class _JobSummaryCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: _blue.withOpacity(0.2)),
       ),
       child: Column(
@@ -1043,7 +1043,7 @@ class _JobSummaryCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
                   color: _blue.withOpacity(0.12),
-                  borderRadius: BorderRadius.circular(6),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
                 child: Text(
                   category,
@@ -1146,7 +1146,7 @@ class _DateRangeSummary extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: _bg,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         border: Border.all(color: _border),
       ),
       child: Row(
@@ -1207,7 +1207,7 @@ class _DateTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
         color: value != null ? AppColors.primaryLight : _bg,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(color: value != null ? _blue : _border),
       ),
       child: Column(
@@ -1257,7 +1257,7 @@ class _OptionCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: _border),
       ),
       child: Row(
@@ -1285,7 +1285,7 @@ class _OptionCard extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
               color: (badgeOk ? _blue : AppColors.error).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(999),
+              borderRadius: BorderRadius.circular(AppRadius.full),
               border: Border.all(color: badgeOk ? _blue : AppColors.error),
             ),
             child: Text(
@@ -1339,7 +1339,7 @@ class _BottomButtons extends StatelessWidget {
               elevation: canSubmit ? 2 : 0,
               shadowColor: _blue.withOpacity(0.3),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
             ),
             child:
