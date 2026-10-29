@@ -1,5 +1,7 @@
 // lib/presentation/chat/work_confirmation_card.dart
 import 'package:flutter/material.dart';
+import 'package:iljujob/utils/chat_stage.dart';
+import 'package:iljujob/utils/apply_stage.dart';
 import 'package:intl/intl.dart';
 import '../../config/app_theme.dart';
 import '../../data/services/work_confirmation_service.dart';
@@ -23,20 +25,23 @@ class WorkConfirmationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isProposed = confirm.status == 'proposed';
-    final isPast = [
-      'cancelled',
-      'completed',
-      'no_show',
-    ].contains(confirm.status);
+    // 근무일이 지난 '제안'은 수락할 수 없다 — 6월 제안 카드에 지금도 '수락하기'가 떠 있었다
+    final expiredProposal =
+        confirm.status == 'proposed' && isWorkDatePast(confirm.workDate);
+    final isProposed = confirm.status == 'proposed' && !expiredProposal;
+    final isPast =
+        expiredProposal ||
+        ['cancelled', 'completed', 'no_show'].contains(confirm.status);
     final canReportNoShow = [
       'accepted',
       'scheduled',
       'day_before_confirmed',
       'day_of_confirmed',
     ].contains(confirm.status);
-    final statusLabel = _statusLabel(confirm.status);
-    final statusColor = _statusColor(confirm.status);
+    final statusLabel =
+        expiredProposal ? '지난 제안' : _statusLabel(confirm.status);
+    final statusColor =
+        expiredProposal ? AppColors.textTertiary : _statusColor(confirm.status);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -44,13 +49,6 @@ class WorkConfirmationCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -60,27 +58,7 @@ class WorkConfirmationCard extends StatelessWidget {
             // 헤더
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.calendar_today_rounded,
-                    size: 16,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  '출근 확정 카드',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+                Text('근무 약속', style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -94,7 +72,7 @@ class WorkConfirmationCard extends StatelessWidget {
                   child: Text(
                     statusLabel,
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: AppFontSize.caption,
                       fontWeight: FontWeight.w700,
                       color: statusColor,
                     ),
@@ -122,9 +100,10 @@ class WorkConfirmationCard extends StatelessWidget {
             const SizedBox(height: 8),
             _Row(
               icon: Icons.payments_rounded,
-              label: '시급',
+              // ponytail: 예전 카드는 일급이 '시급' 칸에 들어갔다 — 2만 원 이상이면 '급여'로만 표기.
+              // 정확히 하려면 카드에 pay_type 저장 필요
+              label: confirm.hourlyWage >= 20000 ? '급여' : '시급',
               value: '${NumberFormat('#,###').format(confirm.hourlyWage)}원',
-              valueColor: AppColors.primary,
             ),
             if (confirm.location != null && confirm.location!.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -134,8 +113,8 @@ class WorkConfirmationCard extends StatelessWidget {
                 value: confirm.location!,
               ),
             ],
-            if (!isProposed && !isPast) ...[
-              const SizedBox(height: 12),
+            if (!isPast) ...[
+              const SizedBox(height: 16),
               _StatusHint(status: confirm.status),
             ],
 
@@ -147,21 +126,8 @@ class WorkConfirmationCard extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: onReject,
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textSecondary,
-                        side: const BorderSide(color: AppColors.border),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
                       child: const Text(
-                        '거절',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                        '거절'),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -169,22 +135,8 @@ class WorkConfirmationCard extends StatelessWidget {
                     flex: 2,
                     child: ElevatedButton(
                       onPressed: onAccept,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
-                      ),
                       child: const Text(
-                        '수락하기',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                        '수락하기'),
                     ),
                   ),
                 ],
@@ -202,19 +154,13 @@ class WorkConfirmationCard extends StatelessWidget {
                   onPressed: onNoShow,
                   icon: const Icon(Icons.person_off_rounded, size: 15),
                   label: const Text(
-                    '노쇼 신고',
-                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                  ),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.urgentCall,
-                    side: const BorderSide(color: AppColors.urgentCall),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
+                    '노쇼 신고'),
+                  style: OutlinedButton.styleFrom(foregroundColor: AppColors.error),
                 ),
               ),
+              const SizedBox(height: 6),
+              // 서버 workConfirmationController.AUTO_COMPLETE_HOURS 와 같은 값
+              const Text('근무가 끝나고 48시간 안에 신고가 없으면 출근한 것으로 완료돼요', style: AppTextStyles.caption),
             ],
           ],
         ),
@@ -225,33 +171,23 @@ class WorkConfirmationCard extends StatelessWidget {
   String _formatDate(String raw) {
     try {
       final dt = DateTime.parse(raw);
-      return DateFormat('yyyy년 M월 d일 (E)', 'ko_KR').format(dt);
+      return DateFormat('M월 d일(E)', 'ko_KR').format(dt);
     } catch (_) {
       return raw;
     }
   }
 
-  String _statusLabel(String s) => switch (s) {
-    'proposed' => '제안됨',
-    'accepted' => '수락됨',
-    'scheduled' => '예정',
-    'day_before_confirmed' => 'D-1 확인',
-    'day_of_confirmed' => '당일 확인',
-    'checked_in' => '출근 확인',
-    'completed' => '근무 완료',
-    'cancelled' => '취소됨',
-    'no_show' => '노쇼',
-    _ => s,
-  };
+  // 내 활동과 같은 이름 (utils/apply_stage.dart)
+  String _statusLabel(String s) => workStatusLabel(s);
 
   Color _statusColor(String s) => switch (s) {
     'proposed' => AppColors.pending,
     'accepted' ||
     'scheduled' ||
     'day_before_confirmed' ||
-    'day_of_confirmed' => AppColors.primary,
-    'checked_in' || 'completed' => AppColors.gradeB,
-    'cancelled' || 'no_show' => AppColors.urgentCall,
+    'day_of_confirmed' => AppColors.textPrimary,
+    'checked_in' || 'completed' => AppColors.badgeSameDay,
+    'cancelled' || 'no_show' => AppColors.error,
     _ => AppColors.textSecondary,
   };
 }
@@ -260,78 +196,114 @@ class _Row extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  final Color? valueColor;
-  const _Row({
-    required this.icon,
-    required this.label,
-    required this.value,
-    this.valueColor,
-  });
+  const _Row({required this.icon, required this.label, required this.value});
 
+  // 라벨 길이가 달라 값이 들쭉날쭉했다 — 라벨 칸을 고정폭으로
   @override
   Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Icon(icon, size: 14, color: AppColors.textTertiary),
-      const SizedBox(width: 6),
-      Text(
-        '$label  ',
-        style: const TextStyle(fontSize: 12, color: AppColors.textTertiary),
-      ),
-      Text(
-        value,
-        style: TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: valueColor ?? AppColors.textPrimary,
-        ),
+      SizedBox(width: 44, child: Text(label, style: AppTextStyles.body2)),
+      Expanded(
+        child: Text(value, style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
       ),
     ],
   );
 }
 
+/// 출근확정 진행 단계. 배달 앱 주문 추적처럼 지금 어디인지 한눈에 보이게 한다.
+/// 상태값 순서는 work_confirmations.status 와 같다.
 class _StatusHint extends StatelessWidget {
   final String status;
   const _StatusHint({required this.status});
 
+  static const _steps = ['제안', '수락', '전날', '당일', '출근', '완료'];
+
+  int get _current => switch (status) {
+    'proposed' => 0,
+    'accepted' || 'scheduled' => 1,
+    'day_before_confirmed' => 2,
+    'day_of_confirmed' => 3,
+    'checked_in' => 4,
+    'completed' => 5,
+    _ => 0,
+  };
+
   @override
   Widget build(BuildContext context) {
     final text = switch (status) {
-      'accepted' || 'scheduled' => '근무가 확정됐어요. 근무일 전 알림이 발송돼요.',
-      'day_before_confirmed' => 'D-1 확인이 완료됐어요. 당일 출근 확인을 기다리고 있어요.',
-      'day_of_confirmed' => '당일 확인이 완료됐어요. 출근 완료 후 정산달력에 반영돼요.',
-      'checked_in' => '출근 확인이 완료됐어요. 근무 완료 처리만 남았어요.',
+      'proposed' => '수락하면 근무가 확정돼요.',
+      'accepted' || 'scheduled' => '근무가 확정됐어요. 전날 18시에 확인 알림이 가요.',
+      'day_before_confirmed' => '전날 확인 완료. 출근 2시간 전에 당일 확인 알림이 가요.',
+      'day_of_confirmed' => '당일 확인 완료. 출근하면 정산 달력에 반영돼요.',
+      'checked_in' => '출근 확인 완료. 근무 완료 처리만 남았어요.',
       _ => '출근 확정이 진행 중이에요.',
     };
+    final cur = _current;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: const Color(0xFFDBEAFE)),
-      ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.info_outline_rounded,
-            size: 16,
-            color: AppColors.primary,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                fontSize: 12,
-                height: 1.35,
-                color: AppColors.primaryDark,
-                fontWeight: FontWeight.w700,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            for (var i = 0; i < _steps.length; i++) ...[
+              _dot(done: i < cur, now: i == cur),
+              if (i < _steps.length - 1)
+                Expanded(
+                  child: Container(
+                    height: 2,
+                    color: i < cur ? AppColors.primary : AppColors.border,
+                  ),
+                ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 6),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            for (var i = 0; i < _steps.length; i++)
+              Text(
+                _steps[i],
+                style: AppTextStyles.caption.copyWith(
+                  color:
+                      i == cur
+                          ? AppColors.textPrimary
+                          : i < cur
+                          ? AppColors.textSecondary
+                          : AppColors.textTertiary,
+                  fontWeight: i == cur ? FontWeight.w700 : FontWeight.w500,
+                ),
               ),
-            ),
-          ),
-        ],
+          ],
+        ),
+        const SizedBox(height: 10),
+        Text(text, style: AppTextStyles.body2),
+      ],
+    );
+  }
+
+  Widget _dot({required bool done, required bool now}) {
+    return Container(
+      width: 16,
+      height: 16,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: done ? AppColors.primary : AppColors.bgCard,
+        border: Border.all(
+          color:
+              done
+                  ? AppColors.primary
+                  : now
+                  ? AppColors.badgeUrgent
+                  : AppColors.border,
+          width: now ? 4 : 2,
+        ),
       ),
+      child:
+          done
+              ? const Icon(Icons.check_rounded, size: 10, color: Colors.white)
+              : null,
     );
   }
 }
@@ -503,14 +475,7 @@ class _ProposeWorkConfirmationSheetState
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.primary.withValues(alpha: 0.10),
-                      AppColors.primary.withValues(alpha: 0.03),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: AppColors.primaryLight,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: AppColors.primary.withValues(alpha: 0.18),
@@ -538,7 +503,7 @@ class _ProposeWorkConfirmationSheetState
                           Text(
                             '출근 확정 제안',
                             style: TextStyle(
-                              fontSize: 16,
+                              fontSize: AppFontSize.buttonLg,
                               fontWeight: FontWeight.w800,
                               color: AppColors.textPrimary,
                             ),
@@ -547,7 +512,7 @@ class _ProposeWorkConfirmationSheetState
                           Text(
                             '알바생이 수락하면 근무가 확정돼요',
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: AppFontSize.meta,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -568,34 +533,8 @@ class _ProposeWorkConfirmationSheetState
                 children: [
                   // 장기 공고 안내
                   if (_isWeekdaysJob) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFF7ED),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFED7AA)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.info_outline_rounded,
-                            size: 16,
-                            color: Color(0xFFEA580C),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '장기 공고 (${widget.weekdays})입니다.\n출근 첫날 날짜를 선택해주세요.',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFFEA580C),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    Text('${widget.weekdays} 공고예요 · 첫 출근 날짜를 골라 주세요', style: AppTextStyles.body2),
+                    const SizedBox(height: 16),
                   ],
 
                   // 근무 날짜
@@ -605,10 +544,7 @@ class _ProposeWorkConfirmationSheetState
                     text:
                         _date == null
                             ? '날짜를 선택하세요'
-                            : DateFormat(
-                              'yyyy년 M월 d일 (E)',
-                              'ko_KR',
-                            ).format(_date!),
+                            : DateFormat('M월 d일(E)', 'ko_KR').format(_date!),
                     isEmpty: _date == null,
                     icon: Icons.calendar_today_rounded,
                     onTap: () async {
@@ -695,18 +631,18 @@ class _ProposeWorkConfirmationSheetState
                       hintText: '시급을 입력하세요',
                       suffixText: '원',
                       filled: true,
-                      fillColor: const Color(0xFFF9FAFB),
+                      fillColor: AppColors.bgMuted,
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 14,
                         vertical: 13,
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.border),
+                        borderSide: BorderSide.none,
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.border),
+                        borderSide: BorderSide.none,
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -721,37 +657,10 @@ class _ProposeWorkConfirmationSheetState
 
                   // 예상 급여 요약
                   if (estPay != null) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 11,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0FDF4),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFBBF7D0)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.calculate_outlined,
-                            size: 15,
-                            color: Color(0xFF16A34A),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '예상 ${estHours!.toStringAsFixed(1)}시간  ·  총 ${NumberFormat('#,###').format(estPay)}원',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF15803D),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${estHours!.toStringAsFixed(1)}시간 · 총 ${NumberFormat('#,###').format(estPay)}원',
+                      style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
                     ),
                   ],
 
@@ -761,16 +670,6 @@ class _ProposeWorkConfirmationSheetState
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _canSubmit && !_loading ? _submit : null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                        disabledBackgroundColor: AppColors.border,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                      ),
                       child:
                           _loading
                               ? const SizedBox(
@@ -782,13 +681,7 @@ class _ProposeWorkConfirmationSheetState
                                 ),
                               )
                               : const Text(
-                                '제안 보내기',
-                                style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  letterSpacing: 0.3,
-                                ),
-                              ),
+                                '제안 보내기'),
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -809,13 +702,14 @@ class _FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) => Text(
     text,
     style: const TextStyle(
-      fontSize: 13,
+      fontSize: AppFontSize.body2,
       fontWeight: FontWeight.w600,
       color: AppColors.textSecondary,
     ),
   );
 }
 
+/// 값 칸은 채워도 회색 그대로 — 채우면 파랑+테두리+체크로 바뀌던 것이 화면을 파랗게 만들었다(값 칸 규칙)
 class _Tile extends StatelessWidget {
   final String text;
   final bool isEmpty;
@@ -829,47 +723,30 @@ class _Tile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-      decoration: BoxDecoration(
-        color: isEmpty ? const Color(0xFFF9FAFB) : const Color(0xFFEFF6FF),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color:
-              isEmpty
-                  ? AppColors.border
-                  : AppColors.primary.withValues(alpha: 0.4),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 16,
-            color: isEmpty ? AppColors.textTertiary : AppColors.primary,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: isEmpty ? FontWeight.w400 : FontWeight.w600,
-                color:
-                    isEmpty ? AppColors.textTertiary : AppColors.textPrimary,
+  Widget build(BuildContext context) => Material(
+    color: AppColors.bgMuted,
+    borderRadius: BorderRadius.circular(AppRadius.md),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: AppColors.textSecondary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                text,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.body2.copyWith(
+                  fontWeight: isEmpty ? FontWeight.w400 : FontWeight.w600,
+                  color: isEmpty ? AppColors.textTertiary : AppColors.textPrimary,
+                ),
               ),
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-          if (!isEmpty)
-            Icon(
-              Icons.check_circle_rounded,
-              size: 15,
-              color: AppColors.primary,
-            ),
-        ],
+          ],
+        ),
       ),
     ),
   );

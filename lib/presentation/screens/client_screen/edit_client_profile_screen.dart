@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:iljujob/widget/app_ui.dart';
 import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
@@ -33,8 +34,6 @@ class EditClientProfileScreen extends StatefulWidget {
 
 class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
   // ---- 스타일
-  static const kBrand = AppColors.primary;
-  static const kBg = AppColors.bgPage;
 
   final picker = ImagePicker();
 
@@ -384,19 +383,13 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       return;
     }
 
-    final ok = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      builder:
-          (_) => _ConfirmSheet(
-            title: '저장하지 않고 나갈까요?',
-            message: '변경 사항이 저장되지 않습니다.',
-            confirmText: '나가기',
-            confirmColor: AppColors.error,
-            icon: Icons.warning_amber_rounded,
-          ),
+    final ok = await showAppSheet(
+      context,
+      title: '저장하지 않고 나갈까요?',
+      message: '바꾼 내용은 저장되지 않아요.',
+      confirmLabel: '나가기',
+      cancelLabel: '계속 수정',
+      destructive: true,
     );
 
     if (ok == true && mounted) Navigator.pop(context);
@@ -404,15 +397,10 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomSafe = MediaQuery.of(context).viewPadding.bottom;
-
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: AppColors.bgPage,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
         leading: IconButton(
           tooltip: '뒤로',
           icon: const Icon(Icons.arrow_back),
@@ -423,34 +411,26 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       ),
 
       // 저장 버튼을 하단 고정 + SafeArea로 올림 (안드 뒤로가기 영역 회피)
-      bottomNavigationBar: SafeArea(
-        top: false,
-        child: Container(
-          color: kBg,
-          padding: EdgeInsets.fromLTRB(
-            16,
-            10,
-            16,
-            12 + (bottomSafe > 0 ? 0 : 0),
-          ),
-          child: _SaveButton(
-            busy: _saving,
-            onPressed: _canSave ? _saveProfile : null,
-          ),
+      bottomNavigationBar: AppBottomBar(
+        child: AppPrimaryButton(
+          label: '저장하기',
+          loading: _saving,
+          height: 52,
+          onPressed: _canSave ? _saveProfile : null,
         ),
       ),
 
       body:
           isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const AppSkeletonList(rows: 4)
               : RefreshIndicator(
-                color: kBrand,
+                color: AppColors.primary,
                 onRefresh: _loadProfile,
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                  padding: const EdgeInsets.only(top: 8, bottom: 16),
                   children: [
                     _profileHeaderCard(),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 8),
                     _SectionCard(
                       title: '기본 정보',
                       children: [
@@ -500,7 +480,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 8),
                     _certificateSection(),
 
                     // 여기 있던 _SaveButton 제거 (bottomNavigationBar로 이동)
@@ -519,32 +499,22 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
             : (hasRemoteLogo ? NetworkImage(_getFullImageUrl(logoUrl)) : null);
 
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 10,
-            offset: Offset(0, 6),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(14),
+      color: AppColors.bgCard,
+      padding: const EdgeInsets.all(20),
       child: Row(
         children: [
           Stack(
             children: [
               CircleAvatar(
                 radius: 34,
-                backgroundColor: const Color(0xFFEAF2FF),
+                backgroundColor: AppColors.bgMuted,
                 backgroundImage: imgProvider as ImageProvider?,
                 child:
                     (imgProvider == null)
                         ? const Icon(
                           Icons.business,
                           size: 32,
-                          color: Colors.black54,
+                          color: AppColors.textSecondary,
                         )
                         : null,
               ),
@@ -560,16 +530,14 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(5),
                       decoration: BoxDecoration(
-                        color: kBrand,
+                        color: AppColors.bgCard,
                         shape: BoxShape.circle,
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black26, blurRadius: 4),
-                        ],
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: const Icon(
-                        Icons.edit,
+                        Icons.photo_camera_outlined,
                         size: 16,
-                        color: Colors.white,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ),
@@ -588,26 +556,14 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                       : companyController.text.trim(),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                  ),
+                  style: AppTextStyles.h3,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   _maskPhone(phone),
-                  style: const TextStyle(color: Colors.black54, fontSize: 13),
+                  style: const TextStyle(color: AppColors.textSecondary, fontSize: AppFontSize.body2),
                 ),
               ],
-            ),
-          ),
-          const SizedBox(width: 10),
-          IconButton.filledTonal(
-            onPressed: _pickLogoImage,
-            icon: const Icon(Icons.photo_camera_back_outlined),
-            style: IconButton.styleFrom(
-              backgroundColor: const Color(0xFFEAF2FF),
-              foregroundColor: kBrand,
             ),
           ),
         ],
@@ -625,25 +581,25 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
     switch (certStatus) {
       case 'approved':
         text = '안심기업으로 승인되었어요. 공고에 «안심기업» 표시가 붙습니다.';
-        fg = const Color(0xFF4D7C0F);
+        fg = AppColors.badgeSafe;
         bg = const Color(0xFFF3F8EC);
         break;
       case 'pending':
         text = '서류를 검토하고 있어요. 결과는 알림으로 알려드립니다.';
-        fg = const Color(0xFF6B7280);
-        bg = const Color(0xFFF3F4F6);
+        fg = AppColors.textSecondary;
+        bg = AppColors.bgMuted;
         break;
       case 'rejected':
         text = certRejectReason.isNotEmpty
             ? '승인되지 않았어요. 사유: $certRejectReason\n서류를 다시 올리면 재심사합니다.'
             : '승인되지 않았어요. 서류를 다시 올리면 재심사합니다.';
-        fg = const Color(0xFF9A3412);
+        fg = AppColors.warningDark;
         bg = const Color(0xFFFEF3EC);
         break;
       default:
         text = '사업자등록증을 올리면 관리자 검토 후 «안심기업» 표시가 적용됩니다.';
-        fg = const Color(0xFF6B7280);
-        bg = const Color(0xFFF3F4F6);
+        fg = AppColors.textSecondary;
+        bg = AppColors.bgMuted;
     }
 
     return Container(
@@ -651,11 +607,11 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Text(
         text,
-        style: TextStyle(fontSize: 12.5, color: fg, height: 1.4),
+        style: TextStyle(fontSize: AppFontSize.body2, color: fg, height: 1.4),
       ),
     );
   }
@@ -676,7 +632,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
           isPdfLocal
               ? _pdfRow(selectedCertificateFile!.name)
               : ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 child: Image.file(
                   File(selectedCertificateFile!.path!),
                   height: 120,
@@ -689,7 +645,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         preview = _pdfRow('업로드된 사업자등록증 (PDF)');
       } else {
         preview = ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           child: Image(
             height: 120,
             width: double.infinity,
@@ -707,7 +663,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: AppColors.bgMuted,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: const Text(
                     '파일을 불러오지 못했어요.',
@@ -718,72 +674,28 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
         );
       }
     } else {
-      preview = Container(
-        height: 90,
-        decoration: BoxDecoration(
-          color: AppColors.bgMuted,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
-        ),
-        alignment: Alignment.center,
-        child: const Text(
-          '아직 올라온 파일이 없어요.',
-          style: TextStyle(color: AppColors.textSecondary),
-        ),
-      );
+      preview = const Text('아직 올린 파일이 없어요', style: AppTextStyles.body2);
     }
 
     return _SectionCard(
       title: '사업자등록증',
-      trailing: TextButton.icon(
-        onPressed: _showCertificatePickerOptions,
-        icon: const Icon(Icons.upload_file),
-        label: const Text('업로드'),
-      ),
+      trailing: TextButton(onPressed: _showCertificatePickerOptions, child: const Text('파일 올리기')),
       children: [
         _certStatusBanner(),
         const SizedBox(height: 10),
         preview,
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: hasRemote ? _openCertificate : null,
-                icon: const Icon(Icons.open_in_new),
-                label: const Text('기존 파일 열기'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: kBrand,
-                  side: const BorderSide(color: Color(0xFFD1E3FF)),
-                  backgroundColor: const Color(0xFFEAF2FF),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+        // 늘 보이던 버튼 두 개(대개 둘 다 꺼짐) → 쓸 수 있을 때만 글자 링크
+        if (hasRemote || hasLocal)
+          Row(
+            children: [
+              if (hasRemote) TextButton(onPressed: _openCertificate, child: const Text('올린 파일 보기')),
+              if (hasLocal)
+                TextButton(
+                  onPressed: () => setState(() => selectedCertificateFile = null),
+                  child: const Text('선택 취소'),
                 ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed:
-                    hasLocal
-                        ? () => setState(() => selectedCertificateFile = null)
-                        : null,
-                icon: const Icon(Icons.close),
-                label: const Text('선택 해제'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.black54,
-                  side: BorderSide(color: Colors.grey.shade300),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                ),
-              ),
-            ),
-          ],
-        ),
+            ],
+          ),
       ],
     );
   }
@@ -791,13 +703,12 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
   Widget _pdfRow(String name) => Container(
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: const Color(0xFFFFF1F2),
-      borderRadius: BorderRadius.circular(12),
-      border: Border.all(color: const Color(0xFFFECACA)),
+      color: AppColors.bgMuted,
+      borderRadius: BorderRadius.circular(AppRadius.md),
     ),
     child: Row(
       children: [
-        const Icon(Icons.picture_as_pdf, color: Colors.red),
+        const Icon(Icons.picture_as_pdf_outlined, color: AppColors.textSecondary),
         const SizedBox(width: 8),
         Expanded(child: Text(name, overflow: TextOverflow.ellipsis)),
       ],
@@ -821,42 +732,18 @@ class _SectionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: const [
-          BoxShadow(color: Colors.black12, blurRadius: 8, offset: Offset(0, 4)),
-        ],
-      ),
-      padding: const EdgeInsets.all(14),
+      color: AppColors.bgCard,
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             children: [
-              Container(
-                width: 6,
-                height: 18,
-                decoration: BoxDecoration(
-                  color: _EditClientProfileScreenState.kBrand,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  title,
-                  style: const TextStyle(
-                    fontFamily: 'Jalnan2TTF',
-                    fontSize: 15,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
+              Expanded(child: Text(title, style: AppTextStyles.h3)),
               if (trailing != null) trailing!,
             ],
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 14),
           ...children,
         ],
       ),
@@ -878,30 +765,31 @@ class _LabeledField extends StatelessWidget {
       children: [
         Text(
           label,
-          style: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
+          style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 6),
         Theme(
           data: theme.copyWith(
             inputDecorationTheme: InputDecorationTheme(
               isDense: true,
+              filled: true,
+              fillColor: AppColors.bgMuted,
               contentPadding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 12,
+                horizontal: 14,
+                vertical: 14,
               ),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderSide: BorderSide.none,
               ),
               enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderSide: BorderSide.none,
               ),
               focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.md),
                 borderSide: const BorderSide(
-                  color: _EditClientProfileScreenState.kBrand,
+                  color: AppColors.primary,
                   width: 1.3,
                 ),
               ),
@@ -914,46 +802,6 @@ class _LabeledField extends StatelessWidget {
   }
 }
 
-class _SaveButton extends StatelessWidget {
-  final bool busy;
-  final VoidCallback? onPressed;
-
-  const _SaveButton({required this.busy, required this.onPressed});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: onPressed,
-        icon:
-            busy
-                ? const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: Colors.white,
-                  ),
-                )
-                : const Icon(Icons.save_outlined),
-        label: Text(busy ? '저장 중…' : '저장하기'),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _EditClientProfileScreenState.kBrand,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-          elevation: 0,
-        ),
-      ),
-    );
-  }
-}
-
-/* --------------------------- Bottom Sheets --------------------------- */
-
 class _BottomSheetCard extends StatelessWidget {
   final Widget child;
   const _BottomSheetCard({required this.child});
@@ -964,7 +812,7 @@ class _BottomSheetCard extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       padding: EdgeInsets.fromLTRB(16, 10, 16, 16 + bottomSafe),
       child: child,
@@ -985,7 +833,7 @@ class _SheetHeader extends StatelessWidget {
           height: 5,
           decoration: BoxDecoration(
             color: AppColors.border,
-            borderRadius: BorderRadius.circular(999),
+            borderRadius: BorderRadius.circular(AppRadius.full),
           ),
         ),
         const SizedBox(height: 10),
@@ -993,7 +841,7 @@ class _SheetHeader extends StatelessWidget {
           alignment: Alignment.centerLeft,
           child: Text(
             title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+            style: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w800),
           ),
         ),
       ],
@@ -1015,7 +863,7 @@ class _SheetTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: _EditClientProfileScreenState.kBrand),
+      leading: Icon(icon, color: AppColors.primary),
       title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
       onTap: onTap,
     );
@@ -1024,110 +872,3 @@ class _SheetTile extends StatelessWidget {
 
 /* --------------------------- Confirm Sheet --------------------------- */
 
-class _ConfirmSheet extends StatelessWidget {
-  final String title;
-  final String message;
-  final String confirmText;
-  final Color confirmColor;
-  final IconData icon;
-
-  const _ConfirmSheet({
-    required this.title,
-    required this.message,
-    required this.confirmText,
-    required this.confirmColor,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final bottomSafe = MediaQuery.of(context).viewPadding.bottom;
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
-      padding: EdgeInsets.fromLTRB(16, 12, 16, 16 + bottomSafe),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 42,
-            height: 5,
-            decoration: BoxDecoration(
-              color: AppColors.border,
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            width: 52,
-            height: 52,
-            decoration: BoxDecoration(
-              color: confirmColor.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: confirmColor),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 12.5,
-              color: AppColors.textSecondary,
-              height: 1.35,
-            ),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () => Navigator.pop(context, false),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textPrimary,
-                    side: const BorderSide(color: AppColors.border),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
-                  child: const Text(
-                    '취소',
-                    style: TextStyle(fontWeight: FontWeight.w900),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context, true),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: confirmColor,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    confirmText,
-                    style: const TextStyle(fontWeight: FontWeight.w900),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}

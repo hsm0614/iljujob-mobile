@@ -109,15 +109,6 @@ Future<void> maybeShowPushPrimer(BuildContext context) async {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(ctx, true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                    ),
                     child: const Text('알림 받기'),
                   ),
                 ),
@@ -187,14 +178,10 @@ class _PushOffBannerState extends State<PushOffBanner>
   @override
   Widget build(BuildContext context) {
     if (!_off || _dismissed) return const SizedBox.shrink();
+    // 목록 사이 얇은 회색 띠 (카드형은 공고 줄과 결이 달랐다 — 2026-10)
     return Container(
-      margin: const EdgeInsets.only(top: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.border),
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 6, 12, 6),
+      color: AppColors.bgMuted,
       child: Row(
         children: [
           const Icon(

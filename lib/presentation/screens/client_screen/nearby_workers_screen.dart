@@ -3,6 +3,7 @@
 // 긴급 호출: 사장님이 근무지 3km 내 구직자를 보고 직접 메시지 발송
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_ui.dart';
 
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
@@ -112,7 +113,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder: (sheetContext) {
         final bottomInset = MediaQuery.of(sheetContext).viewInsets.bottom;
@@ -126,8 +127,8 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                 const Text(
                   '긴급호출 문구 수정',
                   style: TextStyle(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w900,
+                    fontSize: AppFontSize.titleLg,
+                    fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),
                 ),
@@ -135,7 +136,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                 Text(
                   '${_selected.length}명에게 채팅과 푸시로 함께 전달돼요.',
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: AppFontSize.body2,
                     height: 1.35,
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w600,
@@ -152,18 +153,18 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                   decoration: InputDecoration(
                     hintText: '예: 오늘 18시부터 가능하신 분을 찾고 있어요. 시급 우대합니다.',
                     filled: true,
-                    fillColor: const Color(0xFFF8FAFC),
+                    fillColor: AppColors.bgMuted,
                     contentPadding: const EdgeInsets.all(14),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       borderSide: const BorderSide(color: AppColors.border),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       borderSide: const BorderSide(color: AppColors.border),
                     ),
                     focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       borderSide: const BorderSide(
                         color: AppColors.primary,
                         width: 1.5,
@@ -177,14 +178,6 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                     Expanded(
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(sheetContext),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.textSecondary,
-                          side: const BorderSide(color: AppColors.border),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
                         child: const Text('취소'),
                       ),
                     ),
@@ -196,18 +189,8 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                               sheetContext,
                               controller.text.trim(),
                             ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
                         child: const Text(
-                          '긴급 호출 보내기',
-                          style: TextStyle(fontWeight: FontWeight.w900),
-                        ),
+                          '긴급 호출 보내기'),
                       ),
                     ),
                   ],
@@ -298,8 +281,6 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgBase,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
         titleSpacing: 0,
         leading: IconButton(
           tooltip: '뒤로',
@@ -309,35 +290,22 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '긴급 호출',
-              style: TextStyle(
-                fontFamily: 'Jalnan2TTF',
-                fontSize: 17,
-                fontWeight: FontWeight.w900,
-                color: AppColors.primary,
-              ),
-            ),
+            // 안쪽 화면 제목은 검정·기본 글꼴 (앱바 통일 규칙 — 장난체 파랑은 탭 화면만)
+            const Text('긴급 호출 보낼 사람', style: TextStyle(fontSize: AppFontSize.title, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
             Text(
               widget.jobTitle,
               style: const TextStyle(
-                fontSize: 12,
+                fontSize: AppFontSize.meta,
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w400,
               ),
             ),
           ],
         ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppColors.border),
-        ),
       ),
       body:
           _loading
-              ? const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              )
+              ? const AppSkeletonList(avatar: true)
               : _workers.isEmpty
               ? _buildEmpty()
               : Column(
@@ -360,7 +328,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(
               color: const Color(0xFFFFF3E0),
-              borderRadius: BorderRadius.circular(99),
+              borderRadius: BorderRadius.circular(AppRadius.full),
             ),
             child: Row(
               children: [
@@ -373,7 +341,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                 Text(
                   '반경 5km 내 ${_workers.length}명',
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: AppFontSize.meta,
                     fontWeight: FontWeight.w700,
                     color: AppColors.pending,
                   ),
@@ -385,7 +353,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
           Text(
             '최대 $_maxSelect명 선택',
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: AppFontSize.meta,
               color: AppColors.textSecondary,
             ),
           ),
@@ -446,7 +414,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
             decoration: BoxDecoration(
               color:
                   alreadySent
-                      ? const Color(0xFFF9FAFB)
+                      ? AppColors.bgMuted
                       : isSelected
                       ? AppColors.primary.withValues(alpha: 0.06)
                       : Colors.white,
@@ -520,7 +488,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                           Text(
                             maskedName,
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: AppFontSize.button,
                               fontWeight: FontWeight.w700,
                               color:
                                   alreadySent
@@ -537,12 +505,12 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(99),
+                                borderRadius: BorderRadius.circular(AppRadius.full),
                               ),
                               child: const Text(
                                 '오늘 가능',
                                 style: TextStyle(
-                                  fontSize: 10,
+                                  fontSize: AppFontSize.caption,
                                   fontWeight: FontWeight.w700,
                                   color: Colors.white,
                                 ),
@@ -558,12 +526,12 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                               ),
                               decoration: BoxDecoration(
                                 color: AppColors.bgMuted,
-                                borderRadius: BorderRadius.circular(99),
+                                borderRadius: BorderRadius.circular(AppRadius.full),
                               ),
                               child: const Text(
                                 '발송됨',
                                 style: TextStyle(
-                                  fontSize: 10,
+                                  fontSize: AppFontSize.caption,
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.textTertiary,
                                 ),
@@ -585,7 +553,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                             Text(
                               _distanceLabel(distance),
                               style: const TextStyle(
-                                fontSize: 11,
+                                fontSize: AppFontSize.caption,
                                 color: AppColors.textSecondary,
                               ),
                             ),
@@ -600,7 +568,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                           Text(
                             _lastActiveLabel(w['last_active_at']),
                             style: const TextStyle(
-                              fontSize: 11,
+                              fontSize: AppFontSize.caption,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -633,15 +601,15 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                               Text(
                                 grade,
                                 style: TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w900,
+                                  fontSize: AppFontSize.body2,
+                                  fontWeight: FontWeight.w800,
                                   color: gradeColor,
                                 ),
                               ),
                               Text(
                                 '$score',
                                 style: TextStyle(
-                                  fontSize: 9,
+                                  fontSize: AppFontSize.caption,
                                   color: gradeColor,
                                 ),
                               ),
@@ -655,7 +623,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                         child: const Text(
                           '프로필',
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: AppFontSize.caption,
                             color: AppColors.primary,
                             fontWeight: FontWeight.w600,
                           ),
@@ -694,7 +662,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
               child: Text(
                 '$count명 선택됨',
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSize.body2,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -706,13 +674,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor:
                     count > 0 ? AppColors.urgentCall : AppColors.bgMuted,
-                foregroundColor: Colors.white,
                 disabledBackgroundColor: AppColors.bgMuted,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                padding: const EdgeInsets.symmetric(vertical: 14),
               ),
               child:
                   _sending
@@ -727,7 +689,7 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
                       : Text(
                         count > 0 ? '$count명에게 긴급 호출 발송' : '알바생을 선택해주세요',
                         style: TextStyle(
-                          fontSize: 15,
+                          fontSize: AppFontSize.body1,
                           fontWeight: FontWeight.w700,
                           color:
                               count > 0
@@ -743,48 +705,13 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
   }
 
   Widget _buildEmpty() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.location_off_rounded,
-              size: 60,
-              color: AppColors.textDisabled,
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              '반경 5km 내 오늘 가능한 알바생이 없어요',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '잠시 후 다시 시도하거나\n공고를 일반 게시로 등록해보세요.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-            const SizedBox(height: 24),
-            OutlinedButton(
-              onPressed: _fetchWorkers,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: const Text('새로고침'),
-            ),
-          ],
-        ),
-      ),
+    return AppEmptyState(
+      icon: Icons.location_off_rounded,
+      title: '반경 5km 내 오늘 가능한 알바생이 없어요',
+      message: '잠시 후 다시 시도하거나\n공고를 일반 게시로 등록해보세요.',
+      actionLabel: '새로고침',
+      onAction: _fetchWorkers,
+      secondaryAction: true,
     );
   }
 }

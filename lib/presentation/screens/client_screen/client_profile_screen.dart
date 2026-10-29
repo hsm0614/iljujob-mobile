@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:flutter/material.dart';
 import '../../../config/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -38,10 +39,12 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
         });
       } else {
         debugPrint('불러오기 실패: ${response.body}');
+        if (mounted) setState(() => isLoading = false);
         _showError(Msg.server);
       }
     } catch (e) {
       debugPrint('네트워크 오류: $e');
+      if (mounted) setState(() => isLoading = false);
       _showError(Msg.network);
     }
   }
@@ -68,6 +71,17 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
   }
 
   Future<void> _toggleBlockStatus() async {
+    if (!isBlocked) {
+      final ok = await showAppSheet(
+        context,
+        title: '이 기업을 차단할까요?',
+        message: '차단하면 이 기업의 공고와 채팅이 보이지 않아요.',
+        confirmLabel: '차단하기',
+        cancelLabel: '취소',
+        destructive: true,
+      );
+      if (!ok || !mounted) return;
+    }
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('userId') ?? 0;
 
@@ -90,7 +104,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(isBlocked ? '해당 기업이 차단되었습니다.' : '차단이 해제되었습니다.'),
+            content: Text(isBlocked ? '차단했어요.' : '차단을 풀었어요.'),
           ),
         );
       } else {
@@ -156,7 +170,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                 const Text(
                   '※ 신고된 내용은 검토 후 24시간 이내에 조치됩니다.',
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: AppFontSize.meta,
                     color: AppColors.textSecondary,
                   ),
                 ),
@@ -228,306 +242,127 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  Widget _mzHeaderCard() {
-    final logo = profile!['logo_url'];
-    final verified = profile!['is_certified_company'].toString() == '1';
-    final company = profile!['company_name'] ?? '회사명 없음';
-    final manager = profile!['manager_name'] ?? '정보 없음';
-    final phone = profile!['phone'] ?? '정보 없음';
-    final email = profile!['email'] ?? '정보 없음';
-
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
-      margin: const EdgeInsets.only(bottom: 24),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primary, Color(0xFF5AA6FF)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withOpacity(0.25),
-            blurRadius: 16,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          CircleAvatar(
-            radius: 34,
-            backgroundColor: Colors.white,
-            backgroundImage:
-                (logo != null && logo.toString().isNotEmpty)
-                    ? NetworkImage(_resolveImageUrl(logo))
-                    : null,
-            child:
-                (logo == null || logo.toString().isEmpty)
-                    ? const Icon(
-                      Icons.business,
-                      size: 30,
-                      color: AppColors.primary,
-                    )
-                    : null,
-          ),
-          const SizedBox(width: 14),
-          Expanded(
+  // 신고·차단은 ⋯ 안으로 (알바생 프로필과 같게)
+  void _showMoreSheet() {
+    showModalBottomSheet(
+      context: context,
+      builder:
+          (ctx) => SafeArea(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        company,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    if (verified)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(.9),
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: const Text(
-                          '안심기업',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
-                  ],
+                ListTile(
+                  title: const Text('신고하기'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _showReportDialog('client', widget.clientId);
+                  },
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  '담당자 $manager',
-                  style: const TextStyle(color: Colors.white70),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  '전화 $phone',
-                  style: const TextStyle(color: Colors.white70),
-                ),
-                Text(
-                  '이메일 $email',
-                  style: const TextStyle(color: Colors.white70),
+                ListTile(
+                  title: Text(isBlocked ? '차단 풀기' : '차단하기', style: TextStyle(color: isBlocked ? AppColors.textPrimary : AppColors.error)),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _toggleBlockStatus();
+                  },
                 ),
               ],
             ),
           ),
-          const SizedBox(width: 8),
-          Column(
+    );
+  }
+
+  // 파란 통 상자(흰 글자 담당자·전화·이메일)+신고/차단 칩 → 흰 머리 + 숫자 두 칸 + 소개.
+  // 전화·이메일은 서버가 더 이상 보내지 않는다(무인증 열거로 개인 번호가 새던 것) — 연락은 채팅으로.
+  Widget _header() {
+    final logo = (profile!['logo_url'] ?? '').toString();
+    final verified = profile!['is_certified_company'].toString() == '1';
+    final company = (profile!['company_name'] ?? '').toString().trim();
+    final manager = (profile!['manager_name'] ?? '').toString().trim();
+    Widget cell(String label, String value) => Expanded(
+      child: Column(
+        children: [
+          Text(value, style: AppTextStyles.h3.copyWith(color: AppColors.textPrimary)),
+          const SizedBox(height: 2),
+          Text(label, style: AppTextStyles.body2),
+        ],
+      ),
+    );
+    return Container(
+      color: AppColors.bgCard,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          Row(
             children: [
-              _iconChip(
-                icon: Icons.report_gmailerrorred_rounded,
-                label: '신고',
-                bg: Colors.white,
-                fg: const Color(0xFFEB5757),
-                onTap: () => _showReportDialog('client', widget.clientId),
+              CircleAvatar(
+                radius: 32,
+                backgroundColor: AppColors.bgMuted,
+                backgroundImage: logo.isNotEmpty ? NetworkImage(_resolveImageUrl(logo)) : null,
+                child: logo.isEmpty ? const Icon(Icons.storefront_outlined, size: 30, color: AppColors.textTertiary) : null,
               ),
-              const SizedBox(height: 8),
-              _iconChip(
-                icon: isBlocked ? Icons.block_flipped : Icons.block,
-                label: isBlocked ? '해제' : '차단',
-                bg: Colors.white,
-                fg: isBlocked ? Colors.grey : Colors.black87,
-                onTap: _toggleBlockStatus,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            company.isEmpty ? '이름 없는 기업' : company,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.h2,
+                          ),
+                        ),
+                        if (verified) ...[
+                          const SizedBox(width: 6),
+                          const JobSignalBadge(label: '안심기업', signal: JobSignal.trust),
+                        ],
+                      ],
+                    ),
+                    if (manager.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text('담당자 $manager', style: AppTextStyles.body2),
+                    ],
+                  ],
+                ),
               ),
             ],
+          ),
+          const SizedBox(height: 20),
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(color: AppColors.bgMuted, borderRadius: BorderRadius.circular(AppRadius.md)),
+            child: Row(
+              children: [
+                cell('올린 공고', '${profile!['job_count'] ?? 0}개'),
+                cell('채용 확정', '${profile!['hire_count'] ?? 0}번'),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _iconChip({
-    required IconData icon,
-    required String label,
-    required Color bg,
-    required Color fg,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: bg,
-      borderRadius: BorderRadius.circular(12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          child: Row(
-            children: [
-              Icon(icon, size: 18, color: fg),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(color: fg, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _aboutCard() {
+  Widget _about() {
     final desc = (profile!['description'] ?? '').toString().trim();
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.04),
-            blurRadius: 10,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
+      color: AppColors.bgCard,
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              _pill('회사 소개'),
-              const Spacer(),
-              if (desc.isNotEmpty) _tinyMuted('최근 업데이트'),
-            ],
-          ),
-          const SizedBox(height: 12),
+          const Text('기업 소개', style: AppTextStyles.h3),
+          const SizedBox(height: 8),
           Text(
-            desc.isEmpty ? '아직 회사 소개가 작성되지 않았습니다.' : desc,
-            style: const TextStyle(fontSize: 14, height: 1.6),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _pill(String text) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-    decoration: BoxDecoration(
-      color: const Color(0xFFE9F2FF),
-      borderRadius: BorderRadius.circular(10),
-    ),
-    child: Text(
-      text,
-      style: const TextStyle(
-        color: AppColors.primary,
-        fontWeight: FontWeight.w700,
-      ),
-    ),
-  );
-
-  Widget _tinyMuted(String text) => Text(
-    text,
-    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-  );
-
-  Widget _statsCard() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      margin: const EdgeInsets.only(bottom: 32),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.04),
-            blurRadius: 10,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _pill('채용 활동'),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _statChip(
-                  Icons.work_outline,
-                  '등록한 공고',
-                  profile!['job_count']?.toString() ?? '0',
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _statChip(
-                  Icons.check_circle_outline,
-                  '채용 확정',
-                  profile!['hire_count']?.toString() ?? '0',
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _statChip(IconData icon, String title, String value) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7F9FC),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: AppColors.primary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ],
-            ),
+            desc.isEmpty ? '아직 소개를 쓰지 않았어요' : desc,
+            style:
+                desc.isEmpty
+                    ? AppTextStyles.body2
+                    : AppTextStyles.body1.copyWith(color: AppColors.textPrimary, height: 1.6),
           ),
         ],
       ),
@@ -537,27 +372,25 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.bgPage,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
         title: const Text('기업 프로필'),
+        actions: [
+          IconButton(tooltip: '더보기', icon: const Icon(Icons.more_horiz_rounded), onPressed: _showMoreSheet),
+        ],
       ),
       body:
           isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const AppSkeletonList(rows: 4)
               : profile == null
-              ? const Center(child: Text('기업 정보를 불러올 수 없어요.'))
-              : SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _mzHeaderCard(), // 여기
-                    _aboutCard(), // 여기
-                    _statsCard(), // 여기
-                  ],
-                ),
+              ? const AppEmptyState(
+                icon: Icons.storefront_outlined,
+                title: '기업 정보를 불러오지 못했어요',
+                message: '잠시 후 다시 시도해 주세요.',
+              )
+              : ListView(
+                padding: const EdgeInsets.only(bottom: 24),
+                children: [_header(), const SizedBox(height: 8), _about()],
               ),
     );
   }

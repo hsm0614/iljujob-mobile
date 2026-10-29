@@ -30,7 +30,7 @@ Future<void> showFreeLimitSheet(BuildContext context, String message) {
             width: 52,
             height: 52,
             decoration: const BoxDecoration(
-              color: Color(0xFFFFF7ED),
+              color: AppColors.warningLight,
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -44,7 +44,7 @@ Future<void> showFreeLimitSheet(BuildContext context, String message) {
             '이번 달 무료 등록을 다 쓰셨어요',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 17,
+              fontSize: AppFontSize.title,
               fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
             ),
@@ -54,7 +54,7 @@ Future<void> showFreeLimitSheet(BuildContext context, String message) {
             message,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 13,
+              fontSize: AppFontSize.body2,
               color: AppColors.textSecondary,
               height: 1.5,
             ),
@@ -65,13 +65,6 @@ Future<void> showFreeLimitSheet(BuildContext context, String message) {
               Expanded(
                 child: OutlinedButton(
                   onPressed: () => Navigator.pop(ctx),
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    side: const BorderSide(color: AppColors.border),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
                   child: const Text(
                     '닫기',
                     style: TextStyle(
@@ -99,17 +92,9 @@ Future<void> showFreeLimitSheet(BuildContext context, String message) {
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: blue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
                   ),
                   child: const Text(
-                    '즉시게시로 올리기',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
+                    '즉시게시로 올리기'),
                 ),
               ),
             ],

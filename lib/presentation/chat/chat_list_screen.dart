@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_motion.dart';
+import 'package:iljujob/utils/chat_stage.dart';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
@@ -334,7 +337,7 @@ class _ChatListScreenState extends State<ChatListScreen>
               const Text(
                 '채팅방 나가기',
                 style: TextStyle(
-                  fontSize: 17,
+                  fontSize: AppFontSize.title,
                   fontWeight: FontWeight.w800,
                   fontFamily: 'Jalnan2TTF',
                   color: AppColors.textPrimary,
@@ -345,7 +348,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                 '$title\n$leaveDescription',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 13.5,
+                  fontSize: AppFontSize.button,
                   color: AppColors.textSecondary,
                   height: 1.5,
                 ),
@@ -357,16 +360,9 @@ class _ChatListScreenState extends State<ChatListScreen>
                   onPressed: () => Navigator.of(context).pop(true),
                   style: FilledButton.styleFrom(
                     backgroundColor: AppColors.error,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
                   ),
                   child: const Text(
-                    '나가기',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                  ),
+                    '나가기'),
                 ),
               ),
               const SizedBox(height: 10),
@@ -383,7 +379,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                   ),
                   child: const Text(
                     '취소',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontSize: AppFontSize.button, fontWeight: FontWeight.w600),
                   ),
                 ),
               ),
@@ -544,7 +540,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    fontSize: 16,
+                    fontSize: AppFontSize.buttonLg,
                     fontWeight: FontWeight.w800,
                     color: AppColors.textPrimary,
                   ),
@@ -609,12 +605,12 @@ class _ChatListScreenState extends State<ChatListScreen>
             width: 28,
             height: 28,
             decoration: BoxDecoration(
-              color: AppColors.primaryLight,
+              color: AppColors.bgMuted,
               borderRadius: BorderRadius.circular(999),
             ),
             child: const Icon(
               Icons.notifications_none_rounded,
-              color: AppColors.primary,
+              color: AppColors.textSecondary,
               size: 17,
             ),
           ),
@@ -623,7 +619,7 @@ class _ChatListScreenState extends State<ChatListScreen>
             child: Text(
               '답변과 출근확정을 놓치지 않게 알림을 켜주세요.',
               style: TextStyle(
-                fontSize: 12.5,
+                fontSize: AppFontSize.body2,
                 color: AppColors.textPrimary,
                 fontWeight: FontWeight.w600,
               ),
@@ -648,7 +644,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                 style: TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.w800,
-                  fontSize: 12.5,
+                  fontSize: AppFontSize.body2,
                 ),
               ),
             ),
@@ -667,57 +663,6 @@ class _ChatListScreenState extends State<ChatListScreen>
     );
   }
 
-  bool _isTruthy(dynamic value) {
-    if (value == null) return false;
-    if (value is bool) return value;
-    if (value is num) return value != 0;
-    final text = value.toString().trim().toLowerCase();
-    return text == '1' || text == 'true' || text == 'yes' || text == 'y';
-  }
-
-  bool _isConfirmedRoom(Map chat) {
-    final statusText =
-        [
-          chat['application_status'],
-          chat['direct_message_status'],
-          chat['match_status'],
-          chat['status'],
-        ].where((v) => v != null).join(' ').toLowerCase();
-
-    return _isTruthy(chat['is_confirmed']) ||
-        _isTruthy(chat['is_hired']) ||
-        _isTruthy(chat['work_confirmed']) ||
-        chat['confirmed_at'] != null ||
-        statusText.contains('confirmed') ||
-        statusText.contains('accepted') ||
-        statusText.contains('hired') ||
-        statusText.contains('출근') ||
-        statusText.contains('확정') ||
-        statusText.contains('채택');
-  }
-
-  Widget _buildRoomBadge({
-    required String label,
-    required Color foreground,
-    required Color background,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(
-        color: background,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          color: foreground,
-          fontSize: 10.5,
-          fontWeight: FontWeight.w800,
-        ),
-      ),
-    );
-  }
-
   Widget _buildChatItem(Map chat) {
     final unreadCount =
         userType == 'worker'
@@ -726,8 +671,16 @@ class _ChatListScreenState extends State<ChatListScreen>
     final hasUnread = unreadCount > 0;
     final isUrgent =
         chat['is_urgent_call'] == 1 || chat['is_urgent_call'] == true;
-    final isConfirmed = _isConfirmedRoom(chat);
-    final showRoomBadges = hasUnread || isUrgent || isConfirmed;
+    // 방마다 '지금 단계' 하나 — 긴급호출 수락이 '출근확정'으로 보이던 것(상태 문자열에 accepted만 있어도 확정)
+    final stage = chatStageOf(
+      isWorker: userType == 'worker',
+      workStatus: chat['work_status']?.toString(),
+      workDate: chat['work_date']?.toString(),
+      urgentStatus: chat['direct_message_status']?.toString(),
+      isUrgent: isUrgent,
+      applicationStatus: chat['application_status']?.toString(),
+    );
+    final workDay = (chat['work_date'] ?? '').toString();
 
     String resolveProfileImageUrl(String? url) {
       if (url == null || url.trim().isEmpty) return '';
@@ -794,7 +747,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 13,
+                        fontSize: AppFontSize.body2,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -831,7 +784,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -841,14 +794,155 @@ class _ChatListScreenState extends State<ChatListScreen>
           ),
         ],
       ),
+      // 2026-10 리디자인(당근 채팅 목록): 떠 있는 카드·안읽음 파란 바탕·'새 메시지' 뱃지(숫자와 중복)·⋯ 버튼
+      // → 흰 줄 + 구분선. 누가(굵게) · 무슨 공고 · 마지막 말 순서. 더보기는 길게 누르기/밀기로
       child: Material(
-        color:
-            hasUnread
-                ? AppColors.primaryLight.withValues(alpha: 0.45)
-                : AppColors.bgCard,
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.bgCard,
         child: InkWell(
-          onTap: () {
+          onTap: () => _openRoom(chat),
+          onLongPress: () => _showChatActions(chat),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: AppColors.borderSub)),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                CircleAvatar(
+                  radius: 24,
+                  backgroundColor: AppColors.bgMuted,
+                  backgroundImage:
+                      profileImageUrl.isNotEmpty
+                          ? NetworkImage(profileImageUrl)
+                          : null,
+                  child:
+                      profileImageUrl.isEmpty
+                          ? Text(
+                            fallbackText.isNotEmpty ? fallbackText[0] : '?',
+                            style: AppTextStyles.h3.copyWith(
+                              color: AppColors.textTertiary,
+                            ),
+                          )
+                          : null,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Row(
+                              children: [
+                          Flexible(
+                            child: Text(
+                              '$otherParty',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.jobTitle,
+                            ),
+                          ),
+                          if (userType == 'client' &&
+                              chat['user_available_today'] == 1) ...[
+                            const SizedBox(width: 6),
+                            const JobSignalBadge(
+                              label: '오늘 가능',
+                              signal: JobSignal.time,
+                            ),
+                          ],
+                              ],
+                            ),
+                          ),
+                          if (lastTime.isNotEmpty)
+                            Text(lastTime, style: AppTextStyles.caption),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      // 단계(색) · 근무일 · 공고 — 같은 사장님 방이 여러 개여도 구별되게
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            if (stage != null)
+                              TextSpan(
+                                text: '${stage.label} · ',
+                                style: AppTextStyles.jobMeta.copyWith(
+                                  color: stage.color,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            if (workDay.length >= 10)
+                              TextSpan(
+                                text:
+                                    '${int.parse(workDay.substring(5, 7))}/${int.parse(workDay.substring(8, 10))} 근무 · ',
+                              ),
+                            TextSpan(text: '$jobTitle'),
+                          ],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.jobMeta,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              previewText,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.body2.copyWith(
+                                color:
+                                    lastMessage.isEmpty
+                                        ? AppColors.textTertiary
+                                        : hasUnread
+                                        ? AppColors.textPrimary
+                                        : AppColors.textSecondary,
+                                fontWeight:
+                                    hasUnread
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                              ),
+                            ),
+                          ),
+                          if (hasUnread)
+                            Container(
+                              margin: const EdgeInsets.only(left: 8),
+                              constraints: const BoxConstraints(minWidth: 20),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                // 안읽음은 '빨리 봐야 함' — 주황(시간 신호). 파랑은 누르는 것에만
+                                color: AppColors.badgeUrgent,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.full,
+                                ),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                unreadCount > 99 ? '99+' : '$unreadCount',
+                                style: AppTextStyles.captionBold.copyWith(
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openRoom(Map chat) {
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -884,211 +978,6 @@ class _ChatListScreenState extends State<ChatListScreen>
                 widget.onMessagesRead?.call();
               }
             });
-          },
-          borderRadius: BorderRadius.circular(14),
-          child: Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CircleAvatar(
-                      radius: 24,
-                      backgroundColor: AppColors.primaryLight,
-                      backgroundImage:
-                          profileImageUrl.isNotEmpty
-                              ? NetworkImage(profileImageUrl)
-                              : null,
-                      child:
-                          profileImageUrl.isEmpty
-                              ? Text(
-                                (fallbackText.isNotEmpty
-                                    ? fallbackText[0]
-                                    : '?'),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.textSecondary,
-                                ),
-                              )
-                              : null,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // 제목 + 시간
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  jobTitle,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 15.5,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                              ),
-                              if (lastTime.isNotEmpty) ...[
-                                const SizedBox(width: 8),
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 2),
-                                  child: Text(
-                                    lastTime,
-                                    style: const TextStyle(
-                                      color: AppColors.textTertiary,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                              const SizedBox(width: 2),
-                              SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: IconButton(
-                                  tooltip: '채팅방 작업',
-                                  padding: EdgeInsets.zero,
-                                  icon: const Icon(
-                                    Icons.more_horiz_rounded,
-                                    color: AppColors.textTertiary,
-                                    size: 21,
-                                  ),
-                                  onPressed: () => _showChatActions(chat),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (showRoomBadges) ...[
-                            const SizedBox(height: 5),
-                            Wrap(
-                              spacing: 5,
-                              runSpacing: 5,
-                              children: [
-                                if (hasUnread)
-                                  _buildRoomBadge(
-                                    label: '새 메시지',
-                                    foreground: Colors.white,
-                                    background: AppColors.primary,
-                                  ),
-                                if (isConfirmed)
-                                  _buildRoomBadge(
-                                    label: '출근확정',
-                                    foreground: AppColors.success,
-                                    background: AppColors.success.withValues(
-                                      alpha: 0.12,
-                                    ),
-                                  ),
-                                if (isUrgent)
-                                  _buildRoomBadge(
-                                    label: '긴급호출',
-                                    foreground: AppColors.warningDark,
-                                    background: AppColors.warningLight,
-                                  ),
-                              ],
-                            ),
-                          ],
-                          const SizedBox(height: 4),
-                          // 상대 + 오늘가능
-                          Row(
-                            children: [
-                              Flexible(
-                                child: Text(
-                                  '$otherParty님',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: AppColors.textSecondary,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ),
-                              if (userType == 'client' &&
-                                  chat['user_available_today'] == 1)
-                                Container(
-                                  margin: const EdgeInsets.only(left: 6),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary,
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: const Text(
-                                    '오늘 가능',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                          const SizedBox(height: 4),
-                          // 마지막 메시지 + 안읽음
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  previewText,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color:
-                                        lastMessage.isEmpty
-                                            ? AppColors.textTertiary
-                                            : AppColors.textPrimary,
-                                    fontSize: 13,
-                                    fontWeight:
-                                        unreadCount > 0
-                                            ? FontWeight.w700
-                                            : FontWeight.w400,
-                                  ),
-                                ),
-                              ),
-                              if (unreadCount > 0)
-                                Container(
-                                  margin: const EdgeInsets.only(left: 8),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: AppColors.primary,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Text(
-                                    unreadCount > 99
-                                        ? '99+'
-                                        : unreadCount.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w800,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   void _showSnackbar(String message) {
@@ -1150,7 +1039,7 @@ class _ChatListScreenState extends State<ChatListScreen>
     return DefaultTabController(
       length: 3,
       child: Scaffold(
-        backgroundColor: AppColors.bgPage,
+        backgroundColor: AppColors.bgCard,
         body: RefreshIndicator(
           onRefresh: () async {
             await _fetchChatRooms();
@@ -1160,38 +1049,24 @@ class _ChatListScreenState extends State<ChatListScreen>
           // 안에 TabBarView 를 넣었다. 그러면 안쪽 ListView 가 제스처를 먹어
           // 바깥 스크롤이 움직이지 않았고, 광고 배너를 스크롤로 치울 수 없었다.
           // NestedScrollView 는 헤더와 본문 스크롤을 이어 준다 —
-          // 배너는 위로 사라지고 검색바·탭만 고정으로 남으며 탭 스와이프도 유지된다.
+          // 검색바·탭은 고정으로 남고 탭 스와이프도 유지된다.
           child: NestedScrollView(
             headerSliverBuilder:
                 (context, innerBoxIsScrolled) => [
                   SliverAppBar(
                     pinned: true,
                     elevation: 0,
-                    backgroundColor: AppColors.primary,
-                    surfaceTintColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    expandedHeight: 130,
-                    toolbarHeight: 88,
+                    backgroundColor: AppColors.bgCard,
+                    surfaceTintColor: Colors.transparent,
+                    foregroundColor: AppColors.textPrimary,
+                    // 흰 앱바 52 + 검색창 56. 예전 파란 헤더는 130이었다.
+                    expandedHeight: 108,
+                    toolbarHeight: 52,
                     titleSpacing: 20,
-                    title: const Text(
-                      '채팅',
-                      style: TextStyle(
-                        fontFamily: 'Jalnan2TTF',
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w900,
-                        height: 1.1,
-                      ),
-                    ),
+                    title: const Text('채팅', style: AppTextStyles.tabTitle),
                     flexibleSpace: FlexibleSpaceBar(
                       background: Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [AppColors.primary, AppColors.primaryDark],
-                          ),
-                        ),
+                        color: AppColors.bgCard,
                         child: SafeArea(
                           bottom: false,
                           child: Align(
@@ -1207,17 +1082,18 @@ class _ChatListScreenState extends State<ChatListScreen>
                       ),
                     ),
                   ),
-                  // 배너를 탭 헤더보다 앞에 둔다. 스크롤하면 배너가 먼저 위로
-                  // 빠지고, 탭 헤더가 앱바 아래에 붙어 고정된다.
                   SliverToBoxAdapter(child: _buildNotificationBanner()),
-                  const SliverToBoxAdapter(
-                    child: AdBannerWidget(placement: 'app_chat_list'),
-                  ),
+                  if (!isLoading && chatRooms.isEmpty)
+                    const SliverToBoxAdapter(
+                      child: AdBannerWidget(placement: 'app_chat_list'),
+                    ),
                   SliverPersistentHeader(
                     pinned: true,
                     delegate: _TabHeaderDelegate(
                       TabBar(
-                        indicatorColor: AppColors.primary,
+                        indicatorColor: AppColors.textPrimary,
+                        indicatorSize: TabBarIndicatorSize.tab,
+                        dividerColor: AppColors.border,
                         labelColor: AppColors.textPrimary,
                         unselectedLabelColor: AppColors.textTertiary,
                         labelStyle: const TextStyle(
@@ -1234,7 +1110,7 @@ class _ChatListScreenState extends State<ChatListScreen>
                 ],
             body:
                 isLoading
-                    ? const Center(child: CircularProgressIndicator())
+                    ? const AppSkeletonList(avatar: true)
                     : chatRooms.isEmpty
                     ? const _EmptyState()
                     : TabBarView(
@@ -1242,6 +1118,12 @@ class _ChatListScreenState extends State<ChatListScreen>
                         _PrettyListView(
                           items: filtered,
                           itemBuilder: (c) => _buildChatItem(c),
+                          afterFirst:
+                              q.isEmpty
+                                  ? const AdBannerWidget(
+                                    placement: 'app_chat_list',
+                                  )
+                                  : null,
                           emptyState:
                               q.isEmpty
                                   ? const _EmptyState()
@@ -1285,9 +1167,8 @@ class _SearchFieldState extends State<_SearchField> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: AppShadows.card,
+        color: AppColors.bgMuted,
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Row(
@@ -1299,7 +1180,10 @@ class _SearchFieldState extends State<_SearchField> {
               controller: controller,
               decoration: const InputDecoration(
                 hintText: '채팅 검색',
+                filled: false,
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
               ),
               onChanged: (v) {
                 widget.onChanged(v);
@@ -1342,19 +1226,12 @@ class _BadgeTab extends StatelessWidget {
           Text(label),
           if (count > 0) ...[
             const SizedBox(width: 5),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(99),
-              ),
-              child: Text(
-                count > 99 ? '99+' : '$count',
-                style: const TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.white,
-                ),
+            Text(
+              count > 99 ? '99+' : '$count',
+              style: const TextStyle(
+                fontSize: AppFontSize.body2,
+                fontWeight: FontWeight.w700,
+                color: AppColors.badgeUrgent,
               ),
             ),
           ],
@@ -1397,10 +1274,12 @@ class _PrettyListView extends StatelessWidget {
   final List<dynamic> items;
   final Widget Function(Map chat) itemBuilder;
   final Widget emptyState;
+  final Widget? afterFirst;
   const _PrettyListView({
     required this.items,
     required this.itemBuilder,
     this.emptyState = const _EmptyState(),
+    this.afterFirst,
   });
 
   @override
@@ -1408,11 +1287,26 @@ class _PrettyListView extends StatelessWidget {
     if (items.isEmpty) {
       return emptyState;
     }
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 120),
-      itemBuilder: (_, i) => itemBuilder(items[i] as Map),
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
-      itemCount: items.length,
+    return ListView.builder(
+      padding: const EdgeInsets.only(bottom: 120),
+      itemBuilder: (_, i) {
+        // 배너는 세 번째 대화 뒤 — 첫 대화 바로 뒤에 끼면 흐름이 끊겼다. 대화가 3개 미만이면 맨 끝
+        final slot = items.length < 3 ? items.length : 3;
+        if (afterFirst != null && i == slot) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: afterFirst!,
+          );
+        }
+        final itemIndex = afterFirst != null && i > slot ? i - 1 : i;
+        final chat = items[itemIndex] as Map;
+        return AppFadeSlideIn(
+          key: ValueKey('room_in_${chat['id']}'),
+          index: itemIndex,
+          child: itemBuilder(chat),
+        );
+      },
+      itemCount: items.length + (afterFirst == null ? 0 : 1),
     );
   }
 }
@@ -1450,36 +1344,7 @@ class _EmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 48, color: AppColors.textDisabled),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return AppEmptyState(icon: icon, title: title, message: message);
   }
 }
 
@@ -1517,7 +1382,7 @@ class _ChatActionTile extends StatelessWidget {
       title: Text(
         title,
         style: const TextStyle(
-          fontSize: 15,
+          fontSize: AppFontSize.body1,
           fontWeight: FontWeight.w800,
           color: AppColors.textPrimary,
         ),
@@ -1525,7 +1390,7 @@ class _ChatActionTile extends StatelessWidget {
       subtitle: Text(
         subtitle,
         style: const TextStyle(
-          fontSize: 12.5,
+          fontSize: AppFontSize.body2,
           color: AppColors.textSecondary,
           height: 1.35,
         ),
@@ -1575,7 +1440,7 @@ class CancelApplicationDialog extends StatelessWidget {
                       Text(
                         '지원 취소하시겠어요?',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: AppFontSize.buttonLg,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
                         ),
@@ -1584,7 +1449,7 @@ class CancelApplicationDialog extends StatelessWidget {
                       Text(
                         '이 공고에 대한 지원이 취소되며,\n다시 지원하려면 새로 지원해야 할 수 있어요.',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: AppFontSize.body2,
                           height: 1.4,
                           color: AppColors.textSecondary,
                         ),
@@ -1616,7 +1481,7 @@ class CancelApplicationDialog extends StatelessWidget {
                     child: Text(
                       '취소 이후에는 채팅만 남고,\n해당 공고와의 매칭은 해제됩니다.',
                       style: TextStyle(
-                        fontSize: 11.5,
+                        fontSize: AppFontSize.meta,
                         height: 1.4,
                         color: AppColors.textTertiary,
                       ),
@@ -1637,41 +1502,25 @@ class CancelApplicationDialog extends StatelessWidget {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.error,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
                     ),
                     onPressed: () {
                       Navigator.of(context).pop(true);
                     },
                     child: const Text(
-                      '네, 지원을 취소할게요',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
+                      '네, 지원을 취소할게요'),
                   ),
                 ),
                 const SizedBox(height: 8),
                 SizedBox(
                   height: 44,
                   child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: AppColors.border),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
                     onPressed: () {
                       Navigator.of(context).pop(false);
                     },
                     child: const Text(
                       '그냥 둘게요',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFontSize.button,
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
                       ),

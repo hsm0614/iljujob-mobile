@@ -1,3 +1,4 @@
+import 'package:iljujob/config/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
@@ -29,11 +30,7 @@ void checkToken(String token) {
   });
     return Scaffold(
       appBar: AppBar(
-  title: const Text(
-    '관리자 홈',
-    style: TextStyle(fontWeight: FontWeight.bold),
-  ),
-  backgroundColor: Colors.indigo,
+  title: const Text('관리자 홈'),
   actions: [
     IconButton(
       icon: const Icon(Icons.logout),
@@ -49,7 +46,7 @@ void checkToken(String token) {
         children: [
           const Text(
             '관리자 기능',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(fontSize: AppFontSize.titleLg, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
 

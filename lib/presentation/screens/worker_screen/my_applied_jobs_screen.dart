@@ -2,29 +2,42 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_motion.dart';
 import 'package:http/http.dart' as http;
 import 'package:iljujob/config/app_theme.dart';
+import 'package:iljujob/widget/app_ui.dart';
+import 'package:iljujob/utils/apply_stage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
 import '../../../config/constants.dart';
 import '../../../data/models/job.dart';
 import '../../../data/services/authenticated_http_client.dart';
+import '../../../data/services/screen_analytics_service.dart';
 import 'job_detail_screen.dart';
 import '../../chat/chat_room_screen.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import '../../../config/messages.dart';
+import '../../widgets/albailju_common.dart';
 
 const kBrandBlue = AppColors.primary;
 
 class MyAppliedJobsScreen extends StatefulWidget {
-  const MyAppliedJobsScreen({super.key});
+  /// 빈 화면 '공고 보러 가기' — 탭 안이라 pop 으로는 홈에 못 간다. 탭 컨테이너가 넘겨준다
+  final VoidCallback? onGoHome;
+  const MyAppliedJobsScreen({super.key, this.onGoHome});
 
   @override
   State<MyAppliedJobsScreen> createState() => _MyAppliedJobsScreenState();
 }
 
 class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
+  final Map<String, ApplyStage> _stageByJob = {};
+  final Map<String, String> _replySpeedByJob = {};
+  final Set<String> _reviewableJobs = {};
+  ApplyStage _stage(Job j) =>
+      _stageByJob['${j.id}'] ?? applyStageOf(jobStatus: j.status);
+
   // Tabs
   int _tabIndex = 0; // 0=지원현황, 1=찜한공고
 
@@ -38,7 +51,8 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
   Set<String> hiddenJobIds = {}; // 로컬 숨김
   bool isLoading = true;
   // Filters
-  String filterStatus = '전체'; // 전체 | applied | confirmed | closed
+  String filterStatus =
+      '전체'; // 전체 | todo | waiting | done (apply_stage.dart group)
   String searchQuery = '';
 
   // Review status
@@ -64,20 +78,10 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
     return const [];
   }
 
-  int _payToInt(String s) {
-    final onlyNum = s.replaceAll(RegExp(r'[^0-9]'), '');
-    return int.tryParse(onlyNum) ?? 0;
-  }
-
-  String _fmtPay(String s) {
-    final n = _payToInt(s);
-    if (n <= 0) return s; // 혹시 이상한 값이면 원본 유지
-    return NumberFormat('#,###').format(n);
-  }
-
   @override
   void initState() {
     super.initState();
+    ScreenAnalyticsService.instance.logScreenView('worker_activity');
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       await _loadHiddenIds();
       await _loadAll();
@@ -162,6 +166,44 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
               .map((item) => Job.fromJson(item))
               .where((job) => job.status != 'deleted'),
         );
+        // 상태(답장 여부·출근확정)는 Job 모델 밖 값이라 따로 들고 있는다
+        _stageByJob
+          ..clear()
+          ..addEntries(
+            (raw as List).whereType<Map>().map(
+              (r) => MapEntry(
+                '${r['id']}',
+                applyStageOf(
+                  jobStatus: '${r['status'] ?? ''}',
+                  workStatus: r['work_status'] as String?,
+                  isConfirmed: '${r['is_confirmed']}' == '1',
+                  isCompleted: '${r['is_completed']}' == '1',
+                  clientReplied: '${r['client_replied']}' == '1',
+                  appliedAt: DateTime.tryParse('${r['applied_at']}'),
+                ),
+              ),
+            ),
+          );
+        // 후기는 사장님이 답했고 근무일이 지난 공고만 (서버 reviewController와 같은 기준)
+        _reviewableJobs
+          ..clear()
+          ..addAll(
+            raw.whereType<Map>().where(
+              (r) =>
+                  '${r['client_replied']}' == '1' &&
+                  '${r['work_day_passed']}' == '1',
+            ).map((r) => '${r['id']}'),
+          );
+        _replySpeedByJob.clear();
+        for (final r in raw.whereType<Map>()) {
+          int n(String k) => int.tryParse('${r[k] ?? 0}') ?? 0;
+          final label = replySpeedLabel(
+            n('client_reply_n'),
+            n('client_reply_1h'),
+            n('client_reply_24h'),
+          );
+          if (label != null) _replySpeedByJob['${r['id']}'] = label;
+        }
 
         // 후기 여부 미리 로딩
         reviewStatusMap.clear();
@@ -229,7 +271,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
         if (!mounted) return;
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(const SnackBar(content: Text('찜에서 해제했어요.')));
+        ).showSnackBar(const SnackBar(content: Text('관심 공고에서 뺐어요.')));
       } else {
         debugPrint('찜 해제 실패 (${res.statusCode})');
         _showErrorSnackbar(Msg.bookmarkFailed);
@@ -354,133 +396,91 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
-  /// 카드 더보기 — 저빈도·파괴적 액션 모음 (바텀시트 원칙)
+  /// 더보기 (2026-10): 빨간 아이콘 목록 → 공고 이름 + 글자 줄.
+  /// 숨기기는 되돌리기 스낵바가 있어 확인 창 없이 바로 (메뉴→확인→되돌리기 3단계였다)
   void _showCardActions(Job job) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
+      showDragHandle: true,
       builder:
           (sheetContext) => SafeArea(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const SizedBox(height: 8),
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(999),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+                  child: Text(
+                    job.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.body2,
                   ),
                 ),
-                const SizedBox(height: 8),
+                AppMenuRow(
+                  label: '목록에서 숨기기',
+                  subtitle: '이 기기에서만 안 보여요',
+                  trailing: const SizedBox.shrink(),
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _hide(job.id);
+                  },
+                ),
                 if (job.status == 'active')
-                  ListTile(
-                    leading: const Icon(
-                      Icons.cancel_outlined,
-                      color: AppColors.error,
-                    ),
-                    title: const Text(
-                      '지원 취소',
-                      style: TextStyle(
-                        color: AppColors.error,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
+                  InkWell(
                     onTap: () {
                       Navigator.pop(sheetContext);
                       _confirmCancel(job);
                     },
-                  ),
-                ListTile(
-                  leading: const Icon(
-                    Icons.visibility_off_outlined,
-                    color: AppColors.textSecondary,
-                  ),
-                  title: const Text(
-                    '목록에서 숨기기',
-                    style: TextStyle(
-                      color: AppColors.textPrimary,
-                      fontWeight: FontWeight.w600,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      child: Text(
+                        '지원 취소',
+                        style: AppTextStyles.body1.copyWith(
+                          color: AppColors.error,
+                        ),
+                      ),
                     ),
                   ),
-                  onTap: () {
-                    Navigator.pop(sheetContext);
-                    _confirmDelete(job.id);
-                  },
-                ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
               ],
             ),
           ),
     );
   }
 
-  Future<void> _confirmDelete(String jobId) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('목록에서 숨기기'),
-            content: const Text('이 항목을 목록에서 숨길까요?\n(내역은 이 기기에서만 숨겨져요)'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('취소'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('숨기기', style: TextStyle(color: Colors.red)),
-              ),
-            ],
-          ),
-    );
+  Future<void> _hide(String jobId) async {
+    hiddenJobIds.add(jobId);
+    await _saveHiddenIds();
+    _applyFilters();
 
-    if (confirmed == true) {
-      hiddenJobIds.add(jobId);
-      await _saveHiddenIds();
-      _applyFilters();
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('숨김 처리했어요.'),
-          action: SnackBarAction(
-            label: '되돌리기',
-            onPressed: () async {
-              hiddenJobIds.remove(jobId);
-              await _saveHiddenIds();
-              _applyFilters();
-            },
-          ),
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('목록에서 숨겼어요.'),
+        action: SnackBarAction(
+          label: '되돌리기',
+          onPressed: () async {
+            hiddenJobIds.remove(jobId);
+            await _saveHiddenIds();
+            _applyFilters();
+          },
         ),
-      );
-    }
+      ),
+    );
   }
 
   Future<void> _confirmCancel(Job job) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('지원 취소'),
-            content: const Text(
-              '이 공고 지원을 취소할까요?\n취소 후 다시 지원하려면 새로 지원해야 할 수 있어요.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: const Text('닫기'),
-              ),
-              TextButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: const Text('지원 취소', style: TextStyle(color: Colors.red)),
-              ),
-            ],
-          ),
+    final confirmed = await showAppSheet(
+      context,
+      title: '이 공고 지원을 취소할까요?',
+      message: '취소한 지원은 되돌릴 수 없어요. 다시 하려면 새로 지원해야 해요.',
+      confirmLabel: '지원 취소',
+      cancelLabel: '닫기',
+      destructive: true,
     );
 
     if (confirmed == true) {
@@ -562,16 +562,8 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
       child: Container(
         height: 44,
         decoration: BoxDecoration(
-          color: AppColors.bgPage,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
-          boxShadow: const [
-            BoxShadow(
-              color: Color(0x08000000),
-              blurRadius: 6,
-              offset: Offset(0, 2),
-            ),
-          ],
+          color: AppColors.bgMuted,
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: TextField(
           onChanged: (v) {
@@ -585,7 +577,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
               size: 20,
             ),
             hintText: '제목 또는 지역으로 검색',
-            hintStyle: TextStyle(color: Color(0xFFB0B8C1), fontSize: 14),
+            hintStyle: TextStyle(color: AppColors.textTertiary, fontSize: AppFontSize.button),
             border: InputBorder.none,
             contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             isDense: true,
@@ -617,7 +609,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                     Text(
                       title,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: AppFontSize.button,
                         fontWeight:
                             selected ? FontWeight.w700 : FontWeight.w500,
                         color:
@@ -634,13 +626,13 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: selected ? kBrandBlue : const Color(0xFFE7ECF3),
+                        color: selected ? kBrandBlue : AppColors.border,
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Text(
                         '$count',
                         style: TextStyle(
-                          fontSize: 11,
+                          fontSize: AppFontSize.caption,
                           fontWeight: FontWeight.w700,
                           color:
                               selected ? Colors.white : AppColors.textTertiary,
@@ -668,48 +660,36 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
         Row(
           children: [
             tabItem(idx: 0, title: '지원 현황', count: filteredApplied.length),
-            tabItem(idx: 1, title: '찜한 공고', count: filteredBookmarked.length),
+            tabItem(idx: 1, title: '관심 공고', count: filteredBookmarked.length),
           ],
         ),
-        Container(height: 1, color: const Color(0xFFE7E7E7)),
+        Container(height: 1, color: AppColors.border),
       ],
     );
   }
 
+  /// 상태 묶음 칩: 전체 · 할 일 · 답장 대기 · 지난 지원 (개수 함께). 할 일이 있으면 그게 먼저 보인다
   Widget _statusChips() {
     Widget chip(String key, String label) {
       final selected = filterStatus == key;
-      return GestureDetector(
-        onTap: () {
-          setState(() => filterStatus = key);
-          _applyFilters();
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-          decoration: BoxDecoration(
-            color: selected ? kBrandBlue : Colors.white,
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(
-              color: selected ? kBrandBlue : AppColors.border,
-            ),
-            boxShadow:
-                selected
-                    ? [
-                      BoxShadow(
-                        color: kBrandBlue.withValues(alpha: 0.20),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ]
-                    : [],
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: selected ? Colors.white : AppColors.textSecondary,
+      final n = _activityCount(key);
+      return Material(
+        color: selected ? AppColors.primaryLight : AppColors.bgMuted,
+        borderRadius: BorderRadius.circular(AppRadius.full),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.full),
+          onTap: () {
+            setState(() => filterStatus = key);
+            _applyFilters();
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+            child: Text(
+              '$label $n',
+              style: AppTextStyles.captionBold.copyWith(
+                fontSize: AppFontSize.body2,
+                color: selected ? AppColors.primary : AppColors.textSecondary,
+              ),
             ),
           ),
         ),
@@ -721,25 +701,20 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
       child: Align(
         alignment: Alignment.centerLeft,
         child: Wrap(
-          spacing: 10,
+          spacing: 6,
           children: [
             chip('전체', '전체'),
-            chip('applied', '지원중'),
-            chip('confirmed', '출근 확정'),
-            chip('closed', '마감'),
+            chip('todo', '할 일'),
+            chip('waiting', '답장 대기'),
+            chip('done', '지난 지원'),
           ],
         ),
       ),
     );
   }
 
-  bool _matchesActivityFilter(Job job, String key) {
-    final status = job.status;
-    if (key == 'applied') return status == 'active';
-    if (key == 'confirmed') return status == 'hired' || status == 'confirmed';
-    if (key == 'closed') return status == 'closed';
-    return true;
-  }
+  bool _matchesActivityFilter(Job job, String key) =>
+      key == '전체' || _stage(job).group == key;
 
   int _activityCount(String key) =>
       appliedJobs
@@ -747,229 +722,63 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
           .where((job) => _matchesActivityFilter(job, key))
           .length;
 
-  Widget _activitySummary() {
-    Widget item({
-      required String label,
-      required int count,
-      required Color color,
-      required IconData icon,
-    }) {
-      return Expanded(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE8EDF3)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x08000000),
-                blurRadius: 8,
-                offset: Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 30,
-                height: 30,
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, size: 17, color: color),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '$count건',
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.textPrimary,
-                        height: 1.1,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      label,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textTertiary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: Row(
-        children: [
-          item(
-            label: '지원중',
-            count: _activityCount('applied'),
-            color: kBrandBlue,
-            icon: Icons.send_rounded,
-          ),
-          const SizedBox(width: 8),
-          item(
-            label: '출근 확정',
-            count: _activityCount('confirmed'),
-            color: AppColors.success,
-            icon: Icons.verified_rounded,
-          ),
-          const SizedBox(width: 8),
-          item(
-            label: '마감',
-            count: _activityCount('closed'),
-            color: AppColors.textTertiary,
-            icon: Icons.flag_rounded,
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _statusText(Job job) {
-    if (job.status == 'deleted') return '삭제됨';
-    if (job.status == 'hired' || job.status == 'confirmed') return '출근 확정';
-    if (job.status != 'active') return '마감';
-    // '지원중' 은 공고가 살아있다는 뜻일 뿐이라, 지원자 입장에선 아무 정보가 아니다.
-    // 최소한 얼마나 지났는지는 알려준다.
-    final at = job.appliedAt;
-    if (at == null) return '지원중';
-    final days = DateTime.now().toUtc().difference(at.toUtc()).inDays;
-    if (days <= 0) return '오늘 지원';
-    if (days == 1) return '지원 1일째';
-    return '지원 $days일째';
-  }
-
-  Color _statusColor(Job job) {
-    if (job.status == 'deleted') return AppColors.textTertiary;
-    if (job.status == 'active') return AppColors.primary;
-    if (job.status == 'hired' || job.status == 'confirmed')
-      return AppColors.success;
-    return AppColors.textTertiary;
-  }
-
   Widget _emptyView({required bool forBookmark}) {
-    final title = forBookmark ? '찜한 공고가 아직 없어요.' : '아직 지원한 알바가 없어요.';
-    final desc =
-        forBookmark
-            ? '마음에 드는 공고를 하트로 저장해두면\n나중에 빠르게 다시 볼 수 있어요.'
-            : '지금 바로 동네 알바를 찾아볼까요?';
-    final cta = forBookmark ? '공고 둘러보기' : '공고보러 가기';
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              desc,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 44,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: kBrandBlue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
-                ),
-                onPressed: () {
-                  // 홈으로 보내는 안전한 기본 동작
-                  Navigator.popUntil(context, (r) => r.isFirst);
-                },
-                child: Text(
-                  cta,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return AppEmptyState(
+      icon:
+          forBookmark
+              ? Icons.favorite_border_rounded
+              : Icons.work_outline_rounded,
+      title: forBookmark ? '관심 공고가 아직 없어요' : '아직 지원한 알바가 없어요',
+      message:
+          forBookmark
+              ? '마음에 드는 공고를 하트로 저장해두면\n나중에 빠르게 다시 볼 수 있어요.'
+              : '지금 바로 동네 알바를 찾아볼까요?',
+      actionLabel: '공고 보러 가기',
+      // 예전엔 popUntil(isFirst)였는데 탭 안이라 아무 일도 안 일어났다
+      onAction:
+          widget.onGoHome ??
+          () => Navigator.popUntil(context, (r) => r.isFirst),
     );
   }
 
-  Widget _jobRow(Job job, {required bool bookmarkedTab}) {
+  Widget _jobRow(Job job, {required bool bookmarkedTab, bool last = false}) {
     final reviewKey = '${job.clientId}-${job.title}';
     final reviewed = reviewStatusMap[reviewKey] == true;
     final isDeleted = job.status == 'deleted';
     // 지원일은 applications.created_at(=applied_at). 공고 생성일(job.createdAt)을
     // 쓰면 "3일 전에 올라온 공고에 오늘 지원"이 "지원일 3일 전"으로 표시된다.
     final appliedDate = job.appliedAt ?? job.createdAt;
-    final appliedAt =
-        appliedDate != null
-            ? DateFormat('MM.dd').format(appliedDate.toLocal())
-            : '';
-    final start =
-        job.startDate != null ? DateFormat('MM.dd').format(job.startDate!) : '';
-    final end =
-        job.endDate != null ? DateFormat('MM.dd').format(job.endDate!) : '';
+    final fmt = DateFormat('MM.dd');
+    final start = job.startDate != null ? fmt.format(job.startDate!) : '';
+    final end = job.endDate != null ? fmt.format(job.endDate!) : '';
+    // 하루짜리는 '06.09 ~ 06.09' 대신 '06.09', 날짜 없는 장기는 요일
+    final period =
+        start.isEmpty
+            ? (formatWeekdays(job.weekdays) ?? '')
+            : (end.isEmpty || end == start ? start : '$start ~ $end');
+    final hours =
+        job.workingHours.replaceAll('~', '').trim().isEmpty
+            ? ''
+            : job.workingHours;
+    final meta = [
+      if (period.isNotEmpty) period,
+      if (hours.isNotEmpty) hours,
+      if (!bookmarkedTab && appliedDate != null)
+        '${fmt.format(appliedDate.toLocal())} 지원',
+    ].join(' · ');
 
-    final statusText = _statusText(job);
-    final statusColor = _statusColor(job);
-
-    // 이미지 (있으면)
-    Widget thumb() {
-      final hasImage = job.imageUrls.isNotEmpty;
-      if (!hasImage) return const SizedBox(width: 74, height: 74);
-      final raw = job.imageUrls.first;
-      final url = raw.startsWith('http') ? raw : '$baseUrl$raw';
-
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: Image.network(
-          url,
-          width: 74,
-          height: 74,
-          cacheWidth: 222,
-          fit: BoxFit.cover,
-          errorBuilder:
-              (_, __, ___) => Container(
-                width: 74,
-                height: 74,
-                color: const Color(0xFFF2F4F7),
-                child: const Icon(
-                  Icons.image_not_supported_outlined,
-                  color: Color(0xFFBCC0CB),
-                ),
-              ),
-        ),
-      );
-    }
+    final stage = _stage(job);
+    final company = (job.company ?? '').trim();
+    final head =
+        company.isNotEmpty
+            ? company
+            : job.location.split(RegExp(r'\s+')).take(3).join(' ');
+    final done = !bookmarkedTab && stage.group == 'done';
+    final replySpeed =
+        bookmarkedTab || stage.group != 'waiting'
+            ? null
+            : _replySpeedByJob['${job.id}'];
+    final negotiable = isNegotiablePayType(job.payType);
 
     return InkWell(
       onTap:
@@ -983,179 +792,171 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
               },
       child: Opacity(
         opacity: (bookmarkedTab && isDeleted) ? 0.55 : 1.0,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        // 홈 목록과 같은 흰 줄 + 아래 구분선 (마지막 줄 뒤엔 없음)
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.bgCard,
+            border:
+                last
+                    ? null
+                    : const Border(
+                      bottom: BorderSide(color: AppColors.borderSub),
+                    ),
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 14, 8, 14),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Left info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // location + status
+                    // 회사(없으면 시·구) · 오른쪽에 지금 상태
                     Row(
                       children: [
-                        const Icon(
-                          Icons.place_outlined,
-                          size: 16,
-                          color: kBrandBlue,
-                        ),
-                        const SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            job.location,
+                            head,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12.5,
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w600,
-                            ),
+                            style: AppTextStyles.jobMeta,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: statusColor.withValues(alpha: 0.10),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            statusText,
-                            style: TextStyle(
-                              color: statusColor,
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
+                        if (!bookmarkedTab) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            stage.label,
+                            style: AppTextStyles.captionBold.copyWith(
+                              color: stage.color,
                             ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
-                    const SizedBox(height: 6),
-
+                    const SizedBox(height: 4),
                     Text(
                       job.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 15.5,
-                        fontWeight: FontWeight.w800,
+                      style: AppTextStyles.jobTitle.copyWith(
+                        color: done ? AppColors.textSecondary : null,
                       ),
                     ),
-                    const SizedBox(height: 6),
-
-                    Text(
-                      '$start ~ $end  ·  ${job.workingHours}',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-
-                    if (job.pay.isNotEmpty)
-                      Text(
-                        '${formatJobPay(job.pay, job.payType, includeType: true)}${bookmarkedTab ? '' : '   ·   지원일 $appliedAt'}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w700,
+                    if (meta.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(meta, style: AppTextStyles.jobMeta),
+                    ],
+                    if (job.pay.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: formatJobPay(job.pay, job.payType),
+                              style:
+                                  negotiable
+                                      ? AppTextStyles.body2.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textSecondary,
+                                      )
+                                      : AppTextStyles.body1.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                            ),
+                            if (!negotiable && job.payType.isNotEmpty)
+                              TextSpan(
+                                text: ' ${job.payType}',
+                                style: AppTextStyles.jobMeta,
+                              ),
+                          ],
                         ),
                       ),
+                    ],
+                    if (replySpeed != null) ...[
+                      const SizedBox(height: 6),
+                      Text(replySpeed, style: AppTextStyles.caption),
+                    ],
 
-                    const SizedBox(height: 10),
-
-                    // Bottom actions (지원현황 탭에서만)
-                    // 지원 취소는 ⋯ 더보기로 이동 — 카드 노출 액션 다이어트
-                    if (!bookmarkedTab)
-                      Row(
-                        children: [
-                          const Spacer(),
-                          TextButton.icon(
-                            style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 4,
-                              ),
-                              minimumSize: const Size(0, 32),
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
-                            onPressed:
-                                reviewed
-                                    ? null
-                                    : () {
-                                      Navigator.pushNamed(
-                                        context,
-                                        '/review',
-                                        arguments: {
-                                          'jobId': job.id,
-                                          'clientId': job.clientId,
-                                          'jobTitle': job.title,
-                                          'companyName': job.company,
-                                        },
-                                      );
-                                    },
-                            icon: Icon(
-                              Icons.edit_note,
-                              size: 18,
-                              color: reviewed ? Colors.grey : kBrandBlue,
-                            ),
-                            label: Text(
-                              reviewed ? '후기 작성 완료' : '후기 남기기',
-                              style: TextStyle(
-                                color: reviewed ? Colors.grey : kBrandBlue,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
+                    // 지금 해야 할 일 — 상태와 같은 기준(apply_stage.dart)
+                    if (!bookmarkedTab && stage.next != null) ...[
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap:
+                            stage == ApplyStage.waitingLong
+                                ? widget.onGoHome
+                                : () => _openChatRoom(job),
+                        child: Text(
+                          '${stage.next} ›',
+                          style: AppTextStyles.captionBold.copyWith(
+                            fontSize: AppFontSize.body2,
+                            color: AppColors.primary,
                           ),
-                        ],
+                        ),
                       ),
+                    ],
+                    // 끝난 지원 중 사장님과 이야기했고 근무일이 지난 것만 후기 (지원 취소·숨기기는 ⋯ 더보기).
+                    // 작성한 후기는 기준과 상관없이 '작성 완료'로 보여준다
+                    if (done &&
+                        (reviewed || _reviewableJobs.contains('${job.id}'))) ...[
+                      const SizedBox(height: 8),
+                      GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap:
+                            reviewed
+                                ? null
+                                : () => Navigator.pushNamed(
+                                  context,
+                                  '/review',
+                                  arguments: {
+                                    'jobId': job.id,
+                                    'clientId': job.clientId,
+                                    'jobTitle': job.title,
+                                    'companyName': job.company,
+                                  },
+                                ),
+                        child: Text(
+                          reviewed ? '후기 작성 완료' : '후기 남기기 ›',
+                          style: AppTextStyles.captionBold.copyWith(
+                            fontSize: AppFontSize.body2,
+                            color:
+                                reviewed
+                                    ? AppColors.textTertiary
+                                    : AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
 
-              const SizedBox(width: 12),
+              if (job.imageUrls.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                _thumb(job),
+              ],
 
-              // Right: image + heart
-              Stack(
-                children: [
-                  thumb(),
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Icon(
-                      bookmarkedTab ? Icons.favorite : Icons.favorite_border,
-                      color:
-                          bookmarkedTab ? kBrandBlue : const Color(0xFFBCC0CB),
-                      size: 22,
-                    ),
-                  ),
-                ],
-              ),
-
-              // trailing actions (chat/hide)
-              const SizedBox(width: 6),
+              // 오른쪽 아이콘 (채팅 · 더보기 / 관심 해제)
+              const SizedBox(width: 4),
               Column(
                 children: [
-                  if (bookmarkedTab && isDeleted) ...[
+                  if (bookmarkedTab)
                     IconButton(
-                      icon: const Icon(Icons.favorite, size: 22),
-                      color: Colors.redAccent,
-                      tooltip: '찜 해제',
+                      icon: const Icon(Icons.favorite_rounded, size: 22),
+                      color: AppColors.badgeNew,
+                      tooltip: '관심 해제',
                       onPressed: () => _removeBookmark(job),
-                    ),
-                  ] else ...[
+                    )
+                  else ...[
                     IconButton(
-                      icon: const Icon(Icons.chat_bubble_outline, size: 20),
-                      color: AppColors.primary,
+                      icon: const Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        size: 20,
+                      ),
+                      color: AppColors.textSecondary,
                       tooltip: '채팅하기',
                       onPressed: () => _openChatRoom(job),
                     ),
-                    // 숨기기·취소 같은 저빈도/파괴적 액션은 더보기로 (카드 액션 다이어트)
                     IconButton(
                       icon: const Icon(Icons.more_horiz_rounded, size: 22),
                       color: AppColors.textTertiary,
@@ -1172,6 +973,25 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
     );
   }
 
+  // 실제 이미지가 있을 때만
+  Widget _thumb(Job job) {
+    final raw = job.imageUrls.first;
+    final url = raw.startsWith('http') ? raw : '$baseUrl$raw';
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Image.network(
+        url,
+        width: 64,
+        height: 64,
+        cacheWidth: 192,
+        fit: BoxFit.cover,
+        errorBuilder:
+            (_, __, ___) =>
+                Container(width: 64, height: 64, color: AppColors.bgMuted),
+      ),
+    );
+  }
+
   // ---------------------------
   // Build
   // ---------------------------
@@ -1183,72 +1003,28 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
         backgroundColor: AppColors.bgPage,
-        appBar: PreferredSize(
-          preferredSize: const Size.fromHeight(88),
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppColors.primary, AppColors.primaryDark],
-              ),
+        appBar: AlbailjuAppBar(
+          title: '내 활동',
+          brand: true,
+          actions: [
+            IconButton(
+              tooltip: '새로고침',
+              icon: const Icon(Icons.refresh_rounded),
+              onPressed: _loadAll,
             ),
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 8, 10),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            '내 활동',
-                            style: TextStyle(
-                              fontFamily: 'Jalnan2TTF',
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.white,
-                              height: 1.1,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '지원 ${appliedJobs.length}건 · 찜 ${bookmarkedJobs.length}건',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white.withValues(alpha: 0.80),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: _loadAll,
-                      icon: const Icon(
-                        Icons.refresh_rounded,
-                        color: Colors.white,
-                      ),
-                      tooltip: '새로고침',
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+            const SizedBox(width: 6),
+          ],
         ),
         body:
             isLoading
-                ? const Center(child: CircularProgressIndicator())
+                ? const AppSkeletonList()
                 : Column(
                   children: [
-                    _headerSearch(),
+                    // 지원 0건이면 검색창·'0'짜리 칩 없이 빈 화면 안내만 (평가 2026-10)
+                    if (appliedJobs.isNotEmpty || bookmarkedJobs.isNotEmpty)
+                      _headerSearch(),
                     _topTabs(),
-                    if (_tabIndex == 0) ...[
-                      _activitySummary(),
+                    if (_tabIndex == 0 && appliedJobs.isNotEmpty) ...[
                       _statusChips(),
                     ] else
                       const SizedBox(height: 12),
@@ -1257,44 +1033,24 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
                           list.isEmpty
                               ? _emptyView(forBookmark: _tabIndex == 1)
                               : ListView.builder(
-                                padding: const EdgeInsets.fromLTRB(
-                                  16,
-                                  12,
-                                  16,
-                                  24,
-                                ),
+                                padding: const EdgeInsets.only(bottom: 24),
                                 itemCount: list.length,
                                 itemBuilder:
-                                    (context, i) => _jobCard(
-                                      list[i],
-                                      bookmarkedTab: _tabIndex == 1,
+                                    (context, i) => AppFadeSlideIn(
+                                      key: ValueKey(
+                                        'act_${_tabIndex}_${list[i].id}',
+                                      ),
+                                      index: i,
+                                      child: _jobRow(
+                                        list[i],
+                                        bookmarkedTab: _tabIndex == 1,
+                                        last: i == list.length - 1,
+                                      ),
                                     ),
                               ),
                     ),
                   ],
                 ),
-      ),
-    );
-  }
-
-  // 카드 래퍼 — 기존 _jobRow를 흰 카드로 감쌈
-  Widget _jobCard(Job job, {required bool bookmarkedTab}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x0D000000),
-            blurRadius: 12,
-            offset: Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: _jobRow(job, bookmarkedTab: bookmarkedTab),
       ),
     );
   }

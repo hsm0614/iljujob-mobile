@@ -22,13 +22,11 @@ class AlbailjuAppBar extends StatelessWidget implements PreferredSizeWidget {
   });
 
   @override
-  Size get preferredSize => Size.fromHeight(
-    (brand ? 88 : kToolbarHeight) + (bottom?.preferredSize.height ?? 0),
-  );
+  Size get preferredSize =>
+      Size.fromHeight(52 + (bottom?.preferredSize.height ?? 0));
 
   @override
   Widget build(BuildContext context) {
-    final titleColor = brand ? Colors.white : AppColors.primary;
     final appBarBottom =
         bottom == null
             ? null
@@ -45,28 +43,18 @@ class AlbailjuAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             );
 
+    // 리디자인(2026-10): 88px 파란 그라데이션(brand)을 없앴다. 탭 루트도 52px 흰 앱바.
+    // brand=true 는 '탭 루트 제목'이라는 뜻으로만 남는다 — 글자가 한 단계 크다.
     return AppBar(
-      backgroundColor: brand ? AppColors.primary : AppColors.bgCard,
-      foregroundColor: brand ? Colors.white : AppColors.textPrimary,
-      surfaceTintColor: brand ? AppColors.primary : AppColors.bgCard,
+      backgroundColor: AppColors.bgCard,
+      foregroundColor: AppColors.textPrimary,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
-      scrolledUnderElevation: 0.5,
-      toolbarHeight: brand ? 88 : kToolbarHeight,
+      scrolledUnderElevation: 0,
+      toolbarHeight: 52,
       centerTitle: centerTitle,
       titleSpacing: leading == null ? 20 : 0,
       leading: leading,
-      flexibleSpace:
-          brand
-              ? const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [AppColors.primary, AppColors.primaryDark],
-                  ),
-                ),
-              )
-              : null,
       title:
           titleWidget ??
           (title == null
@@ -75,12 +63,7 @@ class AlbailjuAppBar extends StatelessWidget implements PreferredSizeWidget {
                 title!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontFamily: 'Jalnan2TTF',
-                  fontSize: 24,
-                  fontWeight: FontWeight.w900,
-                  height: 1.1,
-                ).copyWith(color: titleColor),
+                style: brand ? AppTextStyles.tabTitle : AppTextStyles.h3,
               )),
       actions: actions,
       bottom: appBarBottom,
@@ -100,68 +83,16 @@ class AlbailjuPostJobCta extends StatelessWidget {
     this.inverted = false,
   });
 
+  // 2026-10: 큰 파란 알약 → 파란 글자 버튼 (내 공고 상단바와 같은 모양). [inverted]는 하위호환으로만 받는다.
   @override
   Widget build(BuildContext context) {
-    final fg = inverted ? AppColors.primary : Colors.white;
-    final bg = inverted ? Colors.white : AppColors.primary;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(AppRadius.full),
-        child: Ink(
-          height: 40,
-          padding: const EdgeInsets.fromLTRB(10, 0, 14, 0),
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(AppRadius.full),
-            border: Border.all(
-              color:
-                  inverted
-                      ? Colors.white.withValues(alpha: 0.90)
-                      : AppColors.primaryDark.withValues(alpha: 0.24),
-            ),
-            boxShadow:
-                inverted
-                    ? [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.10),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ]
-                    : AppShadows.button,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  color:
-                      inverted
-                          ? AppColors.primaryLight
-                          : Colors.white.withValues(alpha: 0.20),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.add_rounded, size: 17, color: fg),
-              ),
-              const SizedBox(width: 7),
-              Text(
-                label,
-                style: TextStyle(
-                  fontFamily: 'Jalnan2TTF',
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                  color: fg,
-                  height: 1.0,
-                ),
-              ),
-            ],
-          ),
-        ),
+    return TextButton.icon(
+      onPressed: onPressed,
+      icon: const Icon(Icons.add_rounded, size: 20),
+      label: Text(label),
+      style: TextButton.styleFrom(
+        foregroundColor: inverted ? Colors.white : AppColors.primary,
+        textStyle: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700),
       ),
     );
   }
@@ -183,17 +114,12 @@ class AlbailjuPostJobPrimaryButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Ink(
-          height: 56,
+          height: 52,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.primary, AppColors.primaryDark],
-            ),
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            boxShadow: AppShadows.button,
+            color: AppColors.primary,
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -216,7 +142,7 @@ class AlbailjuPostJobPrimaryButton extends StatelessWidget {
                 label,
                 style: const TextStyle(
                   fontFamily: 'Jalnan2TTF',
-                  fontSize: 16,
+                  fontSize: AppFontSize.buttonLg,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
                   height: 1.0,

@@ -81,6 +81,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
+        backgroundColor: AppColors.bgCard,
         appBar: AppBar(title: const Text('회원가입')),
         body: PageView(
           controller: _pageController,
@@ -431,16 +432,17 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
       hintText: hint,
       isDense: true,
       filled: true,
-      fillColor: Colors.white,
+      // 회색 채움·테두리 없음 (입력칸 규칙)
+      fillColor: AppColors.bgMuted,
       prefixIcon: icon != null ? Icon(icon) : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -451,7 +453,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
 
   ButtonStyle _primaryBtnStyle({bool enabled = true}) {
     return ElevatedButton.styleFrom(
-      backgroundColor: enabled ? kBrand : const Color(0xFF93C5FD),
+      backgroundColor: enabled ? kBrand : const Color(0xFFC4DCFF),
       foregroundColor: Colors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -467,7 +469,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
           label,
           style: const TextStyle(
             fontWeight: FontWeight.w700,
-            fontSize: 14.5,
+            fontSize: AppFontSize.body1,
             color: AppColors.textPrimary,
           ),
         ),
@@ -661,17 +663,9 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                                         _submitSignupData();
                                       },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 14,
-                                ),
                                 textStyle: const TextStyle(
-                                  fontSize: 16,
+                                  fontSize: AppFontSize.buttonLg,
                                   fontWeight: FontWeight.bold,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
                                 ),
                               ),
                               child: const Text('동의하고 가입하기'),
@@ -714,7 +708,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               const Text(
                 '알바일주 가입을 환영합니다',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: AppFontSize.h2,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
                 ),
@@ -723,24 +717,13 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               const Text(
                 '전화번호 인증만으로 바로 시작할 수 있어요.',
                 style: TextStyle(
-                  fontSize: 13.5,
+                  fontSize: AppFontSize.button,
                   color: AppColors.textSecondary,
                 ),
               ),
               const SizedBox(height: 18),
               Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(16),
+                // 테두리 카드 제거 — 상자 속 상자
                 child: _buildLabeledField(
                   '휴대폰 번호',
                   TextField(
@@ -770,19 +753,14 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                             ),
                           )
                           : const Text(
-                            '본인인증 하기',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                            '본인인증 하기'),
                 ),
               ),
               const SizedBox(height: 12),
               const Text(
                 '인증 후 기존 회원이라면 자동 로그인, 신규 회원이면 다음 단계로 이어집니다.',
                 style: TextStyle(
-                  fontSize: 12.5,
+                  fontSize: AppFontSize.body2,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -806,7 +784,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               const Text(
                 '기본 정보를 입력해주세요',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: AppFontSize.h2,
                   fontWeight: FontWeight.w800,
                   color: AppColors.textPrimary,
                 ),
@@ -815,7 +793,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               const Text(
                 '이름과 성별, 출생년도를 정확히 입력해 주세요.',
                 style: TextStyle(
-                  fontSize: 13.5,
+                  fontSize: AppFontSize.button,
                   color: AppColors.textSecondary,
                 ),
               ),
@@ -824,13 +802,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
+                  border: Border.all(color: AppColors.border),
                 ),
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                 child: Column(
@@ -930,12 +902,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                             ),
                           )
                           : const Text(
-                            '다음',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                            '다음'),
                 ),
               ),
               const SizedBox(height: 24),
@@ -958,18 +925,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               children: [
                 // 자신 있는 업무
                 Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(16),
+                  // 테두리 카드 제거 — 상자 속 상자
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1025,18 +981,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
 
                 // 나를 표현하는 단어
                 Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
-                        blurRadius: 12,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(16),
+                  // 테두리 카드 제거 — 상자 속 상자
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1107,12 +1052,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                               ),
                             )
                             : const Text(
-                              '가입 완료',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
+                              '가입 완료'),
                   ),
                 ),
               ],

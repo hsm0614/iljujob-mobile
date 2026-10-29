@@ -201,7 +201,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
 
     if (_workerId == null) {
       if (mounted) setState(() => _initialLoading = false);
-      _toast('로그인 정보가 없어요 🙏');
+      _toast('로그인 정보가 없어요');
       return;
     }
 
@@ -292,7 +292,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
 
       _prefs?.setString('workerProfileImageUrl', _profileImageUrl);
     } catch (_) {
-      _toast('네트워크 오류가 났어요 🥲');
+      _toast('네트워크 오류가 났어요');
     }
   }
 
@@ -436,9 +436,9 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
       });
 
       _prefs?.setString('workerProfileImageUrl', _profileImageUrl);
-      _toast('저장 완료! ✅');
+      _toast('저장 완료!');
     } catch (e) {
-      _toast('저장 중 오류가 났어요 🥲');
+      _toast('저장 중 오류가 났어요');
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -481,12 +481,12 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         setState(() {
           _experiences.removeWhere((e) => e.id == exp.id);
         });
-        _toast('삭제됐어요 🗑️');
+        _toast('삭제됐어요');
       } else {
         _toast('삭제 실패 (${resp.statusCode})');
       }
     } catch (e) {
-      _toast('네트워크 오류가 났어요 🥲');
+      _toast('네트워크 오류가 났어요');
     } finally {
       if (mounted) setState(() => _deletingExperienceIds.remove(exp.id));
     }
@@ -516,12 +516,12 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         setState(() {
           _licenses.removeWhere((x) => x.id == item.id);
         });
-        _toast('삭제됐어요 🗑️');
+        _toast('삭제됐어요');
       } else {
         _toast('삭제 실패 (${res.statusCode})');
       }
     } catch (e) {
-      _toast('네트워크 오류가 났어요 🥲');
+      _toast('네트워크 오류가 났어요');
     } finally {
       if (mounted) setState(() => _deletingLicenseIds.remove(item.id));
     }
@@ -574,13 +574,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.10),
-                  blurRadius: 24,
-                  spreadRadius: 2,
-                ),
-              ],
+              border: Border.all(color: AppColors.border),
             ),
             // ✅ SingleChildScrollView로 감싸서 키보드 올라올 때 overflow 방지
             child: SingleChildScrollView(
@@ -630,8 +624,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                         Text(
                           isEdit ? '자격증 수정' : '자격증 추가',
                           style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
+                            fontSize: AppFontSize.titleLg,
+                            fontWeight: FontWeight.w700,
                             color: kText,
                           ),
                         ),
@@ -673,7 +667,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                                         '',
                                       );
                                       if (digits.length != 8) {
-                                        _toast('취득일 형식을 확인해주세요 🙂');
+                                        _toast('취득일 형식을 확인해주세요');
                                         return;
                                       }
                                       try {
@@ -709,26 +703,12 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                                           );
                                         }
                                       } catch (e) {
-                                        _toast('네트워크 오류가 났어요 🥲');
+                                        _toast('네트워크 오류가 났어요');
                                       }
                                     }
                                     : null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: kBrandBlue,
-                              foregroundColor: Colors.white,
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                            ),
                             child: Text(
-                              isEdit ? '수정 완료' : '저장하기',
-                              style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
+                              isEdit ? '수정 완료' : '저장하기'),
                           ),
                         ),
                       ],
@@ -773,13 +753,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(22),
-              boxShadow: [
-                BoxShadow(
-                  blurRadius: 24,
-                  spreadRadius: 2,
-                  color: Colors.black.withOpacity(0.10),
-                ),
-              ],
+              border: Border.all(color: AppColors.border),
             ),
             child: StatefulBuilder(
               builder: (ctx, setLocal) {
@@ -818,7 +792,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                           child: Text(
                             label,
                             style: TextStyle(
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w700,
                               color: selected ? kBrandBlue : kMuted,
                             ),
                           ),
@@ -855,8 +829,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                               child: Text(
                                 '기본 정보 수정',
                                 style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
+                                  fontSize: AppFontSize.titleLg,
+                                  fontWeight: FontWeight.w700,
                                   color: kText,
                                 ),
                               ),
@@ -879,7 +853,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                             textInputAction: TextInputAction.done,
                             onChanged: (v) => tempName = v,
                             style: const TextStyle(
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w700,
                               color: kText,
                             ),
                             decoration: const InputDecoration(
@@ -920,7 +894,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                                   child: Text(
                                     _fmtYmdSlash(tempBirth),
                                     style: const TextStyle(
-                                      fontWeight: FontWeight.w900,
+                                      fontWeight: FontWeight.w700,
                                       color: kText,
                                     ),
                                   ),
@@ -940,7 +914,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                                   child: const Text(
                                     '선택',
                                     style: TextStyle(
-                                      fontWeight: FontWeight.w900,
+                                      fontWeight: FontWeight.w700,
                                       color: kBrandBlue,
                                     ),
                                   ),
@@ -965,7 +939,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                                 child: Text(
                                   _phone.isNotEmpty ? _phone : '전화번호 없음',
                                   style: TextStyle(
-                                    fontWeight: FontWeight.w900,
+                                    fontWeight: FontWeight.w700,
                                     color: _phone.isNotEmpty ? kText : kMuted,
                                   ),
                                 ),
@@ -982,19 +956,11 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                               child: OutlinedButton(
                                 onPressed: () => Navigator.pop(ctx),
                                 style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
                                   side: const BorderSide(color: kBorder),
                                   foregroundColor: kText,
                                 ),
                                 child: const Text(
-                                  '취소',
-                                  style: TextStyle(fontWeight: FontWeight.w900),
-                                ),
+                                  '취소'),
                               ),
                             ),
                             const SizedBox(width: 10),
@@ -1008,21 +974,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                                   });
                                   Navigator.pop(ctx);
                                 },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: kBrandBlue,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 14,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
                                 child: const Text(
-                                  '적용하기',
-                                  style: TextStyle(fontWeight: FontWeight.w900),
-                                ),
+                                  '적용하기'),
                               ),
                             ),
                           ],
@@ -1064,13 +1017,6 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(color: kBorder),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.12),
-                    blurRadius: 30,
-                    offset: const Offset(0, 18),
-                  ),
-                ],
               ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1103,7 +1049,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontFamily: 'Jalnan2TTF',
-                      fontSize: 16,
+                      fontSize: AppFontSize.buttonLg,
                       fontWeight: FontWeight.w800,
                       color: kText,
                     ),
@@ -1113,7 +1059,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                     message,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       height: 1.35,
                       fontWeight: FontWeight.w700,
                       color: kMuted,
@@ -1127,17 +1073,11 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: kText,
                             side: const BorderSide(color: kBorder),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
                             backgroundColor: kBg,
                           ),
                           onPressed: () => Navigator.pop(ctx, false),
                           child: const Text(
-                            '취소',
-                            style: TextStyle(fontWeight: FontWeight.w900),
-                          ),
+                            '취소'),
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -1145,18 +1085,10 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: confirmColor,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
                           ),
                           onPressed: () => Navigator.pop(ctx, true),
                           child: Text(
-                            confirmLabel,
-                            style: const TextStyle(fontWeight: FontWeight.w900),
-                          ),
+                            confirmLabel),
                         ),
                       ),
                     ],
@@ -1174,34 +1106,6 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
   // ──────────────────────────────────────────
   // 회원 탈퇴
   // ──────────────────────────────────────────
-  Future<void> _handleDeleteAccount() async {
-    if (_workerId == null) return;
-
-    final yes = await _confirmBottomSheet(
-      title: '회원 탈퇴',
-      message: '정말 탈퇴할까요?\n채팅방이 아카이브되고 계정이 삭제돼요.',
-      confirmLabel: '탈퇴',
-    );
-    if (!yes || !mounted) return;
-
-    try {
-      final res = await AuthenticatedHttpClient.delete(
-        Uri.parse('$baseUrl/api/worker/profile?id=$_workerId'),
-      );
-      if (res.statusCode == 200) {
-        await _prefs?.clear();
-        if (!mounted) return;
-        _toast('탈퇴가 완료됐어요.');
-        // ✅ 로그인 화면으로 이동 (Navigator.pushNamedAndRemoveUntil 등으로 교체)
-        Navigator.of(context).popUntil((route) => route.isFirst);
-      } else {
-        _toast('탈퇴 실패 (${res.statusCode})');
-      }
-    } catch (e) {
-      _toast('네트워크 오류가 났어요 🥲');
-    }
-  }
-
   // ──────────────────────────────────────────
   // UI 헬퍼
   // ──────────────────────────────────────────
@@ -1212,18 +1116,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
     );
   }
 
-  BoxDecoration _cardDeco() => BoxDecoration(
-    color: kCard,
-    borderRadius: BorderRadius.circular(18),
-    border: Border.all(color: kBorder),
-    boxShadow: [
-      BoxShadow(
-        color: Colors.black.withOpacity(0.04),
-        blurRadius: 18,
-        offset: const Offset(0, 10),
-      ),
-    ],
-  );
+  // 2026-10 리디자인: 떠 있는 그림자 카드 → 화면 폭 흰 블록, 블록 사이는 회색 바탕 8px (마이와 같은 문법)
+  BoxDecoration _cardDeco() => const BoxDecoration(color: kCard);
 
   Widget _sectionTitle(String title, {String? sub}) {
     return Padding(
@@ -1234,14 +1128,14 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
           Text(
             title,
             style: const TextStyle(
-              fontWeight: FontWeight.w900,
-              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              fontSize: AppFontSize.button,
               color: kText,
             ),
           ),
           if (sub != null) ...[
             const SizedBox(height: 4),
-            Text(sub, style: const TextStyle(fontSize: 12.5, color: kMuted)),
+            Text(sub, style: const TextStyle(fontSize: AppFontSize.body2, color: kMuted)),
           ],
         ],
       ),
@@ -1256,11 +1150,11 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(fontWeight: FontWeight.w900, color: kText),
+            style: const TextStyle(fontWeight: FontWeight.w700, color: kText),
           ),
           if (sub != null) ...[
             const SizedBox(height: 3),
-            Text(sub, style: const TextStyle(fontSize: 12.5, color: kMuted)),
+            Text(sub, style: const TextStyle(fontSize: AppFontSize.body2, color: kMuted)),
           ],
         ],
       ),
@@ -1294,8 +1188,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         Text(
           label,
           style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w900,
+            fontSize: AppFontSize.meta,
+            fontWeight: FontWeight.w700,
             color: kText,
           ),
         ),
@@ -1305,23 +1199,22 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
           onChanged: onChanged,
           readOnly: readOnly,
           onTap: onTap,
-          style: const TextStyle(fontWeight: FontWeight.w900, color: kText),
+          style: AppTextStyles.body1,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: const TextStyle(
-              color: kMuted,
-              fontWeight: FontWeight.w700,
+            hintStyle: AppTextStyles.body1.copyWith(
+              color: AppColors.textTertiary,
             ),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: AppColors.bgMuted,
             suffixIcon: suffixIcon,
             contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
+              horizontal: 14,
+              vertical: 14,
             ),
             enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(14),
-              borderSide: const BorderSide(color: kBorder),
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              borderSide: BorderSide.none,
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(14),
@@ -1341,18 +1234,15 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         duration: const Duration(milliseconds: 120),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
-          color: selected ? kBrandBlue.withOpacity(0.12) : Colors.white,
+          color: selected ? AppColors.primaryLight : Colors.white,
           borderRadius: BorderRadius.circular(999),
-          border: Border.all(
-            color: selected ? kBrandBlue : kBorder,
-            width: selected ? 1.6 : 1.2,
-          ),
+          border: Border.all(color: selected ? kBrandBlue : kBorder),
         ),
         child: Text(
           text,
           style: TextStyle(
-            fontWeight: FontWeight.w900,
-            fontSize: 12.5,
+            fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+            fontSize: AppFontSize.body2,
             color: selected ? kBrandBlue : kMuted,
           ),
         ),
@@ -1435,21 +1325,20 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFEFF6FF),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFC7D2FE)),
+        color: AppColors.bgMuted,
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Row(
         children: [
-          const Icon(Icons.info_outline_rounded, size: 18, color: kBrandBlue),
+          const Icon(Icons.info_outline_rounded, size: 18, color: kMuted),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
               text,
               style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.primaryDark,
-                fontWeight: FontWeight.w700,
+                fontSize: AppFontSize.meta,
+                color: kMuted,
+                fontWeight: FontWeight.w500,
                 height: 1.35,
               ),
             ),
@@ -1472,7 +1361,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
 
     return Container(
       decoration: _cardDeco(),
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
       child: Row(
         children: [
           GestureDetector(
@@ -1482,13 +1371,13 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                 CircleAvatar(
                   radius: 28,
                   backgroundImage: avatarProvider,
-                  backgroundColor: const Color(0xFFEFF6FF),
+                  backgroundColor: AppColors.bgMuted,
                   child:
                       avatarProvider == null
                           ? const Icon(
                             Icons.person_rounded,
-                            color: kBrandBlue,
-                            size: 28,
+                            color: AppColors.textDisabled,
+                            size: 32,
                           )
                           : null,
                 ),
@@ -1498,12 +1387,13 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                   child: Container(
                     width: 22,
                     height: 22,
-                    decoration: const BoxDecoration(
-                      color: kBrandBlue,
+                    decoration: BoxDecoration(
+                      color: AppColors.textSecondary,
                       shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
                     ),
                     child: const Icon(
-                      Icons.edit_rounded,
+                      Icons.camera_alt_rounded,
                       size: 13,
                       color: Colors.white,
                     ),
@@ -1520,8 +1410,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                 Text(
                   _nameCtrl.text.isNotEmpty ? _nameCtrl.text : '이름 미입력',
                   style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
+                    fontSize: AppFontSize.buttonLg,
+                    fontWeight: FontWeight.w700,
                     color: kText,
                   ),
                 ),
@@ -1530,7 +1420,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                   _birthDisplayText(_birthYear),
                   // 데이터 값은 다크 잉크 — 파랑은 액션 전용
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: AppFontSize.body2,
                     color: kText,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1538,26 +1428,19 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                 const SizedBox(height: 2),
                 Text(
                   _phone.isNotEmpty ? _phone : '전화번호 미입력',
-                  style: const TextStyle(fontSize: 12.5, color: kMuted),
+                  style: const TextStyle(fontSize: AppFontSize.body2, color: kMuted),
                 ),
               ],
             ),
           ),
-          Container(
-            decoration: BoxDecoration(
-              color: kBrandBlue.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: kBrandBlue.withOpacity(0.18)),
+          TextButton(
+            onPressed: _showBasicInfoSheet,
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.textSecondary,
+              backgroundColor: AppColors.bgMuted,
+              textStyle: AppTextStyles.btnSm,
             ),
-            child: IconButton(
-              onPressed: _showBasicInfoSheet,
-              icon: const Icon(
-                Icons.edit_outlined,
-                color: kBrandBlue,
-                size: 20,
-              ),
-              tooltip: '기본정보 수정',
-            ),
+            child: const Text('기본 정보 수정'),
           ),
         ],
       ),
@@ -1567,29 +1450,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
   // ── 섹션 카드 공통 헤더
   Widget _cardHeader(IconData icon, String title, {Color? iconColor}) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-      child: Row(
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: (iconColor ?? kBrandBlue).withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: iconColor ?? kBrandBlue, size: 18),
-          ),
-          const SizedBox(width: 10),
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w900,
-              color: kText,
-            ),
-          ),
-        ],
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      child: Text(title, style: AppTextStyles.h3),
     );
   }
 
@@ -1600,43 +1462,38 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _cardHeader(Icons.edit_note_rounded, '자기소개'),
-          const Divider(height: 1, color: kBorder),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(20, 6, 20, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
                   '사장님이 가장 먼저 읽는 내용이에요. 2~3줄이면 충분해요!',
-                  style: TextStyle(fontSize: 12.5, color: kMuted),
+                  style: TextStyle(fontSize: AppFontSize.body2, color: kMuted),
                 ),
                 const SizedBox(height: 10),
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: kBorder),
+                    color: AppColors.bgMuted,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(14),
                   child: TextField(
                     controller: _introductionCtrl,
                     minLines: 4,
                     maxLines: 7,
                     maxLength: 300,
                     style: const TextStyle(
-                      fontSize: 14.5,
+                      fontSize: AppFontSize.body1,
                       height: 1.5,
                       color: kText,
                     ),
                     decoration: const InputDecoration(
                       hintText: '예) 평일 저녁 가능 / 상하차 3개월 경험 / 책임감 있게 마무리합니다',
-                      hintStyle: TextStyle(
-                        color: kMuted,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      hintStyle: TextStyle(color: AppColors.textTertiary),
                       border: InputBorder.none,
                       isDense: true,
-                      counterStyle: TextStyle(fontSize: 12, color: kMuted),
+                      counterStyle: TextStyle(fontSize: AppFontSize.meta, color: kMuted),
                       contentPadding: EdgeInsets.zero,
                     ),
                   ),
@@ -1656,9 +1513,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _cardHeader(Icons.tune_rounded, '근무 조건'),
-          const Divider(height: 1, color: kBorder),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1668,13 +1524,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
 
                 // 가능 요일
                 _sectionTitle('가능 요일', sub: '최소 2개 이상 선택하면 매칭이 더 잘 돼요'),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: kBorder),
-                  ),
-                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+                Padding(
+                  padding: EdgeInsets.zero,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -1781,9 +1632,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _cardHeader(Icons.work_history_rounded, '경력 / 자격증'),
-          const Divider(height: 1, color: kBorder),
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
+            padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1803,7 +1653,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                 ),
 
                 // 자격증
-                _sectionTitle('자격증 / 면허', sub: '신뢰도에 도움돼요. (증빙 첨부는 준비중)'),
+                _sectionTitle('자격증 / 면허', sub: '사장님이 믿고 맡길 수 있어요'),
                 if (_licenses.isEmpty)
                   _emptyCard(
                     icon: Icons.card_membership_rounded,
@@ -1828,16 +1678,10 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _cardHeader(Icons.settings_rounded, '설정', iconColor: kMuted),
-          const Divider(height: 1, color: kBorder),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: const EdgeInsets.fromLTRB(20, 8, 12, 12),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: kBorder),
-              ),
+              padding: EdgeInsets.zero,
               child: Row(
                 children: [
                   Icon(
@@ -1845,7 +1689,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                         ? Icons.visibility_rounded
                         : Icons.visibility_off_rounded,
                     size: 20,
-                    color: _resumeConsent ? kBrandBlue : kMuted,
+                    color: kMuted,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -1855,8 +1699,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                         const Text(
                           '이력서 열람 동의',
                           style: TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            fontSize: AppFontSize.button,
                             color: kText,
                           ),
                         ),
@@ -1864,19 +1708,15 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                           _resumeConsent
                               ? '사장님이 내 이력서를 볼 수 있어요.'
                               : '사장님은 기본 정보만 볼 수 있어요.',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: _resumeConsent ? kBrandBlue : kMuted,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: AppTextStyles.body2,
                         ),
                       ],
                     ),
                   ),
-                  Switch(
+                  Switch.adaptive(
                     value: _resumeConsent,
                     onChanged: (v) => setState(() => _resumeConsent = v),
-                    activeThumbColor: kBrandBlue,
+                    activeTrackColor: kBrandBlue,
                   ),
                 ],
               ),
@@ -1897,24 +1737,12 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: kBorder),
+          color: AppColors.bgMuted,
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: kBg,
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: kBorder),
-              ),
-              child: const Icon(Icons.badge_outlined, color: kMuted, size: 20),
-            ),
-            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1922,8 +1750,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                   Text(
                     e.place,
                     style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      fontSize: AppFontSize.body1,
                       color: kText,
                     ),
                   ),
@@ -1932,7 +1760,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                     spacing: 8,
                     runSpacing: 6,
                     children: [
-                      _tagPill('${e.year}년', blue: true),
+                      _tagPill('${e.year}년'),
                       _tagPill(e.duration),
                     ],
                   ),
@@ -1941,7 +1769,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                     Text(
                       e.description,
                       style: const TextStyle(
-                        fontSize: 13.5,
+                        fontSize: AppFontSize.button,
                         color: kMuted,
                         height: 1.3,
                       ),
@@ -1961,8 +1789,9 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                 )
                 : IconButton(
                   icon: const Icon(
-                    Icons.delete_outline_rounded,
-                    color: AppColors.error,
+                    Icons.close_rounded,
+                    size: 20,
+                    color: AppColors.textTertiary,
                   ),
                   onPressed: () => _deleteExperience(e),
                   splashRadius: 20,
@@ -1984,9 +1813,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: kBg,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: kBorder),
+          color: AppColors.bgMuted,
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         child: Row(
           children: [
@@ -1997,15 +1825,15 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                   Text(
                     l.name,
                     style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 14.5,
+                      fontWeight: FontWeight.w700,
+                      fontSize: AppFontSize.body1,
                       color: kText,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${l.issuedAt} 취득',
-                    style: const TextStyle(color: kMuted, fontSize: 13),
+                    style: const TextStyle(color: kMuted, fontSize: AppFontSize.body2),
                   ),
                   // '증빙 첨부 준비중' 자리표시는 섹션 설명에 이미 있어 카드별 반복 제거
                 ],
@@ -2023,8 +1851,9 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                 : IconButton(
                   tooltip: '삭제',
                   icon: const Icon(
-                    Icons.delete_outline_rounded,
-                    color: AppColors.error,
+                    Icons.close_rounded,
+                    size: 20,
+                    color: AppColors.textTertiary,
                   ),
                   onPressed: () => _deleteLicense(l),
                 ),
@@ -2038,17 +1867,14 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: blue ? kBrandBlue.withOpacity(0.10) : kBg,
+        color: blue ? kBrandBlue.withOpacity(0.10) : Colors.white,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: blue ? kBrandBlue.withOpacity(0.20) : kBorder,
-        ),
       ),
       child: Text(
         label,
         style: TextStyle(
-          fontWeight: FontWeight.w900,
-          fontSize: 12.5,
+          fontWeight: FontWeight.w700,
+          fontSize: AppFontSize.body2,
           color: blue ? kBrandBlue : kMuted,
         ),
       ),
@@ -2059,27 +1885,18 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: kBorder),
+        color: AppColors.bgMuted,
+        borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Row(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: kBrandBlue.withOpacity(0.10),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: kBrandBlue, size: 20),
-          ),
+          Icon(icon, color: AppColors.textTertiary, size: 22),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               label,
               style: const TextStyle(
-                fontSize: 13.5,
+                fontSize: AppFontSize.button,
                 color: kMuted,
                 height: 1.3,
               ),
@@ -2096,58 +1913,12 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
       child: OutlinedButton.icon(
         onPressed: onPressed,
         icon: const Icon(Icons.add_rounded, size: 18),
-        label: Text(label, style: const TextStyle(fontWeight: FontWeight.w900)),
+        label: Text(label),
         style: OutlinedButton.styleFrom(
-          foregroundColor: kBrandBlue,
-          side: const BorderSide(color: kBrandBlue, width: 1.4),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
+          foregroundColor: kText,
+          side: const BorderSide(color: kBorder),
         ),
       ),
-    );
-  }
-
-  Widget _buildAccountSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SizedBox(height: 8),
-        Divider(height: 32, color: kBorder),
-        const Text(
-          '계정 관리',
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            fontSize: 15,
-            color: kText,
-          ),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          '※ 탈퇴는 결제·채팅·지원 이력 정리 후 진행됩니다.',
-          style: TextStyle(fontSize: 12, color: kMuted),
-        ),
-        const SizedBox(height: 14),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            onPressed: _handleDeleteAccount,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.error,
-              side: const BorderSide(color: AppColors.error),
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            child: const Text(
-              '회원 탈퇴',
-              style: TextStyle(fontWeight: FontWeight.w900),
-            ),
-          ),
-        ),
-      ],
     );
   }
 
@@ -2160,7 +1931,6 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
       backgroundColor: kBg,
       appBar: AppBar(
         backgroundColor: Colors.white,
-        elevation: 0.8,
         titleSpacing: 16,
         title: const Text('프로필 수정'),
       ),
@@ -2171,20 +1941,18 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
               )
               : SafeArea(
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                  padding: const EdgeInsets.only(bottom: 32),
                   children: [
-                    _buildCompletenessHeader(),
-                    const SizedBox(height: 14),
                     _buildProfileCard(),
-                    const SizedBox(height: 14),
+                    _buildCompletenessHeader(),
+                    const SizedBox(height: 8),
                     _buildIntroCard(),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 8),
                     _buildWorkConditionCard(),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 8),
                     _buildCareerCard(),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 8),
                     _buildSettingsCard(),
-                    _buildAccountSection(),
                   ],
                 ),
               ),
@@ -2204,14 +1972,6 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                     height: 52,
                     child: ElevatedButton(
                       onPressed: _saving ? null : _saveProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: kBrandBlue,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
                       child:
                           _saving
                               ? const SizedBox(
@@ -2223,12 +1983,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                                 ),
                               )
                               : const Text(
-                                '저장하기',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
+                                '저장하기'),
                     ),
                   ),
                 ),
@@ -2262,7 +2017,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
     ];
 
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
       decoration: _cardDeco(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2272,7 +2027,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
               const Text(
                 '프로필 완성도',
                 style: TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSize.body2,
                   fontWeight: FontWeight.w800,
                   color: kText,
                 ),
@@ -2281,8 +2036,8 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
               Text(
                 '$pct%',
                 style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w900,
+                  fontSize: AppFontSize.body1,
+                  fontWeight: FontWeight.w700,
                   color: kText,
                 ),
               ),
@@ -2293,18 +2048,18 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
             borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
               value: done / total,
-              minHeight: 8,
-              backgroundColor: AppColors.border,
+              minHeight: 6,
+              backgroundColor: AppColors.bgMuted,
               valueColor: const AlwaysStoppedAnimation<Color>(kBrandBlue),
             ),
           ),
           const SizedBox(height: 8),
           Text(
             done >= total
-                ? '완성! 사장님에게 가장 신뢰가는 프로필이에요 👍'
+                ? '완성! 사장님에게 가장 신뢰가는 프로필이에요'
                 : '${next.first}만 채워도 사장님 신뢰가 올라가요',
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: AppFontSize.meta,
               color: kMuted,
               fontWeight: FontWeight.w600,
             ),
@@ -2384,7 +2139,7 @@ Future<DateTime?> showKoWheelDatePickerSheet(
         padding: const EdgeInsets.symmetric(vertical: 10),
         child: Text(
           text,
-          style: const TextStyle(fontWeight: FontWeight.w900, color: kMuted),
+          style: const TextStyle(fontWeight: FontWeight.w700, color: kMuted),
         ),
       );
 
@@ -2412,8 +2167,8 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                         child: Text(
                           label(v),
                           style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
+                            fontSize: AppFontSize.titleLg,
+                            fontWeight: FontWeight.w700,
                             color: kText,
                           ),
                         ),
@@ -2432,13 +2187,7 @@ Future<DateTime?> showKoWheelDatePickerSheet(
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(22),
-            boxShadow: [
-              BoxShadow(
-                blurRadius: 24,
-                spreadRadius: 2,
-                color: Colors.black.withOpacity(0.10),
-              ),
-            ],
+            border: Border.all(color: AppColors.border),
           ),
           child: StatefulBuilder(
             builder: (ctx, setLocal) {
@@ -2468,8 +2217,8 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                         child: Text(
                           title,
                           style: const TextStyle(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w900,
+                            fontSize: AppFontSize.title,
+                            fontWeight: FontWeight.w700,
                             color: kText,
                           ),
                         ),
@@ -2486,20 +2235,9 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                         onPressed: () => Navigator.pop(ctx, temp),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: brand,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(999),
-                          ),
                         ),
                         child: const Text(
-                          '완료',
-                          style: TextStyle(fontWeight: FontWeight.w900),
-                        ),
+                          '완료'),
                       ),
                     ],
                   ),
@@ -2527,8 +2265,8 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                         Text(
                           pretty(temp),
                           style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 14.5,
+                            fontWeight: FontWeight.w700,
+                            fontSize: AppFontSize.body1,
                             color: kText,
                           ),
                         ),

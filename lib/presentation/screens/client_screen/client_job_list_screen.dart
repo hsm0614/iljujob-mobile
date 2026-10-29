@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:iljujob/data/services/job_service.dart';
 import 'package:iljujob/data/models/job.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
@@ -75,9 +76,7 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
       onTap: () => FocusScope.of(context).unfocus(), // 키보드 내림
       child: Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          title: const Text('등록한 공고'),
+          title: const Text('이 기업의 공고'),
         ),
         body: Column(
           children: [
@@ -92,8 +91,12 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
                       decoration: InputDecoration(
                         hintText: '공고 제목 검색',
                         prefixIcon: const Icon(Icons.search),
+                        filled: true,
+                        fillColor: AppColors.bgMuted,
+                        isDense: true,
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          borderSide: BorderSide.none,
                         ),
                       ),
                     ),
@@ -115,7 +118,7 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
                 future: _jobsFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const AppSkeletonList();
                   }
 
                   if (_filteredJobs.isEmpty) {
@@ -135,7 +138,7 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
                         leading: const Icon(
                           Icons.work_outline,
                           size: 32,
-                          color: Colors.grey,
+                          color: AppColors.textTertiary,
                         ),
                         title: Text(
                           job.title,
@@ -156,15 +159,16 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
                           children: [
                             Text(
                               formatJobPay(job.pay, job.payType),
+                              // 급여는 잉크색 — 파랑은 누르는 것에만
                               style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
                               ),
                             ),
                             if (!isNegotiablePayType(job.payType))
                               Text(
                                 '(${job.payType})',
-                                style: const TextStyle(fontSize: 12),
+                                style: const TextStyle(fontSize: AppFontSize.meta),
                               ),
                           ],
                         ),
@@ -193,7 +197,7 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
       padding: const EdgeInsets.only(top: 2),
       child: Row(
         children: [
-          Icon(icon, size: 13, color: Colors.grey),
+          Icon(icon, size: 13, color: AppColors.textTertiary),
           const SizedBox(width: 4),
           Expanded(child: Text(text)),
         ],
@@ -202,68 +206,16 @@ class _ClientJobListScreenState extends State<ClientJobListScreen> {
   }
 }
 
-/// 공고가 하나도 없을 때. 문장만 남기면 사장님이 여기서 멈춘다 —
-/// 홈으로 돌려보내 공고 등록을 이어가게 한다.
+/// 공고 상세의 기업 칸에서 들어온다 — 대개 알바생이 본다. 예전엔 사장님 문구('공고 올리러 가기')였다
 class _EmptyJobs extends StatelessWidget {
   const _EmptyJobs();
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 28),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.work_outline_rounded,
-              size: 42,
-              color: AppColors.textDisabled,
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              '아직 등록한 공고가 없어요',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              '공고를 올리면 근처 알바생에게 바로 노출돼요.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 13,
-                height: 1.4,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 18),
-            SizedBox(
-              height: 44,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                onPressed:
-                    () => Navigator.popUntil(context, (r) => r.isFirst),
-                child: const Text(
-                  '공고 올리러 가기',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
+    return const AppEmptyState(
+      icon: Icons.work_outline_rounded,
+      title: '지금 모집 중인 공고가 없어요',
+      message: '새 공고가 올라오면 홈에서 볼 수 있어요',
     );
   }
 }

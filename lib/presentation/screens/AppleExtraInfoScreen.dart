@@ -142,10 +142,9 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: AppColors.bgPage,
+        backgroundColor: AppColors.bgCard,
         appBar: AppBar(
           elevation: 0,
-          centerTitle: true,
           title: const Text('기본 정보 및 프로필 설정'),
         ),
         body: Center(
@@ -159,27 +158,10 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // 헤더 카드
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(18),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
-                        gradient: LinearGradient(
-                          colors: [kBrand.withOpacity(0.15), Colors.white],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                      child: const Text(
-                        '🍎 Apple로 가입을 마무리합니다.\n'
-                        '필수 정보를 입력하고 프로필을 완성해주세요!',
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Color(0xFF1F2937),
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
+                    // 파란 안내 상자 → 큰 제목 한 줄 + 설명 (다른 가입 화면과 같게)
+                    const Text('거의 다 됐어요', style: AppTextStyles.h2),
+                    const SizedBox(height: 4),
+                    const Text('사장님이 볼 기본 정보만 채워 주세요', style: AppTextStyles.body2),
                     const SizedBox(height: 24),
 
                     // 이름
@@ -202,7 +184,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                     const SizedBox(height: 16),
 
                     // 출생년도
-                    _sectionTitle('🎂 출생년도'),
+                    _sectionTitle('출생년도'),
                     TextFormField(
                       controller: _birthYearCtrl,
                       keyboardType: TextInputType.number,
@@ -222,7 +204,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                     const SizedBox(height: 24),
 
                     // 성별
-                    _sectionTitle('👤 성별'),
+                    _sectionTitle('성별'),
                     Wrap(
                       spacing: 10,
                       children: [
@@ -234,12 +216,13 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                               _gender = selected ? '남성' : null;
                             });
                           },
-                          selectedColor: kBrand.withOpacity(0.2),
-                          backgroundColor: AppColors.border,
+                          selectedColor: kBrand,
+                          showCheckmark: false,
+                          backgroundColor: AppColors.bgMuted,
                           labelStyle: TextStyle(
                             color:
                                 _gender == '남성'
-                                    ? kBrand
+                                    ? Colors.white
                                     : AppColors.textPrimary,
                             fontWeight: FontWeight.w600,
                           ),
@@ -252,12 +235,13 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                               _gender = selected ? '여성' : null;
                             });
                           },
-                          selectedColor: kBrand.withOpacity(0.2),
-                          backgroundColor: AppColors.border,
+                          selectedColor: kBrand,
+                          showCheckmark: false,
+                          backgroundColor: AppColors.bgMuted,
                           labelStyle: TextStyle(
                             color:
                                 _gender == '여성'
-                                    ? kBrand
+                                    ? Colors.white
                                     : AppColors.textPrimary,
                             fontWeight: FontWeight.w600,
                           ),
@@ -267,7 +251,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                     const SizedBox(height: 28),
 
                     // 강점
-                    _sectionTitle('💪 자신 있는 업무 (최대 2개)'),
+                    _sectionTitle('자신 있는 업무 (최대 2개)'),
                     Wrap(
                       spacing: 10,
                       runSpacing: 10,
@@ -288,12 +272,13 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                                   }
                                 });
                               },
-                              selectedColor: kBrand.withOpacity(0.2),
-                              backgroundColor: AppColors.border,
+                              selectedColor: kBrand,
+                          showCheckmark: false,
+                              backgroundColor: AppColors.bgMuted,
                               labelStyle: TextStyle(
                                 color:
                                     isSelected
-                                        ? kBrand
+                                        ? Colors.white
                                         : AppColors.textPrimary,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -303,7 +288,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                     const SizedBox(height: 28),
 
                     // 성격
-                    _sectionTitle('🌟 나를 표현하는 단어'),
+                    _sectionTitle('나를 표현하는 단어'),
                     Wrap(
                       spacing: 10,
                       runSpacing: 10,
@@ -324,14 +309,14 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                                   }
                                 });
                               },
-                              selectedColor: const Color(
-                                0xFF10B981,
-                              ).withOpacity(0.25),
-                              backgroundColor: AppColors.border,
+                              // 초록은 돈·신뢰 신호 전용 — 고른 칩은 다른 칩과 같은 파랑
+                              selectedColor: kBrand,
+                              showCheckmark: false,
+                              backgroundColor: AppColors.bgMuted,
                               labelStyle: TextStyle(
                                 color:
                                     isSelected
-                                        ? const Color(0xFF047857)
+                                        ? Colors.white
                                         : AppColors.textPrimary,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -346,21 +331,10 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                       child: ElevatedButton(
                         onPressed: _loading ? null : _submitAll,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: kBrand,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
                           minimumSize: const Size.fromHeight(52),
                         ),
                         child: Text(
-                          _loading ? '저장 중...' : '완료하고 시작하기',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                          _loading ? '저장 중...' : '완료하고 시작하기'),
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -370,7 +344,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
                         '입력한 정보는 프로필에 반영되고,\n언제든 수정할 수 있어요.',
                         style: TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 13,
+                          fontSize: AppFontSize.body2,
                         ),
                         textAlign: TextAlign.center,
                       ),
@@ -392,11 +366,16 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
       hintText: hint,
       floatingLabelBehavior: FloatingLabelBehavior.auto,
       filled: true,
-      fillColor: Colors.white,
+      // 흰 바탕 위 회색 칸·테두리 없음 (입력칸 규칙)
+      fillColor: AppColors.bgMuted,
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -410,7 +389,7 @@ class _AppleProfileSetupScreenState extends State<AppleProfileSetupScreen> {
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(
         text,
-        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+        style: const TextStyle(fontSize: AppFontSize.body1, fontWeight: FontWeight.w800),
       ),
     );
   }

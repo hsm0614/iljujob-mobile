@@ -11,7 +11,6 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import '../../../config/messages.dart';
 import '../../../config/app_theme.dart';
 
-const kBrand = AppColors.primary;
 
 class SignupClientScreen extends StatefulWidget {
   const SignupClientScreen({super.key});
@@ -281,51 +280,37 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
       hintText: hint,
       isDense: true,
       filled: true,
-      fillColor: Colors.white,
+      // 회색 채움·테두리 없음 (입력칸 규칙) — 흰 칸에 테두리를 두르고 그걸 또 테두리 카드에 넣었었다
+      fillColor: AppColors.bgMuted,
       prefixIcon: icon != null ? Icon(icon) : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: kBrand, width: 1.5),
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
     );
   }
 
   ButtonStyle _primaryBtnStyle({bool enabled = true}) {
     return ElevatedButton.styleFrom(
-      backgroundColor: enabled ? kBrand : const Color(0xFF93C5FD),
+      backgroundColor: enabled ? AppColors.primary : const Color(0xFFC4DCFF),
       foregroundColor: Colors.white,
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       minimumSize: const Size.fromHeight(52),
     );
   }
 
-  Widget _card({required Widget child}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: child,
-    );
-  }
+  // 상자 없이 내용만 (상자 속 상자를 없앴다)
+  Widget _card({required Widget child}) => child;
 
   void _showSnackbar(String message) {
     ScaffoldMessenger.of(
@@ -353,9 +338,9 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
             height: 22,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: value ? kBrand : Colors.transparent,
+              color: value ? AppColors.primary : Colors.transparent,
               border: Border.all(
-                color: value ? kBrand : AppColors.textDisabled,
+                color: value ? AppColors.primary : AppColors.textDisabled,
                 width: 1.5,
               ),
             ),
@@ -369,7 +354,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(fontSize: 13.5, color: AppColors.textSecondary),
+            style: const TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
           ),
         ),
         TextButton(
@@ -388,7 +373,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
           ),
           child: const Text(
             '보기',
-            style: TextStyle(fontSize: 12, color: kBrand),
+            style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.primary),
           ),
         ),
       ],
@@ -403,11 +388,9 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFEFF3F8),
+        backgroundColor: AppColors.bgCard,
         appBar: AppBar(
           title: const Text('기업 회원가입'),
-          centerTitle: true,
-          elevation: 0,
           bottom: PreferredSize(
             preferredSize: const Size.fromHeight(4),
             child: _StepIndicator(currentPage: _currentPage, totalPages: 2),
@@ -437,7 +420,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
             const Text(
               '사장님 전화번호로\n시작해요',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: AppFontSize.h1,
                 fontWeight: FontWeight.w800,
                 height: 1.3,
                 color: AppColors.textPrimary,
@@ -446,7 +429,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
             const SizedBox(height: 8),
             const Text(
               '기존 회원이면 자동으로 로그인돼요.',
-              style: TextStyle(fontSize: 13.5, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 20),
             _card(
@@ -455,7 +438,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                 children: [
                   const Text(
                     '휴대폰 번호',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: AppFontSize.body2),
                   ),
                   const SizedBox(height: 8),
                   TextField(
@@ -499,12 +482,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                           ),
                         )
                         : const Text(
-                          'PASS 본인인증 하기',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                          'PASS 본인인증 하기'),
               ),
             ),
           ],
@@ -527,7 +505,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
             const Text(
               '담당자 정보를\n입력해주세요',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: AppFontSize.h1,
                 fontWeight: FontWeight.w800,
                 height: 1.3,
                 color: AppColors.textPrimary,
@@ -536,7 +514,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
             const SizedBox(height: 8),
             const Text(
               '채팅 및 고객센터 안내에 사용돼요.',
-              style: TextStyle(fontSize: 13.5, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 20),
 
@@ -546,7 +524,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                 children: [
                   const Text(
                     '담당자 이름',
-                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: AppFontSize.body2),
                   ),
                   const SizedBox(height: 8),
                   TextField(
@@ -566,14 +544,8 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
             Container(
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
+                borderRadius: BorderRadius.circular(AppRadius.lg),
+                border: Border.all(color: AppColors.border),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Column(
@@ -589,9 +561,9 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                       decoration: BoxDecoration(
                         color:
                             _allAgreed
-                                ? const Color(0xFFEFF6FF)
+                                ? AppColors.primaryLight
                                 : AppColors.bgPage,
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       child: Row(
                         children: [
@@ -601,11 +573,11 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                             height: 22,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: _allAgreed ? kBrand : Colors.transparent,
+                              color: _allAgreed ? AppColors.primary : Colors.transparent,
                               border: Border.all(
                                 color:
                                     _allAgreed
-                                        ? kBrand
+                                        ? AppColors.primary
                                         : AppColors.textDisabled,
                                 width: 1.5,
                               ),
@@ -623,7 +595,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                           const Text(
                             '약관 전체 동의',
                             style: TextStyle(
-                              fontSize: 14,
+                              fontSize: AppFontSize.button,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textPrimary,
                             ),
@@ -690,12 +662,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                           ),
                         )
                         : const Text(
-                          '동의하고 가입 완료',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                          '동의하고 가입 완료'),
               ),
             ),
             const SizedBox(height: 20),
@@ -727,7 +694,7 @@ class _StepIndicator extends StatelessWidget {
             height: 4,
             width: isActive ? 24 : 8,
             decoration: BoxDecoration(
-              color: isActive ? kBrand : AppColors.textDisabled,
+              color: isActive ? AppColors.primary : AppColors.textDisabled,
               borderRadius: BorderRadius.circular(2),
             ),
           );

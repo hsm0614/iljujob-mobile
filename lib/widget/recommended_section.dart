@@ -144,7 +144,7 @@ class _RecommendedSectionState extends State<RecommendedSection> {
               const SizedBox(height: 10),
               const Text(
                 'AI가 나에게 맞는 공고를 찾는 중이에요...',
-                style: TextStyle(color: Colors.black54, fontSize: 13),
+                style: TextStyle(color: Colors.black54, fontSize: AppFontSize.body2),
               ),
             ],
           ),
@@ -160,7 +160,7 @@ class _RecommendedSectionState extends State<RecommendedSection> {
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           decoration: BoxDecoration(
-            color: Colors.grey.shade50,
+            color: AppColors.bgMuted,
             borderRadius: BorderRadius.circular(14),
             border: Border.all(color: Colors.black12),
           ),
@@ -173,14 +173,14 @@ class _RecommendedSectionState extends State<RecommendedSection> {
                   SizedBox(width: 8),
                   Text(
                     '아직 추천 공고가 없어요',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                    style: TextStyle(fontSize: AppFontSize.button, fontWeight: FontWeight.w800),
                   ),
                 ],
               ),
               const SizedBox(height: 6),
               const Text(
                 '프로필(성별/희망직종)과 위치를 채우면 추천 정확도가 확 올라가요.',
-                style: TextStyle(fontSize: 12.5, color: Colors.black54, height: 1.2),
+                style: TextStyle(fontSize: AppFontSize.body2, color: Colors.black54, height: 1.2),
               ),
               const SizedBox(height: 12),
               Align(
@@ -192,9 +192,7 @@ class _RecommendedSectionState extends State<RecommendedSection> {
                     icon: const Icon(Icons.refresh_rounded, size: 18),
                     label: const Text('다시 불러오기'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
                       side: BorderSide(color: AppColors.primary.withOpacity(.35)),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                   ),
                 ),
@@ -214,12 +212,12 @@ class _RecommendedSectionState extends State<RecommendedSection> {
           if (widget.showHeader) ...[
             const Text(
               'AI 맞춤 추천',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+              style: TextStyle(fontSize: AppFontSize.titleLg, fontWeight: FontWeight.w800),
             ),
             const SizedBox(height: 6),
             Text(
               '총 ${items.length}개 추천',
-              style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+              style: const TextStyle(fontSize: AppFontSize.body2, color: Colors.black54),
             ),
             const SizedBox(height: 10),
           ],
@@ -295,12 +293,12 @@ class _AiJobCard extends StatelessWidget {
                 title,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w800),
+                style: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 6),
               Text(
                 meta,
-                style: const TextStyle(fontSize: 12.5, color: Colors.black54),
+                style: const TextStyle(fontSize: AppFontSize.body2, color: Colors.black54),
               ),
 
               if (shown.isNotEmpty) ...[
@@ -319,12 +317,6 @@ class _AiJobCard extends StatelessWidget {
                 height: 40,
                 child: ElevatedButton(
                   onPressed: loading ? null : onTap,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -335,11 +327,11 @@ class _AiJobCard extends StatelessWidget {
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                         ),
                         const SizedBox(width: 10),
-                        const Text('불러오는 중...', style: TextStyle(fontWeight: FontWeight.w800)),
+                        const Text('불러오는 중...'),
                       ] else ...[
                         const Icon(Icons.send_rounded, size: 18),
                         const SizedBox(width: 8),
-                        const Text('지원하기', style: TextStyle(fontWeight: FontWeight.w900)),
+                        const Text('지원하기'),
                       ],
                     ],
                   ),
@@ -362,14 +354,14 @@ class _ReasonChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: BoxDecoration(
-        color: const Color(0xFFEAF2FF),
+        color: AppColors.primaryLight,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: AppColors.primary.withOpacity(.22)),
       ),
       child: Text(
         text,
         style: const TextStyle(
-          fontSize: 12,
+          fontSize: AppFontSize.meta,
           fontWeight: FontWeight.w800,
           color: Color(0xFF1E2A3A),
         ),

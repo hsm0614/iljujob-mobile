@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../worker_calendar_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../data/services/job_service.dart';
+import 'job_detail_screen.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'home_main_screen.dart';
@@ -15,13 +18,13 @@ import 'package:iljujob/data/models/promo_model.dart';
 import 'package:iljujob/data/services/ai_api.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/widget/recommended_section.dart';
-import '../worker_calendar_screen.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/widget/app_ui.dart';
 import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 
 class HomeScreen extends StatefulWidget {
   final int initialTabIndex;
+  // 탭 순서: 0 캘린더 · 1 내 활동 · 2 홈 · 3 채팅 · 4 마이 (4탭 시도 후 롤백 2026-10-16)
   const HomeScreen({super.key, this.initialTabIndex = 2});
 
   @override
@@ -30,6 +33,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 2;
+  bool _homeOpened = false;
+  late final Widget _homeMainScreen;
   int unreadCount = 0;
   String userPhone = '';
   String userType = 'worker';
@@ -46,11 +51,30 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _selectedIndex = widget.initialTabIndex;
+    _homeOpened = _selectedIndex == 2;
+    _homeMainScreen = HomeMainScreen(onAiRecommend: _openRecommendSheet);
     _initializeHomeScreen();
     _setupFirebaseMessagingListeners();
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _maybeShowPromoIfHomeTab(),
     );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _openPendingApplyJob());
+  }
+
+  /// 비로그인 상태에서 '지원하기'를 누르고 가입했다면 그 공고로 돌려보낸다 (한 번만)
+  Future<void> _openPendingApplyJob() async {
+    final prefs = await SharedPreferences.getInstance();
+    final id = prefs.getString(JobDetailScreen.pendingApplyJobKey);
+    if (id == null) return;
+    await prefs.remove(JobDetailScreen.pendingApplyJobKey);
+    try {
+      final job = await JobService.fetchJobById(id);
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => JobDetailScreen(job: job)),
+      );
+    } catch (_) {}
   }
 
   @override
@@ -141,7 +165,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: Text(
                               p.checkboxLabel,
-                              style: const TextStyle(fontSize: 14),
+                              style: const TextStyle(fontSize: AppFontSize.button),
                             ),
                           ),
                           if (p.deeplink != null)
@@ -156,25 +180,13 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           const SizedBox(width: 8),
                           ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                            ),
                             onPressed: () async {
                               if (dontShow) await promoService.snooze(p);
                               if (!context.mounted) return;
                               Navigator.pop(context);
                             },
                             child: const Text(
-                              '닫기',
-                              style: TextStyle(color: Colors.white),
-                            ),
+                              '닫기'),
                           ),
                         ],
                       ),
@@ -301,27 +313,46 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // ─────────────────────────────────────────────
-  // 탭 선택 — 5탭 그대로
+  // 탭 선택
   // ─────────────────────────────────────────────
   void _onItemTapped(int index) {
-    setState(() => _selectedIndex = index);
+    setState(() {
+      _selectedIndex = index;
+      if (index == 2) _homeOpened = true;
+    });
     if (index == 2) _maybeShowPromoIfHomeTab();
   }
 
-  List<Widget> _buildScreens() {
-    return [
-      const WorkerCalendarScreen(),
-      const MyAppliedJobsScreen(),
-      HomeMainScreen(onAiRecommend: _openRecommendSheet),
-      ChatListScreen(onMessagesRead: _fetchUnreadCount),
-      const WorkerMyPageScreen(),
-    ];
+  Widget _screenForIndex(int index) {
+    return switch (index) {
+      0 => WorkerCalendarScreen(
+        onGoHome: () => _onItemTapped(2),
+        onGoActivity: () => _onItemTapped(1),
+      ),
+      1 => MyAppliedJobsScreen(onGoHome: () => _onItemTapped(2)),
+      3 => ChatListScreen(onMessagesRead: _fetchUnreadCount),
+      4 => WorkerMyPageScreen(onGoCalendar: () => _onItemTapped(0)),
+      _ => const SizedBox.shrink(),
+    };
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _buildScreens()[_selectedIndex],
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (_homeOpened)
+            Offstage(
+              offstage: _selectedIndex != 2,
+              child: TickerMode(
+                enabled: _selectedIndex == 2,
+                child: _homeMainScreen,
+              ),
+            ),
+          if (_selectedIndex != 2) _screenForIndex(_selectedIndex),
+        ],
+      ),
       bottomNavigationBar: _buildBottomNav(),
     );
   }
@@ -333,7 +364,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.bgCard,
-        boxShadow: AppShadows.bottomNav,
+        border: Border(top: BorderSide(color: AppColors.borderSub)),
       ),
       child: SafeArea(
         top: false,
@@ -496,7 +527,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                         Text(
                           'AI 맞춤 추천',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: AppFontSize.titleLg,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -504,7 +535,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                         Text(
                           '프로필과 위치를 기준으로 공고를 추천합니다.',
                           style: TextStyle(
-                            fontSize: 12.5,
+                            fontSize: AppFontSize.body2,
                             color: AppColors.textSecondary,
                             height: 1.2,
                           ),
@@ -565,7 +596,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                           child: Text(
                             label,
                             style: TextStyle(
-                              fontSize: 12.5,
+                              fontSize: AppFontSize.body2,
                               fontWeight: FontWeight.w800,
                               color:
                                   selected
@@ -612,7 +643,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                         child: Text(
                           '거리, 일정, 선호 조건, 최근 지원 이력을 반영합니다.',
                           style: TextStyle(
-                            fontSize: 12.5,
+                            fontSize: AppFontSize.body2,
                             color: AppColors.textPrimary,
                             height: 1.2,
                           ),
@@ -631,7 +662,7 @@ class _RecommendSheetState extends State<_RecommendSheet> {
                   opacity: 0.55,
                   child: Text(
                     '추천 결과는 조건에 따라 달라질 수 있어요.',
-                    style: TextStyle(fontSize: 11.5),
+                    style: TextStyle(fontSize: AppFontSize.meta),
                   ),
                 ),
               ]),

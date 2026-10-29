@@ -300,13 +300,13 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                         Text(
                           'AI 공고문 생성',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: AppFontSize.titleLg,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
                           '입력한 정보로 매력적인 공고문을 자동 생성합니다',
-                          style: TextStyle(fontSize: 12, color: Colors.black54),
+                          style: TextStyle(fontSize: AppFontSize.meta, color: Colors.black54),
                         ),
                       ],
                     ),
@@ -324,7 +324,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
               // 톤 선택
               const Text(
                 '공고문 스타일 선택',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                style: TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
 
@@ -344,13 +344,13 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                             color:
                                 isSelected
                                     ? AppColors.primary
-                                    : Colors.grey.shade100,
+                                    : AppColors.bgMuted,
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
                               color:
                                   isSelected
                                       ? AppColors.primary
-                                      : Colors.grey.shade300,
+                                      : AppColors.textDisabled,
                             ),
                           ),
                           child: Row(
@@ -358,7 +358,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                             children: [
                               Text(
                                 preset.icon,
-                                style: const TextStyle(fontSize: 16),
+                                style: const TextStyle(fontSize: AppFontSize.buttonLg),
                               ),
                               const SizedBox(width: 6),
                               Text(
@@ -396,14 +396,6 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                           )
                           : const Icon(Icons.auto_awesome),
                   label: Text(isGenerating ? 'AI 생성 중...' : '공고문 생성하기'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
                 ),
               ),
 
@@ -418,7 +410,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                     const Text(
                       '생성된 공고문',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: AppFontSize.buttonLg,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -437,7 +429,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                           '품질: ${qualityReport!.score}점',
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 12,
+                            fontSize: AppFontSize.meta,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -453,15 +445,15 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                   ), // ✅ 최대 높이 제한
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
+                    color: AppColors.bgMuted,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade200),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: SingleChildScrollView(
                     // ✅ 내용이 길 경우 스크롤
                     child: Text(
                       generatedContent!,
-                      style: const TextStyle(fontSize: 14, height: 1.5),
+                      style: const TextStyle(fontSize: AppFontSize.button, height: 1.5),
                     ),
                   ),
                 ),
@@ -493,7 +485,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                             Text(
                               'AI 개선 제안',
                               style: TextStyle(
-                                fontSize: 12,
+                                fontSize: AppFontSize.meta,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.orange.shade700,
                               ),
@@ -508,7 +500,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                               child: Text(
                                 '• $issue',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: AppFontSize.caption,
                                   color: Colors.orange.shade700,
                                 ),
                               ),
@@ -523,7 +515,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                               child: Text(
                                 '$suggestion',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: AppFontSize.caption,
                                   color: Colors.orange.shade600,
                                 ),
                               ),
@@ -545,9 +537,6 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                         onPressed: _generateDescription,
                         icon: const Icon(Icons.refresh),
                         label: const Text('다시 생성'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -558,8 +547,6 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                         label: const Text('적용하기'),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 12),
                         ),
                       ),
                     ),
@@ -653,7 +640,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFEFF6FF),
+                  color: AppColors.primaryLight,
                   borderRadius: BorderRadius.circular(18),
                 ),
                 child: const Icon(
@@ -666,17 +653,17 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
               const Text(
                 '구독자 전용 기능이에요',
                 style: TextStyle(
-                  fontSize: 17,
+                  fontSize: AppFontSize.title,
                   fontWeight: FontWeight.w900,
                   color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
               const Text(
-                'AI 공고문 작성은 라이트 이상 구독자만\n이용할 수 있어요.',
+                'AI 공고문 작성은 구독자만\n이용할 수 있어요.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppFontSize.button,
                   color: AppColors.textSecondary,
                   height: 1.5,
                 ),
@@ -689,19 +676,8 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                     Navigator.pop(bCtx);
                     Navigator.pushNamed(ctx, '/subscribe');
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
                   child: const Text(
-                    '구독 플랜 보기',
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-                  ),
+                    '구독 플랜 보기'),
                 ),
               ),
             ],

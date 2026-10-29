@@ -9,7 +9,6 @@ import '../../../config/constants.dart';
 import '../../../data/services/authenticated_http_client.dart';
 import '../../../config/app_theme.dart';
 
-const kBrandBlue = AppColors.primary;
 
 class ClientBusinessInfoScreen extends StatefulWidget {
   const ClientBusinessInfoScreen({super.key});
@@ -65,7 +64,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       ),
       builder:
           (ctx) => StatefulBuilder(
@@ -98,7 +97,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                       const Text(
                         '추천인 코드가 있으신가요?',
                         style: TextStyle(
-                          fontSize: 17,
+                          fontSize: AppFontSize.title,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -106,7 +105,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                       const Text(
                         '없으시면 비워두셔도 돼요.',
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: AppFontSize.body2,
                           color: AppColors.textTertiary,
                         ),
                       ),
@@ -134,12 +133,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                           },
                           style: _primaryButtonStyle(),
                           child: const Text(
-                            '확인',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                            '확인'),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -150,7 +144,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                             '건너뛰기',
                             style: TextStyle(
                               color: AppColors.textTertiary,
-                              fontSize: 13,
+                              fontSize: AppFontSize.body2,
                             ),
                           ),
                         ),
@@ -352,8 +346,6 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
         backgroundColor: Colors.white,
         appBar: AppBar(
           title: const Text('사업자 인증'),
-          backgroundColor: Colors.white,
-          elevation: 0,
           leading: IconButton(
             tooltip: '뒤로',
             icon: const Icon(Icons.arrow_back),
@@ -372,7 +364,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                 '건너뛰기',
                 style: TextStyle(
                   color: AppColors.textTertiary,
-                  fontSize: 14,
+                  fontSize: AppFontSize.button,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -393,17 +385,17 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                 const SizedBox(height: 14),
                 const Text(
                   '사장님, 공고 등록 전에\n사업자번호만 확인할게요.',
-                  style: TextStyle(fontSize: 21, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontSize: AppFontSize.h2, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
                 const Text(
                   '휴업/폐업 여부만 간단히 체크해요.',
-                  style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 6),
                 const Text(
                   '사업자등록번호가 없으시면\nhsm@outfind.co.kr 로 문의해주세요.',
-                  style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                  style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 12),
 
@@ -417,7 +409,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.bgPage,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                       border: Border.all(color: AppColors.border),
                     ),
                     child: Row(
@@ -432,8 +424,8 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                           child: Text(
                             '지금 당장 없으셔도 괜찮아요. 나중에 마이페이지에서 인증할 수 있어요.',
                             style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey.shade600,
+                              fontSize: AppFontSize.body2,
+                              color: AppColors.textSecondary,
                               height: 1.4,
                             ),
                           ),
@@ -442,8 +434,8 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                         const Text(
                           '건너뛰기 →',
                           style: TextStyle(
-                            fontSize: 13,
-                            color: kBrandBlue,
+                            fontSize: AppFontSize.body2,
+                            color: AppColors.primary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -470,7 +462,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                 if (_loading) ...[
                   const SizedBox(height: 24),
                   const Center(
-                    child: CircularProgressIndicator(color: kBrandBlue),
+                    child: CircularProgressIndicator(color: AppColors.primary),
                   ),
                 ],
 
@@ -479,7 +471,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                   const SizedBox(height: 14),
                   Text(
                     _errorMessage!,
-                    style: const TextStyle(color: Colors.red, fontSize: 13),
+                    style: const TextStyle(color: AppColors.error, fontSize: AppFontSize.body2),
                   ),
                 ],
 
@@ -490,7 +482,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE9F3FF),
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(AppRadius.sm),
                     ),
                     child: const Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -498,13 +490,13 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                         Icon(
                           Icons.check_circle_outline,
                           size: 18,
-                          color: kBrandBlue,
+                          color: AppColors.primary,
                         ),
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             '계속사업자로 확인됐어요.\n바로 공고를 등록할 수 있어요.',
-                            style: TextStyle(fontSize: 15, color: kBrandBlue),
+                            style: TextStyle(fontSize: AppFontSize.body1, color: AppColors.primary),
                           ),
                         ),
                       ],
@@ -523,13 +515,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                         _loading ? null : (_verified ? _saveAndGo : _lookup),
                     style: _primaryButtonStyle(),
                     child: Text(
-                      _verified ? '공고 등록하기' : '사업자 확인하기',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
+                      _verified ? '공고 등록하기' : '사업자 확인하기'),
                   ),
                 ),
               ],
@@ -558,12 +544,12 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
           vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: kBrandBlue, width: 2),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
       ),
     );
@@ -577,23 +563,23 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
       fillColor: const Color(0xFFF6F8FA),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: const BorderSide(color: kBrandBlue, width: 1.5),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
     );
   }
 
   ButtonStyle _primaryButtonStyle() {
     return ElevatedButton.styleFrom(
-      backgroundColor: kBrandBlue,
-      disabledBackgroundColor: kBrandBlue.withOpacity(0.4),
+      backgroundColor: AppColors.primary,
+      disabledBackgroundColor: AppColors.primary.withOpacity(0.4),
       foregroundColor: Colors.white,
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
     );
   }
 

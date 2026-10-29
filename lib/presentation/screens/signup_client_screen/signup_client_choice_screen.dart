@@ -15,14 +15,12 @@ import 'package:iljujob/presentation/screens/signup_client_screen/signup_client_
 import 'package:iljujob/presentation/screens/signup_client_screen/client_extra_info_screen.dart';
 import '../../../config/app_theme.dart';
 
-const kBrand = AppColors.primary;
 
 class SignupClientChoiceScreen extends StatefulWidget {
   const SignupClientChoiceScreen({super.key});
 
   @override
-  State<SignupClientChoiceScreen> createState() =>
-      _SignupClientChoiceScreenState();
+  State<SignupClientChoiceScreen> createState() => _SignupClientChoiceScreenState();
 }
 
 class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
@@ -31,18 +29,17 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
   // ── 버튼 스타일 ──────────────────────────────────────────────
   ButtonStyle _btnStyle({Color? bg, Color? fg, Color? borderColor}) {
     return ElevatedButton.styleFrom(
-      backgroundColor: bg ?? kBrand,
+      backgroundColor: bg ?? AppColors.primary,
       foregroundColor: fg ?? Colors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(14),
-        side:
-            borderColor != null
-                ? BorderSide(color: borderColor)
-                : BorderSide.none,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        side: borderColor != null
+            ? BorderSide(color: borderColor)
+            : BorderSide.none,
       ),
       minimumSize: const Size.fromHeight(52),
-      textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+      textStyle: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w700),
     );
   }
 
@@ -79,7 +76,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
 
     if (!mounted) return;
 
-    final isAdmin = data['isAdmin'] ?? false;
+    final isAdmin   = data['isAdmin'] ?? false;
     final isNewUser = data['isNewUser'] ?? false;
 
     if (isAdmin) {
@@ -92,8 +89,9 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder:
-              (_) => ClientExtraInfoScreen(clientId: data['clientId'] as int),
+          builder: (_) => ClientExtraInfoScreen(
+            clientId: data['clientId'] as int,
+          ),
         ),
       );
     } else {
@@ -108,10 +106,9 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
     setState(() => _loading = true);
     try {
       final isInstalled = await kakao.isKakaoTalkInstalled();
-      final token =
-          isInstalled
-              ? await kakao.UserApi.instance.loginWithKakaoTalk()
-              : await kakao.UserApi.instance.loginWithKakaoAccount();
+      final token = isInstalled
+          ? await kakao.UserApi.instance.loginWithKakaoTalk()
+          : await kakao.UserApi.instance.loginWithKakaoAccount();
 
       final res = await http.post(
         Uri.parse('$baseUrl/api/client/social-login'),
@@ -140,10 +137,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
     const chars =
         '0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._';
     final rnd = Random.secure();
-    return List.generate(
-      length,
-      (_) => chars[rnd.nextInt(chars.length)],
-    ).join();
+    return List.generate(length, (_) => chars[rnd.nextInt(chars.length)]).join();
   }
 
   String _sha256of(String input) =>
@@ -158,7 +152,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
     setState(() => _loading = true);
     try {
       final rawNonce = _randomNonce();
-      final nonce = _sha256of(rawNonce);
+      final nonce    = _sha256of(rawNonce);
 
       final credential = await SignInWithApple.getAppleIDCredential(
         scopes: [
@@ -174,19 +168,18 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
         return;
       }
 
-      final fullName = [
-        credential.givenName,
-        credential.familyName,
-      ].where((e) => e != null && e.isNotEmpty).join(' ');
+      final fullName = [credential.givenName, credential.familyName]
+          .where((e) => e != null && e.isNotEmpty)
+          .join(' ');
 
       final res = await http.post(
         Uri.parse('$baseUrl/api/client/social-login'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'provider': 'apple',
-          'idToken': identityToken,
+          'idToken':  identityToken,
           'rawNonce': rawNonce,
-          'name': fullName.isNotEmpty ? fullName : null,
+          'name':     fullName.isNotEmpty ? fullName : null,
         }),
       );
 
@@ -214,11 +207,9 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: AppColors.bgPage,
+        backgroundColor: AppColors.bgCard,
         appBar: AppBar(
           title: const Text('가입 방법 선택'),
-          centerTitle: true,
-          elevation: 0,
         ),
         body: Center(
           child: SingleChildScrollView(
@@ -231,7 +222,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                   const Text(
                     '알바일주 시작하기',
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: AppFontSize.h2,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
                     ),
@@ -239,43 +230,24 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '카카오/애플로 간편하게 가입하고\n바로 공고를 올려보세요.',
-                    style: TextStyle(
-                      fontSize: 13.5,
-                      color: AppColors.textSecondary,
-                    ),
+                    '가입하고 바로 공고를 올릴 수 있어요',
+                    style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
 
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.06),
-                          blurRadius: 12,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
-                    child: Column(
+                  // 흰 카드로 한 번 더 감싸던 것 제거 — 버튼만
+                  Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // 카카오
                         ElevatedButton.icon(
                           onPressed: _loading ? null : _kakao,
-                          icon: const Icon(
-                            Icons.chat_bubble,
-                            size: 20,
-                            color: Color(0xFF191919),
-                          ),
+                          icon: const Icon(Icons.chat_bubble, size: 20, color: Color(0xFF191919)),
                           label: Text(_loading ? '처리 중...' : '카카오로 시작하기'),
                           style: _btnStyle(
                             bg: const Color(0xFFFFE812),
-                            fg: Colors.black87,
+                            fg: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 12),
@@ -287,46 +259,22 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                             icon: const Icon(Icons.apple, size: 22),
                             label: Text(_loading ? '처리 중...' : 'Apple로 시작하기'),
                             style: _btnStyle(bg: Colors.black),
-                          )
-                        else
-                          Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: AppColors.bgMuted,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Center(
-                              child: Text(
-                                'Apple은 iOS에서만 제공됩니다',
-                                style: TextStyle(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ),
                           ),
-
-                        const SizedBox(height: 16),
-                        const Divider(),
-                        const SizedBox(height: 16),
-
-                        // 전화번호 (PASS)
-                        ElevatedButton.icon(
+                        const SizedBox(height: 12),
+                        // 휴대폰은 보조 — 카카오·애플 옆에 파란 버튼이 하나 더 있어 셋이 경쟁했다
+                        OutlinedButton.icon(
                           onPressed: _loading ? null : _goPhone,
                           icon: const Icon(Icons.phone_iphone),
-                          label: const Text('휴대폰으로 시작하기'),
-                          style: _btnStyle(),
+                          label: const Text('휴대폰 번호로 시작하기'),
+                          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
                         ),
                       ],
                     ),
-                  ),
 
                   const SizedBox(height: 20),
                   const Text(
-                    '※ 공고 등록 후 지원자와 채팅으로 바로 연결됩니다.',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      color: AppColors.textSecondary,
-                    ),
+                    '공고를 올리면 지원자와 채팅으로 바로 이어져요',
+                    style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                 ],

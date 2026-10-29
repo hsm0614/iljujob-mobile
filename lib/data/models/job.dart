@@ -189,6 +189,10 @@ class Job {
   final String category;
   final String? description;
   final String? company;
+  /// 목록 API의 지원자 수(applications). 없으면 0
+  final int applicantCount;
+  /// 조회수(jobs.view_count). 사장님 '내 공고' 카드용, 없으면 0
+  final int viewCount;
 
   // ✅ 모두 UTC로 보관
   final DateTime? createdAt; // UTC
@@ -251,6 +255,8 @@ class Job {
     required this.category,
     this.description,
     this.company,
+    this.applicantCount = 0,
+    this.viewCount = 0,
     this.createdAt,
     this.appliedAt,
     this.startDate,
@@ -346,6 +352,8 @@ class Job {
       category: json['category'] ?? '기타',
       description: json['description'],
       company: json['company'],
+      applicantCount: int.tryParse('${json['applicant_count'] ?? 0}') ?? 0,
+      viewCount: int.tryParse('${json['view_count'] ?? 0}') ?? 0,
 
       // ✅ UTC 보관
       publishAt: publishAtUtc,
@@ -537,6 +545,8 @@ class Job {
       category: category,
       description: description,
       company: company,
+      applicantCount: applicantCount,
+      viewCount: viewCount,
       createdAt: createdAt,
       appliedAt: appliedAt,
       startDate: startDate,

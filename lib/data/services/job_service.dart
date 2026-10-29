@@ -568,9 +568,9 @@ class JobService {
   }
 
   // ─── 9. 즉시 게시 ─────────────────────────────────────
-  static Future<void> publishNow(int jobId) async {
+  static Future<void> publishNow(int jobId, {String passType = 'instant'}) async {
     final uri = Uri.parse('$baseUrl/api/job/$jobId/publish-now');
-    final resp = await AuthenticatedHttpClient.postJson(uri);
+    final resp = await AuthenticatedHttpClient.postJson(uri, body: {'pass_type': passType});
 
     if (resp.statusCode == 402) {
       throw const NoPassException();
@@ -623,21 +623,6 @@ class JobService {
       );
     } catch (_) {
       return null;
-    }
-  }
-
-  // ─── 내부 헬퍼 (공통 fetch) ───────────────────────────
-  static Future<List<Job>> _fetchJobsFromUri(Uri uri) async {
-    try {
-      final response = await http.get(uri);
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonList = json.decode(response.body);
-        return jsonList.map((json) => Job.fromJson(json)).toList();
-      } else {
-        throw Exception('공고 불러오기 실패 (status: ${response.statusCode})');
-      }
-    } catch (e) {
-      throw Exception('공고 불러오기 중 오류 발생');
     }
   }
 }

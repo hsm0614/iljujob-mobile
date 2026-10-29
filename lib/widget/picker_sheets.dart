@@ -39,7 +39,7 @@ Widget _sheetHeader(BuildContext ctx, String title) => Padding(
               title,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 16,
+                fontSize: AppFontSize.buttonLg,
                 fontWeight: FontWeight.w800,
                 color: _text,
               ),
@@ -77,20 +77,11 @@ Widget _confirmButton(BuildContext ctx, {required VoidCallback? onPressed}) =>
         child: ElevatedButton(
           onPressed: onPressed,
           style: ElevatedButton.styleFrom(
-            backgroundColor: _blue,
-            foregroundColor: Colors.white,
             disabledBackgroundColor: _border,
             disabledForegroundColor: AppColors.textSecondary,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
           ),
           child: const Text(
-            '선택 완료',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
-          ),
+            '선택 완료'),
         ),
       ),
     );
@@ -158,7 +149,7 @@ Future<DateTime?> pickDateSheet(
                       formatButtonVisible: false,
                       titleCentered: true,
                       titleTextStyle: TextStyle(
-                        fontSize: 15,
+                        fontSize: AppFontSize.body1,
                         fontWeight: FontWeight.w700,
                         color: _text,
                       ),
@@ -219,11 +210,11 @@ Future<TimeOfDay?> pickTimeSheet(
                       is24HourMode: false,
                       minutesInterval: 10,
                       normalTextStyle: const TextStyle(
-                        fontSize: 16,
+                        fontSize: AppFontSize.buttonLg,
                         color: AppColors.textSecondary,
                       ),
                       highlightedTextStyle: const TextStyle(
-                        fontSize: 18,
+                        fontSize: AppFontSize.titleLg,
                         color: _blue,
                         fontWeight: FontWeight.bold,
                       ),

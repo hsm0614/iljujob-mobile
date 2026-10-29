@@ -96,7 +96,7 @@ class _PartnerRecruitDetailScreenState
   // ── 타이틀 (형광펜 하이라이트) ─────────────────────────────
   Widget _titleBlock(PartnerRecruitPost post) {
     const style = TextStyle(
-      fontSize: 21,
+      fontSize: AppFontSize.h2,
       fontWeight: FontWeight.w800,
       color: AppColors.textPrimary,
       height: 1.35,
@@ -192,7 +192,7 @@ class _PartnerRecruitDetailScreenState
                   Text(
                     section.highlightLine!,
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: AppFontSize.body1,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
                       height: 1.4,
@@ -236,7 +236,7 @@ class _PartnerRecruitDetailScreenState
                   Text(
                     '• ${item.title}',
                     style: const TextStyle(
-                      fontSize: 15,
+                      fontSize: AppFontSize.body1,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textPrimary,
                       height: 1.4,
@@ -319,7 +319,7 @@ class _PartnerRecruitDetailScreenState
       child: Text(
         _logoLabels[key] ?? key,
         style: const TextStyle(
-          fontSize: 12,
+          fontSize: AppFontSize.meta,
           fontWeight: FontWeight.w700,
           color: AppColors.textTertiary,
           letterSpacing: 0.2,
@@ -341,7 +341,7 @@ class _PartnerRecruitDetailScreenState
         child: Text(
           text,
           style: const TextStyle(
-            fontSize: 16,
+            fontSize: AppFontSize.buttonLg,
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
             height: 1.35,
@@ -418,14 +418,8 @@ class _PartnerRecruitDetailScreenState
             child: ElevatedButton(
               onPressed: _applying ? null : _onApply,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
                 disabledBackgroundColor: AppColors.primary.withValues(
                   alpha: 0.5,
-                ),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
               child: _applying

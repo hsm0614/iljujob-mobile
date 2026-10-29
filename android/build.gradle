@@ -1,5 +1,10 @@
+def newBuildDir = rootProject.layout.buildDirectory.dir("../../build").get()
+rootProject.layout.buildDirectory.value(newBuildDir)
 
+subprojects {
+    project.layout.buildDirectory.value(newBuildDir.dir(project.name))
+}
 
 tasks.register("clean", Delete) {
-    delete rootProject.buildDir
+    delete rootProject.layout.buildDirectory
 }

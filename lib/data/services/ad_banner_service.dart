@@ -34,7 +34,13 @@ class AdBannerService {
     try {
       final uri = Uri.parse(
         '$baseUrl/api/banners',
-      ).replace(queryParameters: {'placement': placement});
+      ).replace(
+        queryParameters: {
+          'placement': placement,
+          // 공고형 광고를 직접 그리는 앱이라는 표시. 없으면(구버전) 서버가 원더 행만 준다
+          if (placement == 'app_partner_recruit') 'job_ad': '1',
+        },
+      );
       final resp = await http
           .get(uri, headers: await _headers())
           .timeout(const Duration(seconds: 5));

@@ -36,6 +36,21 @@ flutter:
     - family: Jalnan2TTF
       fonts:
         - asset: assets/fonts/Jalnan2TTF.ttf
+    # 본문 글꼴 — 기기 글꼴(삼성·사용자 지정)마다 크기가 달라 갤럭시에서 깨지던 것 방지 (2026-10)
+    # Pretendard Std = 공식 서브셋(KS X 1001 한글 2,350자 + 영문). 희귀 글자는 기기 글꼴로 대체된다.
+    # w900은 선언 안 함 → ExtraBold로 그려진다. 라이선스: assets/fonts/Pretendard-OFL.txt
+    - family: Pretendard
+      fonts:
+        - asset: assets/fonts/PretendardStd-Regular.otf
+          weight: 400
+        - asset: assets/fonts/PretendardStd-Medium.otf
+          weight: 500
+        - asset: assets/fonts/PretendardStd-SemiBold.otf
+          weight: 600
+        - asset: assets/fonts/PretendardStd-Bold.otf
+          weight: 700
+        - asset: assets/fonts/PretendardStd-ExtraBold.otf
+          weight: 800
   uses-material-design: true
   assets:
     - assets/splash.png

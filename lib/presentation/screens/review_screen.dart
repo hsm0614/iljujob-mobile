@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_motion.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 
@@ -155,13 +156,23 @@ class _ReviewScreenState extends State<ReviewScreen> {
       setState(() => isSubmitting = false);
 
       if (resp.statusCode == 200) {
-        Navigator.pop(context, 'reviewed');
-        ScaffoldMessenger.of(
+        await showAppSuccess(
           context,
-        ).showSnackBar(const SnackBar(content: Text('후기를 등록했어요.')));
+          title: '후기를 남겼어요',
+          message: '다른 알바생이 이 가게를 고를 때 도움이 돼요.',
+          primaryLabel: '확인',
+        );
+        if (!mounted) return;
+        Navigator.pop(context, 'reviewed');
       } else {
+        // 서버가 거절 이유를 주면 그대로 (예: '근무일이 지난 뒤에 후기를 남길 수 있어요.')
+        String msg = Msg.reviewFailed;
+        try {
+          final m = jsonDecode(resp.body)['message'];
+          if (resp.statusCode == 403 && m is String && m.isNotEmpty) msg = m;
+        } catch (_) {}
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(Msg.reviewFailed)),
+          SnackBar(content: Text(msg)),
         );
       }
     } catch (e) {
@@ -185,7 +196,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
         backgroundColor: AppColors.bgPage,
         appBar: AppBar(
           backgroundColor: Colors.white,
-          elevation: 0.5,
           title: const Text('후기 보내기'),
           leading: IconButton(
             tooltip: '뒤로',
@@ -199,7 +209,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
           children: [
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
+                padding: const EdgeInsets.only(top: 8, bottom: 24),
                 child: Column(
                   children: [
                     _JobHeaderCard(
@@ -207,7 +217,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       company: widget.companyName,
                       brand: kBrandBlue,
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     _SectionCard(
                       title: '일해보니 어땠나요?',
                       child: _SatisfactionRow(
@@ -216,7 +226,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         brand: kBrandBlue,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     _SectionCard(
                       title: '얼마나 일하셨나요?',
                       child: _ChoiceWrap(
@@ -226,7 +236,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         brand: kBrandBlue,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     _SectionCard(
                       title: '어떤 점이 기억에 남나요?',
                       subTitle: '중복 선택 가능',
@@ -236,7 +246,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         brand: kBrandBlue,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     _SectionCard(
                       title: '한 줄 후기',
                       subTitle: '불쾌감을 줄 수 있는 내용은 제재 대상이 될 수 있어요.',
@@ -247,7 +257,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                         decoration: InputDecoration(
                           hintText: '예) 설명이 친절했고 급여도 제때 주셨어요.',
                           filled: true,
-                          fillColor: const Color(0xFFF3F5F9),
+                          fillColor: AppColors.bgMuted,
                           contentPadding: const EdgeInsets.all(14),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
@@ -267,15 +277,9 @@ class _ReviewScreenState extends State<ReviewScreen> {
               top: false,
               child: Container(
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      blurRadius: 16,
-                      offset: const Offset(0, -6),
-                      color: Colors.black.withOpacity(0.06),
-                    ),
-                  ],
+                decoration: const BoxDecoration(
+                  color: AppColors.bgCard,
+                  border: Border(top: BorderSide(color: AppColors.borderSub)),
                 ),
                 child: Row(
                   children: [
@@ -283,18 +287,8 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       child: OutlinedButton(
                         onPressed:
                             isSubmitting ? null : () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          side: const BorderSide(color: AppColors.border),
-                          foregroundColor: AppColors.textPrimary,
-                        ),
                         child: const Text(
-                          '나중에',
-                          style: TextStyle(fontWeight: FontWeight.w700),
-                        ),
+                          '나중에'),
                       ),
                     ),
                     const SizedBox(width: 10),
@@ -302,15 +296,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
                       child: ElevatedButton(
                         onPressed:
                             (_isValid && !isSubmitting) ? _submitReview : null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kBrandBlue,
-                          disabledBackgroundColor: const Color(0xFFB7C7FF),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          elevation: 0,
-                        ),
                         child:
                             isSubmitting
                                 ? const SizedBox(
@@ -322,9 +307,7 @@ class _ReviewScreenState extends State<ReviewScreen> {
                                   ),
                                 )
                                 : const Text(
-                                  '작성 완료',
-                                  style: TextStyle(fontWeight: FontWeight.w800),
-                                ),
+                                  '작성 완료'),
                       ),
                     ),
                   ],
@@ -355,63 +338,20 @@ class _JobHeaderCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-            color: Colors.black.withOpacity(0.05),
-          ),
-        ],
-      ),
-      child: Row(
+      color: AppColors.bgCard,
+      padding: const EdgeInsets.all(20),
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: brand.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(Icons.rate_review_rounded, color: brand),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  company,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          if (company.isNotEmpty) ...[Text(company, style: AppTextStyles.body2), const SizedBox(height: 2)],
+          Text(title, maxLines: 2, overflow: TextOverflow.ellipsis, style: AppTextStyles.h3),
         ],
       ),
     );
   }
 }
 
+// 테두리 카드(굵기 w900) → 화면 폭 흰 블록, 사이 8px 회색 띠 (다른 화면과 같은 문법)
 class _SectionCard extends StatelessWidget {
   final String title;
   final String? subTitle;
@@ -423,36 +363,17 @@ class _SectionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-            color: Colors.black.withOpacity(0.05),
-          ),
-        ],
-      ),
+      color: AppColors.bgCard,
+      padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900),
-          ),
+          Text(title, style: AppTextStyles.h3),
           if (subTitle != null) ...[
-            const SizedBox(height: 6),
-            Text(
-              subTitle!,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            const SizedBox(height: 4),
+            Text(subTitle!, style: AppTextStyles.body2),
           ],
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           child,
         ],
       ),
@@ -460,6 +381,7 @@ class _SectionCard extends StatelessWidget {
   }
 }
 
+/// 만족도 — 이모지 얼굴 3개(화면 이모지 금지 규칙) → 글자 세 칸, 고른 칸은 큰 선택 규칙(연파랑+파란 테두리)
 class _SatisfactionRow extends StatelessWidget {
   final int value;
   final ValueChanged<int> onChanged;
@@ -473,48 +395,38 @@ class _SatisfactionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = const [
-      ('아쉬워요', '😕', 1),
-      ('만족해요', '🙂', 2),
-      ('좋아요', '😄', 3),
-    ];
-
+    const items = [('아쉬워요', 1), ('만족해요', 2), ('좋아요', 3)];
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceAround,
-      children:
-          items.map((e) {
-            final selected = value == e.$3;
-            return InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () => onChanged(e.$3),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                child: Column(
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 160),
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: selected ? brand : AppColors.border,
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(e.$2, style: const TextStyle(fontSize: 26)),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      e.$1,
-                      style: TextStyle(
-                        fontWeight: FontWeight.w800,
-                        color: selected ? brand : AppColors.textPrimary,
+      children: [
+        for (final (label, v) in items) ...[
+          if (v != 1) const SizedBox(width: 8),
+          Expanded(
+            child: Material(
+              color: value == v ? AppColors.primaryLight : AppColors.bgCard,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                side: BorderSide(color: value == v ? AppColors.primary : AppColors.border, width: value == v ? 1.5 : 1),
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                onTap: () => onChanged(v),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: Text(
+                      label,
+                      style: AppTextStyles.body1.copyWith(
+                        fontWeight: value == v ? FontWeight.w700 : FontWeight.w500,
+                        color: value == v ? AppColors.primary : AppColors.textPrimary,
                       ),
                     ),
-                  ],
+                  ),
                 ),
               ),
-            );
-          }).toList(),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -558,7 +470,7 @@ class _ChoiceWrap extends StatelessWidget {
                         ? brand.withOpacity(0.35)
                         : AppColors.border,
               ),
-              backgroundColor: const Color(0xFFF3F5F9),
+              backgroundColor: AppColors.bgMuted,
             );
           }).toList(),
     );
@@ -605,7 +517,7 @@ class _TagGroups extends StatelessWidget {
               side: BorderSide(
                 color: isOn ? brand.withOpacity(0.35) : AppColors.border,
               ),
-              backgroundColor: const Color(0xFFF3F5F9),
+              backgroundColor: AppColors.bgMuted,
               showCheckmark: false,
             );
           }).toList(),

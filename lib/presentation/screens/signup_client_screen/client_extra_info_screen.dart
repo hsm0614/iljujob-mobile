@@ -5,7 +5,6 @@ import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import '../../../config/app_theme.dart';
 
-const kBrand = AppColors.primary;
 
 /// 소셜 로그인(카카오/애플)으로 기업 신규 가입 시
 /// 담당자 이름을 추가로 입력받는 화면
@@ -69,11 +68,9 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFEFF3F8),
+        backgroundColor: AppColors.bgCard,
         appBar: AppBar(
           title: const Text('기본 정보 입력'),
-          centerTitle: true,
-          elevation: 0,
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -84,9 +81,9 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
 
               // 헤더
               const Text(
-                '담당자 이름을\n알려주세요 👋',
+                '담당자 이름을\n알려주세요',
                 style: TextStyle(
-                  fontSize: 26,
+                  fontSize: AppFontSize.h1,
                   fontWeight: FontWeight.w800,
                   height: 1.3,
                   color: AppColors.textPrimary,
@@ -96,7 +93,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
               const Text(
                 '지원자와의 채팅 및 고객센터 안내에 사용돼요.',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppFontSize.button,
                   color: AppColors.textSecondary,
                   height: 1.5,
                 ),
@@ -105,27 +102,16 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
               const SizedBox(height: 32),
 
               // 입력 카드
+              // 테두리 카드 제거 — 라벨과 입력칸만
               Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      '🙋 담당자 이름',
+                      '담당자 이름',
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
-                        fontSize: 13,
+                        fontSize: AppFontSize.body2,
                         color: AppColors.textSecondary,
                       ),
                     ),
@@ -139,28 +125,24 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                         hintText: '홍길동',
                         isDense: true,
                         filled: true,
-                        fillColor: AppColors.bgPage,
+                        fillColor: AppColors.bgMuted,
                         prefixIcon: const Icon(Icons.person_outline),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14,
                           vertical: 14,
                         ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.border,
-                          ),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          borderSide: BorderSide.none,
                         ),
                         enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(
-                            color: AppColors.border,
-                          ),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                          borderSide: BorderSide.none,
                         ),
                         focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                           borderSide: const BorderSide(
-                            color: kBrand,
+                            color: AppColors.primary,
                             width: 1.5,
                           ),
                         ),
@@ -177,12 +159,6 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: kBrand,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
                     minimumSize: const Size.fromHeight(54),
                   ),
                   onPressed: _isLoading ? null : _submit,
@@ -197,12 +173,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                             ),
                           )
                           : const Text(
-                            '완료하고 시작하기',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                            '완료하고 시작하기'),
                 ),
               ),
             ],

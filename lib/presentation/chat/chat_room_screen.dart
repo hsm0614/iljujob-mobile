@@ -7,8 +7,9 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/app_motion.dart';
+import 'package:iljujob/utils/chat_stage.dart';
 import 'package:iljujob/config/constants.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -67,8 +68,6 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   final _scrollController = ScrollController();
   final _messageController = TextEditingController();
   final _inputFocusNode = FocusNode();
-  bool _jobPanelExpanded = true;
-
   /// 위로 올려 읽는 중에 새 메시지가 도착했는지. 자동 스크롤을 막는 대신
   /// "새 메시지" 버튼으로 알린다.
   bool _hasNewBelow = false;
@@ -102,7 +101,6 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         if (mounted) Navigator.of(context).maybePop();
       };
 
-      ctrl.onShowEvaluationDialog = () => _showEvaluationDialog(ctrl);
 
       ctrl.onShowCalendarBlockedDialog =
           () => _showCancelBlockedByCalendarDialog(ctrl);
@@ -229,14 +227,17 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
             workerId: workerId,
             clientId: clientId,
             jobLocation: jobSource['location']?.toString(),
-            defaultWage: int.tryParse(
-              (jobSource['pay'] ??
-                      jobSource['hourly_wage'] ??
-                      jobSource['wage'] ??
-                      '')
-                  .toString()
-                  .replaceAll(RegExp(r'[^0-9]'), ''),
-            ),
+            // 일급 공고의 급여(예: 41,280원)가 '시급' 칸에 들어가 시간을 곱한 예상 금액이
+            // 터무니없이 나왔다(운영 카드 61건 중 31건이 2만 원 이상 '시급'). 시급 공고일 때만 채운다
+            defaultWage:
+                jobSource['pay_type']?.toString() == '시급'
+                    ? int.tryParse(
+                      (jobSource['pay'] ?? '').toString().replaceAll(
+                        RegExp(r'[^0-9]'),
+                        '',
+                      ),
+                    )
+                    : null,
             defaultStartTime: jobSource['start_time']?.toString(),
             defaultEndTime: jobSource['end_time']?.toString(),
             weekdays: jobSource['weekdays']?.toString(),
@@ -356,68 +357,6 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
     };
   }
 
-  Widget _buildJobPanelHandle(ChatRoomController ctrl, String jobTitle) {
-    final title =
-        jobTitle.isNotEmpty
-            ? jobTitle
-            : (ctrl.jobSource['title'] ?? ctrl.jobSource['job_title'] ?? '공고')
-                .toString();
-
-    return Material(
-      color: AppColors.bgCard,
-      child: InkWell(
-        onTap: () => setState(() => _jobPanelExpanded = !_jobPanelExpanded),
-        child: Container(
-          height: 42,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: const BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: AppColors.borderSub, width: 1),
-            ),
-          ),
-          child: Row(
-            children: [
-              const Icon(
-                Icons.work_outline_rounded,
-                size: 17,
-                color: AppColors.primary,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                _jobPanelExpanded ? '접기' : '공고 보기',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primary,
-                ),
-              ),
-              Icon(
-                _jobPanelExpanded
-                    ? Icons.keyboard_arrow_up_rounded
-                    : Icons.keyboard_arrow_down_rounded,
-                size: 18,
-                color: AppColors.primary,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   // ─────────────────────────────────────────────
   // 캘린더 이동
   // ─────────────────────────────────────────────
@@ -474,375 +413,40 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   }
 
   // ─────────────────────────────────────────────
-  // 평가 다이얼로그 (별점 + 태그)
-  // ─────────────────────────────────────────────
-
-  Future<void> _showEvaluationDialog(ChatRoomController ctrl) async {
-    if (!mounted) return;
-
-    final isClient = ctrl.userType == 'client';
-    final title = isClient ? '이번 알바생은 어땠나요?' : '이번 사장님은 어땠나요?';
-    final goodTags =
-        isClient
-            ? ['시간 약속 잘 지킴', '일 잘함', '매너 좋음', '소통 원활']
-            : ['급여 제때 지급', '친절한 안내', '근무 환경 좋음', '약속 잘 지킴'];
-    final badTags =
-        isClient
-            ? ['지각/무단결근', '불성실한 태도', '연락 불가', '업무 미숙']
-            : ['급여 지연', '불친절', '과도한 업무', '약속 불이행'];
-
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        double rating = 5.0;
-        final Set<String> selectedTags = {};
-        bool sending = false;
-
-        return StatefulBuilder(
-          builder: (ctx, setState) {
-            final isGood = rating >= 4.0;
-            final tags = isGood ? goodTags : badTags;
-
-            Future<void> submit() async {
-              if (sending) return;
-              setState(() => sending = true);
-              try {
-                await ctrl.submitEvaluation(isGood: isGood);
-                if (ctx.mounted) Navigator.of(ctx).pop();
-              } catch (_) {
-                if (ctx.mounted) setState(() => sending = false);
-              }
-            }
-
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.rate_review_rounded,
-                        size: 28,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.w800,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      '솔직한 평가가 더 나은 매칭을 만들어요',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // ── 별점 ──
-                    RatingBar.builder(
-                      initialRating: rating,
-                      minRating: 1,
-                      direction: Axis.horizontal,
-                      allowHalfRating: false,
-                      itemCount: 5,
-                      itemSize: 36,
-                      itemPadding: const EdgeInsets.symmetric(horizontal: 4),
-                      itemBuilder:
-                          (_, __) => const Icon(
-                            Icons.star_rounded,
-                            color: Color(0xFFFFC107),
-                          ),
-                      onRatingUpdate:
-                          (r) => setState(() {
-                            rating = r;
-                            selectedTags.clear();
-                          }),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _ratingLabel(rating),
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color:
-                            isGood ? AppColors.success : AppColors.urgentCall,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // ── 태그 ──
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children:
-                          tags.map((tag) {
-                            final active = selectedTags.contains(tag);
-                            return GestureDetector(
-                              onTap:
-                                  () => setState(() {
-                                    active
-                                        ? selectedTags.remove(tag)
-                                        : selectedTags.add(tag);
-                                  }),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 120),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color:
-                                      active
-                                          ? (isGood
-                                              ? AppColors.primary
-                                              : AppColors.urgentCall)
-                                          : AppColors.bgMuted,
-                                  borderRadius: BorderRadius.circular(99),
-                                ),
-                                child: Text(
-                                  tag,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                    color:
-                                        active
-                                            ? Colors.white
-                                            : AppColors.textSecondary,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // ── 버튼 ──
-                    if (sending)
-                      const SizedBox(
-                        height: 44,
-                        child: Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    else
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: submit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
-                          child: const Text(
-                            '평가 제출',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ),
-                      ),
-                    const SizedBox(height: 4),
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      child: const Text(
-                        '나중에 할게요',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  String _ratingLabel(double r) {
-    if (r >= 5) return '최고예요!';
-    if (r >= 4) return '좋았어요';
-    if (r >= 3) return '보통이에요';
-    if (r >= 2) return '아쉬웠어요';
-    return '별로였어요';
-  }
-
-  // ─────────────────────────────────────────────
   // 캘린더 추가 다이얼로그
   // ─────────────────────────────────────────────
 
+  /// 출근 확정 = 이 앱에서 가장 좋은 순간. 작은 팝업 대신 완료 화면 (2026-10)
   Future<void> _showAddToCalendarDialog(WorkConfirmation conf) async {
     if (!mounted) return;
     final fmt = NumberFormat('#,###');
-
-    await showDialog<void>(
-      context: context,
-      builder:
-          (ctx) => Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(
-                          Icons.calendar_today_rounded,
-                          color: AppColors.primary,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '캘린더에서 확인할까요?',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                            SizedBox(height: 2),
-                            Text(
-                              '앱 내 캘린더에서 근무 일정을 확인해요',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.bgPage,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        _CalRow(
-                          icon: Icons.business_rounded,
-                          text: conf.companyName ?? '사장님',
-                        ),
-                        const SizedBox(height: 6),
-                        _CalRow(
-                          icon: Icons.event_rounded,
-                          text: conf.workDate.split('T').first,
-                        ),
-                        const SizedBox(height: 6),
-                        _CalRow(
-                          icon: Icons.access_time_rounded,
-                          text:
-                              '${conf.startTime.substring(0, 5)} ~ ${conf.endTime.substring(0, 5)}',
-                        ),
-                        if (conf.location != null) ...[
-                          const SizedBox(height: 6),
-                          _CalRow(
-                            icon: Icons.location_on_rounded,
-                            text: conf.location!,
-                          ),
-                        ],
-                        const SizedBox(height: 6),
-                        _CalRow(
-                          icon: Icons.payments_rounded,
-                          text: '시급 ${fmt.format(conf.hourlyWage)}원',
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.of(ctx).pop(),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: AppColors.textSecondary,
-                            side: const BorderSide(color: AppColors.border),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          child: const Text(
-                            '나중에',
-                            style: TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.of(ctx).pop();
-                            _addToCalendar(conf);
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                          child: const Text(
-                            '캘린더 보기',
-                            style: TextStyle(fontWeight: FontWeight.w800),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
+    final day = DateTime.tryParse(conf.workDate.split('T').first);
+    final r = await showAppSuccess(
+      context,
+      title: '출근이 확정됐어요',
+      message: '근무 전날과 2시간 전에 알림으로 다시 알려드려요.',
+      facts: [
+        if (conf.companyName != null) ('근무지', conf.companyName!),
+        (
+          '날짜',
+          day == null
+              ? conf.workDate.split('T').first
+              : DateFormat('M월 d일 (E)', 'ko_KR').format(day),
+        ),
+        (
+          '시간',
+          '${conf.startTime.substring(0, 5)} ~ ${conf.endTime.substring(0, 5)}',
+        ),
+        // 예전 카드는 일급이 '시급' 칸에 들어갔다 (work_confirmation_card.dart 참고)
+        (
+          conf.hourlyWage >= 20000 ? '급여' : '시급',
+          '${fmt.format(conf.hourlyWage)}원',
+        ),
+      ],
+      primaryLabel: '캘린더에서 보기',
+      secondaryLabel: '채팅으로 돌아가기',
     );
+    if (r == 'primary') _addToCalendar(conf);
   }
 
   void _addToCalendar(WorkConfirmation conf) {
@@ -889,7 +493,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                         child: Text(
                           '이미 캘린더에 등록된 일정이에요',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: AppFontSize.buttonLg,
                             fontWeight: FontWeight.w800,
                           ),
                         ),
@@ -902,7 +506,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                         ? '이 공고는 근무확정(캘박) 상태라 바로 지원 취소가 불가해요.\n먼저 "캘박 취소"를 하거나 캘린더에서 일정을 확인해 주세요.'
                         : '이 공고는 근무확정(캘박) 상태라 바로 지원 취소가 불가해요.\n현재는 취소 가능 시간이 지나 캘박 취소도 제한될 수 있어요.\n캘린더에서 일정을 확인해 주세요.',
                     style: const TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       height: 1.4,
                       color: AppColors.textSecondary,
                     ),
@@ -912,12 +516,6 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     children: [
                       Expanded(
                         child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: AppColors.border),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
                           onPressed: () => Navigator.of(context).pop(false),
                           child: const Text(
                             '닫기',
@@ -931,21 +529,9 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                          ),
                           onPressed: () => Navigator.of(context).pop(true),
                           child: const Text(
-                            '캘린더로 이동',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                            ),
-                          ),
+                            '캘린더로 이동'),
                         ),
                       ),
                     ],
@@ -979,11 +565,11 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
             ),
             title: const Text(
               '노쇼 신고',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+              style: TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w700),
             ),
             content: const Text(
               '해당 알바생이 출근하지 않았나요?\n노쇼 처리 시 알바생 신뢰도 점수가 크게 감소합니다.',
-              style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
             ),
             actions: [
               TextButton(
@@ -1067,7 +653,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                             '노쇼 처리됐어요',
                             style: TextStyle(
                               fontWeight: FontWeight.w700,
-                              fontSize: 16,
+                              fontSize: AppFontSize.buttonLg,
                               color: AppColors.textPrimary,
                             ),
                           ),
@@ -1075,7 +661,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                           Text(
                             '즉시게시 이용권 1개가 자동 환급됩니다.',
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: AppFontSize.body2,
                               color: AppColors.textSecondary,
                             ),
                           ),
@@ -1102,19 +688,9 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.urgentCall, AppColors.error],
-                      ),
+                      color: AppColors.urgentCall,
                       borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(
-                            0xFFEF4444,
-                          ).withValues(alpha: 0.25),
-                          blurRadius: 8,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
+                      
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -1130,7 +706,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w700,
-                            fontSize: 15,
+                            fontSize: AppFontSize.body1,
                           ),
                         ),
                       ],
@@ -1147,7 +723,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                       style: TextStyle(
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
-                        fontSize: 14,
+                        fontSize: AppFontSize.button,
                       ),
                     ),
                   ),
@@ -1193,37 +769,40 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   }
 
   // 상대가 알림을 못 받는 상태 안내. 회색 톤으로 조용히 — 경고가 아니라 정보.
-  Widget _buildPeerUnreachableBanner(ChatRoomController ctrl) {
-    final peer = ctrl.userType == 'worker' ? '사장님' : '알바생';
+  /// 상태 안내 한 줄 (2026-10). 테두리 상자 두 개가 쌓여 대화가 아래로 밀렸다 → 화면 폭 얇은 띠
+  Widget _statusStrip(IconData icon, String text, Color color) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: AppColors.bgPage,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      decoration: const BoxDecoration(
+        color: AppColors.bgMuted,
+        border: Border(bottom: BorderSide(color: AppColors.borderSub)),
       ),
       child: Row(
         children: [
-          const Icon(
-            Icons.notifications_off_outlined,
-            size: 16,
-            color: AppColors.textSecondary,
-          ),
-          const SizedBox(width: 8),
+          Icon(icon, size: 15, color: color),
+          const SizedBox(width: 6),
           Expanded(
             child: Text(
-              '$peer이 알림을 꺼둔 상태라 확인이 늦을 수 있어요.',
-              style: const TextStyle(
-                fontSize: 12.5,
+              text,
+              style: AppTextStyles.caption.copyWith(
+                fontSize: AppFontSize.meta,
+                color: color,
                 fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-                height: 1.4,
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildPeerUnreachableBanner(ChatRoomController ctrl) {
+    final peer = ctrl.userType == 'worker' ? '사장님' : '알바생';
+    return _statusStrip(
+      Icons.notifications_off_outlined,
+      '$peer이 알림을 꺼둬서 확인이 늦을 수 있어요',
+      AppColors.textSecondary,
     );
   }
 
@@ -1233,48 +812,31 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         widget.jobInfo['is_urgent_call'] == true;
     if (!isUrgent || ctrl.userType != 'worker') return const SizedBox.shrink();
     if (_urgentCallStatus == 'accepted') {
-      return Container(
-        margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: const Color(0xFFDCFCE7),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFF86EFAC)),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.check_circle_rounded, color: AppColors.gradeB, size: 18),
-            SizedBox(width: 8),
-            Text(
-              '긴급호출 수락 완료',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF15803D),
-              ),
-            ),
-          ],
-        ),
+      // '수락 완료'만 쓰면 출근까지 확정된 걸로 읽혔다 — 다음에 무엇을 기다리는지 말한다
+      final proposals = ctrl.workConfirmations;
+      final open = proposals.where(
+        (c) => c.status == 'proposed' && !isWorkDatePast(c.workDate),
+      );
+      if (open.isNotEmpty) {
+        return _statusStrip(
+          Icons.event_available_rounded,
+          '출근 제안이 왔어요 · 아래 카드에서 수락해 주세요',
+          AppColors.badgeUrgent,
+        );
+      }
+      // 근무 약속 카드가 이미 있으면 카드가 상태를 말한다
+      if (proposals.isNotEmpty) return const SizedBox.shrink();
+      return _statusStrip(
+        Icons.hourglass_empty_rounded,
+        '긴급호출에 응답했어요 · 사장님의 출근 제안을 기다리는 중',
+        AppColors.textSecondary,
       );
     }
     if (_urgentCallStatus == 'rejected') {
-      return Container(
-        margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: AppColors.bgMuted,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Row(
-          children: [
-            Icon(Icons.block_rounded, color: AppColors.textTertiary, size: 18),
-            SizedBox(width: 8),
-            Text(
-              '긴급호출을 거절했어요.',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
-            ),
-          ],
-        ),
+      return _statusStrip(
+        Icons.block_rounded,
+        '긴급호출을 거절했어요',
+        AppColors.textSecondary,
       );
     }
     if (_urgentCallStatus != 'sent') return const SizedBox.shrink();
@@ -1283,31 +845,21 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
       margin: const EdgeInsets.fromLTRB(12, 6, 12, 0),
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFFFF6B1A), AppColors.pending],
-          begin: Alignment.centerLeft,
-          end: Alignment.centerRight,
-        ),
+        color: AppColors.urgentCall,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.pending.withValues(alpha: 0.25),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
-          ),
-        ],
+        
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Row(
             children: [
-              Icon(Icons.bolt_rounded, size: 17, color: AppColors.badgeUrgent),
+              Icon(Icons.bolt_rounded, size: 17, color: Colors.white),
               SizedBox(width: 6),
               Text(
                 '긴급 호출이 왔어요!',
                 style: TextStyle(
-                  fontSize: 14,
+                  fontSize: AppFontSize.button,
                   fontWeight: FontWeight.w900,
                   color: Colors.white,
                 ),
@@ -1317,7 +869,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
           const SizedBox(height: 4),
           const Text(
             '사장님이 지금 바로 일할 분을 찾고 있어요.\n수락하면 바로 연결됩니다.',
-            style: TextStyle(fontSize: 12, color: Colors.white70, height: 1.4),
+            style: TextStyle(fontSize: AppFontSize.meta, color: Colors.white70, height: 1.4),
           ),
           const SizedBox(height: 12),
           Row(
@@ -1331,15 +883,9 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.white,
                     side: const BorderSide(color: Colors.white54),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
                   ),
                   child: const Text(
-                    '거절',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
+                    '거절'),
                 ),
               ),
               const SizedBox(width: 10),
@@ -1352,12 +898,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                           : () => _respondToUrgentCall('accepted'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFFFF6B1A),
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    foregroundColor: AppColors.urgentCall,
                   ),
                   child:
                       _urgentCallBusy
@@ -1366,13 +907,11 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: Color(0xFFFF6B1A),
+                              color: AppColors.urgentCall,
                             ),
                           )
                           : const Text(
-                            '수락하기',
-                            style: TextStyle(fontWeight: FontWeight.w900),
-                          ),
+                            '수락하기'),
                 ),
               ),
             ],
@@ -1407,124 +946,41 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   // ─────────────────────────────────────────────
 
   Widget _buildEmptyChatNotice(bool isClient) {
+    // TIP 알약·테두리 카드·근거 없는 '알바일주 데이터 기준'·파란 알약 버튼 → 글 두 줄 + 글자 버튼 하나.
+    // 사장님 화면에 알바생용 문구('사장님께 자기소개와 장점')가 뜨던 것도 역할별로 나눴다.
+    final greeting =
+        isClient
+            ? '안녕하세요, 지원해 주셔서 감사해요. 근무 가능하신지 여쭤봐도 될까요?'
+            : '안녕하세요, 지원한 알바생입니다. 근무 가능해서 연락드려요.';
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.04),
-                blurRadius: 14,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0x143B8AFF),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: const Text(
-                      'T I P',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                isClient ? '여기서 첫 채용 대화를 시작해 보세요' : '여기서 첫 인사를 남겨보세요',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                    fontSize: 13,
-                    height: 1.4,
-                    color: AppColors.textSecondary,
-                  ),
-                  children: [
-                    TextSpan(text: isClient ? '사장님께 ' : '상대방에게 '),
-                    const TextSpan(
-                      text: '자기소개와 장점',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const TextSpan(text: '을 함께 첫 메시지로 보내면\n채용 확률이 더 높아져요.'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.bolt_rounded,
-                    size: 14,
-                    color: AppColors.textTertiary,
-                  ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    '알바일주 데이터 기준',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton.icon(
-                    onPressed: () {
-                      _scrollToBottom(force: true);
-                      _inputFocusNode.requestFocus();
-                    },
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                    icon: const Icon(Icons.edit_rounded, size: 14),
-                    label: const Text(
-                      '첫 메시지 쓰기',
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              isClient ? '먼저 인사를 건네 보세요' : '사장님께 먼저 인사해 보세요',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isClient
+                  ? '근무 가능 여부를 물어보면 답장이 빨라요'
+                  : '출근 가능한 날과 비슷한 경험을 적으면 답장이 빨라요',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.body2,
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () {
+                if (_messageController.text.trim().isEmpty) _messageController.text = greeting;
+                _scrollToBottom(force: true);
+                _inputFocusNode.requestFocus();
+              },
+              child: const Text('인사말 넣기'),
+            ),
+          ],
         ),
       ),
     );
@@ -1578,7 +1034,8 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
           resizeToAvoidBottomInset: true,
-          backgroundColor: AppColors.bgPage,
+          // 회색 바탕 위 회색 말풍선은 구분이 약했다 — 흰 바탕 (당근·토스 채팅)
+          backgroundColor: AppColors.bgCard,
 
           // ── 앱바
           appBar: AlbailjuAppBar(
@@ -1619,6 +1076,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                   onTap: onProfileTap ?? () {},
                   child: CircleAvatar(
                     radius: 18,
+                    backgroundColor: AppColors.bgMuted,
                     backgroundImage:
                         (targetThumbnailUrl != null &&
                                 targetThumbnailUrl.isNotEmpty)
@@ -1627,7 +1085,10 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     child:
                         (targetThumbnailUrl == null ||
                                 targetThumbnailUrl.isEmpty)
-                            ? const Icon(Icons.person)
+                            ? const Icon(
+                              Icons.person_rounded,
+                              color: AppColors.textDisabled,
+                            )
                             : null,
                   ),
                 ),
@@ -1649,9 +1110,8 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
             children: [
               // 공고 요약 패널
               if (!ctrl.isLoadingJobInfo) ...[
-                _buildJobPanelHandle(ctrl, jobTitle),
-                if (_jobPanelExpanded)
-                  ChatRoomJobPanel(
+                // 접기 줄 없이 공고 카드 한 장 (2026-10 2차) — 카드가 작아 접을 이유가 없어졌다
+                ChatRoomJobPanel(
                     jobSource: ctrl.jobSource,
                     userType: ctrl.userType,
                     isConfirmed: ctrl.isConfirmed,
@@ -1662,6 +1122,10 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     onConfirmHire: ctrl.confirmHire,
                     onProposeWorkConfirmation: () => _showProposeSheet(ctrl),
                     onMarkCompleted: ctrl.markJobAsCompleted,
+                    onEvaluate:
+                        ctrl.userType == 'client' && !ctrl.evaluatedByMe
+                            ? (good) => ctrl.submitEvaluation(isGood: good).catchError((_) {})
+                            : null,
                     workLoading: ctrl.workLoading,
                     hasWorkSession: ctrl.hasWorkSession,
                     canCancel: ctrl.canCancel,
@@ -1775,7 +1239,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                           child: Material(
                             color: AppColors.primary,
                             borderRadius: BorderRadius.circular(999),
-                            elevation: 3,
+                            elevation: 1,
                             child: InkWell(
                               borderRadius: BorderRadius.circular(999),
                               onTap: () => _scrollToBottom(force: true),
@@ -1790,7 +1254,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                     Text(
                                       '새 메시지',
                                       style: TextStyle(
-                                        fontSize: 13,
+                                        fontSize: AppFontSize.body2,
                                         fontWeight: FontWeight.w700,
                                         color: Colors.white,
                                       ),
@@ -1856,10 +1320,14 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                           (_) =>
                                               FocusScope.of(context).unfocus(),
                                       decoration: InputDecoration(
+                                        filled: false,
                                         border: InputBorder.none,
+                                        enabledBorder: InputBorder.none,
+                                        focusedBorder: InputBorder.none,
+                                        disabledBorder: InputBorder.none,
                                         hintText:
                                             ctrl.inputEnabled
-                                                ? '메시지를 입력하세요...'
+                                                ? '메시지 보내기'
                                                 : (ctrl.status == 'pending'
                                                     ? '상대방의 수락을 기다리는 중이에요'
                                                     : (ctrl.status ==
@@ -1872,7 +1340,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                                             : '지원을 취소해서 메시지를 보낼 수 없어요')
                                                         : '지금은 메시지를 보낼 수 없어요')),
                                         hintStyle: const TextStyle(
-                                          fontSize: 14,
+                                          fontSize: AppFontSize.button,
                                           color: AppColors.textTertiary,
                                         ),
                                       ),
@@ -1931,33 +1399,4 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
       ),
     );
   }
-}
-
-// ─────────────────────────────────────────────
-// 캘린더 다이얼로그용 행 위젯
-// ─────────────────────────────────────────────
-
-class _CalRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  const _CalRow({required this.icon, required this.text});
-
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Icon(icon, size: 14, color: AppColors.primary),
-      const SizedBox(width: 8),
-      Expanded(
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-          overflow: TextOverflow.ellipsis,
-        ),
-      ),
-    ],
-  );
 }

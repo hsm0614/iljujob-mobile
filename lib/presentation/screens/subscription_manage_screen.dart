@@ -1,5 +1,6 @@
 // lib/screens/payment/subscription_manage_screen.dart
 import 'dart:async';
+import 'package:iljujob/widget/app_ui.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
@@ -12,28 +13,15 @@ import '../widgets/albailju_common.dart';
 import '../../config/app_theme.dart';
 import '../../data/models/subscription_product_config.dart';
 
-const _defaultBenefits = [
-  _Benefit(Icons.flash_on_rounded, '즉시게시 3회 또는 무제한', AppColors.primary),
-  _Benefit(Icons.message_outlined, '먼저 연락 10~50명/결제기간', AppColors.primary),
-  _Benefit(Icons.notifications_outlined, '지도 알림 2~8회/결제기간', AppColors.primary),
-];
-
-class _Benefit {
-  final IconData icon;
-  final String label;
-  final Color color;
-  const _Benefit(this.icon, this.label, this.color);
-}
-
 // ─── 플랜 레이블 ─────────────────────────────────────────────────
 String _planLabel(String? plan) {
   switch (plan?.toLowerCase()) {
     case 'lite':
-      return '라이트';
+      return '베이직';
     case 'standard':
       return '스탠다드';
     case 'pro':
-      return '프로';
+      return '무제한';
     default:
       return plan?.toUpperCase() ?? '';
   }
@@ -227,13 +215,46 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
+  // 파란/회색 통 상자(흰 글자)·색색 아이콘 상자 혜택·파란 아이콘 상자 메뉴 → 마이와 같은 흰 블록 문법
   @override
   Widget build(BuildContext context) {
+    final label = _planLabel(_plan);
+    final remaining = _entitlementVersion == 'v3'
+        ? <(String, String)>[
+            ('즉시 게시', _instantRemaining == -1 ? '무제한' : '${_instantRemaining ?? 0}회 남음'),
+            ('먼저 연락', '${_directRemaining ?? 0}명 남음'),
+            ('지도 알림', '${_pushRemaining ?? 0}회 남음'),
+          ]
+        : const <(String, String)>[];
+    final benefits = _active
+        ? subscriptionBenefitLabels(_plan?.toLowerCase(), _entitlementVersion)
+        : const <String>[];
+    final title = !_active
+        ? '구독하지 않았어요'
+        : label.isEmpty
+        ? '구독 중'
+        : '$label 구독 중';
+
+    Widget row(String k, String v) => Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Row(
+        children: [
+          Expanded(child: Text(k, style: AppTextStyles.body2)),
+          Text(
+            v,
+            style: AppTextStyles.body2.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       appBar: AlbailjuAppBar(
         title: '구독 관리',
-        brand: true,
         actions: [
           IconButton(
             tooltip: '새로고침',
@@ -244,625 +265,145 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
       ),
       body:
           _loading
-              ? const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              )
+              ? const AppSkeletonList(rows: 4)
               : RefreshIndicator(
                 onRefresh: _refresh,
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 32),
+                  padding: const EdgeInsets.only(bottom: 24),
                   children: [
-                    // ── 상태 카드
-                    _StatusCard(
-                      active: _active,
-                      plan: _plan,
-                      entitlementVersion: _entitlementVersion,
-                      isTrial: _isTrial,
-                      expiresText: _expiresText(),
-                      remainText: _remainText(),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // ── 혜택
-                    _BenefitSection(
-                      plan: _plan,
-                      entitlementVersion: _entitlementVersion,
-                      active: _active,
-                      remainingText:
-                          _entitlementVersion == 'v3'
-                              ? '남은 즉시게시 ${_instantRemaining == -1 ? '무제한' : '${_instantRemaining ?? 0}회'} · 먼저 연락 ${_directRemaining ?? 0}명 · 지도 알림 ${_pushRemaining ?? 0}회'
-                              : null,
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // ── 구독 관리 / 복원
-                    _ManageSection(
-                      isStoreBilling: Platform.isIOS,
-                      onOpenStore: _openStore,
-                      onRestore: _restore,
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // ── 정책
-                    _PolicySection(
-                      isStoreBilling: Platform.isIOS,
-                      onOpenStore: _openStore,
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // ── 미구독 CTA
-                    if (!_active)
-                      SizedBox(
-                        width: double.infinity,
-                        height: 52,
-                        child: FilledButton.icon(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
+                    Container(
+                      color: AppColors.bgCard,
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(child: Text(title, style: AppTextStyles.h2)),
+                              if (_isTrial == true) ...[
+                                const SizedBox(width: 6),
+                                const JobSignalBadge(label: '체험 중'),
+                              ],
+                              if (_active && _entitlementVersion == 'legacy_v1') ...[
+                                const SizedBox(width: 6),
+                                const JobSignalBadge(label: '기존 혜택 유지'),
+                              ],
+                            ],
                           ),
-                          onPressed: () async {
-                            final result = await Navigator.pushNamed(
-                              context,
-                              '/subscribe',
-                            );
-                            if (!mounted) return;
-                            if (result == true) {
-                              await _refresh();
-                              _toast('구독이 활성화되었어요!');
-                            }
-                          },
-                          icon: const Icon(Icons.workspace_premium_rounded),
-                          label: const Text(
-                            '구독 시작하기',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
+                          if (_active) ...[
+                            row('만료일', _expiresText()),
+                            row('남은 기간', _remainText()),
+                          ] else ...[
+                            const SizedBox(height: 4),
+                            const Text(
+                              '구독하면 즉시 게시와 먼저 연락하기를 매달 쓸 수 있어요',
+                              style: AppTextStyles.body2,
                             ),
-                          ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (remaining.isNotEmpty || benefits.isNotEmpty) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        color: AppColors.bgCard,
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              remaining.isNotEmpty ? '이번 기간 남은 혜택' : '혜택',
+                              style: AppTextStyles.h3,
+                            ),
+                            for (final (k, v) in remaining) row(k, v),
+                            if (remaining.isEmpty)
+                              for (final b in benefits)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 10),
+                                  child: Row(
+                                    children: [
+                                      const Icon(
+                                        Icons.check_rounded,
+                                        size: 16,
+                                        color: AppColors.primary,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: Text(
+                                          b,
+                                          style: AppTextStyles.body2.copyWith(
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                          ],
                         ),
                       ),
+                    ],
+                    const SizedBox(height: 8),
+                    AppMenuSection(
+                      children: [
+                        if (_active || !Platform.isIOS)
+                        AppMenuRow(
+                          label: Platform.isIOS ? '구독 변경·해지' : '결제 방식 안내',
+                          subtitle:
+                              Platform.isIOS
+                                  ? 'App Store에서 바꾸거나 해지해요'
+                                  : '30일 이용 · 자동으로 다시 결제되지 않아요',
+                          onTap: _openStore,
+                        ),
+                        AppMenuRow(
+                          label: Platform.isIOS ? '구매 복원' : '결제 상태 다시 확인',
+                          onTap: _restore,
+                        ),
+                        AppMenuRow(
+                          label: '구독 문의',
+                          subtitle: 'support@albailju.co.kr',
+                          onTap:
+                              () => launchUrl(
+                                Uri(
+                                  scheme: 'mailto',
+                                  path: 'support@albailju.co.kr',
+                                  queryParameters: {
+                                    'subject': '[알바일주] 구독 문의',
+                                    'body': '문의 내용을 입력해주세요.',
+                                  },
+                                ),
+                              ),
+                        ),
+                      ],
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                      child: Text(
+                        Platform.isIOS
+                            ? '해지는 App Store 구독 관리에서 하고, 해지해도 기간 끝까지 쓸 수 있어요. 환불은 Apple 정책을 따라요.'
+                            : '기간이 끝나면 다시 결제해서 이어 쓸 수 있어요. 환불과 영수증은 고객센터로 문의해 주세요.',
+                        style: AppTextStyles.caption,
+                      ),
+                    ),
                   ],
                 ),
               ),
-    );
-  }
-}
-
-// ─── 상태 카드 ───────────────────────────────────────────────────
-class _StatusCard extends StatelessWidget {
-  final bool active;
-  final String? plan;
-  final String? entitlementVersion;
-  final bool? isTrial;
-  final String expiresText;
-  final String remainText;
-
-  const _StatusCard({
-    required this.active,
-    required this.plan,
-    required this.entitlementVersion,
-    required this.isTrial,
-    required this.expiresText,
-    required this.remainText,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final label = _planLabel(plan);
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors:
-              active
-                  ? [AppColors.primary, const Color(0xFF1A6FFF)]
-                  : [AppColors.textTertiary, AppColors.textSecondary],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: (active ? AppColors.primary : AppColors.textTertiary)
-                .withValues(alpha: 0.3),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                active
-                    ? Icons.verified_rounded
-                    : Icons.workspace_premium_outlined,
-                color: Colors.white,
-                size: 22,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                active ? '구독 활성' : '구독 없음',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const Spacer(),
-              if (active && label.isNotEmpty)
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 5,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    label,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              if (active && entitlementVersion == 'legacy_v1') ...[
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: const Text(
-                    '기존 권리 유지',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-              if (isTrial == true) ...[
-                const SizedBox(width: 6),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: const Text(
-                    '체험 중',
-                    style: TextStyle(
-                      color: Colors.orange,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ],
-            ],
-          ),
-          const SizedBox(height: 16),
-          if (active) ...[
-            _infoRow('만료일', expiresText),
-            const SizedBox(height: 6),
-            _infoRow('남은 기간', remainText),
-          ] else
-            const Text(
-              '구독하면 즉시게시와 AI 공고문 작성 혜택을 사용할 수 있어요.',
-              style: TextStyle(
-                color: Colors.white70,
-                fontSize: 13,
-                height: 1.5,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  static Widget _infoRow(String k, String v) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 2),
-    child: Row(
-      children: [
-        SizedBox(
-          width: 70,
-          child: Text(
-            k,
-            style: const TextStyle(color: Colors.white70, fontSize: 13),
-          ),
-        ),
-        Text(
-          v,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-// ─── 혜택 섹션 ───────────────────────────────────────────────────
-class _BenefitSection extends StatelessWidget {
-  final String? plan;
-  final String? entitlementVersion;
-  final bool active;
-  final String? remainingText;
-  const _BenefitSection({
-    required this.plan,
-    required this.entitlementVersion,
-    required this.active,
-    required this.remainingText,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final labels =
-        active
-            ? subscriptionBenefitLabels(plan?.toLowerCase(), entitlementVersion)
-            : const <String>[];
-    final benefits =
-        labels.isEmpty
-            ? _defaultBenefits
-            : labels
-                .map((label) {
-                  if (label.startsWith('즉시게시')) {
-                    return _Benefit(
-                      Icons.flash_on_rounded,
-                      label,
-                      AppColors.primary,
-                    );
-                  }
-                  if (label.startsWith('긴급호출')) {
-                    return _Benefit(
-                      Icons.bolt_rounded,
-                      label,
-                      AppColors.urgentCall,
-                    );
-                  }
-                  if (label.startsWith('먼저 연락')) {
-                    return _Benefit(
-                      Icons.message_outlined,
-                      label,
-                      AppColors.primary,
-                    );
-                  }
-                  if (label.startsWith('지도 알림')) {
-                    return _Benefit(
-                      Icons.notifications_outlined,
-                      label,
-                      AppColors.primary,
-                    );
-                  }
-                  if (label.startsWith('AI')) {
-                    return _Benefit(
-                      Icons.auto_awesome_rounded,
-                      label,
-                      AppColors.aiAccent,
-                    );
-                  }
-                  if (label.startsWith('우선')) {
-                    return _Benefit(
-                      Icons.headset_mic_rounded,
-                      label,
-                      AppColors.pending,
-                    );
-                  }
-                  return _Benefit(
-                    Icons.verified_rounded,
-                    label,
-                    AppColors.primary,
-                  );
-                })
-                .toList(growable: false);
-    final label = _planLabel(plan);
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.workspace_premium_rounded,
-                color: AppColors.primary,
-                size: 18,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                active && label.isNotEmpty ? '$label 플랜 혜택' : '구독 혜택',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          ...benefits.map((b) => _BenefitRow(benefit: b)),
-          if (remainingText != null) ...[
-            const SizedBox(height: 10),
-            Text(
-              remainingText!,
-              style: const TextStyle(color: AppColors.textSecondary),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _BenefitRow extends StatelessWidget {
-  final _Benefit benefit;
-  const _BenefitRow({required this.benefit});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Row(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: benefit.color.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Icon(benefit.icon, color: benefit.color, size: 17),
-          ),
-          const SizedBox(width: 12),
-          Text(
-            benefit.label,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const Spacer(),
-          const Icon(Icons.check_rounded, size: 16, color: AppColors.success),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── 관리 버튼 섹션 ──────────────────────────────────────────────
-class _ManageSection extends StatelessWidget {
-  final bool isStoreBilling;
-  final VoidCallback onOpenStore;
-  final VoidCallback onRestore;
-  const _ManageSection({
-    required this.isStoreBilling,
-    required this.onOpenStore,
-    required this.onRestore,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        children: [
-          _tile(
-            icon: Icons.manage_accounts_rounded,
-            title: isStoreBilling ? '구독 관리' : '결제 방식 안내',
-            subtitle:
-                isStoreBilling
-                    ? 'App Store에서 변경 · 해지'
-                    : 'PortOne 30일 결제 · 자동 갱신 없음',
-            onTap: onOpenStore,
-            showDivider: true,
-          ),
-          _tile(
-            icon: Icons.history_rounded,
-            title: isStoreBilling ? '구매 복원' : '결제 상태 새로고침',
-            subtitle: isStoreBilling ? '이전 결제 내역 복원' : '서버의 이용 기간 다시 확인',
-            onTap: onRestore,
-            showDivider: false,
-          ),
-        ],
-      ),
-    );
-  }
-
-  static Widget _tile({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-    required bool showDivider,
-  }) {
-    return Column(
-      children: [
-        ListTile(
-          leading: Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: const Color(0xFFE8F0FF),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: AppColors.primary, size: 20),
-          ),
-          title: Text(
-            title,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-          ),
-          subtitle: Text(
-            subtitle,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppColors.textSecondary,
-            ),
-          ),
-          trailing: const Icon(
-            Icons.chevron_right_rounded,
-            color: AppColors.textTertiary,
-          ),
-          onTap: onTap,
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 4,
-          ),
-        ),
-        if (showDivider)
-          const Divider(height: 1, indent: 64, color: AppColors.bgPage),
-      ],
-    );
-  }
-}
-
-// ─── 정책 섹션 ───────────────────────────────────────────────────
-class _PolicySection extends StatelessWidget {
-  final bool isStoreBilling;
-  final VoidCallback onOpenStore;
-  const _PolicySection({
-    required this.isStoreBilling,
-    required this.onOpenStore,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Theme(
-        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-        child: ExpansionTile(
-          leading: Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              color: AppColors.bgPage,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.description_outlined,
-              color: AppColors.textSecondary,
-              size: 20,
-            ),
-          ),
-          title: const Text(
-            '해지 · 환불 · 문의',
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-          ),
-          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          children: [
-            Text(
-              isStoreBilling
-                  ? '• 구독 해지는 App Store 구독 관리 페이지에서 처리됩니다.\n'
-                      '• 환불 규정은 Apple App Store 정책을 따릅니다.\n'
-                      '• 결제 영수증은 App Store 구매 내역에서 확인하세요.'
-                  : '• Android 구독은 PortOne을 통한 30일 이용권 결제입니다.\n'
-                      '• 자동 갱신되지 않으며 기간이 끝난 뒤 다시 결제할 수 있습니다.\n'
-                      '• 환불과 결제 영수증은 고객센터로 문의해주세요.',
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-                height: 1.6,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                  label: Text(isStoreBilling ? '구독 관리 열기' : '결제 방식 확인'),
-                  onPressed: onOpenStore,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    side: const BorderSide(color: AppColors.primary),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    textStyle: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.mail_outline_rounded, size: 16),
-                  label: const Text('문의하기'),
-                  onPressed: () {
-                    final uri = Uri(
-                      scheme: 'mailto',
-                      path: 'support@albailju.co.kr',
-                      queryParameters: {
-                        'subject': '[알바일주] 구독 문의',
-                        'body': '문의 내용을 입력해주세요.',
-                      },
-                    );
-                    launchUrl(uri);
+      bottomNavigationBar:
+          !_loading && !_active
+              ? AppBottomBar(
+                child: AppPrimaryButton(
+                  label: '구독 플랜 보기',
+                  onPressed: () async {
+                    final result = await Navigator.pushNamed(context, '/subscribe');
+                    if (!mounted) return;
+                    if (result == true) {
+                      await _refresh();
+                      _toast('구독을 시작했어요');
+                    }
                   },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textSecondary,
-                    side: const BorderSide(color: AppColors.textDisabled),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    textStyle: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
                 ),
-              ],
-            ),
-          ],
-        ),
-      ),
+              )
+              : null,
     );
   }
 }

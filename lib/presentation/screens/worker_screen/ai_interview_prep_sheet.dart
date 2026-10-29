@@ -139,7 +139,7 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                   height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
+                    color: AppColors.textDisabled,
                     borderRadius: BorderRadius.circular(99),
                   ),
                 ),
@@ -152,9 +152,7 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primary, Color(0xFF6C63FF)],
-                      ),
+                      color: AppColors.primary,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(
@@ -170,15 +168,15 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                       const Text(
                         'AI 면접 준비 도우미',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: AppFontSize.buttonLg,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
                       Text(
                         widget.jobTitle,
                         style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade500,
+                          fontSize: AppFontSize.meta,
+                          color: AppColors.textTertiary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -205,14 +203,14 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                       SizedBox(height: 16),
                       Text(
                         'AI가 면접 준비 가이드를 만들고 있어요...',
-                        style: TextStyle(color: Colors.black54, fontSize: 13),
+                        style: TextStyle(color: Colors.black54, fontSize: AppFontSize.body2),
                       ),
                       SizedBox(height: 6),
                       Text(
                         '보통 5~10초 걸려요',
                         style: TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 11,
+                          fontSize: AppFontSize.caption,
                         ),
                       ),
                       SizedBox(height: 24),
@@ -225,8 +223,8 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                   decoration: BoxDecoration(
                     color:
                         _isDailyLimit
-                            ? Colors.orange.shade50
-                            : Colors.red.shade50,
+                            ? AppColors.warningLight
+                            : AppColors.errorLight,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -238,8 +236,8 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                             : Icons.error_outline,
                         color:
                             _isDailyLimit
-                                ? Colors.orange.shade400
-                                : Colors.red.shade400,
+                                ? AppColors.warning
+                                : AppColors.error,
                         size: 20,
                       ),
                       const SizedBox(width: 10),
@@ -249,9 +247,9 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                           style: TextStyle(
                             color:
                                 _isDailyLimit
-                                    ? Colors.orange.shade700
-                                    : Colors.red.shade600,
-                            fontSize: 13,
+                                    ? AppColors.warningDark
+                                    : AppColors.error,
+                            fontSize: AppFontSize.body2,
                             height: 1.5,
                           ),
                         ),
@@ -285,7 +283,7 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                   child: Text(
                     _result ?? '',
                     style: const TextStyle(
-                      fontSize: 14,
+                      fontSize: AppFontSize.button,
                       height: 1.65,
                       color: Color(0xFF1E2A3A),
                     ),
@@ -298,15 +296,15 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                     Icon(
                       Icons.info_outline,
                       size: 13,
-                      color: Colors.grey.shade400,
+                      color: AppColors.textDisabled,
                     ),
                     const SizedBox(width: 5),
                     Expanded(
                       child: Text(
                         'AI가 생성한 내용이에요. 실제 면접과 다를 수 있어요.',
                         style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey.shade400,
+                          fontSize: AppFontSize.caption,
+                          color: AppColors.textDisabled,
                         ),
                       ),
                     ),
@@ -320,17 +318,10 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                     onPressed: _generate,
                     icon: const Icon(Icons.refresh_rounded, size: 16),
                     label: const Text(
-                      '다시 생성',
-                      style: TextStyle(fontWeight: FontWeight.w700),
-                    ),
+                      '다시 생성'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: AppColors.primary,
                       side: BorderSide(
                         color: AppColors.primary.withOpacity(0.4),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                   ),

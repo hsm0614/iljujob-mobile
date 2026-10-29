@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:iljujob/config/app_theme.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart' as km;
 
 class FullMapScreen extends StatefulWidget {
@@ -101,7 +102,7 @@ class _FullMapScreenState extends State<FullMapScreen> {
           // (대응책) 중앙 고정 핀 위젯 — 네이티브 마커가 혹시 실패해도 핀은 보이게
           const IgnorePointer(
             child: Center(
-              child: Icon(Icons.location_pin, size: 34, color: Colors.red),
+              child: Icon(Icons.location_pin, size: 34, color: AppColors.error),
             ),
           ),
 
@@ -123,12 +124,12 @@ if (widget.address?.trim().isNotEmpty ?? false)
         ),
         child: Row(
           children: [
-            const Icon(Icons.place, size: 18, color: Colors.grey),
+            const Icon(Icons.place, size: 18, color: AppColors.textTertiary),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 widget.address!.trim(), // 이쁘게 적힌 주소
-                style: const TextStyle(fontSize: 14),
+                style: const TextStyle(fontSize: AppFontSize.button),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -154,12 +155,12 @@ else
         ),
         child: Row(
           children: [
-            const Icon(Icons.place, size: 18, color: Colors.grey),
+            const Icon(Icons.place, size: 18, color: AppColors.textTertiary),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
                 '위치: ${widget.lat.toStringAsFixed(6)}, ${widget.lng.toStringAsFixed(6)}',
-                style: const TextStyle(fontSize: 14),
+                style: const TextStyle(fontSize: AppFontSize.button),
               ),
             ),
           ],

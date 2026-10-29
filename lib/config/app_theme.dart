@@ -19,10 +19,10 @@ class AppColors {
   static const primaryMid   = Color(0xFFBDD9FF); // 포커스 링/구분선
 
   // ── Neutral ────────────────────────────────────────────
-  static const bgPage    = Color(0xFFF4F6FA); // 페이지 배경 (카드 그림자 살리는 연회색)
-  static const bgBase    = Color(0xFFF4F6FA); // bgPage 별칭
+  static const bgPage    = Color(0xFFF2F4F6); // TDS grey100 // 페이지 배경 (카드 그림자 살리는 연회색)
+  static const bgBase    = Color(0xFFF2F4F6); // bgPage 별칭
   static const bgCard    = Color(0xFFFFFFFF); // 카드/시트 배경
-  static const bgMuted   = Color(0xFFF2F4F8); // 비활성 배경 (칩, 인풋)
+  static const bgMuted   = Color(0xFFF2F4F6); // TDS grey100 // 비활성 배경 (칩, 인풋)
 
   // ── Border ─────────────────────────────────────────────
   static const border    = Color(0xFFE5E8EB); // 일반 구분선
@@ -30,12 +30,14 @@ class AppColors {
 
   // ── Text ───────────────────────────────────────────────
   static const textPrimary   = Color(0xFF191F28); // 제목·강조
-  static const textSecondary = Color(0xFF6B7280); // 본문
-  static const textTertiary  = Color(0xFF9CA3AF); // 힌트·보조
-  static const textDisabled  = Color(0xFFD1D5DB); // 비활성
+  static const textSecondary = Color(0xFF6B7684); // TDS grey600 (흰 바탕 4.6:1) // 본문
+  static const textTertiary  = Color(0xFF8B95A1); // TDS grey500 // 힌트·보조
+  static const textDisabled  = Color(0xFFD1D6DB); // TDS grey300 // 비활성
 
   // ── Semantic ───────────────────────────────────────────
   static const error   = Color(0xFFDC2626);
+  static const errorLight  = Color(0xFFFEF2F2); // 오류 연한 바탕
+  static const errorBorder = Color(0xFFFECACA); // 오류 연한 테두리
   static const success = Color(0xFF10B981);
   static const warning = Color(0xFFF59E0B);
   static const warningDark = Color(0xFF92400E);
@@ -56,12 +58,13 @@ class AppColors {
   // ── 제품·상태 색 ───────────────────────────────────────
   // 화면마다 하드코딩돼 있던 값을 여기로 올린다. 값은 그대로 두고
   // 관리 지점만 하나로 모은다 — 색 정책을 바꿀 때 여기 한 줄만 고치면 된다.
-  /// 긴급호출(유료 상품) 브랜딩 색. 그라디언트 [urgentCall, error] 로 쓰인다.
-  static const urgentCall = Color(0xFFEF4444);
+  /// 긴급호출(유료 상품) 색. 2026-10 빨강 그라데이션 → 주황 단색(시간 신호와 같은 값).
+  /// 급함은 알리되 화면 전체가 경고처럼 보이지 않게.
+  static const urgentCall = Color(0xFFEA8035);
   /// 진행 중·대기 상태(출근확정 proposed, 프로 플랜 등)
   static const pending = Color(0xFFFF9500);
-  /// AI 기능 표시
-  static const aiAccent = Color(0xFF6C5CE7);
+  /// AI 기능 — 2026-10 보라 폐지. AI는 색이 아니라 기능 이름·아이콘으로 구분한다.
+  static const aiAccent = textSecondary;
 
   // ── 구직자 활동등급 (CLAUDE.md 스펙) ───────────────────
   static const gradeS = Color(0xFFFF6B00); // 100점 이상
@@ -76,13 +79,9 @@ class AppColors {
 class AppShadows {
   AppShadows._();
 
-  static const List<BoxShadow> card = [
-    BoxShadow(
-      color: Color(0x0D000000), // black 5%
-      blurRadius: 12,
-      offset: Offset(0, 2),
-    ),
-  ];
+  // 리디자인(2026-10): 목록·카드는 그림자 없이 흰 면 + 회색 배경 대비로 구분한다.
+  // 떠 있는 것(시트·플로팅 버튼)만 cardElevated 를 쓴다.
+  static const List<BoxShadow> card = [];
 
   static const List<BoxShadow> cardElevated = [
     BoxShadow(
@@ -92,13 +91,8 @@ class AppShadows {
     ),
   ];
 
-  static const List<BoxShadow> button = [
-    BoxShadow(
-      color: Color(0x333B8AFF), // primary 20%
-      blurRadius: 10,
-      offset: Offset(0, 4),
-    ),
-  ];
+  // 파란 글로우는 '광고 앱' 인상을 만든다 — 버튼은 색만으로 충분하다
+  static const List<BoxShadow> button = [];
 
   static const List<BoxShadow> bottomNav = [
     BoxShadow(
@@ -125,23 +119,63 @@ class AppRadius {
 }
 
 // ─────────────────────────────────────────────────────────
+// 글자 크기 단계 (2026-10). 화면마다 숫자를 직접 쓰다 19·21·22·26pt가 섞였다 —
+// 크기는 이 단계만 쓴다. 가능하면 AppTextStyles 를 먼저 쓰고, 굵기·색만 바꿀 때 이걸 쓴다.
+// 11pt 하한(DESIGN.md) — 그보다 작은 단계는 없다.
+// ─────────────────────────────────────────────────────────
+class AppFontSize {
+  AppFontSize._();
+  static const double caption = 11;
+  static const double meta = 12;
+  static const double body2 = 13;
+  static const double button = 14;
+  static const double body1 = 15;
+  static const double buttonLg = 16;
+  static const double title = 17;
+  static const double titleLg = 18;
+  static const double h2 = 20;
+  static const double h1 = 24;
+  static const double display = 28;
+  static const double hero = 46;
+}
+
+// ─────────────────────────────────────────────────────────
 // 텍스트 스타일 토큰
 // ─────────────────────────────────────────────────────────
 class AppTextStyles {
   AppTextStyles._();
 
+  /// 앱바 로고 — Jalnan2는 브랜드 순간 한정
+  static const logo = TextStyle(
+    fontFamily: 'Jalnan2TTF', fontSize: 20,
+    color: AppColors.primary, height: 1.1,
+  );
+
+  /// 탭 화면 제목(내 활동·채팅·마이·캘린더·사장님 탭) — 홈 로고와 같은 잘난체로 통일 (2026-10 대표 요청)
+  // 탭 화면 앱바 제목: 장난체 파랑 — 홈·내 활동·채팅·마이·달력·사장님 탭 공통 (대표 결정 2026-10-24,
+  // DESIGN.md '제목 파랑 금지'의 예외는 탭 제목 한 곳)
+  static const tabTitle = TextStyle(
+    fontFamily: 'Jalnan2TTF', fontSize: 18,
+    color: AppColors.primary, height: 1.1,
+  );
+  /// 화면 안 섹션 머리글('전체 공고' 등)
+  static const sectionTitle = TextStyle(
+    fontFamily: 'Jalnan2TTF', fontSize: 16,
+    color: AppColors.textPrimary, height: 1.2,
+  );
+
   // 제목
   static const h1 = TextStyle(
     fontSize: 24, fontWeight: FontWeight.w800,
-    color: AppColors.textPrimary, height: 1.2,
+    color: AppColors.textPrimary, height: 1.2, letterSpacing: -0.5,
   );
   static const h2 = TextStyle(
     fontSize: 20, fontWeight: FontWeight.w700,
-    color: AppColors.textPrimary, height: 1.3,
+    color: AppColors.textPrimary, height: 1.3, letterSpacing: -0.4,
   );
   static const h3 = TextStyle(
     fontSize: 17, fontWeight: FontWeight.w700,
-    color: AppColors.textPrimary, height: 1.3,
+    color: AppColors.textPrimary, height: 1.3, letterSpacing: -0.25,
   );
 
   // 본문
@@ -180,20 +214,38 @@ class AppTextStyles {
 
   // 공고 카드 전용
   static const jobTitle = TextStyle(
-    fontSize: 15.5, fontWeight: FontWeight.w700,
+    fontSize: 15, fontWeight: FontWeight.w700,
     color: AppColors.textPrimary, height: 1.3,
   );
   static const jobPay = TextStyle(
     fontSize: 18, fontWeight: FontWeight.w800,
-    color: AppColors.textPrimary, height: 1.1,
+    color: AppColors.textPrimary, height: 1.1, letterSpacing: -0.4,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+  /// 목록 급여 — 카드에서 가장 무거운 요소. 자릿수를 맞춰 위아래 금액이 정렬된다.
+  static const jobPayHero = TextStyle(
+    fontSize: 17, fontWeight: FontWeight.w800,
+    color: AppColors.textPrimary, height: 1.1, letterSpacing: -0.4,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+  /// 공고 상세 급여 — C안의 큰 숫자는 상세에서만 쓴다
+  static const jobPayDisplay = TextStyle(
+    fontSize: 24, fontWeight: FontWeight.w800,
+    color: AppColors.textPrimary, height: 1.1, letterSpacing: -0.8,
+    fontFeatures: [FontFeature.tabularFigures()],
+  );
+  static const jobPayUnit = TextStyle(
+    fontSize: 12, fontWeight: FontWeight.w700,
+    color: AppColors.textSecondary,
   );
   static const jobPayType = TextStyle(
     fontSize: 12, fontWeight: FontWeight.w600,
     color: AppColors.primary,
   );
+  // 회사명·거리·지원 N명은 지원 판단 정보 — 힌트 회색(#9CA3AF, 대비 2.5:1)이 아니라 본문 보조(4.8:1)
   static const jobMeta = TextStyle(
     fontSize: 12, fontWeight: FontWeight.w500,
-    color: AppColors.textTertiary,
+    color: AppColors.textSecondary,
   );
   static const jobLocation = TextStyle(
     fontSize: 12, fontWeight: FontWeight.w500,
@@ -247,7 +299,32 @@ class AppDecorations {
 class AppTheme {
   AppTheme._();
 
+  static final ButtonStyle _primaryButtonStyle = ElevatedButton.styleFrom(
+    backgroundColor: AppColors.primary,
+    foregroundColor: Colors.white,
+    disabledBackgroundColor: const Color(0xFFC4DCFF), // 파랑 35% — 비활성도 '파란 버튼'으로 읽힌다
+    disabledForegroundColor: Colors.white,
+    elevation: 0,
+    shadowColor: Colors.transparent,
+    minimumSize: const Size(64, 52),
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    textStyle: const TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w600),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+  );
+
   static ThemeData get theme => ThemeData(
+        fontFamily: 'Pretendard', // 갤럭시·아이폰 같은 모양으로 (pubspec 주석 참고)
+        // 누를 때: 안드로이드 물결 대신 살짝 어두워짐 (토스 press overlay · 당근도 물결 없음)
+        splashFactory: NoSplash.splashFactory,
+        splashColor: Colors.transparent,
+        highlightColor: const Color(0x0F000000), // 검정 6%
+        // 화면 전환: 안드로이드도 iOS처럼 오른쪽에서 밀려 들어온다 (기본은 확대·페이드라 플랫폼마다 달랐다)
+        pageTransitionsTheme: const PageTransitionsTheme(
+          builders: {
+            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
+            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+          },
+        ),
         useMaterial3: true,
         // 알바일주는 라이트 전용이다. 화면 색이 하드코딩으로 흩어져 있어
         // 다크 팔레트를 얹으면 절반만 뒤집힌 화면이 나온다.
@@ -270,49 +347,53 @@ class AppTheme {
         // AppBar
         appBarTheme: const AppBarTheme(
           backgroundColor: AppColors.bgCard,
-          foregroundColor: AppColors.primary,
+          foregroundColor: AppColors.textPrimary,
+          surfaceTintColor: Colors.transparent,
           elevation: 0,
-          scrolledUnderElevation: 0.5,
+          scrolledUnderElevation: 0,
+          toolbarHeight: 52,
           centerTitle: false,
-          // 푸시된 화면 제목은 다크 잉크 + 시스템 폰트
-          // (Jalnan·브랜드 블루는 탭 루트의 파란 헤더 같은 브랜드 순간 전용)
           titleTextStyle: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,
           ),
-          iconTheme: IconThemeData(color: AppColors.primary),
+          // 뒤로가기·닫기는 잉크색 — 파랑은 화면 안의 주요 액션 몫
+          iconTheme: IconThemeData(color: AppColors.textPrimary),
+          actionsIconTheme: IconThemeData(color: AppColors.textPrimary),
         ),
-        // ElevatedButton
-        elevatedButtonTheme: ElevatedButtonThemeData(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            textStyle: AppTextStyles.btnLg,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
+        cardTheme: CardThemeData(
+          color: AppColors.bgCard,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+          margin: EdgeInsets.zero,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
         ),
-        // OutlinedButton
+        // ── 버튼 3종 (2026-10, 토스 TDS식) — 모양은 여기서만 정한다. 화면에서 styleFrom으로 다시 정하지 말 것
+        //   주 버튼(Filled·Elevated): 파랑 채움 · 흰 글자 16/w600 · 높이 52 · 비활성은 연한 파랑(회색 아님)
+        //   보조 버튼(Outlined): 회색 채움 · 검정 글자 · 테두리 없음
+        //   글자 버튼(Text): 파란 글자
+        filledButtonTheme: FilledButtonThemeData(style: _primaryButtonStyle),
+        elevatedButtonTheme: ElevatedButtonThemeData(style: _primaryButtonStyle),
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.primary),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            textStyle: AppTextStyles.btnMd,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-            ),
+            backgroundColor: AppColors.bgMuted,
+            foregroundColor: AppColors.textPrimary,
+            disabledForegroundColor: AppColors.textDisabled,
+            side: BorderSide.none,
+            elevation: 0,
+            minimumSize: const Size(64, 48),
+            padding: const EdgeInsets.symmetric(horizontal: 18),
+            textStyle: const TextStyle(fontSize: AppFontSize.body1, fontWeight: FontWeight.w600),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
           ),
         ),
-        // TextButton
         textButtonTheme: TextButtonThemeData(
           style: TextButton.styleFrom(
             foregroundColor: AppColors.primary,
-            textStyle: AppTextStyles.btnMd,
+            textStyle: const TextStyle(fontSize: AppFontSize.body1, fontWeight: FontWeight.w600),
           ),
         ),
         // InputDecoration
@@ -320,13 +401,15 @@ class AppTheme {
           filled: true,
           fillColor: AppColors.bgMuted,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          // 회색 채움 칸이 기본 — 테두리까지 그리면 회색 상자 안에 테두리 칸이 또 생겼다
+          // (채팅 검색·입력창). 포커스일 때만 파란 테두리
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
-            borderSide: const BorderSide(color: AppColors.border),
+            borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
-            borderSide: const BorderSide(color: AppColors.border),
+            borderSide: BorderSide.none,
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.md),
@@ -353,13 +436,17 @@ class AppTheme {
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         ),
         // SnackBar
+        // 토스식 토스트: 진회색 알약 + 흰 15 세미볼드, 화면 양옆 16 띄움
         snackBarTheme: SnackBarThemeData(
           backgroundColor: AppColors.textPrimary,
-          contentTextStyle: const TextStyle(color: Colors.white, fontSize: 13),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
+          contentTextStyle: const TextStyle(
+            color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600, height: 1.4,
           ),
+          actionTextColor: AppColors.primaryMid,
+          behavior: SnackBarBehavior.floating,
+          insetPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          elevation: 0,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         // BottomSheet
         bottomSheetTheme: const BottomSheetThemeData(

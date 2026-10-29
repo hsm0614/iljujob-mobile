@@ -1,3 +1,4 @@
+import 'package:iljujob/config/app_theme.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -201,7 +202,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
 
         return Dialog(
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           insetPadding: const EdgeInsets.symmetric(
             horizontal: 20,
@@ -215,7 +216,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
                 // 이미지
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(16),
+                    top: Radius.circular(AppRadius.lg),
                   ),
                   child: Container(
                     color: Colors.black,
@@ -241,7 +242,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     '한정 이벤트 진행 중',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                    style: TextStyle(fontSize: AppFontSize.titleLg, fontWeight: FontWeight.w800),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -250,7 +251,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
                   padding: EdgeInsets.symmetric(horizontal: 16),
                   child: Text(
                     '지금 참여하면 보너스 혜택을 드려요.',
-                    style: TextStyle(fontSize: 14, color: Colors.black54),
+                    style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -272,12 +273,6 @@ class _ClientMainScreenState extends State<ClientMainScreen>
                             // 서버와 동기화하고 싶으면: 이후 첫 /promo 호출 시 헤더 x-promo-skip-until 로 전달됨
                             if (mounted) Navigator.of(dialogCtx).pop();
                           },
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
                           child: Text(checkboxLabel),
                         ),
                       ),
@@ -286,12 +281,6 @@ class _ClientMainScreenState extends State<ClientMainScreen>
                       Expanded(
                         child: OutlinedButton(
                           onPressed: () => Navigator.of(dialogCtx).pop(),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
                           child: Text(dismissLabel),
                         ),
                       ),

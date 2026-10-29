@@ -433,6 +433,9 @@ Future<void> _handleNotificationData(Map<String, String> data) async {
     navigatorKey.currentState?.pushNamed('/inquiry');
   } else if (type == 'repost_nudge' || type == 'zero_applicant_care') {
     navigatorKey.currentState?.pushNamed('/post_job');
+  } else if (type == 'urgent_not_sent') {
+    // 긴급 호출로 올리고 아무에게도 안 보냈을 때 — 후보 고르는 화면으로 바로
+    navigatorKey.currentState?.pushNamed('/nearby-workers', arguments: <String, dynamic>{...data});
   } else if (data['chatRoomId'] != null || data['roomId'] != null) {
     // 채팅 초대·동의 결과 푸시는 예전 서버가 roomId 로만 보냈다(눌러도 안 열렸음).
     await _handleChatNotification(RemoteMessage(data: data));
@@ -546,6 +549,8 @@ Future<void> _handleInitialMessage(
     } else if (userType == 'client' &&
         (type == 'repost_nudge' || type == 'zero_applicant_care')) {
       navigator.pushNamed('/post_job');
+    } else if (type == 'urgent_not_sent') {
+      navigator.pushNamed('/nearby-workers', arguments: <String, dynamic>{...initialMessage.data});
     } else if (initialMessage.data['chatRoomId'] != null ||
         initialMessage.data['roomId'] != null) {
       final homeWithChatTab =
@@ -755,14 +760,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       ],
       theme: AppTheme.theme,
       themeMode: ThemeMode.light, // 시스템 다크를 따라가지 않는다
-      // 시스템 '글자 크게'를 1.3배로 제한한다. 앱 전반이 고정 height 를 쓰고 있어
-      // (1,000곳 이상) 그 이상 키우면 버튼·카드가 통째로 넘친다.
-      // 근본 해결은 화면별 유연 레이아웃이지만, 그 전까지 여기서 막는다.
+      // 시스템 '글자 크게'를 1.15배로 제한한다. 앱 전반이 고정 height 를 쓰고 있어
+      // (1,000곳 이상) 더 키우면 버튼·카드가 넘친다. 1.3이던 걸 낮춤(2026-10) —
+      // 갤럭시는 기본 글자 크기가 한두 단계 커서 캘린더·홈 카드가 줄바꿈되며 깨졌다.
+      // ponytail: 저시력 사용자는 1.15배까지만 커짐. 화면별 유연 레이아웃이 되면 다시 올릴 것.
       builder: (context, child) {
         final mq = MediaQuery.of(context);
         return MediaQuery(
           data: mq.copyWith(
-            textScaler: mq.textScaler.clamp(maxScaleFactor: 1.3),
+            textScaler: mq.textScaler.clamp(maxScaleFactor: 1.15),
           ),
           child: child ?? const SizedBox.shrink(),
         );
@@ -957,7 +963,7 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
             const SizedBox(height: 12),
             const Text(
               '업데이트가 있어요',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              style: TextStyle(fontSize: AppFontSize.titleLg, fontWeight: FontWeight.w900),
             ),
             const SizedBox(height: 6),
             Text(
@@ -966,7 +972,7 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
                   : '더 빠르고 편해진 알바일주를 써보세요.',
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 13,
+                fontSize: AppFontSize.body2,
                 height: 1.35,
                 color: AppColors.textSecondary,
                 fontWeight: FontWeight.w700,
@@ -982,15 +988,9 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
                     onPressed: force ? null : () => Navigator.pop(context),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(46),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      side: const BorderSide(color: AppColors.border),
                     ),
                     child: Text(
-                      force ? '필수 업데이트' : '나중에',
-                      style: const TextStyle(fontWeight: FontWeight.w900),
-                    ),
+                      force ? '필수 업데이트' : '나중에'),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -1001,20 +1001,10 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
                       if (!force && context.mounted) Navigator.pop(context);
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
                       minimumSize: const Size.fromHeight(46),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      elevation: 0,
                     ),
                     child: const Text(
-                      '업데이트하기',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        color: Colors.white,
-                      ),
-                    ),
+                      '업데이트하기'),
                   ),
                 ),
               ],
@@ -1024,7 +1014,7 @@ class _AlbailjuUpgradeDialog extends StatelessWidget {
               const Text(
                 '업데이트는 스토어에서 진행됩니다.',
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: AppFontSize.caption,
                   color: AppColors.textTertiary,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1048,14 +1038,14 @@ class _ReleaseNotesBox extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF9FAFB),
+        color: AppColors.bgMuted,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: AppColors.border),
       ),
       child: Text(
         t,
         style: const TextStyle(
-          fontSize: 12,
+          fontSize: AppFontSize.meta,
           height: 1.35,
           color: AppColors.textSecondary,
           fontWeight: FontWeight.w700,

@@ -103,7 +103,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
       padding: const EdgeInsets.only(top: 14, bottom: 8),
       child: Text(
         text,
-        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5),
+        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: AppFontSize.buttonLg),
       ),
     );
   }
@@ -142,7 +142,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                 const SizedBox(height: 12),
                 const Text(
                   '일한 연도 선택',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: AppFontSize.buttonLg),
                 ),
                 const SizedBox(height: 8),
                 Expanded(
@@ -161,7 +161,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                           child: Text(
                             y,
                             style: TextStyle(
-                              fontSize: selected ? 18 : 16,
+                              fontSize: selected ? AppFontSize.titleLg : AppFontSize.buttonLg,
                               fontWeight:
                                   selected ? FontWeight.w800 : FontWeight.w500,
                               color: selected ? kBrand : Colors.black87,
@@ -185,10 +185,6 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                           onPressed: () => Navigator.pop(context),
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: kBorder),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
                           ),
                           child: const Text('취소'),
                         ),
@@ -201,14 +197,6 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                             setState(() => selectedYear = temp);
                             Navigator.pop(context);
                           },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: kBrand,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                          ),
                           child: const Text('선택'),
                         ),
                       ),
@@ -301,10 +289,9 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F9FC),
+      backgroundColor: AppColors.bgMuted,
       appBar: AppBar(
         title: Text(_isEdit ? '경력 수정' : '경력 추가'),
-        centerTitle: true,
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
@@ -332,13 +319,6 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                       color: Colors.white,
                       border: Border.all(color: kBorder),
                       borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          blurRadius: 24,
-                          offset: const Offset(0, 10),
-                          color: Colors.black.withOpacity(0.04),
-                        ),
-                      ],
                     ),
                     padding: const EdgeInsets.fromLTRB(16, 16, 16, 6),
                     child: Column(
@@ -461,13 +441,6 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
             height: 52,
             child: ElevatedButton(
               onPressed: isSaving ? null : _submit,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: kBrand,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
               child:
                   isSaving
                       ? const SizedBox(
@@ -476,12 +449,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                       : Text(
-                        _isEdit ? '수정 완료' : '입력 완료',
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                        _isEdit ? '수정 완료' : '입력 완료'),
             ),
           ),
         ),

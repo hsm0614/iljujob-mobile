@@ -7,7 +7,8 @@
 // - ChatRoomCancelledBanner : 알바생 취소 배너
 
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:iljujob/utils/pay_display.dart';
+import 'package:iljujob/utils/chat_stage.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'chat_room_helpers.dart';
 
@@ -28,6 +29,8 @@ class ChatRoomJobPanel extends StatelessWidget {
 
   // 클라이언트 액션 콜백
   final VoidCallback? onConfirmHire;
+  /// 근무 끝난 알바생 평가 (true=또 부르고 싶어요). 이미 했으면 null
+  final ValueChanged<bool>? onEvaluate;
   final VoidCallback? onMarkCompleted;
   final VoidCallback? onProposeWorkConfirmation;
 
@@ -63,6 +66,7 @@ class ChatRoomJobPanel extends StatelessWidget {
     this.onConfirmHire,
     this.onMarkCompleted,
     this.onProposeWorkConfirmation,
+    this.onEvaluate,
     // 워커
     this.workLoading = false,
     this.hasWorkSession = false,
@@ -89,26 +93,40 @@ class ChatRoomJobPanel extends StatelessWidget {
     return null;
   }
 
-  String get _title {
-    final t = _pick(['title', 'job_title'])?.toString().trim() ?? '';
-    return t.isNotEmpty ? t : '공고 제목 없음';
-  }
-
-  String get _payText {
-    final raw = _pick(['pay', 'salary', 'wage'])?.toString() ?? '0';
-    final v = int.tryParse(raw) ?? 0;
-    return '${NumberFormat('#,###').format(v)}원';
-  }
-
-  String get _periodText => formatPeriod(
-    _pick(['start_date', 'startDate']),
-    _pick(['end_date', 'endDate']),
+  // '일급 41,280원' — 급여 형태를 같이 (홈·상세와 같은 함수)
+  String get _payText => formatJobPay(
+    (_pick(['pay', 'salary', 'wage']) ?? '').toString(),
+    (_pick(['pay_type', 'payType']) ?? '').toString(),
+    includeType: true,
   );
 
   String get _timeText => formatTimeRange(
     _pick(['start_time', 'startTime']),
     _pick(['end_time', 'endTime']),
   );
+
+  String get _title {
+    final t = _pick(['title', 'job_title'])?.toString().trim() ?? '';
+    return t.isNotEmpty ? t : '공고';
+  }
+
+  /// 마지막 근무일(벽시계 DATE 앞 10자리). 없으면 null
+  String? get _lastWorkDay {
+    final raw = (_pick(['end_date', 'endDate']) ??
+            _pick(['start_date', 'startDate']))
+        ?.toString();
+    return raw != null && raw.length >= 10 ? raw.substring(0, 10) : null;
+  }
+
+  bool get _workDayPassed => isWorkDatePast(_lastWorkDay);
+
+  /// '6/9' 또는 '6/9 지난 근무'
+  String? get _workDayLabel {
+    final d = _lastWorkDay;
+    if (d == null) return null;
+    final md = '${int.parse(d.substring(5, 7))}/${int.parse(d.substring(8, 10))}';
+    return _workDayPassed ? '$md 지난 근무' : md;
+  }
 
   bool get _isWeekdaysJob {
     final s = (_pick(['weekdays', 'weekday', 'days']) ?? '').toString().trim();
@@ -127,78 +145,76 @@ class ChatRoomJobPanel extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 제목 + 상세보기
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Text(
-                  _title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
-              ),
-              if (onOpenJobDetail != null)
-                TextButton.icon(
-                  onPressed: onOpenJobDetail,
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 0,
+          // 2026-10 (2차): 접기 줄 + 요약 줄 + 버튼 줄이 따로 놀았다 → 공고 카드 한 장.
+          // 누르면 공고 상세. 근무일이 지나면 날짜 옆에 '지난 근무'
+          InkWell(
+            onTap: onOpenJobDetail,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: AppColors.bgMuted,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    child: const Icon(
+                      Icons.work_outline_rounded,
+                      size: 22,
+                      color: AppColors.textSecondary,
+                    ),
                   ),
-                  icon: const Icon(
-                    Icons.open_in_new_rounded,
-                    size: 14,
-                    color: AppColors.primary,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.body2.copyWith(
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text.rich(
+                          TextSpan(
+                            children: [
+                              TextSpan(
+                                text: _payText,
+                                style: AppTextStyles.jobTitle,
+                              ),
+                              TextSpan(
+                                text: [
+                                  '',
+                                  if (_workDayLabel case final d?) d,
+                                  if (_timeText.isNotEmpty) _timeText,
+                                ].join(' · '),
+                                style: AppTextStyles.jobMeta,
+                              ),
+                            ],
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
                   ),
-                  label: const Text(
-                    '상세',
-                    style: TextStyle(fontSize: 11, color: AppColors.primary),
-                  ),
-                ),
-            ],
-          ),
-
-          // 공고 정보 바
-          Container(
-            margin: const EdgeInsets.only(top: 6, bottom: 2),
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFF),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFE8EEFF)),
+                  if (onOpenJobDetail != null)
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      size: 22,
+                      color: AppColors.textTertiary,
+                    ),
+                ],
+              ),
             ),
-            child: Row(
-              children: [
-                _InfoBit(
-                  icon: Icons.monetization_on_rounded,
-                  text: _payText,
-                  color: AppColors.primary,
-                ),
-                _InfoDivider(),
-                _InfoBit(
-                  icon: Icons.calendar_today_outlined,
-                  text: _periodText,
-                  color: AppColors.textSecondary,
-                ),
-                _InfoDivider(),
-                _InfoBit(
-                  icon: Icons.access_time_outlined,
-                  text: _timeText,
-                  color: AppColors.textSecondary,
-                ),
-              ],
-            ),
           ),
-
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
 
           // 액션 버튼
           userType == 'client'
@@ -211,6 +227,7 @@ class ChatRoomJobPanel extends StatelessWidget {
                 onConfirmHire: onConfirmHire,
                 onMarkCompleted: onMarkCompleted,
                 onProposeWorkConfirmation: onProposeWorkConfirmation,
+                onEvaluate: onEvaluate,
               )
               : _WorkerActions(
                 status: status,
@@ -225,6 +242,7 @@ class ChatRoomJobPanel extends StatelessWidget {
                 hasReviewed: hasReviewed,
                 isConfirmed: isConfirmed,
                 workerWorkConfirmed: workerWorkConfirmed,
+                workDayPassed: _workDayPassed,
                 onAddToCalendar: onAddToCalendar,
                 onOpenCalendar: onOpenCalendar,
                 onCancelWorkSession: onCancelWorkSession,
@@ -251,6 +269,7 @@ class _ClientActions extends StatelessWidget {
   final VoidCallback? onConfirmHire;
   final VoidCallback? onMarkCompleted;
   final VoidCallback? onProposeWorkConfirmation;
+  final ValueChanged<bool>? onEvaluate;
 
   const _ClientActions({
     required this.isConfirmed,
@@ -261,17 +280,32 @@ class _ClientActions extends StatelessWidget {
     this.onConfirmHire,
     this.onMarkCompleted,
     this.onProposeWorkConfirmation,
+    this.onEvaluate,
   });
 
   @override
   Widget build(BuildContext context) {
-    final actions = <Widget>[];
-
-    void add(Widget w) {
-      if (actions.isNotEmpty) actions.add(const SizedBox(width: 8));
-      actions.add(w);
+    // 근무가 끝났고 아직 평가 전 — 한 번 누르면 알바생 프로필의 '또 부르고 싶대요'가 된다
+    if (isCompleted && onEvaluate != null) {
+      final small = ButtonStyle(
+        minimumSize: const WidgetStatePropertyAll(Size(0, 40)),
+        textStyle: WidgetStatePropertyAll(AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600)),
+      );
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('이번 알바생, 또 부르고 싶으세요?', style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary)),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: OutlinedButton(style: small, onPressed: () => onEvaluate!(false), child: const Text('아쉬웠어요'))),
+              const SizedBox(width: 8),
+              Expanded(child: ElevatedButton(style: small, onPressed: () => onEvaluate!(true), child: const Text('또 부를래요'))),
+            ],
+          ),
+        ],
+      );
     }
-
     final isActive = status == 'active';
     final openStatus = workConfirmationStatus ?? '';
     final isWaitingWorker = openStatus == 'proposed';
@@ -287,125 +321,52 @@ class _ClientActions extends StatelessWidget {
         isWaitingWorker ||
         isWorkAccepted ||
         isCheckedIn;
-    final proposeText =
-        isWaitingWorker
-            ? '알바생 응답 대기중'
-            : isCheckedIn
-            ? '출근 확인됨'
-            : isWorkAccepted
-            ? '출근 확정 완료'
-            : onProposeWorkConfirmation != null
-            ? '출근 확정 제안하기'
-            : '채용 확정하기';
-    final proposeIcon =
-        isWaitingWorker
-            ? Icons.hourglass_top_rounded
-            : isCheckedIn
-            ? Icons.how_to_reg_rounded
-            : isWorkAccepted
-            ? Icons.event_available_rounded
-            : onProposeWorkConfirmation != null
-            ? Icons.event_available_rounded
-            : Icons.thumb_up_alt_rounded;
-    final helperText =
-        isWaitingWorker
-            ? '알바생 수락을 기다리는 중'
-            : isCheckedIn
-            ? '근무 완료 처리를 진행해주세요'
-            : isWorkAccepted
-            ? '근무일 알림과 출근 확인이 진행돼요'
-            : onProposeWorkConfirmation != null
-            ? '알바생 수락 후 출근확인 가능'
-            : '확정 후 출근확인 가능';
-
-    // 채용 확정 전: 사장님 UX는 출근 확정 제안으로 통일한다.
-    if (!isConfirmed) {
-      add(
-        _ActionButton(
-          text: proposeText,
-          icon: proposeIcon,
-          color: AppColors.primary,
-          onPressed:
-              isActive && !hasOpenConfirmation
-                  ? (onProposeWorkConfirmation ?? onConfirmHire)
-                  : null,
-        ),
-      );
-      add(
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: const Color(0xFFEFF6FF),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: const Color(0xFFDBEAFE)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.info_outline_rounded,
-                size: 13,
-                color: AppColors.primary,
-              ),
-              const SizedBox(width: 5),
-              Text(
-                helperText,
-                style: const TextStyle(
-                  fontSize: 11,
-                  color: AppColors.primaryDark,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        child: Row(children: actions),
-      );
-    }
-
-    // 확정 후: 완료 처리
-    if (!isCompleted) {
-      add(
-        _ActionButton(
-          text: '알바 완료 처리',
-          icon: Icons.check_circle_rounded,
-          color: Colors.green,
-          onPressed: onMarkCompleted,
-        ),
-      );
+    // 큰 파란 버튼 + 버튼처럼 생긴 파란 안내 알약(누를 수 없음)이 나란히 있던 것 →
+    // 지금 상태를 말하는 한 줄 + 할 일이 있을 때만 오른쪽 버튼 하나.
+    final String line;
+    String? label;
+    VoidCallback? onTap;
+    IconData? icon;
+    if (isCompleted) {
+      line = '근무 완료';
+      icon = Icons.check_circle_rounded;
+    } else if (isConfirmed || isCheckedIn) {
+      line = isCheckedIn ? '출근 확인됐어요 · 끝나면 완료 처리해 주세요' : '근무가 끝나면 완료 처리해 주세요';
+      label = '완료 처리';
+      onTap = onMarkCompleted;
+    } else if (isWorkAccepted) {
+      line = '출근 확정됐어요 · 근무일에 알림이 가요';
+      icon = Icons.event_available_rounded;
+    } else if (isWaitingWorker || hasOpenConfirmation) {
+      line = '알바생 수락을 기다리고 있어요';
+      icon = Icons.hourglass_top_rounded;
+    } else if (!isActive) {
+      line = '지금은 출근 확정을 제안할 수 없어요';
     } else {
-      add(
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Text(
-            '✔ 알바 완료됨',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-          ),
-        ),
-      );
+      line = '조건이 맞으면 출근 확정을 제안해 보세요';
+      label = onProposeWorkConfirmation != null ? '출근 확정 제안' : '채용 확정';
+      onTap = onProposeWorkConfirmation ?? onConfirmHire;
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          child: Row(children: actions),
-        ),
+        if (icon != null) ...[
+          Icon(icon, size: 16, color: AppColors.textSecondary),
+          const SizedBox(width: 6),
+        ],
+        Expanded(child: Text(line, style: AppTextStyles.body2)),
+        if (label != null) ...[
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: onTap,
+            style: ButtonStyle(
+              minimumSize: const WidgetStatePropertyAll(Size(64, 40)),
+              padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 16)),
+              textStyle: WidgetStatePropertyAll(AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600)),
+            ),
+            child: Text(label),
+          ),
+        ],
       ],
     );
   }
@@ -428,6 +389,8 @@ class _WorkerActions extends StatelessWidget {
   final bool hasReviewed;
   final bool isConfirmed;
   final bool workerWorkConfirmed;
+  /// 근무일이 지났으면 '캘린더 추가'·'지원 취소' 대신 후기만 — 6/9 공고에 큰 파란 '캘린더에 추가하기'가 떠 있었다
+  final bool workDayPassed;
   final VoidCallback? onAddToCalendar;
   final VoidCallback? onOpenCalendar;
   final VoidCallback? onCancelWorkSession;
@@ -447,6 +410,7 @@ class _WorkerActions extends StatelessWidget {
     required this.hasReviewed,
     required this.isConfirmed,
     required this.workerWorkConfirmed,
+    this.workDayPassed = false,
     this.checkinDistanceM,
     this.onAddToCalendar,
     this.onOpenCalendar,
@@ -469,97 +433,12 @@ class _WorkerActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final actions = <Widget>[];
-
-    void add(Widget w) {
-      if (actions.isNotEmpty) actions.add(const SizedBox(width: 8));
-      actions.add(w);
-    }
-
-    final canBook = !_isCancelled && !_blocked && !_expired && !isCompleted;
-
-    // ── 캘린더 (요일 공고면 숨김)
-    if (!isWeekdaysJob) {
-      if (!hasWorkSession) {
-        add(
-          ElevatedButton.icon(
-            onPressed: (!canBook || workLoading) ? null : onAddToCalendar,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(999),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            ),
-            icon:
-                workLoading
-                    ? _loadingDot(Colors.white)
-                    : const Icon(
-                      Icons.event_available_rounded,
-                      size: 16,
-                      color: Colors.white,
-                    ),
-            label: const Text(
-              '캘린더에 추가하기',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        );
-      } else {
-        add(
-          OutlinedButton.icon(
-            onPressed: onOpenCalendar,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              side: const BorderSide(color: AppColors.primary),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(999),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            ),
-            icon: const Icon(Icons.calendar_month_rounded, size: 16),
-            label: const Text(
-              '캘린더',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-            ),
-          ),
-        );
-
-        if (canCancel) {
-          add(
-            OutlinedButton.icon(
-              onPressed: workLoading ? null : onCancelWorkSession,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.error,
-                side: const BorderSide(color: AppColors.error),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 8,
-                ),
-              ),
-              icon:
-                  workLoading
-                      ? _loadingDot(AppColors.error)
-                      : const Icon(Icons.event_busy_rounded, size: 16),
-              label: const Text(
-                '일정 취소',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              ),
-            ),
-          );
-        }
-      }
-    }
-
-    // ── 출근 확인
+    final canBook =
+        !_isCancelled &&
+        !_blocked &&
+        !_expired &&
+        !isCompleted &&
+        !workDayPassed;
     final canCheckin =
         !checkedIn &&
         status == 'active' &&
@@ -569,96 +448,100 @@ class _WorkerActions extends StatelessWidget {
         !_expired &&
         !isCompleted &&
         _hireConfirmed;
+    // 진행 중엔 '지원 취소', 끝난 뒤엔 '후기' — 둘이 같이 보이면 서로 모순이었다.
+    // 후기 자격(사장님 답장·근무일 지남)은 서버가 한 번 더 막는다 (reviewController)
+    final ended = isCompleted || checkedIn || status != 'active' || workDayPassed;
 
-    if (canCheckin) {
-      add(
-        ElevatedButton.icon(
-          onPressed: checkinLoading ? null : onCheckin,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.success,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(999),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-          ),
-          icon:
-              checkinLoading
-                  ? _loadingDot(Colors.white)
-                  : const Icon(
-                    Icons.how_to_reg_rounded,
-                    size: 16,
-                    color: Colors.white,
-                  ),
-          label: const Text(
-            '출근 확인',
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-            ),
-          ),
-        ),
-      );
-    } else if (checkedIn) {
-      add(
-        _Pill(
-          icon: Icons.verified_rounded,
-          text:
-              checkinDistanceM != null
-                  ? '출근 확인됨 (${checkinDistanceM}m)'
-                  : '출근 확인됨',
-          bg: const Color(0x1410B981),
-          fg: const Color(0xFF047857),
-        ),
-      );
+    // 연파랑·초록·빨간 테두리·알약·회색 글자가 가로 스크롤 한 줄에 섞여 있던 것 →
+    // 사장님 쪽과 같은 뼈대: 지금 상태 한 줄 + 할 일 버튼 하나, 드문 행동은 아래 작은 글자.
+    String line;
+    IconData? icon;
+    ({String label, VoidCallback? onTap, bool loading, bool primary})? action;
+    if (_isCancelled) {
+      line = '지원을 취소했어요';
+    } else if (canCheckin) {
+      line = '근무지에 도착하면 출근 확인을 눌러 주세요';
+      action = (label: '출근 확인', onTap: onCheckin, loading: checkinLoading, primary: true);
+    } else if (ended) {
+      line = checkedIn
+          ? (checkinDistanceM != null ? '출근 확인됐어요 (${checkinDistanceM}m)' : '출근 확인됐어요')
+          : '근무가 끝났어요';
+      icon = checkedIn ? Icons.check_circle_rounded : null;
+      action = hasReviewed
+          ? null
+          : (label: '후기 남기기', onTap: onGoReview, loading: false, primary: true);
+      if (hasReviewed) line = '$line · 후기를 남겼어요';
+    } else if (_hireConfirmed) {
+      line = '출근 확정됐어요 · 근무일에 알림이 가요';
+      icon = Icons.event_available_rounded;
+    } else {
+      line = '채팅으로 근무 조건을 맞춰 보세요';
+    }
+    // 캘린더는 할 일이 따로 없을 때의 보조 행동
+    if (action == null && !isWeekdaysJob && !hasWorkSession && canBook && !_isCancelled) {
+      action = (label: '캘린더에 추가', onTap: onAddToCalendar, loading: workLoading, primary: false);
     }
 
-    // ── 지원 취소 (활성 상태에서만 — 마감·완료된 공고엔 취소할 지원이 없음)
-    if (status == 'active' || _isCancelled) {
-      add(
-        OutlinedButton.icon(
-          onPressed: (workLoading || _isCancelled) ? null : onCancelApplication,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.error,
-            side: const BorderSide(color: AppColors.error),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(999),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          ),
-          icon: const Icon(Icons.cancel_outlined, size: 16),
-          label: Text(
-            _isCancelled ? '지원 취소됨' : '지원 취소',
-            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-          ),
-        ),
-      );
-    }
+    final links = <(String, VoidCallback?)>[
+      if (!isWeekdaysJob && hasWorkSession) ('캘린더 보기', onOpenCalendar),
+      if (!isWeekdaysJob && hasWorkSession && canCancel && !workDayPassed)
+        ('일정 취소', workLoading ? null : onCancelWorkSession),
+      if (!ended && !_isCancelled) ('지원 취소', workLoading ? null : onCancelApplication),
+    ];
 
-    // ── 후기
-    add(
-      TextButton.icon(
-        onPressed: hasReviewed ? null : onGoReview,
-        icon: Icon(
-          Icons.edit_note,
-          size: 18,
-          color: hasReviewed ? Colors.grey : AppColors.primary,
-        ),
-        label: Text(
-          hasReviewed ? '후기 작성 완료' : '후기 남기기',
-          style: TextStyle(
-            fontSize: 13,
-            color: hasReviewed ? Colors.grey : AppColors.primary,
-          ),
-        ),
-      ),
+    final btnStyle = ButtonStyle(
+      minimumSize: const WidgetStatePropertyAll(Size(64, 40)),
+      padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 16)),
+      textStyle: WidgetStatePropertyAll(AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600)),
     );
+    Widget? button;
+    if (action != null) {
+      final child =
+          action.loading
+              ? _loadingDot(action.primary ? Colors.white : AppColors.textSecondary)
+              : Text(action.label);
+      final onTap = action.loading ? null : action.onTap;
+      button =
+          action.primary
+              ? ElevatedButton(style: btnStyle, onPressed: onTap, child: child)
+              : OutlinedButton(style: btnStyle, onPressed: onTap, child: child);
+    }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(children: actions),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 16, color: AppColors.textSecondary),
+              const SizedBox(width: 6),
+            ],
+            Expanded(child: Text(line, style: AppTextStyles.body2)),
+            if (button != null) ...[const SizedBox(width: 12), button],
+          ],
+        ),
+        if (links.isNotEmpty)
+          Wrap(
+            spacing: 16,
+            children: [
+              for (final (label, onTap) in links)
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onTap,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Text(
+                      label,
+                      style: AppTextStyles.body2.copyWith(
+                        color: label == '캘린더 보기' ? AppColors.primary : AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+      ],
     );
   }
 }
@@ -667,133 +550,13 @@ class _WorkerActions extends StatelessWidget {
 // 공고 정보 바 위젯
 // ─────────────────────────────────────────────
 
-class _InfoBit extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Color color;
-  const _InfoBit({required this.icon, required this.text, required this.color});
-
-  @override
-  Widget build(BuildContext context) => Expanded(
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 12, color: color),
-        const SizedBox(width: 4),
-        Flexible(
-          child: Text(
-            text,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: color,
-            ),
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-class _InfoDivider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 1,
-    height: 14,
-    color: AppColors.textDisabled,
-    margin: const EdgeInsets.symmetric(horizontal: 4),
-  );
-}
-
 // ─────────────────────────────────────────────
 // 공용 Pill 위젯
 // ─────────────────────────────────────────────
 
-class _Pill extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Color? bg;
-  final Color? fg;
-
-  const _Pill({required this.icon, required this.text, this.bg, this.fg});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg ?? AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: fg ?? AppColors.primaryDark),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: fg ?? AppColors.primaryDark,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 // ─────────────────────────────────────────────
 // 공용 액션 버튼
 // ─────────────────────────────────────────────
-
-class _ActionButton extends StatelessWidget {
-  final String text;
-  final IconData icon;
-  final Color color;
-  final VoidCallback? onPressed;
-
-  const _ActionButton({
-    required this.text,
-    required this.icon,
-    required this.color,
-    this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final disabled = onPressed == null;
-    return ElevatedButton.icon(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: disabled ? AppColors.border : color,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
-        elevation: 0,
-        shadowColor: Colors.transparent,
-      ),
-      icon: Icon(
-        icon,
-        size: 15,
-        color: disabled ? AppColors.textTertiary : Colors.white,
-      ),
-      label: Text(
-        text,
-        style: TextStyle(
-          color: disabled ? AppColors.textTertiary : Colors.white,
-          fontWeight: FontWeight.w700,
-          fontSize: 13,
-          letterSpacing: -0.3,
-        ),
-      ),
-      onPressed: onPressed,
-    );
-  }
-}
 
 // ─────────────────────────────────────────────
 // 워커 수락/거절 배너
@@ -820,9 +583,9 @@ class ChatRoomConsentBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: const BoxDecoration(
-        color: Color(0xFFEFF6FF),
+        color: AppColors.primaryLight,
         border: Border(
-          bottom: BorderSide(color: Color(0xFFDBEAFE), width: 0.5),
+          bottom: BorderSide(color: AppColors.primaryMid, width: 0.5),
         ),
       ),
       child: Row(
@@ -836,7 +599,7 @@ class ChatRoomConsentBanner extends StatelessWidget {
           const Expanded(
             child: Text(
               '사장님의 대화 요청입니다.\n수락 시 채팅이 시작되고 연락이 가능해요.',
-              style: TextStyle(fontSize: 12, color: AppColors.primaryDark),
+              style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.primaryDark),
             ),
           ),
           const SizedBox(width: 8),
@@ -848,20 +611,14 @@ class ChatRoomConsentBanner extends StatelessWidget {
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            child: const Text('거절', style: TextStyle(fontSize: 12)),
+            child: const Text('거절', style: TextStyle(fontSize: AppFontSize.meta)),
           ),
           const SizedBox(width: 4),
           ElevatedButton(
             onPressed: busy ? null : onAccept,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B82F6),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(999),
-              ),
             ),
             child:
                 busy
@@ -873,7 +630,7 @@ class ChatRoomConsentBanner extends StatelessWidget {
                         color: Colors.white,
                       ),
                     )
-                    : const Text('수락', style: TextStyle(fontSize: 12)),
+                    : const Text('수락'),
           ),
         ],
       ),
@@ -897,9 +654,9 @@ class ChatRoomWaitingBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: const BoxDecoration(
-        color: Color(0xFFFFF7E6),
+        color: AppColors.warningLight,
         border: Border(
-          bottom: BorderSide(color: Color(0xFFFDE68A), width: 0.5),
+          bottom: BorderSide(color: AppColors.warningBorder, width: 0.5),
         ),
       ),
       child: const Row(
@@ -907,13 +664,13 @@ class ChatRoomWaitingBanner extends StatelessWidget {
           Icon(
             Icons.hourglass_bottom_rounded,
             size: 18,
-            color: Color(0xFFEA580C),
+            color: AppColors.badgeUrgent,
           ),
           SizedBox(width: 8),
           Expanded(
             child: Text(
               '구직자의 수락을 기다리는 중입니다.\n수락되면 바로 채팅이 가능해요.',
-              style: TextStyle(fontSize: 12, color: Color(0xFF92400E)),
+              style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.warningDark),
             ),
           ),
         ],
@@ -954,14 +711,14 @@ class ChatRoomCancelledBanner extends StatelessWidget {
           const Icon(
             Icons.info_outline_rounded,
             size: 18,
-            color: Color(0xFFB91C1C),
+            color: AppColors.error,
           ),
           const SizedBox(width: 8),
           const Expanded(
             child: Text(
               '알바생이 이 공고에 대한 지원을 취소했어요.\n'
               '지금 다른 공고도 한 번 올려보실래요?',
-              style: TextStyle(fontSize: 12, color: Color(0xFF7F1D1D)),
+              style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.error),
             ),
           ),
           const SizedBox(width: 8),
@@ -977,10 +734,12 @@ class ChatRoomCancelledBanner extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
               ),
             ),
-            child: const Text('공고 더 쓰기', style: TextStyle(fontSize: 11)),
+            child: const Text('공고 더 쓰기', style: TextStyle(fontSize: AppFontSize.caption)),
           ),
         ],
       ),
     );
   }
 }
+
+/// 패널 안 작은 행동 버튼 — 연파랑 바탕·파랑 글자, 높이 34. 채팅이 주인공이라 큰 파란 알약은 쓰지 않는다

@@ -281,21 +281,8 @@ class _DateDivider extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Center(
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: AppColors.border,
-            borderRadius: BorderRadius.circular(999),
-          ),
-          child: Text(
-            label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
+        // 회색 알약 → 글자만 (흰 바탕 채팅)
+        child: Text(label, style: AppTextStyles.caption),
       ),
     );
   }
@@ -348,6 +335,8 @@ class _MessageBubble extends StatelessWidget {
               onTap: onProfileTap ?? () {},
               child: CircleAvatar(
                 radius: 16,
+                // 앱바 아바타와 같은 회색 (기본값은 연파랑이라 둘이 달랐다)
+                backgroundColor: AppColors.bgMuted,
                 backgroundImage:
                     (targetThumbnailUrl != null &&
                             targetThumbnailUrl!.isNotEmpty)
@@ -355,7 +344,11 @@ class _MessageBubble extends StatelessWidget {
                         : null,
                 child:
                     (targetThumbnailUrl == null || targetThumbnailUrl!.isEmpty)
-                        ? const Icon(Icons.person, size: 16)
+                        ? const Icon(
+                          Icons.person_rounded,
+                          size: 18,
+                          color: AppColors.textDisabled,
+                        )
                         : null,
               ),
             ),
@@ -376,7 +369,7 @@ class _MessageBubble extends StatelessWidget {
                     child: Text(
                       targetName,
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: AppFontSize.caption,
                         color: AppColors.textSecondary,
                         fontWeight: FontWeight.w500,
                       ),
@@ -425,12 +418,7 @@ class _MessageBubble extends StatelessWidget {
                                   ),
                                   width: 1,
                                 )
-                                : (!isMe
-                                    ? Border.all(
-                                      color: AppColors.border,
-                                      width: 0.8,
-                                    )
-                                    : null),
+                                : null,
                       ),
                       child:
                           hasImage
@@ -444,7 +432,7 @@ class _MessageBubble extends StatelessWidget {
                               : SelectableText(
                                 messageText,
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: AppFontSize.button,
                                   color:
                                       isMe
                                           ? Colors.white
@@ -478,7 +466,7 @@ class _MessageBubble extends StatelessWidget {
                                 Text(
                                   '전송 안 됨 · 탭해서 재전송',
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: AppFontSize.caption,
                                     fontWeight: FontWeight.w600,
                                     color: AppColors.error,
                                   ),
@@ -490,7 +478,7 @@ class _MessageBubble extends StatelessWidget {
                           ? const Text(
                             '전송 중…',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: AppFontSize.caption,
                               color: AppColors.textTertiary,
                             ),
                           )
@@ -504,7 +492,7 @@ class _MessageBubble extends StatelessWidget {
                               Text(
                                 DateFormat('a h:mm', 'ko_KR').format(when),
                                 style: const TextStyle(
-                                  fontSize: 11,
+                                  fontSize: AppFontSize.caption,
                                   color: AppColors.textSecondary,
                                 ),
                               ),
@@ -516,7 +504,7 @@ class _MessageBubble extends StatelessWidget {
                                       ? '읽음'
                                       : '안읽음',
                                   style: TextStyle(
-                                    fontSize: 11,
+                                    fontSize: AppFontSize.caption,
                                     color:
                                         (msg['is_read'] == 1 ||
                                                 msg['is_read'] == true)
@@ -553,10 +541,10 @@ class _BotMessageBubble extends StatelessWidget {
         child: Container(
           constraints: const BoxConstraints(maxWidth: 300),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          // 안내 메시지는 누를 수 없다 — 파랑 대신 회색 면 (2026-10)
           decoration: BoxDecoration(
-            color: const Color(0xFFF0F6FF),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFDBEAFE), width: 1),
+            color: AppColors.bgMuted,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -564,14 +552,18 @@ class _BotMessageBubble extends StatelessWidget {
               const Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('🤖', style: TextStyle(fontSize: 14)),
-                  SizedBox(width: 6),
+                  Icon(
+                    Icons.smart_toy_outlined,
+                    size: 15,
+                    color: AppColors.textSecondary,
+                  ),
+                  SizedBox(width: 5),
                   Text(
                     '일주봇',
                     style: TextStyle(
-                      fontSize: 12,
+                      fontSize: AppFontSize.meta,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.primary,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ],
@@ -581,7 +573,7 @@ class _BotMessageBubble extends StatelessWidget {
                 message,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  fontSize: 13,
+                  fontSize: AppFontSize.body2,
                   color: AppColors.textSecondary,
                   height: 1.5,
                 ),
@@ -610,10 +602,11 @@ class _HireNudgeBubble extends StatelessWidget {
         child: Container(
           constraints: const BoxConstraints(maxWidth: 320),
           padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+          // 하늘색 4종(팔레트 밖) → 흰 카드 + 기본 테두리. 버튼만 파랑
           decoration: BoxDecoration(
-            color: const Color(0xFFF0F9FF),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: const Color(0xFFBAE6FD), width: 1),
+            color: AppColors.bgCard,
+            borderRadius: BorderRadius.circular(AppRadius.lg),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -624,25 +617,25 @@ class _HireNudgeBubble extends StatelessWidget {
                   Icon(
                     Icons.event_available_rounded,
                     size: 18,
-                    color: Color(0xFF0284C7),
+                    color: AppColors.textSecondary,
                   ),
                   SizedBox(width: 6),
                   Text(
                     '출근 확정을 제안해보세요',
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: AppFontSize.body2,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF0369A1),
+                      color: AppColors.textPrimary,
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               const Text(
-                '일정을 확정하면 D-1 알림과\n출근 자동 확인이 진행돼요.',
+                '일정을 확정하면 전날 알림과\n출근 자동 확인이 진행돼요.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 12.5,
+                  fontSize: AppFontSize.body2,
                   height: 1.4,
                   color: AppColors.textSecondary,
                 ),
@@ -653,11 +646,6 @@ class _HireNudgeBubble extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: onConfirmHire,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
                     padding: const EdgeInsets.symmetric(horizontal: 14),
                   ),
                   icon: const Icon(
@@ -666,13 +654,7 @@ class _HireNudgeBubble extends StatelessWidget {
                     color: Colors.white,
                   ),
                   label: const Text(
-                    '출근 확정 제안하기',
-                    style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                    ),
-                  ),
+                    '출근 확정 제안하기'),
                 ),
               ),
             ],
