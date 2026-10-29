@@ -280,16 +280,17 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
       hintText: hint,
       isDense: true,
       filled: true,
-      fillColor: Colors.white,
+      // 회색 채움·테두리 없음 (입력칸 규칙) — 흰 칸에 테두리를 두르고 그걸 또 테두리 카드에 넣었었다
+      fillColor: AppColors.bgMuted,
       prefixIcon: icon != null ? Icon(icon) : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
@@ -300,7 +301,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
 
   ButtonStyle _primaryBtnStyle({bool enabled = true}) {
     return ElevatedButton.styleFrom(
-      backgroundColor: enabled ? AppColors.primary : const Color(0xFF93C5FD),
+      backgroundColor: enabled ? AppColors.primary : const Color(0xFFC4DCFF),
       foregroundColor: Colors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
@@ -308,17 +309,8 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
     );
   }
 
-  Widget _card({required Widget child}) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border),
-      ),
-      padding: const EdgeInsets.all(16),
-      child: child,
-    );
-  }
+  // 상자 없이 내용만 (상자 속 상자를 없앴다)
+  Widget _card({required Widget child}) => child;
 
   void _showSnackbar(String message) {
     ScaffoldMessenger.of(
@@ -396,7 +388,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFEFF3F8),
+        backgroundColor: AppColors.bgCard,
         appBar: AppBar(
           title: const Text('기업 회원가입'),
           bottom: PreferredSize(

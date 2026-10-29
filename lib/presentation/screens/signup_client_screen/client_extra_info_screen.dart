@@ -68,7 +68,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFEFF3F8),
+        backgroundColor: AppColors.bgCard,
         appBar: AppBar(
           title: const Text('기본 정보 입력'),
         ),
@@ -102,13 +102,8 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
               const SizedBox(height: 32),
 
               // 입력 카드
+              // 테두리 카드 제거 — 라벨과 입력칸만
               Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  border: Border.all(color: AppColors.border),
-                ),
-                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -130,7 +125,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                         hintText: '홍길동',
                         isDense: true,
                         filled: true,
-                        fillColor: AppColors.bgPage,
+                        fillColor: AppColors.bgMuted,
                         prefixIcon: const Icon(Icons.person_outline),
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 14,
@@ -138,15 +133,11 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppRadius.md),
-                          borderSide: const BorderSide(
-                            color: AppColors.border,
-                          ),
+                          borderSide: BorderSide.none,
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppRadius.md),
-                          borderSide: const BorderSide(
-                            color: AppColors.border,
-                          ),
+                          borderSide: BorderSide.none,
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppRadius.md),

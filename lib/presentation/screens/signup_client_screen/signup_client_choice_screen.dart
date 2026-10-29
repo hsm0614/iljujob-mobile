@@ -207,7 +207,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: AppColors.bgPage,
+        backgroundColor: AppColors.bgCard,
         appBar: AppBar(
           title: const Text('가입 방법 선택'),
         ),
@@ -230,20 +230,14 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '카카오/애플로 간편하게 가입하고\n바로 공고를 올려보세요.',
+                    '가입하고 바로 공고를 올릴 수 있어요',
                     style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
 
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
-                    child: Column(
+                  // 흰 카드로 한 번 더 감싸던 것 제거 — 버튼만
+                  Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // 카카오
@@ -271,40 +265,21 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
                             icon: const Icon(Icons.apple, size: 22),
                             label: Text(_loading ? '처리 중...' : 'Apple로 시작하기'),
                             style: _btnStyle(bg: Colors.black),
-                          )
-                        else
-                          Container(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: AppColors.bgMuted,
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
-                            child: const Center(
-                              child: Text(
-                                'Apple은 iOS에서만 제공됩니다',
-                                style: TextStyle(color: AppColors.textSecondary),
-                              ),
-                            ),
                           ),
-
-                        const SizedBox(height: 16),
-                        const Divider(),
-                        const SizedBox(height: 16),
-
-                        // 전화번호 (PASS)
-                        ElevatedButton.icon(
+                        const SizedBox(height: 12),
+                        // 휴대폰은 보조 — 카카오·애플 옆에 파란 버튼이 하나 더 있어 셋이 경쟁했다
+                        OutlinedButton.icon(
                           onPressed: _loading ? null : _goPhone,
                           icon: const Icon(Icons.phone_iphone),
-                          label: const Text('휴대폰으로 시작하기'),
-                          style: _btnStyle(),
+                          label: const Text('휴대폰 번호로 시작하기'),
+                          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
                         ),
                       ],
                     ),
-                  ),
 
                   const SizedBox(height: 20),
                   const Text(
-                    '※ 공고 등록 후 지원자와 채팅으로 바로 연결됩니다.',
+                    '공고를 올리면 지원자와 채팅으로 바로 이어져요',
                     style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
                     textAlign: TextAlign.center,
                   ),

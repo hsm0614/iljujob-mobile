@@ -70,86 +70,31 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
                   const SizedBox(height: 24),
 
                   const Text(
-                    '가입 완료!',
+                    '가입했어요',
                     style: TextStyle(
                       fontSize: AppFontSize.display,
                       fontWeight: FontWeight.w800,
                       color: AppColors.textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 10),
-                  const Text(
-                    '지금 근처에서 알바를 구하는 분들이\n공고를 기다리고 있어요.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: AppFontSize.body1,
-                      color: AppColors.textSecondary,
-                      height: 1.6,
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // 통계 카드 3개
-                  Row(
-                    children: const [
-                      Expanded(
-                        child: _StatCard(
-                          number: '간편',
-                          label: '공고 작성\n지원',
-                          icon: Icons.people_outline,
-                        ),
+                  const SizedBox(height: 28),
+                  // 파란 테두리 타일 3개('간편'·'채팅'·'2건')+주황 상자 → 체크 세 줄.
+                  // '월 무료 2건'과 '첫 공고는 무료'가 서로 달랐고 서버 한도(기본 월 3건)와도 달랐다 — 숫자는 빼고 말로
+                  for (final t in const [
+                    '매달 무료로 공고를 올릴 수 있어요',
+                    '지원이 오면 채팅으로 바로 이어져요',
+                    '급할 땐 즉시 게시로 바로 공개해요',
+                  ])
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.check_rounded, size: 20, color: AppColors.primary),
+                          const SizedBox(width: 10),
+                          Expanded(child: Text(t, style: AppTextStyles.body1.copyWith(color: AppColors.textPrimary))),
+                        ],
                       ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: _StatCard(
-                          number: '채팅',
-                          label: '지원자와\n바로 연결',
-                          icon: Icons.timer_outlined,
-                        ),
-                      ),
-                      SizedBox(width: 10),
-                      Expanded(
-                        child: _StatCard(
-                          number: '2건',
-                          label: '월 무료\n공고 제공',
-                          icon: Icons.card_giftcard_outlined,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // 안내 텍스트
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: AppColors.warningLight,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      border: Border.all(
-                          color: AppColors.warningBorder, width: 1),
                     ),
-                    child: Row(
-                      children: const [
-                        Icon(Icons.card_giftcard_rounded, size: 18, color: AppColors.primary),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            '첫 공고는 무료예요. 지금 바로 올려보세요!',
-                            style: TextStyle(
-                              fontSize: AppFontSize.button,
-                              color: AppColors.warningDark,
-                              fontWeight: FontWeight.w600,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
 
                   const Spacer(flex: 3),
 
@@ -157,10 +102,7 @@ class _ClientWelcomeScreenState extends State<ClientWelcomeScreen>
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(56),
-                        shadowColor: AppColors.primary.withValues(alpha: 0.4),
-                      ),
+                      style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
                       onPressed: () {
                       // ✅ 웰컴 화면 제거하고 메인 위에 post_job 쌓기
 Navigator.pushNamedAndRemoveUntil(
@@ -173,9 +115,8 @@ WidgetsBinding.instance.addPostFrameCallback((_) {
   Navigator.pushNamed(context, '/post_job');
 });
                       },
-                      icon: const Icon(Icons.add_circle_outline, size: 22),
-                      label: const Text(
-                        '지금 바로 공고 올리기'),
+                      icon: const SizedBox.shrink(),
+                      label: const Text('첫 공고 올리기'),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -210,53 +151,3 @@ WidgetsBinding.instance.addPostFrameCallback((_) {
   }
 }
 
-// ─────────────────────────────────────────────
-// 통계 카드
-// ─────────────────────────────────────────────
-class _StatCard extends StatelessWidget {
-  final String number;
-  final String label;
-  final IconData icon;
-
-  const _StatCard({
-    required this.number,
-    required this.label,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-      decoration: BoxDecoration(
-        color: AppColors.bgPage,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: AppColors.primaryMid, width: 1),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: AppColors.primary, size: 22),
-          const SizedBox(height: 8),
-          Text(
-            number,
-            style: const TextStyle(
-              fontSize: AppFontSize.titleLg,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: AppFontSize.caption,
-              color: AppColors.textSecondary,
-              height: 1.4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

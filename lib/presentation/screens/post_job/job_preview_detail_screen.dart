@@ -182,534 +182,167 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
     return '미정';
   }
 
+  // 알바생이 보는 공고 상세와 같은 뼈대 (2026-10). 예전엔 테두리 카드 다섯 장·잘난체 제목·
+  // 가짜 '내 근처 단기 알바' 칩·주황 '미리보기' 알약·파란 체크리스트 상자가 있었고,
+  // 아래 '공고 등록하기'는 실제로는 등록하지 않고 닫기만 했다.
   @override
   Widget build(BuildContext context) {
+    final negotiable = isNegotiablePayType(widget.payType);
+    Widget section(Widget child) => Container(
+      width: double.infinity,
+      color: AppColors.bgCard,
+      padding: const EdgeInsets.all(20),
+      child: child,
+    );
+
     return Scaffold(
       backgroundColor: AppColors.bgPage,
-      appBar: AppBar(
-        // 제목에 브랜드 블루 금지 (디자인 가이드)
-        title: const Text('공고 미리보기'),
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppColors.warningLight,
-              borderRadius: BorderRadius.circular(AppRadius.full),
-              border: Border.all(color: AppColors.warningBorder),
-            ),
-            child: const Text(
-              '미리보기',
-              // Colors.orange는 흰 배경에서 2.15:1 — AA 미달
-              style: TextStyle(
-                fontSize: AppFontSize.meta,
-                fontWeight: FontWeight.w700,
-                color: AppColors.warningDark,
-              ),
-            ),
-          ),
-        ],
-      ),
-
+      appBar: AppBar(title: const Text('알바생에게 이렇게 보여요')),
       body: ListView(
         padding: const EdgeInsets.only(bottom: 24),
         children: [
-          // ── 이미지 ──────────────────────────────────────
           if (widget.images.isNotEmpty)
-            SizedBox(
+            Container(
+              color: AppColors.bgCard,
               height: 200,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
                 itemCount: widget.images.length,
                 separatorBuilder: (_, __) => const SizedBox(width: 8),
                 itemBuilder:
                     (_, i) => ClipRRect(
                       borderRadius: BorderRadius.circular(AppRadius.md),
-                      child: Image.file(
-                        widget.images[i],
-                        width: 200,
-                        height: 176,
-                        fit: BoxFit.cover,
-                      ),
+                      child: Image.file(widget.images[i], width: 200, height: 176, fit: BoxFit.cover),
                     ),
               ),
             ),
-
-          const SizedBox(height: 12),
-
-          // ── 공고 분석 카드 ──────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: _AiInsightCard(
-              quality: _quality,
-              payInsight: _payInsight,
-              loading: _loading,
-              pay: widget.pay,
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // ── 헤더 카드 ────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryLight,
-                          borderRadius: BorderRadius.circular(AppRadius.full),
-                        ),
-                        child: const Text(
-                          '내 근처 단기 알바',
-                          // _kBrand는 #E7F0FF 위에서 3.05:1 — AA 미달
-                          style: TextStyle(
-                            fontSize: AppFontSize.caption,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primaryDark,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+          section(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (widget.category.trim().isNotEmpty) ...[
+                  JobSignalBadge(label: widget.category),
                   const SizedBox(height: 10),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.border,
-                          borderRadius: BorderRadius.circular(AppRadius.xs),
-                        ),
-                        child: Text(
-                          widget.category,
-                          style: const TextStyle(
-                            fontSize: AppFontSize.caption,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          widget.title,
-                          style: const TextStyle(
-                            fontSize: AppFontSize.titleLg,
-                            fontWeight: FontWeight.w700,
-                            fontFamily: 'Jalnan2TTF',
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.place_outlined,
-                        size: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          widget.location,
-                          style: const TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
                 ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // ── 근무 정보 카드 ────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '근무 정보',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: AppFontSize.buttonLg,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  _infoRow(
-                    Icons.monetization_on,
-                    formatJobPay(
-                      widget.pay.toString(),
-                      widget.payType,
-                      includeType: true,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  _infoRow(Icons.calendar_today, _periodText()),
-                  const SizedBox(height: 10),
-                  _infoRow(Icons.access_time, widget.workingTime),
-
-                  if (widget.description.trim().isNotEmpty) ...[
-                    const SizedBox(height: 16),
-                    const Divider(height: 1, color: AppColors.border),
-                    const SizedBox(height: 14),
-                    const Text(
-                      '상세 설명',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: AppFontSize.button,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                if (widget.companyName.isNotEmpty) ...[
+                  Text(widget.companyName, style: AppTextStyles.body2),
+                  const SizedBox(height: 4),
+                ],
+                Text(widget.title, style: AppTextStyles.h2),
+                const SizedBox(height: 14),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
                     Text(
-                      widget.description.trim(),
-                      style: const TextStyle(
-                        fontSize: AppFontSize.button,
-                        height: 1.6,
-                        color: AppColors.textPrimary,
-                      ),
+                      formatJobPay(widget.pay.toString(), widget.payType),
+                      style:
+                          negotiable
+                              ? AppTextStyles.h3.copyWith(color: AppColors.textSecondary)
+                              : AppTextStyles.jobPayDisplay,
                     ),
-                  ] else ...[
-                    const SizedBox(height: 16),
-                    const Divider(height: 1, color: AppColors.border),
-                    const SizedBox(height: 14),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: AppColors.warningLight,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        border: Border.all(color: AppColors.warningBorder),
-                      ),
-                      child: const Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline_rounded,
-                            size: 16,
-                            color: AppColors.warningDark,
-                          ),
-                          SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '공고 설명이 비어 있어요. 등록 전에 작성하는 걸 추천해요.',
-                              // Colors.orange는 2.15:1 — AA 미달
-                              style: TextStyle(
-                                fontSize: AppFontSize.body2,
-                                color: AppColors.warningDark,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    if (!negotiable && widget.payType.isNotEmpty) ...[
+                      const SizedBox(width: 6),
+                      Text(widget.payType, style: AppTextStyles.jobPayUnit),
+                    ],
                   ],
-                ],
-              ),
+                ),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 14),
+                _infoRow(Icons.calendar_today_outlined, _periodText()),
+                const SizedBox(height: 10),
+                _infoRow(Icons.schedule_outlined, widget.workingTime),
+                const SizedBox(height: 10),
+                _infoRow(Icons.place_outlined, widget.location),
+              ],
             ),
           ),
-
-          const SizedBox(height: 16),
-
-          // ── 지도 ─────────────────────────────────────────
-          if (widget.lat != 0 && widget.lng != 0)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
+          const SizedBox(height: 8),
+          section(
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('상세 설명', style: AppTextStyles.h3),
+                const SizedBox(height: 8),
+                Text(
+                  widget.description.trim().isEmpty
+                      ? '설명이 비어 있어요 · 하는 일과 준비물을 쓰면 지원이 늘어요'
+                      : widget.description.trim(),
+                  style:
+                      widget.description.trim().isEmpty
+                          ? AppTextStyles.body2
+                          : AppTextStyles.body1.copyWith(color: AppColors.textPrimary, height: 1.6),
+                ),
+              ],
+            ),
+          ),
+          if (_loading || _quality != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              color: AppColors.bgCard,
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              child: _AiInsightCard(
+                quality: _quality,
+                payInsight: _payInsight,
+                loading: _loading,
+                pay: widget.pay,
+                payType: widget.payType,
+              ),
+            ),
+          ],
+          if (widget.lat != 0 && widget.lng != 0) ...[
+            const SizedBox(height: 8),
+            section(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    '근무 위치',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: AppFontSize.buttonLg,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
+                  const Text('근무 위치', style: AppTextStyles.h3),
                   const SizedBox(height: 10),
                   ClipRRect(
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     child: SizedBox(
-                      height: 200,
-                      child: Stack(
+                      height: 160,
+                      child: FlutterMap(
+                        options: MapOptions(initialCenter: LatLng(widget.lat, widget.lng), initialZoom: 16),
                         children: [
-                          FlutterMap(
-                            options: MapOptions(
-                              initialCenter: LatLng(widget.lat, widget.lng),
-                              initialZoom: 16,
-                            ),
-                            children: [
-                              TileLayer(
-                                urlTemplate:
-                                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                userAgentPackageName:
-                                    Platform.isAndroid
-                                        ? 'kr.co.iljujob'
-                                        : 'com.iljujob.kr',
-                              ),
-                              MarkerLayer(
-                                markers: [
-                                  Marker(
-                                    point: LatLng(widget.lat, widget.lng),
-                                    width: 40,
-                                    height: 40,
-                                    child: const Icon(
-                                      Icons.location_on,
-                                      color: AppColors.error,
-                                      size: 40,
-                                    ),
-                                  ),
-                                ],
+                          TileLayer(
+                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: Platform.isAndroid ? 'kr.co.iljujob' : 'com.iljujob.kr',
+                          ),
+                          MarkerLayer(
+                            markers: [
+                              Marker(
+                                point: LatLng(widget.lat, widget.lng),
+                                width: 40,
+                                height: 40,
+                                child: const Icon(Icons.location_on, color: AppColors.primary, size: 40),
                               ),
                             ],
                           ),
-                          Positioned(
-                            left: 8,
-                            right: 8,
-                            bottom: 8,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.92),
-                                borderRadius: BorderRadius.circular(AppRadius.sm),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.place,
-                                    size: 14,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      widget.location,
-                                      style: const TextStyle(
-                                        fontSize: AppFontSize.meta,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
                         ],
                       ),
                     ),
                   ),
                 ],
-              ),
-            ),
-
-          const SizedBox(height: 16),
-
-          // ── 기업 카드 ─────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.08),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.business_outlined,
-                      color: AppColors.primary,
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.companyName.isNotEmpty
-                              ? widget.companyName
-                              : '회사명 미입력',
-                          style: const TextStyle(
-                            fontSize: AppFontSize.body1,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.managerName.isNotEmpty
-                              ? '담당자: ${widget.managerName}'
-                              : '담당자 정보 없음',
-                          style: const TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          // ── 체크리스트 ────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Container(
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(Icons.checklist_rounded, size: 16, color: AppColors.primary),
-                      SizedBox(width: 6),
-                      Text(
-                        '등록 전 확인해주세요',
-                        // 섹션 헤더에 브랜드 블루 금지 (디자인 가이드)
-                        style: TextStyle(
-                          fontSize: AppFontSize.body2,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ...[
-                    '제목과 업종이 정확한가요?',
-                    '급여가 최저시급 이상인가요?',
-                    '근무 날짜와 시간이 맞나요?',
-                    '근무지 주소가 정확한가요?',
-                  ].map(
-                    (t) => Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.check_circle_outline,
-                            size: 14,
-                            color: AppColors.primary,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            t,
-                            // _kBrand는 #E7F0FF 위에서 2.95:1 — AA 미달
-                            style: const TextStyle(
-                              fontSize: AppFontSize.meta,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-
-      // ── 하단 버튼 ─────────────────────────────────────────
-      bottomNavigationBar: AppBottomBar(
-        child: Row(
-          children: [
-            Expanded(
-              child: SizedBox(
-                height: 52,
-                child: OutlinedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    widget.onEdit?.call();
-                  },
-                  child: const Text('수정하기'),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              flex: 2,
-              child: AppPrimaryButton(
-                label: '공고 등록하기',
-                height: 52,
-                onPressed: widget.onSubmit,
               ),
             ),
           ],
-        ),
+        ],
+      ),
+      bottomNavigationBar: AppBottomBar(
+        child: AppPrimaryButton(label: '확인했어요', onPressed: widget.onSubmit),
       ),
     );
   }
 
   Widget _infoRow(IconData icon, String text) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Icon(icon, size: 16, color: AppColors.textSecondary),
-      const SizedBox(width: 8),
-      Expanded(
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: AppFontSize.button,
-            color: AppColors.textPrimary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ),
+      Icon(icon, size: 18, color: AppColors.textSecondary),
+      const SizedBox(width: 10),
+      Expanded(child: Text(text, style: AppTextStyles.body1.copyWith(color: AppColors.textPrimary))),
     ],
   );
 }
@@ -719,12 +352,14 @@ class _AiInsightCard extends StatefulWidget {
   final PayInsight? payInsight;
   final bool loading;
   final int pay;
+  final String payType;
 
   const _AiInsightCard({
     required this.quality,
     required this.payInsight,
     required this.loading,
     required this.pay,
+    required this.payType,
   });
 
   @override
@@ -750,11 +385,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
     if (widget.loading) {
       return Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: AppColors.border),
-        ),
+        color: AppColors.bgCard,
         child: Row(
           children: [
             const SizedBox(
@@ -784,7 +415,8 @@ class _AiInsightCardState extends State<_AiInsightCard> {
     // 급여 위치 계산
     String payPosition = '';
     Color payPosColor = AppColors.textSecondary;
-    if (pi != null && pi.avgHourly > 0) {
+    // 평균 '시급'과 비교하므로 시급 공고만 — 일급 12만원이 늘 '평균보다 높아요'로 나왔다
+    if (pi != null && pi.avgHourly > 0 && widget.payType == '시급') {
       final ratio = widget.pay / pi.avgHourly;
       if (ratio >= 1.2) {
         payPosition = '평균보다 높아요';
@@ -798,12 +430,10 @@ class _AiInsightCardState extends State<_AiInsightCard> {
       }
     }
 
+    // 흰 섹션 안에 들어가므로 자기 테두리 상자는 없앴다(상자 속 상자)
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border),
-      ),
+      color: AppColors.bgCard,
+      padding: const EdgeInsets.only(bottom: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -901,10 +531,10 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                 const SizedBox(height: 12),
 
                 // ② 업종 평균 대비 급여
-                if (pi != null && pi.avgHourly > 0) ...[
+                if (payPosition.isNotEmpty) ...[
                   _insightRow(
                     icon: Icons.payments_outlined,
-                    label: '업종 평균 시급 ${fmt.format(pi.avgHourly)}원 대비',
+                    label: '업종 평균 시급 ${fmt.format(pi!.avgHourly)}원 대비',
                     value: payPosition,
                     valueColor: payPosColor,
                   ),

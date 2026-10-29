@@ -290,15 +290,8 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '긴급 호출',
-              style: TextStyle(
-                fontFamily: 'Jalnan2TTF',
-                fontSize: AppFontSize.title,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primary,
-              ),
-            ),
+            // 안쪽 화면 제목은 검정·기본 글꼴 (앱바 통일 규칙 — 장난체 파랑은 탭 화면만)
+            const Text('긴급 호출 보낼 사람', style: TextStyle(fontSize: AppFontSize.title, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
             Text(
               widget.jobTitle,
               style: const TextStyle(
@@ -308,10 +301,6 @@ class _NearbyWorkersScreenState extends State<NearbyWorkersScreen> {
               ),
             ),
           ],
-        ),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1),
-          child: Container(height: 1, color: AppColors.border),
         ),
       ),
       body:
