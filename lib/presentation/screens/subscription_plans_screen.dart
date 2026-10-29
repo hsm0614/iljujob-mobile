@@ -431,6 +431,8 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
 }
 
 // ── 플랜 카드 ─────────────────────────────────────────────
+// 플랜별 색(프로 주황·라이트 회색 테두리)·그림자·아이콘 칩 4개 → 큰 선택 규칙(연파랑+파란 테두리) 하나.
+// 칩 내용은 아래 비교표와 같아서 카드엔 핵심 세 가지만 한 줄로.
 class _PlanCard extends StatelessWidget {
   final _Plan plan;
   final String? displayPrice;
@@ -445,196 +447,61 @@ class _PlanCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _planColor(plan.key);
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
+    final summary = [
+      plan.unlimitedInstant ? '즉시 게시 무제한' : '즉시 게시 ${plan.instantCredits}회',
+      '먼저 연락 ${plan.directMonthly}명',
+      plan.aiJobMonthly < 0 ? 'AI 공고문 무제한' : 'AI 공고문 ${plan.aiJobMonthly}회',
+    ].join(' · ');
+    final price = displayPrice ?? '${NumberFormat('#,###').format(plan.price)}원';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: selected ? AppColors.primaryLight : AppColors.bgCard,
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(
-            color: selected ? color : AppColors.border,
-            width: selected ? 2 : 1,
-          ),
-          boxShadow:
-              selected
-                  ? [
-                    BoxShadow(
-                      color: color.withValues(alpha: 0.15),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ]
-                  : [],
+          side: BorderSide(color: selected ? AppColors.primary : AppColors.border, width: selected ? 1.5 : 1),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // 선택 라디오
-                Container(
-                  width: 20,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: selected ? color : Colors.transparent,
-                    border: Border.all(
-                      color: selected ? color : AppColors.textDisabled,
-                      width: 1.5,
-                    ),
-                  ),
-                  child:
-                      selected
-                          ? const Icon(
-                            Icons.circle,
-                            size: 10,
-                            color: Colors.white,
-                          )
-                          : null,
+                Icon(
+                  selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                  size: 22,
+                  color: selected ? AppColors.primary : AppColors.textDisabled,
                 ),
                 const SizedBox(width: 10),
-                Text(
-                  plan.name,
-                  style: TextStyle(
-                    fontSize: AppFontSize.buttonLg,
-                    fontWeight: FontWeight.w800,
-                    color: selected ? color : AppColors.textPrimary,
-                  ),
-                ),
-                if (plan.recommended) ...[
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: color,
-                      borderRadius: BorderRadius.circular(AppRadius.full),
-                    ),
-                    child: const Text(
-                      '추천',
-                      style: TextStyle(
-                        fontSize: AppFontSize.caption,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-                const Spacer(),
-                RichText(
-                  text: TextSpan(
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      TextSpan(
-                        text:
-                            displayPrice ??
-                            NumberFormat('#,###').format(plan.price),
-                        style: TextStyle(
-                          fontSize: AppFontSize.titleLg,
-                          fontWeight: FontWeight.w800,
-                          color: selected ? color : AppColors.textPrimary,
-                        ),
+                      Row(
+                        children: [
+                          Text(plan.name, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                          if (plan.recommended) ...[const SizedBox(width: 6), const JobSignalBadge(label: '추천')],
+                          const Spacer(),
+                          Text(
+                            displayPrice == '가격 확인 중' ? price : '$price/월',
+                            style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                          ),
+                        ],
                       ),
-                      TextSpan(
-                        text:
-                            displayPrice == '가격 확인 중'
-                                ? ''
-                                : displayPrice == null
-                                ? '원/월'
-                                : '/월',
-                        style: TextStyle(
-                          fontSize: AppFontSize.meta,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
+                      const SizedBox(height: 4),
+                      Text(summary, style: AppTextStyles.body2),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 6,
-              children: [
-                _Chip(
-                  icon: Icons.flash_on_rounded,
-                  label:
-                      plan.unlimitedInstant
-                          ? '즉시게시 무제한'
-                          : '즉시게시 ${plan.instantCredits}회',
-                  color: AppColors.primary,
-                ),
-                _Chip(
-                  icon: Icons.message_outlined,
-                  label:
-                      '먼저 연락 ${plan.directMonthly}명/월 · 공고당 ${plan.directPerJob}명',
-                  color: AppColors.primary,
-                ),
-                _Chip(
-                  icon: Icons.notifications_active_outlined,
-                  label:
-                      '지도 알림 ${plan.pushMonthly}회/월 · 공고당 ${plan.pushPerJob}회',
-                  color: AppColors.primary,
-                ),
-                _Chip(
-                  icon: Icons.auto_awesome_outlined,
-                  label:
-                      plan.aiJobMonthly < 0
-                          ? 'AI 공고문 무제한'
-                          : 'AI 공고문 월 ${plan.aiJobMonthly}회',
-                  color: AppColors.primary,
-                ),
-              ],
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
-
-  Color _planColor(String key) {
-    if (key == 'pro') return AppColors.pending;
-    if (key == 'standard') return AppColors.primary;
-    return AppColors.textSecondary;
-  }
-}
-
-class _Chip extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final Color color;
-  const _Chip({required this.icon, required this.label, required this.color});
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(AppRadius.full),
-    ),
-    child: Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, size: 12, color: color),
-        const SizedBox(width: 4),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: AppFontSize.caption,
-            fontWeight: FontWeight.w700,
-            color: color,
-          ),
-        ),
-      ],
-    ),
-  );
 }
 
 // ── 비교표 ────────────────────────────────────────────────
@@ -692,7 +559,7 @@ class _CompareTable extends StatelessWidget {
                       style: TextStyle(
                         fontSize: AppFontSize.caption,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.pending,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                   ),
@@ -824,18 +691,29 @@ class _BottomCta extends StatelessWidget {
     required this.onPurchase,
   });
 
-  // 공용 하단 띠·주 버튼으로 (2026-10). 플랜별 버튼 색(프로 주황·라이트 회색) → 파랑 하나(CTA Blue).
+  // 버튼 글자는 행동만, 얼마·어떻게 결제되는지는 버튼 위 한 줄 (공고 올리기 결제 버튼과 같은 규칙)
   @override
   Widget build(BuildContext context) {
+    final checking = displayPrice == '가격 확인 중';
+    final price = displayPrice ?? '${NumberFormat('#,###').format(plan.price)}원';
+    final note =
+        checking
+            ? 'App Store 가격을 확인하고 있어요'
+            : Platform.isIOS
+            ? '매월 $price 자동 결제 · 언제든 해지할 수 있어요'
+            : '$price · 30일 이용 · 자동으로 다시 결제되지 않아요';
     return AppBottomBar(
-      child: AppPrimaryButton(
-        label:
-            displayPrice == '가격 확인 중'
-                ? '${plan.name} App Store 가격 확인 후 구독'
-                : '${plan.name} 구독 시작 (${displayPrice ?? '${NumberFormat('#,###').format(plan.price)}원'}/월)',
-        height: 52,
-        loading: processing,
-        onPressed: onPurchase,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(note, style: AppTextStyles.body2, textAlign: TextAlign.center),
+          const SizedBox(height: 8),
+          AppPrimaryButton(
+            label: '${plan.name} 구독하기',
+            loading: processing,
+            onPressed: onPurchase,
+          ),
+        ],
       ),
     );
   }

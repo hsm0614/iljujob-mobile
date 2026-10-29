@@ -18,7 +18,6 @@ import 'potrone_screen.dart';
 
 // ── 디자인 토큰 ──
 // 긴급호출 색(2026-10 빨강→주황). 이름은 호환 때문에 유지
-const _green = Color(0xFF00C48C);
 
 // ── iOS 상품 ID ──
 const _kIosInstant = {
@@ -101,7 +100,6 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
       _purchaseCompleter == null || _purchaseCompleter!.isCompleted;
 
   // ─── 잔여 조회 ───────────────────────────────────────
-  int _nearbyCount = 0;
 
   Future<void> _refreshPassCount() async {
     final prefs = await SharedPreferences.getInstance();
@@ -117,19 +115,6 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
         remainingUrgent = int.tryParse('${data['urgent'] ?? 0}') ?? 0;
       });
     }
-    _fetchNearbyCount();
-  }
-
-  Future<void> _fetchNearbyCount() async {
-    try {
-      final res = await AuthenticatedHttpClient.get(
-        Uri.parse('$baseUrl/api/direct-message/nearby-count'),
-      );
-      if (res.statusCode == 200 && mounted) {
-        final data = jsonDecode(res.body);
-        setState(() => _nearbyCount = (data['count'] as num?)?.toInt() ?? 0);
-      }
-    } catch (_) {}
   }
 
   Future<void> _loadUserInfo() async {
@@ -534,352 +519,30 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   }
 
   // ─── 즉시 게시 구매 확인 시트 ────────────────────────
-  void _showInstantConfirmSheet(int count, int price) {
-    final discount =
-        count == 1
-            ? 0
-            : (((8900 * count - price) / (8900 * count)) * 100).round();
-    showModalBottomSheet(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final pad =
-            MediaQuery.of(ctx).viewInsets.bottom +
-            MediaQuery.of(ctx).padding.bottom +
-            20;
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
-          ),
-          padding: EdgeInsets.fromLTRB(24, 8, 24, pad),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 24),
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                  ),
-                ),
-              ),
-              Row(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.confirmation_number_outlined,
-                        size: 26,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '즉시 게시 이용권 $count회',
-                          style: const TextStyle(
-                            fontSize: AppFontSize.title,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          '회당 ${formatPrice((price / count).floor())}',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: AppFontSize.body2, color: AppColors.textTertiary),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        formatPrice(price),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          fontSize: AppFontSize.h2,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      if (discount > 0)
-                        Text(
-                          '$discount% 할인',
-                          style: const TextStyle(
-                            fontSize: AppFontSize.meta,
-                            color: AppColors.urgentCall,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.bgPage,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                ),
-                child: const Column(
-                  children: [
-                    _BenefitRow(
-                      icon: Icons.bolt_rounded,
-                      iconColor: AppColors.primary,
-                      text: '결제 즉시 공고 노출',
-                    ),
-                    SizedBox(height: 10),
-                    _BenefitRow(
-                      icon: Icons.shield_outlined,
-                      iconColor: _green,
-                      text: '지원자 없으면 이용권 자동 환급',
-                    ),
-                    SizedBox(height: 10),
-                    _BenefitRow(
-                      icon: Icons.repeat_rounded,
-                      iconColor: AppColors.badgeUrgent,
-                      text: '남은 이용권은 다음 공고에도 사용',
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              _BuyButton(
-                label: '${formatPrice(price)} 결제하기',
-                isPurchasing: _isPurchasing,
-                gradient: const [AppColors.primary, AppColors.primaryDark],
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  if (Platform.isIOS) {
-                    final productId = _kIosInstant[count];
-                    if (productId != null) {
-                      await _buyWithIAP(productId, 'instant');
-                    }
-                  } else {
-                    await _purchaseWithPortOne(
-                      count: count,
-                      amount: price,
-                      passType: 'instant',
-                    );
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
+  // 고르고 '구매하기' → 확인 시트 → '결제하기'로 같은 결정을 두 번 받던 것을 한 번으로 (2026-10).
+  // 금액은 하단 버튼 글자('8,900원 결제하기')가 말한다. 스토어·PortOne 결제창이 마지막 확인이다.
+  Future<void> _payInstant(int count, int price) async {
+    if (_isPurchasing) return;
+    if (Platform.isIOS) {
+      final productId = _kIosInstant[count];
+      if (productId != null) await _buyWithIAP(productId, 'instant');
+    } else {
+      await _purchaseWithPortOne(count: count, amount: price, passType: 'instant');
+    }
   }
 
-  // ─── 긴급 호출 구매 확인 시트 ────────────────────────
-  void _showUrgentConfirmSheet() {
-    showModalBottomSheet(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final pad =
-            MediaQuery.of(ctx).viewInsets.bottom +
-            MediaQuery.of(ctx).padding.bottom +
-            20;
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
-          ),
-          padding: EdgeInsets.fromLTRB(24, 8, 24, pad),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 24),
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                  ),
-                ),
-              ),
-              Row(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      color: AppColors.warningLight,
-                      borderRadius: BorderRadius.circular(AppRadius.lg),
-                    ),
-                    child: const Center(
-                      child: Icon(
-                        Icons.bolt_rounded,
-                        size: 26,
-                        color: AppColors.badgeUrgent,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          '긴급 호출 이용권 1회',
-                          style: TextStyle(
-                            fontSize: AppFontSize.title,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        const Text(
-                          '반경 5km 알바생 최대 10명 발송',
-                          style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textTertiary),
-                        ),
-                        const SizedBox(height: 4),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.people_alt_rounded,
-                              size: 13,
-                              color: _green,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _nearbyCount > 0
-                                  ? '현재 호출 가능한 알바생 $_nearbyCount명'
-                                  : '근처 알바생 수 조회 중...',
-                              style: const TextStyle(
-                                fontSize: AppFontSize.meta,
-                                color: _green,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Text(
-                    '₩13,900',
-                    style: TextStyle(
-                      fontSize: AppFontSize.h2,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.urgentCall,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.warningLight,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  border: Border.all(color: AppColors.urgentCall.withOpacity(0.15)),
-                ),
-                child: const Column(
-                  children: [
-                    _BenefitRow(
-                      icon: Icons.bolt_rounded,
-                      iconColor: AppColors.urgentCall,
-                      text: '즉시 노출 + 24시간 긴급 고정',
-                    ),
-                    SizedBox(height: 10),
-                    _BenefitRow(
-                      icon: Icons.people_alt_rounded,
-                      iconColor: AppColors.urgentCall,
-                      text: '반경 5km 내 최대 10명에게 인앱 메시지 발송',
-                    ),
-                    SizedBox(height: 10),
-                    _BenefitRow(
-                      icon: Icons.shield_outlined,
-                      iconColor: _green,
-                      text: '응답자 0명이면 이용권 100% 자동 반환',
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-              // 구독 넛지 인라인
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.info_outline_rounded,
-                      size: 15,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        '구독은 먼저 연락·지도 알림을 제공하며 긴급호출 이용권은 별도예요.',
-                        style: TextStyle(
-                          fontSize: AppFontSize.caption,
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              _BuyButton(
-                label: '₩13,900 결제하기',
-                isPurchasing: _isPurchasing,
-                gradient: const [AppColors.urgentCall, AppColors.error],
-                onTap: () async {
-                  Navigator.pop(ctx);
-                  if (Platform.isIOS) {
-                    await _buyWithIAP(_kIosUrgent1, 'urgent');
-                  } else {
-                    await _purchaseWithPortOne(
-                      count: 1,
-                      amount: 13900,
-                      passType: 'urgent',
-                      productName: '알바일주 긴급 호출 이용권',
-                    );
-                  }
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
+  Future<void> _payUrgent() async {
+    if (_isPurchasing) return;
+    if (Platform.isIOS) {
+      await _buyWithIAP(_kIosUrgent1, 'urgent');
+    } else {
+      await _purchaseWithPortOne(
+        count: 1,
+        amount: 13900,
+        passType: 'urgent',
+        productName: '알바일주 긴급 호출 이용권',
+      );
+    }
   }
 
   // ─── Build ────────────────────────────────────────────
@@ -904,61 +567,6 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
       ),
       body: Column(
         children: [
-          // ── 긴급호출 소개 고정 배너 (탭 무관 항상 노출) ──
-          GestureDetector(
-            onTap: () => _tabCtrl.animateTo(1),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: AppColors.warningLight,
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(7),
-                    decoration: BoxDecoration(
-                      color: AppColors.warningLight,
-                      borderRadius: BorderRadius.circular(AppRadius.sm),
-                    ),
-                    child: const Icon(
-                      Icons.bolt_rounded,
-                      size: 16,
-                      color: AppColors.urgentCall,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '긴급 호출 — 갑작스러운 결근, 30분 내 대타 구하기',
-                          style: TextStyle(
-                            fontSize: AppFontSize.meta,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.urgentCall,
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          '반경 5km 알바생에게 직접 메시지 · 응답 0명이면 100% 환급',
-                          style: TextStyle(
-                            fontSize: AppFontSize.caption,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Icon(
-                    Icons.chevron_right_rounded,
-                    size: 18,
-                    color: AppColors.urgentCall,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const Divider(height: 1, color: AppColors.warningBorder),
           // ── TabBarView ──
           Expanded(
             child: TabBarView(
@@ -968,14 +576,13 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                   remainingCount: remainingInstant,
                   options: instantPassOptions,
                   isPurchasing: _isPurchasing,
-                  onSelect: _showInstantConfirmSheet,
+                  onSelect: _payInstant,
                   formatPrice: formatPrice,
-                  onSwitchToUrgent: () => _tabCtrl.animateTo(1),
                 ),
                 _UrgentTab(
                   remainingCount: remainingUrgent,
                   isPurchasing: _isPurchasing,
-                  onBuy: _showUrgentConfirmSheet,
+                  onBuy: _payUrgent,
                 ),
               ],
             ),
@@ -989,278 +596,83 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
 // ════════════════════════════════════════════════════════
 // 즉시 게시 탭
 // ════════════════════════════════════════════════════════
+// 큰 파란 '보유 0개' 상자·숫자 타일·가격 알약·오른쪽 아래 라디오 → 보유 한 줄 + 공고 올리기 등록 방식과 같은 선택 행.
+// 처음부터 1회가 골라져 있다 — 공고 올리기에서 '결제하고 바로 올리기'로 넘어온 사장님이 대부분이다.
 class _InstantTab extends StatefulWidget {
   final int remainingCount;
   final List<Map<String, dynamic>> options;
   final bool isPurchasing;
   final void Function(int count, int price) onSelect;
   final String Function(int) formatPrice;
-  final VoidCallback? onSwitchToUrgent;
   const _InstantTab({
     required this.remainingCount,
     required this.options,
     required this.isPurchasing,
     required this.onSelect,
     required this.formatPrice,
-    this.onSwitchToUrgent,
   });
   @override
   State<_InstantTab> createState() => _InstantTabState();
 }
 
 class _InstantTabState extends State<_InstantTab> {
-  int? _selected;
+  late int _selected = widget.options.first['count'] as int;
 
   @override
   Widget build(BuildContext context) {
+    final opt = widget.options.firstWhere((o) => o['count'] == _selected);
+    final price = opt['price'] as int;
     return Column(
       children: [
-        // 잔여 배너
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-              // 색 그림자(글로우) 제거 — DESIGN.md Paper-Thin
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.confirmation_number_outlined,
-                  size: 28,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '보유 즉시 게시 이용권',
-                      style: TextStyle(
-                        fontSize: AppFontSize.meta,
-                        color: Colors.white70,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${widget.remainingCount}개',
-                      style: const TextStyle(
-                        fontSize: AppFontSize.h1,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        height: 1,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-        // 상품 목록
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-            itemCount: widget.options.length,
-            itemBuilder: (ctx, i) {
-              final opt = widget.options[i];
-              final count = opt['count'] as int;
-              final price = opt['price'] as int;
-              final tag = opt['tag'] as String?;
-              final tagColorStr = opt['tagColor'] as String?;
-              final desc = opt['desc'] as String;
-              final isSelected = _selected == count;
-              final isPopular = tagColorStr == 'green';
-              final isOrange = tagColorStr == 'orange';
-              final tagColor =
-                  isPopular
-                      ? _green
-                      : isOrange
-                      ? AppColors.badgeUrgent
-                      : AppColors.primary;
-              final discount =
-                  count == 1
-                      ? 0
-                      : (((8900 * count - price) / (8900 * count)) * 100)
-                          .round();
-
-              return GestureDetector(
-                onTap: () => setState(() => _selected = count),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  margin: const EdgeInsets.only(bottom: 12),
-                  decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primaryLight : Colors.white,
-                    borderRadius: BorderRadius.circular(AppRadius.xl),
-                    border: Border.all(
-                      color:
-                          isSelected
-                              ? AppColors.primary
-                              : isPopular
-                              ? _green.withOpacity(0.4)
-                              : AppColors.border,
-                      width: isSelected ? 2 : 1,
-                    ),
-                    // 색 그림자(글로우) 제거 — DESIGN.md Paper-Thin
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(18),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Row(
-                                children: [
-                                  AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    width: 40,
-                                    height: 40,
-                                    decoration: BoxDecoration(
-                                      color: isSelected ? AppColors.primary : AppColors.bgPage,
-                                      borderRadius: BorderRadius.circular(AppRadius.md),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '$count',
-                                        style: TextStyle(
-                                          fontSize: AppFontSize.titleLg,
-                                          fontWeight: FontWeight.w800,
-                                          color: isSelected ? Colors.white : AppColors.textPrimary,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    '회 이용권',
-                                    style: TextStyle(
-                                      fontSize: AppFontSize.title,
-                                      fontWeight: FontWeight.w800,
-                                      color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (tag != null)
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: tagColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(AppRadius.full),
-                                  border: Border.all(
-                                    color: tagColor.withOpacity(0.3),
-                                  ),
-                                ),
-                                child: Text(
-                                  tag,
-                                  style: TextStyle(
-                                    fontSize: AppFontSize.caption,
-                                    fontWeight: FontWeight.w700,
-                                    color: tagColor,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          desc,
-                          style: const TextStyle(
-                            fontSize: AppFontSize.meta,
-                            color: AppColors.textTertiary,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Wrap(
-                                spacing: 6,
-                                runSpacing: 6,
-                                children: [
-                                  _PriceChip(
-                                    label: widget.formatPrice(price),
-                                    color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                                    bgColor:
-                                        isSelected
-                                            ? AppColors.primary.withOpacity(0.1)
-                                            : AppColors.bgPage,
-                                    bold: true,
-                                  ),
-                                  if (discount > 0)
-                                    _PriceChip(
-                                      label: '$discount% 절약',
-                                      color: AppColors.urgentCall,
-                                      bgColor: AppColors.warningLight,
-                                      bold: true,
-                                    ),
-                                ],
-                              ),
-                            ),
-                            AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              width: 26,
-                              height: 26,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: isSelected ? AppColors.primary : Colors.white,
-                                border: Border.all(
-                                  color: isSelected ? AppColors.primary : AppColors.border,
-                                  width: 2,
-                                ),
-                              ),
-                              child:
-                                  isSelected
-                                      ? const Icon(
-                                        Icons.check_rounded,
-                                        size: 14,
-                                        color: Colors.white,
-                                      )
-                                      : null,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            children: [
+              _OwnedLine(label: '보유 즉시 게시 이용권', count: widget.remainingCount),
+              const SizedBox(height: 20),
+              const Text('몇 개 살까요?', style: AppTextStyles.h2),
+              const SizedBox(height: 4),
+              const Text('남은 이용권은 만료 없이 다음 공고에 써요', style: AppTextStyles.body2),
+              const SizedBox(height: 16),
+              for (final o in widget.options)
+                _OptionRow(
+                  title: '${o['count']}회',
+                  sub:
+                      o['count'] == 1
+                          ? '공고 1건'
+                          : '회당 ${widget.formatPrice(((o['price'] as int) / (o['count'] as int)).floor())}'
+                              '${_discount(o) > 0 ? ' · ${_discount(o)}% 할인' : ''}',
+                  price: widget.formatPrice(o['price'] as int),
+                  tag: o['tag'] as String?,
+                  selected: _selected == o['count'],
+                  onTap: () => setState(() => _selected = o['count'] as int),
                 ),
-              );
-            },
+            ],
           ),
         ),
-        // 하단 CTA
-        _BottomCta(
-          isSelected: _selected != null,
-          isPurchasing: widget.isPurchasing,
-          label: _selected != null ? '구매하기' : '이용권을 선택해주세요',
-          onTap:
-              _selected == null
-                  ? null
-                  : () {
-                    final opt = widget.options.firstWhere(
-                      (o) => o['count'] == _selected,
-                    );
-                    widget.onSelect(opt['count'] as int, opt['price'] as int);
-                  },
+        AppBottomBar(
+          child: AppPrimaryButton(
+            label: '${widget.formatPrice(price)} 결제하기',
+            loading: widget.isPurchasing,
+            onPressed: () => widget.onSelect(_selected, price),
+          ),
         ),
       ],
     );
+  }
+
+  int _discount(Map<String, dynamic> o) {
+    final c = o['count'] as int;
+    final full = 8900 * c;
+    return c == 1 ? 0 : (((full - (o['price'] as int)) / full) * 100).round();
   }
 }
 
 // ════════════════════════════════════════════════════════
 // 긴급 호출 탭
 // ════════════════════════════════════════════════════════
+// 빨강 보유 상자·그림자 카드·아이콘 상자 혜택 4줄·파란 구독 상자 → 즉시 게시 탭과 같은 뼈대.
+// 상품이 하나라 선택 행 하나(이미 골라짐) + 무엇을 해 주는지 세 줄.
 class _UrgentTab extends StatelessWidget {
   final int remainingCount;
   final bool isPurchasing;
@@ -1273,262 +685,56 @@ class _UrgentTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    Widget line(String t) => Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 2),
+            child: Icon(Icons.check_rounded, size: 16, color: AppColors.primary),
+          ),
+          const SizedBox(width: 8),
+          Expanded(child: Text(t, style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary))),
+        ],
+      ),
+    );
     return Column(
       children: [
         Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 긴급 호출 소개
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    border: Border.all(color: AppColors.border),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+            children: [
+              _OwnedLine(label: '보유 긴급 호출 이용권', count: remainingCount),
+              const SizedBox(height: 20),
+              const Text('갑자기 사람이 빌 때', style: AppTextStyles.h2),
+              const SizedBox(height: 4),
+              const Text('근무지 5km 안 알바생에게 사장님이 직접 연락해요', style: AppTextStyles.body2),
+              const SizedBox(height: 16),
+              _OptionRow(title: '1회', sub: '공고 1건', price: '13,900원', selected: true, onTap: () {}),
+              const SizedBox(height: 12),
+              line('바로 공개되고 24시간 맨 위에 고정돼요'),
+              line('활동 많은 순으로 고른 알바생 최대 10명에게 메시지를 보내요 · 번호는 공개되지 않아요'),
+              line('아무도 답하지 않으면 이용권을 돌려드려요'),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Expanded(child: Text('매달 쓴다면 구독이 더 저렴해요', style: AppTextStyles.body2)),
+                  TextButton(
+                    onPressed: () => Navigator.pushNamed(context, '/subscribe'),
+                    child: const Text('구독 보기'),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '긴급 호출이란?',
-                        style: TextStyle(
-                          fontSize: AppFontSize.body1,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '알바생이 갑자기 결근하거나 급하게 인력이 필요할 때 사용하는 기능이에요. 공고 위치 기준 반경 5km 내 활동 중인 알바생에게 사장님이 직접 인앱 메시지를 보낼 수 있어요.',
-                        style: TextStyle(
-                          fontSize: AppFontSize.body2,
-                          color: AppColors.textSecondary,
-                          height: 1.55,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Row(
-                        children: [
-                          _MiniChip('즉시 노출'),
-                          SizedBox(width: 6),
-                          _MiniChip('24시간 상단 고정'),
-                          SizedBox(width: 6),
-                          _MiniChip('개인정보 비노출'),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // 잔여 배너
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: AppColors.urgentCall,
-                    borderRadius: BorderRadius.circular(AppRadius.xl),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.bolt_rounded,
-                        size: 28,
-                        color: AppColors.badgeUrgent,
-                      ),
-                      const SizedBox(width: 12),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '보유 긴급 호출 이용권',
-                            style: TextStyle(
-                              fontSize: AppFontSize.meta,
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '$remainingCount개',
-                            style: const TextStyle(
-                              fontSize: AppFontSize.h1,
-                              fontWeight: FontWeight.w800,
-                              color: Colors.white,
-                              height: 1,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 20),
-                // 상품 카드
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(AppRadius.xl),
-                    border: Border.all(color: AppColors.urgentCall, width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppColors.urgentCall.withOpacity(0.08),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(10),
-                            decoration: BoxDecoration(
-                              color: AppColors.warningLight,
-                              borderRadius: BorderRadius.circular(AppRadius.md),
-                            ),
-                            child: const Icon(
-                              Icons.bolt_rounded,
-                              size: 24,
-                              color: AppColors.urgentCall,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  '긴급 호출 이용권',
-                                  style: TextStyle(
-                                    fontSize: AppFontSize.title,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                Text(
-                                  '단건 구매 · 1회 사용',
-                                  style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.textTertiary),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const Text(
-                            '₩13,900',
-                            style: TextStyle(
-                              fontSize: AppFontSize.h1,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.urgentCall,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 20),
-                      const Divider(height: 1),
-                      const SizedBox(height: 16),
-                      const _BenefitRow(
-                        icon: Icons.bolt_rounded,
-                        iconColor: AppColors.urgentCall,
-                        text: '즉시 노출 + 24시간 긴급 고정',
-                      ),
-                      const SizedBox(height: 12),
-                      const _BenefitRow(
-                        icon: Icons.people_alt_rounded,
-                        iconColor: AppColors.urgentCall,
-                        text: '반경 5km 내 최대 10명에게 인앱 메시지 발송',
-                      ),
-                      const SizedBox(height: 12),
-                      const _BenefitRow(
-                        icon: Icons.shield_outlined,
-                        iconColor: _green,
-                        text: '응답자 0명이면 이용권 100% 자동 반환',
-                      ),
-                      const SizedBox(height: 12),
-                      const _BenefitRow(
-                        icon: Icons.no_accounts_outlined,
-                        iconColor: AppColors.textTertiary,
-                        text: '개인정보 비노출 인앱 메시지',
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                // 구독 넛지
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryLight,
-                    borderRadius: BorderRadius.circular(AppRadius.lg),
-                    border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(
-                        Icons.workspace_premium_rounded,
-                        size: 18,
-                        color: AppColors.primary,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '반복 채용은 구독으로',
-                              style: TextStyle(
-                                fontSize: AppFontSize.body2,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              '라이트는 즉시게시 3회, 프로는 즉시게시 무제한입니다. 긴급호출은 별도예요.',
-                              style: TextStyle(
-                                fontSize: AppFontSize.meta,
-                                color: AppColors.textSecondary,
-                                height: 1.5,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            GestureDetector(
-                              onTap:
-                                  () => Navigator.pushNamed(
-                                    context,
-                                    '/subscribe',
-                                  ),
-                              child: const Text(
-                                '구독 보러가기 →',
-                                style: TextStyle(
-                                  fontSize: AppFontSize.meta,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+                ],
+              ),
+            ],
           ),
         ),
-        _BottomCta(
-          isSelected: true,
-          isPurchasing: isPurchasing,
-          label: '₩13,900 긴급 호출 이용권 구매',
-          color: AppColors.urgentCall,
-          onTap: isPurchasing ? null : onBuy,
+        AppBottomBar(
+          child: AppPrimaryButton(
+            label: '13,900원 결제하기',
+            loading: isPurchasing,
+            onPressed: onBuy,
+          ),
         ),
       ],
     );
@@ -1538,166 +744,89 @@ class _UrgentTab extends StatelessWidget {
 // ════════════════════════════════════════════════════════
 // 공용 위젯
 // ════════════════════════════════════════════════════════
-class _MiniChip extends StatelessWidget {
+class _OwnedLine extends StatelessWidget {
   final String label;
-  const _MiniChip(this.label);
+  final int count;
+  const _OwnedLine({required this.label, required this.count});
+
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     decoration: BoxDecoration(
-      color: AppColors.warningLight,
-      borderRadius: BorderRadius.circular(AppRadius.xs),
+      color: AppColors.bgMuted,
+      borderRadius: BorderRadius.circular(AppRadius.md),
     ),
-    child: Text(
-      label,
-      style: const TextStyle(
-        fontSize: AppFontSize.caption,
-        fontWeight: FontWeight.w600,
-        color: AppColors.urgentCall,
-      ),
+    child: Row(
+      children: [
+        Expanded(child: Text(label, style: AppTextStyles.body2)),
+        Text(
+          '$count개',
+          style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+        ),
+      ],
     ),
   );
 }
 
-class _BottomCta extends StatelessWidget {
-  final bool isSelected;
-  final bool isPurchasing;
-  final String label;
-  final Color? color;
-  final VoidCallback? onTap;
-  const _BottomCta({
-    required this.isSelected,
-    required this.isPurchasing,
-    required this.label,
-    this.color,
-    this.onTap,
-  });
-
-  // 공용 하단 띠·주 버튼으로 (2026-10). [color]는 받지만 쓰지 않는다 — 누르는 건 파랑 하나(CTA Blue).
-  @override
-  Widget build(BuildContext context) {
-    return AppBottomBar(
-      child: AppPrimaryButton(
-        label: label,
-        height: 52,
-        loading: isPurchasing,
-        onPressed: isSelected ? onTap : null,
-      ),
-    );
-  }
-}
-
-class _BuyButton extends StatelessWidget {
-  final String label;
-  final bool isPurchasing;
-  final List<Color> gradient;
-  final VoidCallback? onTap;
-  const _BuyButton({
-    required this.label,
-    required this.isPurchasing,
-    required this.gradient,
+/// 큰 선택 = 연파랑 바탕 + 파란 테두리, 라디오는 왼쪽 (공고 올리기 등록 방식과 같은 모양)
+class _OptionRow extends StatelessWidget {
+  final String title;
+  final String sub;
+  final String price;
+  final String? tag;
+  final bool selected;
+  final VoidCallback onTap;
+  const _OptionRow({
+    required this.title,
+    required this.sub,
+    required this.price,
+    this.tag,
+    required this.selected,
     required this.onTap,
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: isPurchasing ? null : onTap,
-    child: AnimatedContainer(
-      duration: const Duration(milliseconds: 150),
-      width: double.infinity,
-      height: 52,
-      decoration: BoxDecoration(
-        // 그라데이션·글로우 없이 단색 (리디자인 2026-10). gradient 첫 색만 쓴다
-        color: isPurchasing ? AppColors.border : gradient.first,
-        borderRadius: BorderRadius.circular(AppRadius.md),
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Material(
+      color: selected ? AppColors.primaryLight : AppColors.bgCard,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        side: BorderSide(color: selected ? AppColors.primary : AppColors.border, width: selected ? 1.5 : 1),
       ),
-      child: Center(
-        child:
-            isPurchasing
-                ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                    strokeWidth: 2,
-                  ),
-                )
-                : Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: AppFontSize.body1,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+          child: Row(
+            children: [
+              Icon(
+                selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                size: 22,
+                color: selected ? AppColors.primary : AppColors.textDisabled,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(title, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                        if (tag != null) ...[const SizedBox(width: 6), JobSignalBadge(label: tag!)],
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(sub, style: AppTextStyles.body2),
+                  ],
                 ),
-      ),
-    ),
-  );
-}
-
-class _PriceChip extends StatelessWidget {
-  final String label;
-  final Color color;
-  final Color bgColor;
-  final bool bold;
-  const _PriceChip({
-    required this.label,
-    required this.color,
-    required this.bgColor,
-    required this.bold,
-  });
-
-  @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-    decoration: BoxDecoration(
-      color: bgColor,
-      borderRadius: BorderRadius.circular(AppRadius.full),
-    ),
-    child: Text(
-      label,
-      style: TextStyle(
-        fontSize: AppFontSize.meta,
-        color: color,
-        fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-      ),
-    ),
-  );
-}
-
-class _BenefitRow extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final String text;
-  const _BenefitRow({
-    required this.icon,
-    required this.iconColor,
-    required this.text,
-  });
-
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Container(
-        width: 30,
-        height: 30,
-        decoration: BoxDecoration(
-          color: iconColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: Icon(icon, size: 16, color: iconColor),
-      ),
-      const SizedBox(width: 10),
-      Expanded(
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: AppFontSize.body2,
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
+              ),
+              Text(price, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+            ],
           ),
         ),
       ),
-    ],
+    ),
   );
 }
