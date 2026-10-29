@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../widget/dev_account_switch.dart';
 import 'package:flutter/services.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'worker_screen/home_main_screen.dart';
@@ -88,6 +89,7 @@ class OnboardingScreen extends StatelessWidget {
                     ),
                   ],
                 ),
+                const DevAccountSwitchButton(),
 
                 const Spacer(),
                 SizedBox(
