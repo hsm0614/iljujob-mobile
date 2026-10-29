@@ -69,3 +69,16 @@ String formatPostedAgo(DateTime postedUtc, {DateTime? now}) {
   if (days < 7) return '$days일 전';
   return '${local.month}월 ${local.day}일';
 }
+
+/// 근무일 → '11월 7일(토)' · '11월 7일(토) ~ 8일(일)' · '11월 30일(일) ~ 12월 2일(화)'.
+/// 날짜가 없으면 요일('주말'), 그것도 없으면 null. DATE는 KST 자정을 UTC로 들고 있어 toLocal로 되돌린다.
+String? formatWorkDays(DateTime? start, DateTime? end, String? weekdays) {
+  const wd = ['월', '화', '수', '목', '금', '토', '일'];
+  String md(DateTime d, {bool month = true}) =>
+      '${month ? '${d.month}월 ' : ''}${d.day}일(${wd[d.weekday - 1]})';
+  if (start == null) return formatWeekdays(weekdays);
+  final s = start.toLocal();
+  final e = (end ?? start).toLocal();
+  if (s.year == e.year && s.month == e.month && s.day == e.day) return md(s);
+  return '${md(s)} ~ ${md(e, month: e.month != s.month)}';
+}

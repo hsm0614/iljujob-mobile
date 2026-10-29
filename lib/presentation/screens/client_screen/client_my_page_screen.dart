@@ -13,6 +13,7 @@ import '../../../config/messages.dart';
 import '../../../widget/dev_account_switch.dart';
 import '../../../widget/app_ui.dart';
 import '../../../widget/app_motion.dart';
+import '../worker_screen/labor_consult_screen.dart';
 
 class ClientMyPageScreen extends StatefulWidget {
   const ClientMyPageScreen({super.key});
@@ -411,6 +412,16 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
                 AppMenuSection(
                   title: '도움',
                   children: [
+                    AppMenuRow(
+                      icon: Icons.balance_rounded,
+                      label: 'AI 노무 상담',
+                      subtitle: '최저임금·주휴수당·근로계약이 궁금할 때',
+                      onTap:
+                          () => Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (_) => const LaborConsultScreen()),
+                          ),
+                    ),
                     AppMenuRow(
                       icon: Icons.headset_mic_outlined,
                       label: '고객센터',

@@ -26,4 +26,14 @@ void main() {
     expect(formatPostedAgo(DateTime(2026, 10, 26, 20).toUtc(), now: now), '어제');
     expect(formatPostedAgo(DateTime(2026, 10, 10).toUtc(), now: now), '10월 10일');
   });
+
+  test('근무일 표기 (사장님 내 공고 카드)', () {
+    // KST 자정 = 전날 15:00Z — 앱이 들고 있는 형태
+    DateTime kst(int m, int d) => DateTime.utc(2026, m, d).subtract(const Duration(hours: 9));
+    expect(formatWorkDays(kst(11, 7), kst(11, 7), null), '11월 7일(토)');
+    expect(formatWorkDays(kst(11, 7), kst(11, 8), null), '11월 7일(토) ~ 8일(일)');
+    expect(formatWorkDays(kst(11, 30), kst(12, 2), null), '11월 30일(월) ~ 12월 2일(수)');
+    expect(formatWorkDays(null, null, '토,일'), '주말');
+    expect(formatWorkDays(null, null, null), isNull);
+  });
 }
