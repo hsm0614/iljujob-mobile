@@ -1600,6 +1600,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   Widget _buildJobCard(Job job, {required bool last}) {
     final isClosed = job.status == 'closed';
     final reserved = isJobReserved(job);
+    // 근무 마지막 날이 지나서야 공개되는 공고 — '공개 대기'로 두면 정상처럼 보인다
+    final publishTooLate =
+        reserved && job.publishAt != null && job.endDate != null &&
+        !job.publishAt!.isBefore(job.endDate!.add(const Duration(days: 1)));
     final pinned = isJobPinned(job);
     final when = [
       if (formatWorkDays(job.startDate, job.endDate, job.weekdays) case final d?) d,
@@ -1608,6 +1612,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     final chips = <Widget>[
       if (isClosed)
         const JobSignalBadge(label: '마감')
+      else if (publishTooLate)
+        const JobSignalBadge(label: '공개 전에 근무가 끝나요', signal: JobSignal.time)
       else if (reserved)
         const JobSignalBadge(label: '공개 대기')
       else
@@ -1624,6 +1630,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     (String, String, VoidCallback)? next;
     if (isClosed) {
       next = ('', '같은 조건으로 다시 올리기', () => _repost(job));
+    } else if (publishTooLate) {
+      next = ('근무일보다 공개가 늦어요', '수정하기', () => Navigator.pushNamed(context, '/edit_job', arguments: job.id));
     } else if (reserved && !job.isPaid) {
       next = ('${publishRemainText(job)} 공개', '지금 바로 공개', () => _upgradeToInstant(job));
     } else if (reserved) {

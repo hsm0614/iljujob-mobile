@@ -181,7 +181,7 @@ class _PostJobFormState extends State<PostJobForm>
       case 0:
         return '공고 제목을 입력해주세요';
       case 1:
-        return '업종을 선택해주세요';
+        return _majorCat.isNotEmpty ? '세부 직종을 선택해주세요' : '업종을 선택해주세요';
       case 2:
         return '근무지를 입력해주세요';
       case 3:
@@ -868,7 +868,7 @@ class _PostJobFormState extends State<PostJobForm>
         isTimeNegotiable: _timeNegotiable,
         payType: _payType,
         pay: _pay,
-        description: _description.trim(),
+        description: _descForPost,
         images: _images,
         clientId: clientId,
         weekdays: (wdPayload?.trim().isNotEmpty ?? false) ? wdPayload : null,
@@ -1180,7 +1180,7 @@ class _PostJobFormState extends State<PostJobForm>
                       : '시간 미정',
               payType: _payType,
               pay: isNegotiablePayType(_payType) ? 0 : _pay,
-              description: _description,
+              description: _descForPost,
               images: _images,
               onSubmit: () => Navigator.pop(context),
             ),
@@ -1272,6 +1272,11 @@ class _PostJobFormState extends State<PostJobForm>
               appBar: AppBar(title: const Text('확인하고 올리기')),
               body: _PublishSheet(
             header: _publishHeader(ctx),
+            workStartKst:
+                _isShortTerm && _startDate != null
+                    ? DateTime.utc(_startDate!.year, _startDate!.month, _startDate!.day,
+                        _timeNegotiable ? 0 : (_startTime?.hour ?? 0), _timeNegotiable ? 0 : (_startTime?.minute ?? 0))
+                    : null,
             fetchPassCounts: _fetchPassCounts,
             fetchFreeQuota: JobService.fetchFreeQuota,
             nationwideHint: hasNationwideHint(_titleCtrl.text, _descCtrl.text),
@@ -1741,14 +1746,14 @@ class _PostJobFormState extends State<PostJobForm>
   /// 설명이 비어 있으면 앞에서 입력한 것으로 미리 써 둔다(급구식). AI 횟수를 쓰지 않는다 — 고치기만 하면 된다
   void _autoFillDescription() {
     if (_description.trim().isNotEmpty) return;
-    final when = _doneValue(3);
-    final pay = _doneValue(4);
+    // 일정·급여·장소는 공고 상단에 이미 나온다. 알바생이 채팅으로 묻는 것만 빈칸으로.
     final text = [
       if (_category.isNotEmpty) '$_category 업무를 함께할 분을 찾아요.',
       '',
-      if (when.isNotEmpty) '· 일정: $when',
-      if (pay.isNotEmpty) '· 급여: $pay',
-      if (_location.isNotEmpty) '· 장소: $_location',
+      '· 하는 일: ',
+      '· 준비물·복장: ',
+      '· 휴게시간: ',
+      _isSameDayPay ? '· 급여 지급: 근무 당일' : '· 급여 지급일: ',
       '',
       '궁금한 점은 채팅으로 편하게 물어봐 주세요.',
     ].join('\n').trim();
@@ -1756,6 +1761,10 @@ class _PostJobFormState extends State<PostJobForm>
     _description = text;
     _descAutoFilled = true;
   }
+
+  /// 안 채운 빈칸 줄('· 휴게시간: ')은 빼고 올린다
+  String get _descForPost =>
+      _description.split('\n').where((l) => !RegExp(r'^· [^:]+:\s*$').hasMatch(l)).join('\n').trim();
 
   Widget _buildBody() {
     return SafeArea(
@@ -1946,6 +1955,9 @@ class _PostJobFormState extends State<PostJobForm>
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
         ),
       ),
+      // '알바'처럼 짧은 제목은 막지 않고 예시만 — 무슨 일인지 보여야 지원한다
+      if (_title.isNotEmpty && _title.replaceAll(' ', '').length < 5)
+        const Text('어디서 무슨 일인지 적으면 지원이 늘어요 · 예) 카페 주말 홀서빙', style: AppTextStyles.body2),
       // 지난 공고로 채우기 — '공고 올리기' 앞의 선택 시트를 없애고 여기로 (2026-10, 대표)
       if (_recentJobs.isNotEmpty) ...[
         const SizedBox(height: 20),
@@ -3724,7 +3736,7 @@ class _PostJobFormState extends State<PostJobForm>
 
         if (_descAutoFilled) ...[
           const SizedBox(height: 6),
-          const Text('앞에서 입력한 내용으로 미리 써 두었어요 · 자유롭게 고쳐 주세요', style: AppTextStyles.caption),
+          const Text('알바생이 자주 묻는 것만 빈칸으로 두었어요 · 안 채운 줄은 빼고 올라가요', style: AppTextStyles.caption),
         ],
         // ── 장기 공고 전용 필드 ──────────────────────────
         if (!_isShortTerm) ...[
@@ -4584,8 +4596,11 @@ class _PublishSheet extends StatefulWidget {
   final bool externalApplyEnabled;
   /// 맨 위에 붙는 공고 요약(전체 화면으로 열 때)
   final Widget? header;
+  /// 근무 시작(KST 벽시계). 무료 공개가 이보다 늦으면 미리 알려준다. 장기 공고는 null
+  final DateTime? workStartKst;
   const _PublishSheet({
     this.header,
+    this.workStartKst,
     required this.fetchPassCounts,
     required this.fetchFreeQuota,
     required this.fetchReachableWorkerCount,
@@ -4704,6 +4719,9 @@ class _PublishSheetState extends State<_PublishSheet> {
   // → 선택지 3개(라디오) + 하단 버튼 하나. 버튼 글자가 무엇이 차감되는지 말한다(급구 결제 선택 화면 뼈대).
   String _choice = 'instant'; // instant · urgent · free
 
+  bool _freeLate(DateTime now) =>
+      widget.workStartKst != null && !freePublishAt(now).isBefore(widget.workStartKst!);
+
   bool get _urgentOk => !_passCountFailed && (_urgentPassCount > 0 || _urgentPassCount == -1);
 
   String _ownedTag(int n, String price) =>
@@ -4739,7 +4757,12 @@ class _PublishSheetState extends State<_PublishSheet> {
         final now = kstNow();
         return _freeExhausted
             ? (label: '무료로 올리기', note: '이번 달 무료 등록을 다 썼어요', onTap: null, loading: false)
-            : (label: '무료로 올리기', note: '${kstWhenLabel(freePublishAt(now), now)}에 공개돼요', onTap: widget.onFreeSubmit, loading: false);
+            : (
+              label: '무료로 올리기',
+              note: '${kstWhenLabel(freePublishAt(now), now)}에 공개돼요${_freeLate(now) ? ' · 근무 시작보다 늦어요' : ''}',
+              onTap: widget.onFreeSubmit,
+              loading: false,
+            );
       default:
         if (!_paidOk) {
           return (label: '결제하고 바로 올리기', note: '즉시 게시 이용권 8,900원', onTap: widget.onBuyPass, loading: false);
@@ -4881,7 +4904,10 @@ class _PublishSheetState extends State<_PublishSheet> {
                   value: 'free',
                   title: '무료 등록',
                   tag: freeLeft ?? '무료',
-                  sub: '$freeWhen 공개 · 알바생 알림 1회 · 3일 노출',
+                  sub:
+                      _freeLate(now)
+                          ? '$freeWhen 공개라 근무 시작보다 늦어요 · 알림 1회 · 3일 노출'
+                          : '$freeWhen 공개 · 알바생 알림 1회 · 3일 노출',
                 ),
                 if (_choice == 'instant' && _paidOk) ...[
                   const SizedBox(height: 8),
