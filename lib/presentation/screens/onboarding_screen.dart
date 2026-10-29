@@ -261,33 +261,15 @@ class _TypeCardState extends State<_TypeCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // 아이콘
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color:
-                            widget.isHighlighted
-                                ? AppColors.primaryLight
-                                : AppColors.primaryLight,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      child: Icon(
-                        widget.icon,
-                        size: 22,
-                        color: AppColors.primary,
-                      ),
-                    ),
+                    // 파란 아이콘 상자 → 회색 아이콘만 (아이콘 상자 규칙)
+                    Icon(widget.icon, size: 26, color: AppColors.textSecondary),
 
                     const SizedBox(height: 16),
 
                     // 라벨
                     Text(
                       widget.label,
-                      style: const TextStyle(
-                        fontFamily: 'Jalnan2TTF',
-                        fontSize: AppFontSize.title,
-                        color: AppColors.textPrimary,
-                      ),
+                      style: AppTextStyles.h3,
                     ),
 
                     const SizedBox(height: 6),
@@ -307,19 +289,8 @@ class _TypeCardState extends State<_TypeCard> {
                     // 화살표
                     Align(
                       alignment: Alignment.centerRight,
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        decoration: const BoxDecoration(
-                          color: AppColors.primary,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.arrow_forward_rounded,
-                          size: 14,
-                          color: Colors.white,
-                        ),
-                      ),
+                      // 카드 전체가 버튼 — 파란 동그라미 화살표 대신 회색 화살표
+                      child: const Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary),
                     ),
                   ],
                 ),

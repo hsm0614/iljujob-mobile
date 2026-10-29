@@ -89,7 +89,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
           MaterialPageRoute(
             builder:
                 (_) => Scaffold(
-                  backgroundColor: AppColors.bgPage,
+                  backgroundColor: AppColors.bgCard,
                   appBar: AppBar(
                     title: const Text('프로필 설정'),
                     elevation: 0,
@@ -271,7 +271,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
-        backgroundColor: AppColors.bgPage,
+        backgroundColor: AppColors.bgCard,
         appBar: AppBar(
           title: const Text('가입 방법 선택'),
           elevation: 0,
@@ -302,14 +302,8 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
-                    child: Column(
+                  // 버튼을 감싸던 흰 카드 제거 (사장님 가입 화면과 같게)
+                  Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         // Kakao
@@ -347,39 +341,17 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
                               bg: Colors.black,
                               fg: Colors.white,
                             ),
-                          )
-                        else
-                          Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              decoration: BoxDecoration(
-                                color: AppColors.bgMuted,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  'Apple은 iOS에서만 제공됩니다',
-                                  style: TextStyle(color: AppColors.textSecondary),
-                                ),
-                              ),
-                            ),
                           ),
-
-                        const SizedBox(height: 16),
-                        const Divider(),
-                        const SizedBox(height: 16),
-
-                        // Phone (PASS)
-                        ElevatedButton.icon(
+                        const SizedBox(height: 12),
+                        // 휴대폰은 보조 버튼 — 파란 버튼이 카카오·애플과 경쟁했다
+                        OutlinedButton.icon(
                           onPressed: _goPhoneSignup,
                           icon: const Icon(Icons.phone_iphone),
-                          label: const Text('휴대폰으로 시작하기'),
-                          style: _primaryBtnStyle(),
+                          label: const Text('휴대폰 번호로 시작하기'),
+                          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
                         ),
                       ],
                     ),
-                  ),
 
                   const SizedBox(height: 20),
                   const Text(

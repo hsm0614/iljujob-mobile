@@ -81,6 +81,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: Scaffold(
+        backgroundColor: AppColors.bgCard,
         appBar: AppBar(title: const Text('회원가입')),
         body: PageView(
           controller: _pageController,
@@ -431,16 +432,17 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
       hintText: hint,
       isDense: true,
       filled: true,
-      fillColor: Colors.white,
+      // 회색 채움·테두리 없음 (입력칸 규칙)
+      fillColor: AppColors.bgMuted,
       prefixIcon: icon != null ? Icon(icon) : null,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderSide: BorderSide.none,
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -451,7 +453,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
 
   ButtonStyle _primaryBtnStyle({bool enabled = true}) {
     return ElevatedButton.styleFrom(
-      backgroundColor: enabled ? kBrand : const Color(0xFF93C5FD),
+      backgroundColor: enabled ? kBrand : const Color(0xFFC4DCFF),
       foregroundColor: Colors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -721,12 +723,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               ),
               const SizedBox(height: 18),
               Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.border),
-                ),
-                padding: const EdgeInsets.all(16),
+                // 테두리 카드 제거 — 상자 속 상자
                 child: _buildLabeledField(
                   '휴대폰 번호',
                   TextField(
@@ -928,12 +925,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
               children: [
                 // 자신 있는 업무
                 Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  padding: const EdgeInsets.all(16),
+                  // 테두리 카드 제거 — 상자 속 상자
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -989,12 +981,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
 
                 // 나를 표현하는 단어
                 Container(
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  padding: const EdgeInsets.all(16),
+                  // 테두리 카드 제거 — 상자 속 상자
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
