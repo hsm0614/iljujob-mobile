@@ -1,6 +1,7 @@
 // File: lib/presentation/screens/purchase_pass_screen.dart
 import 'dart:async';
 import 'package:iljujob/widget/app_ui.dart';
+import 'package:iljujob/widget/app_motion.dart';
 import 'dart:convert';
 import 'dart:io';
 
@@ -256,12 +257,8 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
             if (widget.fromPostJob) {
               await Future.delayed(const Duration(milliseconds: 600));
               if (mounted) Navigator.pop(context, {'success': true});
-            } else if (isUrgent) {
-              _showUrgentSuccessAndNudge();
             } else {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text('이용권을 지급했어요.')));
+              await _showBought(isUrgent ? 'urgent' : 'instant');
             }
           }
         } catch (e) {
@@ -359,12 +356,8 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
         if (widget.fromPostJob) {
           await Future.delayed(const Duration(milliseconds: 600));
           if (mounted) Navigator.pop(context, {'success': true});
-        } else if (passType == 'urgent') {
-          _showUrgentSuccessAndNudge();
         } else {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(const SnackBar(content: Text('이용권을 지급했어요.')));
+          await _showBought(passType);
         }
       } else {
         final message = data['message'] ?? '이용권 지급에 실패했습니다.';
@@ -378,144 +371,20 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   }
 
   // ─── 긴급 결제 후 구독 넛지 ──────────────────────────
-  void _showUrgentSuccessAndNudge() {
+  // 결제 뒤: 스낵바 한 줄(즉시 게시) / 주황 아이콘 상자·'지급 완료!'·파란 구독 상자 시트(긴급)
+  // → 공용 완료 화면 하나. 다음 할 일은 공고 올리기 (긴급 직후 구독을 권하던 것은 뺐다)
+  Future<void> _showBought(String passType) async {
     if (!mounted) return;
-    showModalBottomSheet(
-      context: context,
-      useSafeArea: true,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        final pad = MediaQuery.of(ctx).padding.bottom;
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
-          ),
-          padding: EdgeInsets.fromLTRB(24, 8, 24, pad + 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Container(
-                  margin: const EdgeInsets.only(top: 12, bottom: 20),
-                  width: 36,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                  ),
-                ),
-              ),
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: AppColors.warningLight,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.bolt_rounded,
-                    size: 30,
-                    color: AppColors.badgeUrgent,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                '긴급 호출 이용권 지급 완료!',
-                style: TextStyle(
-                  fontSize: AppFontSize.h2,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                '공고 등록 후 긴급 호출을 발송해보세요.',
-                style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 20),
-              // 구독 넛지
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.25)),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      child: const Icon(
-                        Icons.workspace_premium_rounded,
-                        size: 16,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '반복 채용은 구독으로',
-                            style: TextStyle(
-                              fontSize: AppFontSize.body2,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            '구독은 즉시게시와 먼저 연락·지도 알림을 제공합니다. 긴급호출은 별도예요.',
-                            style: TextStyle(
-                              fontSize: AppFontSize.meta,
-                              color: AppColors.textSecondary,
-                              height: 1.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('나중에'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(ctx);
-                        Navigator.pushNamed(context, '/subscribe');
-                      },
-                      child: const Text(
-                        '구독 보러가기'),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+    final urgent = passType == 'urgent';
+    final r = await showAppSuccess(
+      context,
+      title: urgent ? '긴급 호출 이용권을 받았어요' : '즉시 게시 이용권을 받았어요',
+      message: urgent ? '공고를 올린 뒤 근처 알바생에게 바로 연락할 수 있어요' : '공고를 올릴 때 바로 공개할 수 있어요',
+      facts: [(urgent ? '보유 긴급 호출' : '보유 즉시 게시', '${urgent ? remainingUrgent : remainingInstant}개')],
+      primaryLabel: '공고 올리기',
+      secondaryLabel: '닫기',
     );
+    if (r == 'primary' && mounted) Navigator.pushNamed(context, '/post_job');
   }
 
   // ─── 즉시 게시 구매 확인 시트 ────────────────────────
