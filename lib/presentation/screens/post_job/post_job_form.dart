@@ -1988,16 +1988,16 @@ class _PostJobFormState extends State<PostJobForm>
                       duration: const Duration(milliseconds: 160),
                       padding: const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
-                        color: isSel || isOpen ? AppColors.bgCard : AppColors.bgMuted,
+                        color: isSel || isOpen ? AppColors.primaryLight : AppColors.bgMuted,
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         border: Border.all(
-                          color: isSel || isOpen ? AppColors.textPrimary : Colors.transparent,
+                          color: isSel || isOpen ? AppColors.primary : Colors.transparent,
                           width: 1.5,
                         ),
                       ),
                       child: Row(
                         children: [
-                          Icon(cat.icon, size: 20, color: isSel || isOpen ? AppColors.textPrimary : AppColors.textSecondary),
+                          Icon(cat.icon, size: 20, color: isSel || isOpen ? AppColors.primary : AppColors.textSecondary),
                           const SizedBox(width: 10),
                           Expanded(
                             child: Column(
@@ -2010,7 +2010,7 @@ class _PostJobFormState extends State<PostJobForm>
                                   overflow: TextOverflow.ellipsis,
                                   style: AppTextStyles.body2.copyWith(
                                     fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                                    color: AppColors.textPrimary,
+                                    color: isSel || isOpen ? AppColors.primary : AppColors.textPrimary,
                                   ),
                                 ),
                                 if (isSel && _category.isNotEmpty && _category != cat.name)
@@ -2108,14 +2108,14 @@ class _PostJobFormState extends State<PostJobForm>
                                             vertical: 8,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: sel ? AppColors.textPrimary : Colors.white,
+                                            color: sel ? AppColors.primary : Colors.white,
                                             borderRadius: BorderRadius.circular(
                                               99,
                                             ),
                                             border: Border.all(
                                               color:
                                                   sel
-                                                      ? AppColors.textPrimary
+                                                      ? AppColors.primary
                                                       : AppColors.border,
                                               width: sel ? 0 : 1,
                                             ),
@@ -2263,7 +2263,7 @@ class _PostJobFormState extends State<PostJobForm>
               padding: const EdgeInsets.symmetric(vertical: 12),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: sel ? AppColors.textPrimary : AppColors.bgMuted,
+                color: sel ? AppColors.primary : AppColors.bgMuted,
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Text(
@@ -3163,7 +3163,7 @@ class _PostJobFormState extends State<PostJobForm>
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: sel ? AppColors.textPrimary : AppColors.bgMuted,
+                        color: sel ? AppColors.primary : AppColors.bgMuted,
                         borderRadius: BorderRadius.circular(AppRadius.md),
                       ),
                       child: Text(
@@ -3496,9 +3496,9 @@ class _PostJobFormState extends State<PostJobForm>
                 duration: const Duration(milliseconds: 160),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _isSameDayPay ? AppColors.bgCard : AppColors.bgMuted,
+                  color: _isSameDayPay ? AppColors.primaryLight : AppColors.bgMuted,
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: _isSameDayPay ? AppColors.textPrimary : Colors.transparent, width: 1.5),
+                  border: Border.all(color: _isSameDayPay ? AppColors.primary : Colors.transparent, width: 1.5),
                 ),
                 child: Row(
                   children: [
@@ -4177,10 +4177,10 @@ class _ToggleBtn extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
           decoration: BoxDecoration(
-            color: selected ? AppColors.bgCard : AppColors.bgMuted,
+            color: selected ? AppColors.primaryLight : AppColors.bgMuted,
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
-              color: selected ? AppColors.textPrimary : Colors.transparent,
+              color: selected ? AppColors.primary : Colors.transparent,
               width: 1.5,
             ),
           ),
@@ -4189,7 +4189,7 @@ class _ToggleBtn extends StatelessWidget {
             style: TextStyle(
               fontSize: AppFontSize.button,
               fontWeight: FontWeight.w700,
-              color: selected ? AppColors.textPrimary : AppColors.textSecondary,
+              color: selected ? AppColors.primary : AppColors.textSecondary,
             ),
           ),
         ),
@@ -4215,16 +4215,16 @@ class _SmallToggle extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: selected ? AppColors.bgCard : AppColors.bgMuted,
+            color: selected ? AppColors.primaryLight : AppColors.bgMuted,
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: selected ? AppColors.textPrimary : Colors.transparent, width: 1.5),
+            border: Border.all(color: selected ? AppColors.primary : Colors.transparent, width: 1.5),
           ),
           child: Center(
             child: Text(
               label,
               style: TextStyle(
                 fontWeight: FontWeight.w700,
-                color: selected ? AppColors.textPrimary : AppColors.textSecondary,
+                color: selected ? AppColors.primary : AppColors.textSecondary,
               ),
             ),
           ),
@@ -4302,9 +4302,9 @@ class _ExternalApplyOption extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: enabled ? AppColors.bgCard : AppColors.bgMuted,
+        color: enabled ? AppColors.primaryLight : AppColors.bgMuted,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: enabled ? AppColors.textPrimary : Colors.transparent, width: 1.5),
+        border: Border.all(color: enabled ? AppColors.primary : Colors.transparent, width: 1.5),
       ),
       child: Column(
         children: [
@@ -4770,9 +4770,9 @@ class _PublishSheetState extends State<_PublishSheet> {
         showCheckmark: false,
         onSelected: (_) => onTap(),
         labelStyle: AppTextStyles.body2.copyWith(color: on ? Colors.white : AppColors.textPrimary),
-        selectedColor: AppColors.textPrimary,
+        selectedColor: AppColors.primary,
         backgroundColor: AppColors.bgCard,
-        side: BorderSide(color: on ? AppColors.textPrimary : AppColors.border),
+        side: BorderSide(color: on ? AppColors.primary : AppColors.border),
         shape: const StadiumBorder(),
       ),
     );

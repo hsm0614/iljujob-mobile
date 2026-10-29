@@ -1262,7 +1262,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                             duration: const Duration(milliseconds: 150),
                             padding: const EdgeInsets.symmetric(horizontal: 14),
                             decoration: BoxDecoration(
-                              color: sel ? AppColors.textPrimary : Colors.white,
+                              color: sel ? AppColors.primary : Colors.white,
                               borderRadius: BorderRadius.circular(AppRadius.xl),
                               border: Border.all(
                                 color: sel ? Colors.transparent : AppColors.border,

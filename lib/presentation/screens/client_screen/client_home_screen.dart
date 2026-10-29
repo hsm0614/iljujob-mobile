@@ -1003,8 +1003,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     Widget chip(String label, bool on, VoidCallback onTap, {bool arrow = false}) => Padding(
       padding: const EdgeInsets.only(right: 8),
       child: Material(
-        color: on ? AppColors.textPrimary : AppColors.bgCard,
-        shape: StadiumBorder(side: BorderSide(color: on ? AppColors.textPrimary : AppColors.border)),
+        color: on ? AppColors.primary : AppColors.bgCard,
+        shape: StadiumBorder(side: BorderSide(color: on ? AppColors.primary : AppColors.border)),
         child: InkWell(
           customBorder: const StadiumBorder(),
           onTap: onTap,
