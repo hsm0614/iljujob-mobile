@@ -660,7 +660,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'AI 공고문 작성은 라이트 이상 구독자만\n이용할 수 있어요.',
+                'AI 공고문 작성은 구독자만\n이용할 수 있어요.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: AppFontSize.button,

@@ -117,7 +117,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
   /// '스탠다드 구독 중 · 12일 남음' / null(구독 안 함)
   String? _subLine() {
     if (!(_sub?.active ?? false)) return null;
-    const names = {'lite': '라이트', 'standard': '스탠다드', 'pro': '프로'};
+    const names = {'lite': '베이직', 'standard': '스탠다드', 'pro': '무제한'};
     final raw = (_sub!.plan ?? '').toLowerCase();
     final name = names.entries
         .firstWhere((e) => raw.contains(e.key), orElse: () => const MapEntry('', '구독'))

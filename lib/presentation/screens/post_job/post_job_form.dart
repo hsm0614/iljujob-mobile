@@ -3973,7 +3973,7 @@ class _PostJobFormState extends State<PostJobForm>
   void _showAiPaywall() {
     final planLabel =
         _subscriptionPlan == 'lite'
-            ? '라이트'
+            ? '베이직'
             : _subscriptionPlan == 'standard'
             ? '스탠다드'
             : null;
@@ -4029,7 +4029,7 @@ class _PostJobFormState extends State<PostJobForm>
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  '라이트는 월 3회, 프로는 무제한으로 사용할 수 있어요',
+                  '베이직은 월 3회, 무제한은 제한 없이 쓸 수 있어요',
                   style: TextStyle(
                     fontSize: AppFontSize.meta,
                     color: AppColors.textSecondary,

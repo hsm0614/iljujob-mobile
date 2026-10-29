@@ -136,7 +136,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
             ),
             const SizedBox(height: 8),
             const Text(
-              '임금 AI 리포트는 라이트 이상 구독자만\n이용할 수 있어요.',
+              '임금 AI 리포트는 구독자만\n이용할 수 있어요.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: AppFontSize.button,

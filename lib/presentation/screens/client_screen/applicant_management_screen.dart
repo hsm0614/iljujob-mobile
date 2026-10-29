@@ -9,6 +9,7 @@ import '../../../config/constants.dart';
 import '../../../data/services/authenticated_http_client.dart';
 import '../../../data/services/screen_analytics_service.dart';
 import '../../chat/chat_room_screen.dart'; // 경로 맞게 수정
+import '../../chat/work_confirmation_card.dart';
 import '../../widgets/albailju_common.dart';
 import '../../../config/app_theme.dart';
 import '../../../config/messages.dart';
@@ -34,6 +35,15 @@ class ApplicantModel {
   final bool isCanceled;
   final DateTime? canceledAt;
 
+  // 대화 상태 (2026-10-30) — 누구에게 답해야 하는지 목록에서 보이게
+  final int? chatRoomId;
+  final int unreadCount;
+  final String? lastMessage;
+  final DateTime? lastSentAt;
+  final String? lastSenderType;
+  /// 최신 근무 약속 상태 (proposed/accepted/…/completed/no_show)
+  final String? workStatus;
+
   ApplicantModel({
     required this.applicationId,
     required this.appliedAt,
@@ -48,6 +58,12 @@ class ApplicantModel {
     this.activityScore,
     this.isCanceled = false,
     this.canceledAt,
+    this.chatRoomId,
+    this.unreadCount = 0,
+    this.lastMessage,
+    this.lastSentAt,
+    this.lastSenderType,
+    this.workStatus,
   });
 
   factory ApplicantModel.fromJson(Map<String, dynamic> j) {
@@ -72,8 +88,29 @@ class ApplicantModel {
           j['canceled_at'] != null
               ? DateTime.tryParse('${j['canceled_at']}')
               : null,
+      chatRoomId: int.tryParse('${j['chat_room_id'] ?? ''}'),
+      unreadCount: int.tryParse('${j['unread_count'] ?? 0}') ?? 0,
+      lastMessage: j['last_message']?.toString(),
+      lastSentAt: j['last_sent_at'] != null ? DateTime.tryParse('${j['last_sent_at']}') : null,
+      lastSenderType: j['last_sender_type']?.toString(),
+      workStatus: j['work_status']?.toString(),
     );
   }
+
+  static const _confirmedWork = {'accepted', 'scheduled', 'day_before_confirmed', 'day_of_confirmed', 'checked_in'};
+
+  /// 단계 하나로 — 'pending'(채용 전) · 'proposed'(제안 보냄) · 'confirmed' · 'completed' · 'no_show' · 'canceled'
+  String get stage {
+    if (isCanceled) return 'canceled';
+    if (workStatus == 'no_show') return 'no_show';
+    if (isCompleted || workStatus == 'completed') return 'completed';
+    if (isConfirmed || _confirmedWork.contains(workStatus)) return 'confirmed';
+    if (workStatus == 'proposed') return 'proposed';
+    return 'pending';
+  }
+
+  /// 사장님이 답할 차례 — 안 읽은 게 있거나 마지막 말이 알바생
+  bool get needsReply => !isCanceled && (unreadCount > 0 || lastSenderType == 'worker');
 
   int get safeActivityScore => activityScore ?? 0;
 
@@ -109,10 +146,9 @@ class ApplicantModel {
   }
 
   int get sortWeight {
-    if (isCanceled) return 4; // 취소는 항상 맨 아래
-    if (isCompleted) return 3;
-    if (isConfirmed) return 2;
-    return 1;
+    if (isCanceled) return 5; // 취소는 항상 맨 아래
+    if (needsReply) return 0; // 답할 차례가 맨 위
+    return switch (stage) { 'pending' => 1, 'proposed' => 2, 'confirmed' => 3, _ => 4 };
   }
 }
 
@@ -123,6 +159,13 @@ class JobApplicantGroup {
   final String? startDate;
   final String jobStatus;
   final List<ApplicantModel> applicants;
+  // 출근 확정 제안 시트 기본값
+  final String? location;
+  final String? startTime;
+  final String? endTime;
+  final String? payType;
+  final int? pay;
+  final String? weekdays;
 
   JobApplicantGroup({
     required this.jobId,
@@ -131,6 +174,12 @@ class JobApplicantGroup {
     this.startDate,
     required this.jobStatus,
     required this.applicants,
+    this.location,
+    this.startTime,
+    this.endTime,
+    this.payType,
+    this.pay,
+    this.weekdays,
   });
 
   factory JobApplicantGroup.fromJson(Map<String, dynamic> j) {
@@ -150,6 +199,12 @@ class JobApplicantGroup {
       startDate: j['start_date'],
       jobStatus: j['job_status'] ?? '',
       applicants: list,
+      location: j['location']?.toString(),
+      startTime: j['start_time']?.toString(),
+      endTime: j['end_time']?.toString(),
+      payType: j['pay_type']?.toString(),
+      pay: int.tryParse('${j['pay'] ?? ''}'.split('.').first),
+      weekdays: j['weekdays']?.toString(),
     );
   }
 
@@ -185,12 +240,14 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   bool _bulkSending = false;
   String? _error;
   List<JobApplicantGroup> _groups = [];
-  int _totalCount = 0;
   int _currentPage = 1;
   final Map<int, bool> _expanded = {};
   final Map<int, Set<int>> _selectedByJob = {};
   /// 여러 명에게 메시지 — 선택 중인 공고(한 번에 하나)
   int? _selectingJob;
+  /// 상태 필터: all · reply(답장할 차례) · pending · confirmed · completed
+  String _filter = 'all';
+  bool _sortByScore = false;
   final Map<int, String> _visiblePhones = {};
   final Set<int> _phoneLoading = {};
 
@@ -229,12 +286,10 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
           (data['jobs'] as List? ?? [])
               .map((j) => JobApplicantGroup.fromJson(j))
               .toList();
-      final summary = data['summary'] as Map<String, dynamic>? ?? {};
 
       if (!mounted) return;
       setState(() {
         _groups = groups;
-        _totalCount = summary['total'] ?? 0;
         _loading = false;
         _currentPage = 1;
         _selectedByJob.clear();
@@ -251,12 +306,81 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     }
   }
 
-  int get _totalPages => (_groups.length / _jobsPerPage).ceil().clamp(1, 9999);
+  bool _matches(ApplicantModel a) => switch (_filter) {
+    'reply' => a.needsReply,
+    'pending' => a.stage == 'pending' || a.stage == 'proposed',
+    'confirmed' => a.stage == 'confirmed',
+    'completed' => a.stage == 'completed' || a.stage == 'no_show',
+    _ => true,
+  };
+
+  List<ApplicantModel> _visibleApplicants(JobApplicantGroup g) {
+    final list = g.applicants.where(_matches).toList();
+    if (_sortByScore) {
+      list.sort((a, b) {
+        if (a.isCanceled != b.isCanceled) return a.isCanceled ? 1 : -1;
+        return b.safeActivityScore.compareTo(a.safeActivityScore);
+      });
+    }
+    return list;
+  }
+
+  // 필터를 걸면 해당 지원자가 없는 공고는 숨긴다 (전체일 땐 지원자 0명 공고도 보인다)
+  List<JobApplicantGroup> get _visibleGroups =>
+      _filter == 'all' ? _groups : _groups.where((g) => g.applicants.any(_matches)).toList();
+
+  int get _totalPages => (_visibleGroups.length / _jobsPerPage).ceil().clamp(1, 9999);
 
   List<JobApplicantGroup> get _pagedGroups {
+    final groups = _visibleGroups;
     final start = (_currentPage - 1) * _jobsPerPage;
-    final end = (start + _jobsPerPage).clamp(0, _groups.length);
-    return _groups.sublist(start, end);
+    final end = (start + _jobsPerPage).clamp(0, groups.length);
+    return start >= groups.length ? const [] : groups.sublist(start, end);
+  }
+
+  // 행에서 바로 출근 확정 제안 — 채팅방이 없으면 만들고 연다 (서버가 방 단위로 약속을 묶는다)
+  Future<void> _proposeFromRow(ApplicantModel applicant, JobApplicantGroup group) async {
+    var roomId = applicant.chatRoomId;
+    try {
+      if (roomId == null) {
+        final res = await AuthenticatedHttpClient.postJson(
+          Uri.parse('$baseUrl/api/chat/start'),
+          body: {'workerId': applicant.workerId, 'jobId': group.jobId},
+        );
+        roomId = int.tryParse('${jsonDecode(res.body)['roomId'] ?? ''}');
+      }
+    } catch (_) {}
+    if (!mounted) return;
+    if (roomId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text(Msg.server)));
+      return;
+    }
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      backgroundColor: Colors.white,
+      builder:
+          (_) => ProposeWorkConfirmationSheet(
+            chatRoomId: roomId!,
+            jobId: group.jobId,
+            workerId: applicant.workerId,
+            clientId: prefs.getInt('userId') ?? 0,
+            jobLocation: group.location,
+            // 시급 공고일 때만 채운다 (채팅방과 같은 규칙 — 일급이 '시급' 칸에 들어갔었다)
+            defaultWage: group.payType == '시급' ? group.pay : null,
+            defaultStartTime: group.startTime,
+            defaultEndTime: group.endTime,
+            weekdays: group.weekdays,
+            onPropose: (_) {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('출근 확정 제안을 보냈어요')));
+              _fetch();
+            },
+          ),
+    );
   }
 
   // 채팅(=채용) 전에 지원자 프로필·신뢰도 확인
@@ -674,21 +798,59 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     );
   }
 
-  // ─── 요약 한 줄 ──────────────────────────────────────────────────
-  // 큰 숫자 상자 3개였던 것 → 한 줄. '미확인'은 실제로는 '채용 확정 전'이라 이름도 바꿨다.
+  // ─── 필터·정렬 ─────────────────────────────────────────────────
+  // 요약 숫자 한 줄이던 것 → 누를 수 있는 상태 칩. '답장할 차례'가 사장님이 제일 먼저 볼 것
   Widget _buildSummaryRow() {
-    final pending = _groups.fold(0, (s, g) => s + g.pendingCount);
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
-      child: Text.rich(
-        TextSpan(
-          style: AppTextStyles.body2,
-          children: [
-            TextSpan(text: '지원자 $_totalCount명', style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700)),
-            if (pending > 0) TextSpan(text: ' · 채용 확정 전 $pending명'),
-          ],
+    final all = [for (final g in _groups) ...g.applicants.where((a) => !a.isCanceled)];
+    int count(bool Function(ApplicantModel) f) => all.where(f).length;
+    final chips = <(String, String, int)>[
+      ('all', '전체', all.length),
+      ('reply', '답장할 차례', count((a) => a.needsReply)),
+      ('pending', '채용 전', count((a) => a.stage == 'pending' || a.stage == 'proposed')),
+      ('confirmed', '출근 확정', count((a) => a.stage == 'confirmed')),
+      ('completed', '끝남', count((a) => a.stage == 'completed' || a.stage == 'no_show')),
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final (key, label, n) in chips)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: Text('$label $n'),
+                    selected: _filter == key,
+                    showCheckmark: false,
+                    onSelected: (_) => setState(() {
+                      _filter = key;
+                      _currentPage = 1;
+                    }),
+                    labelStyle: AppTextStyles.body2.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: _filter == key ? Colors.white : AppColors.textPrimary,
+                    ),
+                    selectedColor: AppColors.primary,
+                    backgroundColor: AppColors.bgCard,
+                    side: BorderSide(color: _filter == key ? AppColors.primary : AppColors.border),
+                    shape: const StadiumBorder(),
+                  ),
+                ),
+            ],
+          ),
         ),
-      ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton.icon(
+            onPressed: () => setState(() => _sortByScore = !_sortByScore),
+            icon: const Icon(Icons.swap_vert_rounded, size: 18),
+            label: Text(_sortByScore ? '신뢰도 높은 순' : '답장할 차례 먼저'),
+            style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
+          ),
+        ),
+      ],
     );
   }
 
@@ -696,8 +858,9 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
 
   Widget _buildJobCard(JobApplicantGroup group) {
     final isExpanded = _expanded[group.jobId] ?? false;
-    final hasMore = group.applicants.length > _applicantsPreview;
-    final showList = isExpanded ? group.applicants : group.applicants.take(_applicantsPreview).toList();
+    final visible = _visibleApplicants(group);
+    final hasMore = visible.length > _applicantsPreview;
+    final showList = isExpanded ? visible : visible.take(_applicantsPreview).toList();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -725,7 +888,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   child: Center(
                     child: Text(
-                      isExpanded ? '접기' : '${group.applicants.length - _applicantsPreview}명 더보기',
+                      isExpanded ? '접기' : '${visible.length - _applicantsPreview}명 더보기',
                       style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -853,13 +1016,25 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       if (applicant.genderLabel.isNotEmpty) applicant.genderLabel,
       '${_timeAgo(applicant.appliedAt)} 지원',
     ].join(' · ');
-    // 상태 배지는 확정·완료만. '처리 필요'는 거의 모든 행에 붙어 정보가 없었다(Everyone-Has-It)
-    final status =
-        applicant.isCompleted
-            ? const JobSignalBadge(label: '근무 완료', signal: JobSignal.trust)
-            : applicant.isConfirmed
-            ? const JobSignalBadge(label: '출근 확정', signal: JobSignal.trust)
-            : null;
+    // 상태 배지는 진행된 단계만. '처리 필요'는 거의 모든 행에 붙어 정보가 없었다(Everyone-Has-It)
+    final status = switch (applicant.stage) {
+      'completed' => const JobSignalBadge(label: '근무 완료', signal: JobSignal.trust),
+      'confirmed' => const JobSignalBadge(label: '출근 확정', signal: JobSignal.trust),
+      'proposed' => const JobSignalBadge(label: '제안 보냄'),
+      'no_show' => const JobSignalBadge(label: '노쇼'),
+      _ => null,
+    };
+    // 대화 한 줄 — 안 읽음 / 답장 기다림 / 내가 보냄 / 아직 대화 안 함
+    final msg = (applicant.lastMessage ?? '').replaceAll('\n', ' ').trim();
+    final (convoLead, convoLeadColor) =
+        applicant.unreadCount > 0
+            ? ('새 메시지 ${applicant.unreadCount}', AppColors.badgeUrgent)
+            : applicant.lastSenderType == 'worker'
+            ? ('답장 기다려요', AppColors.textPrimary)
+            : msg.isNotEmpty
+            ? ('보냄', AppColors.textSecondary)
+            : ('아직 대화하지 않았어요', AppColors.textTertiary);
+    final canPropose = group.jobStatus == 'active' && applicant.stage == 'pending';
 
     return InkWell(
       // 선택 중이면 행 전체가 체크, 아니면 프로필(채팅 전 지원자 확인)
@@ -903,6 +1078,30 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(meta, style: AppTextStyles.body2),
+                  const SizedBox(height: 6),
+                  Text.rich(
+                    TextSpan(
+                      style: AppTextStyles.body2,
+                      children: [
+                        TextSpan(text: convoLead, style: TextStyle(color: convoLeadColor, fontWeight: FontWeight.w600)),
+                        if (msg.isNotEmpty) TextSpan(text: ' · $msg'),
+                      ],
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (!selecting && canPropose)
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _proposeFromRow(applicant, group),
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(
+                          '출근 확정 제안하기',
+                          style: AppTextStyles.body2.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ),
                   if (!selecting && (applicant.workerPhoneMasked.isNotEmpty || visiblePhone != null))
                     // 번호는 글자 한 줄 + 오른쪽 글자 링크. 회색 상자에 테두리까지 있던 것을 걷어냈다
                     GestureDetector(
@@ -939,9 +1138,10 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child:
-                    applicant.isConfirmed || applicant.isCompleted
-                        ? OutlinedButton(style: _rowBtn, onPressed: () => _goToChat(applicant, group), child: const Text('채팅'))
-                        : ElevatedButton(style: _rowBtn, onPressed: () => _goToChat(applicant, group), child: const Text('채팅')),
+                    // 파랑은 지금 할 일(답장할 차례·채용 전)에만
+                    applicant.needsReply || applicant.stage == 'pending'
+                        ? ElevatedButton(style: _rowBtn, onPressed: () => _goToChat(applicant, group), child: Text(applicant.needsReply ? '답장' : '채팅'))
+                        : OutlinedButton(style: _rowBtn, onPressed: () => _goToChat(applicant, group), child: const Text('채팅')),
               ),
             ],
           ],

@@ -1,6 +1,6 @@
 // lib/presentation/screens/subscription_plans_screen.dart
 //
-// 알바일주 구독 플랜 선택 화면 (라이트/프로)
+// 알바일주 구독 플랜 선택 화면 (베이직/무제한 — 내부 키는 lite/pro)
 import 'dart:async';
 import 'package:iljujob/widget/app_ui.dart';
 import 'dart:convert';
@@ -543,7 +543,7 @@ class _CompareTable extends StatelessWidget {
                 Expanded(
                   child: Center(
                     child: Text(
-                      '라이트',
+                      '베이직',
                       style: TextStyle(
                         fontSize: AppFontSize.caption,
                         fontWeight: FontWeight.w700,
@@ -555,7 +555,7 @@ class _CompareTable extends StatelessWidget {
                 Expanded(
                   child: Center(
                     child: Text(
-                      '프로',
+                      '무제한',
                       style: TextStyle(
                         fontSize: AppFontSize.caption,
                         fontWeight: FontWeight.w700,

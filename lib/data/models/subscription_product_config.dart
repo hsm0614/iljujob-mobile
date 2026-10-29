@@ -44,7 +44,7 @@ CheckoutProvider checkoutProviderForPlatform({required bool isIos}) =>
 const subscriptionProductConfigs = [
   SubscriptionProductConfig(
     key: 'lite',
-    name: '라이트',
+    name: '베이직',
     price: 29000,
     instantCredits: 3,
     urgentCredits: 0,
@@ -59,7 +59,7 @@ const subscriptionProductConfigs = [
   ),
   SubscriptionProductConfig(
     key: 'pro',
-    name: '프로',
+    name: '무제한',
     price: 95000,
     instantCredits: 0,
     urgentCredits: 0,

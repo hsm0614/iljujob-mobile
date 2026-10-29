@@ -17,11 +17,11 @@ import '../../data/models/subscription_product_config.dart';
 String _planLabel(String? plan) {
   switch (plan?.toLowerCase()) {
     case 'lite':
-      return '라이트';
+      return '베이직';
     case 'standard':
       return '스탠다드';
     case 'pro':
-      return '프로';
+      return '무제한';
     default:
       return plan?.toUpperCase() ?? '';
   }
