@@ -17,8 +17,6 @@ import '../../../data/services/ai_api.dart';
 import 'package:iljujob/widget/recommended_workers_sheet.dart';
 import 'package:iljujob/presentation/screens/worker_screen/job_insight_sheet.dart';
 import 'package:iljujob/presentation/screens/client_screen/wage_report_screen.dart';
-import 'package:iljujob/presentation/screens/post_job/SelectPreviousJobScreen.dart';
-import 'package:iljujob/presentation/screens/post_job/quick_post_sheet.dart';
 import 'package:iljujob/widget/app_ui.dart';
 import 'package:iljujob/widget/app_motion.dart';
 import 'package:iljujob/config/app_theme.dart';
@@ -90,8 +88,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   // Data
   List<Job> myJobs = [];
-  // 서버 원본 — 빠른 등록 시트(QuickPostSheet)가 원본 키('is_same_day_pay'==1 등)를 읽는다
-  List<Map<String, dynamic>> _myJobsRaw = [];
   bool isLoading = false;
   static const String _bannerHideUntilKey = 'client_banner_hide_until';
   static const String _legacyBannerHiddenKey = 'client_banner_hidden';
@@ -382,12 +378,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        final raw = (data['jobs'] as List).whereType<Map>().map((m) => Map<String, dynamic>.from(m)).toList();
-        final jobs = raw.map(Job.fromJson).toList();
+        final jobs =
+            (data['jobs'] as List).map((json) => Job.fromJson(json)).toList();
         if (!mounted) return;
         setState(() {
           myJobs = jobs;
-          _myJobsRaw = raw;
           currentPage = targetPage;
           totalPages = data['pagination']['totalPages'] ?? 1;
           totalCount = data['pagination']['totalCount'] ?? 0;
@@ -1835,125 +1830,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     }
 
     // 사업자 인증 체크 제거 — 바로 공고 등록으로.
-    // 올린 공고가 있으면 '이전 공고 불러오기'를 같이 묻는다 (목록 위 빠른 등록 카드를 여기로 합침)
-    if (myJobs.isEmpty) {
-      Navigator.pushNamed(context, '/post_job');
-      return;
-    }
-    // 설정식 두 줄('이전 공고 불러와 올리기 >' / '새 공고 쓰기 >') → 지난 공고를 바로 보여주고 하나 누르면 바로 불러온다.
-    // 예전엔 '불러와 올리기'를 누르면 목록 화면이 한 번 더 열렸다.
-    final recent = [..._myJobsRaw]
-      ..sort((a, b) => '${b['created_at'] ?? ''}'.compareTo('${a['created_at'] ?? ''}'));
-    final shown = recent.take(3).toList();
-    final v = await showModalBottomSheet<Object>(
-      context: context,
-      isScrollControlled: true,
-      showDragHandle: true,
-      builder:
-          (ctx) => SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text('공고 올리기', style: AppTextStyles.h2),
-                  const SizedBox(height: 4),
-                  const Text('지난 공고를 고르면 날짜와 급여만 바꿔 바로 올릴 수 있어요', style: AppTextStyles.body2),
-                  const SizedBox(height: 16),
-                  for (final j in shown)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Material(
-                        color: AppColors.bgMuted,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
-                          onTap: () => Navigator.pop(ctx, j),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
-                            child: Row(
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        '${j['title'] ?? ''}',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        [
-                                          formatJobPay('${j['pay'] ?? ''}', '${j['pay_type'] ?? ''}', includeType: true),
-                                          if ('${j['location'] ?? ''}'.isNotEmpty) '${j['location']}',
-                                        ].join(' · '),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: AppTextStyles.body2,
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  '불러오기',
-                                  style: AppTextStyles.body2.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (recent.length > shown.length)
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(ctx, 'quick'),
-                        style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary, padding: EdgeInsets.zero),
-                        child: Text('지난 공고 ${recent.length}개 전체 보기 >'),
-                      ),
-                    ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    height: 52,
-                    child: OutlinedButton.icon(
-                      onPressed: () => Navigator.pop(ctx, 'new'),
-                      icon: const Icon(Icons.add_rounded, size: 20),
-                      label: const Text('새 공고 쓰기'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.textPrimary,
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-    );
-    if (!mounted || v == null) return;
-    if (v is Map<String, dynamic>) {
-      FirebaseAnalytics.instance.logEvent(name: 'client_quick_post_tap');
-      await QuickPostSheet.show(context, job: v);
-    } else if (v == 'quick') {
-      await _goToQuickPostFlow();
-    } else if (v == 'new') {
-      Navigator.pushNamed(context, '/post_job');
-    }
-  }
-
-  Future<void> _goToQuickPostFlow() async {
-    FirebaseAnalytics.instance.logEvent(name: 'client_quick_post_tap');
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => const SelectPreviousJobScreen(quickMode: true),
-      ),
-    );
+    // 앞에 '지난 공고 / 새 공고' 선택 시트를 두었다가 뺐다(대표 10/29) — 지난 공고는 작성 1단계에서 바로 채운다
+    Navigator.pushNamed(context, '/post_job');
   }
 
   @override

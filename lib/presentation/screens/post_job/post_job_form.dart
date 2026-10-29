@@ -157,6 +157,8 @@ class _PostJobFormState extends State<PostJobForm>
   String? _subscriptionPlan;
   int _aiQuotaRemaining = 0;
   bool _aiQuotaLoaded = false;
+  // 1단계 '최근에 올린 공고' (서버 원본 — _fillFromJob이 원본 키를 읽는다). 다시 올리기·수정이 아닐 때만
+  List<Map<String, dynamic>> _recentJobs = [];
   // 급여 단위 의심을 사장님이 '맞아요'로 확인한 값 ('일급:3000000'). 금액·단위가 바뀌면 다시 묻는다
   String? _payUnitAckFor;
   String? get _payUnitMsg => isNegotiablePayType(_payType) ? null : payUnitSuspect(_payType, _pay);
@@ -477,11 +479,23 @@ class _PostJobFormState extends State<PostJobForm>
     }
   }
 
+  Future<void> _loadRecentJobs(int clientId) async {
+    try {
+      final res = await AuthenticatedHttpClient.get(
+        Uri.parse('$baseUrl/api/job/my-jobs?clientId=$clientId&page=1&limit=3'),
+      ).timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200 || !mounted) return;
+      final list = (jsonDecode(res.body)['jobs'] as List? ?? const []).whereType<Map>().map((m) => Map<String, dynamic>.from(m)).toList();
+      setState(() => _recentJobs = list);
+    } catch (_) {} // 없으면 안 보일 뿐 — 작성은 그대로 된다
+  }
+
   Future<void> _loadInitialData() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final clientId = prefs.getInt('userId');
       if (clientId != null) await _fetchClientProfile(clientId);
+      if (clientId != null && !widget.isRepost) unawaited(_loadRecentJobs(clientId));
     } catch (e) {
       // 프로필 조회가 실패해도 재등록 데이터와 임시저장 복구는 계속 진행한다.
       _trackFail('client_profile_load_failed', {'message': e.toString()});
@@ -1373,8 +1387,8 @@ class _PostJobFormState extends State<PostJobForm>
       _majorCat = majorOfCategory(_category);
       _location = job['location'] ?? '';
       _locationCity = job['location_city'] ?? '';
-      _lat = (job['lat'] ?? 0.0) as double;
-      _lng = (job['lng'] ?? 0.0) as double;
+      _lat = (job['lat'] as num?)?.toDouble() ?? 0.0;
+      _lng = (job['lng'] as num?)?.toDouble() ?? 0.0;
       _extraLocations
         ..clear()
         ..addAll(
@@ -1397,6 +1411,12 @@ class _PostJobFormState extends State<PostJobForm>
               ? DateTime.tryParse(job['end_date'])?.toLocal()
               : null;
       _endDate = parsedEnd ?? _startDate;
+      // 지난 근무일은 불러오지 않는다 — 그대로 두면 등록 때 서버가 PAST_WORK_DATE로 막는다
+      final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+      if ((_endDate ?? _startDate) != null && (_endDate ?? _startDate)!.isBefore(today)) {
+        _startDate = null;
+        _endDate = null;
+      }
       _startTime = _parseTime(job['start_time']);
       _endTime = _parseTime(job['end_time']);
       _timeNegotiable =
@@ -1836,46 +1856,6 @@ class _PostJobFormState extends State<PostJobForm>
   Widget _buildQ0() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Semantics(
-        button: true,
-        label: '이전 공고 불러오기',
-        child: GestureDetector(
-          onTap: () async {
-            final job = await Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const SelectPreviousJobScreen(),
-              ),
-            );
-            if (job != null) _fillFromJob(job);
-          },
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.bgPage,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: AppColors.border),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.history_rounded, size: 16, color: AppColors.textSecondary),
-                SizedBox(width: 8),
-                Text(
-                  '이전 공고 불러오기',
-                  style: TextStyle(
-                    fontSize: AppFontSize.body2,
-                    color: AppColors.textSecondary,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                Spacer(),
-                Icon(Icons.chevron_right_rounded, size: 16, color: AppColors.textSecondary),
-              ],
-            ),
-          ),
-        ),
-      ),
       TextField(
         controller: _titleCtrl,
         autofocus: false,
@@ -1918,8 +1898,85 @@ class _PostJobFormState extends State<PostJobForm>
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
         ),
       ),
+      // 지난 공고로 채우기 — '공고 올리기' 앞의 선택 시트를 없애고 여기로 (2026-10, 대표)
+      if (_recentJobs.isNotEmpty) ...[
+        const SizedBox(height: 20),
+        Row(
+          children: [
+            const Expanded(child: Text('또는 지난 공고로 채우기', style: AppTextStyles.body2)),
+            GestureDetector(
+              onTap: () async {
+                final job = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SelectPreviousJobScreen()),
+                );
+                if (job != null) _fillFromRecent(job);
+              },
+              child: Text('전체 보기 >', style: AppTextStyles.body2.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        for (final j in _recentJobs)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Material(
+              color: AppColors.bgMuted,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                onTap: () => _fillFromRecent(j),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${j['title'] ?? ''}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              [
+                                formatJobPay('${j['pay'] ?? ''}', '${j['pay_type'] ?? ''}', includeType: true),
+                                if ('${j['location'] ?? ''}'.isNotEmpty) '${j['location']}',
+                              ].join(' · '),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.body2,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text('채우기', style: AppTextStyles.body2.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     ],
   );
+
+  /// 지난 공고로 모든 단계를 채우고 안내 — 이후 단계는 '다음'만 눌러 확인하면 된다
+  void _fillFromRecent(Map<String, dynamic> job) {
+    _fillFromJob(job);
+    _trackPost('job_post_fill_from_recent');
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(_startDate == null ? '지난 공고 내용으로 채웠어요 · 근무 날짜만 새로 골라 주세요' : '지난 공고 내용으로 채웠어요 · 단계마다 확인해 주세요'),
+        ),
+      );
+  }
 
   // Q1: 업종
   Widget _buildQ1() {
