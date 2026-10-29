@@ -886,61 +886,60 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     );
   }
 
-  // 답장 안 한 지원자 — 있을 때만, 회색 한 줄 (파랑은 누를 수 있는 글자에만)
-  Widget _buildUnansweredBanner() {
-    if (unansweredCount <= 0) return const SizedBox.shrink();
-    return Material(
-      color: AppColors.bgCard,
-      child: InkWell(
-        onTap: widget.onOpenApplicants,
-        child: Container(
-          margin: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-          decoration: BoxDecoration(
-            color: AppColors.bgMuted,
-            borderRadius: BorderRadius.circular(AppRadius.md),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text.rich(
-                  TextSpan(
-                    style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary),
-                    children: [
-                      const TextSpan(text: '답장 기다리는 지원자 '),
-                      TextSpan(
-                        text: '$unansweredCount명',
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                    ],
-                  ),
+  // 위쪽 안내 줄 공용 모양 — 회색 바탕 한 줄, 오른쪽 화살표 (파랑은 누를 글자에만)
+  Widget _noticeRow({required IconData icon, required InlineSpan text, required VoidCallback? onTap}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      child: Material(
+        color: AppColors.bgMuted,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+            child: Row(
+              children: [
+                Icon(icon, size: 18, color: AppColors.textSecondary),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text.rich(text, style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary)),
                 ),
-              ),
-              const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.textTertiary),
-            ],
+                const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.textTertiary),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // 안심기업 인증 — 주황 카드 → 목록 맨 아래 회색 한 줄
+  // 답장 기다리는 지원자 — 있을 때만
+  Widget _buildUnansweredBanner() {
+    if (unansweredCount <= 0) return const SizedBox.shrink();
+    return _noticeRow(
+      icon: Icons.mark_chat_unread_outlined,
+      onTap: widget.onOpenApplicants,
+      text: TextSpan(
+        children: [
+          const TextSpan(text: '답장 기다리는 지원자 '),
+          TextSpan(text: '$unansweredCount명', style: const TextStyle(fontWeight: FontWeight.w700)),
+        ],
+      ),
+    );
+  }
+
+  // 안심기업 인증 — 주황 카드 → 같은 회색 안내 줄 (인증 전까지 위에 남는다)
   Widget _buildSafeCompanyPrompt() {
     if (isSafeCompany) return const SizedBox.shrink();
-    return InkWell(
+    return _noticeRow(
+      icon: Icons.verified_user_outlined,
       onTap: () => Navigator.pushNamed(context, '/edit_profile'),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 16, 16, 16),
-        child: Row(
-          children: [
-            const Icon(Icons.verified_user_outlined, size: 18, color: AppColors.textTertiary),
-            const SizedBox(width: 8),
-            const Expanded(
-              child: Text('안심기업 인증을 받으면 공고에 인증 표시가 붙어요', style: AppTextStyles.body2),
-            ),
-            Text('인증하기', style: AppTextStyles.body2.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600)),
-          ],
-        ),
+      text: const TextSpan(
+        children: [
+          TextSpan(text: '안심기업 인증', style: TextStyle(fontWeight: FontWeight.w700)),
+          TextSpan(text: '을 받으면 공고에 인증 표시가 붙어요'),
+        ],
       ),
     );
   }
@@ -1217,46 +1216,129 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   }
 
   // ======= Job Cards =======
-  // ⋯ 공고 관리 — 카드에서 뺀 행동이 모두 여기. 인사이트·맞춤 인재는 구독 전용이라 안내를 붙였다(각 화면이 구독을 다시 확인).
+  // ⋯ 공고 관리 (토스 액션 시트 모양, 2026-10): 공고 요약 → 자주 쓰는 두 칸(지원자·수정)
+  // → 이 상태에서 할 일 하나(파란 버튼) → 나머지는 화살표 없는 짧은 줄 → 삭제는 맨 아래 작은 빨간 글자.
   Future<void> _openJobActions(Job job) async {
     final isClosed = job.status == 'closed';
     final reserved = isJobReserved(job);
-    Widget row(IconData icon, String label, String value, {String? subtitle}) =>
-        AppMenuRow(icon: icon, label: label, subtitle: subtitle, onTap: () => Navigator.pop(context, value));
+    final when = [
+      if (formatWorkDays(job.startDate, job.endDate, job.weekdays) case final d?) d,
+      if (job.workingHours.replaceAll('~', '').trim().isNotEmpty) job.workingHours,
+    ].join(' ');
+
+    // 상태별 주 행동 (카드 맨 아래 줄과 같은 것)
+    final (String, String)? primary =
+        isClosed
+            ? ('같은 조건으로 다시 올리기', 'repost')
+            : reserved && !job.isPaid
+            ? ('지금 바로 공개 · 즉시 게시 이용권 1개', 'publish-now')
+            : reserved
+            ? ('예약 공고 바로 공개', 'publish-now')
+            : job.isUrgent
+            ? ('근처 알바생에게 긴급 호출', 'urgent-call')
+            : null;
 
     final v = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
-      builder:
-          (ctx) => SafeArea(
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                    child: Text(job.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTextStyles.h3),
-                  ),
-                  row(Icons.people_outline_rounded, '지원자 보기', 'applicants'),
-                  if (!isClosed) row(Icons.edit_outlined, '공고 수정', 'edit'),
-                  if (reserved) row(Icons.publish_rounded, job.isPaid ? '예약 공고 바로 공개' : '지금 바로 공개', 'publish-now', subtitle: job.isPaid ? null : '즉시 게시 이용권 1개'),
-                  if (!isClosed && job.isUrgent) row(Icons.bolt_rounded, '긴급 호출 보내기', 'urgent-call'),
-                  if (isClosed) row(Icons.replay_rounded, '같은 조건으로 다시 올리기', 'repost'),
-                  row(Icons.insights_rounded, '공고 인사이트', 'insight', subtitle: '구독 전용'),
-                  row(Icons.analytics_outlined, '임금 리포트', 'wage', subtitle: '같은 업종·지역 급여와 비교'),
-                  if (!isClosed) row(Icons.person_search_outlined, '맞춤 인재 추천', 'recommend', subtitle: '구독 전용'),
-                  const Divider(height: 1, color: AppColors.borderSub),
-                  ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-                    title: Text('공고 삭제', style: AppTextStyles.body1.copyWith(color: AppColors.error)),
-                    onTap: () => Navigator.pop(ctx, 'delete'),
-                  ),
-                  const SizedBox(height: 8),
-                ],
+      showDragHandle: true,
+      builder: (ctx) {
+        Widget tile(IconData icon, String label, String value, {String? sub}) => Expanded(
+          child: Material(
+            color: AppColors.bgMuted,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              onTap: () => Navigator.pop(ctx, value),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                child: Column(
+                  children: [
+                    Icon(icon, size: 22, color: AppColors.textPrimary),
+                    const SizedBox(height: 6),
+                    Text(sub == null ? label : '$label $sub', style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                  ],
+                ),
               ),
             ),
           ),
+        );
+        Widget line(String label, String value, {bool locked = false}) => InkWell(
+          onTap: () => Navigator.pop(ctx, value),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            child: Row(
+              children: [
+                Expanded(child: Text(label, style: AppTextStyles.body1)),
+                if (locked)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(color: AppColors.bgMuted, borderRadius: BorderRadius.circular(AppRadius.full)),
+                    child: const Text('구독', style: AppTextStyles.caption),
+                  ),
+              ],
+            ),
+          ),
+        );
+
+        return SafeArea(
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(job.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTextStyles.h3),
+                      const SizedBox(height: 2),
+                      Text(
+                        [if (when.isNotEmpty) when, formatJobPay(job.pay, job.payType, includeType: true)].join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.body2,
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      tile(Icons.people_outline_rounded, '지원자', 'applicants', sub: '${job.applicantCount}'),
+                      const SizedBox(width: 8),
+                      if (!isClosed)
+                        tile(Icons.edit_outlined, '수정', 'edit')
+                      else
+                        tile(Icons.description_outlined, '공고 보기', 'detail'),
+                    ],
+                  ),
+                ),
+                if (primary != null)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                    child: AppPrimaryButton(label: primary.$1, onPressed: () => Navigator.pop(ctx, primary.$2)),
+                  ),
+                const SizedBox(height: 12),
+                const Divider(height: 1, color: AppColors.borderSub),
+                line('공고 인사이트', 'insight', locked: true),
+                if (!isClosed) line('맞춤 인재 추천', 'recommend', locked: true),
+                line('임금 리포트 · 같은 업종 급여 비교', 'wage'),
+                const Divider(height: 1, color: AppColors.borderSub),
+                InkWell(
+                  onTap: () => Navigator.pop(ctx, 'delete'),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    child: Text('공고 삭제', style: AppTextStyles.body1.copyWith(color: AppColors.error)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
 
     if (v == null || !mounted) return;
@@ -1825,7 +1907,18 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             SliverToBoxAdapter(
               child: Container(
                 color: AppColors.bgCard,
-                child: Column(children: [_buildUnansweredBanner(), _buildSearchBar()]),
+                child: Column(
+                  children: [
+                    // 원더 배너는 위 (대표 결정 10/29) — 공고 사이에 끼우면 카드 흐름이 끊긴다
+                    const AdBannerWidget(
+                      placement: 'app_home_owner',
+                      margin: EdgeInsets.fromLTRB(20, 0, 20, 12),
+                    ),
+                    _buildUnansweredBanner(),
+                    _buildSafeCompanyPrompt(),
+                    _buildSearchBar(),
+                  ],
+                ),
               ),
             ),
             const SliverToBoxAdapter(child: Divider(height: 1, color: AppColors.border)),
@@ -1837,25 +1930,14 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               SliverList.builder(
                 itemCount: jobs.length,
                 itemBuilder:
-                    (context, index) => Column(
-                      children: [
-                        AppFadeSlideIn(
-                          key: ValueKey('cjob_${jobs[index].id}'),
-                          index: index,
-                          child: _buildJobCard(jobs[index], last: index == jobs.length - 1),
-                        ),
-                        // 배너는 공고 3개 뒤 (공고가 먼저) — 3개 미만이면 맨 끝
-                        if (index == 2 || (jobs.length < 3 && index == jobs.length - 1))
-                          const AdBannerWidget(
-                            placement: 'app_home_owner',
-                            margin: EdgeInsets.fromLTRB(20, 12, 20, 12),
-                          ),
-                      ],
+                    (context, index) => AppFadeSlideIn(
+                      key: ValueKey('cjob_${jobs[index].id}'),
+                      index: index,
+                      child: _buildJobCard(jobs[index], last: index == jobs.length - 1),
                     ),
               ),
               SliverToBoxAdapter(child: _buildPaginationWidget()),
             ],
-            SliverToBoxAdapter(child: _buildSafeCompanyPrompt()),
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),
