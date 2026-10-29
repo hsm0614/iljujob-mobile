@@ -136,10 +136,6 @@
 	<string>이 앱은 로컬 네트워크에 연결하여 데이터를 전송하기 위해 권한이 필요합니다.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>내 주변 공고 추천을 위해 현재 위치 정보가 사용됩니다.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>'상시 위치 공유'를 켜면 앱을 닫은 동안에도 내 주변에 새로 올라온 알바를 먼저 추천받고, 사장님의 긴급 호출 후보에 들어갑니다. 설정에서 언제든 끌 수 있습니다.</string>
-	<key>NSLocationAlwaysUsageDescription</key>
-	<string>'상시 위치 공유'를 켜면 앱을 닫은 동안에도 내 주변에 새로 올라온 알바를 먼저 추천받고, 사장님의 긴급 호출 후보에 들어갑니다. 설정에서 언제든 끌 수 있습니다.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>프로필 사진 등록 또는 공고 등록 시 사진을 선택하기 위해 앨범 접근 권한이 필요합니다.</string>
 	<key>NSPushNotificationUsageDescription</key>
@@ -181,7 +177,6 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
-		<string>location</string>
 	</array>
 	<key>UIDeviceFamily</key>
 	<array>

@@ -8,9 +8,7 @@ import 'dart:async'; // TimeoutException
 import '../../../config/constants.dart'; // baseUrl
 import '../../../data/services/authenticated_http_client.dart';
 import '../../../data/services/screen_analytics_service.dart';
-import 'package:geolocator/geolocator.dart';
 
-import '../../../data/services/background_location_service.dart';
 import 'edit_worker_profile_screen.dart';
 import 'labor_consult_screen.dart';
 import '../../../config/app_theme.dart';
@@ -55,42 +53,12 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
   int _cancelPenalty = 0;
 
 
-  bool _alwaysLocation = false;
 
   @override
   void initState() {
     super.initState();
     ScreenAnalyticsService.instance.logScreenView('worker_my_page');
     _bootstrap();
-    BackgroundLocationService.isEnabled().then((on) {
-      if (mounted) setState(() => _alwaysLocation = on);
-    });
-  }
-
-  // 상시 위치 공유. '항상 허용' 을 못 받으면 켜지지 않는다 —
-  // 안드로이드 11+ 는 앱이 직접 줄 수 없고 설정 화면에서만 줄 수 있다.
-  Future<void> _toggleAlwaysLocation() async {
-    if (_alwaysLocation) {
-      await BackgroundLocationService.disable();
-      if (!mounted) return;
-      setState(() => _alwaysLocation = false);
-      return;
-    }
-
-    final ok = await BackgroundLocationService.enable();
-    if (!mounted) return;
-    setState(() => _alwaysLocation = ok);
-    if (!ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('위치 권한을 \'항상 허용\' 으로 바꿔야 켤 수 있어요.'),
-          action: SnackBarAction(
-            label: '설정 열기',
-            onPressed: Geolocator.openAppSettings,
-          ),
-        ),
-      );
-    }
   }
 
   Future<void> _bootstrap() async {
@@ -519,17 +487,6 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
                       label: '알림 설정',
                       onTap:
                           () => Navigator.pushNamed(context, '/notifications'),
-                    ),
-                    AppMenuRow(
-                      icon: Icons.near_me_outlined,
-                      label: '상시 위치 공유',
-                      subtitle: '앱을 닫아도 근처 사장님의 급구 연락을 받아요',
-                      onTap: _toggleAlwaysLocation,
-                      trailing: Switch.adaptive(
-                        value: _alwaysLocation,
-                        activeTrackColor: AppColors.primary,
-                        onChanged: (_) => _toggleAlwaysLocation(),
-                      ),
                     ),
                   ],
                 ),
