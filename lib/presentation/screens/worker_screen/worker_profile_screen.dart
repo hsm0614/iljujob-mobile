@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../../../config/constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/services/authenticated_http_client.dart';
 import '../../../config/messages.dart';
 import '../../../config/app_theme.dart';
+import '../../../widget/app_ui.dart';
 
 class WorkerProfileScreen extends StatefulWidget {
   final int workerId;
@@ -60,115 +60,98 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
   }
 
   Future<void> _fetchProfile(int workerId) async {
-    try {
-      final profileRes = await http.get(
-        Uri.parse('$baseUrl/api/worker/profile?id=$workerId'),
-      );
-      final expRes = await http.get(
-        Uri.parse('$baseUrl/api/worker/experiences?workerId=$workerId'),
-      );
-      final licenseRes = await http.get(
-        Uri.parse('$baseUrl/api/worker/licenses?workerId=$workerId'),
-      );
-
-      print(
-        '📥 프로필 응답: ${profileRes.statusCode}, '
-        '경력 응답: ${expRes.statusCode}, '
-        '자격증 응답: ${licenseRes.statusCode}',
-      );
-
-      if (profileRes.statusCode == 200) {
-        final profileData = jsonDecode(profileRes.body);
-        final resumeAllowed = _parseResumeFlag(profileData['resume_consent']);
-        setState(() {
-          profile = profileData;
-          canViewResume = resumeAllowed;
-        });
+    // 토큰을 붙인다 — 서버가 이력서 열람 동의를 요청자 기준으로 판정하고, 토큰 없으면 이름을 가려 보낸다
+    Future<dynamic> getJson(String path) async {
+      try {
+        final res = await AuthenticatedHttpClient.get(Uri.parse('$baseUrl$path'));
+        return res.statusCode == 200 ? jsonDecode(res.body) : null;
+      } catch (_) {
+        return null;
       }
-
-      final scoreRes = await http.get(
-        Uri.parse('$baseUrl/api/worker/activity-score?workerId=$workerId'),
-      );
-      if (scoreRes.statusCode == 200) {
-        final scoreData = jsonDecode(scoreRes.body);
-        setState(() {
-          _activityScore = (scoreData['total_score'] ?? 0) as int;
-          _activityGrade = (scoreData['grade'] ?? 'NEW').toString();
-        });
-      }
-
-      if (expRes.statusCode == 200) {
-        final expData = jsonDecode(expRes.body);
-        setState(() {
-          experiences = List<Map<String, dynamic>>.from(expData);
-        });
-      }
-
-      if (licenseRes.statusCode == 200) {
-        final licenseData = jsonDecode(licenseRes.body);
-        setState(() {
-          licenses = List<Map<String, dynamic>>.from(licenseData);
-        });
-      }
-    } catch (e) {
-      print('❌ 프로필 불러오기 실패: $e');
-    } finally {
-      setState(() => isLoading = false);
     }
+
+    final r = await Future.wait([
+      getJson('/api/worker/profile?id=$workerId'),
+      getJson('/api/worker/experiences?workerId=$workerId'),
+      getJson('/api/worker/licenses?workerId=$workerId'),
+      getJson('/api/worker/activity-score?workerId=$workerId'),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      if (r[0] is Map) {
+        profile = Map<String, dynamic>.from(r[0]);
+        canViewResume = _parseResumeFlag(profile!['resume_consent']);
+      }
+      if (r[1] is List) experiences = List<Map<String, dynamic>>.from(r[1]);
+      if (r[2] is List) licenses = List<Map<String, dynamic>>.from(r[2]);
+      if (r[3] is Map) {
+        _activityScore = (r[3]['total_score'] as num?)?.toInt() ?? 0;
+        _activityGrade = (r[3]['grade'] ?? 'NEW').toString();
+      }
+      isLoading = false;
+    });
   }
 
-  String getBirthYear() {
-    final raw = profile?['birth_year']?.toString() ?? '';
-    return raw.length >= 4 ? raw.substring(0, 4) : '없음';
+  String get _ageGender {
+    final y = int.tryParse((profile?['birth_year'] ?? '').toString().padRight(4).substring(0, 4).trim());
+    final g = profile?['gender'];
+    return [
+      if (y != null && y > 1900) '${DateTime.now().year - y}세',
+      if (g == 'male' || g == '남') '남' else if (g == 'female' || g == '여') '여',
+    ].join(' · ');
   }
 
-  void _showBlockDialog(String targetType, int targetId) {
-    showDialog(
+  Future<void> _block(String targetType, int targetId) async {
+    if (isBlocked) return;
+    final ok = await showAppSheet(
+      context,
+      title: '이 알바생을 차단할까요?',
+      message: '차단하면 채팅과 지원을 더 주고받을 수 없어요.',
+      confirmLabel: '차단하기',
+      cancelLabel: '취소',
+      destructive: true,
+    );
+    if (!ok || !mounted) return;
+    final prefs = await SharedPreferences.getInstance();
+    final response = await AuthenticatedHttpClient.postJson(
+      Uri.parse('$baseUrl/api/user-block/block'),
+      body: {'userId': prefs.getInt('userId') ?? 0, 'targetId': targetId, 'targetType': targetType},
+    );
+    if (!mounted) return;
+    if (response.statusCode == 200) setState(() => isBlocked = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(response.statusCode == 200 ? '차단했어요.' : Msg.server)),
+    );
+  }
+
+  // 신고·차단은 자주 쓰는 게 아니다 — 앱바에 빨간 신고·검정 차단 아이콘이 늘 떠 있던 것을 ⋯ 하나로
+  void _showMoreSheet() {
+    showModalBottomSheet(
       context: context,
       builder:
-          (_) => AlertDialog(
-            title: const Text('사용자 차단'),
-            content: const Text(
-              '해당 사용자를 차단하시겠습니까?\n'
-              '차단 시 더 이상 채팅 및 지원 등의 상호작용이 제한됩니다.',
+          (ctx) => SafeArea(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ListTile(
+                  title: const Text('신고하기'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _showReportDialog('worker', widget.workerId);
+                  },
+                ),
+                ListTile(
+                  title: Text(isBlocked ? '차단한 알바생이에요' : '차단하기', style: TextStyle(color: isBlocked ? AppColors.textTertiary : AppColors.error)),
+                  onTap:
+                      isBlocked
+                          ? null
+                          : () {
+                            Navigator.pop(ctx);
+                            _block('worker', widget.workerId);
+                          },
+                ),
+              ],
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('취소'),
-              ),
-              ElevatedButton.icon(
-                icon: const Icon(Icons.block),
-                label: const Text('차단'),
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-                onPressed: () async {
-                  Navigator.pop(context);
-
-                  final prefs = await SharedPreferences.getInstance();
-                  final userId = prefs.getInt('userId') ?? 0;
-
-                  final response = await AuthenticatedHttpClient.postJson(
-                    Uri.parse('$baseUrl/api/user-block/block'),
-                    body: {
-                      'userId': userId,
-                      'targetId': targetId,
-                      'targetType': targetType, // 'worker'
-                    },
-                  );
-
-                  if (response.statusCode == 200) {
-                    setState(() => isBlocked = true);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('차단했어요.')),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(Msg.server)),
-                    );
-                  }
-                },
-              ),
-            ],
           ),
     );
   }
@@ -280,371 +263,176 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomInset = MediaQuery.of(context).padding.bottom;
-
     return Scaffold(
+      backgroundColor: AppColors.bgPage,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        centerTitle: false,
         title: const Text('알바생 프로필'),
         actions: [
-          IconButton(
-            tooltip: '신고',
-            icon: const Icon(Icons.report, color: AppColors.error),
-            onPressed: () => _showReportDialog('worker', widget.workerId),
-          ),
-          IconButton(
-            icon: Icon(
-              isBlocked ? Icons.block_flipped : Icons.block,
-              color: isBlocked ? AppColors.textTertiary : Colors.black,
-            ),
-            tooltip: isBlocked ? '차단 해제' : '차단하기',
-            onPressed: () => _showBlockDialog('worker', widget.workerId),
-          ),
+          IconButton(tooltip: '더보기', icon: const Icon(Icons.more_horiz_rounded), onPressed: _showMoreSheet),
         ],
       ),
       body:
           isLoading
-              ? const Center(child: CircularProgressIndicator())
+              ? const AppSkeletonList(rows: 3, avatar: true)
               : profile == null
-              ? const Center(child: Text('프로필을 불러올 수 없어요.'))
-              : SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(20, 20, 20, 20 + bottomInset),
+              ? AppEmptyState(
+                icon: Icons.person_off_outlined,
+                title: '프로필을 불러오지 못했어요',
+                message: '잠시 후 다시 시도해 주세요.',
+                actionLabel: '다시 시도',
+                onAction: () {
+                  setState(() => isLoading = true);
+                  _fetchProfile(widget.workerId);
+                },
+              )
+              : ListView(
+                padding: EdgeInsets.only(bottom: 24 + MediaQuery.of(context).padding.bottom),
+                children: [
+                  _header(),
+                  const SizedBox(height: 8),
+                  _resumeSection(),
+                ],
+              ),
+    );
+  }
+
+  // 사진·이름·나이 → 신뢰 숫자 세 칸. 예전엔 네모 상자 4개(알바온도 점수와 활동등급이 따로)였다
+  Widget _header() {
+    final img = (profile!['profile_image_url'] ?? '').toString();
+    Widget cell(String label, String value) => Expanded(
+      child: Column(
+        children: [
+          Text(value, style: AppTextStyles.h3.copyWith(color: AppColors.textPrimary)),
+          const SizedBox(height: 2),
+          Text(label, style: AppTextStyles.body2),
+        ],
+      ),
+    );
+    return Container(
+      color: AppColors.bgCard,
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 32,
+                backgroundColor: AppColors.bgMuted,
+                backgroundImage: img.isNotEmpty ? NetworkImage(img) : null,
+                child: img.isEmpty ? const Icon(Icons.person_rounded, size: 32, color: AppColors.textTertiary) : null,
+              ),
+              const SizedBox(width: 14),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ===== 헤더: 아바타 + 통계 =====
-                    Center(
-                      child: Column(
-                        children: [
-                          CircleAvatar(
-                            radius: 50,
-                            backgroundImage:
-                                (profile!['profile_image_url'] != null &&
-                                        (profile!['profile_image_url']
-                                                as String)
-                                            .isNotEmpty)
-                                    ? NetworkImage(
-                                      profile!['profile_image_url'],
-                                    )
-                                    : null,
-                            child:
-                                (profile!['profile_image_url'] == null ||
-                                        (profile!['profile_image_url']
-                                                as String)
-                                            .isEmpty)
-                                    ? const Icon(Icons.person, size: 40)
-                                    : null,
-                          ),
-                          const SizedBox(height: 16),
-                          _statWrap(),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // ===== 이력서 열람 안내 카드 =====
-                    _resumeInfoCard(),
-                    const SizedBox(height: 8),
-                    Text(
-                      canViewResume
-                          ? '강점, 희망 분야, 경력, 자격증까지 확인할 수 있습니다.'
-                          : '이 알바생은 이력서 열람에 동의하지 않았습니다.\n기본 정보만 확인할 수 있어요.',
-                      style: TextStyle(
-                        fontSize: AppFontSize.meta,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-
-                    // ===== 기본 정보 (항상 표시) =====
-                    const SizedBox(height: 24),
-                    const _SectionTitle('기본 정보'),
-                    const SizedBox(height: 8),
-                    _buildInfoTile('이름', maskName(profile!['name'] ?? '없음')),
-                    _buildInfoTile('성별', profile!['gender'] ?? '없음'),
-                    _buildInfoTile('출생년도', getBirthYear()),
-
-                    // ===== 이력서 상세 (동의한 경우에만) =====
-                    if (canViewResume) ...[
-                      const SizedBox(height: 24),
-                      const _SectionTitle('이력서 상세'),
-                      const SizedBox(height: 8),
-                      _buildInfoTile('강점', profile!['strengths'] ?? '없음'),
-                      _buildInfoTile('성격', profile!['traits'] ?? '없음'),
-                      _buildInfoTile(
-                        '업무 희망 분야',
-                        profile!['desired_work'] ?? '없음',
-                      ),
-                      _buildInfoTile(
-                        '가능 요일',
-                        profile!['available_days'] ?? '없음',
-                      ),
-                      _buildInfoTile(
-                        '가능 시간대',
-                        profile!['available_times'] ?? '없음',
-                      ),
-                      _buildInfoTile('자기소개', profile!['introduction'] ?? '없음'),
-                      const SizedBox(height: 20),
-                      _buildExperienceList(),
-                      const SizedBox(height: 20),
-                      _buildLicenseChips(),
+                    Text(maskName((profile!['name'] ?? '').toString()), style: AppTextStyles.h2),
+                    if (_ageGender.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(_ageGender, style: AppTextStyles.body2),
                     ],
                   ],
                 ),
               ),
-    );
-  }
-
-  Widget _statWrap() {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      alignment: WrapAlignment.center,
-      children: [
-        _squareStatCard(
-          Icons.verified,
-          '채용 확정',
-          '${profile!['confirmed_count'] ?? 0}',
-          AppColors.textSecondary,
-        ),
-        _squareStatCard(
-          Icons.check_circle,
-          '알바 완료',
-          '${profile!['completed_count'] ?? 0}',
-          AppColors.textSecondary,
-        ),
-        _squareStatCard(
-          Icons.thermostat_rounded,
-          '알바온도',
-          '$_activityScore점',
-          AppColors.textSecondary,
-        ),
-        _squareStatCard(
-          Icons.military_tech_rounded,
-          '활동등급',
-          _activityGrade,
-          AppColors.textSecondary,
-        ),
-      ],
-    );
-  }
-
-  Widget _resumeInfoCard() {
-    final enabled = canViewResume;
-    final icon = enabled ? Icons.visibility : Icons.visibility_off;
-    final title = enabled ? '이력서 열람 가능' : '이력서 열람 불가';
-    final desc =
-        enabled
-            ? '이 알바생은 이력서 열람에 동의했어요.\n강점, 경력, 자격증까지 확인해보세요.'
-            : '이 알바생은 이력서 열람에 동의하지 않았어요.\n기본 정보만 확인 가능합니다.';
-
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+            ],
+          ),
+          const SizedBox(height: 20),
           Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: .12),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: AppColors.primary),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: AppFontSize.body1,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  desc,
-                  style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _squareStatCard(
-    IconData icon,
-    String label,
-    String count,
-    Color color,
-  ) {
-    const double boxSize = 86;
-
-    return SizedBox(
-      width: boxSize,
-      height: boxSize,
-      child: Container(
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.06),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
-        ),
-        padding: const EdgeInsets.all(6),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 20, color: color),
-            const SizedBox(height: 4),
-            Text(
-              count,
-              style: TextStyle(
-                fontSize: AppFontSize.button,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: const TextStyle(fontSize: AppFontSize.caption),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoTile(String title, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 100,
-            child: Text(
-              '$title:',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-          Expanded(child: Text(value)),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildExperienceList() {
-    if (experiences.isEmpty) {
-      return _buildInfoTile('경력', '없음');
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('경력', style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        ...experiences.map(
-          (exp) => Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: AppColors.bgMuted,
-              borderRadius: BorderRadius.circular(12),
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(color: AppColors.bgMuted, borderRadius: BorderRadius.circular(AppRadius.md)),
             child: Row(
               children: [
-                const Icon(Icons.work_outline, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(exp['place'] ?? ''),
-                      if ((exp['description'] ?? '').toString().isNotEmpty)
-                        Text(
-                          exp['description'],
-                          style: const TextStyle(color: AppColors.textPrimary),
-                        ),
-                    ],
-                  ),
-                ),
+                cell('신뢰도', '$_activityGrade · $_activityScore점'),
+                cell('채용 확정', '${profile!['confirmed_count'] ?? 0}번'),
+                cell('근무 완료', '${profile!['completed_count'] ?? 0}번'),
               ],
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
-  Widget _buildLicenseChips() {
-    if (licenses.isEmpty) {
-      return _buildInfoTile('자격·면허', '없음');
+  // 이력서: 동의 안 했으면 한 줄, 했으면 채운 칸만 ('없음'이 줄줄이 찍히던 것)
+  Widget _resumeSection() {
+    if (!canViewResume) {
+      return Container(
+        color: AppColors.bgCard,
+        padding: const EdgeInsets.all(20),
+        child: const Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('이력서', style: AppTextStyles.h3),
+            SizedBox(height: 6),
+            Text('이 알바생은 이력서를 공개하지 않았어요 · 경력은 채팅으로 물어봐 주세요', style: AppTextStyles.body2),
+          ],
+        ),
+      );
     }
-    return Column(
+    String v(String k) => (profile![k] ?? '').toString().trim();
+    final rows = <(String, String)>[
+      ('강점', v('strengths')),
+      ('성격', v('traits')),
+      ('희망 업무', v('desired_work')),
+      ('가능 요일', v('available_days')),
+      ('가능 시간', v('available_times')),
+    ].where((r) => r.$2.isNotEmpty).toList();
+    final intro = v('introduction');
+    final empty = rows.isEmpty && intro.isEmpty && experiences.isEmpty && licenses.isEmpty;
+
+    return Container(
+      color: AppColors.bgCard,
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('이력서', style: AppTextStyles.h3),
+          if (empty) ...[
+            const SizedBox(height: 6),
+            const Text('아직 이력서를 채우지 않았어요', style: AppTextStyles.body2),
+          ],
+          if (intro.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(intro, style: AppTextStyles.body1.copyWith(color: AppColors.textPrimary, height: 1.5)),
+          ],
+          for (final r in rows) _infoRow(r.$1, r.$2),
+          if (experiences.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            const Text('경력', style: AppTextStyles.body1),
+            // 가게 이름이 길어 라벨 칸(84)에 안 들어간다 — 이름 위, 기간·내용 아래 두 줄
+            for (final e in experiences)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text((e['place'] ?? '').toString(), style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                    Text(
+                      [e['duration'], e['description']].where((x) => (x ?? '').toString().trim().isNotEmpty).join(' · '),
+                      style: AppTextStyles.body2,
+                    ),
+                  ],
+                ),
+              ),
+          ],
+          if (licenses.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            const Text('자격·면허', style: AppTextStyles.body1),
+            for (final l in licenses) _infoRow((l['name'] ?? '').toString(), (l['issued_at'] ?? '').toString()),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _infoRow(String label, String value) => Padding(
+    padding: const EdgeInsets.only(top: 12),
+    child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('자격·면허', style: TextStyle(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 4,
-          children:
-              licenses
-                  .map(
-                    (lic) => Chip(
-                      label: Text('${lic['name']} (${lic['issued_at']})'),
-                      backgroundColor: AppColors.primaryLight,
-                    ),
-                  )
-                  .toList(),
-        ),
+        SizedBox(width: 84, child: Text(label, style: AppTextStyles.body2)),
+        Expanded(child: Text(value, style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary))),
       ],
-    );
-  }
-}
-
-class _SectionTitle extends StatelessWidget {
-  final String text;
-  const _SectionTitle(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 8,
-          height: 8,
-          decoration: const BoxDecoration(
-            color: AppColors.primary,
-            shape: BoxShape.circle,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          text,
-          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: AppFontSize.buttonLg),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Divider(
-            height: 1,
-            thickness: 1,
-            color: AppColors.textDisabled,
-          ),
-        ),
-      ],
-    );
-  }
+    ),
+  );
 }
