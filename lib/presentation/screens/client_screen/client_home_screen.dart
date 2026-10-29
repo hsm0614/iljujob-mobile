@@ -64,11 +64,14 @@ String pinnedRemainText(Job j) {
 
 String publishRemainText(Job j) {
   if (!isJobReserved(j) || j.publishAt == null) return '';
-  final diff = _toLocal(j.publishAt!).difference(_nowLocal());
+  final at = _toLocal(j.publishAt!);
+  final diff = at.difference(_nowLocal());
   final h = diff.inHours;
   final m = diff.inMinutes % 60;
-  if (h > 0) return '$h시간 $m분 후 노출';
-  return m > 0 ? '$m분 후 노출' : '곧 노출';
+  // 하루 넘게 남으면 시각으로 — '10264시간 17분 후'가 나왔다
+  if (h >= 24) return '${at.month}월 ${at.day}일 ${at.hour.toString().padLeft(2, '0')}:${at.minute.toString().padLeft(2, '0')}';
+  if (h > 0) return '$h시간 $m분 후';
+  return m > 0 ? '$m분 후' : '곧';
 }
 
 class ClientHomeScreen extends StatefulWidget {
@@ -1677,7 +1680,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     } else if (reserved && !job.isPaid) {
       next = ('${publishRemainText(job)} 공개', '지금 바로 공개', () => _upgradeToInstant(job));
     } else if (reserved) {
-      next = (publishRemainText(job), '', () {});
+      next = ('${publishRemainText(job)} 공개', '', () {});
     } else if (job.isUrgent) {
       next = ('', '근처 알바생에게 긴급 호출', () => _openUrgentCall(job));
     } else if (pinned) {
