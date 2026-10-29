@@ -15,7 +15,6 @@ import 'package:iljujob/presentation/screens/signup_client_screen/signup_client_
 import 'package:iljujob/presentation/screens/signup_client_screen/client_extra_info_screen.dart';
 import '../../../config/app_theme.dart';
 
-const kBrand = AppColors.primary;
 
 class SignupClientChoiceScreen extends StatefulWidget {
   const SignupClientChoiceScreen({super.key});
@@ -30,7 +29,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
   // ── 버튼 스타일 ──────────────────────────────────────────────
   ButtonStyle _btnStyle({Color? bg, Color? fg, Color? borderColor}) {
     return ElevatedButton.styleFrom(
-      backgroundColor: bg ?? kBrand,
+      backgroundColor: bg ?? AppColors.primary,
       foregroundColor: fg ?? Colors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(

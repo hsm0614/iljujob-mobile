@@ -16,16 +16,10 @@ import 'package:iljujob/utils/pay_display.dart';
 import '../../../config/app_theme.dart';
 import '../../../config/messages.dart';
 
-const kBrandBlue = AppColors.primary;
-const kTextPrimary = AppColors.textPrimary;
-const kTextSecondary = AppColors.textSecondary;
 
 class ClientRealMainScreen extends StatefulWidget {
   const ClientRealMainScreen({super.key});
 
-  static const Color kBrandBlue = AppColors.primary;
-  static const Color kTextPrimary = AppColors.textPrimary;
-  static const Color kTextSecondary = AppColors.textSecondary;
   @override
   State<ClientRealMainScreen> createState() => _ClientRealMainScreenState();
 }
@@ -303,15 +297,15 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
   Widget _pill(String text) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
     decoration: BoxDecoration(
-      color: kBrandBlue.withOpacity(.08),
+      color: AppColors.primary.withOpacity(.08),
       borderRadius: BorderRadius.circular(AppRadius.full),
-      border: Border.all(color: kBrandBlue.withOpacity(.28)),
+      border: Border.all(color: AppColors.primary.withOpacity(.28)),
     ),
     child: Text(
       text,
       style: const TextStyle(
         fontSize: AppFontSize.meta,
-        color: kBrandBlue,
+        color: AppColors.primary,
         fontWeight: FontWeight.w600,
       ),
     ),
@@ -357,7 +351,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
               ),
               child: Icon(
                 compactView ? Icons.view_agenda : Icons.view_list,
-                color: kBrandBlue,
+                color: AppColors.primary,
               ),
             ),
           ),
@@ -381,7 +375,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
                 style: TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 6),
-              const Text('필터를 조정해보세요', style: TextStyle(color: kTextSecondary)),
+              const Text('필터를 조정해보세요', style: TextStyle(color: AppColors.textSecondary)),
             ],
           ),
         ],
@@ -463,7 +457,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
               style: const TextStyle(
                 fontSize: AppFontSize.buttonLg,
                 fontWeight: FontWeight.w700,
-                color: kTextPrimary,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
@@ -525,7 +519,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
               style: const TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: AppFontSize.body1,
-                color: kTextPrimary,
+                color: AppColors.textPrimary,
               ),
             ),
           ),
@@ -534,7 +528,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
             child: Text(
               job.location,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: AppFontSize.body2, color: kTextPrimary),
+              style: const TextStyle(fontSize: AppFontSize.body2, color: AppColors.textPrimary),
             ),
           ),
           const SizedBox(width: 8),
@@ -557,14 +551,14 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
               _applyFilters();
             });
           },
-          selectedColor: kBrandBlue.withOpacity(.15),
+          selectedColor: AppColors.primary.withOpacity(.15),
           labelStyle: TextStyle(
-            color: (showNearbyOnly == false) ? kBrandBlue : kTextPrimary,
+            color: (showNearbyOnly == false) ? AppColors.primary : AppColors.textPrimary,
           ),
           shape: StadiumBorder(
             side: BorderSide(
               color:
-                  (showNearbyOnly == false) ? kBrandBlue : AppColors.textDisabled,
+                  (showNearbyOnly == false) ? AppColors.primary : AppColors.textDisabled,
             ),
           ),
         ),
@@ -578,14 +572,14 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
               _applyFilters();
             });
           },
-          selectedColor: kBrandBlue.withOpacity(.15),
+          selectedColor: AppColors.primary.withOpacity(.15),
           labelStyle: TextStyle(
-            color: (showNearbyOnly == true) ? kBrandBlue : kTextPrimary,
+            color: (showNearbyOnly == true) ? AppColors.primary : AppColors.textPrimary,
           ),
           shape: StadiumBorder(
             side: BorderSide(
               color:
-                  (showNearbyOnly == true) ? kBrandBlue : AppColors.textDisabled,
+                  (showNearbyOnly == true) ? AppColors.primary : AppColors.textDisabled,
             ),
           ),
         ),
@@ -639,13 +633,13 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: kBrandBlue.withOpacity(.1),
+                color: AppColors.primary.withOpacity(.1),
                 shape: BoxShape.circle,
               ),
               alignment: Alignment.center,
               child: const Icon(
                 Icons.confirmation_num_outlined,
-                color: kBrandBlue,
+                color: AppColors.primary,
               ),
             ),
             const SizedBox(width: 12),
@@ -655,16 +649,16 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
                 style: const TextStyle(
                   fontSize: AppFontSize.body1,
                   fontWeight: FontWeight.w600,
-                  color: kTextPrimary,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ),
             OutlinedButton.icon(
               onPressed: () => Navigator.pushNamed(context, '/purchase-pass'),
-              icon: const Icon(Icons.add_card, size: 18, color: kBrandBlue),
-              label: const Text('구매', style: TextStyle(color: kBrandBlue)),
+              icon: const Icon(Icons.add_card, size: 18, color: AppColors.primary),
+              label: const Text('구매', style: TextStyle(color: AppColors.primary)),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: kBrandBlue),
+                side: const BorderSide(color: AppColors.primary),
                 padding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 8,
@@ -700,7 +694,7 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
         },
         icon: const Icon(Icons.map),
         label: const Text('지도 보기'),
-        backgroundColor: kBrandBlue,
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
 
@@ -755,9 +749,9 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
                 height: 38,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 decoration: BoxDecoration(
-                  color: kBrandBlue.withOpacity(.08),
+                  color: AppColors.primary.withOpacity(.08),
                   borderRadius: BorderRadius.circular(AppRadius.full),
-                  border: Border.all(color: kBrandBlue.withOpacity(.35)),
+                  border: Border.all(color: AppColors.primary.withOpacity(.35)),
                 ),
                 child: Row(
                   children: [
@@ -765,17 +759,17 @@ class _ClientRealMainScreenState extends State<ClientRealMainScreen> {
                       width: 26,
                       height: 26,
                       decoration: BoxDecoration(
-                        color: kBrandBlue.withOpacity(.18),
+                        color: AppColors.primary.withOpacity(.18),
                         shape: BoxShape.circle,
                       ),
                       alignment: Alignment.center,
-                      child: const Icon(Icons.add, size: 18, color: kBrandBlue),
+                      child: const Icon(Icons.add, size: 18, color: AppColors.primary),
                     ),
                     const SizedBox(width: 8),
                     const Text(
                       '공고 등록',
                       style: TextStyle(
-                        color: kBrandBlue,
+                        color: AppColors.primary,
                         fontSize: AppFontSize.button,
                         fontWeight: FontWeight.w800,
                         // 폰트 대소문자 혼용 때문에 적용 안될 수 있어서 통일 추천

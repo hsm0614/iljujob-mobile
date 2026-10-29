@@ -27,12 +27,6 @@ class SelectPreviousJobScreen extends StatefulWidget {
 class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
   // 자체 팔레트를 쓰면 화면 전환 시 배경·텍스트가 미세하게 어긋난다.
   // 디자인 토큰(AppColors)만 사용한다.
-  static const Color brandBlue = AppColors.primary;
-  static const Color brandBlueDark = AppColors.primaryDark;
-  static const Color bg = AppColors.bgPage;
-  static const Color textDark = AppColors.textPrimary;
-  static const Color textMute = AppColors.textSecondary;
-  static const Color border = AppColors.border;
 
   List<dynamic> myJobs = [];
   bool isLoading = true;
@@ -152,7 +146,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           if (icon != null) ...[
-            Icon(icon, size: 14, color: fgColor ?? brandBlueDark),
+            Icon(icon, size: 14, color: fgColor ?? AppColors.primaryDark),
             const SizedBox(width: 6),
           ],
           Text(
@@ -160,7 +154,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
             style: TextStyle(
               fontSize: AppFontSize.meta,
               fontWeight: FontWeight.w600,
-              color: fgColor ?? brandBlueDark,
+              color: fgColor ?? AppColors.primaryDark,
               height: 1.0,
             ),
           ),
@@ -186,7 +180,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
               ),
               child: const Icon(
                 Icons.work_outline,
-                color: brandBlueDark,
+                color: AppColors.primaryDark,
                 size: 32,
               ),
             ),
@@ -196,19 +190,19 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
               style: TextStyle(
                 fontSize: AppFontSize.buttonLg,
                 fontWeight: FontWeight.w800,
-                color: textDark,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 6),
             const Text(
               '공고를 작성하면 여기에서\n이전 공고를 바로 불러올 수 있어요.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: AppFontSize.body2, height: 1.4, color: textMute),
+              style: TextStyle(fontSize: AppFontSize.body2, height: 1.4, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 16),
             OutlinedButton(
               style: OutlinedButton.styleFrom(
-                foregroundColor: brandBlueDark,
+                foregroundColor: AppColors.primaryDark,
                 side: const BorderSide(color: AppColors.primaryMid),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(AppRadius.md),
@@ -259,7 +253,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: border),
+            border: Border.all(color: AppColors.border),
             boxShadow: const [
               BoxShadow(
                 color: Color(0x0F0C1F35),
@@ -284,7 +278,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                         style: const TextStyle(
                           fontSize: AppFontSize.buttonLg,
                           fontWeight: FontWeight.w800,
-                          color: textDark,
+                          color: AppColors.textPrimary,
                           height: 1.15,
                         ),
                       ),
@@ -304,7 +298,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                             ? Icons.flash_on_rounded
                             : Icons.arrow_forward_ios_rounded,
                         size: 16,
-                        color: brandBlueDark,
+                        color: AppColors.primaryDark,
                       ),
                     ),
                   ],
@@ -329,7 +323,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                 ),
 
                 const SizedBox(height: 12),
-                Container(height: 1, color: border),
+                Container(height: 1, color: AppColors.border),
                 const SizedBox(height: 12),
 
                 // 날짜/시간
@@ -338,7 +332,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                     const Icon(
                       Icons.calendar_today_outlined,
                       size: 16,
-                      color: textMute,
+                      color: AppColors.textSecondary,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -346,7 +340,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                         dateText,
                         style: const TextStyle(
                           fontSize: AppFontSize.body2,
-                          color: textMute,
+                          color: AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -359,7 +353,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                     const Icon(
                       Icons.schedule_outlined,
                       size: 16,
-                      color: textMute,
+                      color: AppColors.textSecondary,
                     ),
                     const SizedBox(width: 8),
                     Expanded(
@@ -367,7 +361,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                         timeText,
                         style: const TextStyle(
                           fontSize: AppFontSize.body2,
-                          color: textMute,
+                          color: AppColors.textSecondary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -395,7 +389,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: brandBlue,
+                          color: AppColors.primary,
                           borderRadius: BorderRadius.circular(AppRadius.full),
                         ),
                         child: Text(
@@ -415,7 +409,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                           style: const TextStyle(
                             fontSize: AppFontSize.body1,
                             fontWeight: FontWeight.w800,
-                            color: textDark,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -424,7 +418,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
                             ? Icons.bolt_rounded
                             : Icons.touch_app_outlined,
                         size: 18,
-                        color: brandBlueDark,
+                        color: AppColors.primaryDark,
                       ),
                     ],
                   ),
@@ -440,7 +434,7 @@ class _SelectPreviousJobScreenState extends State<SelectPreviousJobScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: bg,
+      backgroundColor: AppColors.bgPage,
       appBar: AppBar(
         // quickMode일 때 타이틀 다르게
         title: Text(widget.quickMode ? '빠른 등록 · 공고 선택' : '기존 공고 선택'),

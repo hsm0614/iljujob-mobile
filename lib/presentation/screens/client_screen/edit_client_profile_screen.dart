@@ -34,8 +34,6 @@ class EditClientProfileScreen extends StatefulWidget {
 
 class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
   // ---- 스타일
-  static const kBrand = AppColors.primary;
-  static const kBg = AppColors.bgPage;
 
   final picker = ImagePicker();
 
@@ -399,10 +397,8 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bottomSafe = MediaQuery.of(context).viewPadding.bottom;
-
     return Scaffold(
-      backgroundColor: kBg,
+      backgroundColor: AppColors.bgPage,
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
         leading: IconButton(
@@ -428,7 +424,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
           isLoading
               ? const AppSkeletonList(rows: 4)
               : RefreshIndicator(
-                color: kBrand,
+                color: AppColors.primary,
                 onRefresh: _loadProfile,
                 child: ListView(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
@@ -538,7 +534,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(5),
                       decoration: BoxDecoration(
-                        color: kBrand,
+                        color: AppColors.primary,
                         shape: BoxShape.circle,
                         boxShadow: const [
                           BoxShadow(color: Colors.black26, blurRadius: 4),
@@ -585,7 +581,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
             icon: const Icon(Icons.photo_camera_back_outlined),
             style: IconButton.styleFrom(
               backgroundColor: AppColors.primaryLight,
-              foregroundColor: kBrand,
+              foregroundColor: AppColors.primary,
             ),
           ),
         ],
@@ -731,7 +727,7 @@ class _EditClientProfileScreenState extends State<EditClientProfileScreen> {
                 icon: const Icon(Icons.open_in_new),
                 label: const Text('기존 파일 열기'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: kBrand,
+                  foregroundColor: AppColors.primary,
                   side: const BorderSide(color: AppColors.primaryMid),
                   backgroundColor: AppColors.primaryLight,
                   shape: RoundedRectangleBorder(
@@ -814,7 +810,7 @@ class _SectionCard extends StatelessWidget {
                 width: 6,
                 height: 18,
                 decoration: BoxDecoration(
-                  color: _EditClientProfileScreenState.kBrand,
+                  color: AppColors.primary,
                   borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
               ),
@@ -877,7 +873,7 @@ class _LabeledField extends StatelessWidget {
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
                 borderSide: const BorderSide(
-                  color: _EditClientProfileScreenState.kBrand,
+                  color: AppColors.primary,
                   width: 1.3,
                 ),
               ),
@@ -951,7 +947,7 @@ class _SheetTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon, color: _EditClientProfileScreenState.kBrand),
+      leading: Icon(icon, color: AppColors.primary),
       title: Text(label, style: const TextStyle(fontWeight: FontWeight.w700)),
       onTap: onTap,
     );

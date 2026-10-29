@@ -17,19 +17,8 @@ import '../../data/services/authenticated_http_client.dart';
 import 'potrone_screen.dart';
 
 // ── 디자인 토큰 ──
-const _blue = AppColors.primary;
-const _blueDark = AppColors.primaryDark;
-const _blueLight = AppColors.primaryLight;
 // 긴급호출 색(2026-10 빨강→주황). 이름은 호환 때문에 유지
-const _red = AppColors.urgentCall;
 const _green = Color(0xFF00C48C);
-const _orange = AppColors.badgeUrgent;
-const _bg = AppColors.bgPage;
-const _white = Colors.white;
-const _text = AppColors.textPrimary;
-const _sub = AppColors.textSecondary;
-const _label = AppColors.textTertiary;
-const _border = AppColors.border;
 
 // ── iOS 상품 ID ──
 const _kIosInstant = {
@@ -415,7 +404,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
         final pad = MediaQuery.of(ctx).padding.bottom;
         return Container(
           decoration: const BoxDecoration(
-            color: _white,
+            color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
           ),
           padding: EdgeInsets.fromLTRB(24, 8, 24, pad + 24),
@@ -428,7 +417,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: _border,
+                    color: AppColors.border,
                     borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                 ),
@@ -454,13 +443,13 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                 style: TextStyle(
                   fontSize: AppFontSize.h2,
                   fontWeight: FontWeight.w800,
-                  color: _text,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 8),
               const Text(
                 '공고 등록 후 긴급 호출을 발송해보세요.',
-                style: TextStyle(fontSize: AppFontSize.button, color: _sub),
+                style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
               ),
               const SizedBox(height: 20),
               // 구독 넛지
@@ -470,7 +459,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                 decoration: BoxDecoration(
                   color: AppColors.primaryLight,
                   borderRadius: BorderRadius.circular(AppRadius.lg),
-                  border: Border.all(color: _blue.withOpacity(0.25)),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.25)),
                 ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -478,13 +467,13 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: _blue,
+                        color: AppColors.primary,
                         borderRadius: BorderRadius.circular(AppRadius.sm),
                       ),
                       child: const Icon(
                         Icons.workspace_premium_rounded,
                         size: 16,
-                        color: _white,
+                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -497,7 +486,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                             style: TextStyle(
                               fontSize: AppFontSize.body2,
                               fontWeight: FontWeight.w800,
-                              color: _blue,
+                              color: AppColors.primary,
                             ),
                           ),
                           SizedBox(height: 4),
@@ -505,7 +494,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                             '구독은 즉시게시와 먼저 연락·지도 알림을 제공합니다. 긴급호출은 별도예요.',
                             style: TextStyle(
                               fontSize: AppFontSize.meta,
-                              color: _sub,
+                              color: AppColors.textSecondary,
                               height: 1.5,
                             ),
                           ),
@@ -538,8 +527,8 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                         Navigator.pushNamed(context, '/subscribe');
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _blue,
-                        foregroundColor: _white,
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(AppRadius.md),
@@ -579,7 +568,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
             20;
         return Container(
           decoration: const BoxDecoration(
-            color: _white,
+            color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
           ),
           padding: EdgeInsets.fromLTRB(24, 8, 24, pad),
@@ -592,7 +581,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: _border,
+                    color: AppColors.border,
                     borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                 ),
@@ -603,7 +592,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     width: 52,
                     height: 52,
                     decoration: BoxDecoration(
-                      color: _blue,
+                      color: AppColors.primary,
                       borderRadius: BorderRadius.circular(AppRadius.lg),
                     ),
                     child: const Center(
@@ -624,7 +613,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                           style: const TextStyle(
                             fontSize: AppFontSize.title,
                             fontWeight: FontWeight.w800,
-                            color: _text,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 3),
@@ -632,7 +621,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                           '회당 ${formatPrice((price / count).floor())}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontSize: AppFontSize.body2, color: _label),
+                          style: const TextStyle(fontSize: AppFontSize.body2, color: AppColors.textTertiary),
                         ),
                       ],
                     ),
@@ -647,7 +636,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                         style: const TextStyle(
                           fontSize: AppFontSize.h2,
                           fontWeight: FontWeight.w800,
-                          color: _blue,
+                          color: AppColors.primary,
                         ),
                       ),
                       if (discount > 0)
@@ -667,14 +656,14 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _bg,
+                  color: AppColors.bgPage,
                   borderRadius: BorderRadius.circular(AppRadius.lg),
                 ),
                 child: const Column(
                   children: [
                     _BenefitRow(
                       icon: Icons.bolt_rounded,
-                      iconColor: _blue,
+                      iconColor: AppColors.primary,
                       text: '결제 즉시 공고 노출',
                     ),
                     SizedBox(height: 10),
@@ -686,7 +675,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     SizedBox(height: 10),
                     _BenefitRow(
                       icon: Icons.repeat_rounded,
-                      iconColor: _orange,
+                      iconColor: AppColors.badgeUrgent,
                       text: '남은 이용권은 다음 공고에도 사용',
                     ),
                   ],
@@ -696,7 +685,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
               _BuyButton(
                 label: '${formatPrice(price)} 결제하기',
                 isPurchasing: _isPurchasing,
-                gradient: const [_blue, _blueDark],
+                gradient: const [AppColors.primary, AppColors.primaryDark],
                 onTap: () async {
                   Navigator.pop(ctx);
                   if (Platform.isIOS) {
@@ -734,7 +723,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
             20;
         return Container(
           decoration: const BoxDecoration(
-            color: _white,
+            color: Colors.white,
             borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
           ),
           padding: EdgeInsets.fromLTRB(24, 8, 24, pad),
@@ -747,7 +736,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                   width: 36,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: _border,
+                    color: AppColors.border,
                     borderRadius: BorderRadius.circular(AppRadius.full),
                   ),
                 ),
@@ -779,13 +768,13 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                           style: TextStyle(
                             fontSize: AppFontSize.title,
                             fontWeight: FontWeight.w800,
-                            color: _text,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 3),
                         const Text(
                           '반경 5km 알바생 최대 10명 발송',
-                          style: TextStyle(fontSize: AppFontSize.body2, color: _label),
+                          style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textTertiary),
                         ),
                         const SizedBox(height: 4),
                         Row(
@@ -816,7 +805,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     style: TextStyle(
                       fontSize: AppFontSize.h2,
                       fontWeight: FontWeight.w800,
-                      color: _red,
+                      color: AppColors.urgentCall,
                     ),
                   ),
                 ],
@@ -827,19 +816,19 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                 decoration: BoxDecoration(
                   color: AppColors.warningLight,
                   borderRadius: BorderRadius.circular(AppRadius.lg),
-                  border: Border.all(color: _red.withOpacity(0.15)),
+                  border: Border.all(color: AppColors.urgentCall.withOpacity(0.15)),
                 ),
                 child: const Column(
                   children: [
                     _BenefitRow(
                       icon: Icons.bolt_rounded,
-                      iconColor: _red,
+                      iconColor: AppColors.urgentCall,
                       text: '즉시 노출 + 24시간 긴급 고정',
                     ),
                     SizedBox(height: 10),
                     _BenefitRow(
                       icon: Icons.people_alt_rounded,
-                      iconColor: _red,
+                      iconColor: AppColors.urgentCall,
                       text: '반경 5km 내 최대 10명에게 인앱 메시지 발송',
                     ),
                     SizedBox(height: 10),
@@ -859,7 +848,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                   vertical: 10,
                 ),
                 decoration: BoxDecoration(
-                  color: _blueLight,
+                  color: AppColors.primaryLight,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Row(
@@ -867,7 +856,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     const Icon(
                       Icons.info_outline_rounded,
                       size: 15,
-                      color: _blue,
+                      color: AppColors.primary,
                     ),
                     const SizedBox(width: 8),
                     const Expanded(
@@ -875,7 +864,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                         '구독은 먼저 연락·지도 알림을 제공하며 긴급호출 이용권은 별도예요.',
                         style: TextStyle(
                           fontSize: AppFontSize.caption,
-                          color: _blue,
+                          color: AppColors.primary,
                           fontWeight: FontWeight.w600,
                           height: 1.4,
                         ),
@@ -914,14 +903,14 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: AppColors.bgPage,
       appBar: AppBar(
         title: const Text('이용권 구매'),
         bottom: TabBar(
           controller: _tabCtrl,
-          labelColor: _blue,
-          unselectedLabelColor: _label,
-          indicatorColor: _blue,
+          labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textTertiary,
+          indicatorColor: AppColors.primary,
           indicatorWeight: 2,
           labelStyle: const TextStyle(
             fontWeight: FontWeight.w700,
@@ -950,7 +939,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     child: const Icon(
                       Icons.bolt_rounded,
                       size: 16,
-                      color: _red,
+                      color: AppColors.urgentCall,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -980,7 +969,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                   const Icon(
                     Icons.chevron_right_rounded,
                     size: 18,
-                    color: _red,
+                    color: AppColors.urgentCall,
                   ),
                 ],
               ),
@@ -1049,7 +1038,7 @@ class _InstantTabState extends State<_InstantTab> {
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: _blue,
+              color: AppColors.primary,
               borderRadius: BorderRadius.circular(AppRadius.xl),
               // 색 그림자(글로우) 제거 — DESIGN.md Paper-Thin
             ),
@@ -1078,7 +1067,7 @@ class _InstantTabState extends State<_InstantTab> {
                       style: const TextStyle(
                         fontSize: AppFontSize.h1,
                         fontWeight: FontWeight.w800,
-                        color: _white,
+                        color: Colors.white,
                         height: 1,
                       ),
                     ),
@@ -1107,8 +1096,8 @@ class _InstantTabState extends State<_InstantTab> {
                   isPopular
                       ? _green
                       : isOrange
-                      ? _orange
-                      : _blue;
+                      ? AppColors.badgeUrgent
+                      : AppColors.primary;
               final discount =
                   count == 1
                       ? 0
@@ -1121,15 +1110,15 @@ class _InstantTabState extends State<_InstantTab> {
                   duration: const Duration(milliseconds: 200),
                   margin: const EdgeInsets.only(bottom: 12),
                   decoration: BoxDecoration(
-                    color: isSelected ? _blueLight : _white,
+                    color: isSelected ? AppColors.primaryLight : Colors.white,
                     borderRadius: BorderRadius.circular(AppRadius.xl),
                     border: Border.all(
                       color:
                           isSelected
-                              ? _blue
+                              ? AppColors.primary
                               : isPopular
                               ? _green.withOpacity(0.4)
-                              : _border,
+                              : AppColors.border,
                       width: isSelected ? 2 : 1,
                     ),
                     // 색 그림자(글로우) 제거 — DESIGN.md Paper-Thin
@@ -1149,7 +1138,7 @@ class _InstantTabState extends State<_InstantTab> {
                                     width: 40,
                                     height: 40,
                                     decoration: BoxDecoration(
-                                      color: isSelected ? _blue : _bg,
+                                      color: isSelected ? AppColors.primary : AppColors.bgPage,
                                       borderRadius: BorderRadius.circular(AppRadius.md),
                                     ),
                                     child: Center(
@@ -1158,7 +1147,7 @@ class _InstantTabState extends State<_InstantTab> {
                                         style: TextStyle(
                                           fontSize: AppFontSize.titleLg,
                                           fontWeight: FontWeight.w800,
-                                          color: isSelected ? _white : _text,
+                                          color: isSelected ? Colors.white : AppColors.textPrimary,
                                         ),
                                       ),
                                     ),
@@ -1169,7 +1158,7 @@ class _InstantTabState extends State<_InstantTab> {
                                     style: TextStyle(
                                       fontSize: AppFontSize.title,
                                       fontWeight: FontWeight.w800,
-                                      color: isSelected ? _blue : _text,
+                                      color: isSelected ? AppColors.primary : AppColors.textPrimary,
                                     ),
                                   ),
                                 ],
@@ -1204,7 +1193,7 @@ class _InstantTabState extends State<_InstantTab> {
                           desc,
                           style: const TextStyle(
                             fontSize: AppFontSize.meta,
-                            color: _label,
+                            color: AppColors.textTertiary,
                             height: 1.4,
                           ),
                         ),
@@ -1218,11 +1207,11 @@ class _InstantTabState extends State<_InstantTab> {
                                 children: [
                                   _PriceChip(
                                     label: widget.formatPrice(price),
-                                    color: isSelected ? _blue : _text,
+                                    color: isSelected ? AppColors.primary : AppColors.textPrimary,
                                     bgColor:
                                         isSelected
-                                            ? _blue.withOpacity(0.1)
-                                            : _bg,
+                                            ? AppColors.primary.withOpacity(0.1)
+                                            : AppColors.bgPage,
                                     bold: true,
                                   ),
                                   if (discount > 0)
@@ -1241,9 +1230,9 @@ class _InstantTabState extends State<_InstantTab> {
                               height: 26,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: isSelected ? _blue : _white,
+                                color: isSelected ? AppColors.primary : Colors.white,
                                 border: Border.all(
-                                  color: isSelected ? _blue : _border,
+                                  color: isSelected ? AppColors.primary : AppColors.border,
                                   width: 2,
                                 ),
                               ),
@@ -1252,7 +1241,7 @@ class _InstantTabState extends State<_InstantTab> {
                                       ? const Icon(
                                         Icons.check_rounded,
                                         size: 14,
-                                        color: _white,
+                                        color: Colors.white,
                                       )
                                       : null,
                             ),
@@ -1384,7 +1373,7 @@ class _UrgentTab extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: AppFontSize.h1,
                               fontWeight: FontWeight.w800,
-                              color: _white,
+                              color: Colors.white,
                               height: 1,
                             ),
                           ),
@@ -1399,7 +1388,7 @@ class _UrgentTab extends StatelessWidget {
                   width: double.infinity,
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: _white,
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(AppRadius.xl),
                     border: Border.all(color: AppColors.urgentCall, width: 1.5),
                     boxShadow: [
@@ -1437,12 +1426,12 @@ class _UrgentTab extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: AppFontSize.title,
                                     fontWeight: FontWeight.w800,
-                                    color: _text,
+                                    color: AppColors.textPrimary,
                                   ),
                                 ),
                                 Text(
                                   '단건 구매 · 1회 사용',
-                                  style: TextStyle(fontSize: AppFontSize.meta, color: _label),
+                                  style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.textTertiary),
                                 ),
                               ],
                             ),
@@ -1480,7 +1469,7 @@ class _UrgentTab extends StatelessWidget {
                       const SizedBox(height: 12),
                       const _BenefitRow(
                         icon: Icons.no_accounts_outlined,
-                        iconColor: _label,
+                        iconColor: AppColors.textTertiary,
                         text: '개인정보 비노출 인앱 메시지',
                       ),
                     ],
@@ -1493,7 +1482,7 @@ class _UrgentTab extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: AppColors.primaryLight,
                     borderRadius: BorderRadius.circular(AppRadius.lg),
-                    border: Border.all(color: _blue.withOpacity(0.2)),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.2)),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1501,7 +1490,7 @@ class _UrgentTab extends StatelessWidget {
                       const Icon(
                         Icons.workspace_premium_rounded,
                         size: 18,
-                        color: _blue,
+                        color: AppColors.primary,
                       ),
                       const SizedBox(width: 10),
                       Expanded(
@@ -1513,7 +1502,7 @@ class _UrgentTab extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: AppFontSize.body2,
                                 fontWeight: FontWeight.w800,
-                                color: _blue,
+                                color: AppColors.primary,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -1521,7 +1510,7 @@ class _UrgentTab extends StatelessWidget {
                               '라이트는 즉시게시 3회, 프로는 즉시게시 무제한입니다. 긴급호출은 별도예요.',
                               style: TextStyle(
                                 fontSize: AppFontSize.meta,
-                                color: _sub,
+                                color: AppColors.textSecondary,
                                 height: 1.5,
                               ),
                             ),
@@ -1537,7 +1526,7 @@ class _UrgentTab extends StatelessWidget {
                                 style: TextStyle(
                                   fontSize: AppFontSize.meta,
                                   fontWeight: FontWeight.w700,
-                                  color: _blue,
+                                  color: AppColors.primary,
                                 ),
                               ),
                             ),
@@ -1636,7 +1625,7 @@ class _BuyButton extends StatelessWidget {
       height: 52,
       decoration: BoxDecoration(
         // 그라데이션·글로우 없이 단색 (리디자인 2026-10). gradient 첫 색만 쓴다
-        color: isPurchasing ? _border : gradient.first,
+        color: isPurchasing ? AppColors.border : gradient.first,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Center(
@@ -1646,7 +1635,7 @@ class _BuyButton extends StatelessWidget {
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
-                    color: _white,
+                    color: Colors.white,
                     strokeWidth: 2,
                   ),
                 )
@@ -1655,7 +1644,7 @@ class _BuyButton extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: AppFontSize.body1,
                     fontWeight: FontWeight.w800,
-                    color: _white,
+                    color: Colors.white,
                   ),
                 ),
       ),
@@ -1721,7 +1710,7 @@ class _BenefitRow extends StatelessWidget {
           text,
           style: const TextStyle(
             fontSize: AppFontSize.body2,
-            color: _sub,
+            color: AppColors.textSecondary,
             fontWeight: FontWeight.w500,
           ),
         ),

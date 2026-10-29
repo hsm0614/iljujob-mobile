@@ -18,13 +18,7 @@ import 'package:uuid/uuid.dart';
 // ════════════════════════════════════════════════════════
 //  디자인 토큰 (post_job_form.dart와 동일)
 // ════════════════════════════════════════════════════════
-const _blue = AppColors.primary;
-const _bg = AppColors.bgPage;
-const _border = AppColors.border;
-// textTertiary(#9CA3AF)는 _bg 위 2.35:1로 WCAG AA 미달이라 승격.
-const _label = AppColors.textSecondary;
-const _text = AppColors.textPrimary;
-const _sub = AppColors.textSecondary;
+// textTertiary(#9CA3AF)는 AppColors.bgPage 위 2.35:1로 WCAG AA 미달이라 승격.
 const int _minWage = 10320;
 
 // ════════════════════════════════════════════════════════
@@ -396,7 +390,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                           ? Icons.schedule_rounded
                           : Icons.check_circle_rounded,
                       size: 38,
-                      color: isDelayed ? AppColors.warningDark : _blue,
+                      color: isDelayed ? AppColors.warningDark : AppColors.primary,
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -405,7 +399,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                     style: TextStyle(
                       fontSize: AppFontSize.h2,
                       fontWeight: FontWeight.w800,
-                      color: _text,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -416,7 +410,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: AppFontSize.button,
-                      color: _sub,
+                      color: AppColors.textSecondary,
                       height: 1.55,
                     ),
                   ),
@@ -426,7 +420,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                     child: ElevatedButton(
                       onPressed: () => Navigator.pop(sheetCtx),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _blue,
+                        backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 15),
@@ -530,13 +524,13 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                 style: TextStyle(
                   fontSize: AppFontSize.titleLg,
                   fontWeight: FontWeight.w800,
-                  color: _text,
+                  color: AppColors.textPrimary,
                 ),
               ),
               const SizedBox(height: 6),
               const Text(
                 '동일한 공고를 새 날짜·급여로 재등록해요',
-                style: TextStyle(fontSize: AppFontSize.body2, color: _sub),
+                style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
               ),
               if (_reachableWorkersCount != null) ...[
                 const SizedBox(height: 14),
@@ -653,7 +647,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                     width: 40,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: _border,
+                      color: AppColors.border,
                       borderRadius: BorderRadius.circular(AppRadius.full),
                     ),
                   ),
@@ -671,7 +665,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: _blue.withOpacity(0.1),
+                          color: AppColors.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                         child: const Text(
@@ -679,7 +673,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                           style: TextStyle(
                             fontSize: AppFontSize.meta,
                             fontWeight: FontWeight.w800,
-                            color: _blue,
+                            color: AppColors.primary,
                           ),
                         ),
                       ),
@@ -689,7 +683,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                           '날짜·급여만 바꾸고 바로 등록',
                           style: TextStyle(
                             fontSize: AppFontSize.body2,
-                            color: _label,
+                            color: AppColors.textSecondary,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -744,7 +738,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                                 '→',
                                 style: TextStyle(
                                   fontSize: AppFontSize.titleLg,
-                                  color: _label.withOpacity(0.6),
+                                  color: AppColors.textSecondary.withOpacity(0.6),
                                 ),
                               ),
                             ),
@@ -807,12 +801,12 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                                           vertical: 12,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: sel ? _blue : _bg,
+                                          color: sel ? AppColors.primary : AppColors.bgPage,
                                           borderRadius: BorderRadius.circular(
                                             12,
                                           ),
                                           border: Border.all(
-                                            color: sel ? _blue : _border,
+                                            color: sel ? AppColors.primary : AppColors.border,
                                           ),
                                         ),
                                         child: Center(
@@ -821,7 +815,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                                             style: TextStyle(
                                               fontSize: AppFontSize.button,
                                               fontWeight: FontWeight.w700,
-                                              color: sel ? Colors.white : _sub,
+                                              color: sel ? Colors.white : AppColors.textSecondary,
                                             ),
                                           ),
                                         ),
@@ -847,7 +841,7 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                             ),
                             child: const Text(
                               '금액은 공고에 급여 협의로 표시됩니다.',
-                              style: TextStyle(fontSize: AppFontSize.body2, color: _sub),
+                              style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
                             ),
                           )
                         else
@@ -857,23 +851,23 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                             style: const TextStyle(
                               fontSize: AppFontSize.h2,
                               fontWeight: FontWeight.w800,
-                              color: _text,
+                              color: AppColors.textPrimary,
                             ),
                             decoration: InputDecoration(
                               hintText: '0',
                               hintStyle: const TextStyle(
                                 fontSize: AppFontSize.h2,
                                 fontWeight: FontWeight.w800,
-                                color: _border,
+                                color: AppColors.border,
                               ),
                               suffixText: '원',
                               suffixStyle: const TextStyle(
                                 fontSize: AppFontSize.buttonLg,
                                 fontWeight: FontWeight.w700,
-                                color: _label,
+                                color: AppColors.textSecondary,
                               ),
                               filled: true,
-                              fillColor: _bg,
+                              fillColor: AppColors.bgPage,
                               contentPadding: const EdgeInsets.symmetric(
                                 horizontal: 16,
                                 vertical: 16,
@@ -884,14 +878,14 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                                   color:
                                       _payWarning != null
                                           ? AppColors.error
-                                          : _border,
+                                          : AppColors.border,
                                 ),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(AppRadius.md),
                                 borderSide: BorderSide(
                                   color:
-                                      _payWarning != null ? AppColors.error : _blue,
+                                      _payWarning != null ? AppColors.error : AppColors.primary,
                                   width: 1.5,
                                 ),
                               ),
@@ -958,14 +952,14 @@ class _QuickPostSheetBodyState extends State<_QuickPostSheetBody> {
                             const Icon(
                               Icons.info_outline,
                               size: 13,
-                              color: _label,
+                              color: AppColors.textSecondary,
                             ),
                             const SizedBox(width: 4),
                             Text(
                               '2026년 최저시급 ${_fmt.format(_minWage)}원',
                               style: const TextStyle(
                                 fontSize: AppFontSize.caption,
-                                color: _label,
+                                color: AppColors.textSecondary,
                               ),
                             ),
                           ],
@@ -1018,7 +1012,7 @@ class _JobSummaryCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.primaryLight,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: _blue.withOpacity(0.2)),
+        border: Border.all(color: AppColors.primary.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1032,7 +1026,7 @@ class _JobSummaryCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: AppFontSize.buttonLg,
                     fontWeight: FontWeight.w800,
-                    color: _text,
+                    color: AppColors.textPrimary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1042,7 +1036,7 @@ class _JobSummaryCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: _blue.withOpacity(0.12),
+                  color: AppColors.primary.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
                 child: Text(
@@ -1050,14 +1044,14 @@ class _JobSummaryCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: AppFontSize.caption,
                     fontWeight: FontWeight.w700,
-                    color: _blue,
+                    color: AppColors.primary,
                   ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          const Divider(color: _border, height: 1),
+          const Divider(color: AppColors.border, height: 1),
           const SizedBox(height: 10),
 
           // 정보 그리드
@@ -1087,14 +1081,14 @@ class _JobSummaryCard extends StatelessWidget {
               Icon(
                 Icons.check_circle_outline,
                 size: 14,
-                color: _blue.withOpacity(0.7),
+                color: AppColors.primary.withOpacity(0.7),
               ),
               const SizedBox(width: 4),
               const Text(
                 '위 정보를 그대로 재사용해요',
                 style: TextStyle(
                   fontSize: AppFontSize.caption,
-                  color: _label,
+                  color: AppColors.textSecondary,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -1116,13 +1110,13 @@ class _InfoChip extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Icon(icon, size: 13, color: color ?? _label),
+      Icon(icon, size: 13, color: color ?? AppColors.textSecondary),
       const SizedBox(width: 3),
       Text(
         label,
         style: TextStyle(
           fontSize: AppFontSize.meta,
-          color: color ?? _sub,
+          color: color ?? AppColors.textSecondary,
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -1145,20 +1139,20 @@ class _DateRangeSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: _bg,
+        color: AppColors.bgPage,
         borderRadius: BorderRadius.circular(AppRadius.sm),
-        border: Border.all(color: _border),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
-          const Icon(Icons.date_range_rounded, size: 15, color: _blue),
+          const Icon(Icons.date_range_rounded, size: 15, color: AppColors.primary),
           const SizedBox(width: 6),
           Text(
             '${dfShort.format(start)} ~ ${dfShort.format(end)}  ·  총 $days일',
             style: const TextStyle(
               fontSize: AppFontSize.meta,
               fontWeight: FontWeight.w600,
-              color: _sub,
+              color: AppColors.textSecondary,
             ),
           ),
         ],
@@ -1175,14 +1169,14 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Row(
     children: [
-      Icon(icon, size: 16, color: _blue),
+      Icon(icon, size: 16, color: AppColors.primary),
       const SizedBox(width: 6),
       Text(
         label,
         style: const TextStyle(
           fontSize: AppFontSize.button,
           fontWeight: FontWeight.w700,
-          color: _text,
+          color: AppColors.textPrimary,
         ),
       ),
     ],
@@ -1206,9 +1200,9 @@ class _DateTile extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: value != null ? AppColors.primaryLight : _bg,
+        color: value != null ? AppColors.primaryLight : AppColors.bgPage,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: value != null ? _blue : _border),
+        border: Border.all(color: value != null ? AppColors.primary : AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1218,7 +1212,7 @@ class _DateTile extends StatelessWidget {
             style: TextStyle(
               fontSize: AppFontSize.caption,
               fontWeight: FontWeight.w600,
-              color: value != null ? _blue : _label,
+              color: value != null ? AppColors.primary : AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 4),
@@ -1227,7 +1221,7 @@ class _DateTile extends StatelessWidget {
             style: TextStyle(
               fontSize: AppFontSize.body2,
               fontWeight: FontWeight.w700,
-              color: value != null ? _text : _label,
+              color: value != null ? AppColors.textPrimary : AppColors.textSecondary,
             ),
           ),
         ],
@@ -1258,11 +1252,11 @@ class _OptionCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: _border),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
-          Icon(icon, size: 24, color: _blue),
+          Icon(icon, size: 24, color: AppColors.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -1273,27 +1267,27 @@ class _OptionCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: AppFontSize.body1,
                     fontWeight: FontWeight.w700,
-                    color: _text,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(desc, style: const TextStyle(fontSize: AppFontSize.meta, color: _label)),
+                Text(desc, style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary)),
               ],
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: (badgeOk ? _blue : AppColors.error).withOpacity(0.1),
+              color: (badgeOk ? AppColors.primary : AppColors.error).withOpacity(0.1),
               borderRadius: BorderRadius.circular(AppRadius.full),
-              border: Border.all(color: badgeOk ? _blue : AppColors.error),
+              border: Border.all(color: badgeOk ? AppColors.primary : AppColors.error),
             ),
             child: Text(
               badge,
               style: TextStyle(
                 fontSize: AppFontSize.meta,
                 fontWeight: FontWeight.w700,
-                color: badgeOk ? _blue : AppColors.error,
+                color: badgeOk ? AppColors.primary : AppColors.error,
               ),
             ),
           ),
@@ -1334,10 +1328,10 @@ class _BottomButtons extends StatelessWidget {
           child: ElevatedButton(
             onPressed: (isSubmitting || !canSubmit) ? null : onTap,
             style: ElevatedButton.styleFrom(
-              backgroundColor: canSubmit ? _blue : _border,
-              foregroundColor: canSubmit ? Colors.white : _label,
+              backgroundColor: canSubmit ? AppColors.primary : AppColors.border,
+              foregroundColor: canSubmit ? Colors.white : AppColors.textSecondary,
               elevation: canSubmit ? 2 : 0,
-              shadowColor: _blue.withOpacity(0.3),
+              shadowColor: AppColors.primary.withOpacity(0.3),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(AppRadius.lg),
               ),

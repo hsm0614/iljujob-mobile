@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:iljujob/widget/app_ui.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../config/constants.dart';
@@ -197,15 +196,7 @@ class JobApplicantGroup {
 }
 
 // ─── 상수 ────────────────────────────────────────────────────────
-const kBrandBlue = AppColors.primary;
-const _blue = AppColors.primary;
-const _blueBg = AppColors.primaryLight;
-const _green = AppColors.badgeSameDay;
 const _greenBg = Color(0xFFE8F7EF);
-const _signalTime = AppColors.badgeUrgent; // 시간이 급함
-const _signalTimeBg = AppColors.warningLight;
-const _ink = AppColors.textPrimary;
-const _inkSecondary = AppColors.textSecondary;
 const int _jobsPerPage = 5;
 const int _applicantsPreview = 3;
 
@@ -468,7 +459,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                       child: ElevatedButton(
                         onPressed: () => Navigator.pop(ctx, true),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _blue,
+                          backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           padding: const EdgeInsets.symmetric(vertical: 13),
@@ -556,7 +547,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.mark_chat_unread_rounded, color: _blue),
+                  const Icon(Icons.mark_chat_unread_rounded, color: AppColors.primary),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -597,7 +588,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppRadius.md),
-                    borderSide: const BorderSide(color: _blue, width: 1.4),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 1.4),
                   ),
                 ),
               ),
@@ -611,7 +602,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                     Navigator.pop(ctx, text);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _blue,
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(vertical: 14),
@@ -859,7 +850,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                             : '${group.applicants.length - _applicantsPreview}명 더보기',
                         style: const TextStyle(
                           fontSize: AppFontSize.body2,
-                          color: _blue,
+                          color: AppColors.primary,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -869,7 +860,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                             ? Icons.keyboard_arrow_up_rounded
                             : Icons.keyboard_arrow_down_rounded,
                         size: 18,
-                        color: _blue,
+                        color: AppColors.primary,
                       ),
                     ],
                   ),
@@ -934,7 +925,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                           Icon(
                             Icons.location_on_rounded,
                             size: 12,
-                            color: _inkSecondary,
+                            color: AppColors.textSecondary,
                           ),
                           const SizedBox(width: 2),
                           Flexible(
@@ -944,7 +935,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 fontSize: AppFontSize.meta,
-                                color: _inkSecondary,
+                                color: AppColors.textSecondary,
                               ),
                             ),
                           ),
@@ -954,7 +945,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                           Icon(
                             Icons.calendar_today_rounded,
                             size: 12,
-                            color: _inkSecondary,
+                            color: AppColors.textSecondary,
                           ),
                           const SizedBox(width: 2),
                           Text(
@@ -963,7 +954,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                                 : group.startDate!,
                             style: const TextStyle(
                               fontSize: AppFontSize.meta,
-                              color: _inkSecondary,
+                              color: AppColors.textSecondary,
                             ),
                           ),
                         ],
@@ -1009,14 +1000,14 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   _headerSignalChip(
                     icon: Icons.priority_high_rounded,
                     label: '처리 필요 ${group.pendingCount}명',
-                    color: _signalTime,
-                    background: _signalTimeBg,
+                    color: AppColors.badgeUrgent,
+                    background: AppColors.warningLight,
                   ),
                 if (group.confirmedCount > 0)
                   _headerSignalChip(
                     icon: Icons.check_circle_outline_rounded,
                     label: '출근 확정 ${group.confirmedCount}명',
-                    color: _green,
+                    color: AppColors.badgeSameDay,
                     background: _greenBg,
                   ),
               ],
@@ -1027,14 +1018,14 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 _smallActionChip(
                   label: allSelected ? '선택 해제' : '전체 선택',
                   selected: allSelected,
-                  color: _blue,
+                  color: AppColors.primary,
                   onTap: () => _toggleAllApplicants(group),
                 ),
                 const SizedBox(width: 8),
                 _smallActionChip(
                   label: selectedCount > 0 ? '메시지 $selectedCount' : '메시지',
                   selected: selectedCount > 0,
-                  color: _green,
+                  color: AppColors.badgeSameDay,
                   onTap:
                       selectedCount > 0 && !_bulkSending
                           ? () => _showBulkMessageSheet(group)
@@ -1161,13 +1152,13 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                       style: const TextStyle(
                         fontSize: AppFontSize.body1,
                         fontWeight: FontWeight.w700,
-                        color: _inkSecondary,
+                        color: AppColors.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle,
-                      style: const TextStyle(fontSize: AppFontSize.meta, color: _inkSecondary),
+                      style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
                     ),
                   ],
                 ),
@@ -1201,8 +1192,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     final phoneLoading = _phoneLoading.contains(applicant.applicationId);
     final actionColor =
         applicant.isCompleted
-            ? _green
-            : _blue; // 확정 상태도 버튼은 CTA 파랑
+            ? AppColors.badgeSameDay
+            : AppColors.primary; // 확정 상태도 버튼은 CTA 파랑
     return Column(
       children: [
         Padding(
@@ -1219,13 +1210,13 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   margin: const EdgeInsets.only(right: 10),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: selected ? _blue : Colors.white,
+                    color: selected ? AppColors.primary : Colors.white,
                     border: Border.all(
                       color:
                           selected
-                              ? _blue
+                              ? AppColors.primary
                               : applicant.isNew
-                              ? _blue
+                              ? AppColors.primary
                               : AppColors.textDisabled,
                       width: 1.5,
                     ),
@@ -1288,7 +1279,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                         ].join(' · '),
                         style: const TextStyle(
                           fontSize: AppFontSize.meta,
-                          color: _inkSecondary,
+                          color: AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 7),
@@ -1348,7 +1339,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                                       color:
                                           phoneLoading
                                               ? AppColors.textTertiary
-                                              : _blue,
+                                              : AppColors.primary,
                                     ),
                                   ),
                                 ),
@@ -1364,7 +1355,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                                       Icon(
                                         Icons.copy_rounded,
                                         size: 13,
-                                        color: _blue,
+                                        color: AppColors.primary,
                                       ),
                                       SizedBox(width: 3),
                                       Text(
@@ -1372,7 +1363,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                                         style: TextStyle(
                                           fontSize: AppFontSize.meta,
                                           fontWeight: FontWeight.w800,
-                                          color: _blue,
+                                          color: AppColors.primary,
                                         ),
                                       ),
                                     ],
@@ -1449,10 +1440,10 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 height: 36,
                 margin: const EdgeInsets.symmetric(horizontal: 3),
                 decoration: BoxDecoration(
-                  color: isSelected ? _blue : Colors.transparent,
+                  color: isSelected ? AppColors.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                   border: Border.all(
-                    color: isSelected ? _blue : AppColors.textDisabled,
+                    color: isSelected ? AppColors.primary : AppColors.textDisabled,
                   ),
                 ),
                 child: Center(
@@ -1573,7 +1564,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
 
   Widget _statusChip(ApplicantModel applicant) {
     if (applicant.isCanceled) {
-      return _chip(applicant.statusLabel, AppColors.bgMuted, _inkSecondary);
+      return _chip(applicant.statusLabel, AppColors.bgMuted, AppColors.textSecondary);
     }
     if (applicant.isCompleted) {
       return _chip(
@@ -1589,8 +1580,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         AppColors.textPrimary,
       );
     }
-    if (applicant.isNew) return _chip(applicant.statusLabel, _blueBg, _blue);
-    return _chip('확인', AppColors.bgMuted, _inkSecondary);
+    if (applicant.isNew) return _chip(applicant.statusLabel, AppColors.primaryLight, AppColors.primary);
+    return _chip('확인', AppColors.bgMuted, AppColors.textSecondary);
   }
 
   Widget _chip(String label, Color bg, Color fg) {
@@ -1607,31 +1598,6 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
           color: fg,
           fontWeight: FontWeight.w800,
         ),
-      ),
-    );
-  }
-
-  Widget _miniInfoChip(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.bgPage,
-        borderRadius: BorderRadius.circular(AppRadius.full),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 11, color: AppColors.textSecondary),
-          const SizedBox(width: 3),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: AppFontSize.caption,
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
       ),
     );
   }

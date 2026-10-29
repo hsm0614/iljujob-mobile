@@ -11,7 +11,6 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import '../../../config/messages.dart';
 import '../../../config/app_theme.dart';
 
-const kBrand = AppColors.primary;
 
 class SignupClientScreen extends StatefulWidget {
   const SignupClientScreen({super.key});
@@ -294,14 +293,14 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.md),
-        borderSide: const BorderSide(color: kBrand, width: 1.5),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
     );
   }
 
   ButtonStyle _primaryBtnStyle({bool enabled = true}) {
     return ElevatedButton.styleFrom(
-      backgroundColor: enabled ? kBrand : const Color(0xFF93C5FD),
+      backgroundColor: enabled ? AppColors.primary : const Color(0xFF93C5FD),
       foregroundColor: Colors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
@@ -347,9 +346,9 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
             height: 22,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: value ? kBrand : Colors.transparent,
+              color: value ? AppColors.primary : Colors.transparent,
               border: Border.all(
-                color: value ? kBrand : AppColors.textDisabled,
+                color: value ? AppColors.primary : AppColors.textDisabled,
                 width: 1.5,
               ),
             ),
@@ -382,7 +381,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
           ),
           child: const Text(
             '보기',
-            style: TextStyle(fontSize: AppFontSize.meta, color: kBrand),
+            style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.primary),
           ),
         ),
       ],
@@ -587,11 +586,11 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
                             height: 22,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: _allAgreed ? kBrand : Colors.transparent,
+                              color: _allAgreed ? AppColors.primary : Colors.transparent,
                               border: Border.all(
                                 color:
                                     _allAgreed
-                                        ? kBrand
+                                        ? AppColors.primary
                                         : AppColors.textDisabled,
                                 width: 1.5,
                               ),
@@ -713,7 +712,7 @@ class _StepIndicator extends StatelessWidget {
             height: 4,
             width: isActive ? 24 : 8,
             decoration: BoxDecoration(
-              color: isActive ? kBrand : AppColors.textDisabled,
+              color: isActive ? AppColors.primary : AppColors.textDisabled,
               borderRadius: BorderRadius.circular(2),
             ),
           );

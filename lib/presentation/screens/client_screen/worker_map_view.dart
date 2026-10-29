@@ -17,14 +17,8 @@ import 'nearby_workers_screen.dart';
 import '../../../config/app_theme.dart';
 
 // ── 디자인 토큰 ───────────────────────────────────────────────────
-const _primary = AppColors.primary;
-const _border = AppColors.border;
-const _textMain = AppColors.textPrimary;
-const _textSub = AppColors.textSecondary;
 const _red = Color(0xFFFF3B30);
-const _green = AppColors.gradeB;
 // 알림 발송 버튼(누를 수 있음) — 보라 폐지, CTA 파랑 (2026-10)
-const _broadcastColor = AppColors.primary;
 
 // ── 공고 모델 ─────────────────────────────────────────────────────
 class _Job {
@@ -110,8 +104,8 @@ class _Job {
 
   Color get pinColor {
     if (isUrgent) return _red;
-    if (status == 'active') return _primary;
-    return _textSub;
+    if (status == 'active') return AppColors.primary;
+    return AppColors.textSecondary;
   }
 
   String get statusLabel {
@@ -863,7 +857,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                   style: const TextStyle(
                     fontSize: AppFontSize.titleLg,
                     fontWeight: FontWeight.w800,
-                    color: _textMain,
+                    color: AppColors.textPrimary,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -872,7 +866,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                   style: const TextStyle(
                     fontSize: AppFontSize.body2,
                     height: 1.35,
-                    color: _textSub,
+                    color: AppColors.textSecondary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -891,15 +885,15 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                     contentPadding: const EdgeInsets.all(14),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadius.md),
-                      borderSide: const BorderSide(color: _border),
+                      borderSide: const BorderSide(color: AppColors.border),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadius.md),
-                      borderSide: const BorderSide(color: _border),
+                      borderSide: const BorderSide(color: AppColors.border),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(AppRadius.md),
-                      borderSide: const BorderSide(color: _primary, width: 1.5),
+                      borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
                     ),
                   ),
                 ),
@@ -910,8 +904,8 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                       child: OutlinedButton(
                         onPressed: () => Navigator.pop(sheetContext),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: _textSub,
-                          side: const BorderSide(color: _border),
+                          foregroundColor: AppColors.textSecondary,
+                          side: const BorderSide(color: AppColors.border),
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(AppRadius.md),
@@ -929,7 +923,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                               controller.text.trim(),
                             ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _primary,
+                          backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -959,8 +953,8 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     final canMessage = _canDirectMessageSelected;
     final gradeColor = switch (worker.grade) {
       'S' => AppColors.gradeS,
-      'A' => _primary,
-      'B' => _green,
+      'A' => AppColors.primary,
+      'B' => AppColors.gradeB,
       _ => AppColors.textTertiary,
     };
     showModalBottomSheet(
@@ -990,7 +984,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                             worker.profileImageUrl.isEmpty
                                 ? const Icon(
                                   Icons.person_rounded,
-                                  color: _textSub,
+                                  color: AppColors.textSecondary,
                                 )
                                 : null,
                       ),
@@ -1004,7 +998,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                               style: const TextStyle(
                                 fontSize: AppFontSize.title,
                                 fontWeight: FontWeight.w800,
-                                color: _textMain,
+                                color: AppColors.textPrimary,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -1012,7 +1006,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                               '${_distanceLabel(worker.distanceM)} · 활동등급 ${worker.grade}',
                               style: const TextStyle(
                                 fontSize: AppFontSize.meta,
-                                color: _textSub,
+                                color: AppColors.textSecondary,
                               ),
                             ),
                           ],
@@ -1046,11 +1040,11 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                       decoration: BoxDecoration(
                         color: AppColors.bgMuted,
                         borderRadius: BorderRadius.circular(AppRadius.sm),
-                        border: Border.all(color: _border),
+                        border: Border.all(color: AppColors.border),
                       ),
                       child: const Text(
                         '이미 이 공고로 메시지를 보낸 알바생입니다.',
-                        style: TextStyle(fontSize: AppFontSize.meta, color: _textSub),
+                        style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
                       ),
                     ),
                   ],
@@ -1061,7 +1055,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                         child: _Btn(
                           label: '프로필 보기',
                           icon: Icons.account_circle_rounded,
-                          color: _primary,
+                          color: AppColors.primary,
                           filled: false,
                           onTap: () {
                             Navigator.pop(context);
@@ -1090,7 +1084,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                               worker.alreadySent
                                   ? Icons.check_rounded
                                   : Icons.send_rounded,
-                          color: canMessage ? _red : _textSub,
+                          color: canMessage ? _red : AppColors.textSecondary,
                           filled: true,
                           onTap:
                               canMessage &&
@@ -1106,7 +1100,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                     const SizedBox(height: 10),
                     const Text(
                       '게시 중인 공고와 남은 먼저 연락하기 제공량을 확인해 주세요.',
-                      style: TextStyle(fontSize: AppFontSize.meta, color: _textSub),
+                      style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
                     ),
                   ],
                 ],
@@ -1120,7 +1114,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(msg),
-          backgroundColor: isError ? _red : _green,
+          backgroundColor: isError ? _red : AppColors.gradeB,
           duration: const Duration(seconds: 3),
         ),
       );
@@ -1264,7 +1258,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: _primary,
+                            color: AppColors.primary,
                           ),
                         ),
                       ),
@@ -1274,7 +1268,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                       child: _chipContainer(
                         child: const Text(
                           '등록된 공고 없음',
-                          style: TextStyle(fontSize: AppFontSize.meta, color: _textSub),
+                          style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
                         ),
                       ),
                     )
@@ -1296,7 +1290,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                               color: sel ? job.pinColor : Colors.white,
                               borderRadius: BorderRadius.circular(AppRadius.xl),
                               border: Border.all(
-                                color: sel ? Colors.transparent : _border,
+                                color: sel ? Colors.transparent : AppColors.border,
                               ),
                               boxShadow: [
                                 BoxShadow(
@@ -1332,7 +1326,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                                   style: TextStyle(
                                     fontSize: AppFontSize.body2,
                                     fontWeight: FontWeight.w600,
-                                    color: sel ? Colors.white : _textMain,
+                                    color: sel ? Colors.white : AppColors.textPrimary,
                                   ),
                                 ),
                                 if (job.applicantCount > 0) ...[
@@ -1348,7 +1342,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                                               ? Colors.white.withValues(
                                                 alpha: 0.25,
                                               )
-                                              : _primary.withValues(alpha: 0.1),
+                                              : AppColors.primary.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(AppRadius.full),
                                     ),
                                     child: Text(
@@ -1356,7 +1350,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                                       style: TextStyle(
                                         fontSize: AppFontSize.caption,
                                         fontWeight: FontWeight.w700,
-                                        color: sel ? Colors.white : _primary,
+                                        color: sel ? Colors.white : AppColors.primary,
                                       ),
                                     ),
                                   ),
@@ -1413,7 +1407,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                 height: 14,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: _primary,
+                  color: AppColors.primary,
                 ),
               ),
             ),
@@ -1569,7 +1563,7 @@ class _Fab extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         shape: BoxShape.circle,
-        border: Border.all(color: _border),
+        border: Border.all(color: AppColors.border),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
@@ -1578,7 +1572,7 @@ class _Fab extends StatelessWidget {
           ),
         ],
       ),
-      child: Icon(icon, color: onTap != null ? _primary : _textSub, size: 21),
+      child: Icon(icon, color: onTap != null ? AppColors.primary : AppColors.textSecondary, size: 21),
     ),
   );
 }
@@ -1650,7 +1644,7 @@ class _ExpandableJobCardState extends State<_ExpandableJobCard> {
                     height: 4,
                     decoration: BoxDecoration(
                       color:
-                          _expanded ? _primary.withValues(alpha: 0.5) : _border,
+                          _expanded ? AppColors.primary.withValues(alpha: 0.5) : AppColors.border,
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -1688,7 +1682,7 @@ class _ExpandableJobCardState extends State<_ExpandableJobCard> {
                       style: const TextStyle(
                         fontSize: AppFontSize.body1,
                         fontWeight: FontWeight.w800,
-                        color: _textMain,
+                        color: AppColors.textPrimary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1701,7 +1695,7 @@ class _ExpandableJobCardState extends State<_ExpandableJobCard> {
                       Icon(
                         Icons.people_alt_rounded,
                         size: 14,
-                        color: widget.workerCount > 0 ? _primary : _textSub,
+                        color: widget.workerCount > 0 ? AppColors.primary : AppColors.textSecondary,
                       ),
                       const SizedBox(width: 3),
                       Text(
@@ -1711,13 +1705,13 @@ class _ExpandableJobCardState extends State<_ExpandableJobCard> {
                         style: TextStyle(
                           fontSize: AppFontSize.body2,
                           fontWeight: FontWeight.w700,
-                          color: widget.workerCount > 0 ? _primary : _textSub,
+                          color: widget.workerCount > 0 ? AppColors.primary : AppColors.textSecondary,
                         ),
                       ),
                       const SizedBox(width: 2),
                       const Text(
                         '5km',
-                        style: TextStyle(fontSize: AppFontSize.caption, color: _textSub),
+                        style: TextStyle(fontSize: AppFontSize.caption, color: AppColors.textSecondary),
                       ),
                     ],
                   ),
@@ -1801,12 +1795,12 @@ class _CollapsedMeta extends StatelessWidget {
                     const Icon(
                       Icons.calendar_today_rounded,
                       size: 11,
-                      color: _textSub,
+                      color: AppColors.textSecondary,
                     ),
                     const SizedBox(width: 3),
                     Text(
                       job.startDate,
-                      style: const TextStyle(fontSize: AppFontSize.meta, color: _textSub),
+                      style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
                     ),
                     const SizedBox(width: 8),
                   ],
@@ -1814,12 +1808,12 @@ class _CollapsedMeta extends StatelessWidget {
                     const Icon(
                       Icons.access_time_rounded,
                       size: 11,
-                      color: _textSub,
+                      color: AppColors.textSecondary,
                     ),
                     const SizedBox(width: 3),
                     Text(
                       job.timeRange,
-                      style: const TextStyle(fontSize: AppFontSize.meta, color: _textSub),
+                      style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
                     ),
                     const SizedBox(width: 8),
                   ],
@@ -1827,12 +1821,12 @@ class _CollapsedMeta extends StatelessWidget {
                     const Icon(
                       Icons.payments_rounded,
                       size: 11,
-                      color: _textSub,
+                      color: AppColors.textSecondary,
                     ),
                     const SizedBox(width: 3),
                     Text(
                       _comma(job.hourlyWage),
-                      style: const TextStyle(fontSize: AppFontSize.meta, color: _textSub),
+                      style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
                     ),
                   ],
                 ],
@@ -1902,18 +1896,18 @@ class _ExpandedDetail extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.primaryLight,
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: _primary.withValues(alpha: 0.25)),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.payments_rounded, size: 16, color: _primary),
+                  const Icon(Icons.payments_rounded, size: 16, color: AppColors.primary),
                   const SizedBox(width: 8),
                   Text(
                     '시급 ${_comma(job.hourlyWage)}원',
                     style: const TextStyle(
                       fontSize: AppFontSize.buttonLg,
                       fontWeight: FontWeight.w800,
-                      color: _primary,
+                      color: AppColors.primary,
                     ),
                   ),
                 ],
@@ -1930,7 +1924,7 @@ class _ExpandedDetail extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppColors.bgMuted,
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: _border),
+                border: Border.all(color: AppColors.border),
               ),
               child: Column(
                 children: [
@@ -1939,13 +1933,13 @@ class _ExpandedDetail extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 9),
                       child: Row(
                         children: [
-                          Icon(metaRows[i].$1, size: 14, color: _textSub),
+                          Icon(metaRows[i].$1, size: 14, color: AppColors.textSecondary),
                           const SizedBox(width: 8),
                           Text(
                             metaRows[i].$2,
                             style: const TextStyle(
                               fontSize: AppFontSize.meta,
-                              color: _textSub,
+                              color: AppColors.textSecondary,
                               fontWeight: FontWeight.w700,
                             ),
                           ),
@@ -1958,7 +1952,7 @@ class _ExpandedDetail extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                 fontSize: AppFontSize.body2,
-                                color: _textMain,
+                                color: AppColors.textPrimary,
                                 fontWeight: FontWeight.w800,
                               ),
                             ),
@@ -1967,7 +1961,7 @@ class _ExpandedDetail extends StatelessWidget {
                       ),
                     ),
                     if (i < metaRows.length - 1)
-                      const Divider(height: 1, color: _border),
+                      const Divider(height: 1, color: AppColors.border),
                   ],
                 ],
               ),
@@ -1981,7 +1975,7 @@ class _ExpandedDetail extends StatelessWidget {
               style: TextStyle(
                 fontSize: AppFontSize.meta,
                 fontWeight: FontWeight.w800,
-                color: _textSub,
+                color: AppColors.textSecondary,
               ),
             ),
             const SizedBox(height: 6),
@@ -1991,13 +1985,13 @@ class _ExpandedDetail extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: _border),
+                border: Border.all(color: AppColors.border),
               ),
               child: Text(
                 job.description,
                 style: const TextStyle(
                   fontSize: AppFontSize.body2,
-                  color: _textMain,
+                  color: AppColors.textPrimary,
                   height: 1.6,
                 ),
                 maxLines: 6,
@@ -2047,7 +2041,7 @@ class _ActionRow extends StatelessWidget {
                   ? _Btn(
                     label: '긴급 공고만',
                     icon: Icons.lock_rounded,
-                    color: _textSub,
+                    color: AppColors.textSecondary,
                     filled: false,
                     onTap: null,
                   )
@@ -2062,7 +2056,7 @@ class _ActionRow extends StatelessWidget {
                   : _Btn(
                     label: '이용권 구매',
                     icon: Icons.add_shopping_cart_rounded,
-                    color: _textSub,
+                    color: AppColors.textSecondary,
                     filled: false,
                     onTap: onBuyPass,
                   ),
@@ -2077,14 +2071,14 @@ class _ActionRow extends StatelessWidget {
                         broadcasting
                             ? Icons.hourglass_top_rounded
                             : Icons.campaign_rounded,
-                    color: _broadcastColor,
+                    color: AppColors.primary,
                     filled: false,
                     onTap: broadcasting ? null : onBroadcast,
                   )
                   : _Btn(
                     label: '알림 이용 불가',
                     icon: Icons.lock_rounded,
-                    color: _textSub,
+                    color: AppColors.textSecondary,
                     filled: false,
                     onTap: null,
                   ),
@@ -2124,7 +2118,7 @@ class _Btn extends StatelessWidget {
     final dis = onTap == null;
     final bg =
         filled ? (dis ? AppColors.textDisabled : color) : Colors.transparent;
-    final fg = filled ? Colors.white : (dis ? _textSub : color);
+    final fg = filled ? Colors.white : (dis ? AppColors.textSecondary : color);
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -2132,7 +2126,7 @@ class _Btn extends StatelessWidget {
         decoration: BoxDecoration(
           color: bg,
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: filled ? null : Border.all(color: dis ? _border : color),
+          border: filled ? null : Border.all(color: dis ? AppColors.border : color),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -2163,8 +2157,8 @@ class _JobMapCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bg = isSelected ? job.pinColor : Colors.white;
-    final fg = isSelected ? Colors.white : _textMain;
-    final border = isSelected ? job.pinColor : _border;
+    final fg = isSelected ? Colors.white : AppColors.textPrimary;
+    final border = isSelected ? job.pinColor : AppColors.border;
 
     return Column(
       mainAxisSize: MainAxisSize.min,

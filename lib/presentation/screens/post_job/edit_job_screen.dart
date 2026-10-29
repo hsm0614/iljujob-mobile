@@ -64,8 +64,6 @@ class EditJobScreen extends StatefulWidget {
 
 class _EditJobScreenState extends State<EditJobScreen> {
   // ===== Brand =====
-  static const Color brandBlue = AppColors.primary;
-  static const Color cardBg = AppColors.bgMuted;
   static const int minWagePerHour = 10320; // 2026년 적용
 
   final _formKey = GlobalKey<FormState>();
@@ -462,7 +460,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                   ),
                                   highlightedTextStyle: const TextStyle(
                                     fontSize: AppFontSize.titleLg,
-                                    color: brandBlue,
+                                    color: AppColors.primary,
                                     fontWeight: FontWeight.bold,
                                   ),
                                   spacing: 40,
@@ -499,7 +497,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                                   ),
                                   highlightedTextStyle: const TextStyle(
                                     fontSize: AppFontSize.titleLg,
-                                    color: brandBlue,
+                                    color: AppColors.primary,
                                     fontWeight: FontWeight.bold,
                                   ),
                                   spacing: 40,
@@ -560,7 +558,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                           Navigator.pop(context);
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: brandBlue,
+                          backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -758,7 +756,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                   child: ElevatedButton(
                     onPressed: () => Navigator.pop(ctx),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: brandBlue,
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 14),
@@ -893,10 +891,10 @@ class _EditJobScreenState extends State<EditJobScreen> {
                 width: 36,
                 height: 36,
                 decoration: BoxDecoration(
-                  color: cardBg,
+                  color: AppColors.bgMuted,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
-                child: Icon(icon, color: brandBlue, size: 20),
+                child: Icon(icon, color: AppColors.primary, size: 20),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -945,7 +943,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        borderSide: const BorderSide(color: brandBlue, width: 1.6),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.6),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -1003,9 +1001,9 @@ class _EditJobScreenState extends State<EditJobScreen> {
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? brandBlue : Colors.white,
+            color: selected ? AppColors.primary : Colors.white,
             border: Border.all(
-              color: selected ? brandBlue : AppColors.border,
+              color: selected ? AppColors.primary : AppColors.border,
             ),
             borderRadius: BorderRadius.circular(AppRadius.full),
           ),
@@ -1036,7 +1034,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
       return Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: cardBg,
+          color: AppColors.bgMuted,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: AppColors.border),
         ),
@@ -1169,7 +1167,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           decoration: BoxDecoration(
-            color: cardBg,
+            color: AppColors.bgMuted,
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(color: AppColors.border),
           ),
@@ -1193,13 +1191,13 @@ class _EditJobScreenState extends State<EditJobScreen> {
       child: Ink(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
         decoration: BoxDecoration(
-          color: cardBg,
+          color: AppColors.bgMuted,
           borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: AppColors.border),
         ),
         child: Row(
           children: [
-            const Icon(Icons.calendar_today, size: 18, color: brandBlue),
+            const Icon(Icons.calendar_today, size: 18, color: AppColors.primary),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -1231,8 +1229,8 @@ class _EditJobScreenState extends State<EditJobScreen> {
             return FilterChip(
               label: Text(day),
               selected: sel,
-              selectedColor: brandBlue.withOpacity(0.15),
-              checkmarkColor: brandBlue,
+              selectedColor: AppColors.primary.withOpacity(0.15),
+              checkmarkColor: AppColors.primary,
               onSelected: (v) {
                 setState(() {
                   if (v) {
@@ -1271,10 +1269,10 @@ class _EditJobScreenState extends State<EditJobScreen> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: cardBg,
+                color: AppColors.bgMuted,
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              child: const Icon(Icons.access_time, size: 20, color: brandBlue),
+              child: const Icon(Icons.access_time, size: 20, color: AppColors.primary),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1379,7 +1377,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                     width: 8,
                     height: 8,
                     decoration: const BoxDecoration(
-                      color: brandBlue,
+                      color: AppColors.primary,
                       shape: BoxShape.circle,
                     ),
                   ),
@@ -1502,7 +1500,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
                     icon: const Icon(Icons.image, size: 18),
                     label: const Text('추가'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: brandBlue,
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,

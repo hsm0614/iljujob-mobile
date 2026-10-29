@@ -9,7 +9,6 @@ import '../../../config/constants.dart';
 import '../../../data/services/authenticated_http_client.dart';
 import '../../../config/app_theme.dart';
 
-const kBrandBlue = AppColors.primary;
 
 class ClientBusinessInfoScreen extends StatefulWidget {
   const ClientBusinessInfoScreen({super.key});
@@ -441,7 +440,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                           '건너뛰기 →',
                           style: TextStyle(
                             fontSize: AppFontSize.body2,
-                            color: kBrandBlue,
+                            color: AppColors.primary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -468,7 +467,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                 if (_loading) ...[
                   const SizedBox(height: 24),
                   const Center(
-                    child: CircularProgressIndicator(color: kBrandBlue),
+                    child: CircularProgressIndicator(color: AppColors.primary),
                   ),
                 ],
 
@@ -496,13 +495,13 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                         Icon(
                           Icons.check_circle_outline,
                           size: 18,
-                          color: kBrandBlue,
+                          color: AppColors.primary,
                         ),
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             '계속사업자로 확인됐어요.\n바로 공고를 등록할 수 있어요.',
-                            style: TextStyle(fontSize: AppFontSize.body1, color: kBrandBlue),
+                            style: TextStyle(fontSize: AppFontSize.body1, color: AppColors.primary),
                           ),
                         ),
                       ],
@@ -561,7 +560,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          borderSide: const BorderSide(color: kBrandBlue, width: 2),
+          borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
       ),
     );
@@ -580,15 +579,15 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadius.sm),
-        borderSide: const BorderSide(color: kBrandBlue, width: 1.5),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
     );
   }
 
   ButtonStyle _primaryButtonStyle() {
     return ElevatedButton.styleFrom(
-      backgroundColor: kBrandBlue,
-      disabledBackgroundColor: kBrandBlue.withOpacity(0.4),
+      backgroundColor: AppColors.primary,
+      disabledBackgroundColor: AppColors.primary.withOpacity(0.4),
       foregroundColor: Colors.white,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),

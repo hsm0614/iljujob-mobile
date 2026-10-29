@@ -8,12 +8,7 @@ import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/data/services/job_insight_service.dart';
 import 'package:iljujob/utils/pay_display.dart';
 
-const _kBrand = AppColors.primary;
-const _kBg = AppColors.bgPage;
-const _kBorder = AppColors.border;
-const _kText = AppColors.textPrimary;
-// textTertiary(#9CA3AF)는 _kBg 위 2.35:1로 WCAG AA 미달이라 승격.
-const _kLabel = AppColors.textSecondary;
+// textTertiary(#9CA3AF)는 AppColors.bgPage 위 2.35:1로 WCAG AA 미달이라 승격.
 
 class JobPreviewDetailScreen extends StatefulWidget {
   final String title;
@@ -190,7 +185,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: AppColors.bgPage,
       appBar: AppBar(
         // 제목에 브랜드 블루 금지 (디자인 가이드)
         title: const Text('공고 미리보기'),
@@ -323,7 +318,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                             fontSize: AppFontSize.titleLg,
                             fontWeight: FontWeight.w700,
                             fontFamily: 'Jalnan2TTF',
-                            color: _kText,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
@@ -335,13 +330,13 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                       const Icon(
                         Icons.place_outlined,
                         size: 14,
-                        color: _kLabel,
+                        color: AppColors.textSecondary,
                       ),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           widget.location,
-                          style: const TextStyle(fontSize: AppFontSize.body2, color: _kLabel),
+                          style: const TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -362,7 +357,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: _kBorder),
+                border: Border.all(color: AppColors.border),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -372,7 +367,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: AppFontSize.buttonLg,
-                      color: _kText,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -391,14 +386,14 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
 
                   if (widget.description.trim().isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    const Divider(height: 1, color: _kBorder),
+                    const Divider(height: 1, color: AppColors.border),
                     const SizedBox(height: 14),
                     const Text(
                       '상세 설명',
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: AppFontSize.button,
-                        color: _kText,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -407,12 +402,12 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                       style: const TextStyle(
                         fontSize: AppFontSize.button,
                         height: 1.6,
-                        color: _kText,
+                        color: AppColors.textPrimary,
                       ),
                     ),
                   ] else ...[
                     const SizedBox(height: 16),
-                    const Divider(height: 1, color: _kBorder),
+                    const Divider(height: 1, color: AppColors.border),
                     const SizedBox(height: 14),
                     Container(
                       width: double.infinity,
@@ -464,7 +459,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                     style: TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: AppFontSize.buttonLg,
-                      color: _kText,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 10),
@@ -522,7 +517,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                                   const Icon(
                                     Icons.place,
                                     size: 14,
-                                    color: _kLabel,
+                                    color: AppColors.textSecondary,
                                   ),
                                   const SizedBox(width: 6),
                                   Expanded(
@@ -530,7 +525,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                                       widget.location,
                                       style: const TextStyle(
                                         fontSize: AppFontSize.meta,
-                                        color: _kText,
+                                        color: AppColors.textPrimary,
                                       ),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
@@ -558,7 +553,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(AppRadius.lg),
-                border: Border.all(color: _kBorder),
+                border: Border.all(color: AppColors.border),
               ),
               child: Row(
                 children: [
@@ -566,12 +561,12 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                     width: 48,
                     height: 48,
                     decoration: BoxDecoration(
-                      color: _kBrand.withOpacity(0.08),
+                      color: AppColors.primary.withOpacity(0.08),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       Icons.business_outlined,
-                      color: _kBrand,
+                      color: AppColors.primary,
                       size: 22,
                     ),
                   ),
@@ -587,7 +582,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                           style: const TextStyle(
                             fontSize: AppFontSize.body1,
                             fontWeight: FontWeight.w700,
-                            color: _kText,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                         const SizedBox(height: 4),
@@ -595,7 +590,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                           widget.managerName.isNotEmpty
                               ? '담당자: ${widget.managerName}'
                               : '담당자 정보 없음',
-                          style: const TextStyle(fontSize: AppFontSize.body2, color: _kLabel),
+                          style: const TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
                         ),
                       ],
                     ),
@@ -621,7 +616,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                 children: [
                   const Row(
                     children: [
-                      Icon(Icons.checklist_rounded, size: 16, color: _kBrand),
+                      Icon(Icons.checklist_rounded, size: 16, color: AppColors.primary),
                       SizedBox(width: 6),
                       Text(
                         '등록 전 확인해주세요',
@@ -629,7 +624,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                         style: TextStyle(
                           fontSize: AppFontSize.body2,
                           fontWeight: FontWeight.w700,
-                          color: _kText,
+                          color: AppColors.textPrimary,
                         ),
                       ),
                     ],
@@ -648,7 +643,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                           const Icon(
                             Icons.check_circle_outline,
                             size: 14,
-                            color: _kBrand,
+                            color: AppColors.primary,
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -656,7 +651,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                             // _kBrand는 #E7F0FF 위에서 2.95:1 — AA 미달
                             style: const TextStyle(
                               fontSize: AppFontSize.meta,
-                              color: _kText,
+                              color: AppColors.textPrimary,
                             ),
                           ),
                         ],
@@ -707,14 +702,14 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
 
   Widget _infoRow(IconData icon, String text) => Row(
     children: [
-      Icon(icon, size: 16, color: _kLabel),
+      Icon(icon, size: 16, color: AppColors.textSecondary),
       const SizedBox(width: 8),
       Expanded(
         child: Text(
           text,
           style: const TextStyle(
             fontSize: AppFontSize.button,
-            color: _kText,
+            color: AppColors.textPrimary,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -747,7 +742,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
     try {
       return Color(int.parse(hex.replaceFirst('#', 'FF'), radix: 16));
     } catch (_) {
-      return _kBrand;
+      return AppColors.primary;
     }
   }
 
@@ -762,7 +757,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          border: Border.all(color: _kBorder),
+          border: Border.all(color: AppColors.border),
         ),
         child: Row(
           children: [
@@ -771,13 +766,13 @@ class _AiInsightCardState extends State<_AiInsightCard> {
               height: 18,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation(_kBrand),
+                valueColor: AlwaysStoppedAnimation(AppColors.primary),
               ),
             ),
             const SizedBox(width: 12),
             const Text(
               '공고를 분석하고 있어요…',
-              style: TextStyle(fontSize: AppFontSize.body2, color: _kLabel),
+              style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -792,7 +787,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
 
     // 급여 위치 계산
     String payPosition = '';
-    Color payPosColor = _kLabel;
+    Color payPosColor = AppColors.textSecondary;
     if (pi != null && pi.avgHourly > 0) {
       final ratio = widget.pay / pi.avgHourly;
       if (ratio >= 1.2) {
@@ -800,7 +795,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
         payPosColor = AppColors.badgeSameDay;
       } else if (ratio >= 0.95) {
         payPosition = '평균 수준이에요';
-        payPosColor = _kBrand;
+        payPosColor = AppColors.primary;
       } else {
         payPosition = '평균보다 낮아요';
         payPosColor = AppColors.warningDark;
@@ -811,7 +806,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -821,14 +816,14 @@ class _AiInsightCardState extends State<_AiInsightCard> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
             child: Row(
               children: [
-                const Icon(Icons.analytics_outlined, size: 17, color: _kBrand),
+                const Icon(Icons.analytics_outlined, size: 17, color: AppColors.primary),
                 const SizedBox(width: 6),
                 const Text(
                   '공고 분석',
                   style: TextStyle(
                     fontSize: AppFontSize.button,
                     fontWeight: FontWeight.w700,
-                    color: _kText,
+                    color: AppColors.textPrimary,
                   ),
                 ),
               ],
@@ -893,7 +888,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
             ),
           ),
           const SizedBox(height: 16),
-          const Divider(height: 1, color: _kBorder),
+          const Divider(height: 1, color: AppColors.border),
 
           // ── 3개 인사이트 행 ──
           Padding(
@@ -905,7 +900,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                   icon: Icons.groups_outlined,
                   label: '24시간 예상 지원자',
                   value: q.predictLabel,
-                  valueColor: _kBrand,
+                  valueColor: AppColors.primary,
                 ),
                 const SizedBox(height: 12),
 
@@ -926,7 +921,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                   icon: Icons.vertical_align_top_rounded,
                   label: '즉시게시로 등록 시',
                   value: '3일 → 7일로 노출 연장',
-                  valueColor: _kBrand,
+                  valueColor: AppColors.primary,
                 ),
               ],
             ),
@@ -934,7 +929,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
 
           // ── 개선 팁 (있을 때만) ──
           if (q.tips.isNotEmpty) ...[
-            const Divider(height: 1, color: _kBorder),
+            const Divider(height: 1, color: AppColors.border),
             GestureDetector(
               onTap: () => setState(() => _tipsExpanded = !_tipsExpanded),
               child: Padding(
@@ -968,7 +963,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                           ? Icons.keyboard_arrow_up
                           : Icons.keyboard_arrow_down,
                       size: 18,
-                      color: _kLabel,
+                      color: AppColors.textSecondary,
                     ),
                   ],
                 ),
@@ -999,7 +994,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                                           ? AppColors.errorBorder
                                           : tip.impact == 'high'
                                           ? AppColors.warningBorder
-                                          : _kBorder,
+                                          : AppColors.border,
                                 ),
                               ),
                               child: Row(
@@ -1016,7 +1011,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                                             ? AppColors.error
                                             : tip.impact == 'high'
                                             ? AppColors.warning
-                                            : _kBrand,
+                                            : AppColors.primary,
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
@@ -1024,7 +1019,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                                       tip.msg,
                                       style: const TextStyle(
                                         fontSize: AppFontSize.meta,
-                                        color: _kText,
+                                        color: AppColors.textPrimary,
                                       ),
                                     ),
                                   ),
@@ -1048,22 +1043,22 @@ class _AiInsightCardState extends State<_AiInsightCard> {
     required Color valueColor,
   }) => Row(
     children: [
-      Icon(icon, size: 16, color: _kLabel),
+      Icon(icon, size: 16, color: AppColors.textSecondary),
       const SizedBox(width: 8),
       Expanded(
         child: Text(
           label,
-          style: const TextStyle(fontSize: AppFontSize.meta, color: _kLabel),
+          style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
         ),
       ),
       // 12px 값 텍스트라 3:1(UI 컴포넌트)이 아니라 4.5:1이 기준이다.
-      // _kBrand(#3B8AFF)는 흰 배경에서 3.35:1이므로 진한 파랑으로 대체한다.
+      // AppColors.primary(#3B8AFF)는 흰 배경에서 3.35:1이므로 진한 파랑으로 대체한다.
       Text(
         value,
         style: TextStyle(
           fontSize: AppFontSize.meta,
           fontWeight: FontWeight.w700,
-          color: valueColor == _kBrand ? AppColors.primaryDark : valueColor,
+          color: valueColor == AppColors.primary ? AppColors.primaryDark : valueColor,
         ),
       ),
     ],

@@ -5,7 +5,6 @@ import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import '../../../config/app_theme.dart';
 
-const kBrand = AppColors.primary;
 
 /// 소셜 로그인(카카오/애플)으로 기업 신규 가입 시
 /// 담당자 이름을 추가로 입력받는 화면
@@ -152,7 +151,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(AppRadius.md),
                           borderSide: const BorderSide(
-                            color: kBrand,
+                            color: AppColors.primary,
                             width: 1.5,
                           ),
                         ),
@@ -169,7 +168,7 @@ class _ClientExtraInfoScreenState extends State<ClientExtraInfoScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: kBrand,
+                    backgroundColor: AppColors.primary,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
