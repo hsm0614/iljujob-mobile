@@ -279,13 +279,6 @@ class _ClientActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final actions = <Widget>[];
-
-    void add(Widget w) {
-      if (actions.isNotEmpty) actions.add(const SizedBox(width: 8));
-      actions.add(w);
-    }
-
     final isActive = status == 'active';
     final openStatus = workConfirmationStatus ?? '';
     final isWaitingWorker = openStatus == 'proposed';
@@ -301,125 +294,52 @@ class _ClientActions extends StatelessWidget {
         isWaitingWorker ||
         isWorkAccepted ||
         isCheckedIn;
-    final proposeText =
-        isWaitingWorker
-            ? '알바생 응답 대기중'
-            : isCheckedIn
-            ? '출근 확인됨'
-            : isWorkAccepted
-            ? '출근 확정 완료'
-            : onProposeWorkConfirmation != null
-            ? '출근 확정 제안하기'
-            : '채용 확정하기';
-    final proposeIcon =
-        isWaitingWorker
-            ? Icons.hourglass_top_rounded
-            : isCheckedIn
-            ? Icons.how_to_reg_rounded
-            : isWorkAccepted
-            ? Icons.event_available_rounded
-            : onProposeWorkConfirmation != null
-            ? Icons.event_available_rounded
-            : Icons.thumb_up_alt_rounded;
-    final helperText =
-        isWaitingWorker
-            ? '알바생 수락을 기다리는 중'
-            : isCheckedIn
-            ? '근무 완료 처리를 진행해주세요'
-            : isWorkAccepted
-            ? '근무일 알림과 출근 확인이 진행돼요'
-            : onProposeWorkConfirmation != null
-            ? '알바생 수락 후 출근확인 가능'
-            : '확정 후 출근확인 가능';
-
-    // 채용 확정 전: 사장님 UX는 출근 확정 제안으로 통일한다.
-    if (!isConfirmed) {
-      add(
-        _ActionButton(
-          text: proposeText,
-          icon: proposeIcon,
-          color: AppColors.primary,
-          onPressed:
-              isActive && !hasOpenConfirmation
-                  ? (onProposeWorkConfirmation ?? onConfirmHire)
-                  : null,
-        ),
-      );
-      add(
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.primaryLight,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.primaryMid),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.info_outline_rounded,
-                size: 13,
-                color: AppColors.primary,
-              ),
-              const SizedBox(width: 5),
-              Text(
-                helperText,
-                style: const TextStyle(
-                  fontSize: AppFontSize.caption,
-                  color: AppColors.primaryDark,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-
-      return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        physics: const BouncingScrollPhysics(),
-        child: Row(children: actions),
-      );
-    }
-
-    // 확정 후: 완료 처리
-    if (!isCompleted) {
-      add(
-        _ActionButton(
-          text: '알바 완료 처리',
-          icon: Icons.check_circle_rounded,
-          color: AppColors.success,
-          onPressed: onMarkCompleted,
-        ),
-      );
+    // 큰 파란 버튼 + 버튼처럼 생긴 파란 안내 알약(누를 수 없음)이 나란히 있던 것 →
+    // 지금 상태를 말하는 한 줄 + 할 일이 있을 때만 오른쪽 버튼 하나.
+    final String line;
+    String? label;
+    VoidCallback? onTap;
+    IconData? icon;
+    if (isCompleted) {
+      line = '근무 완료';
+      icon = Icons.check_circle_rounded;
+    } else if (isConfirmed || isCheckedIn) {
+      line = isCheckedIn ? '출근 확인됐어요 · 끝나면 완료 처리해 주세요' : '근무가 끝나면 완료 처리해 주세요';
+      label = '완료 처리';
+      onTap = onMarkCompleted;
+    } else if (isWorkAccepted) {
+      line = '출근 확정됐어요 · 근무일에 알림이 가요';
+      icon = Icons.event_available_rounded;
+    } else if (isWaitingWorker || hasOpenConfirmation) {
+      line = '알바생 수락을 기다리고 있어요';
+      icon = Icons.hourglass_top_rounded;
+    } else if (!isActive) {
+      line = '지금은 출근 확정을 제안할 수 없어요';
     } else {
-      add(
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
-          decoration: BoxDecoration(
-            color: AppColors.bgMuted,
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: const Text(
-            '✔ 알바 완료됨',
-            style: TextStyle(
-              color: AppColors.textSecondary,
-              fontWeight: FontWeight.bold,
-              fontSize: AppFontSize.meta,
-            ),
-          ),
-        ),
-      );
+      line = '조건이 맞으면 출근 확정을 제안해 보세요';
+      label = onProposeWorkConfirmation != null ? '출근 확정 제안' : '채용 확정';
+      onTap = onProposeWorkConfirmation ?? onConfirmHire;
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          physics: const BouncingScrollPhysics(),
-          child: Row(children: actions),
-        ),
+        if (icon != null) ...[
+          Icon(icon, size: 16, color: AppColors.textSecondary),
+          const SizedBox(width: 6),
+        ],
+        Expanded(child: Text(line, style: AppTextStyles.body2)),
+        if (label != null) ...[
+          const SizedBox(width: 12),
+          ElevatedButton(
+            onPressed: onTap,
+            style: ButtonStyle(
+              minimumSize: const WidgetStatePropertyAll(Size(64, 40)),
+              padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 16)),
+              textStyle: WidgetStatePropertyAll(AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600)),
+            ),
+            child: Text(label),
+          ),
+        ],
       ],
     );
   }
@@ -668,46 +588,6 @@ class _Pill extends StatelessWidget {
 // ─────────────────────────────────────────────
 // 공용 액션 버튼
 // ─────────────────────────────────────────────
-
-class _ActionButton extends StatelessWidget {
-  final String text;
-  final IconData icon;
-  final Color color;
-  final VoidCallback? onPressed;
-
-  const _ActionButton({
-    required this.text,
-    required this.icon,
-    required this.color,
-    this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final disabled = onPressed == null;
-    return ElevatedButton.icon(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: disabled ? AppColors.border : color,
-        shadowColor: Colors.transparent,
-      ),
-      icon: Icon(
-        icon,
-        size: 15,
-        color: disabled ? AppColors.textTertiary : Colors.white,
-      ),
-      label: Text(
-        text,
-        style: TextStyle(
-          color: disabled ? AppColors.textTertiary : Colors.white,
-          fontWeight: FontWeight.w700,
-          fontSize: AppFontSize.body2,
-          letterSpacing: -0.3,
-        ),
-      ),
-      onPressed: onPressed,
-    );
-  }
-}
 
 // ─────────────────────────────────────────────
 // 워커 수락/거절 배너

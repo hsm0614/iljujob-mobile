@@ -1155,118 +1155,41 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   // ─────────────────────────────────────────────
 
   Widget _buildEmptyChatNotice(bool isClient) {
+    // TIP 알약·테두리 카드·근거 없는 '알바일주 데이터 기준'·파란 알약 버튼 → 글 두 줄 + 글자 버튼 하나.
+    // 사장님 화면에 알바생용 문구('사장님께 자기소개와 장점')가 뜨던 것도 역할별로 나눴다.
+    final greeting =
+        isClient
+            ? '안녕하세요, 지원해 주셔서 감사해요. 근무 가능하신지 여쭤봐도 될까요?'
+            : '안녕하세요, 지원한 알바생입니다. 근무 가능해서 연락드려요.';
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0x143B8AFF),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: const Text(
-                      'T I P',
-                      style: TextStyle(
-                        fontSize: AppFontSize.caption,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Text(
-                isClient ? '여기서 첫 채용 대화를 시작해 보세요' : '여기서 첫 인사를 남겨보세요',
-                style: const TextStyle(
-                  fontSize: AppFontSize.body1,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 6),
-              RichText(
-                text: TextSpan(
-                  style: const TextStyle(
-                    fontSize: AppFontSize.body2,
-                    height: 1.4,
-                    color: AppColors.textSecondary,
-                  ),
-                  children: [
-                    TextSpan(text: isClient ? '사장님께 ' : '상대방에게 '),
-                    const TextSpan(
-                      text: '자기소개와 장점',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const TextSpan(text: '을 함께 첫 메시지로 보내면\n채용 확률이 더 높아져요.'),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.bolt_rounded,
-                    size: 14,
-                    color: AppColors.textTertiary,
-                  ),
-                  const SizedBox(width: 4),
-                  const Text(
-                    '알바일주 데이터 기준',
-                    style: TextStyle(
-                      fontSize: AppFontSize.caption,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const Spacer(),
-                  TextButton.icon(
-                    onPressed: () {
-                      _scrollToBottom(force: true);
-                      _inputFocusNode.requestFocus();
-                    },
-                    style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                    ),
-                    icon: const Icon(Icons.edit_rounded, size: 14),
-                    label: const Text(
-                      '첫 메시지 쓰기',
-                      style: TextStyle(fontSize: AppFontSize.meta),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              isClient ? '먼저 인사를 건네 보세요' : '사장님께 먼저 인사해 보세요',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              isClient
+                  ? '근무 가능 여부를 물어보면 답장이 빨라요'
+                  : '출근 가능한 날과 비슷한 경험을 적으면 답장이 빨라요',
+              textAlign: TextAlign.center,
+              style: AppTextStyles.body2,
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () {
+                if (_messageController.text.trim().isEmpty) _messageController.text = greeting;
+                _scrollToBottom(force: true);
+                _inputFocusNode.requestFocus();
+              },
+              child: const Text('인사말 넣기'),
+            ),
+          ],
         ),
       ),
     );
