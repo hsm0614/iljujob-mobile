@@ -153,6 +153,11 @@
         <service
             android:name="me.carda.awesome_notifications.notifications.services.ForegroundService"
             android:exported="false" />
+        <!-- geolocator 가 넣는 위치용 포그라운드 서비스(foregroundServiceType=location) 제거 — 상시 위치 공유를 없애 안 쓴다.
+             남겨 두면 Play 가 FOREGROUND_SERVICE_LOCATION 사용으로 본다. 앱은 사용 중 1회 위치(getCurrentPosition)만 쓴다 -->
+        <service
+            android:name="com.baseflow.geolocator.GeolocatorLocationService"
+            tools:node="remove" />
 
     </application>
 </manifest>
