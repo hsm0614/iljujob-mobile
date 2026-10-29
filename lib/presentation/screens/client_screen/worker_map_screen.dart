@@ -13,15 +13,10 @@ class WorkerMapScreen extends StatelessWidget {
         title: '공고 지도',
         brand: true,
         actions: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: AlbailjuPostJobCta(
-              onPressed: () => Navigator.pushNamed(context, "/post_job"),
-                inverted: false, // 흰 앱바 위 → 채운 파랑
-              ),
-            ),
+          AlbailjuPostJobCta(
+            onPressed: () => Navigator.pushNamed(context, "/post_job"),
           ),
+          const SizedBox(width: 8),
         ],
       ),
       // 하단 탭바 영역을 침범하지 않게 처리

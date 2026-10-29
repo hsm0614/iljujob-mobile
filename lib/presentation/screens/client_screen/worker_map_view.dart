@@ -15,6 +15,9 @@ import 'package:iljujob/presentation/chat/chat_room_screen.dart';
 import '../worker_screen/worker_profile_screen.dart';
 import 'nearby_workers_screen.dart';
 import '../../../config/app_theme.dart';
+import 'package:iljujob/data/models/job.dart';
+import 'package:iljujob/utils/pay_display.dart';
+import 'package:iljujob/widget/app_ui.dart';
 
 // ── 디자인 토큰 ───────────────────────────────────────────────────
 const _red = Color(0xFFFF3B30);
@@ -34,6 +37,9 @@ class _Job {
   final double lat, lng;
   final int hourlyWage, applicantCount;
   final bool isPinnedNow, isUrgent;
+  final String pay, payType, endDate, weekdays;
+  final DateTime? publishAt; // UTC
+  final Map<String, dynamic> raw; // 공고 상세(Job.fromJson)로 넘길 원본
 
   const _Job({
     required this.id,
@@ -51,6 +57,12 @@ class _Job {
     required this.applicantCount,
     required this.isPinnedNow,
     required this.isUrgent,
+    required this.pay,
+    required this.payType,
+    required this.endDate,
+    required this.weekdays,
+    required this.publishAt,
+    required this.raw,
   });
 
   factory _Job.fromJson(Map<String, dynamic> j) => _Job(
@@ -69,6 +81,12 @@ class _Job {
     applicantCount: _i(j['applicant_count'] ?? j['applicants']),
     isPinnedNow: j['is_pinned_now'] == true || j['is_pinned_now'] == 1,
     isUrgent: j['is_urgent'] == true || j['is_urgent'] == 1,
+    pay: (j['pay'] ?? '').toString(),
+    payType: (j['pay_type'] ?? '').toString(),
+    endDate: _ds(j['end_date']),
+    weekdays: (j['weekdays'] ?? '').toString(),
+    publishAt: DateTime.tryParse('${j['publish_at'] ?? ''}')?.toUtc(),
+    raw: j,
   );
 
   static double _d(dynamic v) {
@@ -102,17 +120,31 @@ class _Job {
   String get timeRange =>
       (startTime.isNotEmpty && endTime.isNotEmpty) ? '$startTime~$endTime' : '';
 
+  /// 공개 시각 전(무료 12시간 대기·예약) — 알바생 지도·목록에 아직 안 보인다
+  bool get isReserved => publishAt != null && publishAt!.isAfter(DateTime.now().toUtc());
+
   Color get pinColor {
     if (isUrgent) return _red;
-    if (status == 'active') return AppColors.primary;
+    if (status == 'active' && !isReserved) return AppColors.primary;
     return AppColors.textSecondary;
   }
 
-  String get statusLabel {
-    if (isUrgent) return '긴급';
-    if (status == 'active') return '진행중';
-    if (status == 'reserved') return '예약';
-    return '마감';
+  /// 지도 위 표시·하단 카드용 급여 ('일급 120,000원'). 없으면 null
+  String? get payLabel {
+    if (payType.isEmpty && pay.isEmpty) return null;
+    return formatJobPay(pay, payType, includeType: true);
+  }
+
+  /// '11월 7일(토) ~ 8일(일) 10:00~18:00' — 날짜 DATE는 KST 벽시계라 문자열 그대로 자른다
+  String get whenLabel {
+    DateTime? d(String ymd) {
+      final p = ymd.split('-').map(int.tryParse).toList();
+      return p.length == 3 && !p.contains(null) ? DateTime(p[0]!, p[1]!, p[2]!) : null;
+    }
+    return [
+      if (formatWorkDays(d(startDate), d(endDate), weekdays) case final w?) w,
+      if (timeRange.isNotEmpty) timeRange,
+    ].join(' ');
   }
 }
 
@@ -271,7 +303,6 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     } catch (_) {}
   }
 
-  bool get _canUrgentCall => _selectedJob?.isUrgent == true;
   bool get _canBroadcastSelected =>
       _selectedJob?.status == 'active' &&
       (_selectedJob?.isUrgent == true ||
@@ -1052,41 +1083,38 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                   Row(
                     children: [
                       Expanded(
-                        child: _Btn(
-                          label: '프로필 보기',
-                          icon: Icons.account_circle_rounded,
-                          color: AppColors.primary,
-                          filled: false,
-                          onTap: () {
-                            Navigator.pop(context);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (_) => WorkerProfileScreen(
-                                      workerId: worker.id,
-                                    ),
-                              ),
-                            );
-                          },
+                        child: SizedBox(
+                          height: 48,
+                          child: OutlinedButton(
+                            onPressed: () {
+                              Navigator.pop(context);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => WorkerProfileScreen(workerId: worker.id),
+                                ),
+                              );
+                            },
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: AppColors.border),
+                              foregroundColor: AppColors.textPrimary,
+                            ),
+                            child: const Text('프로필 보기'),
+                          ),
                         ),
                       ),
                       const SizedBox(width: 10),
+                      // 빨간 채운 버튼 → 파랑(누르는 건 파랑 하나)
                       Expanded(
-                        child: _Btn(
+                        child: AppPrimaryButton(
                           label:
                               worker.alreadySent
                                   ? '발송 완료'
                                   : canMessage
-                                  ? (_directSending ? '발송 중' : '메시지 보내기')
+                                  ? '메시지 보내기'
                                   : '제공량 확인',
-                          icon:
-                              worker.alreadySent
-                                  ? Icons.check_rounded
-                                  : Icons.send_rounded,
-                          color: canMessage ? _red : AppColors.textSecondary,
-                          filled: true,
-                          onTap:
+                          loading: _directSending,
+                          onPressed:
                               canMessage &&
                                       !worker.alreadySent &&
                                       !_directSending
@@ -1175,59 +1203,6 @@ class _WorkerMapViewState extends State<WorkerMapView> {
           ..._buildJobCards(),
         ],
 
-        // ── 무료 공고 지도 노출 안내 ──────────────────────────────
-        Positioned(
-          top: topPad + 60,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1C1C1E).withValues(alpha: 0.72),
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-              ),
-              child: const Text(
-                '무료 공고는 12시간 후, 즉시게시는 결제 즉시 노출됩니다',
-                style: TextStyle(
-                  fontSize: AppFontSize.caption,
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ),
-        ),
-
-        if (_selectedJob != null &&
-            !_selectedJob!.isUrgent &&
-            _entitlementVersion == 'v3')
-          Positioned(
-            top: topPad + 96,
-            left: 16,
-            right: 16,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Text(
-                  '먼저 연락 $_directMonthlyRemaining명(이 공고 ${_directJobRemaining[_selectedJob!.id] ?? 0}명) · 지도 알림 $_pushMonthlyRemaining회(이 공고 ${_pushJobRemaining[_selectedJob!.id] ?? 0}회)',
-                  style: const TextStyle(
-                    fontSize: AppFontSize.caption,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-          ),
-
         // ── 상단 공고 칩 ──────────────────────────────────────────
         Positioned(
           top: topPad + 12,
@@ -1287,7 +1262,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                             duration: const Duration(milliseconds: 150),
                             padding: const EdgeInsets.symmetric(horizontal: 14),
                             decoration: BoxDecoration(
-                              color: sel ? job.pinColor : Colors.white,
+                              color: sel ? AppColors.textPrimary : Colors.white,
                               borderRadius: BorderRadius.circular(AppRadius.xl),
                               border: Border.all(
                                 color: sel ? Colors.transparent : AppColors.border,
@@ -1295,9 +1270,9 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                               boxShadow: [
                                 BoxShadow(
                                   color: Colors.black.withValues(
-                                    alpha: sel ? 0.14 : 0.07,
+                                    alpha: 0.08,
                                   ),
-                                  blurRadius: sel ? 14 : 7,
+                                  blurRadius: 8,
                                   offset: const Offset(0, 2),
                                 ),
                               ],
@@ -1309,12 +1284,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                                   width: 6,
                                   height: 6,
                                   decoration: BoxDecoration(
-                                    color:
-                                        sel
-                                            ? Colors.white.withValues(
-                                              alpha: 0.75,
-                                            )
-                                            : job.pinColor,
+                                    color: job.pinColor,
                                     shape: BoxShape.circle,
                                   ),
                                 ),
@@ -1342,7 +1312,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                                               ? Colors.white.withValues(
                                                 alpha: 0.25,
                                               )
-                                              : AppColors.primary.withValues(alpha: 0.1),
+                                              : AppColors.bgMuted,
                                       borderRadius: BorderRadius.circular(AppRadius.full),
                                     ),
                                     child: Text(
@@ -1350,7 +1320,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                                       style: TextStyle(
                                         fontSize: AppFontSize.caption,
                                         fontWeight: FontWeight.w700,
-                                        color: sel ? Colors.white : AppColors.primary,
+                                        color: sel ? Colors.white : AppColors.textSecondary,
                                       ),
                                     ),
                                   ),
@@ -1367,7 +1337,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
         // ── 우측 FAB (collapsed 카드 높이 165 + safe area 위에 고정) ──
         Positioned(
           right: 14,
-          bottom: 175 + bottomPad,
+          bottom: 200 + bottomPad,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1389,7 +1359,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
         if (_workersLoading)
           Positioned(
             right: 66,
-            bottom: 179 + bottomPad,
+            bottom: 204 + bottomPad,
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -1419,15 +1389,22 @@ class _WorkerMapViewState extends State<WorkerMapView> {
             left: 0,
             right: 0,
             bottom: 0,
-            child: _ExpandableJobCard(
+            child: _MapJobSheet(
               key: ValueKey(_selectedJob!.id),
               job: _selectedJob!,
               workerCount: _workerCount,
-              canUrgentCall: _selectedJob!.isUrgent && _canUrgentCall,
-              isUrgentJob: _selectedJob!.isUrgent,
-              isSubscribed: _canBroadcastSelected,
+              canBroadcast: _canBroadcastSelected,
               broadcasting: _broadcastSending,
               bottomPad: bottomPad,
+              quota:
+                  !_selectedJob!.isUrgent && _entitlementVersion == 'v3'
+                      ? '이번 달 지도 알림 $_pushMonthlyRemaining회 · 이 공고 ${_pushJobRemaining[_selectedJob!.id] ?? 0}회 남음'
+                      : null,
+              onOpenDetail: () {
+                try {
+                  Navigator.pushNamed(context, '/job-detail', arguments: Job.fromJson(_selectedJob!.raw));
+                } catch (_) {}
+              },
               onUrgentCall:
                   () => Navigator.push(
                     context,
@@ -1446,7 +1423,8 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                     if (idx != null) _loadWorkers(_jobs[idx]);
                   }),
               onBroadcast: _sendBroadcast,
-              onBuyPass: () => Navigator.pushNamed(context, '/pass_store'),
+              // '/pass_store'는 없는 경로였다(눌러도 아무 일 없음) → 이용권 구매
+              onBuyPass: () => Navigator.pushNamed(context, '/purchase-pass'),
             ),
           ),
       ],
@@ -1577,577 +1555,6 @@ class _Fab extends StatelessWidget {
   );
 }
 
-// ── 확장형 공고 카드 ──────────────────────────────────────────────
-class _ExpandableJobCard extends StatefulWidget {
-  final _Job job;
-  final int workerCount;
-  final bool canUrgentCall, isUrgentJob, isSubscribed, broadcasting;
-  final double bottomPad;
-  final VoidCallback onUrgentCall, onBroadcast, onBuyPass;
-
-  const _ExpandableJobCard({
-    super.key,
-    required this.job,
-    required this.workerCount,
-    required this.canUrgentCall,
-    required this.isUrgentJob,
-    required this.isSubscribed,
-    required this.broadcasting,
-    required this.bottomPad,
-    required this.onUrgentCall,
-    required this.onBroadcast,
-    required this.onBuyPass,
-  });
-
-  @override
-  State<_ExpandableJobCard> createState() => _ExpandableJobCardState();
-}
-
-class _ExpandableJobCardState extends State<_ExpandableJobCard> {
-  bool _expanded = false;
-
-  void _toggle() => setState(() => _expanded = !_expanded);
-
-  @override
-  Widget build(BuildContext context) {
-    final job = widget.job;
-    return GestureDetector(
-      onVerticalDragEnd: (d) {
-        if ((d.primaryVelocity ?? 0) < -250 && !_expanded) _toggle();
-        if ((d.primaryVelocity ?? 0) > 250 && _expanded) _toggle();
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.10),
-              blurRadius: 18,
-              offset: const Offset(0, -3),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // 드래그 핸들
-            GestureDetector(
-              onTap: _toggle,
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                child: Center(
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    width: _expanded ? 44 : 36,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color:
-                          _expanded ? AppColors.primary.withValues(alpha: 0.5) : AppColors.border,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // 헤더: 상태 뱃지 + 제목 + 구직자 수
-            Padding(
-              padding: const EdgeInsets.fromLTRB(18, 0, 18, 8),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: job.pinColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(AppRadius.xs),
-                    ),
-                    child: Text(
-                      job.statusLabel,
-                      style: TextStyle(
-                        fontSize: AppFontSize.caption,
-                        fontWeight: FontWeight.w700,
-                        color: job.pinColor,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      job.title,
-                      style: const TextStyle(
-                        fontSize: AppFontSize.body1,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.people_alt_rounded,
-                        size: 14,
-                        color: widget.workerCount > 0 ? AppColors.primary : AppColors.textSecondary,
-                      ),
-                      const SizedBox(width: 3),
-                      Text(
-                        widget.workerCount > 0
-                            ? '${widget.workerCount}명'
-                            : '없음',
-                        style: TextStyle(
-                          fontSize: AppFontSize.body2,
-                          fontWeight: FontWeight.w700,
-                          color: widget.workerCount > 0 ? AppColors.primary : AppColors.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(width: 2),
-                      const Text(
-                        '5km',
-                        style: TextStyle(fontSize: AppFontSize.caption, color: AppColors.textSecondary),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // 확장 컨텐츠
-            AnimatedCrossFade(
-              duration: const Duration(milliseconds: 220),
-              sizeCurve: Curves.easeOut,
-              crossFadeState:
-                  _expanded
-                      ? CrossFadeState.showSecond
-                      : CrossFadeState.showFirst,
-              firstChild: _CollapsedMeta(
-                job: job,
-                bottomPad: widget.bottomPad,
-                canUrgentCall: widget.canUrgentCall,
-                isUrgentJob: widget.isUrgentJob,
-                isSubscribed: widget.isSubscribed,
-                broadcasting: widget.broadcasting,
-                onUrgentCall: widget.onUrgentCall,
-                onBroadcast: widget.onBroadcast,
-                onBuyPass: widget.onBuyPass,
-              ),
-              secondChild: _ExpandedDetail(
-                job: job,
-                bottomPad: widget.bottomPad,
-                canUrgentCall: widget.canUrgentCall,
-                isUrgentJob: widget.isUrgentJob,
-                isSubscribed: widget.isSubscribed,
-                broadcasting: widget.broadcasting,
-                onUrgentCall: widget.onUrgentCall,
-                onBroadcast: widget.onBroadcast,
-                onBuyPass: widget.onBuyPass,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── 축소 상태: 한 줄 메타 + 버튼 ────────────────────────────────
-class _CollapsedMeta extends StatelessWidget {
-  final _Job job;
-  final double bottomPad;
-  final bool canUrgentCall, isUrgentJob, isSubscribed, broadcasting;
-  final VoidCallback onUrgentCall, onBroadcast, onBuyPass;
-
-  const _CollapsedMeta({
-    required this.job,
-    required this.bottomPad,
-    required this.canUrgentCall,
-    required this.isUrgentJob,
-    required this.isSubscribed,
-    required this.broadcasting,
-    required this.onUrgentCall,
-    required this.onBroadcast,
-    required this.onBuyPass,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.fromLTRB(18, 0, 18, bottomPad + 14),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 한 줄 메타
-          if (job.location.isNotEmpty ||
-              job.hourlyWage > 0 ||
-              job.timeRange.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Row(
-                children: [
-                  if (job.startDate.isNotEmpty) ...[
-                    const Icon(
-                      Icons.calendar_today_rounded,
-                      size: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      job.startDate,
-                      style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  if (job.timeRange.isNotEmpty) ...[
-                    const Icon(
-                      Icons.access_time_rounded,
-                      size: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      job.timeRange,
-                      style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  if (job.hourlyWage > 0) ...[
-                    const Icon(
-                      Icons.payments_rounded,
-                      size: 11,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 3),
-                    Text(
-                      _comma(job.hourlyWage),
-                      style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
-                    ),
-                  ],
-                ],
-              ),
-            )
-          else
-            const SizedBox(height: 12),
-          _ActionRow(
-            canUrgentCall: canUrgentCall,
-            isUrgentJob: isUrgentJob,
-            isSubscribed: isSubscribed,
-            broadcasting: broadcasting,
-            onUrgentCall: onUrgentCall,
-            onBroadcast: onBroadcast,
-            onBuyPass: onBuyPass,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── 확장 상태: 잡 디테일 스타일 ──────────────────────────────────
-class _ExpandedDetail extends StatelessWidget {
-  final _Job job;
-  final double bottomPad;
-  final bool canUrgentCall, isUrgentJob, isSubscribed, broadcasting;
-  final VoidCallback onUrgentCall, onBroadcast, onBuyPass;
-
-  const _ExpandedDetail({
-    required this.job,
-    required this.bottomPad,
-    required this.canUrgentCall,
-    required this.isUrgentJob,
-    required this.isSubscribed,
-    required this.broadcasting,
-    required this.onUrgentCall,
-    required this.onBroadcast,
-    required this.onBuyPass,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final metaRows = <(IconData, String, String)>[
-      if (job.startDate.isNotEmpty)
-        (Icons.calendar_today_rounded, '날짜', job.startDate),
-      if (job.timeRange.isNotEmpty)
-        (Icons.access_time_rounded, '시간', job.timeRange),
-      if (job.location.isNotEmpty) (Icons.place_rounded, '위치', job.location),
-      if (job.category.isNotEmpty)
-        (Icons.work_outline_rounded, '직종', job.category),
-      if (job.applicantCount > 0)
-        (Icons.how_to_reg_rounded, '지원', '${job.applicantCount}명'),
-    ];
-
-    return Padding(
-      padding: EdgeInsets.fromLTRB(18, 4, 18, bottomPad + 14),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 시급 강조 박스
-          if (job.hourlyWage > 0) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.payments_rounded, size: 16, color: AppColors.primary),
-                  const SizedBox(width: 8),
-                  Text(
-                    '시급 ${_comma(job.hourlyWage)}원',
-                    style: const TextStyle(
-                      fontSize: AppFontSize.buttonLg,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 10),
-          ],
-
-          // 메타 정보 박스
-          if (metaRows.isNotEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.bgMuted,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Column(
-                children: [
-                  for (int i = 0; i < metaRows.length; i++) ...[
-                    Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 9),
-                      child: Row(
-                        children: [
-                          Icon(metaRows[i].$1, size: 14, color: AppColors.textSecondary),
-                          const SizedBox(width: 8),
-                          Text(
-                            metaRows[i].$2,
-                            style: const TextStyle(
-                              fontSize: AppFontSize.meta,
-                              color: AppColors.textSecondary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              metaRows[i].$3,
-                              textAlign: TextAlign.right,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                fontSize: AppFontSize.body2,
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (i < metaRows.length - 1)
-                      const Divider(height: 1, color: AppColors.border),
-                  ],
-                ],
-              ),
-            ),
-
-          // 공고 설명
-          if (job.description.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            const Text(
-              '공고 설명',
-              style: TextStyle(
-                fontSize: AppFontSize.meta,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: AppColors.border),
-              ),
-              child: Text(
-                job.description,
-                style: const TextStyle(
-                  fontSize: AppFontSize.body2,
-                  color: AppColors.textPrimary,
-                  height: 1.6,
-                ),
-                maxLines: 6,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-
-          const SizedBox(height: 12),
-          _ActionRow(
-            canUrgentCall: canUrgentCall,
-            isUrgentJob: isUrgentJob,
-            isSubscribed: isSubscribed,
-            broadcasting: broadcasting,
-            onUrgentCall: onUrgentCall,
-            onBroadcast: onBroadcast,
-            onBuyPass: onBuyPass,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── 공통 액션 버튼 행 ─────────────────────────────────────────────
-class _ActionRow extends StatelessWidget {
-  final bool canUrgentCall, isUrgentJob, isSubscribed, broadcasting;
-  final VoidCallback onUrgentCall, onBroadcast, onBuyPass;
-
-  const _ActionRow({
-    required this.canUrgentCall,
-    required this.isUrgentJob,
-    required this.isSubscribed,
-    required this.broadcasting,
-    required this.onUrgentCall,
-    required this.onBroadcast,
-    required this.onBuyPass,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child:
-              !isUrgentJob
-                  ? _Btn(
-                    label: '긴급 공고만',
-                    icon: Icons.lock_rounded,
-                    color: AppColors.textSecondary,
-                    filled: false,
-                    onTap: null,
-                  )
-                  : canUrgentCall
-                  ? _Btn(
-                    label: '긴급 호출',
-                    icon: Icons.emergency_rounded,
-                    color: _red,
-                    filled: true,
-                    onTap: onUrgentCall,
-                  )
-                  : _Btn(
-                    label: '이용권 구매',
-                    icon: Icons.add_shopping_cart_rounded,
-                    color: AppColors.textSecondary,
-                    filled: false,
-                    onTap: onBuyPass,
-                  ),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child:
-              isSubscribed
-                  ? _Btn(
-                    label: broadcasting ? '발송 중…' : '알림 발송',
-                    icon:
-                        broadcasting
-                            ? Icons.hourglass_top_rounded
-                            : Icons.campaign_rounded,
-                    color: AppColors.primary,
-                    filled: false,
-                    onTap: broadcasting ? null : onBroadcast,
-                  )
-                  : _Btn(
-                    label: '알림 이용 불가',
-                    icon: Icons.lock_rounded,
-                    color: AppColors.textSecondary,
-                    filled: false,
-                    onTap: null,
-                  ),
-        ),
-      ],
-    );
-  }
-}
-
-String _comma(int n) {
-  final s = n.toString();
-  final b = StringBuffer();
-  for (var i = 0; i < s.length; i++) {
-    if (i > 0 && (s.length - i) % 3 == 0) b.write(',');
-    b.write(s[i]);
-  }
-  return b.toString();
-}
-
-class _Btn extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final bool filled;
-  final VoidCallback? onTap;
-
-  const _Btn({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.filled,
-    this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final dis = onTap == null;
-    final bg =
-        filled ? (dis ? AppColors.textDisabled : color) : Colors.transparent;
-    final fg = filled ? Colors.white : (dis ? AppColors.textSecondary : color);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 11),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          border: filled ? null : Border.all(color: dis ? AppColors.border : color),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 15, color: fg),
-            const SizedBox(width: 5),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: AppFontSize.body2,
-                fontWeight: FontWeight.w600,
-                color: fg,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ── 직방 스타일 공고 카드 마커 ────────────────────────────────────
 class _JobMapCard extends StatelessWidget {
   final _Job job;
@@ -2193,22 +1600,26 @@ class _JobMapCard extends StatelessWidget {
                 ),
               if (job.isUrgent) const SizedBox(height: 2),
               Text(
-                job.hourlyWage > 0 ? '₩${_comma(job.hourlyWage)}' : job.title,
+                job.payLabel ?? job.title,
+                maxLines: 1,
                 style: TextStyle(
                   fontSize: AppFontSize.body2,
-                  fontWeight: FontWeight.w800,
+                  fontWeight: FontWeight.w700,
                   color: fg,
                 ),
               ),
-              if (isSelected && job.title.isNotEmpty) ...[
+              if (isSelected && job.payLabel != null) ...[
                 const SizedBox(height: 2),
-                Text(
-                  job.title.length > 9
-                      ? '${job.title.substring(0, 9)}…'
-                      : job.title,
-                  style: TextStyle(
-                    fontSize: AppFontSize.caption,
-                    color: fg.withValues(alpha: 0.8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 140),
+                  child: Text(
+                    job.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: AppFontSize.caption,
+                      color: fg.withValues(alpha: 0.8),
+                    ),
                   ),
                 ),
               ],
@@ -2301,6 +1712,140 @@ class _WorkerDot extends StatelessWidget {
             height: 1,
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ── 선택한 공고 하단 카드 (2026-10) ─────────────────────────────
+// 접기·펼치기 2단 카드 → 한 장: 상태·제목 → 근무일·시간(크게) → 근처 알바생 수 → 할 수 있는 행동 하나.
+// 잠긴 버튼 두 개('긴급 공고만'·'알림 이용 불가')는 누를 수 없는 걸 보여줄 뿐이라 한 줄 안내로 바꿨다.
+class _MapJobSheet extends StatelessWidget {
+  final _Job job;
+  final int workerCount;
+  final bool canBroadcast, broadcasting;
+  final double bottomPad;
+  final String? quota;
+  final VoidCallback onOpenDetail, onUrgentCall, onBroadcast, onBuyPass;
+
+  const _MapJobSheet({
+    super.key,
+    required this.job,
+    required this.workerCount,
+    required this.canBroadcast,
+    required this.broadcasting,
+    required this.bottomPad,
+    required this.quota,
+    required this.onOpenDetail,
+    required this.onUrgentCall,
+    required this.onBroadcast,
+    required this.onBuyPass,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final when = job.whenLabel;
+    final badge =
+        job.isReserved
+            ? const JobSignalBadge(label: '공개 대기')
+            : job.isUrgent
+            ? const JobSignalBadge(label: '긴급', signal: JobSignal.time, icon: Icons.bolt_rounded)
+            : const JobSignalBadge(label: '모집중', signal: JobSignal.trust);
+
+    final Widget action;
+    if (job.isReserved) {
+      final p = job.publishAt!.toLocal();
+      action = Text(
+        '${p.month}월 ${p.day}일 ${p.hour.toString().padLeft(2, '0')}:${p.minute.toString().padLeft(2, '0')} 공개 예정 · 공개 전엔 알바생 지도에 안 보여요',
+        style: AppTextStyles.body2,
+      );
+    } else if (job.isUrgent) {
+      action = AppPrimaryButton(
+        label: workerCount > 0 ? '근처 알바생 $workerCount명에게 긴급 호출' : '긴급 호출',
+        height: 50,
+        onPressed: onUrgentCall,
+      );
+    } else if (canBroadcast) {
+      action = AppPrimaryButton(
+        label: '근처 알바생에게 알림 보내기',
+        height: 50,
+        loading: broadcasting,
+        onPressed: onBroadcast,
+      );
+    } else {
+      action = GestureDetector(
+        onTap: onBuyPass,
+        behavior: HitTestBehavior.opaque,
+        child: const Text.rich(
+          TextSpan(
+            style: AppTextStyles.body2,
+            children: [
+              TextSpan(text: '긴급 공고나 구독이면 근처 알바생에게 바로 알릴 수 있어요 · '),
+              TextSpan(
+                text: '이용권 보기 >',
+                style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.bgCard,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+        boxShadow: [BoxShadow(color: Color(0x14000000), blurRadius: 16, offset: Offset(0, -2))],
+      ),
+      padding: EdgeInsets.fromLTRB(20, 16, 12, bottomPad + 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: onOpenDetail,
+            child: Row(
+              children: [
+                badge,
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    job.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.body2,
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.textTertiary),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 8),
+                Text(when.isEmpty ? (job.payLabel ?? job.title) : when, style: AppTextStyles.h3),
+                const SizedBox(height: 4),
+                Text(
+                  [
+                    if (when.isNotEmpty && job.payLabel != null) job.payLabel!,
+                    workerCount > 0 ? '근처 알바생 $workerCount명 (5km)' : '근처 5km 안 알바생 없음',
+                    if (job.applicantCount > 0) '지원 ${job.applicantCount}명',
+                  ].join(' · '),
+                  style: AppTextStyles.body2,
+                ),
+                const SizedBox(height: 14),
+                action,
+                if (quota != null && canBroadcast) ...[
+                  const SizedBox(height: 8),
+                  Text(quota!, style: AppTextStyles.caption),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
