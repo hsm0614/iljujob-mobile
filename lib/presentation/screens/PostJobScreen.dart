@@ -38,37 +38,13 @@ class _PostJobScreenState extends State<PostJobScreen> {
       // 제출 완료 후엔 확인 없이 그냥 나간다.
       canPop: _submitted,
       onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop),
-      child: Scaffold(
-        backgroundColor: AppColors.bgPage,
-        appBar: AppBar(
-          titleSpacing: 0,
-          title: Text(isRepost ? '공고 다시 올리기' : '알바 공고 작성'),
-        ),
-        body: SafeArea(
-          child: GestureDetector(
-            onTap: () => FocusScope.of(context).unfocus(),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  child: PostJobForm(
-                    isRepost: isRepost,
-                    existingJob: existingJob,
-                    onSubmitComplete: () => setState(() => _submitted = true),
-                  ),
-                ),
-              ),
-            ),
-          ),
+      // 앱바·회색 바탕·흰 카드 틀 제거 — 폼이 화면 전체를 쓰고 자기 상단 줄(뒤로·제목·진행 바)을 가진다
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: PostJobForm(
+          isRepost: isRepost,
+          existingJob: existingJob,
+          onSubmitComplete: () => setState(() => _submitted = true),
         ),
       ),
     );
