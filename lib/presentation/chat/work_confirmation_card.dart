@@ -158,6 +158,9 @@ class WorkConfirmationCard extends StatelessWidget {
                   style: OutlinedButton.styleFrom(foregroundColor: AppColors.error),
                 ),
               ),
+              const SizedBox(height: 6),
+              // 서버 workConfirmationController.AUTO_COMPLETE_HOURS 와 같은 값
+              const Text('근무가 끝나고 48시간 안에 신고가 없으면 출근한 것으로 완료돼요', style: AppTextStyles.caption),
             ],
           ],
         ),
