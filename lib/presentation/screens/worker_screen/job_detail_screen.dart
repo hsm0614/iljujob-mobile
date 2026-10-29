@@ -73,11 +73,10 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final id = prefs.getInt('userId');
-      final type = (prefs.getString('userType') ?? 'worker').toLowerCase();
       if (id == null) throw Exception('no userId');
 
-      final uri = Uri.parse('$baseUrl/api/public/suspension?type=$type&id=$id');
-      final res = await http.get(uri); // ← 토큰 없이
+      // /api/public/suspension 은 서버에 없다(404 → 늘 '정상') — 로그인 정보 API가 정지 상태를 같이 준다
+      final res = await AuthenticatedHttpClient.get(Uri.parse('$baseUrl/api/user/me'));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         setState(() {

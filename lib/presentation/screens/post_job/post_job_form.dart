@@ -13,7 +13,6 @@ import 'package:iljujob/data/services/job_service.dart';
 import 'package:iljujob/data/models/job.dart';
 import 'dart:convert';
 import 'package:iljujob/config/constants.dart';
-import 'package:http/http.dart' as http;
 import 'package:iljujob/presentation/screens/post_job/job_preview_detail_screen.dart';
 import 'package:iljujob/presentation/screens/policy_detail_screen.dart';
 import 'package:iljujob/presentation/screens/post_job/SelectPreviousJobScreen.dart';
@@ -351,9 +350,8 @@ class _PostJobFormState extends State<PostJobForm>
       final prefs = await SharedPreferences.getInstance();
       final id = prefs.getInt('userId');
       if (id == null) throw Exception();
-      final res = await http.get(
-        Uri.parse('$baseUrl/api/public/suspension?type=client&id=$id'),
-      );
+      // /api/public/suspension 은 서버에 없다(404 → 늘 '정상') — 로그인 정보 API가 정지 상태를 같이 준다
+      final res = await AuthenticatedHttpClient.get(Uri.parse('$baseUrl/api/user/me'));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as Map<String, dynamic>;
         if (!mounted) return;
