@@ -59,13 +59,14 @@ const _qTitles = [
   '급여는 얼마인가요?',
   '공고 내용을 채워주세요',
 ];
+// 부제는 정보가 있을 때만 — 버튼 글자('공고 제목을 입력해주세요')와 같은 말을 되풀이하던 것 정리
 const _qSubs = [
-  '공고 제목을 입력해주세요',
-  '업종 → 세부 직종 순으로 선택해주세요',
-  '근무지 주소를 검색해주세요',
-  '근무 날짜와 시간을 한 번에 입력해주세요',
+  '알바생이 목록에서 가장 먼저 보는 한 줄이에요',
+  '고르면 세부 직종이 나와요',
+  '알바생 지도와 거리 계산에 쓰여요',
+  '',
   '최저시급 10,320원 이상이어야 해요',
-  '선택 사항이에요 · 다음은 미리보기예요',
+  '비워 둬도 올릴 수 있어요',
 ];
 const _jobPostStepEvents = [
   'job_post_title_complete',
@@ -1764,11 +1765,13 @@ class _PostJobFormState extends State<PostJobForm>
                       ),
                     ],
                   ),
+                  if (_qSubs[_q].isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
                     _qSubs[_q],
                     style: const TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
                   ),
+                  ],
                 ],
               ),
             ),
@@ -1801,7 +1804,7 @@ class _PostJobFormState extends State<PostJobForm>
                           ? '계정 확인 중…'
                           : (_suspension?.isSuspended ?? false)
                           ? '정지된 계정'
-                          : '미리보기 후 등록',
+                          : '확인하고 올리기',
                 )
                 : _NextBtn(onTap: _canNext ? _nextQ : null, label: _nextLabel),
           ),
@@ -1932,12 +1935,12 @@ class _PostJobFormState extends State<PostJobForm>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GridView.count(
-          crossAxisCount: 3,
+          crossAxisCount: 2,
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           crossAxisSpacing: 8,
           mainAxisSpacing: 8,
-          childAspectRatio: 1.05,
+          childAspectRatio: 3.3,
           children:
               jobCategories.map((cat) {
                 final isSel = selectedMajor == cat.name;
@@ -1982,92 +1985,39 @@ class _PostJobFormState extends State<PostJobForm>
                       }
                     },
                     child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
+                      duration: const Duration(milliseconds: 160),
+                      padding: const EdgeInsets.symmetric(horizontal: 14),
                       decoration: BoxDecoration(
-                        color:
-                            isSel
-                                ? AppColors.primary
-                                : isOpen
-                                ? AppColors.primaryLight
-                                : AppColors.bgPage,
-                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                        color: isSel || isOpen ? AppColors.bgCard : AppColors.bgMuted,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                         border: Border.all(
-                          color:
-                              isSel
-                                  ? AppColors.primary
-                                  : isOpen
-                                  ? AppColors.primary.withOpacity(0.4)
-                                  : Colors.transparent,
+                          color: isSel || isOpen ? AppColors.textPrimary : Colors.transparent,
                           width: 1.5,
                         ),
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      child: Row(
                         children: [
-                          Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              color:
-                                  isSel
-                                      ? Colors.white.withOpacity(0.2)
-                                      : isOpen
-                                      ? AppColors.primary.withOpacity(0.08)
-                                      : Colors.white,
-                              borderRadius: BorderRadius.circular(AppRadius.sm),
-                            ),
-                            child: Center(
-                              child: Icon(
-                                cat.icon,
-                                size: 18,
-                                color: isSel ? Colors.white : AppColors.primary,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            cat.name,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: AppFontSize.caption,
-                              fontWeight:
-                                  isSel ? FontWeight.w700 : FontWeight.w500,
-                              color:
-                                  isSel
-                                      ? Colors.white
-                                      : isOpen
-                                      ? AppColors.primary
-                                      : AppColors.textSecondary,
-                              height: 1.3,
-                            ),
-                          ),
-                          if (isSel &&
-                              _category.isNotEmpty &&
-                              _category != cat.name) ...[
-                            const SizedBox(height: 2),
-                            Container(
-                              margin: const EdgeInsets.symmetric(horizontal: 6),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 6,
-                                vertical: 1,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(AppRadius.full),
-                              ),
-                              child: Text(
-                                _category,
-                                // 9px → 11px (최소 가독 크기)
-                                style: const TextStyle(
-                                  fontSize: AppFontSize.caption,
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
+                          Icon(cat.icon, size: 20, color: isSel || isOpen ? AppColors.textPrimary : AppColors.textSecondary),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  cat.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTextStyles.body2.copyWith(
+                                    fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
+                                    color: AppColors.textPrimary,
+                                  ),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                                if (isSel && _category.isNotEmpty && _category != cat.name)
+                                  Text(_category, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTextStyles.caption),
+                              ],
                             ),
-                          ],
+                          ),
                         ],
                       ),
                     ),
@@ -2090,26 +2040,19 @@ class _PostJobFormState extends State<PostJobForm>
                         margin: const EdgeInsets.only(top: 10),
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryLight,
+                          color: AppColors.bgMuted,
                           borderRadius: BorderRadius.circular(AppRadius.lg),
-                          border: Border.all(
-                            color: AppColors.primary.withOpacity(0.12),
-                            width: 1,
-                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
                               children: [
-                                Icon(cat.icon, size: 14, color: AppColors.primary),
-                                const SizedBox(width: 5),
                                 Text(
-                                  cat.name,
-                                  style: const TextStyle(
-                                    fontSize: AppFontSize.meta,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.primary,
+                                  '${cat.name} · 세부 직종',
+                                  style: AppTextStyles.body2.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
                                   ),
                                 ),
                                 const Spacer(),
@@ -2165,14 +2108,14 @@ class _PostJobFormState extends State<PostJobForm>
                                             vertical: 8,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: sel ? AppColors.primary : Colors.white,
+                                            color: sel ? AppColors.textPrimary : Colors.white,
                                             borderRadius: BorderRadius.circular(
                                               99,
                                             ),
                                             border: Border.all(
                                               color:
                                                   sel
-                                                      ? AppColors.primary
+                                                      ? AppColors.textPrimary
                                                       : AppColors.border,
                                               width: sel ? 0 : 1,
                                             ),
@@ -2320,9 +2263,8 @@ class _PostJobFormState extends State<PostJobForm>
               padding: const EdgeInsets.symmetric(vertical: 12),
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: sel ? AppColors.primary : AppColors.bgPage,
+                color: sel ? AppColors.textPrimary : AppColors.bgMuted,
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: sel ? AppColors.primary : AppColors.border),
               ),
               child: Text(
                 label,
@@ -2564,16 +2506,16 @@ class _PostJobFormState extends State<PostJobForm>
             width: double.infinity,
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: _location.isNotEmpty ? AppColors.primaryLight : AppColors.bgPage,
+              color: AppColors.bgMuted,
               borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: _location.isNotEmpty ? AppColors.primary : AppColors.border),
+              border: Border.all(color: Colors.transparent),
             ),
             child: Row(
               children: [
                 Icon(
                   Icons.place_outlined,
                   size: 22,
-                  color: _location.isNotEmpty ? AppColors.primary : AppColors.textSecondary,
+                  color: AppColors.textSecondary,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -2604,7 +2546,7 @@ class _PostJobFormState extends State<PostJobForm>
                 ),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: _location.isNotEmpty ? AppColors.primary : AppColors.textSecondary,
+                  color: AppColors.textSecondary,
                 ),
               ],
             ),
@@ -2693,10 +2635,10 @@ class _PostJobFormState extends State<PostJobForm>
                   vertical: 15,
                 ),
                 decoration: BoxDecoration(
-                  color: _startDate != null ? AppColors.primaryLight : AppColors.bgPage,
+                  color: AppColors.bgMuted,
                   borderRadius: BorderRadius.circular(AppRadius.md),
                   border: Border.all(
-                    color: _startDate != null ? AppColors.primary : AppColors.border,
+                    color: Colors.transparent,
                   ),
                 ),
                 child: Row(
@@ -2704,7 +2646,7 @@ class _PostJobFormState extends State<PostJobForm>
                     Icon(
                       Icons.calendar_today_rounded,
                       size: 18,
-                      color: _startDate != null ? AppColors.primary : AppColors.textSecondary,
+                      color: AppColors.textSecondary,
                     ),
                     const SizedBox(width: 10),
                     Expanded(
@@ -2735,7 +2677,7 @@ class _PostJobFormState extends State<PostJobForm>
                     ),
                     Icon(
                       Icons.chevron_right,
-                      color: _startDate != null ? AppColors.primary : AppColors.textSecondary,
+                      color: AppColors.textSecondary,
                     ),
                   ],
                 ),
@@ -2895,28 +2837,13 @@ class _PostJobFormState extends State<PostJobForm>
               ),
             ],
           ),
+        // 근무시간 요약 — 누를 수 없는 정보라 파란 띠 대신 회색 한 줄(익일·총 시간만 짚는다)
         if (!_timeNegotiable && _startTime != null && _endTime != null) ...[
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
-            decoration: BoxDecoration(
-              color: AppColors.primary.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-            ),
-            child: Text(
-              '근무시간 ${fmtTime(_startTime)} ~ '
-              '${_toMin(_endTime!) <= _toMin(_startTime!) ? '익일 ' : ''}'
-              '${fmtTime(_endTime)} · 총 ${_workMins() ~/ 60}시간${_workMins() % 60 == 0 ? '' : ' ${_workMins() % 60}분'}',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              // _blue는 이 연한 파랑 위에서 3.1:1 — 12px 텍스트엔 AA 미달
-              style: const TextStyle(
-                fontSize: AppFontSize.meta,
-                fontWeight: FontWeight.w800,
-                color: AppColors.primaryDark,
-              ),
-            ),
+          const SizedBox(height: 10),
+          Text(
+            '${_toMin(_endTime!) <= _toMin(_startTime!) ? '다음 날 ${fmtTime(_endTime)}에 끝나요 · ' : ''}'
+            '총 ${_workMins() ~/ 60}시간${_workMins() % 60 == 0 ? '' : ' ${_workMins() % 60}분'} 근무',
+            style: AppTextStyles.body2,
           ),
         ],
       ],
@@ -3225,11 +3152,8 @@ class _PostJobFormState extends State<PostJobForm>
                   label: t,
                   child: GestureDetector(
                     onTap: () {
-                      setState(() {
-                        _payType = t;
-                        _pay = 0;
-                        _payCtrl.clear();
-                      });
+                      // 단위만 바꾼다 — '월급 금액 아닌가요?'를 보고 단위를 고치면 금액을 다시 쳐야 했다
+                      setState(() => _payType = t);
                       _validatePay();
                     },
                     child: AnimatedContainer(
@@ -3239,16 +3163,15 @@ class _PostJobFormState extends State<PostJobForm>
                         vertical: 12,
                       ),
                       decoration: BoxDecoration(
-                        color: sel ? AppColors.primary : AppColors.bgPage,
+                        color: sel ? AppColors.textPrimary : AppColors.bgMuted,
                         borderRadius: BorderRadius.circular(AppRadius.md),
-                        border: Border.all(color: sel ? AppColors.primary : AppColors.border),
                       ),
                       child: Text(
                         t,
                         style: TextStyle(
                           fontSize: AppFontSize.button,
                           fontWeight: FontWeight.w700,
-                          color: sel ? Colors.white : AppColors.textSecondary,
+                          color: sel ? Colors.white : AppColors.textPrimary,
                         ),
                       ),
                     ),
@@ -3573,13 +3496,13 @@ class _PostJobFormState extends State<PostJobForm>
                 duration: const Duration(milliseconds: 160),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _isSameDayPay ? AppColors.primaryLight : AppColors.bgPage,
+                  color: _isSameDayPay ? AppColors.bgCard : AppColors.bgMuted,
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: _isSameDayPay ? AppColors.primary : AppColors.border),
+                  border: Border.all(color: _isSameDayPay ? AppColors.textPrimary : Colors.transparent, width: 1.5),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.payments_rounded, size: 24, color: AppColors.primary),
+                    const Icon(Icons.payments_rounded, size: 22, color: AppColors.textSecondary),
                     const SizedBox(width: 12),
                     const Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -4191,16 +4114,16 @@ class _TimeInputCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           decoration: BoxDecoration(
-            color: hasValue ? AppColors.primaryLight : AppColors.bgPage,
+            color: AppColors.bgMuted,
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: hasValue ? AppColors.primary : AppColors.border),
+            border: Border.all(color: Colors.transparent),
           ),
           child: Row(
             children: [
               Icon(
                 Icons.schedule_rounded,
                 size: 18,
-                color: hasValue ? AppColors.primary : AppColors.textSecondary,
+                color: AppColors.textSecondary,
               ),
               const SizedBox(width: 8),
               Expanded(
@@ -4254,11 +4177,11 @@ class _ToggleBtn extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
           decoration: BoxDecoration(
-            color: selected ? AppColors.primaryLight : AppColors.bgPage,
+            color: selected ? AppColors.bgCard : AppColors.bgMuted,
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
-              color: selected ? AppColors.primary : AppColors.border,
-              width: selected ? 1.5 : 1,
+              color: selected ? AppColors.textPrimary : Colors.transparent,
+              width: 1.5,
             ),
           ),
           child: Text(
@@ -4266,7 +4189,7 @@ class _ToggleBtn extends StatelessWidget {
             style: TextStyle(
               fontSize: AppFontSize.button,
               fontWeight: FontWeight.w700,
-              color: selected ? AppColors.primary : AppColors.textSecondary,
+              color: selected ? AppColors.textPrimary : AppColors.textSecondary,
             ),
           ),
         ),
@@ -4292,16 +4215,16 @@ class _SmallToggle extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: selected ? AppColors.primary : AppColors.bgPage,
+            color: selected ? AppColors.bgCard : AppColors.bgMuted,
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: selected ? AppColors.primary : AppColors.border),
+            border: Border.all(color: selected ? AppColors.textPrimary : Colors.transparent, width: 1.5),
           ),
           child: Center(
             child: Text(
               label,
               style: TextStyle(
                 fontWeight: FontWeight.w700,
-                color: selected ? Colors.white : AppColors.textSecondary,
+                color: selected ? AppColors.textPrimary : AppColors.textSecondary,
               ),
             ),
           ),
@@ -4379,9 +4302,9 @@ class _ExternalApplyOption extends StatelessWidget {
       duration: const Duration(milliseconds: 180),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: enabled ? AppColors.primaryLight : AppColors.bgPage,
+        color: enabled ? AppColors.bgCard : AppColors.bgMuted,
         borderRadius: BorderRadius.circular(AppRadius.md),
-        border: Border.all(color: enabled ? AppColors.primary : AppColors.border),
+        border: Border.all(color: enabled ? AppColors.textPrimary : Colors.transparent, width: 1.5),
       ),
       child: Column(
         children: [
@@ -4988,16 +4911,16 @@ class _PublishSheetState extends State<_PublishSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         decoration: BoxDecoration(
-          color: _scheduledDate != null ? AppColors.primaryLight : AppColors.bgPage,
+          color: AppColors.bgMuted,
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: _scheduledDate != null ? AppColors.primary : AppColors.border),
+          border: Border.all(color: Colors.transparent),
         ),
         child: Row(
           children: [
             Icon(
               Icons.calendar_today_outlined,
               size: 15,
-              color: _scheduledDate != null ? AppColors.primary : AppColors.textSecondary,
+              color: AppColors.textSecondary,
             ),
             const SizedBox(width: 8),
             Expanded(
@@ -5037,16 +4960,16 @@ class _PublishSheetState extends State<_PublishSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         decoration: BoxDecoration(
-          color: _scheduledTime != null ? AppColors.primaryLight : AppColors.bgPage,
+          color: AppColors.bgMuted,
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: _scheduledTime != null ? AppColors.primary : AppColors.border),
+          border: Border.all(color: Colors.transparent),
         ),
         child: Row(
           children: [
             Icon(
               Icons.access_time_rounded,
               size: 15,
-              color: _scheduledTime != null ? AppColors.primary : AppColors.textSecondary,
+              color: AppColors.textSecondary,
             ),
             const SizedBox(width: 8),
             Expanded(
