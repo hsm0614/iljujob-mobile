@@ -406,56 +406,12 @@ class _WorkerActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final actions = <Widget>[];
-
-    void add(Widget w) {
-      if (actions.isNotEmpty) actions.add(const SizedBox(width: 8));
-      actions.add(w);
-    }
-
     final canBook =
         !_isCancelled &&
         !_blocked &&
         !_expired &&
         !isCompleted &&
         !workDayPassed;
-
-    // ── 캘린더 (요일 공고면 숨김)
-    if (!isWeekdaysJob) {
-      if (!hasWorkSession) {
-        if (canBook) {
-          add(
-            _SmallAction(
-              label: '캘린더에 추가',
-              loading: workLoading,
-              onPressed: workLoading ? null : onAddToCalendar,
-            ),
-          );
-        }
-      } else {
-        add(_SmallAction(label: '캘린더 보기', onPressed: onOpenCalendar));
-
-        if (canCancel && !workDayPassed) {
-          add(
-            OutlinedButton.icon(
-              onPressed: workLoading ? null : onCancelWorkSession,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.error,
-                side: const BorderSide(color: AppColors.error),
-              ),
-              icon:
-                  workLoading
-                      ? _loadingDot(AppColors.error)
-                      : const Icon(Icons.event_busy_rounded, size: 16),
-              label: const Text(
-                '일정 취소'),
-            ),
-          );
-        }
-      }
-    }
-
-    // ── 출근 확인
     final canCheckin =
         !checkedIn &&
         status == 'active' &&
@@ -465,79 +421,100 @@ class _WorkerActions extends StatelessWidget {
         !_expired &&
         !isCompleted &&
         _hireConfirmed;
-
-    if (canCheckin) {
-      add(
-        ElevatedButton.icon(
-          onPressed: checkinLoading ? null : onCheckin,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.success,
-          ),
-          icon:
-              checkinLoading
-                  ? _loadingDot(Colors.white)
-                  : const Icon(
-                    Icons.how_to_reg_rounded,
-                    size: 16,
-                    color: Colors.white,
-                  ),
-          label: const Text(
-            '출근 확인'),
-        ),
-      );
-    } else if (checkedIn) {
-      add(
-        _Pill(
-          icon: Icons.verified_rounded,
-          text:
-              checkinDistanceM != null
-                  ? '출근 확인됨 (${checkinDistanceM}m)'
-                  : '출근 확인됨',
-          bg: const Color(0x1410B981),
-          fg: AppColors.badgeSameDay,
-        ),
-      );
-    }
-
     // 진행 중엔 '지원 취소', 끝난 뒤엔 '후기' — 둘이 같이 보이면 서로 모순이었다.
     // 후기 자격(사장님 답장·근무일 지남)은 서버가 한 번 더 막는다 (reviewController)
-    final ended =
-        isCompleted || checkedIn || status != 'active' || workDayPassed;
+    final ended = isCompleted || checkedIn || status != 'active' || workDayPassed;
 
-    if (!ended && !_isCancelled) {
-      // 파괴적이지만 자주 쓰지 않는 행동 — 빨간 테두리 알약 대신 회색 글자 (누르면 확인 시트)
-      add(
-        TextButton(
-          onPressed: workLoading ? null : onCancelApplication,
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.textSecondary,
-            textStyle: AppTextStyles.btnSm,
-          ),
-          child: const Text('지원 취소'),
-        ),
-      );
-    } else if (_isCancelled) {
-      add(Text('지원을 취소했어요', style: AppTextStyles.caption));
+    // 연파랑·초록·빨간 테두리·알약·회색 글자가 가로 스크롤 한 줄에 섞여 있던 것 →
+    // 사장님 쪽과 같은 뼈대: 지금 상태 한 줄 + 할 일 버튼 하나, 드문 행동은 아래 작은 글자.
+    String line;
+    IconData? icon;
+    ({String label, VoidCallback? onTap, bool loading, bool primary})? action;
+    if (_isCancelled) {
+      line = '지원을 취소했어요';
+    } else if (canCheckin) {
+      line = '근무지에 도착하면 출근 확인을 눌러 주세요';
+      action = (label: '출근 확인', onTap: onCheckin, loading: checkinLoading, primary: true);
+    } else if (ended) {
+      line = checkedIn
+          ? (checkinDistanceM != null ? '출근 확인됐어요 (${checkinDistanceM}m)' : '출근 확인됐어요')
+          : '근무가 끝났어요';
+      icon = checkedIn ? Icons.check_circle_rounded : null;
+      action = hasReviewed
+          ? null
+          : (label: '후기 남기기', onTap: onGoReview, loading: false, primary: true);
+      if (hasReviewed) line = '$line · 후기를 남겼어요';
+    } else if (_hireConfirmed) {
+      line = '출근 확정됐어요 · 근무일에 알림이 가요';
+      icon = Icons.event_available_rounded;
+    } else {
+      line = '채팅으로 근무 조건을 맞춰 보세요';
+    }
+    // 캘린더는 할 일이 따로 없을 때의 보조 행동
+    if (action == null && !isWeekdaysJob && !hasWorkSession && canBook && !_isCancelled) {
+      action = (label: '캘린더에 추가', onTap: onAddToCalendar, loading: workLoading, primary: false);
     }
 
-    if (ended && !_isCancelled) {
-      add(
-        TextButton(
-          onPressed: hasReviewed ? null : onGoReview,
-          style: TextButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            disabledForegroundColor: AppColors.textTertiary,
-            textStyle: AppTextStyles.btnSm,
-          ),
-          child: Text(hasReviewed ? '후기 작성 완료' : '후기 남기기'),
-        ),
-      );
+    final links = <(String, VoidCallback?)>[
+      if (!isWeekdaysJob && hasWorkSession) ('캘린더 보기', onOpenCalendar),
+      if (!isWeekdaysJob && hasWorkSession && canCancel && !workDayPassed)
+        ('일정 취소', workLoading ? null : onCancelWorkSession),
+      if (!ended && !_isCancelled) ('지원 취소', workLoading ? null : onCancelApplication),
+    ];
+
+    final btnStyle = ButtonStyle(
+      minimumSize: const WidgetStatePropertyAll(Size(64, 40)),
+      padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 16)),
+      textStyle: WidgetStatePropertyAll(AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600)),
+    );
+    Widget? button;
+    if (action != null) {
+      final child =
+          action.loading
+              ? _loadingDot(action.primary ? Colors.white : AppColors.textSecondary)
+              : Text(action.label);
+      final onTap = action.loading ? null : action.onTap;
+      button =
+          action.primary
+              ? ElevatedButton(style: btnStyle, onPressed: onTap, child: child)
+              : OutlinedButton(style: btnStyle, onPressed: onTap, child: child);
     }
 
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      physics: const BouncingScrollPhysics(),
-      child: Row(children: actions),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            if (icon != null) ...[
+              Icon(icon, size: 16, color: AppColors.textSecondary),
+              const SizedBox(width: 6),
+            ],
+            Expanded(child: Text(line, style: AppTextStyles.body2)),
+            if (button != null) ...[const SizedBox(width: 12), button],
+          ],
+        ),
+        if (links.isNotEmpty)
+          Wrap(
+            spacing: 16,
+            children: [
+              for (final (label, onTap) in links)
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onTap,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 10),
+                    child: Text(
+                      label,
+                      style: AppTextStyles.body2.copyWith(
+                        color: label == '캘린더 보기' ? AppColors.primary : AppColors.textSecondary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+      ],
     );
   }
 }
@@ -549,41 +526,6 @@ class _WorkerActions extends StatelessWidget {
 // ─────────────────────────────────────────────
 // 공용 Pill 위젯
 // ─────────────────────────────────────────────
-
-class _Pill extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final Color? bg;
-  final Color? fg;
-
-  const _Pill({required this.icon, required this.text, this.bg, this.fg});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: bg ?? AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: fg ?? AppColors.primaryDark),
-          const SizedBox(width: 6),
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: AppFontSize.body2,
-              fontWeight: FontWeight.w600,
-              color: fg ?? AppColors.primaryDark,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
 
 // ─────────────────────────────────────────────
 // 공용 액션 버튼
@@ -774,38 +716,3 @@ class ChatRoomCancelledBanner extends StatelessWidget {
 }
 
 /// 패널 안 작은 행동 버튼 — 연파랑 바탕·파랑 글자, 높이 34. 채팅이 주인공이라 큰 파란 알약은 쓰지 않는다
-class _SmallAction extends StatelessWidget {
-  final String label;
-  final VoidCallback? onPressed;
-  final bool loading;
-  const _SmallAction({
-    required this.label,
-    required this.onPressed,
-    this.loading = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 34,
-      child: FilledButton(
-        onPressed: onPressed,
-        style: FilledButton.styleFrom(
-          backgroundColor: AppColors.primaryLight,
-          foregroundColor: AppColors.primary,
-          disabledBackgroundColor: AppColors.bgMuted,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          textStyle: AppTextStyles.btnSm,
-        ),
-        child:
-            loading
-                ? const SizedBox(
-                  width: 14,
-                  height: 14,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-                : Text(label),
-      ),
-    );
-  }
-}

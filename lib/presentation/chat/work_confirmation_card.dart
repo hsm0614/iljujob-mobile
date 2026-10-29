@@ -58,27 +58,7 @@ class WorkConfirmationCard extends StatelessWidget {
             // 헤더
             Row(
               children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: AppColors.bgMuted,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.calendar_today_rounded,
-                    size: 16,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                const Text(
-                  '근무 약속',
-                  style: TextStyle(
-                    fontSize: AppFontSize.button,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+                Text('근무 약속', style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.symmetric(
@@ -175,10 +155,7 @@ class WorkConfirmationCard extends StatelessWidget {
                   icon: const Icon(Icons.person_off_rounded, size: 15),
                   label: const Text(
                     '노쇼 신고'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.urgentCall,
-                    side: const BorderSide(color: AppColors.urgentCall),
-                  ),
+                  style: OutlinedButton.styleFrom(foregroundColor: AppColors.error),
                 ),
               ),
             ],
@@ -191,7 +168,7 @@ class WorkConfirmationCard extends StatelessWidget {
   String _formatDate(String raw) {
     try {
       final dt = DateTime.parse(raw);
-      return DateFormat('yyyy년 M월 d일 (E)', 'ko_KR').format(dt);
+      return DateFormat('M월 d일(E)', 'ko_KR').format(dt);
     } catch (_) {
       return raw;
     }
@@ -218,22 +195,14 @@ class _Row extends StatelessWidget {
   final String value;
   const _Row({required this.icon, required this.label, required this.value});
 
+  // 라벨 길이가 달라 값이 들쭉날쭉했다 — 라벨 칸을 고정폭으로
   @override
   Widget build(BuildContext context) => Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Icon(icon, size: 14, color: AppColors.textTertiary),
-      const SizedBox(width: 6),
-      Text(
-        '$label  ',
-        style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textTertiary),
-      ),
-      Text(
-        value,
-        style: const TextStyle(
-          fontSize: AppFontSize.body2,
-          fontWeight: FontWeight.w600,
-          color: AppColors.textPrimary,
-        ),
+      SizedBox(width: 44, child: Text(label, style: AppTextStyles.body2)),
+      Expanded(
+        child: Text(value, style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
       ),
     ],
   );
@@ -561,34 +530,8 @@ class _ProposeWorkConfirmationSheetState
                 children: [
                   // 장기 공고 안내
                   if (_isWeekdaysJob) ...[
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      margin: const EdgeInsets.only(bottom: 16),
-                      decoration: BoxDecoration(
-                        color: AppColors.warningLight,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.warningBorder),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.info_outline_rounded,
-                            size: 16,
-                            color: Color(0xFFEA580C),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '장기 공고 (${widget.weekdays})입니다.\n출근 첫날 날짜를 선택해주세요.',
-                              style: const TextStyle(
-                                fontSize: AppFontSize.meta,
-                                color: Color(0xFFEA580C),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    Text('${widget.weekdays} 공고예요 · 첫 출근 날짜를 골라 주세요', style: AppTextStyles.body2),
+                    const SizedBox(height: 16),
                   ],
 
                   // 근무 날짜
@@ -598,10 +541,7 @@ class _ProposeWorkConfirmationSheetState
                     text:
                         _date == null
                             ? '날짜를 선택하세요'
-                            : DateFormat(
-                              'yyyy년 M월 d일 (E)',
-                              'ko_KR',
-                            ).format(_date!),
+                            : DateFormat('M월 d일(E)', 'ko_KR').format(_date!),
                     isEmpty: _date == null,
                     icon: Icons.calendar_today_rounded,
                     onTap: () async {
@@ -695,11 +635,11 @@ class _ProposeWorkConfirmationSheetState
                       ),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.border),
+                        borderSide: BorderSide.none,
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(color: AppColors.border),
+                        borderSide: BorderSide.none,
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -714,37 +654,10 @@ class _ProposeWorkConfirmationSheetState
 
                   // 예상 급여 요약
                   if (estPay != null) ...[
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 11,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0FDF4),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFBBF7D0)),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.calculate_outlined,
-                            size: 15,
-                            color: Color(0xFF16A34A),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              '예상 ${estHours!.toStringAsFixed(1)}시간  ·  총 ${NumberFormat('#,###').format(estPay)}원',
-                              style: const TextStyle(
-                                fontSize: AppFontSize.meta,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF15803D),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${estHours!.toStringAsFixed(1)}시간 · 총 ${NumberFormat('#,###').format(estPay)}원',
+                      style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
                     ),
                   ],
 
@@ -754,9 +667,6 @@ class _ProposeWorkConfirmationSheetState
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: _canSubmit && !_loading ? _submit : null,
-                      style: ElevatedButton.styleFrom(
-                        disabledBackgroundColor: AppColors.border,
-                      ),
                       child:
                           _loading
                               ? const SizedBox(
@@ -796,6 +706,7 @@ class _FieldLabel extends StatelessWidget {
   );
 }
 
+/// 값 칸은 채워도 회색 그대로 — 채우면 파랑+테두리+체크로 바뀌던 것이 화면을 파랗게 만들었다(값 칸 규칙)
 class _Tile extends StatelessWidget {
   final String text;
   final bool isEmpty;
@@ -809,47 +720,30 @@ class _Tile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-      decoration: BoxDecoration(
-        color: isEmpty ? AppColors.bgMuted : AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color:
-              isEmpty
-                  ? AppColors.border
-                  : AppColors.primary.withValues(alpha: 0.4),
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 16,
-            color: isEmpty ? AppColors.textTertiary : AppColors.primary,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: AppFontSize.body2,
-                fontWeight: isEmpty ? FontWeight.w400 : FontWeight.w600,
-                color:
-                    isEmpty ? AppColors.textTertiary : AppColors.textPrimary,
+  Widget build(BuildContext context) => Material(
+    color: AppColors.bgMuted,
+    borderRadius: BorderRadius.circular(AppRadius.md),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, size: 16, color: AppColors.textSecondary),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                text,
+                overflow: TextOverflow.ellipsis,
+                style: AppTextStyles.body2.copyWith(
+                  fontWeight: isEmpty ? FontWeight.w400 : FontWeight.w600,
+                  color: isEmpty ? AppColors.textTertiary : AppColors.textPrimary,
+                ),
               ),
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
-          if (!isEmpty)
-            Icon(
-              Icons.check_circle_rounded,
-              size: 15,
-              color: AppColors.primary,
-            ),
-        ],
+          ],
+        ),
       ),
     ),
   );
