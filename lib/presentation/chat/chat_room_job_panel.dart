@@ -29,6 +29,8 @@ class ChatRoomJobPanel extends StatelessWidget {
 
   // 클라이언트 액션 콜백
   final VoidCallback? onConfirmHire;
+  /// 근무 끝난 알바생 평가 (true=또 부르고 싶어요). 이미 했으면 null
+  final ValueChanged<bool>? onEvaluate;
   final VoidCallback? onMarkCompleted;
   final VoidCallback? onProposeWorkConfirmation;
 
@@ -64,6 +66,7 @@ class ChatRoomJobPanel extends StatelessWidget {
     this.onConfirmHire,
     this.onMarkCompleted,
     this.onProposeWorkConfirmation,
+    this.onEvaluate,
     // 워커
     this.workLoading = false,
     this.hasWorkSession = false,
@@ -224,6 +227,7 @@ class ChatRoomJobPanel extends StatelessWidget {
                 onConfirmHire: onConfirmHire,
                 onMarkCompleted: onMarkCompleted,
                 onProposeWorkConfirmation: onProposeWorkConfirmation,
+                onEvaluate: onEvaluate,
               )
               : _WorkerActions(
                 status: status,
@@ -265,6 +269,7 @@ class _ClientActions extends StatelessWidget {
   final VoidCallback? onConfirmHire;
   final VoidCallback? onMarkCompleted;
   final VoidCallback? onProposeWorkConfirmation;
+  final ValueChanged<bool>? onEvaluate;
 
   const _ClientActions({
     required this.isConfirmed,
@@ -275,10 +280,32 @@ class _ClientActions extends StatelessWidget {
     this.onConfirmHire,
     this.onMarkCompleted,
     this.onProposeWorkConfirmation,
+    this.onEvaluate,
   });
 
   @override
   Widget build(BuildContext context) {
+    // 근무가 끝났고 아직 평가 전 — 한 번 누르면 알바생 프로필의 '또 부르고 싶대요'가 된다
+    if (isCompleted && onEvaluate != null) {
+      final small = ButtonStyle(
+        minimumSize: const WidgetStatePropertyAll(Size(0, 40)),
+        textStyle: WidgetStatePropertyAll(AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600)),
+      );
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('이번 알바생, 또 부르고 싶으세요?', style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary)),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: OutlinedButton(style: small, onPressed: () => onEvaluate!(false), child: const Text('아쉬웠어요'))),
+              const SizedBox(width: 8),
+              Expanded(child: ElevatedButton(style: small, onPressed: () => onEvaluate!(true), child: const Text('또 부를래요'))),
+            ],
+          ),
+        ],
+      );
+    }
     final isActive = status == 'active';
     final openStatus = workConfirmationStatus ?? '';
     final isWaitingWorker = openStatus == 'proposed';

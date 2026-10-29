@@ -27,7 +27,6 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
   bool canViewResume = false;
 
   int _activityScore = 0;
-  String _activityGrade = 'NEW';
 
   @override
   void initState() {
@@ -46,17 +45,6 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
       return upper == '1' || upper == 'Y' || upper == 'YES' || upper == 'TRUE';
     }
     return false;
-  }
-
-  String maskName(String name) {
-    if (name.isEmpty) return name;
-    if (name.length == 2) {
-      return '${name[0]}*';
-    } else if (name.length > 2) {
-      return name[0] + '*' * (name.length - 2) + name[name.length - 1];
-    } else {
-      return name; // 한 글자인 경우 그대로
-    }
   }
 
   Future<void> _fetchProfile(int workerId) async {
@@ -86,7 +74,6 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
       if (r[2] is List) licenses = List<Map<String, dynamic>>.from(r[2]);
       if (r[3] is Map) {
         _activityScore = (r[3]['total_score'] as num?)?.toInt() ?? 0;
-        _activityGrade = (r[3]['grade'] ?? 'NEW').toString();
       }
       isLoading = false;
     });
@@ -287,31 +274,27 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
               )
               : ListView(
                 padding: EdgeInsets.only(bottom: 24 + MediaQuery.of(context).padding.bottom),
-                children: [
-                  _header(),
-                  const SizedBox(height: 8),
-                  _resumeSection(),
-                ],
+                children: [_header(), _resumeSection()],
               ),
     );
   }
 
-  // 사진·이름·나이 → 신뢰 숫자 세 칸. 예전엔 네모 상자 4개(알바온도 점수와 활동등급이 따로)였다
+  // 숫자 상자(신뢰도·채용 확정·근무 완료 세 칸)는 어느 앱에나 있는 틀이라 이 사람이 안 보였다(대표 10-30).
+  // → 이름·등급 + 실제 기록 몇 줄(또 부르고 싶다는 사장님 수, 우리 앱에서 일한 횟수, 최근 접속)
   Widget _header() {
     final img = (profile!['profile_image_url'] ?? '').toString();
-    Widget cell(String label, String value) => Expanded(
-      child: Column(
-        children: [
-          Text(value, style: AppTextStyles.h3.copyWith(color: AppColors.textPrimary)),
-          const SizedBox(height: 2),
-          Text(label, style: AppTextStyles.body2),
-        ],
-      ),
-    );
+    final completed = int.tryParse('${profile!['completed_count'] ?? 0}') ?? 0;
+    final good = int.tryParse('${profile!['eval_good'] ?? 0}') ?? 0;
+    final facts = <(IconData, String)>[
+      if (good > 0) (Icons.favorite_border_rounded, '사장님 $good명이 또 부르고 싶대요'),
+      (Icons.work_outline_rounded, completed > 0 ? '알바일주에서 $completed번 일했어요' : '알바일주 첫 근무 전'),
+      if (_lastActive() case final a?) (Icons.access_time_rounded, a),
+    ];
     return Container(
       color: AppColors.bgCard,
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      padding: const EdgeInsets.all(20),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
@@ -326,7 +309,14 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(maskName((profile!['name'] ?? '').toString()), style: AppTextStyles.h2),
+                    Row(
+                      children: [
+                        // 지원한 사장님에겐 이미 공개된 이름 — 가리면 기계 같았다(토큰 없는 조회는 서버가 가린다)
+                        Flexible(child: Text((profile!['name'] ?? '').toString(), style: AppTextStyles.h2)),
+                        const SizedBox(width: 8),
+                        AppGradeBadge(score: _activityScore),
+                      ],
+                    ),
                     if (_ageGender.isNotEmpty) ...[
                       const SizedBox(height: 2),
                       Text(_ageGender, style: AppTextStyles.body2),
@@ -336,40 +326,46 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Container(
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            decoration: BoxDecoration(color: AppColors.bgMuted, borderRadius: BorderRadius.circular(AppRadius.md)),
-            child: Row(
-              children: [
-                cell('신뢰도', '$_activityGrade · $_activityScore점'),
-                cell('채용 확정', '${profile!['confirmed_count'] ?? 0}번'),
-                cell('근무 완료', '${profile!['completed_count'] ?? 0}번'),
-              ],
+          const SizedBox(height: 16),
+          for (final (icon, text) in facts)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                children: [
+                  Icon(icon, size: 18, color: AppColors.textSecondary),
+                  const SizedBox(width: 8),
+                  Text(text, style: AppTextStyles.body1.copyWith(color: AppColors.textPrimary)),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
   }
 
-  // 이력서: 동의 안 했으면 한 줄, 했으면 채운 칸만 ('없음'이 줄줄이 찍히던 것)
+  String? _lastActive() {
+    final t = DateTime.tryParse('${profile!['last_active_at'] ?? ''}')?.toLocal();
+    if (t == null) return null;
+    final d = DateTime.now().difference(t).inDays;
+    if (d <= 0) return '오늘 접속';
+    if (d < 30) return '$d일 전 접속';
+    return '한 달 넘게 접속 안 함';
+  }
+
+  Widget _section(String title, List<Widget> children) => Container(
+    width: double.infinity,
+    color: AppColors.bgCard,
+    margin: const EdgeInsets.only(top: 8),
+    padding: const EdgeInsets.all(20),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [Text(title, style: AppTextStyles.h3), ...children],
+    ),
+  );
+
   Widget _resumeSection() {
-    if (!canViewResume) {
-      return Container(
-        color: AppColors.bgCard,
-        padding: const EdgeInsets.all(20),
-        child: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('이력서', style: AppTextStyles.h3),
-            SizedBox(height: 6),
-            Text('이 알바생은 이력서를 공개하지 않았어요 · 경력은 채팅으로 물어봐 주세요', style: AppTextStyles.body2),
-          ],
-        ),
-      );
-    }
     String v(String k) => (profile![k] ?? '').toString().trim();
+    final intro = v('introduction');
     final rows = <(String, String)>[
       ('강점', v('strengths')),
       ('성격', v('traits')),
@@ -377,29 +373,47 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
       ('가능 요일', v('available_days')),
       ('가능 시간', v('available_times')),
     ].where((r) => r.$2.isNotEmpty).toList();
-    final intro = v('introduction');
-    final empty = rows.isEmpty && intro.isEmpty && experiences.isEmpty && licenses.isEmpty;
+    final history = (profile!['work_history'] as List?) ?? const [];
 
-    return Container(
-      color: AppColors.bgCard,
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('이력서', style: AppTextStyles.h3),
-          if (empty) ...[
-            const SizedBox(height: 6),
-            const Text('아직 이력서를 채우지 않았어요', style: AppTextStyles.body2),
-          ],
-          if (intro.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Text(intro, style: AppTextStyles.body1.copyWith(color: AppColors.textPrimary, height: 1.5)),
-          ],
-          for (final r in rows) _infoRow(r.$1, r.$2),
-          if (experiences.isNotEmpty) ...[
-            const SizedBox(height: 20),
-            const Text('경력', style: AppTextStyles.body1),
-            // 가게 이름이 길어 라벨 칸(84)에 안 들어간다 — 이름 위, 기간·내용 아래 두 줄
+    String md(String ymd) {
+      final d = DateTime.tryParse(ymd);
+      return d == null ? '' : '${d.month}월 ${d.day}일';
+    }
+
+    return Column(
+      children: [
+        // 자기소개 — 이 화면에서 유일하게 본인 목소리가 들어가는 자리라 크게
+        if (canViewResume && intro.isNotEmpty)
+          _section('자기소개', [
+            const SizedBox(height: 10),
+            Text(intro, style: AppTextStyles.body1.copyWith(color: AppColors.textPrimary, height: 1.6)),
+          ]),
+        if (history.isNotEmpty)
+          _section('알바일주에서 한 일', [
+            for (final h in history)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        (h['title'] ?? '').toString(),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(md((h['work_date'] ?? '').toString()), style: AppTextStyles.body2),
+                  ],
+                ),
+              ),
+          ]),
+        if (!canViewResume)
+          _section('이력서', [const SizedBox(height: 6), const Text('비공개', style: AppTextStyles.body2)])
+        else if (rows.isNotEmpty || experiences.isNotEmpty || licenses.isNotEmpty)
+          _section('이력서', [
+            for (final r in rows) _infoRow(r.$1, r.$2),
             for (final e in experiences)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
@@ -407,21 +421,17 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text((e['place'] ?? '').toString(), style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
-                    Text(
-                      [e['duration'], e['description']].where((x) => (x ?? '').toString().trim().isNotEmpty).join(' · '),
-                      style: AppTextStyles.body2,
-                    ),
+                    if ([e['duration'], e['description']].any((x) => (x ?? '').toString().trim().isNotEmpty))
+                      Text(
+                        [e['duration'], e['description']].where((x) => (x ?? '').toString().trim().isNotEmpty).join(', '),
+                        style: AppTextStyles.body2,
+                      ),
                   ],
                 ),
               ),
-          ],
-          if (licenses.isNotEmpty) ...[
-            const SizedBox(height: 20),
-            const Text('자격·면허', style: AppTextStyles.body1),
-            for (final l in licenses) _infoRow((l['name'] ?? '').toString(), (l['issued_at'] ?? '').toString()),
-          ],
-        ],
-      ),
+            for (final l in licenses) _infoRow('자격증', [l['name'], l['issued_at']].where((x) => (x ?? '').toString().isNotEmpty).join(' ')),
+          ]),
+      ],
     );
   }
 

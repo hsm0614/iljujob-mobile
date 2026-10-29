@@ -10,7 +10,6 @@ import 'package:flutter/material.dart';
 import 'package:iljujob/widget/app_motion.dart';
 import 'package:iljujob/utils/chat_stage.dart';
 import 'package:iljujob/config/constants.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -102,7 +101,6 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         if (mounted) Navigator.of(context).maybePop();
       };
 
-      ctrl.onShowEvaluationDialog = () => _showEvaluationDialog(ctrl);
 
       ctrl.onShowCalendarBlockedDialog =
           () => _showCancelBlockedByCalendarDialog(ctrl);
@@ -412,213 +410,6 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         'companyName': companyName,
       },
     );
-  }
-
-  // ─────────────────────────────────────────────
-  // 평가 다이얼로그 (별점 + 태그)
-  // ─────────────────────────────────────────────
-
-  Future<void> _showEvaluationDialog(ChatRoomController ctrl) async {
-    if (!mounted) return;
-
-    final isClient = ctrl.userType == 'client';
-    final title = isClient ? '이번 알바생은 어땠나요?' : '이번 사장님은 어땠나요?';
-    final goodTags =
-        isClient
-            ? ['시간 약속 잘 지킴', '일 잘함', '매너 좋음', '소통 원활']
-            : ['급여 제때 지급', '친절한 안내', '근무 환경 좋음', '약속 잘 지킴'];
-    final badTags =
-        isClient
-            ? ['지각/무단결근', '불성실한 태도', '연락 불가', '업무 미숙']
-            : ['급여 지연', '불친절', '과도한 업무', '약속 불이행'];
-
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) {
-        double rating = 5.0;
-        final Set<String> selectedTags = {};
-        bool sending = false;
-
-        return StatefulBuilder(
-          builder: (ctx, setState) {
-            final isGood = rating >= 4.0;
-            final tags = isGood ? goodTags : badTags;
-
-            Future<void> submit() async {
-              if (sending) return;
-              setState(() => sending = true);
-              try {
-                await ctrl.submitEvaluation(isGood: isGood);
-                if (ctx.mounted) Navigator.of(ctx).pop();
-              } catch (_) {
-                if (ctx.mounted) setState(() => sending = false);
-              }
-            }
-
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.rate_review_rounded,
-                        size: 28,
-                        color: AppColors.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: AppFontSize.title,
-                        fontWeight: FontWeight.w800,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      '솔직한 평가가 더 나은 매칭을 만들어요',
-                      style: TextStyle(
-                        fontSize: AppFontSize.meta,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // ── 별점 ──
-                    RatingBar.builder(
-                      initialRating: rating,
-                      minRating: 1,
-                      direction: Axis.horizontal,
-                      allowHalfRating: false,
-                      itemCount: 5,
-                      itemSize: 36,
-                      itemPadding: const EdgeInsets.symmetric(horizontal: 4),
-                      itemBuilder:
-                          (_, __) => const Icon(
-                            Icons.star_rounded,
-                            color: Color(0xFFFFC107),
-                          ),
-                      onRatingUpdate:
-                          (r) => setState(() {
-                            rating = r;
-                            selectedTags.clear();
-                          }),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _ratingLabel(rating),
-                      style: TextStyle(
-                        fontSize: AppFontSize.body2,
-                        fontWeight: FontWeight.w700,
-                        color:
-                            isGood ? AppColors.success : AppColors.urgentCall,
-                      ),
-                    ),
-                    const SizedBox(height: 14),
-
-                    // ── 태그 ──
-                    Wrap(
-                      spacing: 6,
-                      runSpacing: 6,
-                      children:
-                          tags.map((tag) {
-                            final active = selectedTags.contains(tag);
-                            return GestureDetector(
-                              onTap:
-                                  () => setState(() {
-                                    active
-                                        ? selectedTags.remove(tag)
-                                        : selectedTags.add(tag);
-                                  }),
-                              child: AnimatedContainer(
-                                duration: const Duration(milliseconds: 120),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 5,
-                                ),
-                                decoration: BoxDecoration(
-                                  color:
-                                      active
-                                          ? (isGood
-                                              ? AppColors.primary
-                                              : AppColors.urgentCall)
-                                          : AppColors.bgMuted,
-                                  borderRadius: BorderRadius.circular(99),
-                                ),
-                                child: Text(
-                                  tag,
-                                  style: TextStyle(
-                                    fontSize: AppFontSize.meta,
-                                    fontWeight: FontWeight.w600,
-                                    color:
-                                        active
-                                            ? Colors.white
-                                            : AppColors.textSecondary,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }).toList(),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // ── 버튼 ──
-                    if (sending)
-                      const SizedBox(
-                        height: 44,
-                        child: Center(
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    else
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: submit,
-                          child: const Text(
-                            '평가 제출'),
-                        ),
-                      ),
-                    const SizedBox(height: 4),
-                    TextButton(
-                      onPressed: () => Navigator.of(ctx).pop(),
-                      child: const Text(
-                        '나중에 할게요',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: AppFontSize.body2,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  String _ratingLabel(double r) {
-    if (r >= 5) return '최고예요!';
-    if (r >= 4) return '좋았어요';
-    if (r >= 3) return '보통이에요';
-    if (r >= 2) return '아쉬웠어요';
-    return '별로였어요';
   }
 
   // ─────────────────────────────────────────────
@@ -1331,6 +1122,10 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     onConfirmHire: ctrl.confirmHire,
                     onProposeWorkConfirmation: () => _showProposeSheet(ctrl),
                     onMarkCompleted: ctrl.markJobAsCompleted,
+                    onEvaluate:
+                        ctrl.userType == 'client' && !ctrl.evaluatedByMe
+                            ? (good) => ctrl.submitEvaluation(isGood: good).catchError((_) {})
+                            : null,
                     workLoading: ctrl.workLoading,
                     hasWorkSession: ctrl.hasWorkSession,
                     canCancel: ctrl.canCancel,

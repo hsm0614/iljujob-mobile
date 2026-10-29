@@ -74,6 +74,8 @@ class ChatRoomController extends ChangeNotifier {
   bool workerWorkConfirmed = false;
   bool workLoading = false;
   bool canCancel = false;
+  /// 사장님이 이 방 알바생을 이미 평가했는지 (서버 work-session-state.evaluated)
+  bool evaluatedByMe = false;
   String? workError;
   bool hasWorkSession = false;
   int? workSessionId;
@@ -805,8 +807,6 @@ class ChatRoomController extends ChangeNotifier {
         onWorkConfirmationAccepted?.call(confirm);
       } else if (nextStatus == 'cancelled') {
         onShowSnackbar?.call('출근 확정 제안을 거절했어요.');
-      } else if (nextStatus == 'completed') {
-        onShowEvaluationDialog?.call();
       }
     } catch (e) {
       debugPrint('처리에 실패했어요: $e');
@@ -834,7 +834,6 @@ class ChatRoomController extends ChangeNotifier {
         isCompleted = true;
         _notify();
         onShowSnackbar?.call('알바를 완료 처리했어요.');
-        onShowEvaluationDialog?.call();
       } else {
         onShowSnackbar?.call('알바 완료 실패');
       }
@@ -989,6 +988,7 @@ class ChatRoomController extends ChangeNotifier {
 
       workerWorkConfirmed = confirmed;
       canCancel = cancelable;
+      evaluatedByMe = asBool(data['evaluated']);
       hasWorkSession =
           asBool(data['hasSession']) ||
           asBool(data['has_session']) ||
@@ -1320,7 +1320,9 @@ class ChatRoomController extends ChangeNotifier {
       onShowSnackbar?.call(msg);
       throw Exception('submitEvaluation failed: ${resp.statusCode}');
     }
-    onShowSnackbar?.call('평가가 반영됐어요');
+    evaluatedByMe = true;
+    _notify();
+    onShowSnackbar?.call('고마워요. 다음 채용에 참고할게요');
   }
 
   // ─────────────────────────────────────────────
