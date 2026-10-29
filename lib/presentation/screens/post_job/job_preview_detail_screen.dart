@@ -546,7 +546,7 @@ class _AiInsightCardState extends State<_AiInsightCard> {
                 _insightRow(
                   icon: Icons.vertical_align_top_rounded,
                   label: '즉시게시로 등록 시',
-                  value: '3일 → 7일로 노출 연장',
+                  value: '12시간 기다리지 않고 즉시 공개 · 알림 2회',
                   valueColor: AppColors.primary,
                 ),
               ],

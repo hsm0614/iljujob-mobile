@@ -568,9 +568,9 @@ class JobService {
   }
 
   // ─── 9. 즉시 게시 ─────────────────────────────────────
-  static Future<void> publishNow(int jobId) async {
+  static Future<void> publishNow(int jobId, {String passType = 'instant'}) async {
     final uri = Uri.parse('$baseUrl/api/job/$jobId/publish-now');
-    final resp = await AuthenticatedHttpClient.postJson(uri);
+    final resp = await AuthenticatedHttpClient.postJson(uri, body: {'pass_type': passType});
 
     if (resp.statusCode == 402) {
       throw const NoPassException();

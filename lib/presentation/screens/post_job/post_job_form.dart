@@ -21,6 +21,7 @@ import 'package:iljujob/core/suspension.dart';
 import 'package:iljujob/core/suspension_guard.dart';
 import '../../../data/services/ai_job_description_service.dart';
 import '../../../data/services/authenticated_http_client.dart';
+import '../../../data/services/commerce_catalog_service.dart';
 import 'package:iljujob/presentation/screens/client_screen/wage_report_screen.dart';
 import 'package:iljujob/presentation/screens/purchase_screen.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -409,7 +410,7 @@ class _PostJobFormState extends State<PostJobForm>
 
   /// 이용권 잔여 조회. 실패하면 null을 돌려준다.
   /// 실패를 0개로 뭉개면 이용권 보유자에게 결제 화면을 띄우게 되므로 구분해야 한다.
-  Future<({int instant, int urgent})?> _fetchPassCounts() async {
+  Future<({int instant, int instant7, int urgent})?> _fetchPassCounts() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final clientId = prefs.getInt('userId');
@@ -446,6 +447,7 @@ class _PostJobFormState extends State<PostJobForm>
                 ? -1
                 : purchasedInstant + subscriptionInstant,
         urgent: int.tryParse('${d['urgent'] ?? 0}') ?? 0,
+        instant7: int.tryParse('${d['instant7'] ?? 0}') ?? 0,
       );
     } catch (e) {
       // 잔여를 못 읽으면 이용권이 있는데도 결제 화면이 뜬다.
@@ -1310,14 +1312,14 @@ class _PostJobFormState extends State<PostJobForm>
               publishAt = null;
               _submit(isPaid: false);
             },
-            onPaidSubmit: (dt) {
+            onPaidSubmit: (dt, selectedPassType) {
               Navigator.pop(ctx);
               publishAt = dt;
               _trackPost(
                 'job_post_paid_publish_start',
-                properties: {'pass_type': 'instant'},
+                properties: {'pass_type': selectedPassType},
               );
-              _submit(isPaid: true, passType: 'instant');
+              _submit(isPaid: true, passType: selectedPassType);
             },
             onUrgentSubmit: () {
               Navigator.pop(ctx);
@@ -4575,7 +4577,7 @@ class _LaborNoticeState extends State<_LaborNotice> {
 // ════════════════════════════════════════════════════════
 class _PublishSheet extends StatefulWidget {
   /// 이용권 잔여 조회. null이면 조회 실패(= "0개"와 구분해야 함).
-  final Future<({int instant, int urgent})?> Function() fetchPassCounts;
+  final Future<({int instant, int instant7, int urgent})?> Function() fetchPassCounts;
 
   /// 이번 달 무료 잔여. null이면 조회 실패 — 막지 않고 서버 판정에 맡긴다.
   final Future<({int limit, int used, int remaining})?> Function()
@@ -4588,7 +4590,7 @@ class _PublishSheet extends StatefulWidget {
   final bool nationwideOn;
   final ValueChanged<bool> onNationwideChanged;
   final VoidCallback onFreeSubmit;
-  final void Function(DateTime?) onPaidSubmit;
+  final void Function(DateTime?, String) onPaidSubmit;
   final VoidCallback onUrgentSubmit;
   final VoidCallback onBuyPass;
   final bool externalApplyEnabled;
@@ -4623,7 +4625,9 @@ class _PublishSheetState extends State<_PublishSheet> {
 
   // 시트가 조회를 소유한다. 부모에서 await하면 시트가 뜨기까지 최대 8초+ 걸린다.
   int _paidPassCount = 0;
+  int _sevenDayPassCount = 0;
   int _urgentPassCount = 0;
+  bool? _durationPolicy;
   int? _reachableWorkersCount;
   int? _urgentWorkersCount;
   bool _passCountLoading = true;
@@ -4639,6 +4643,7 @@ class _PublishSheetState extends State<_PublishSheet> {
   void initState() {
     super.initState();
     _loadCounts();
+    _loadDurationPolicy();
     widget
         .fetchReachableWorkerCount()
         .then((c) {
@@ -4670,9 +4675,19 @@ class _PublishSheetState extends State<_PublishSheet> {
         _passCountFailed = true;
       } else {
         _paidPassCount = r.instant;
+        _sevenDayPassCount = r.instant7;
         _urgentPassCount = r.urgent;
       }
     });
+  }
+
+  Future<void> _loadDurationPolicy() async {
+    try {
+      final products = await const CommerceCatalogService().fetchProducts();
+      if (mounted) setState(() => _durationPolicy = products.any((p) => p.id == 'instant7_1'));
+    } catch (_) {
+      if (mounted) setState(() => _durationPolicy = null);
+    }
   }
 
   @override
@@ -4710,17 +4725,18 @@ class _PublishSheetState extends State<_PublishSheet> {
       //    isUtc == false를 확인해서 toUtc() 변환이 올바르게 동작하도록 보장
       assert(!at.isUtc, '예약 시각은 로컬 DateTime이어야 합니다');
     }
-    widget.onPaidSubmit(at);
+    widget.onPaidSubmit(at, _choice == 'instant_7d' ? 'instant_7d' : 'instant');
   }
 
   // 2026-10 리디자인: 주황 긴급 카드 + 비교표 + 버튼 2개 + 무료 업셀 시트 + '1회 차감' 확인 화면(최대 4번 탭)
   // → 선택지 3개(라디오) + 하단 버튼 하나. 버튼 글자가 무엇이 차감되는지 말한다(급구 결제 선택 화면 뼈대).
-  String _choice = 'instant'; // instant · urgent · free
+  String _choice = 'instant'; // instant · instant_7d · urgent · free
 
   bool _freeLate(DateTime now) =>
       widget.workStartKst != null && !freePublishAt(now).isBefore(widget.workStartKst!);
 
   bool get _urgentOk => !_passCountFailed && (_urgentPassCount > 0 || _urgentPassCount == -1);
+  bool get _sevenDayOk => !_passCountFailed && _sevenDayPassCount > 0;
 
   String _ownedTag(int n, String price) =>
       _passCountLoading
@@ -4736,6 +4752,9 @@ class _PublishSheetState extends State<_PublishSheet> {
   /// 하단 버튼 — 버튼 글자는 행동만, 무엇이 나가는지(이용권·결제 금액·공개 시각)는 버튼 위 한 줄(note)로.
   /// '이용권 사고 바로 올리기'처럼 결제를 돌려 말하던 문구를 정리했다(대표 10/29).
   ({String label, String? note, VoidCallback? onTap, bool loading}) get _cta {
+    if ((_choice == 'instant' || _choice == 'instant_7d') && _durationPolicy == null) {
+      return (label: '상품 확인하기', note: '기간과 가격을 확인 중이에요', onTap: _loadDurationPolicy, loading: false);
+    }
     if (_passCountLoading && _choice != 'free') return (label: '바로 올리기', note: null, onTap: null, loading: true);
     if (_passCountFailed && _choice != 'free') {
       return (label: '다시 확인하기', note: '보유 이용권을 확인하지 못했어요', onTap: _loadCounts, loading: false);
@@ -4761,9 +4780,16 @@ class _PublishSheetState extends State<_PublishSheet> {
               onTap: widget.onFreeSubmit,
               loading: false,
             );
+      case 'instant_7d':
+        if (!_sevenDayOk) {
+          return (label: '결제하고 바로 올리기', note: '즉시 게시 7일권 11,900원', onTap: widget.onBuyPass, loading: false);
+        }
+        if (!_canConfirm) return (label: '예약하기', note: '공개할 날짜와 시간을 골라 주세요', onTap: null, loading: false);
+        return (label: _isScheduled ? '$_scheduledLabel에 올리기' : '바로 올리기',
+          note: '7일권 $_sevenDayPassCount개 중 1개를 써요', onTap: _exec, loading: false);
       default:
         if (!_paidOk) {
-          return (label: '결제하고 바로 올리기', note: '즉시 게시 이용권 8,900원', onTap: widget.onBuyPass, loading: false);
+          return (label: '결제하고 바로 올리기', note: '즉시 게시 ${_durationPolicy == true ? '3' : '7'}일권 8,900원', onTap: widget.onBuyPass, loading: false);
         }
         if (!_canConfirm) return (label: '예약하기', note: '공개할 날짜와 시간을 골라 주세요', onTap: null, loading: false);
         final note = _paidPassCount == -1 ? '구독 혜택으로 올려요' : '즉시 게시 이용권 $_paidPassCount개 중 1개를 써요';
@@ -4884,11 +4910,20 @@ class _PublishSheetState extends State<_PublishSheet> {
                 const SizedBox(height: 16),
                 option(
                   value: 'instant',
-                  title: '즉시 게시',
+                  title: _durationPolicy == true ? '즉시 게시 · 3일' : '즉시 게시',
                   tag: _ownedTag(_paidPassCount, '8,900원'),
                   recommended: true,
-                  sub: '지금 바로 공개 · 알바생 알림 2회 · 7일 노출',
+                  sub: _durationPolicy == null
+                      ? '상품 정보 확인 중'
+                      : '지금 바로 공개 · 알바생 알림 2회 · ${_durationPolicy == true ? '3' : '7'}일 노출',
                 ),
+                if (_durationPolicy == true)
+                  option(
+                    value: 'instant_7d',
+                    title: '즉시 게시 · 7일',
+                    tag: _ownedTag(_sevenDayPassCount, '11,900원'),
+                    sub: '지금 바로 공개 · 알바생 알림 2회 · 7일 노출',
+                  ),
                 option(
                   value: 'urgent',
                   title: '긴급 호출',
@@ -4907,7 +4942,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                           ? '$freeWhen 공개라 근무 시작보다 늦어요 · 알림 1회 · 3일 노출'
                           : '$freeWhen 공개 · 알바생 알림 1회 · 3일 노출',
                 ),
-                if (_choice == 'instant' && _paidOk) ...[
+                if ((_choice == 'instant' && _paidOk) || (_choice == 'instant_7d' && _sevenDayOk)) ...[
                   const SizedBox(height: 8),
                   Text('공개 시점', style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 8),

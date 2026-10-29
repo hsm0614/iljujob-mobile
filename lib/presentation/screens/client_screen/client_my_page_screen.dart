@@ -35,6 +35,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
   // ===== 이용권 (/api/pass/remain — 즉시게시 -1 = 프로 무제한) =====
   bool _passLoading = true;
   int _instant = 0;
+  int _instant7 = 0;
   int _urgent = 0;
 
   // Helpers
@@ -87,6 +88,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
       if (res.statusCode == 200) {
         final d = jsonDecode(res.body);
         _instant = int.tryParse('${d['instant'] ?? d['remaining'] ?? 0}') ?? 0;
+        _instant7 = int.tryParse('${d['instant7'] ?? 0}') ?? 0;
         _urgent = int.tryParse('${d['urgent'] ?? 0}') ?? 0;
       }
     } catch (_) {}
@@ -362,6 +364,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
                         child: _PassBox(
                           loading: _passLoading,
                           instant: _instant,
+                          instant7: _instant7,
                           urgent: _urgent,
                           subLine: _subLoading ? null : _subLine(),
                           onTap: () async {
@@ -507,12 +510,14 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
 class _PassBox extends StatelessWidget {
   final bool loading;
   final int instant; // -1 = 무제한(프로)
+  final int instant7;
   final int urgent;
   final String? subLine;
   final VoidCallback onTap;
   const _PassBox({
     required this.loading,
     required this.instant,
+    required this.instant7,
     required this.urgent,
     required this.subLine,
     required this.onTap,
@@ -576,6 +581,10 @@ class _PassBox extends StatelessWidget {
                 Row(
                   children: [cell('즉시 게시', instant), cell('긴급 호출', urgent)],
                 ),
+                if (instant7 > 0) ...[
+                  const SizedBox(height: 12),
+                  Text('즉시 게시 7일권 $instant7개', style: AppTextStyles.body2),
+                ],
                 if (subLine != null) ...[
                   const SizedBox(height: 12),
                   Text(subLine!, style: AppTextStyles.body2),

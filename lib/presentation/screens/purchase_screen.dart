@@ -14,6 +14,7 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 
 import '../../config/constants.dart';
 import '../../data/models/pass_product_config.dart';
+import '../../data/services/commerce_catalog_service.dart';
 import '../../data/services/authenticated_http_client.dart';
 import 'potrone_screen.dart';
 
@@ -28,9 +29,12 @@ const _kIosInstant = {
   10: 'com.iljujob.pass30',
 };
 const _kIosUrgent1 = 'com.iljujob.urgent1';
+const _kIosInstant7 = 'com.iljujob.pass7d1';
 
 bool _isPassProduct(String id) =>
-    _kIosInstant.values.contains(id) || id == _kIosUrgent1;
+    _kIosInstant.values.contains(id) ||
+    id == _kIosUrgent1 ||
+    id == _kIosInstant7;
 
 class _StoreVerifyFailure implements Exception {
   final String message;
@@ -54,7 +58,10 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
 
   // 잔여
   int remainingInstant = 0;
+  int remainingInstant7 = 0;
   int remainingUrgent = 0;
+  List<Map<String, dynamic>> _instantOptions = const [];
+  bool _catalogReady = false;
 
   String companyName = '';
   String companyPhone = '';
@@ -76,6 +83,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
     super.initState();
     _tabCtrl = TabController(length: 2, vsync: this);
     _refreshPassCount();
+    _loadCatalog();
     _loadUserInfo();
     // 끝나지 않은 거래는 아래 리스너가 서버 검증 후에 완료한다.
     // 예전엔 화면 진입 시 검증 없이 전부 강제 종료해서, 검증이 실패했던 결제는 이용권 없이 사라졌다.
@@ -114,7 +122,23 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
         remainingInstant =
             int.tryParse('${data['instant'] ?? data['remaining'] ?? 0}') ?? 0;
         remainingUrgent = int.tryParse('${data['urgent'] ?? 0}') ?? 0;
+        remainingInstant7 = int.tryParse('${data['instant7'] ?? 0}') ?? 0;
       });
+    }
+  }
+
+  Future<void> _loadCatalog() async {
+    try {
+      final products = await const CommerceCatalogService().fetchProducts();
+      final options = instantOptionsForCatalog(products);
+      if (mounted) {
+        setState(() {
+          _instantOptions = options;
+          _catalogReady = options.isNotEmpty;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _catalogReady = false);
     }
   }
 
@@ -258,7 +282,13 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
               await Future.delayed(const Duration(milliseconds: 600));
               if (mounted) Navigator.pop(context, {'success': true});
             } else {
-              await _showBought(isUrgent ? 'urgent' : 'instant');
+              await _showBought(
+                isUrgent
+                    ? 'urgent'
+                    : p.productID == _kIosInstant7
+                    ? 'instant_7d'
+                    : 'instant',
+              );
             }
           }
         } catch (e) {
@@ -376,11 +406,31 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   Future<void> _showBought(String passType) async {
     if (!mounted) return;
     final urgent = passType == 'urgent';
+    final sevenDay = passType == 'instant_7d';
     final r = await showAppSuccess(
       context,
-      title: urgent ? '긴급 호출 이용권을 받았어요' : '즉시 게시 이용권을 받았어요',
-      message: urgent ? '공고를 올린 뒤 근처 알바생에게 바로 연락할 수 있어요' : '공고를 올릴 때 바로 공개할 수 있어요',
-      facts: [(urgent ? '보유 긴급 호출' : '보유 즉시 게시', '${urgent ? remainingUrgent : remainingInstant}개')],
+      title:
+          urgent
+              ? '긴급 호출 이용권을 받았어요'
+              : sevenDay
+              ? '즉시 게시 7일권을 받았어요'
+              : '즉시 게시 이용권을 받았어요',
+      message:
+          urgent ? '공고를 올린 뒤 근처 알바생에게 바로 연락할 수 있어요' : '공고를 올릴 때 바로 공개할 수 있어요',
+      facts: [
+        (
+          urgent
+              ? '보유 긴급 호출'
+              : sevenDay
+              ? '보유 7일권'
+              : '보유 즉시 게시',
+          '${urgent
+              ? remainingUrgent
+              : sevenDay
+              ? remainingInstant7
+              : remainingInstant}개',
+        ),
+      ],
       primaryLabel: '공고 올리기',
       secondaryLabel: '닫기',
     );
@@ -390,13 +440,27 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   // ─── 즉시 게시 구매 확인 시트 ────────────────────────
   // 고르고 '구매하기' → 확인 시트 → '결제하기'로 같은 결정을 두 번 받던 것을 한 번으로 (2026-10).
   // 금액은 하단 버튼 글자('8,900원 결제하기')가 말한다. 스토어·PortOne 결제창이 마지막 확인이다.
-  Future<void> _payInstant(int count, int price) async {
+  Future<void> _payInstant(Map<String, dynamic> option) async {
     if (_isPurchasing) return;
+    final count = option['count'] as int;
+    final price = option['price'] as int;
+    final passType = option['passType'] as String;
     if (Platform.isIOS) {
-      final productId = _kIosInstant[count];
-      if (productId != null) await _buyWithIAP(productId, 'instant');
+      final productId =
+          passType == 'instant_7d' ? _kIosInstant7 : _kIosInstant[count];
+      if (productId != null) await _buyWithIAP(productId, passType);
     } else {
-      await _purchaseWithPortOne(count: count, amount: price, passType: 'instant');
+      await _purchaseWithPortOne(
+        count: count,
+        amount: price,
+        passType: passType,
+        productName:
+            passType == 'instant_7d'
+                ? '알바일주 즉시게시 7일 이용권'
+                : option['days'] == 3
+                ? '알바일주 즉시게시 3일 이용권 $count회'
+                : null,
+      );
     }
   }
 
@@ -441,13 +505,22 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
             child: TabBarView(
               controller: _tabCtrl,
               children: [
-                _InstantTab(
-                  remainingCount: remainingInstant,
-                  options: instantPassOptions,
-                  isPurchasing: _isPurchasing,
-                  onSelect: _payInstant,
-                  formatPrice: formatPrice,
-                ),
+                if (!_catalogReady)
+                  Center(
+                    child: TextButton(
+                      onPressed: _loadCatalog,
+                      child: const Text('상품 정보를 불러오지 못했어요 · 다시 시도'),
+                    ),
+                  )
+                else
+                  _InstantTab(
+                    remainingCount: remainingInstant,
+                    remainingSevenDay: remainingInstant7,
+                    options: _instantOptions,
+                    isPurchasing: _isPurchasing,
+                    onSelect: _payInstant,
+                    formatPrice: formatPrice,
+                  ),
                 _UrgentTab(
                   remainingCount: remainingUrgent,
                   isPurchasing: _isPurchasing,
@@ -469,12 +542,14 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
 // 처음부터 1회가 골라져 있다 — 공고 올리기에서 '결제하고 바로 올리기'로 넘어온 사장님이 대부분이다.
 class _InstantTab extends StatefulWidget {
   final int remainingCount;
+  final int remainingSevenDay;
   final List<Map<String, dynamic>> options;
   final bool isPurchasing;
-  final void Function(int count, int price) onSelect;
+  final void Function(Map<String, dynamic> option) onSelect;
   final String Function(int) formatPrice;
   const _InstantTab({
     required this.remainingCount,
+    required this.remainingSevenDay,
     required this.options,
     required this.isPurchasing,
     required this.onSelect,
@@ -485,36 +560,55 @@ class _InstantTab extends StatefulWidget {
 }
 
 class _InstantTabState extends State<_InstantTab> {
-  late int _selected = widget.options.first['count'] as int;
+  late String _selectedId = widget.options.first['id'] as String;
 
   @override
   Widget build(BuildContext context) {
-    final opt = widget.options.firstWhere((o) => o['count'] == _selected);
+    final opt = widget.options.firstWhere(
+      (o) => o['id'] == _selectedId,
+      orElse: () => widget.options.first,
+    );
     final price = opt['price'] as int;
+    final durationPolicy = widget.options.any(
+      (o) => o['passType'] == 'instant_7d',
+    );
     return Column(
       children: [
         Expanded(
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
             children: [
-              _OwnedLine(label: '보유 즉시 게시 이용권', count: widget.remainingCount),
+              _OwnedLine(
+                label: durationPolicy ? '보유 즉시 게시 3일권' : '보유 즉시 게시 이용권',
+                count: widget.remainingCount,
+              ),
+              if (durationPolicy) ...[
+                const SizedBox(height: 8),
+                _OwnedLine(
+                  label: '보유 즉시 게시 7일권',
+                  count: widget.remainingSevenDay,
+                ),
+              ],
               const SizedBox(height: 20),
-              const Text('몇 개 살까요?', style: AppTextStyles.h2),
+              Text(
+                durationPolicy ? '기간과 횟수를 고르세요' : '몇 개 살까요?',
+                style: AppTextStyles.h2,
+              ),
               const SizedBox(height: 4),
               const Text('남은 이용권은 만료 없이 다음 공고에 써요', style: AppTextStyles.body2),
               const SizedBox(height: 16),
               for (final o in widget.options)
                 _OptionRow(
-                  title: '${o['count']}회',
+                  title: '${o['days']}일 · ${o['count']}회',
                   sub:
                       o['count'] == 1
-                          ? '공고 1건'
+                          ? '공고 1건을 바로 공개 · 알바생 알림 2회'
                           : '회당 ${widget.formatPrice(((o['price'] as int) / (o['count'] as int)).floor())}'
                               '${_discount(o) > 0 ? ' · ${_discount(o)}% 할인' : ''}',
                   price: widget.formatPrice(o['price'] as int),
                   tag: o['tag'] as String?,
-                  selected: _selected == o['count'],
-                  onTap: () => setState(() => _selected = o['count'] as int),
+                  selected: _selectedId == o['id'],
+                  onTap: () => setState(() => _selectedId = o['id'] as String),
                 ),
             ],
           ),
@@ -523,7 +617,7 @@ class _InstantTabState extends State<_InstantTab> {
           child: AppPrimaryButton(
             label: '${widget.formatPrice(price)} 결제하기',
             loading: widget.isPurchasing,
-            onPressed: () => widget.onSelect(_selected, price),
+            onPressed: () => widget.onSelect(opt),
           ),
         ),
       ],
@@ -533,7 +627,9 @@ class _InstantTabState extends State<_InstantTab> {
   int _discount(Map<String, dynamic> o) {
     final c = o['count'] as int;
     final full = 8900 * c;
-    return c == 1 ? 0 : (((full - (o['price'] as int)) / full) * 100).round();
+    return c == 1 || o['passType'] == 'instant_7d'
+        ? 0
+        : (((full - (o['price'] as int)) / full) * 100).round();
   }
 }
 
@@ -561,10 +657,19 @@ class _UrgentTab extends StatelessWidget {
         children: [
           const Padding(
             padding: EdgeInsets.only(top: 2),
-            child: Icon(Icons.check_rounded, size: 16, color: AppColors.primary),
+            child: Icon(
+              Icons.check_rounded,
+              size: 16,
+              color: AppColors.primary,
+            ),
           ),
           const SizedBox(width: 8),
-          Expanded(child: Text(t, style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary))),
+          Expanded(
+            child: Text(
+              t,
+              style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary),
+            ),
+          ),
         ],
       ),
     );
@@ -578,9 +683,18 @@ class _UrgentTab extends StatelessWidget {
               const SizedBox(height: 20),
               const Text('갑자기 사람이 빌 때', style: AppTextStyles.h2),
               const SizedBox(height: 4),
-              const Text('근무지 5km 안 알바생에게 사장님이 직접 연락해요', style: AppTextStyles.body2),
+              const Text(
+                '근무지 5km 안 알바생에게 사장님이 직접 연락해요',
+                style: AppTextStyles.body2,
+              ),
               const SizedBox(height: 16),
-              _OptionRow(title: '1회', sub: '공고 1건', price: '13,900원', selected: true, onTap: () {}),
+              _OptionRow(
+                title: '1회',
+                sub: '공고 1건',
+                price: '13,900원',
+                selected: true,
+                onTap: () {},
+              ),
               const SizedBox(height: 12),
               line('바로 공개되고 24시간 맨 위에 고정돼요'),
               line('활동 많은 순으로 고른 알바생 최대 10명에게 메시지를 보내요 · 번호는 공개되지 않아요'),
@@ -588,7 +702,12 @@ class _UrgentTab extends StatelessWidget {
               const SizedBox(height: 12),
               Row(
                 children: [
-                  const Expanded(child: Text('매달 쓴다면 구독이 더 저렴해요', style: AppTextStyles.body2)),
+                  const Expanded(
+                    child: Text(
+                      '매달 쓴다면 구독이 더 저렴해요',
+                      style: AppTextStyles.body2,
+                    ),
+                  ),
                   TextButton(
                     onPressed: () => Navigator.pushNamed(context, '/subscribe'),
                     child: const Text('구독 보기'),
@@ -630,7 +749,10 @@ class _OwnedLine extends StatelessWidget {
         Expanded(child: Text(label, style: AppTextStyles.body2)),
         Text(
           '$count개',
-          style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+          style: AppTextStyles.body1.copyWith(
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
         ),
       ],
     ),
@@ -661,7 +783,10 @@ class _OptionRow extends StatelessWidget {
       color: selected ? AppColors.primaryLight : AppColors.bgCard,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        side: BorderSide(color: selected ? AppColors.primary : AppColors.border, width: selected ? 1.5 : 1),
+        side: BorderSide(
+          color: selected ? AppColors.primary : AppColors.border,
+          width: selected ? 1.5 : 1,
+        ),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -671,7 +796,9 @@ class _OptionRow extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                selected
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_off_rounded,
                 size: 22,
                 color: selected ? AppColors.primary : AppColors.textDisabled,
               ),
@@ -682,8 +809,17 @@ class _OptionRow extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        Text(title, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                        if (tag != null) ...[const SizedBox(width: 6), JobSignalBadge(label: tag!)],
+                        Text(
+                          title,
+                          style: AppTextStyles.body1.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        if (tag != null) ...[
+                          const SizedBox(width: 6),
+                          JobSignalBadge(label: tag!),
+                        ],
                       ],
                     ),
                     const SizedBox(height: 2),
@@ -691,7 +827,13 @@ class _OptionRow extends StatelessWidget {
                   ],
                 ),
               ),
-              Text(price, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+              Text(
+                price,
+                style: AppTextStyles.body1.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
+              ),
             ],
           ),
         ),

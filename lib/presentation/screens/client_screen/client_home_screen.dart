@@ -13,6 +13,7 @@ import '../../../data/models/job.dart';
 import '../../../data/models/banner_ad.dart';
 import '../../../data/services/job_service.dart';
 import '../../../data/services/authenticated_http_client.dart';
+import '../../../data/services/commerce_catalog_service.dart';
 import '../../../data/services/ai_api.dart';
 import 'package:iljujob/widget/recommended_workers_sheet.dart';
 import 'package:iljujob/presentation/screens/worker_screen/job_insight_sheet.dart';
@@ -1416,10 +1417,20 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         sub.active &&
         sub.entitlementVersion == 'v3' &&
         (sub.instantRemaining == -1 || (sub.instantRemaining ?? 0) > 0);
+    var sevenDayAvailable = false;
+    try {
+      final catalog = await const CommerceCatalogService().fetchProducts();
+      if (catalog.any((p) => p.id == 'instant7_1')) {
+        final balance = await AuthenticatedHttpClient.get(Uri.parse('$baseUrl/api/pass/remain'));
+        if (balance.statusCode == 200) {
+          sevenDayAvailable = (jsonDecode(balance.body)['instant7'] as num? ?? 0) > 0;
+        }
+      }
+    } catch (_) {}
     if (!mounted) return;
 
     // 무료 공고 → 즉시게시 확인 바텀시트
-    final confirmed = await showModalBottomSheet<bool>(
+    final selectedPassType = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
@@ -1453,11 +1464,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  v3Available
-                      ? '선택한 이 공고에 구독 즉시게시 혜택을 적용합니다. 다른 공고는 변경되지 않습니다.'
-                      : isUnlimited
-                      ? '구독 혜택으로 즉시 게시됩니다. 이용권 차감 없이 지금 바로 공고를 노출합니다.'
-                      : '즉시게시 이용권 1개를 사용해 12시간 기다리지 않고 바로 노출합니다.\n노출 기간이 3일에서 7일로 늘어납니다.',
+                  '선택한 이용권 또는 구독 혜택으로 12시간 기다리지 않고 이 공고를 바로 공개합니다. 7일권을 선택하면 별도 7일권 1개를 사용합니다.',
                   style: const TextStyle(
                     fontSize: AppFontSize.button,
                     color: AppColors.textSecondary,
@@ -1469,7 +1476,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   children: [
                     Expanded(
                       child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context, false),
+                        onPressed: () => Navigator.pop(context),
                         child: const Text(
                           '취소',
                           style: TextStyle(color: AppColors.textSecondary),
@@ -1479,22 +1486,32 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     const SizedBox(width: 12),
                     Expanded(
                       child: ElevatedButton(
-                        onPressed: () => Navigator.pop(context, true),
+                        onPressed: () => Navigator.pop(context, 'instant'),
                         child: Text(
                           v3Available || isUnlimited ? '즉시 게시' : '이용권 사용'),
                       ),
                     ),
                   ],
                 ),
+                if (sevenDayAvailable) ...[
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context, 'instant_7d'),
+                      child: const Text('보유한 7일권으로 바로 공개'),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
     );
 
-    if (confirmed != true || !mounted) return;
+    if (selectedPassType == null || !mounted) return;
 
     try {
-      await JobService.publishNow(jobId);
+      await JobService.publishNow(jobId, passType: selectedPassType);
       _toast('공고가 즉시 게시되었습니다.');
       _loadMyJobs();
     } on NoPassException {
