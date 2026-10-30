@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:iljujob/widget/app_ui.dart';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
+import '../../data/services/iap_platform.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../config/constants.dart';
@@ -121,7 +121,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
       await _restoreSubscription?.cancel();
       _restoreTimeout?.cancel();
       _restoredPurchaseKeys.clear();
-      _restoreSubscription = InAppPurchase.instance.purchaseStream.listen(
+      _restoreSubscription = iap.purchaseStream.listen(
         _handleRestoredPurchases,
         onError: (_) => _toast('복원 결과를 확인하지 못했어요.'),
       );
@@ -129,7 +129,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
         _restoreSubscription?.cancel();
         _restoreSubscription = null;
       });
-      await InAppPurchase.instance.restorePurchases();
+      await iap.restorePurchases();
       _toast('복원을 요청했어요. 스토어 결과를 확인할게요.');
     } catch (e) {
       _toast('복원 실패: $e');
@@ -173,7 +173,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
           continue;
         }
         if (purchase.pendingCompletePurchase) {
-          await InAppPurchase.instance.completePurchase(purchase);
+          await iap.completePurchase(purchase);
         }
         if (mounted) {
           await _refresh();

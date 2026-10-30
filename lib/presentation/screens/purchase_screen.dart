@@ -10,7 +10,7 @@ import 'package:iljujob/config/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
-import 'package:in_app_purchase/in_app_purchase.dart';
+import '../../data/services/iap_platform.dart';
 
 import '../../config/constants.dart';
 import '../../data/models/pass_product_config.dart';
@@ -69,7 +69,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   final formatter = NumberFormat('#,###');
 
   // IAP
-  final InAppPurchase _iap = InAppPurchase.instance;
+  final InAppPurchasePlatform _iap = iap;
   StreamSubscription<List<PurchaseDetails>>? _purchaseSub;
   Completer<PurchaseDetails>? _purchaseCompleter;
   bool _isPurchasing = false;

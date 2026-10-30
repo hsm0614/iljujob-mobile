@@ -122,8 +122,10 @@ dependencies:
   flutter_markdown: ^0.7.0
   jwt_decoder: ^2.0.1
   time_picker_spinner: ^1.0.2
-  in_app_purchase: ^3.2.3
+  # in_app_purchase(연합)는 안 쓴다 — 안드로이드 구현이 Play Billing 7.1.1을 끌고 와
+  # 쓰지도 않는 경고를 만들었다. iOS는 StoreKit만, 안드로이드는 PortOne.
   in_app_purchase_storekit: ^0.4.3
+  in_app_purchase_platform_interface: ^1.4.0
   portone_flutter: ^0.12.1
   dio: ^5.2.0
   photo_view: ^0.15.0

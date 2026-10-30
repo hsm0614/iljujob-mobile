@@ -7,7 +7,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
+import '../../data/services/iap_platform.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -35,7 +35,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   int? _userId;
   String? _companyName;
   String? _companyPhone;
-  final InAppPurchase _iap = InAppPurchase.instance;
+  final InAppPurchasePlatform _iap = iap;
   StreamSubscription<List<PurchaseDetails>>? _purchaseSub;
   final Set<String> _handledIds = {};
   final Map<String, String> _storePrices = {};
