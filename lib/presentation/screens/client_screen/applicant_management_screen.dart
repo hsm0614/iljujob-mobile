@@ -43,6 +43,9 @@ class ApplicantModel {
   final String? lastSenderType;
   /// 최신 근무 약속 상태 (proposed/accepted/…/completed/no_show)
   final String? workStatus;
+  // AI 응대(유료 공고) — asking·complete·handed_off·capped·failed·declined_minor
+  final String? aiStatus;
+  final String? aiSummary;
 
   ApplicantModel({
     required this.applicationId,
@@ -64,6 +67,8 @@ class ApplicantModel {
     this.lastSentAt,
     this.lastSenderType,
     this.workStatus,
+    this.aiStatus,
+    this.aiSummary,
   });
 
   factory ApplicantModel.fromJson(Map<String, dynamic> j) {
@@ -94,6 +99,8 @@ class ApplicantModel {
       lastSentAt: j['last_sent_at'] != null ? DateTime.tryParse('${j['last_sent_at']}') : null,
       lastSenderType: j['last_sender_type']?.toString(),
       workStatus: j['work_status']?.toString(),
+      aiStatus: j['ai_status']?.toString(),
+      aiSummary: j['ai_summary']?.toString(),
     );
   }
 
@@ -1035,6 +1042,15 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
             ? ('보냄', AppColors.textSecondary)
             : ('아직 대화하지 않았어요', AppColors.textTertiary);
     final canPropose = group.jobStatus == 'active' && applicant.stage == 'pending';
+    // AI 응대 요약 한 줄 — 나이 확인 문구는 서버 요약 앞에 이미 붙어 온다. 뱃지 색은 늘리지 않는다(Two-Signal)
+    final aiSummary = (applicant.aiSummary ?? '').trim();
+    final aiLine = switch (applicant.aiStatus) {
+      'complete' => ('AI 확인 끝', aiSummary),
+      'asking' => ('AI 확인 중', aiSummary),
+      'declined_minor' => ('AI가 미성년 안내함', ''),
+      null => null,
+      _ => aiSummary.isEmpty ? null : ('AI 요약', aiSummary),
+    };
 
     return InkWell(
       // 선택 중이면 행 전체가 체크, 아니면 프로필(채팅 전 지원자 확인)
@@ -1078,6 +1094,20 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(meta, style: AppTextStyles.body2),
+                  if (aiLine != null) ...[
+                    const SizedBox(height: 6),
+                    Text.rich(
+                      TextSpan(
+                        style: AppTextStyles.body2,
+                        children: [
+                          TextSpan(text: aiLine.$1, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                          if (aiLine.$2.isNotEmpty) TextSpan(text: ' · ${aiLine.$2}'),
+                        ],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                   const SizedBox(height: 6),
                   Text.rich(
                     TextSpan(

@@ -9,6 +9,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:iljujob/widget/app_motion.dart';
 import 'package:iljujob/utils/chat_stage.dart';
+import 'dart:convert';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -164,6 +166,30 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   // ─────────────────────────────────────────────
   // 이미지 전송
   // ─────────────────────────────────────────────
+
+  // 번호는 사장님이 이 버튼을 눌렀을 때만 나간다(AI 응대도 번호를 주지 않는다). 메시지는 소켓으로 들어온다.
+  Future<void> _sharePhone(ChatRoomController ctrl) async {
+    final ok = await showAppSheet(
+      context,
+      title: '내 번호를 보낼까요?',
+      message: '알바생에게 사장님 휴대폰 번호가 그대로 보여요.',
+      confirmLabel: '보내기',
+      cancelLabel: '취소',
+    );
+    if (!ok || !mounted) return;
+    try {
+      final resp = await AuthenticatedHttpClient.postJson(
+        Uri.parse('$baseUrl/api/chat/${ctrl.chatRoomId}/share-phone'),
+        body: const {},
+      );
+      if (resp.statusCode == 200 || !mounted) return;
+      final msg = (jsonDecode(resp.body) as Map?)?['message']?.toString();
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg ?? '번호를 보내지 못했어요.')));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('번호를 보내지 못했어요.')));
+    }
+  }
 
   Future<void> _pickAndSendImage(ChatRoomController ctrl) async {
     if (!ctrl.inputEnabled) {
@@ -1348,6 +1374,13 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                   ),
                                 ),
                                 const SizedBox(width: 4),
+                                if (ctrl.userType == 'client')
+                                  IconButton(
+                                    tooltip: '내 번호 보내기',
+                                    icon: const Icon(Icons.phone_outlined),
+                                    color: ctrl.inputEnabled ? AppColors.textSecondary : AppColors.textDisabled,
+                                    onPressed: ctrl.inputEnabled ? () => _sharePhone(ctrl) : null,
+                                  ),
                                 IconButton(
                                   tooltip: '사진 첨부',
                                   icon: const Icon(Icons.image),

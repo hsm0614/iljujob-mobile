@@ -141,6 +141,8 @@ class _PostJobFormState extends State<PostJobForm>
   final _welfareCtrl = TextEditingController();
   String _description = '';
   bool _externalApplyEnabled = false;
+  // AI 지원자 응대 — 유료 공고 + 공고 정보 충분할 때만, 기본 켬(서버 lib/aiReply.js readiness와 같은 기준)
+  Map<String, dynamic> _aiReply = {'enabled': true, 'checks': ['date'], 'custom': '', 'adultOnly': false};
   final List<File> _images = [];
   List<String> _imageUrls = [], _deleteImageUrls = [];
 
@@ -892,6 +894,7 @@ class _PostJobFormState extends State<PostJobForm>
         externalApplyEnabled: isPaid && _externalApplyEnabled,
         externalApplyUrl: externalApplyUrl,
         requestId: _attemptId,
+        aiReply: isPaid && _aiReply['enabled'] == true && _aiMissing.isEmpty ? _aiReply : null,
       );
 
       _submitted = true;
@@ -1304,6 +1307,12 @@ class _PostJobFormState extends State<PostJobForm>
                         )
                         : Future.value(0),
             externalApplyEnabled: _externalApplyEnabled,
+            aiReplyCard: _AiReplyCard(
+              missing: _aiMissing,
+              initial: _aiReply,
+              onChanged: (v) => _aiReply = v,
+              onFill: () => Navigator.pop(ctx),
+            ),
             onFreeSubmit: () {
               Navigator.pop(ctx);
               if (_externalApplyEnabled) {
@@ -1764,6 +1773,19 @@ class _PostJobFormState extends State<PostJobForm>
   }
 
   /// 안 채운 빈칸 줄('· 휴게시간: ')은 빼고 올린다
+  static final _contactRe = RegExp(
+      r'https?://\S+|www\.\S+|\S+@\S+\.\S+|0\d{1,2}[-.\s]?\d{3,4}[-.\s]?\d{4}');
+  int get _aiDescLength =>
+      _descForPost.replaceAll(_contactRe, '').replaceAll(RegExp(r'\s+'), ' ').trim().length;
+
+  /// AI 응대를 켜려면 더 채워야 할 것. 비면 켤 수 있다.
+  List<String> get _aiMissing => [
+    if (_pay <= 0) '급여',
+    if (_location.trim().isEmpty) '근무지',
+    if (!_timeNegotiable && (_startTime == null || _endTime == null)) '근무 시간',
+    if (_aiDescLength < 50) '상세 설명 50자 (지금 $_aiDescLength자)',
+  ];
+
   String get _descForPost =>
       _description.split('\n').where((l) => !RegExp(r'^· [^:]+:\s*$').hasMatch(l)).join('\n').trim();
 
@@ -4609,10 +4631,13 @@ class _PublishSheet extends StatefulWidget {
   final bool externalApplyEnabled;
   /// 맨 위에 붙는 공고 요약(전체 화면으로 열 때)
   final Widget? header;
+  /// 유료 선택지에서만 보이는 AI 응대 카드
+  final Widget? aiReplyCard;
   /// 근무 시작(KST 벽시계). 무료 공개가 이보다 늦으면 미리 알려준다. 장기 공고는 null
   final DateTime? workStartKst;
   const _PublishSheet({
     this.header,
+    this.aiReplyCard,
     this.workStartKst,
     required this.fetchPassCounts,
     required this.fetchFreeQuota,
@@ -4995,6 +5020,13 @@ class _PublishSheetState extends State<_PublishSheet> {
                     ),
                   ),
                 ],
+                if (widget.aiReplyCard != null)
+                  // 무료로 바꿨다 돌아와도 고른 질문이 남게 상태 유지
+                  Visibility(
+                    visible: _choice != 'free',
+                    maintainState: true,
+                    child: Padding(padding: const EdgeInsets.only(top: 12), child: widget.aiReplyCard!),
+                  ),
                 if (widget.externalApplyEnabled && _choice != 'free') ...[
                   const SizedBox(height: 12),
                   const Text('알바생은 공고를 본 뒤 외부 신청 페이지로 이동해요', style: AppTextStyles.caption),
@@ -5131,6 +5163,122 @@ class _PublishSheetState extends State<_PublishSheet> {
       ),
     ),
   );
+}
+
+/// 게시 시트의 AI 응대 카드. 시트는 별도 라우트라 부모 setState로 다시 그려지지 않아 상태를 여기서 들고 onChanged로 올린다.
+class _AiReplyCard extends StatefulWidget {
+  final List<String> missing;
+  final Map<String, dynamic> initial;
+  final ValueChanged<Map<String, dynamic>> onChanged;
+  final VoidCallback onFill;
+  const _AiReplyCard({required this.missing, required this.initial, required this.onChanged, required this.onFill});
+  @override
+  State<_AiReplyCard> createState() => _AiReplyCardState();
+}
+
+class _AiReplyCardState extends State<_AiReplyCard> {
+  late bool _on = widget.initial['enabled'] == true;
+  late final Set<String> _checks = {...(widget.initial['checks'] as List).cast<String>(), 'date'};
+  late final _customCtrl = TextEditingController(text: '${widget.initial['custom'] ?? ''}');
+  late bool _adultOnly = widget.initial['adultOnly'] == true;
+
+  void _emit() => widget.onChanged({
+    'enabled': _on,
+    'checks': _checks.toList(),
+    'custom': _customCtrl.text.trim(),
+    'adultOnly': _adultOnly,
+  });
+
+  @override
+  void dispose() {
+    _customCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ready = widget.missing.isEmpty;
+    final on = ready && _on;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 6, 6, 14),
+      decoration: BoxDecoration(color: AppColors.bgMuted, borderRadius: BorderRadius.circular(AppRadius.md)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text('AI가 지원자 먼저 응대',
+                    style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+              ),
+              Switch.adaptive(
+                value: on,
+                activeTrackColor: AppColors.primary,
+                onChanged: ready ? (v) { setState(() => _on = v); _emit(); } : null,
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Text(
+              '지원하면 바로 조건을 물어보고 답을 요약해 알려드려요. 번호는 사장님이 직접 보낼 때만 나가요.',
+              style: AppTextStyles.caption,
+            ),
+          ),
+          if (!ready) ...[
+            const SizedBox(height: 10),
+            Text('이것만 채우면 켤 수 있어요', style: AppTextStyles.caption.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            for (final m in widget.missing) Text('· $m', style: AppTextStyles.caption),
+            TextButton(onPressed: widget.onFill, style: TextButton.styleFrom(padding: EdgeInsets.zero), child: const Text('채우러 가기')),
+          ],
+          if (on) ...[
+            const SizedBox(height: 12),
+            Text('물어볼 것', style: AppTextStyles.caption.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Row(
+                children: [
+                  _SmallToggle('근무 날짜', true, () {}),
+                  const SizedBox(width: 6),
+                  for (final c in const [('experience', '경험'), ('vehicle', '차량')]) ...[
+                    _SmallToggle(c.$2, _checks.contains(c.$1), () {
+                      setState(() => _checks.contains(c.$1) ? _checks.remove(c.$1) : _checks.add(c.$1));
+                      _emit();
+                    }),
+                    if (c.$1 == 'experience') const SizedBox(width: 6),
+                  ],
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: TextField(
+                controller: _customCtrl,
+                maxLength: 100,
+                onChanged: (_) => _emit(),
+                decoration: const InputDecoration(hintText: '직접 질문 (예: 보건증 있으세요?)', counterText: '', isDense: true),
+              ),
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text('성인만 받기 · 만 18세 미만이면 AI가 정중히 안내해요', style: AppTextStyles.caption),
+                ),
+                Switch.adaptive(
+                  value: _adultOnly,
+                  activeTrackColor: AppColors.primary,
+                  onChanged: (v) { setState(() => _adultOnly = v); _emit(); },
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 class _CommaNumberInputFormatter extends TextInputFormatter {
