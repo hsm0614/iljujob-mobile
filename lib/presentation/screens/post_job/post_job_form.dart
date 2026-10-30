@@ -141,8 +141,8 @@ class _PostJobFormState extends State<PostJobForm>
   final _welfareCtrl = TextEditingController();
   String _description = '';
   bool _externalApplyEnabled = false;
-  // AI 지원자 응대 — 유료 공고 + 공고 정보 충분할 때만, 기본 켬(서버 lib/aiReply.js readiness와 같은 기준)
-  Map<String, dynamic> _aiReply = {'enabled': true, 'checks': ['date'], 'custom': '', 'adultOnly': false};
+  // AI 지원자 응대 — 유료 공고 + 공고 정보 충분할 때만, 사장님이 직접 켠다(기본 끔)(서버 lib/aiReply.js readiness와 같은 기준)
+  Map<String, dynamic> _aiReply = {'enabled': false, 'checks': ['date'], 'custom': '', 'adultOnly': false};
   final List<File> _images = [];
   List<String> _imageUrls = [], _deleteImageUrls = [];
 

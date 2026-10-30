@@ -278,6 +278,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   Future<void> _sendMessage(ChatRoomController ctrl) async {
     final content = _messageController.text.trim();
     if (content.isEmpty) return;
+    if (ctrl.isClient) ctrl.aiActive = false; // 사장님이 직접 답하면 서버도 AI를 멈춘다
 
     final prefs = await SharedPreferences.getInstance();
     final userId = prefs.getInt('userId');
@@ -823,6 +824,38 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
     );
   }
 
+  Widget _buildAiReplyBanner(ChatRoomController ctrl) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(20, 2, 8, 2),
+      decoration: const BoxDecoration(
+        color: AppColors.bgMuted,
+        border: Border(bottom: BorderSide(color: AppColors.borderSub)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.smart_toy_outlined, size: 15, color: AppColors.textSecondary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'AI가 대신 응대 중 · 직접 답하면 AI는 멈춰요',
+              style: AppTextStyles.caption.copyWith(fontSize: AppFontSize.meta, fontWeight: FontWeight.w600),
+            ),
+          ),
+          TextButton(
+            onPressed: () async {
+              final ok = await ctrl.stopAiReply();
+              if (!ok && mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('잠시 후 다시 시도해 주세요.')));
+              }
+            },
+            child: const Text('AI 멈추기'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPeerUnreachableBanner(ChatRoomController ctrl) {
     final peer = ctrl.userType == 'worker' ? '사장님' : '알바생';
     return _statusStrip(
@@ -1188,6 +1221,8 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
               // 상대가 알림을 못 받는 상태면 안내 — 답장해도 상대가 못 볼 수 있음
               if (ctrl.peerReachable == false)
                 _buildPeerUnreachableBanner(ctrl),
+
+              if (ctrl.isClient && ctrl.aiActive) _buildAiReplyBanner(ctrl),
 
               // 긴급호출 수락/거절 배너 (알바생 전용)
               _buildUrgentCallBanner(ctrl),

@@ -222,6 +222,8 @@ class Job {
   final bool isSameDayPay;
   final bool isCertifiedCompany;
   final bool isPaid;
+  // AI 지원자 응대 켬(유료 공고, jobs.ai_reply_config.enabled)
+  final bool aiReplyOn;
   final bool isUrgent;
   final bool isAgency;
   final String? agencyPhone;
@@ -277,6 +279,7 @@ class Job {
     required this.isSameDayPay,
     required this.isCertifiedCompany,
     this.isPaid = true,
+    this.aiReplyOn = false,
     this.isUrgent = false,
     this.isAgency = false,
     this.agencyPhone,
@@ -426,6 +429,7 @@ class Job {
           json['is_paid'] == null
               ? true
               : (json['is_paid'] == 1 || json['is_paid'] == true),
+      aiReplyOn: _aiReplyOn(json['ai_reply_config']),
       isUrgent: json['is_urgent'] == 1 || json['is_urgent'] == true,
       isAgency:
           json['is_agency'] == 1 ||
@@ -567,6 +571,7 @@ class Job {
       isSameDayPay: isSameDayPay,
       isCertifiedCompany: isCertifiedCompany,
       isPaid: isPaid,
+      aiReplyOn: aiReplyOn,
       isUrgent: isUrgent,
       isAgency: isAgency,
       agencyPhone: agencyPhone,
@@ -628,5 +633,14 @@ class Job {
       'reasons': matchReasons,
       'zero_applicant_refunded': zeroApplicantRefunded ? 1 : 0,
     };
+  }
+}
+
+bool _aiReplyOn(dynamic raw) {
+  try {
+    final m = raw is String ? jsonDecode(raw) : raw;
+    return m is Map && m['enabled'] == true;
+  } catch (_) {
+    return false;
   }
 }

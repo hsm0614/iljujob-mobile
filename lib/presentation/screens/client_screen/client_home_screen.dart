@@ -1310,6 +1310,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 line('공고 인사이트', 'insight', locked: true),
                 if (!isClosed) line('맞춤 인재 추천', 'recommend', locked: true),
                 line('임금 리포트 · 같은 업종 급여 비교', 'wage'),
+                if (job.isPaid && !isClosed) line(job.aiReplyOn ? 'AI 응대 끄기' : 'AI 응대 켜기', 'ai-reply'),
                 const Divider(height: 1, color: AppColors.borderSub),
                 InkWell(
                   onTap: () => Navigator.pop(ctx, 'delete'),
@@ -1386,6 +1387,44 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         FirebaseAnalytics.instance.logEvent(name: 'client_delete_tap');
         await _showDeleteConfirm(job);
         break;
+      case 'ai-reply':
+        await _toggleAiReply(job);
+        break;
+    }
+  }
+
+  // 게시 후 AI 응대 켜고 끄기. 켤 때는 기본 질문(근무 날짜)만 — 세부 질문은 게시 시트에서 고른다.
+  // 끄면 진행 중인 대화에서도 AI가 더 답하지 않는다(서버 loadAiJob).
+  Future<void> _toggleAiReply(Job job) async {
+    final turnOn = !job.aiReplyOn;
+    try {
+      final resp = await AuthenticatedHttpClient.patchJson(
+        Uri.parse('$baseUrl/api/job/${job.id}/ai-reply'),
+        body: turnOn ? {'enabled': true, 'checks': ['date']} : {'enabled': false},
+      );
+      if (!mounted) return;
+      if (resp.statusCode == 200) {
+        _toast(turnOn ? 'AI 응대를 켰어요. 새 지원자에게 AI가 먼저 물어봐요.' : 'AI 응대를 껐어요.');
+        await _loadMyJobs();
+        return;
+      }
+      final body = jsonDecode(resp.body);
+      if (body is Map && body['code'] == 'AI_REPLY_JOB_INCOMPLETE') {
+        const names = {'pay': '급여', 'location': '근무지', 'time': '근무 시간', 'description': '상세 설명 50자'};
+        final missing = ((body['missing'] as List?) ?? []).map((k) => names[k] ?? '$k').join(' · ');
+        final edit = await showAppSheet(
+          context,
+          title: '공고 정보를 더 채워야 켤 수 있어요',
+          message: 'AI는 공고에 적힌 내용으로만 답해요.\n채울 것: $missing',
+          confirmLabel: '수정하러 가기',
+          cancelLabel: '닫기',
+        );
+        if (edit && mounted) Navigator.pushNamed(context, '/edit_job', arguments: job.id);
+        return;
+      }
+      _toast(body is Map && body['message'] != null ? '${body['message']}' : '설정을 바꾸지 못했어요.');
+    } catch (_) {
+      if (mounted) _toast('설정을 바꾸지 못했어요.');
     }
   }
 

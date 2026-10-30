@@ -104,6 +104,24 @@ class ChatRoomController extends ChangeNotifier {
   // false면 "상대가 확인이 늦을 수 있어요" 안내를 띄운다.
   bool? peerReachable;
 
+  // AI 응대가 이 방에서 아직 답하는 중(사장님 화면에 '멈추기'). 사장님이 보내면 서버가 멈춘다.
+  bool aiActive = false;
+
+  Future<bool> stopAiReply() async {
+    try {
+      final resp = await AuthenticatedHttpClient.postJson(
+        Uri.parse('$baseUrl/api/chat/$chatRoomId/ai-stop'),
+        body: const {},
+      );
+      if (resp.statusCode != 200) return false;
+      aiActive = false;
+      if (!_disposed) notifyListeners();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   final _uuid = const Uuid();
 
   // ─────────────────────────────────────────────
@@ -669,6 +687,7 @@ class ChatRoomController extends ChangeNotifier {
         ji['clientId'] = cId;
       }
 
+      aiActive = const {'asking', 'complete'}.contains(decoded['aiStatus']);
       status = s;
       initiator = ini;
       isConfirmed = confirmed;
