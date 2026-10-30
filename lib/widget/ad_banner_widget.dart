@@ -14,12 +14,14 @@ class AdBannerWidget extends StatefulWidget {
   final String placement;
   final EdgeInsetsGeometry margin;
   final bool autoRotate;
+  final Future<void> Function(int jobId)? onInternalJobTap;
 
   const AdBannerWidget({
     super.key,
     required this.placement,
     this.margin = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
     this.autoRotate = false,
+    this.onInternalJobTap,
   });
 
   @override
@@ -117,6 +119,24 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
   }
 
   Future<void> _onTap(AdBanner banner) async {
+    final destination = Uri.tryParse(banner.targetUrl);
+    if (destination?.scheme == 'iljujob' && destination?.host == 'job') {
+      final active = await AdBannerService.instance.fetchBanners(
+        widget.placement,
+      );
+      if (!active.any((ad) => ad.id == banner.id)) {
+        if (mounted)
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('종료된 광고입니다.')));
+        return;
+      }
+      final jobId = int.tryParse(destination!.pathSegments.firstOrNull ?? '');
+      AdBannerService.instance.logEvent(banner.id, 'click', widget.placement);
+      if (jobId != null) await widget.onInternalJobTap?.call(jobId);
+      return;
+    }
+
     AdBannerService.instance.logEvent(banner.id, 'click', widget.placement);
 
     final uri = Uri.parse(banner.targetUrl).replace(

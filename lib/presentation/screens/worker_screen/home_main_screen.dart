@@ -30,6 +30,7 @@ import 'package:iljujob/data/services/ad_banner_service.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/data/models/partner_recruit_post.dart';
 import 'package:iljujob/presentation/screens/worker_screen/partner_recruit_detail_screen.dart';
+import 'package:iljujob/presentation/screens/worker_screen/standard_recruit_detail_screen.dart';
 import 'package:iljujob/data/services/notificaion_service.dart';
 import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 import 'package:iljujob/widget/push_permission.dart';
@@ -137,15 +138,15 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   bool _genderHintDismissed = false;
   static const _kGenderHintKey = 'gender_hint_dismissed';
 
-  // 파트너 채용공고 카드: 닫으면 7일간 숨김 (광고 피로도 완화)
-  bool _partnerCardHidden = false;
+  // 카드별 닫기 상태. 다른 광고주의 카드까지 숨기지 않는다.
+  List<AdBanner> _jobAds = [];
 
   /// 어드민 '광고 배너(제휴)'의 `app_partner_recruit` 행이 활성인지.
   /// 계약 종료·사고 시 앱 배포 없이 즉시 내리기 위한 스위치.
   /// 기본 false — 서버 확인 전이나 조회 실패 시엔 노출하지 않는다(안전한 기본값).
   // 공고형 광고(어드민 '앱·공고형 광고'). 여럿이면 접속마다 하나를 고른다
   AdBanner? _jobAd;
-  static const _kPartnerCardHiddenUntilKey = 'partner_card_hidden_until';
+  static const _kPartnerCardHiddenUntilKey = 'partner_card_hidden_until_';
   static const _partnerCardHideDays = 7;
 
   // 근무지가 여러 곳이면 가장 가까운 곳까지의 거리. 필터가 '고양으로 통과'시킨
@@ -161,7 +162,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     ScreenAnalyticsService.instance.logScreenView('worker_home');
     // 알림 권한은 첫 공고 상세 뒤에 묻는다(widget/push_permission.dart).
     _loadGenderHintDismissed();
-    _loadPartnerCardHidden();
     _loadPartnerAdActive();
     _loadAvailableTodayStatus();
     _loadWorkerProfileBrief();
@@ -219,30 +219,30 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       'app_partner_recruit',
     );
     if (!mounted || rows.isEmpty) return;
-    // ponytail: 무작위 = 기대값으로 균등 노출. 광고주별 노출 보장(가중치)이 필요해지면 sort_order 가중
-    setState(() => _jobAd = rows[Random().nextInt(rows.length)]);
-  }
-
-  Future<void> _loadPartnerCardHidden() async {
     final prefs = await SharedPreferences.getInstance();
-    final until = prefs.getInt(_kPartnerCardHiddenUntilKey) ?? 0;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final available = rows.where((ad) => now >= (prefs.getInt('$_kPartnerCardHiddenUntilKey${ad.id}') ?? 0)).toList();
     if (!mounted) return;
-    setState(() {
-      _partnerCardHidden = DateTime.now().millisecondsSinceEpoch < until;
-    });
+    // ponytail: 무작위 = 기대값으로 균등 노출. 광고주별 노출 보장(가중치)이 필요해지면 sort_order 가중
+    setState(() { _jobAds = available; _jobAd = available.isEmpty ? null : available[Random().nextInt(available.length)]; });
   }
 
   Future<void> _dismissPartnerCard() async {
+    final hidden = _jobAd;
+    if (hidden == null) return;
     final prefs = await SharedPreferences.getInstance();
     final until = DateTime.now().add(
       const Duration(days: _partnerCardHideDays),
     );
     await prefs.setInt(
-      _kPartnerCardHiddenUntilKey,
+      '$_kPartnerCardHiddenUntilKey${hidden.id}',
       until.millisecondsSinceEpoch,
     );
     if (!mounted) return;
-    setState(() => _partnerCardHidden = true);
+    setState(() {
+      _jobAds = _jobAds.where((ad) => ad.id != hidden.id).toList();
+      _jobAd = _jobAds.isEmpty ? null : _jobAds[Random().nextInt(_jobAds.length)];
+    });
   }
 
   Timer? _debounce;
@@ -1455,7 +1455,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             ad.partnerCode,
             placement: 'app_home_worker',
           );
-          if (isWonder) {
+          if (ad.partnerCode.startsWith('client_ad_')) {
+            Navigator.push(context, MaterialPageRoute<void>(builder: (_) => StandardRecruitDetailScreen(bannerId: ad.id)));
+          } else if (isWonder) {
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -2908,7 +2910,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
   /// 목록 3번째 공고 뒤 한 칸: 알림 꺼짐 · 성별 안내 · 배너 · 파트너 광고
   Widget _buildFeedSlot() {
-    final jobAd = _partnerCardHidden ? null : _jobAd;
+    final jobAd = _jobAd;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -2929,9 +2931,18 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     );
   }
 
-  Widget _buildBannerSlot() => const Padding(
+  Widget _buildBannerSlot() => Padding(
     padding: EdgeInsets.symmetric(vertical: 4),
-    child: AdBannerWidget(placement: 'app_home_worker', autoRotate: true),
+    child: AdBannerWidget(placement: 'app_home_worker', autoRotate: true,
+      onInternalJobTap: (jobId) async {
+        try {
+          final job = await JobService.fetchJobById('$jobId');
+          if (mounted) await _openJobDetail(job);
+        } catch (_) {
+          if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('종료되었거나 열 수 없는 공고입니다.')));
+        }
+      },
+    ),
   );
 
   Widget _pill({

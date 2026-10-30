@@ -29,6 +29,7 @@ import 'package:iljujob/config/app_theme.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../../data/services/client_tracking_service.dart';
 import 'post_job_controller.dart' show getCurrentLocation;
+import 'promotion_request_screen.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/utils/date_ymd.dart';
 import 'package:iljujob/widget/picker_sheets.dart';
@@ -1795,6 +1796,18 @@ class _PostJobFormState extends State<PostJobForm>
                 const SizedBox(width: 48),
               ],
             ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            child: SizedBox(width: double.infinity, child: SegmentedButton<String>(
+              segments: const [ButtonSegment(value: 'job', label: Text('일반 공고')),
+                ButtonSegment(value: 'promotion', label: Text('채용 홍보'))],
+              selected: const {'job'},
+              onSelectionChanged: (selection) {
+                if (selection.first == 'promotion') Navigator.push(context,
+                  MaterialPageRoute<void>(builder: (_) => const PromotionRequestScreen()));
+              },
+            )),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
