@@ -97,14 +97,6 @@ class AIJobDescriptionService {
       suggestions.add('핵심 내용만 간결하게 정리해보세요');
     }
 
-    // 필수 키워드 검증
-    final requiredKeywords = ['업무', '근무', '급여', '지원'];
-    for (final keyword in requiredKeywords) {
-      if (!description.contains(keyword)) {
-        suggestions.add('$keyword 관련 내용을 추가하면 더 완성도 높은 공고가 됩니다');
-      }
-    }
-
     // 차별적 표현 검증
     final discriminatoryWords = ['남자만', '여자만', '젊은', '예쁜', '잘생긴'];
     for (final word in discriminatoryWords) {
@@ -115,30 +107,9 @@ class AIJobDescriptionService {
     }
 
     return AIQualityReport(
-      score: _calculateQualityScore(description, issues.length),
       issues: issues,
       suggestions: suggestions,
     );
-  }
-
-  static int _calculateQualityScore(String description, int issueCount) {
-    int score = 100;
-
-    // 글자 수 기준 점수
-    if (description.length < 200) {
-      score -= 20;
-    } else if (description.length > 600)
-      score -= 10;
-
-    // 이슈 개수별 점수 차감
-    score -= (issueCount * 15);
-
-    // 문단 구성 점수
-    final paragraphs =
-        description.split('\n').where((p) => p.trim().isNotEmpty).length;
-    if (paragraphs < 2) score -= 10;
-
-    return score.clamp(0, 100);
   }
 }
 
@@ -159,17 +130,14 @@ class SubscriptionRequiredException implements Exception {
 
 // 품질 평가 결과 클래스
 class AIQualityReport {
-  final int score;
   final List<String> issues;
   final List<String> suggestions;
 
   const AIQualityReport({
-    required this.score,
     required this.issues,
     required this.suggestions,
   });
 
-  bool get isGoodQuality => score >= 80 && issues.isEmpty;
   bool get hasIssues => issues.isNotEmpty;
 }
 
@@ -414,26 +382,6 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const Spacer(),
-                    if (qualityReport != null)
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: _getQualityColor(qualityReport!.score),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '품질: ${qualityReport!.score}점',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: AppFontSize.meta,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -483,7 +431,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'AI 개선 제안',
+                              '한 번 확인해 주세요',
                               style: TextStyle(
                                 fontSize: AppFontSize.meta,
                                 fontWeight: FontWeight.w600,
@@ -685,12 +633,5 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
         );
       },
     );
-  }
-
-  Color _getQualityColor(int score) {
-    if (score >= 90) return Colors.green;
-    if (score >= 80) return Colors.blue;
-    if (score >= 70) return Colors.orange;
-    return Colors.red;
   }
 }

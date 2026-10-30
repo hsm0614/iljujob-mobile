@@ -105,7 +105,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(Icons.auto_awesome, size: 18),
+                      child: Icon(Icons.bar_chart_rounded, size: 18, color: Colors.white),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -113,7 +113,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           const Text(
-                            'AI 공고 인사이트',
+                            '공고 통계',
                             style: TextStyle(
                               fontSize: AppFontSize.title,
                               fontWeight: FontWeight.w800,
@@ -161,7 +161,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
               color: AppColors.primary,
               borderRadius: BorderRadius.circular(16),
             ),
-            child: Icon(Icons.auto_awesome, size: 32),
+            child: Icon(Icons.bar_chart_rounded, size: 32, color: Colors.white),
           ),
           const SizedBox(height: 16),
           const Text(
@@ -170,7 +170,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
           ),
           const SizedBox(height: 8),
           const Text(
-            '공고 인사이트는 구독 플랜에서\n이용할 수 있어요.',
+            '공고 통계는 구독 플랜에서\n이용할 수 있어요.',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary, height: 1.5),
           ),
@@ -418,9 +418,9 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
           const SizedBox(height: 16),
         ],
 
-        // ── AI 메시지 ──
+        // ── 요약 문구 ──
         if (d.messages.isNotEmpty) ...[
-          _sectionTitle('AI 분석'),
+          _sectionTitle('한눈에 보기'),
           const SizedBox(height: 10),
           Container(
             width: double.infinity,

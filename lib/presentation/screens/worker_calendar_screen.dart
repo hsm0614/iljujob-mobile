@@ -657,7 +657,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     }
     final id = _idOf(it);
     if (id == null) {
-      _snack('id가 없어서 완료 처리가 안돼요');
+      _snack('이 일정은 지금 완료 처리할 수 없어요. 새로고침 후 다시 시도해 주세요');
       return;
     }
     if ((it['status'] ?? '').toString() == _kCompleted) {
@@ -684,7 +684,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         _snack('완료 처리됐어요');
         await _fetchMonth(_focusedDay);
       } else {
-        _snack('완료 처리가 실패했어요');
+        _snack('완료 처리하지 못했어요. 잠시 후 다시 시도해 주세요');
       }
     } finally {
       _actionInProgress = false;
@@ -695,7 +695,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     if (_actionInProgress) return;
     final id = _idOf(it);
     if (id == null) {
-      _snack('id가 없어서 처리가 안돼요');
+      _snack('이 일정은 지금 삭제할 수 없어요. 새로고침 후 다시 시도해 주세요');
       return;
     }
 
@@ -704,7 +704,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
       title: '삭제할까요?',
       message:
           source == 'job'
-              ? '공고로 들어온 일정은 서버 정책상 삭제가 막혀있을 수도 있어요.\n그래도 삭제를 시도할게요.'
+              ? '공고에서 들어온 일정이에요.\n삭제하면 달력에서만 사라져요.'
               : '삭제한 일정은 복구가 어려워요',
       okText: '삭제',
       danger: true,
@@ -718,11 +718,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         _snack('삭제됐어요');
         await _fetchMonth(_focusedDay);
       } else {
-        _snack(
-          source == 'job'
-              ? '공고 일정 삭제가 제한되어 있어요\n(서버 정책/권한 문제일 수 있어요)'
-              : '삭제가 실패했어요',
-        );
+        _snack('삭제하지 못했어요. 잠시 후 다시 시도해 주세요');
       }
     } finally {
       _actionInProgress = false;
@@ -788,7 +784,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
               final source = _sourceOf(item);
               final id = _idOf(item);
               if (id == null) {
-                _snack('id가 없어서 저장이 안돼요');
+                _snack('이 일정은 지금 저장할 수 없어요. 새로고침 후 다시 시도해 주세요');
                 return false;
               }
 
