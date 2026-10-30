@@ -52,13 +52,17 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
   @override
   void initState() {
     super.initState();
-    _api
-        .fetchMine()
-        .then((requests) {
-          if (mounted) setState(() => _requests = requests);
-        })
-        .catchError((_) {});
+    _reloadRequests();
+    if (Platform.isAndroid)
+      _purchase = AdStorePurchaseService(onSettled: _reloadRequests);
     _refreshJobs();
+  }
+
+  Future<void> _reloadRequests() async {
+    try {
+      final requests = await _api.fetchMine();
+      if (mounted) setState(() => _requests = requests);
+    } catch (_) {}
   }
 
   Future<void> _refreshJobs() async {
@@ -141,102 +145,108 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
       ),
       builder:
           (sheetContext) => SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text('신청 내용 확인', style: AppTextStyles.h2),
-                  const SizedBox(height: 16),
-                  Text(
-                    _kind == 'home_banner'
-                        ? '홈 배너 · 30일 · 150,000원'
-                        : '채용 광고 카드 · 30일 · 150,000원',
-                    style: AppTextStyles.body1,
-                  ),
-                  const SizedBox(height: 12),
-                  Text(_title.text.trim(), style: AppTextStyles.h3),
-                  Text(_company.text.trim(), style: AppTextStyles.body2),
-                  const SizedBox(height: 12),
-                  if (_kind == 'home_banner' &&
-                      (_image != null || _existingImageUrl != null))
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      child: AspectRatio(
-                        aspectRatio: 4,
-                        child:
-                            _image != null
-                                ? Image.file(_image!, fit: BoxFit.cover)
-                                : Image.network(
-                                  '${_existingImageUrl!.startsWith('http') ? '' : baseUrl}$_existingImageUrl',
-                                  fit: BoxFit.cover,
-                                ),
-                      ),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text('신청 내용 확인', style: AppTextStyles.h2),
+                    const SizedBox(height: 16),
+                    Text(
+                      _kind == 'home_banner'
+                          ? '홈 배너 · 30일 · 150,000원'
+                          : '채용 광고 카드 · 30일 · 150,000원',
+                      style: AppTextStyles.body1,
                     ),
-                  if (_kind == 'partner_recruit')
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.bgMuted,
+                    const SizedBox(height: 12),
+                    Text(_title.text.trim(), style: AppTextStyles.h3),
+                    Text(_company.text.trim(), style: AppTextStyles.body2),
+                    const SizedBox(height: 12),
+                    if (_kind == 'home_banner' &&
+                        (_image != null || _existingImageUrl != null))
+                      ClipRRect(
                         borderRadius: BorderRadius.circular(AppRadius.md),
+                        child: AspectRatio(
+                          aspectRatio: 4,
+                          child:
+                              _image != null
+                                  ? Image.file(_image!, fit: BoxFit.cover)
+                                  : Image.network(
+                                    '${_existingImageUrl!.startsWith('http') ? '' : baseUrl}$_existingImageUrl',
+                                    fit: BoxFit.cover,
+                                  ),
+                        ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('파트너 채용 · 광고', style: AppTextStyles.caption),
-                          const SizedBox(height: 8),
-                          Text(_title.text.trim(), style: AppTextStyles.h3),
-                          Text(
-                            _subtitle.text.trim(),
-                            style: AppTextStyles.body2,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _description.text.trim(),
-                            maxLines: 4,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTextStyles.body2,
-                          ),
-                        ],
+                    if (_kind == 'partner_recruit')
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.bgMuted,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('파트너 채용 · 광고', style: AppTextStyles.caption),
+                            const SizedBox(height: 8),
+                            Text(_title.text.trim(), style: AppTextStyles.h3),
+                            Text(
+                              _subtitle.text.trim(),
+                              style: AppTextStyles.body2,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _description.text.trim(),
+                              maxLines: 4,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.body2,
+                            ),
+                          ],
+                        ),
                       ),
+                    const SizedBox(height: 12),
+                    Text(
+                      _destination == 'external_url'
+                          ? _url.text.trim()
+                          : '앱 공고 #$_jobId',
+                      style: AppTextStyles.body2,
                     ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _destination == 'external_url'
-                        ? _url.text.trim()
-                        : '앱 공고 #$_jobId',
-                    style: AppTextStyles.body2,
-                  ),
-                  const SizedBox(height: 8),
-                  Text('지원자 수와 채용 성사는 보장하지 않습니다.', style: AppTextStyles.body2),
-                  const SizedBox(height: 20),
-                  FilledButton(
-                    onPressed:
-                        _busy
-                            ? null
-                            : () async {
-                              Navigator.pop(sheetContext);
-                              setState(() => _busy = true);
-                              try {
-                                await _api.submit(_draft());
-                                if (mounted) setState(() => _submitted = true);
-                              } catch (e) {
-                                if (mounted)
-                                  setState(
-                                    () =>
-                                        _error = e.toString().replaceFirst(
-                                          'Exception: ',
-                                          '',
-                                        ),
-                                  );
-                              } finally {
-                                if (mounted) setState(() => _busy = false);
-                              }
-                            },
-                    child: const Text('검수 신청'),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    Text(
+                      '지원자 수와 채용 성사는 보장하지 않습니다.',
+                      style: AppTextStyles.body2,
+                    ),
+                    const SizedBox(height: 20),
+                    FilledButton(
+                      onPressed:
+                          _busy
+                              ? null
+                              : () async {
+                                Navigator.pop(sheetContext);
+                                setState(() => _busy = true);
+                                try {
+                                  await _api.submit(_draft());
+                                  if (mounted)
+                                    setState(() => _submitted = true);
+                                } catch (e) {
+                                  if (mounted)
+                                    setState(
+                                      () =>
+                                          _error = e.toString().replaceFirst(
+                                            'Exception: ',
+                                            '',
+                                          ),
+                                    );
+                                } finally {
+                                  if (mounted) setState(() => _busy = false);
+                                }
+                              },
+                      child: const Text('검수 신청'),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -244,7 +254,7 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
   }
 
   Future<void> _buyAd(AdRequestSummary request) async {
-    _purchase ??= AdStorePurchaseService();
+    _purchase ??= AdStorePurchaseService(onSettled: _reloadRequests);
     setState(() => _busy = true);
     try {
       final price = await _purchase!.loadPrice(request.kind);
@@ -285,8 +295,7 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
       );
       if (accepted != true) return;
       await _purchase!.buy(request.id, request.kind);
-      final requests = await _api.fetchMine();
-      if (mounted) setState(() => _requests = requests);
+      await _reloadRequests();
     } catch (e) {
       if (mounted)
         setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
@@ -361,12 +370,8 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
                 const SizedBox(height: 24),
                 FilledButton(
                   onPressed: () async {
-                    final requests = await _api.fetchMine();
-                    if (mounted)
-                      setState(() {
-                        _requests = requests;
-                        _submitted = false;
-                      });
+                    await _reloadRequests();
+                    if (mounted) setState(() => _submitted = false);
                   },
                   child: const Text('내 신청 확인'),
                 ),
@@ -479,8 +484,8 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
               const SizedBox(height: 12),
               Text(
                 _kind == 'home_banner'
-                    ? '구직자 홈 상단 · 30일 · 150,000원\n검수 뒤 스토어 결제를 안내합니다.'
-                    : '구직자 홈 목록 사이 채용 광고 · 30일 · 150,000원\n검수 뒤 스토어 결제를 안내합니다.',
+                    ? '구직자 홈 상단 · 30일 · 150,000원\n${Platform.isAndroid ? '검수 뒤 Google Play 결제를 안내합니다.' : '검수 뒤 진행 방법을 안내합니다.'}'
+                    : '구직자 홈 목록 사이 채용 광고 · 30일 · 150,000원\n${Platform.isAndroid ? '검수 뒤 Google Play 결제를 안내합니다.' : '검수 뒤 진행 방법을 안내합니다.'}',
                 style: AppTextStyles.body2,
               ),
               const SizedBox(height: 24),

@@ -24,6 +24,49 @@ class FakeAdRequestApi implements AdRequestApi {
 }
 
 void main() {
+  testWidgets('작은 화면에서도 채용 카드 미리보기의 신청 버튼까지 스크롤할 수 있다', (tester) async {
+    tester.view.physicalSize = const Size(320, 568);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    await tester.pumpWidget(
+      MaterialApp(home: PromotionRequestScreen(api: FakeAdRequestApi())),
+    );
+    for (final entry
+        in <Key, String>{
+          const Key('ad_company_name'): '테스트기업',
+          const Key('ad_title'): '전국 현장직 장기 모집',
+          const Key('ad_description'): '현장 업무와 지원 자격을 확인해 주세요. ' * 8,
+          const Key('ad_destination_url'): 'https://example.com/apply',
+        }.entries) {
+      await tester.scrollUntilVisible(
+        find.byKey(entry.key),
+        180,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.enterText(find.byKey(entry.key), entry.value);
+    }
+    tester.testTextInput.hide();
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('신청 내용 확인'),
+      180,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('신청 내용 확인'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('검수 신청'),
+      120,
+      scrollable: find.byType(Scrollable).last,
+    );
+    expect(find.text('검수 신청'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('작은 휴대폰 폭에서도 신청 선택과 문의가 보인다', (tester) async {
     tester.view.physicalSize = const Size(320, 568);
     tester.view.devicePixelRatio = 1;

@@ -9,19 +9,20 @@ import '../../config/constants.dart';
 import 'authenticated_http_client.dart';
 
 class AdStorePurchaseService {
+  AdStorePurchaseService({this.onSettled}) {
+    if (Platform.isAndroid) {
+      _android.setMethodCallHandler(_onAndroidEvent);
+      _android.invokeMethod<void>('restore').catchError((_) {});
+    }
+  }
+
+  final void Function()? onSettled;
   static const androidProduct = 'banner_home_30d';
   static const androidCardProduct = 'recruit_card_30d';
   static const _pendingKey = 'pending_home_banner_request_id';
   static const _android = MethodChannel('albailju/ad_billing');
   Completer<void>? _completion;
   bool _handling = false;
-
-  AdStorePurchaseService() {
-    if (Platform.isAndroid) {
-      _android.setMethodCallHandler(_onAndroidEvent);
-      _android.invokeMethod<void>('restore').catchError((_) {});
-    }
-  }
 
   String productIdFor(String kind) =>
       kind == 'home_banner' ? androidProduct : androidCardProduct;
@@ -115,6 +116,7 @@ class AdStorePurchaseService {
       await _verify(requestId, purchase['productId'] as String, token);
       await _android.invokeMethod<void>('consume', {'purchaseToken': token});
       await _clearPending();
+      onSettled?.call();
       if (_completion != null && !_completion!.isCompleted)
         _completion!.complete();
     } catch (error) {
