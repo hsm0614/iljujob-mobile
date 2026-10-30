@@ -2931,7 +2931,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
   Widget _buildBannerSlot() => const Padding(
     padding: EdgeInsets.symmetric(vertical: 4),
-    child: AdBannerWidget(placement: 'app_home_worker'),
+    child: AdBannerWidget(placement: 'app_home_worker', autoRotate: true),
   );
 
   Widget _pill({
