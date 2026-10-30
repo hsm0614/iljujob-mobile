@@ -779,18 +779,9 @@ class _OptionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
-    child: Material(
-      color: selected ? AppColors.primaryLight : AppColors.bgCard,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        side: BorderSide(
-          color: selected ? AppColors.primary : AppColors.border,
-          width: selected ? 1.5 : 1,
-        ),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        onTap: onTap,
+    child: AppSelectCard(
+      selected: selected,
+      onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
           child: Row(
@@ -837,7 +828,6 @@ class _OptionRow extends StatelessWidget {
             ],
           ),
         ),
-      ),
     ),
   );
 }

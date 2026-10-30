@@ -455,16 +455,10 @@ class _PlanCard extends StatelessWidget {
     final price = displayPrice ?? '${NumberFormat('#,###').format(plan.price)}원';
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Material(
-        color: selected ? AppColors.primaryLight : AppColors.bgCard,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          side: BorderSide(color: selected ? AppColors.primary : AppColors.border, width: selected ? 1.5 : 1),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          onTap: onTap,
-          child: Padding(
+      child: AppSelectCard(
+        selected: selected,
+        onTap: onTap,
+        child: Padding(
             padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -498,7 +492,6 @@ class _PlanCard extends StatelessWidget {
               ],
             ),
           ),
-        ),
       ),
     );
   }
@@ -522,9 +515,9 @@ class _CompareTable extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.bgCard,
         borderRadius: BorderRadius.circular(AppRadius.lg),
-        border: Border.all(color: AppColors.border),
+        boxShadow: AppShadows.card,
       ),
       child: Column(
         children: [

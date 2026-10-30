@@ -124,7 +124,7 @@ class AppPrimaryButton extends StatelessWidget {
   }
 }
 
-/// 화면 맨 아래 고정 버튼 띠 (저장·공고 등록·구매 공용). 흰 바탕 + 위 구분선, 그림자 없음.
+/// 화면 맨 아래 고정 버튼 띠 (저장·공고 등록·구매 공용). 흰 바탕 + 위로 옅은 그림자 — 본문 위에 떠 있다.
 /// 보통 `bottomNavigationBar: AppBottomBar(child: AppPrimaryButton(..., height: 52))`
 class AppBottomBar extends StatelessWidget {
   final Widget child;
@@ -135,7 +135,7 @@ class AppBottomBar extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: AppColors.bgCard,
-        border: Border(top: BorderSide(color: AppColors.borderSub)),
+        boxShadow: AppShadows.bottomNav,
       ),
       child: SafeArea(
         top: false,
@@ -179,7 +179,6 @@ class AppActionBand extends StatelessWidget {
           decoration: BoxDecoration(
             color: AppColors.bgCard,
             borderRadius: BorderRadius.circular(AppRadius.lg),
-            border: Border.all(color: accent.withValues(alpha: 0.18)),
             boxShadow: AppShadows.card,
           ),
           child: Row(
@@ -721,11 +720,52 @@ class _AppPressScaleState extends State<AppPressScale> {
       },
       onPointerUp: (_) => _set(false),
       onPointerCancel: (_) => _set(false),
+      // 누를 땐 빠르게 들어가고, 뗄 땐 살짝 넘쳤다가(easeOutBack) 제자리 — 고무 버튼 같은 반동
       child: AnimatedScale(
         scale: _down ? widget.scale : 1,
-        duration: const Duration(milliseconds: 90),
-        curve: Curves.easeOut,
+        duration: Duration(milliseconds: _down ? 90 : 260),
+        curve: _down ? Curves.easeOut : Curves.easeOutBack,
         child: widget.child,
+      ),
+    );
+  }
+}
+
+/// 큰 선택 카드 (구독 플랜·이용권). 고른 것 = 연파랑 + 파란 테두리, 안 고른 것 = 흰 카드 + 옅은 그림자.
+/// 고르면 색이 부드럽게 넘어가고, 누르면 살짝 들어갔다 튕긴다.
+class AppSelectCard extends StatelessWidget {
+  final bool selected;
+  final VoidCallback onTap;
+  final Widget child;
+  const AppSelectCard({
+    super.key,
+    required this.selected,
+    required this.onTap,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(AppRadius.lg);
+    return AppPressScale(
+      scale: 0.98,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primaryLight : AppColors.bgCard,
+          borderRadius: radius,
+          // 안 고른 카드도 같은 굵기의 투명 테두리 — 고를 때 내용이 밀리지 않게
+          border: Border.all(
+            color: selected ? AppColors.primary : Colors.transparent,
+            width: 1.5,
+          ),
+          boxShadow: selected ? null : AppShadows.card,
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(borderRadius: radius, onTap: onTap, child: child),
+        ),
       ),
     );
   }

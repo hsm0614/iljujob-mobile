@@ -1653,7 +1653,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
 
   // 급구 '내 일감' 카드 뼈대 (2026-10): 상태 칩 → 근무일·시간(가장 큼) → 제목·급여(회색) → 지원·조회 두 칸 → 상태별 행동 한 줄.
   // 버튼 6개(큰 파란 띠 + 둥근 버튼 3개)였던 것 → 카드 자체가 지원자 목록 입구, 나머지는 ⋯ 안으로.
-  Widget _buildJobCard(Job job, {required bool last}) {
+  Widget _buildJobCard(Job job) {
     final isClosed = job.status == 'closed';
     final reserved = isJobReserved(job);
     // 근무 마지막 날이 지나서야 공개되는 공고 — '공개 대기'로 두면 정상처럼 보인다
@@ -1699,6 +1699,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     }
 
     Widget cell(String label, int n, VoidCallback onTap) => Expanded(
+      child: Material(
+      color: AppColors.bgMuted,
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
         child: Padding(
@@ -1719,6 +1723,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           ),
         ),
       ),
+      ),
     );
 
     void openApplicants() {
@@ -1726,15 +1731,22 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       Navigator.pushNamed(context, '/applicants', arguments: job.id);
     }
 
-    return Material(
+    // 회색 바닥 위 흰 카드 한 장씩 — 8px 회색 띠로 자르던 것보다 공고 하나가 '한 덩어리'로 보인다
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      child: DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: AppShadows.card,
+      ),
+      child: Material(
       color: AppColors.bgCard,
+      borderRadius: BorderRadius.circular(AppRadius.lg),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: () => Navigator.pushNamed(context, '/job-detail', arguments: job),
         child: Container(
           padding: const EdgeInsets.fromLTRB(20, 16, 8, 16),
-          decoration: BoxDecoration(
-            border: last ? null : const Border(bottom: BorderSide(color: AppColors.borderSub, width: 8)),
-          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1768,21 +1780,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       style: AppTextStyles.body2,
                     ),
                     const SizedBox(height: 12),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.border),
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      clipBehavior: Clip.antiAlias,
-                      child: IntrinsicHeight(
-                        child: Row(
-                          children: [
-                            cell('지원', job.applicantCount, openApplicants),
-                            const VerticalDivider(width: 1, color: AppColors.border),
-                            cell('조회', job.viewCount, () => Navigator.pushNamed(context, '/job-detail', arguments: job)),
-                          ],
-                        ),
-                      ),
+                    // 테두리 상자 대신 회색 면 두 칸 — 흰 카드 안에서 한 단 들어간 자리
+                    Row(
+                      children: [
+                        cell('지원', job.applicantCount, openApplicants),
+                        const SizedBox(width: 8),
+                        cell('조회', job.viewCount, () => Navigator.pushNamed(context, '/job-detail', arguments: job)),
+                      ],
                     ),
                     if (next != null) ...[
                       const SizedBox(height: 10),
@@ -1811,6 +1815,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             ],
           ),
         ),
+      ),
+      ),
       ),
     );
   }
@@ -1895,7 +1901,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 ),
               ),
             ),
-            const SliverToBoxAdapter(child: Divider(height: 1, color: AppColors.border)),
             if (isLoading)
               const SliverFillRemaining(child: AppSkeletonList(rows: 4))
             else if (jobs.isEmpty)
@@ -1907,7 +1912,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     (context, index) => AppFadeSlideIn(
                       key: ValueKey('cjob_${jobs[index].id}'),
                       index: index,
-                      child: _buildJobCard(jobs[index], last: index == jobs.length - 1),
+                      child: _buildJobCard(jobs[index]),
                     ),
               ),
               SliverToBoxAdapter(child: _buildPaginationWidget()),

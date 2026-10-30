@@ -79,9 +79,13 @@ class AppColors {
 class AppShadows {
   AppShadows._();
 
-  // 리디자인(2026-10): 목록·카드는 그림자 없이 흰 면 + 회색 배경 대비로 구분한다.
-  // 떠 있는 것(시트·플로팅 버튼)만 cardElevated 를 쓴다.
-  static const List<BoxShadow> card = [];
+  // 회색 바닥 위 흰 카드가 '살짝 떠 있다'는 것만 알리는 두 겹 (DESIGN.md card, 알파 합 0.07).
+  // 넓게 퍼지는 그림자 + 바로 아래 접지 그림자 — 하나만 쓰면 뿌옇거나 선처럼 보인다.
+  // 줄 목록(구직자 홈 공고 줄)엔 쓰지 않는다 — 흰 줄 + 구분선이 뼈대(급구)
+  static const List<BoxShadow> card = [
+    BoxShadow(color: Color(0x0A000000), blurRadius: 16, offset: Offset(0, 4)),
+    BoxShadow(color: Color(0x08000000), blurRadius: 2, offset: Offset(0, 1)),
+  ];
 
   static const List<BoxShadow> cardElevated = [
     BoxShadow(

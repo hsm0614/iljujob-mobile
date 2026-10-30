@@ -68,8 +68,11 @@ class JobListTile extends StatelessWidget {
 
     return Material(
       color: AppColors.bgCard,
+      // 누르면 물결 대신 줄 전체가 옅은 회색으로 눌린다 (당근식 목록 반응)
       child: InkWell(
         onTap: onTap,
+        splashFactory: NoSplash.splashFactory,
+        highlightColor: AppColors.bgMuted,
         child: Container(
           padding: const EdgeInsets.fromLTRB(20, 14, 16, 14),
           decoration: BoxDecoration(

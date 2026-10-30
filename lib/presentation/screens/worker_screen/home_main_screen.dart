@@ -1289,7 +1289,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           backgroundColor: AppColors.bgCard,
           surfaceTintColor: Colors.transparent,
           elevation: 0,
-          scrolledUnderElevation: 0,
+          // 목록이 앱바 밑으로 들어가면 옅은 그림자 — 맨 위에선 평평, 스크롤하면 앱바가 떠 보인다
+          scrolledUnderElevation: 2,
+          shadowColor: const Color(0x1A000000),
           toolbarHeight: 52,
           titleSpacing: 20,
           // 급구처럼 제목 자리에 지금 보는 범위. 탭하면 범위 선택 시트
