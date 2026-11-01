@@ -2166,7 +2166,9 @@ Future<DateTime?> showKoWheelDatePickerSheet(
                       (v) => Center(
                         child: Text(
                           label(v),
-                          style: const TextStyle(
+                          // 쿠퍼티노 휠은 시스템 글꼴을 깔아서 앱 글꼴을 직접 넘긴다
+                          style: TextStyle(
+                            fontFamily: Theme.of(context).textTheme.bodyMedium?.fontFamily,
                             fontSize: AppFontSize.titleLg,
                             fontWeight: FontWeight.w700,
                             color: kText,

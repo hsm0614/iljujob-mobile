@@ -1846,6 +1846,7 @@ class _PostJobFormState extends State<PostJobForm>
       child: Column(
         children: [
           SizedBox(
+            width: double.infinity, // 없으면 Stack이 제목 폭으로 줄어 버튼들이 가운데로 몰린다
             height: 56,
             child: Stack(
               alignment: Alignment.center,
