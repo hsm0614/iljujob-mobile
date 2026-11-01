@@ -2319,7 +2319,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       primary: false,
                       icon: Icons.campaign_outlined,
                       title: '채용 홍보',
-                      sub: '회사 채용을 홈 배너·광고 카드로 알려요',
+                      sub: '내 공고를 알바생 홈에 30일 동안 크게 보여요',
                       onTap: _openPromotion,
                     ),
                   ] else if (lives.length == 1) ...[
@@ -2375,7 +2375,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       child: TextButton(
                         onPressed: _openPromotion,
                         style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
-                        child: const Text('회사 채용을 홍보하고 싶다면 · 채용 홍보 >'),
+                        child: const Text('내 공고를 더 크게 알리고 싶다면 · 채용 홍보 >'),
                       ),
                     ),
                   ],

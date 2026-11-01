@@ -1,3 +1,4 @@
+import 'package:iljujob/presentation/screens/post_job/promotion_request_screen.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -435,6 +436,9 @@ Future<void> _handleNotificationData(Map<String, String> data) async {
   } else if (type == 'urgent_not_sent') {
     // 긴급 호출로 올리고 아무에게도 안 보냈을 때 — 후보 고르는 화면으로 바로
     navigatorKey.currentState?.pushNamed('/nearby-workers', arguments: <String, dynamic>{...data});
+  } else if (type == 'ad_request_review') {
+    // 채용 홍보 검수 결과 — 내 신청이 맨 위에 보이는 화면으로
+    navigatorKey.currentState?.pushNamed('/promotion');
   } else if (data['chatRoomId'] != null || data['roomId'] != null) {
     // 채팅 초대·동의 결과 푸시는 예전 서버가 roomId 로만 보냈다(눌러도 안 열렸음).
     await _handleChatNotification(RemoteMessage(data: data));
@@ -550,6 +554,8 @@ Future<void> _handleInitialMessage(
       navigator.pushNamed('/post_job');
     } else if (type == 'urgent_not_sent') {
       navigator.pushNamed('/nearby-workers', arguments: <String, dynamic>{...initialMessage.data});
+    } else if (userType == 'client' && type == 'ad_request_review') {
+      navigator.pushNamed('/promotion');
     } else if (initialMessage.data['chatRoomId'] != null ||
         initialMessage.data['roomId'] != null) {
       final homeWithChatTab =
@@ -800,6 +806,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         '/notices': (context) => const NoticeListScreen(),
         '/events': (context) => const EventScreen(),
         '/support': (context) => const SupportScreen(),
+        '/promotion': (context) => const PromotionRequestScreen(),
         '/inquiry': (context) => const InquiryScreen(),
         '/faq': (context) => const FaqScreen(),
         '/report-history': (context) => const ReportHistoryScreen(),

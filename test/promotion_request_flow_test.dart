@@ -34,6 +34,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(home: PromotionRequestScreen(api: FakeAdRequestApi())),
     );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('회사 지원 페이지로 받기'), 180, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('회사 지원 페이지로 받기'));
+    await tester.pumpAndSettle();
     for (final entry
         in <Key, String>{
           const Key('ad_company_name'): '테스트기업',
@@ -78,12 +82,13 @@ void main() {
       MaterialApp(home: PromotionRequestScreen(api: FakeAdRequestApi())),
     );
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('광고 문의하기'), 200, scrollable: find.byType(Scrollable).first);
     expect(find.text('진행 순서'), findsOneWidget);
     expect(find.text('광고 문의하기'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('비Android 앱에서는 검수 승인 광고의 인앱 결제 버튼을 보이지 않는다', (tester) async {
+  testWidgets('비Android 앱에서는 검수 승인 광고에 인앱 결제 대신 결제 문의를 보인다', (tester) async {
     final api = FakeAdRequestApi(
       mine: const [
         AdRequestSummary(
@@ -98,8 +103,18 @@ void main() {
       MaterialApp(home: PromotionRequestScreen(api: api)),
     );
     await tester.pumpAndSettle();
-    expect(find.text('내용 승인'), findsOneWidget);
+    expect(find.text('검수 통과'), findsOneWidget);
     expect(find.text('결제하기'), findsNothing);
+    expect(find.text('결제 문의하기'), findsOneWidget);
+  });
+
+  testWidgets('게시 중인 공고가 있으면 내 공고로 받기가 기본이고 제목이 채워진다', (tester) async {
+    final api = FakeAdRequestApi();
+    await tester.pumpWidget(MaterialApp(home: PromotionRequestScreen(api: api)));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.byKey(const Key('ad_title')), 200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('현장 알바 모집'), findsWidgets); // 공고 목록 + 제목 칸
+    expect(find.byKey(const Key('ad_destination_url')), findsNothing);
   });
 
   testWidgets('채용 광고 신청은 공식 URL을 확인한 뒤 검수 대기로 제출한다', (tester) async {
@@ -109,8 +124,10 @@ void main() {
     );
 
     expect(find.text('채용 광고 카드'), findsWidgets);
-    expect(find.text('진행 순서'), findsOneWidget);
-    expect(find.text('광고 문의하기'), findsOneWidget);
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('회사 지원 페이지로 받기'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('회사 지원 페이지로 받기'));
+    await tester.pumpAndSettle();
     await tester.scrollUntilVisible(
       find.byKey(const Key('ad_company_name')),
       200,
@@ -131,7 +148,10 @@ void main() {
       find.byKey(const Key('ad_destination_url')),
       'https://example.com/apply',
     );
-    await tester.ensureVisible(find.text('신청 내용 확인'));
+    tester.testTextInput.hide();
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('신청 내용 확인'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('신청 내용 확인'));
     await tester.pumpAndSettle();
     expect(find.textContaining('지원자 수와 채용 성사는 보장하지 않습니다.'), findsOneWidget);

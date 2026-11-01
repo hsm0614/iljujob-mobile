@@ -3,8 +3,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'dart:convert';
+
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
+import '../../../data/services/authenticated_http_client.dart';
+import '../../../widget/app_ui.dart';
 import '../../../data/services/ad_request_service.dart';
 import '../../../data/services/ad_store_purchase_service.dart';
 
@@ -20,7 +24,7 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
   static const _statusLabels = <String, String>{
     'submitted': '검수 대기',
     'changes_requested': '수정 요청',
-    'content_approved': '내용 승인',
+    'content_approved': '검수 통과',
     'rejected': '반려',
     'paid_pending_schedule': '결제 확인 · 일정 대기',
     'scheduled': '게시 예정',
@@ -35,7 +39,12 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
   final _description = TextEditingController();
   final _url = TextEditingController();
   String _kind = 'partner_recruit';
+  // 작은 가게 사장님이 대부분이라 게시 중인 내 공고가 있으면 그쪽으로 받는 게 기본 (_refreshJobs)
   String _destination = 'external_url';
+  bool _destinationTouched = false;
+  // 스토어 가격(안드로이드). 없으면 기본 표시 가격
+  static const _defaultPrice = '150,000원';
+  final Map<String, String> _prices = {};
   File? _image;
   List<AdEligibleJob> _jobs = const [];
   bool _jobsLoading = true;
@@ -53,10 +62,41 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
   void initState() {
     super.initState();
     _reloadRequests();
-    if (Platform.isAndroid)
+    if (Platform.isAndroid) {
       _purchase = AdStorePurchaseService(onSettled: _reloadRequests);
+      _loadPrices();
+    }
     _refreshJobs();
+    if (widget.api == null) _prefillCompany();
   }
+
+  // 화면 가격을 실제 결제 가격(스토어)과 맞춘다 — 고정 문구면 스토어 가격을 바꿀 때 어긋난다
+  Future<void> _loadPrices() async {
+    for (final kind in const ['partner_recruit', 'home_banner']) {
+      try {
+        final p = await _purchase!.loadPrice(kind);
+        if (mounted) setState(() => _prices[kind] = p);
+      } catch (_) {}
+    }
+  }
+
+  String _price(String kind) => _prices[kind] ?? _defaultPrice;
+
+  // 가게 이름은 프로필에 이미 있다 — 다시 치게 하지 않는다
+  Future<void> _prefillCompany() async {
+    try {
+      final res = await AuthenticatedHttpClient.get(Uri.parse('$baseUrl/api/client/profile'));
+      if (res.statusCode != 200) return;
+      final raw = jsonDecode(res.body);
+      final name = '${(raw['data'] ?? raw)['company_name'] ?? ''}'.trim();
+      if (mounted && _company.text.isEmpty && name.isNotEmpty) _company.text = name;
+    } catch (_) {}
+  }
+
+  void _pickJob(AdEligibleJob job) => setState(() {
+    _jobId = job.id;
+    if (_title.text.trim().isEmpty) _title.text = job.title;
+  });
 
   Future<void> _reloadRequests() async {
     try {
@@ -76,6 +116,11 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
         setState(() {
           _jobs = jobs;
           _jobsLoading = false;
+          if (_editingId == null && !_destinationTouched && jobs.isNotEmpty) {
+            _destination = 'internal_job';
+            _jobId ??= jobs.first.id;
+            if (_title.text.trim().isEmpty) _title.text = jobs.first.title;
+          }
         });
     } catch (_) {
       if (mounted)
@@ -155,9 +200,7 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
                     Text('신청 내용 확인', style: AppTextStyles.h2),
                     const SizedBox(height: 16),
                     Text(
-                      _kind == 'home_banner'
-                          ? '홈 배너 · 30일 · 150,000원'
-                          : '채용 광고 카드 · 30일 · 150,000원',
+                      '${_kind == 'home_banner' ? '홈 배너' : '채용 광고 카드'} · 30일 · ${_price(_kind)}',
                       style: AppTextStyles.body1,
                     ),
                     const SizedBox(height: 12),
@@ -209,8 +252,8 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
                     const SizedBox(height: 12),
                     Text(
                       _destination == 'external_url'
-                          ? _url.text.trim()
-                          : '앱 공고 #$_jobId',
+                          ? '지원: ${_url.text.trim()}'
+                          : '지원: 내 공고 «${_jobs.where((j) => j.id == _jobId).map((j) => j.title).firstOrNull ?? ''}»',
                       style: AppTextStyles.body2,
                     ),
                     const SizedBox(height: 8),
@@ -219,7 +262,8 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
                       style: AppTextStyles.body2,
                     ),
                     const SizedBox(height: 20),
-                    FilledButton(
+                    AppPrimaryButton(
+                      label: '검수 신청',
                       onPressed:
                           _busy
                               ? null
@@ -243,7 +287,6 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
                                   if (mounted) setState(() => _busy = false);
                                 }
                               },
-                      child: const Text('검수 신청'),
                     ),
                   ],
                 ),
@@ -327,33 +370,145 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
     Key? key,
     bool required = true,
     int lines = 1,
+    String? hint,
     String? Function(String?)? validator,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 16),
-    child: TextFormField(
-      key: key,
-      controller: ctrl,
-      maxLines: lines,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(AppRadius.md),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text.rich(
+          TextSpan(children: [
+            TextSpan(text: label),
+            if (!required) TextSpan(text: ' (선택)', style: AppTextStyles.body1.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w400)),
+          ]),
+          style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600),
         ),
-      ),
-      validator:
-          validator ??
-          (value) =>
-              required && (value == null || value.trim().isEmpty)
-                  ? '$label 입력해 주세요.'
-                  : null,
+        const SizedBox(height: 8),
+        TextFormField(
+          key: key,
+          controller: ctrl,
+          maxLines: lines,
+          decoration: InputDecoration(hintText: hint),
+          validator:
+              validator ??
+              (value) => required && (value == null || value.trim().isEmpty) ? '$label을 입력해 주세요.' : null,
+        ),
+      ],
     ),
   );
+
+  Widget _choice({required bool selected, required VoidCallback? onTap, required String title, required String sub, String? trailing}) =>
+      Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: AppSelectCard(
+          selected: selected,
+          onTap: onTap ?? () {},
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Icon(
+                  selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                  size: 22,
+                  color: selected ? AppColors.primary : AppColors.textDisabled,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: AppTextStyles.body1.copyWith(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 2),
+                      Text(sub, style: AppTextStyles.body2),
+                    ],
+                  ),
+                ),
+                if (trailing != null) ...[
+                  const SizedBox(width: 8),
+                  Text(trailing, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600)),
+                ],
+              ],
+            ),
+          ),
+        ),
+      );
+
+  Widget _sectionTitle(String t) => Padding(
+    padding: const EdgeInsets.only(top: 12, bottom: 12),
+    child: Text(t, style: AppTextStyles.h3),
+  );
+
+  /// 내 신청 한 건 — 상태와 지금 할 일
+  Widget _requestCard(AdRequestSummary request) {
+    final status = _statusLabels[request.status] ?? request.status;
+    final good = request.status == 'content_approved' || request.status == 'live' || request.status == 'scheduled';
+    Widget? action;
+    if (request.status == 'changes_requested') {
+      action = TextButton(onPressed: () => _edit(request), child: const Text('고치기'));
+    } else if (request.status == 'content_approved') {
+      // 아이폰은 앱 결제 없이 문의로 결제를 안내한다 (대표 11-01)
+      action = Platform.isAndroid
+          ? TextButton(onPressed: _busy ? null : () => _buyAd(request), child: const Text('결제하기'))
+          : TextButton(onPressed: () => Navigator.pushNamed(context, '/support'), child: const Text('결제 문의하기'));
+    }
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
+      decoration: BoxDecoration(color: AppColors.bgMuted, borderRadius: BorderRadius.circular(AppRadius.md)),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(request.title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 2),
+                Text(status, style: AppTextStyles.body2.copyWith(
+                    color: good ? AppColors.primaryDark : AppColors.textSecondary, fontWeight: FontWeight.w600)),
+                if (request.reviewNote?.isNotEmpty == true)
+                  Text(request.reviewNote!, style: AppTextStyles.body2),
+              ],
+            ),
+          ),
+          if (action != null) action,
+        ],
+      ),
+    );
+  }
+
+  Widget _steps() {
+    final steps = [
+      '내용을 신청해요',
+      '운영팀이 검수해요',
+      Platform.isAndroid ? '앱에서 결제해요' : '문의로 결제를 안내해 드려요',
+      '시작일을 정하고 30일 동안 보여요',
+    ];
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: AppColors.bgMuted, borderRadius: BorderRadius.circular(AppRadius.lg)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('진행 순서', style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700)),
+          for (final (i, t) in steps.indexed)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text('${i + 1}. $t', style: AppTextStyles.body1),
+            ),
+          const SizedBox(height: 8),
+          Text('지원자 수나 채용은 보장하지 않아요. 노출·클릭 수는 볼 수 있어요.', style: AppTextStyles.body2),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     if (_submitted)
       return Scaffold(
-        appBar: AppBar(title: const Text('채용 홍보 신청')),
+        appBar: AppBar(title: const Text('채용 홍보')),
         body: SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(24),
@@ -364,16 +519,16 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
                 Text('신청이 접수되었습니다', style: AppTextStyles.h2),
                 const SizedBox(height: 12),
                 Text(
-                  '내용 검수 후 신청 상태가 바뀝니다. 수정 요청이 오면 이 화면의 내 신청에서 다시 제출할 수 있어요.',
+                  '검수가 끝나면 알림으로 알려 드려요. 고칠 점이 있으면 이 화면의 내 신청에서 다시 낼 수 있어요.',
                   style: AppTextStyles.body1,
                 ),
                 const SizedBox(height: 24),
-                FilledButton(
+                AppPrimaryButton(
+                  label: '내 신청 확인',
                   onPressed: () async {
                     await _reloadRequests();
                     if (mounted) setState(() => _submitted = false);
                   },
-                  child: const Text('내 신청 확인'),
                 ),
                 TextButton(
                   onPressed: () => Navigator.pushNamed(context, '/support'),
@@ -384,244 +539,168 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
           ),
         ),
       );
+    final hasJobs = _jobs.isNotEmpty;
     return Scaffold(
-      appBar: AppBar(title: const Text('채용 홍보 신청')),
+      backgroundColor: AppColors.bgCard,
+      appBar: AppBar(title: const Text('채용 홍보')),
       body: SafeArea(
         child: Form(
           key: _formKey,
           child: ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
             children: [
-              SizedBox(
-                width: double.infinity,
-                child: SegmentedButton<String>(
-                  segments: const [
-                    ButtonSegment(value: 'job', label: Text('일반 공고')),
-                    ButtonSegment(value: 'promotion', label: Text('채용 홍보')),
-                  ],
-                  selected: const {'promotion'},
-                  onSelectionChanged: (selection) {
-                    if (selection.first == 'job') Navigator.pop(context);
-                  },
-                ),
-              ),
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.bgMuted,
-                  borderRadius: BorderRadius.circular(AppRadius.lg),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('진행 순서', style: AppTextStyles.h3),
-                    const SizedBox(height: 8),
-                    Text(
-                      '1. 광고 내용 신청  →  2. 운영자 검수\n3. 결제 확인  →  4. 시작일 협의 후 30일 게시',
-                      style: AppTextStyles.body2,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '지원자 수나 채용 성사는 보장하지 않습니다. 노출·클릭 결과를 확인할 수 있어요.',
-                      style: AppTextStyles.body2,
-                    ),
-                  ],
-                ),
-              ),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: () => Navigator.pushNamed(context, '/support'),
-                  child: const Text('광고 문의하기'),
-                ),
-              ),
               if (_requests.isNotEmpty) ...[
                 Text('내 신청', style: AppTextStyles.h3),
-                const SizedBox(height: 8),
-                for (final request in _requests)
-                  Card(
-                    child: ListTile(
-                      title: Text(request.title),
-                      subtitle: Text(
-                        request.reviewNote?.isNotEmpty == true
-                            ? '${_statusLabels[request.status] ?? request.status} · ${request.reviewNote}'
-                            : (_statusLabels[request.status] ?? request.status),
-                      ),
-                      trailing:
-                          request.status == 'changes_requested'
-                              ? TextButton(
-                                onPressed: () => _edit(request),
-                                child: const Text('수정하기'),
-                              )
-                              : Platform.isAndroid &&
-                                  request.status == 'content_approved'
-                              ? TextButton(
-                                onPressed: _busy ? null : () => _buyAd(request),
-                                child: const Text('결제하기'),
-                              )
-                              : null,
-                    ),
-                  ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 10),
+                for (final request in _requests) _requestCard(request),
+                Container(height: 8, margin: const EdgeInsets.symmetric(vertical: 20), color: AppColors.bgMuted),
               ],
-              Text('어떤 지면에 올릴까요?', style: AppTextStyles.h2),
+              Text('알바생 홈에 30일 동안\n크게 보여 드려요', style: AppTextStyles.h1.copyWith(fontWeight: FontWeight.w700, height: 1.4)),
+              const SizedBox(height: 8),
+              Text('운영팀 검수를 거쳐 게시돼요', style: AppTextStyles.body1.copyWith(color: AppColors.textSecondary)),
               const SizedBox(height: 12),
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(
-                    value: 'partner_recruit',
-                    label: Text('채용 광고 카드'),
-                  ),
-                  ButtonSegment(value: 'home_banner', label: Text('홈 배너')),
+              _sectionTitle('어디에 보일까요?'),
+              _choice(
+                selected: _kind == 'partner_recruit',
+                onTap: _editingId == null ? () => setState(() => _kind = 'partner_recruit') : null,
+                title: '채용 광고 카드',
+                sub: '알바생 홈 공고 사이에 크게 · 글만 쓰면 돼요',
+                trailing: _price('partner_recruit'),
+              ),
+              _choice(
+                selected: _kind == 'home_banner',
+                onTap: _editingId == null ? () => setState(() => _kind = 'home_banner') : null,
+                title: '홈 배너',
+                sub: '알바생 홈 맨 위 · 가로 이미지(1600×400)가 필요해요',
+                trailing: _price('home_banner'),
+              ),
+              _sectionTitle('지원은 어디로 받을까요?'),
+              _choice(
+                selected: _destination == 'internal_job',
+                onTap: () => setState(() {
+                  _destinationTouched = true;
+                  _destination = 'internal_job';
+                }),
+                title: '내 공고로 받기',
+                sub: hasJobs ? '앱에 올린 공고로 지원하고 채팅으로 이야기해요' : '게시 중인 공고가 있어야 해요',
+              ),
+              _choice(
+                selected: _destination == 'external_url',
+                onTap: () => setState(() {
+                  _destinationTouched = true;
+                  _destination = 'external_url';
+                }),
+                title: '회사 지원 페이지로 받기',
+                sub: '이미 쓰는 지원 페이지 주소로 보내요',
+              ),
+              if (_destination == 'internal_job') ...[
+                if (_jobsLoading)
+                  Text('게시 중인 공고 확인 중…', style: AppTextStyles.body2)
+                else if (_jobsFailed)
+                  TextButton(onPressed: _refreshJobs, child: const Text('공고를 불러오지 못했어요. 다시 시도'))
+                else if (!hasJobs)
+                  Row(
+                    children: [
+                      Expanded(child: Text('게시 중인 공고가 없어요. 먼저 공고를 올려 주세요.', style: AppTextStyles.body2)),
+                      TextButton(
+                        onPressed: () => Navigator.pushReplacementNamed(context, '/post_job'),
+                        child: const Text('공고 올리기'),
+                      ),
+                    ],
+                  )
+                else ...[
+                  const SizedBox(height: 4),
+                  Text('어느 공고로 받을까요?', style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  for (final job in _jobs)
+                    InkWell(
+                      onTap: () => _pickJob(job),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _jobId == job.id ? Icons.check_circle_rounded : Icons.circle_outlined,
+                              size: 22,
+                              color: _jobId == job.id ? AppColors.primary : AppColors.textDisabled,
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(child: Text(job.title, style: AppTextStyles.body1)),
+                          ],
+                        ),
+                      ),
+                    ),
                 ],
-                selected: {_kind},
-                onSelectionChanged:
-                    _editingId == null
-                        ? (selection) => setState(() => _kind = selection.first)
-                        : null,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _kind == 'home_banner'
-                    ? '구직자 홈 상단 · 30일 · 150,000원\n${Platform.isAndroid ? '검수 뒤 Google Play 결제를 안내합니다.' : '검수 뒤 진행 방법을 안내합니다.'}'
-                    : '구직자 홈 목록 사이 채용 광고 · 30일 · 150,000원\n${Platform.isAndroid ? '검수 뒤 Google Play 결제를 안내합니다.' : '검수 뒤 진행 방법을 안내합니다.'}',
-                style: AppTextStyles.body2,
-              ),
-              const SizedBox(height: 24),
-              _field('회사명', _company, key: const Key('ad_company_name')),
-              _field('제목', _title, key: const Key('ad_title')),
-              _field('한 줄 설명', _subtitle, required: false),
+              ],
+              _sectionTitle('무엇을 보여 줄까요?'),
+              _field('가게·회사 이름', _company, key: const Key('ad_company_name')),
+              _field('제목', _title, key: const Key('ad_title'), hint: '예) 주말 카페 홀서빙 급구'),
+              _field('한 줄 설명', _subtitle, required: false, hint: '예) 일급 12만원 · 당일 지급'),
               if (_kind == 'partner_recruit')
-                _field(
-                  '채용 상세 내용',
-                  _description,
-                  key: const Key('ad_description'),
-                  lines: 4,
-                ),
+                _field('상세 내용', _description, key: const Key('ad_description'), lines: 4, hint: '하는 일, 근무 시간, 지원 조건을 적어 주세요'),
               if (_kind == 'home_banner')
                 Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      OutlinedButton(
-                        onPressed: _pickImage,
-                        child: Text(
-                          _image == null && _existingImageUrl == null
-                              ? '배너 이미지 선택 · 1600×400 권장'
-                              : '이미지 변경하기',
-                        ),
-                      ),
-                      if (_image != null || _existingImageUrl != null) ...[
-                        const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(AppRadius.md),
+                      Text('배너 이미지', style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 8),
+                      Material(
+                        color: AppColors.bgMuted,
+                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: _pickImage,
                           child: AspectRatio(
                             aspectRatio: 4,
-                            child:
-                                _image != null
-                                    ? Image.file(_image!, fit: BoxFit.cover)
-                                    : Image.network(
-                                      '${_existingImageUrl!.startsWith('http') ? '' : baseUrl}$_existingImageUrl',
-                                      fit: BoxFit.cover,
-                                    ),
+                            child: _image != null
+                                ? Image.file(_image!, fit: BoxFit.cover)
+                                : _existingImageUrl != null
+                                ? Image.network('${_existingImageUrl!.startsWith('http') ? '' : baseUrl}$_existingImageUrl', fit: BoxFit.cover)
+                                : Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.add_photo_alternate_outlined, color: AppColors.textSecondary),
+                                      const SizedBox(height: 4),
+                                      Text('이미지 고르기 · 1600×400', style: AppTextStyles.body2),
+                                    ],
+                                  ),
                           ),
                         ),
-                      ],
+                      ),
                     ],
                   ),
                 ),
-              Text('지원 연결 방식', style: AppTextStyles.h3),
-              const SizedBox(height: 8),
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(
-                    value: 'external_url',
-                    label: Text('공식 지원 URL'),
-                  ),
-                  ButtonSegment(value: 'internal_job', label: Text('앱 공고')),
-                ],
-                selected: {_destination},
-                onSelectionChanged:
-                    (selection) =>
-                        setState(() => _destination = selection.first),
-              ),
-              const SizedBox(height: 16),
               if (_destination == 'external_url')
                 _field(
-                  '공식 지원 URL',
+                  '지원 페이지 주소',
                   _url,
                   key: const Key('ad_destination_url'),
+                  hint: 'https://',
                   validator: (value) {
                     final uri = Uri.tryParse(value?.trim() ?? '');
-                    return uri != null &&
-                            uri.scheme == 'https' &&
-                            uri.host.isNotEmpty
+                    return uri != null && uri.scheme == 'https' && uri.host.isNotEmpty
                         ? null
-                        : 'https://로 시작하는 공식 지원 주소를 입력해 주세요.';
+                        : 'https://로 시작하는 지원 페이지 주소를 입력해 주세요.';
                   },
-                ),
-              if (_destination == 'internal_job' && _jobsLoading)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Text('게시 중인 공고 확인 중…', style: AppTextStyles.body2),
-                ),
-              if (_destination == 'internal_job' && _jobsFailed)
-                TextButton(
-                  onPressed: _refreshJobs,
-                  child: const Text('공고를 불러오지 못했습니다. 다시 시도'),
-                ),
-              if (_destination == 'internal_job' &&
-                  !_jobsLoading &&
-                  !_jobsFailed &&
-                  _jobs.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '연결할 게시 중인 공고가 없습니다. 먼저 일반 공고를 올려 주세요.',
-                        style: AppTextStyles.body2,
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: const Text('일반 공고로 돌아가기'),
-                      ),
-                    ],
-                  ),
-                ),
-              if (_destination == 'internal_job' && _jobs.isNotEmpty)
-                DropdownButtonFormField<int>(
-                  key: ValueKey(_editingId),
-                  initialValue:
-                      _jobs.any((job) => job.id == _jobId) ? _jobId : null,
-                  hint: const Text('게시 중인 내 공고 선택'),
-                  items:
-                      _jobs
-                          .map(
-                            (job) => DropdownMenuItem(
-                              value: job.id,
-                              child: Text(job.title),
-                            ),
-                          )
-                          .toList(),
-                  onChanged: (value) => setState(() => _jobId = value),
                 ),
               if (_error != null)
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Text(
-                    _error!,
-                    style: AppTextStyles.body2.copyWith(color: AppColors.error),
-                  ),
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Text(_error!, style: AppTextStyles.body2.copyWith(color: AppColors.error)),
                 ),
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: _busy ? null : _preview,
-                child: const Text('신청 내용 확인'),
+              const SizedBox(height: 8),
+              _steps(),
+              Center(
+                child: TextButton(
+                  onPressed: () => Navigator.pushNamed(context, '/support'),
+                  style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
+                  child: const Text('광고 문의하기'),
+                ),
               ),
+              const SizedBox(height: 8),
+              AppPrimaryButton(label: '신청 내용 확인', height: 54, onPressed: _busy ? null : _preview),
             ],
           ),
         ),
