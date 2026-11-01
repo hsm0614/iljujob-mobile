@@ -1,3 +1,4 @@
+import 'package:iljujob/utils/profile_completeness.dart';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -147,6 +148,8 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
     });
   }
 
+  ({int percent, String? next})? _completeness;
+
   Future<void> _refreshProfileFromServer() async {
     try {
       final uid = await _userId();
@@ -213,6 +216,7 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
         if (name.isNotEmpty) _name = name;
         if (phone.isNotEmpty) _phone = phone;
         if (image.isNotEmpty) _imagePath = image;
+        _completeness = profileCompleteness(data);
         _loading = false;
       });
     } catch (_) {}
@@ -449,6 +453,11 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
                         loading: _loading,
                         onTap: _goEditProfile,
                       ),
+                      if (_completeness case final c? when c.next != null)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                          child: _ProfileCompletenessCard(percent: c.percent, next: c.next!, onTap: _goEditProfile),
+                        ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: _MoneyBox(
@@ -961,3 +970,61 @@ class _DetailRow extends StatelessWidget {
 
 /* --------------------------- 사업자 정보 --------------------------- */
 
+/// 프로필 완성도 — '다음 하나만' 권한다 (자이가르닉)
+class _ProfileCompletenessCard extends StatelessWidget {
+  final int percent;
+  final String next;
+  final VoidCallback onTap;
+  const _ProfileCompletenessCard({required this.percent, required this.next, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: AppColors.primaryLight,
+    borderRadius: BorderRadius.circular(AppRadius.md + 2),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(AppRadius.md + 2),
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text.rich(
+                    TextSpan(children: [
+                      const TextSpan(text: '프로필 '),
+                      TextSpan(text: '$percent%', style: const TextStyle(color: AppColors.primaryDark)),
+                      TextSpan(text: ' · $next만 넣어도 더 눈에 띄어요'),
+                    ]),
+                    style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700),
+                  ),
+                  const SizedBox(height: 2),
+                  Text('사장님이 지원자를 고를 때 보는 정보예요', style: AppTextStyles.body2),
+                  const SizedBox(height: 10),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.full),
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0, end: percent / 100),
+                      duration: const Duration(milliseconds: 600),
+                      curve: Curves.easeOutCubic,
+                      builder: (_, v, _) => LinearProgressIndicator(
+                        value: v,
+                        minHeight: 6,
+                        backgroundColor: AppColors.bgCard,
+                        valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const Icon(Icons.chevron_right_rounded, color: AppColors.primary),
+          ],
+        ),
+      ),
+    ),
+  );
+}

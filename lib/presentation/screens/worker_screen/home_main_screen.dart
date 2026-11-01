@@ -145,6 +145,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
   bool _genderHintDismissed = false;
   static const _kGenderHintKey = 'gender_hint_dismissed';
+  // 코치 마크: '오늘 일할 수 있어요'를 처음 한 번만 짚어 준다 (2026-11)
+  static const _kTodayCoachKey = 'coach_today_card_seen';
+  bool _todayCoachSeen = true; // 읽기 전엔 안 띄운다
 
   // 카드별 닫기 상태. 다른 광고주의 카드까지 숨기지 않는다.
   List<AdBanner> _jobAds = [];
@@ -209,7 +212,14 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     if (!mounted) return;
     setState(() {
       _genderHintDismissed = prefs.getBool(_kGenderHintKey) ?? false;
+      _todayCoachSeen = prefs.getBool(_kTodayCoachKey) ?? false;
     });
+  }
+
+  Future<void> _dismissTodayCoach() async {
+    setState(() => _todayCoachSeen = true);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_kTodayCoachKey, true);
   }
 
   Future<void> _dismissGenderHint() async {
@@ -1411,6 +1421,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   sliver: SliverToBoxAdapter(child: HomeNudges()),
                 ),
                 if (!_isGuest) SliverToBoxAdapter(child: _buildTodayCard()),
+                if (!_isGuest && !_todayCoachSeen) SliverToBoxAdapter(child: _buildTodayCoach()),
                 // ── 적용 중인 필터 ───────────────────────────────────
                 // 필터를 걸어둔 걸 잊으면 "공고가 없다"로 오해한다.
                 // 화면에 보이고, 여기서 바로 뗄 수 있어야 한다.
@@ -1425,8 +1436,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                       ),
                     ),
                   ),
-                // 이미지 배너는 목록 맨 위 (대표 결정 2026-10-19). 배너 없으면 위젯이 스스로 숨는다
-                SliverToBoxAdapter(child: _buildBannerSlot()),
                 if (!isLoading && filteredJobs.isNotEmpty && _isNearScope)
                   SliverToBoxAdapter(
                     child: _listHeader('내 주변 공고',
@@ -1473,6 +1482,15 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                           },
                         );
                       },
+                    ),
+                  ),
+                // 이미지 배너는 내 주변 공고 다음 (시안대로 내림, 대표 11-02 — 10-19엔 목록 맨 위). 배너 없으면 스스로 숨는다
+                if (!isLoading)
+                  SliverToBoxAdapter(
+                    child: Container(
+                      color: AppColors.bgCard,
+                      padding: const EdgeInsets.only(top: 12),
+                      child: _buildBannerSlot(),
                     ),
                   ),
                 if (!isLoading && _isNearScope && _fartherJobs.isNotEmpty && filteredJobs.length < 8)
@@ -3018,8 +3036,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     return _hitArea(
       onTap,
       Material(
-        color: selected ? AppColors.primaryLight : AppColors.bgMuted,
-        borderRadius: BorderRadius.circular(AppRadius.full),
+        color: selected ? AppColors.primaryLight : AppColors.bgCard,
+        shape: StadiumBorder(side: BorderSide(color: selected ? AppColors.primary : AppColors.border)),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.full),
           onTap: onTap,
@@ -3067,7 +3085,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   );
 
   /// '오늘 일할 수 있어요' — 켜 두면 사장님 긴급 호출·공고 지도 후보에 먼저 뜬다 (알바생 홈 시안, 2026-11)
-  Widget _buildTodayCard() => Padding(
+  Widget _buildTodayCard() => Container(
+    color: AppColors.bgCard,
     padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
     child: Material(
       color: AppColors.primaryLight,
@@ -3077,6 +3096,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         onTap: () {
           setState(() => isAvailableToday = !isAvailableToday);
           setAvailableToday(isAvailableToday);
+          if (!_todayCoachSeen) _dismissTodayCoach();
         },
         child: Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
@@ -3087,7 +3107,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('오늘 일할 수 있어요', style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700)),
-                    Text('켜 두면 근처 사장님이 먼저 연락할 수 있어요',
+                    Text('켜 두면 사장님이 먼저 연락해요',
                         style: AppTextStyles.body2.copyWith(color: AppColors.textBody)),
                   ],
                 ),
@@ -3098,6 +3118,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 onChanged: (v) {
                   setState(() => isAvailableToday = v);
                   setAvailableToday(v);
+                  if (!_todayCoachSeen) _dismissTodayCoach();
                 },
               ),
             ],
@@ -3107,7 +3128,42 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     ),
   );
 
-  Widget _listHeader(String title, {String? count, String? trailing, VoidCallback? onTrailing}) => Padding(
+  /// 처음 한 번 — 카드가 무슨 일을 하는지 말풍선으로
+  Widget _buildTodayCoach() => Container(
+    color: AppColors.bgCard,
+    padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(right: 40),
+          child: CustomPaint(size: const Size(14, 8), painter: _CoachTailPainter()),
+        ),
+        Container(
+          padding: const EdgeInsets.fromLTRB(14, 10, 4, 10),
+          decoration: BoxDecoration(color: AppColors.textPrimary, borderRadius: BorderRadius.circular(AppRadius.md)),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '켜면 사장님이 긴급 호출·지도에서 나를 먼저 찾아요. 일 끝나면 꺼 두세요.',
+                  style: AppTextStyles.body2.copyWith(color: Colors.white),
+                ),
+              ),
+              TextButton(
+                onPressed: _dismissTodayCoach,
+                style: TextButton.styleFrom(foregroundColor: AppColors.primaryMid),
+                child: const Text('알겠어요'),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _listHeader(String title, {String? count, String? trailing, VoidCallback? onTrailing}) => Container(
+    color: AppColors.bgCard,
     padding: const EdgeInsets.fromLTRB(20, 24, 12, 4),
     child: Row(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -3137,7 +3193,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   );
 
   /// 내 주변 공고가 없을 때 (가장 흔한 상태) — 알림 켜기·오늘 가능·반경 넓히기
-  Widget _buildNearEmpty() {
+  Widget _buildNearEmpty() => Container(color: AppColors.bgCard, child: _nearEmptyBody());
+
+  Widget _nearEmptyBody() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ScreenAnalyticsService.instance.logEvent(
         'worker_empty_jobs_shown',
@@ -3220,3 +3278,19 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 // ─────────────────────────────────────────────
 // AI 추천 가로 스크롤 스트립
 // ─────────────────────────────────────────────
+
+/// 코치 마크 말풍선 꼬리 (위를 가리키는 삼각형)
+class _CoachTailPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(size.width / 2, 0)
+      ..lineTo(size.width, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+    canvas.drawPath(path, Paint()..color = AppColors.textPrimary);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}

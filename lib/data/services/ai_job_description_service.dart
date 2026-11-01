@@ -1,6 +1,8 @@
 //services/ai_job_description_service.dart
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart'; // StatefulWidget 사용을 위해 필요
+import 'package:http/http.dart' as http;
 import '../../config/constants.dart';
 import 'authenticated_http_client.dart';
 import '../../config/app_theme.dart';
@@ -22,6 +24,85 @@ class AIJobDescriptionService {
       yearMonth: data['yearMonth'] as String,
     );
   }
+
+  /// 글자가 써지듯 받는다 (서버 /job-description/stream, 2026-11). onText에 지금까지 받은 글 전체.
+  /// 끝나면 서버가 정리한 최종본을 돌려준다. 예전 서버(404)면 StreamUnavailable — 일반 호출로 넘어간다
+  static Future<String> streamJobDescription(
+    Map<String, dynamic> body, {
+    required void Function(String soFar) onText,
+  }) async {
+    final token = await AuthenticatedHttpClient.accessToken();
+    final req = http.Request('POST', Uri.parse('$baseUrl/api/ai/job-description/stream'))
+      ..headers.addAll({
+        'Content-Type': 'application/json',
+        'Accept': 'text/event-stream',
+        'Authorization': 'Bearer $token',
+      })
+      ..body = jsonEncode(body);
+    final client = http.Client();
+    try {
+      final resp = await client.send(req).timeout(const Duration(seconds: 15));
+      if (resp.statusCode == 404) throw const StreamUnavailable();
+      if (resp.statusCode != 200) {
+        final raw = await resp.stream.bytesToString();
+        if (resp.statusCode == 401 || resp.statusCode == 403) throw const SubscriptionRequiredException();
+        String msg = '공고문 생성에 실패했어요. 다시 시도해주세요.';
+        try {
+          final d = jsonDecode(raw);
+          if (d['message'] is String) msg = d['message'];
+        } catch (_) {}
+        throw AIGenerationException(msg);
+      }
+      var soFar = '';
+      String? finalText;
+      final lines = resp.stream
+          .transform(utf8.decoder)
+          .transform(const LineSplitter())
+          .timeout(const Duration(seconds: 40));
+      await for (final line in lines) {
+        if (!line.startsWith('data:')) continue;
+        final ev = jsonDecode(line.substring(5).trim()) as Map<String, dynamic>;
+        if (ev['t'] is String) {
+          soFar += ev['t'] as String;
+          onText(soFar);
+        } else if (ev['done'] == true) {
+          finalText = (ev['text'] ?? '').toString().trim();
+        } else if (ev['error'] is String) {
+          throw AIGenerationException(ev['error'] as String);
+        }
+      }
+      if (finalText == null || finalText.isEmpty) throw const AIGenerationException('AI 응답이 비어 있습니다.');
+      return finalText;
+    } on TimeoutException {
+      throw const AIGenerationException('AI 응답이 늦어요. 잠시 후 다시 시도해주세요.');
+    } finally {
+      client.close();
+    }
+  }
+
+  static Map<String, dynamic> requestBody({
+    required String title,
+    required String category,
+    required String location,
+    required String payType,
+    required int pay,
+    String? workingTime,
+    List<String>? weekdays,
+    String? companyName,
+    bool isShortTerm = true,
+    String tone = 'friendly',
+  }) => {
+    'title': title,
+    'category': category,
+    'location': location,
+    'payType': payType,
+    'pay': pay,
+    'workingTime': workingTime ?? '',
+    'weekdays': weekdays ?? [],
+    'companyName': companyName ?? '',
+    'isShortTerm': isShortTerm,
+    'tone': tone,
+  };
 
   static Future<String> generateJobDescription({
     required String title,
@@ -224,7 +305,9 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: SingleChildScrollView(
-                      child: Text(content, style: AppTextStyles.body1.copyWith(height: 1.6, color: AppColors.textPrimary)),
+                      reverse: isGenerating, // 쓰는 중엔 새 글이 보이게 아래에 붙는다
+                      child: Text(isGenerating ? '$content ▍' : content,
+                          style: AppTextStyles.body1.copyWith(height: 1.6, color: AppColors.textPrimary)),
                     ),
                   ),
                 ),
@@ -281,7 +364,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
     });
 
     try {
-      final content = await AIJobDescriptionService.generateJobDescription(
+      final body = AIJobDescriptionService.requestBody(
         title: widget.title,
         category: widget.category,
         location: widget.location,
@@ -291,8 +374,30 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
         weekdays: widget.weekdays,
         companyName: widget.companyName,
         isShortTerm: widget.isShortTerm,
-        tone: 'friendly',
       );
+      String content;
+      try {
+        // 받는 대로 보여 준다 — 다 쓸 때까지 빈 화면으로 기다리지 않게
+        content = await AIJobDescriptionService.streamJobDescription(
+          body,
+          onText: (soFar) {
+            if (mounted) setState(() => generatedContent = soFar);
+          },
+        );
+      } on StreamUnavailable {
+        content = await AIJobDescriptionService.generateJobDescription(
+          title: widget.title,
+          category: widget.category,
+          location: widget.location,
+          payType: widget.payType,
+          pay: widget.pay,
+          workingTime: widget.workingTime,
+          weekdays: widget.weekdays,
+          companyName: widget.companyName,
+          isShortTerm: widget.isShortTerm,
+          tone: 'friendly',
+        );
+      }
 
       final report = AIJobDescriptionService.validateDescription(content);
 
@@ -304,6 +409,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
       if (mounted) _showSubscriptionGate(context);
     } catch (e) {
       if (mounted) {
+        setState(() => generatedContent = null); // 쓰다 끊긴 글은 넣지 않게
         final msg =
             e is AIGenerationException ? e.message : '공고문을 쓰지 못했어요. 잠시 후 다시 시도해 주세요.';
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
@@ -326,4 +432,9 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
     );
     if (go && ctx.mounted) Navigator.pushNamed(ctx, '/subscribe');
   }
+}
+
+/// 서버에 스트리밍 경로가 없을 때(구버전 서버) — 일반 호출로 넘어간다
+class StreamUnavailable implements Exception {
+  const StreamUnavailable();
 }
