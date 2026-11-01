@@ -1520,11 +1520,16 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           const Divider(),
           const SizedBox(height: 14),
           _factRow(Icons.calendar_today_outlined, _getWorkingPeriodText(job)),
-          if (hours != null) _factRow(Icons.schedule_outlined, hours),
+          if (hours != null)
+            _factRow(
+              Icons.schedule_outlined,
+              (job.breakMinutes ?? 0) > 0 ? '$hours · 휴게 ${_breakText(job.breakMinutes!)}' : hours,
+            ),
           _factRow(Icons.near_me_outlined, _distanceOrLocationText()),
           // 지원 조건(이수증·검진 등)은 긴 설명 속에 묻혀 지원 뒤에야 알게 됐다 — 지원 버튼 전에 보이게
           if (requirements != null)
             _factRow(Icons.assignment_outlined, '지원 조건 · $requirements'),
+          if (job.headcount != null) _factRow(Icons.person_add_alt_outlined, '${job.headcount}명 모집'),
           _factRow(Icons.groups_outlined, _applicantSummaryText()),
           const SizedBox(height: 2),
           if (postedUtc != null)
@@ -1768,6 +1773,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     );
   }
 
+  static String _breakText(int m) =>
+      m % 60 == 0 ? '${m ~/ 60}시간' : m < 60 ? '$m분' : '${m ~/ 60}시간 ${m % 60}분';
+
   Widget _buildLocationSection() {
     final lat = double.tryParse(widget.job.lat.toString()) ?? 0;
     final lng = double.tryParse(widget.job.lng.toString()) ?? 0;
@@ -1792,6 +1800,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
           address.isNotEmpty ? address : '위치: $coordText',
           style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600),
         ),
+        if (widget.job.locationDetail != null) Text(widget.job.locationDetail!, style: AppTextStyles.body1),
         const SizedBox(height: 4),
 
         // 거리는 맨 위 요약에 이미 있다 — 여기선 거기 없는 '가까운 역'만 (2026-10 평가: 거리 3번 반복)

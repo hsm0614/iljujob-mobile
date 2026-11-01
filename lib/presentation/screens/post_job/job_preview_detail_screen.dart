@@ -300,31 +300,7 @@ class _JobPreviewDetailScreenState extends State<JobPreviewDetailScreen> {
                 children: [
                   const Text('근무 위치', style: AppTextStyles.h3),
                   const SizedBox(height: 10),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    child: SizedBox(
-                      height: 160,
-                      child: FlutterMap(
-                        options: MapOptions(initialCenter: LatLng(widget.lat, widget.lng), initialZoom: 16),
-                        children: [
-                          TileLayer(
-                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            userAgentPackageName: Platform.isAndroid ? 'kr.co.iljujob' : 'com.iljujob.kr',
-                          ),
-                          MarkerLayer(
-                            markers: [
-                              Marker(
-                                point: LatLng(widget.lat, widget.lng),
-                                width: 40,
-                                height: 40,
-                                child: const Icon(Icons.location_on, color: AppColors.primary, size: 40),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  JobMapPreview(lat: widget.lat, lng: widget.lng),
                 ],
               ),
             ),
@@ -430,4 +406,43 @@ class _AiInsightCardState extends State<_AiInsightCard> {
       ),
     );
   }
+}
+
+/// 근무지 지도 한 장 (손으로 못 움직임) — 미리보기·공고 올리기 근무지 단계 공용
+class JobMapPreview extends StatelessWidget {
+  final double lat, lng;
+  final double height;
+  const JobMapPreview({super.key, required this.lat, required this.lng, this.height = 160});
+
+  @override
+  Widget build(BuildContext context) => ClipRRect(
+    borderRadius: BorderRadius.circular(AppRadius.md),
+    child: SizedBox(
+      height: height,
+      child: FlutterMap(
+        key: ValueKey('$lat,$lng'), // 주소를 바꾸면 새 위치로 다시 그린다
+        options: MapOptions(
+          initialCenter: LatLng(lat, lng),
+          initialZoom: 16,
+          interactionOptions: const InteractionOptions(flags: InteractiveFlag.none),
+        ),
+        children: [
+          TileLayer(
+            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+            userAgentPackageName: Platform.isAndroid ? 'kr.co.iljujob' : 'com.iljujob.kr',
+          ),
+          MarkerLayer(
+            markers: [
+              Marker(
+                point: LatLng(lat, lng),
+                width: 40,
+                height: 40,
+                child: const Icon(Icons.location_on, color: AppColors.primary, size: 40),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
 }

@@ -150,6 +150,10 @@ class _PostJobFormState extends State<PostJobForm>
   bool _isNationwide = false;
   final _requiredCertsCtrl = TextEditingController();
   final _welfareCtrl = TextEditingController();
+  // 선택 항목 (2026-11, 급구 시안) — 서버 jobs.location_detail·headcount·break_minutes
+  final _locDetailCtrl = TextEditingController();
+  int _headcount = 1;
+  int? _breakMinutes; // null = 안 정함
   String _description = '';
   bool _externalApplyEnabled = false;
   // AI 지원자 응대 — 유료 공고 + 공고 정보 충분할 때만, 사장님이 직접 켠다(기본 끔)(서버 lib/aiReply.js readiness와 같은 기준)
@@ -302,6 +306,7 @@ class _PostJobFormState extends State<PostJobForm>
     _payCtrl.dispose();
     _requiredCertsCtrl.dispose();
     _welfareCtrl.dispose();
+    _locDetailCtrl.dispose();
     super.dispose();
   }
 
@@ -912,6 +917,9 @@ class _PostJobFormState extends State<PostJobForm>
         externalApplyUrl: externalApplyUrl,
         requestId: _attemptId,
         aiReply: isPaid && _aiReply['enabled'] == true && _aiMissing.isEmpty ? _aiReply : null,
+        locationDetail: _locDetailCtrl.text,
+        headcount: _headcount,
+        breakMinutes: _timeNegotiable ? null : _breakMinutes,
       );
 
       _submitted = true;
@@ -1254,6 +1262,7 @@ class _PostJobFormState extends State<PostJobForm>
                             if (schedule.isNotEmpty) schedule,
                             formatJobPay('$_pay', _payType, includeType: true),
                             if (_isSameDayPay) '당일지급',
+                            '$_headcount명 모집',
                           ].join(' · '),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -1443,6 +1452,9 @@ class _PostJobFormState extends State<PostJobForm>
       _weekdays =
           job['weekdays'] != null ? (job['weekdays'] as String).split(',') : [];
       _isSameDayPay = job['is_same_day_pay'] == 1;
+      _locDetailCtrl.text = job['location_detail']?.toString() ?? '';
+      _headcount = int.tryParse('${job['headcount'] ?? ''}') ?? 1;
+      _breakMinutes = int.tryParse('${job['break_minutes'] ?? ''}');
       final raw = job['image_urls'];
       _imageUrls = raw is List ? List<String>.from(raw) : [];
     });
@@ -1504,6 +1516,9 @@ class _PostJobFormState extends State<PostJobForm>
       'isAlwaysOpen': _isAlwaysOpen,
       'requiredCerts': _requiredCertsCtrl.text.trim(),
       'welfare': _welfareCtrl.text.trim(),
+      'locationDetail': _locDetailCtrl.text.trim(),
+      'headcount': _headcount,
+      'breakMinutes': _breakMinutes,
     });
     final prefs = await SharedPreferences.getInstance();
     if (_submitted) return;
@@ -1558,6 +1573,9 @@ class _PostJobFormState extends State<PostJobForm>
         _isAlwaysOpen = d['isAlwaysOpen'] as bool? ?? false;
         _requiredCertsCtrl.text = d['requiredCerts']?.toString() ?? '';
         _welfareCtrl.text = d['welfare']?.toString() ?? '';
+        _locDetailCtrl.text = d['locationDetail']?.toString() ?? '';
+        _headcount = d['headcount'] as int? ?? 1;
+        _breakMinutes = d['breakMinutes'] as int?;
       });
       _validatePay();
     } catch (e) {
@@ -2670,7 +2688,26 @@ class _PostJobFormState extends State<PostJobForm>
       ),
       const SizedBox(height: 8),
       _gpsButton(),
+      if (_lat != 0 && _lng != 0) ...[
+        const SizedBox(height: 12),
+        JobMapPreview(lat: _lat, lng: _lng, height: 168),
+      ],
       if (_location.isNotEmpty) ...[
+        const SizedBox(height: 20),
+        Text.rich(
+          TextSpan(children: [
+            const TextSpan(text: '상세 주소 '),
+            TextSpan(text: '(선택)', style: AppTextStyles.body1.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.w400)),
+          ]),
+          style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: _locDetailCtrl,
+          maxLength: 100,
+          onChanged: (_) => _scheduleDraftSave(),
+          decoration: const InputDecoration(hintText: '예) 2층, 정문 옆 카페', counterText: ''),
+        ),
         const SizedBox(height: 24),
         _buildExtraLocations(),
       ],
@@ -2874,13 +2911,63 @@ class _PostJobFormState extends State<PostJobForm>
                   ].join(' '),
                   style: AppTextStyles.body2,
                 ),
+                if (_breakMinutes != null) ...[
+                  const SizedBox(height: 12),
+                  const Divider(height: 1, color: AppColors.border),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      _summaryCell('실제 근무', _hm(_workMins() - _breakMinutes!)),
+                      _summaryCell('휴게시간', _breakMinutes == 0 ? '없음' : _hm(_breakMinutes!)),
+                    ],
+                  ),
+                ],
               ],
             ),
+          ),
+          const SizedBox(height: 14),
+          Text('휴게시간', style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600)),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final m in const [0, 30, 60, 90])
+                if (m < _workMins())
+                  ChoiceChip(
+                    label: Text(m == 0 ? '없음' : _hm(m)),
+                    selected: _breakMinutes == m,
+                    showCheckmark: false,
+                    // 다시 누르면 '안 정함'으로
+                    onSelected: (_) => setState(() => _breakMinutes = _breakMinutes == m ? null : m),
+                    labelStyle: AppTextStyles.body2.copyWith(
+                      fontSize: AppFontSize.button,
+                      color: _breakMinutes == m ? Colors.white : AppColors.textPrimary,
+                    ),
+                    selectedColor: AppColors.primary,
+                    backgroundColor: AppColors.bgCard,
+                    side: BorderSide(color: _breakMinutes == m ? AppColors.primary : AppColors.border),
+                    shape: const StadiumBorder(),
+                  ),
+            ],
           ),
         ],
       ],
     );
   }
+
+  static String _hm(int mins) =>
+      mins % 60 == 0 ? '${mins ~/ 60}시간' : mins < 60 ? '$mins분' : '${mins ~/ 60}시간 ${mins % 60}분';
+
+  Widget _summaryCell(String label, String value) => Expanded(
+    child: Column(
+      children: [
+        Text(label, style: AppTextStyles.body2),
+        const SizedBox(height: 2),
+        Text(value, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700)),
+      ],
+    ),
+  );
 
   static String _fmt12(TimeOfDay t) =>
       '${t.period == DayPeriod.am ? '오전' : '오후'} ${t.hourOfPeriod == 0 ? 12 : t.hourOfPeriod}:${t.minute.toString().padLeft(2, '0')}';
@@ -3224,14 +3311,13 @@ class _PostJobFormState extends State<PostJobForm>
                       ? '예) 10,320'
                       : '예) 100,000',
               suffixText: _payType == '시급' ? '원/시간' : '원',
+              // 최저시급은 위 부제에 이미 있다 — 여기선 부제에 없는 것만
               helperText:
                   _hourlyFromDaily != null
-                      ? '시급으로 ${fmt.format(_hourlyFromDaily)}원 · 최저시급 ${fmt.format(minWagePerHour)}원 이상이에요'
+                      ? '시급으로 ${fmt.format(_hourlyFromDaily)}원'
                       : _payType == '월급'
-                      ? '최저 2,156,880원 이상 (209h 기준)'
-                      : _payType == '시급'
-                      ? '2026년 기준 최저시급 ${fmt.format(minWagePerHour)}원'
-                      : '최저 ${fmt.format(minWagePerHour)}원/시간 이상',
+                      ? '월급은 최저 2,156,880원 이상 (209시간 기준)'
+                      : null,
               helperStyle: AppTextStyles.body2,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
@@ -3347,7 +3433,7 @@ class _PostJobFormState extends State<PostJobForm>
   /// 일급을 근무시간으로 나눈 시급 — 시간이 정해진 일급일 때만
   int? get _hourlyFromDaily =>
       _payType == '일급' && _pay > 0 && !_timeNegotiable && _startTime != null && _endTime != null && _workMins() > 0
-          ? (_pay * 60 / _workMins()).round()
+          ? (_pay * 60 / (_workMins() - (_breakMinutes ?? 0)).clamp(1, 1440)).round()
           : null;
 
   // Q6: 공고 내용
@@ -3553,6 +3639,42 @@ class _PostJobFormState extends State<PostJobForm>
           ),
         ],
 
+        const SizedBox(height: 20),
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 8, 8, 8),
+          decoration: BoxDecoration(
+            border: Border.all(color: AppColors.border),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(
+            children: [
+              Expanded(child: Text('모집 인원', style: AppTextStyles.body1.copyWith(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w600))),
+              IconButton(
+                tooltip: '한 명 줄이기',
+                onPressed: _headcount > 1 ? () => setState(() => _headcount--) : null,
+                icon: const Icon(Icons.remove_rounded, size: 20),
+                style: IconButton.styleFrom(side: const BorderSide(color: AppColors.border)),
+              ),
+              SizedBox(
+                width: 56,
+                child: Text.rich(
+                  TextSpan(children: [
+                    TextSpan(text: '$_headcount', style: const TextStyle(color: AppColors.primary)),
+                    const TextSpan(text: '명'),
+                  ]),
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.h3.copyWith(fontSize: AppFontSize.titleLg),
+                ),
+              ),
+              IconButton(
+                tooltip: '한 명 늘리기',
+                onPressed: _headcount < 99 ? () => setState(() => _headcount++) : null,
+                icon: const Icon(Icons.add_rounded, size: 20),
+                style: IconButton.styleFrom(side: const BorderSide(color: AppColors.border)),
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 20),
         Text.rich(
           TextSpan(children: [
@@ -4321,15 +4443,9 @@ class _PublishSheetState extends State<_PublishSheet> {
           loading: false,
         );
       case 'free':
-        final now = kstNow();
         return _freeExhausted
             ? (label: '무료로 올리기', note: '이번 달 무료 등록을 다 썼어요', onTap: null, loading: false)
-            : (
-              label: '무료로 올리기',
-              note: '${kstWhenLabel(freePublishAt(now), now)}에 공개돼요${_freeLate(now) ? '. 근무 시작보다 늦어요' : ''}',
-              onTap: widget.onFreeSubmit,
-              loading: false,
-            );
+            : (label: '무료로 올리기', note: null, onTap: widget.onFreeSubmit, loading: false);
       case 'instant_7d':
         if (!_sevenDayOk) {
           return (label: '11,900원 결제하고 올리기', note: null, onTap: widget.onBuyPass, loading: false);

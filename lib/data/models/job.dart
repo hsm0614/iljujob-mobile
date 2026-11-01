@@ -243,6 +243,11 @@ class Job {
   final String? requiredCerts; // 자격요건
   final String? welfare; // 복리후생
 
+  // 선택 항목 (2026-11) — 옛 공고는 null
+  final String? locationDetail; // 상세 주소
+  final int? headcount; // 모집 인원
+  final int? breakMinutes; // 휴게시간(분)
+
   Job({
     required this.id,
     this.userNumber,
@@ -296,6 +301,9 @@ class Job {
     this.workDaysPerWeek,
     this.requiredCerts,
     this.welfare,
+    this.locationDetail,
+    this.headcount,
+    this.breakMinutes,
   });
 
   String get workingHours =>
@@ -480,6 +488,9 @@ class Job {
               : null,
       requiredCerts: json['required_certs']?.toString(),
       welfare: json['welfare']?.toString(),
+      locationDetail: (json['location_detail']?.toString().trim().isEmpty ?? true) ? null : json['location_detail'].toString().trim(),
+      headcount: int.tryParse('${json['headcount'] ?? ''}'),
+      breakMinutes: int.tryParse('${json['break_minutes'] ?? ''}'),
     );
   }
   // Job 클래스 안에 추가 (toJson 위에)
@@ -583,6 +594,9 @@ class Job {
       matchScore: matchScore ?? this.matchScore,
       matchReasons: matchReasons ?? this.matchReasons,
       zeroApplicantRefunded: zeroApplicantRefunded,
+      locationDetail: locationDetail,
+      headcount: headcount,
+      breakMinutes: breakMinutes,
     );
   }
 
@@ -632,6 +646,9 @@ class Job {
       'score': matchScore,
       'reasons': matchReasons,
       'zero_applicant_refunded': zeroApplicantRefunded ? 1 : 0,
+      'location_detail': locationDetail,
+      'headcount': headcount,
+      'break_minutes': breakMinutes,
     };
   }
 }

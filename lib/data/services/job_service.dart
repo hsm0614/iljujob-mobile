@@ -260,6 +260,10 @@ class JobService {
     bool payUnitConfirmed = false,
     // AI 지원자 응대 설정 — 유료 공고 + 공고 정보 충분할 때만 보낸다(서버가 다시 확인)
     Map<String, dynamic>? aiReply,
+    // 선택 항목 (2026-11) — 상세 주소·모집 인원·휴게시간(분)
+    String? locationDetail,
+    int? headcount,
+    int? breakMinutes,
   }) async {
     final uri = Uri.parse('$baseUrl/api/job/post_job');
 
@@ -295,6 +299,10 @@ class JobService {
               'is_agency': isAgency ? '1' : '0',
               'is_nationwide': isNationwide ? '1' : '0',
               if (aiReply != null) 'ai_reply': jsonEncode(aiReply),
+              if (locationDetail != null && locationDetail.trim().isNotEmpty)
+                'location_detail': locationDetail.trim(),
+              if (headcount != null) 'headcount': '$headcount',
+              if (breakMinutes != null) 'break_minutes': '$breakMinutes',
               // 추가 근무지. 서버가 job_locations로 저장해 각 지역 목록에 노출한다.
               if (locations.isNotEmpty)
                 'locations': jsonEncode(
