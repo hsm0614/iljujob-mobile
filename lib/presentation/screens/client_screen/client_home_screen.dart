@@ -80,10 +80,7 @@ class ClientHomeScreen extends StatefulWidget {
   // 미확인 지원자 배너 탭 시 지원자관리 탭으로 전환 (main_screen이 넘김)
   final VoidCallback? onOpenApplicants;
 
-  /// true = '전체 보기'로 연 공고 관리 목록(필터·검색·페이지). false = 탭의 홈 (2026-11 시안)
-  final bool manage;
-
-  const ClientHomeScreen({super.key, required this.api, this.onOpenApplicants, this.manage = false});
+  const ClientHomeScreen({super.key, required this.api, this.onOpenApplicants});
 
   @override
   State<ClientHomeScreen> createState() => _ClientHomeScreenState();
@@ -127,6 +124,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   bool isSafeCompany = false;
   String companyName = '';
   int? freeRemaining; // 이번 달 무료 등록 남은 횟수 (모르면 null)
+  bool _loadedOnce = false; // 첫 조회 전엔 '공고 없음' 화면을 띄우지 않는다
 
   // ======= Utils =======
   String getExpiryText(Job job) {
@@ -249,18 +247,14 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    if (!widget.manage) {
-      ClientTrackingService.instance.init(baseUrl);
-      ClientTrackingService.instance.startSession();
-    }
+    ClientTrackingService.instance.init(baseUrl);
+    ClientTrackingService.instance.startSession();
 
     _pageController = PageController(initialPage: 0);
 
-    if (!widget.manage) {
-      _requestNotificationPermission();
-      _saveClientFcmToken();
-      _loadFreeQuota();
-    }
+    _requestNotificationPermission();
+    _saveClientFcmToken();
+    _loadFreeQuota();
     _fetchClientProfile();
 
     _loadBannerHidden();
@@ -385,6 +379,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           currentPage = targetPage;
           totalPages = data['pagination']['totalPages'] ?? 1;
           totalCount = data['pagination']['totalCount'] ?? 0;
+          _loadedOnce = true;
         });
       } else {
         _toast('공고 목록을 불러오지 못했습니다.');
@@ -414,10 +409,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
 
     var filtered = List<Job>.of(myJobs);
 
+    // 노출이 끝난 공고는 status가 active여도 마감 (카드와 같은 기준)
     if (filterStatus == '공고중') {
-      filtered = filtered.where((j) => j.status == 'active').toList();
+      filtered = filtered.where(_isLive).toList();
     } else if (filterStatus == '마감') {
-      filtered = filtered.where((j) => j.status == 'closed').toList();
+      filtered = filtered.where((j) => !_isLive(j)).toList();
     }
 
     if (payTypeFilter != '전체') {
@@ -449,6 +445,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           if (cmp != 0) return cmp;
           return idInt(b).compareTo(idInt(a));
         });
+    }
+    if (sortType == '최신순') {
+      // 모집 중 공고가 위 — 마감은 아래에서 '다시 올리기'로 (한 페이지 안에서만)
+      filtered = [...filtered.where(_isLive), ...filtered.where((j) => !_isLive(j))];
     }
 
     return filtered;
@@ -963,7 +963,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   // 급구 '진행중 | 종료' 밑줄 탭 + 필터 칩 한 줄 (탭 두 줄 + 정렬·보기 버튼을 하나로)
   Widget _buildFilterHeader() {
     final single = totalPages <= 1; // 한 페이지일 때만 개수가 정확하다
-    int n(String st) => myJobs.where((j) => st == '전체' || j.status == (st == '공고중' ? 'active' : 'closed')).length;
+    int n(String st) => myJobs.where((j) => st == '전체' || _isLive(j) == (st == '공고중')).length;
     Widget tab(String label, String value) {
       final on = filterStatus == value;
       return Expanded(
@@ -1666,17 +1666,15 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   // 급구 '내 일감' 카드 뼈대 (2026-10): 상태 칩 → 근무일·시간(가장 큼) → 제목·급여(회색) → 지원·조회 두 칸 → 상태별 행동 한 줄.
   // 버튼 6개(큰 파란 띠 + 둥근 버튼 3개)였던 것 → 카드 자체가 지원자 목록 입구, 나머지는 ⋯ 안으로.
   Widget _buildJobCard(Job job) {
-    final isClosed = job.status == 'closed';
+    // 노출 기간이 끝난 공고도 마감으로 — '모집중'으로 남아 있었다
+    final isClosed = !_isLive(job);
     final reserved = isJobReserved(job);
     // 근무 마지막 날이 지나서야 공개되는 공고 — '공개 대기'로 두면 정상처럼 보인다
     final publishTooLate =
         reserved && job.publishAt != null && job.endDate != null &&
         !job.publishAt!.isBefore(job.endDate!.add(const Duration(days: 1)));
     final pinned = isJobPinned(job);
-    final when = [
-      if (formatWorkDays(job.startDate, job.endDate, job.weekdays) case final d?) d,
-      if (job.workingHours.replaceAll('~', '').trim().isNotEmpty) job.workingHours,
-    ].join(' ');
+    final when = _jobWhen(job);
     final chips = <Widget>[
       if (isClosed)
         const JobSignalBadge(label: '마감')
@@ -1709,34 +1707,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     } else if (pinned) {
       next = ('상단 고정 ${pinnedRemainText(job)}', '', () {});
     }
-
-    Widget cell(String label, int n, VoidCallback onTap) => Expanded(
-      child: Material(
-      color: AppColors.bgMuted,
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(label, style: AppTextStyles.body2),
-              const SizedBox(width: 6),
-              Text(
-                '$n',
-                style: AppTextStyles.body1.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-      ),
-    );
 
     void openApplicants() {
       FirebaseAnalytics.instance.logEvent(name: 'client_applicants_tap');
@@ -1791,13 +1761,32 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.body2,
                     ),
-                    const SizedBox(height: 12),
-                    // 테두리 상자 대신 회색 면 두 칸 — 흰 카드 안에서 한 단 들어간 자리
+                    const SizedBox(height: 6),
+                    // 지원자 숫자는 작게 — 지원자 관리는 '지원자' 탭이 한다 (홈과 겹쳤다, 대표 11-01)
                     Row(
                       children: [
-                        cell('지원', job.applicantCount, openApplicants),
-                        const SizedBox(width: 8),
-                        cell('조회', job.viewCount, () => Navigator.pushNamed(context, '/job-detail', arguments: job)),
+                        Expanded(
+                          child: Text(
+                            isClosed
+                                ? '${job.expiresAt != null ? '${_toLocal(job.expiresAt).month}월 ${_toLocal(job.expiresAt).day}일 ' : ''}마감 · 조회 ${job.viewCount}'
+                                : '${_liveStatus(job)} · 조회 ${job.viewCount}',
+                            style: AppTextStyles.body2,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: job.applicantCount > 0 ? openApplicants : null,
+                          behavior: HitTestBehavior.opaque,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Text(
+                              job.applicantCount > 0 ? '지원 ${job.applicantCount}명 >' : '지원 없음',
+                              style: AppTextStyles.body2.copyWith(
+                                color: job.applicantCount > 0 ? AppColors.primary : AppColors.textSecondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     if (next != null) ...[
@@ -1866,8 +1855,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
 
 
   // ════════════════════════════════════════════════════════
-  //  홈 (2026-11 시안) — 사장님 70%가 공고 1개(90일 실측). 관리 목록은 '전체 보기'로
-  //  모집 중 0개: 무엇을 올릴지 두 카드 · 1개: 큰 카드 · 2개+: 요약 + 작은 카드
+  //  홈 (2026-11) — 공고 중심. 지원자 이야기는 '지원자' 탭이 한다(대표: 둘이 겹친다).
+  //  공고가 하나도 없으면 무엇을 올릴지 두 카드, 있으면 모집 중·마감 공고를 같은 카드로 펼쳐 페이지로
   // ════════════════════════════════════════════════════════
   Future<void> _loadFreeQuota() async {
     final q = await JobService.fetchFreeQuota();
@@ -1877,18 +1866,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   bool _isLive(Job j) =>
       j.status != 'closed' && (j.expiresAt == null || _toUtc(j.expiresAt).isAfter(DateTime.now().toUtc()));
 
-  void _openManage() => Navigator.push(
-    context,
-    MaterialPageRoute(builder: (_) => ClientHomeScreen(api: widget.api, onOpenApplicants: widget.onOpenApplicants, manage: true)),
-  ).then((_) => _loadMyJobs(page: 1));
-
   void _openPromotion() =>
       Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const PromotionRequestScreen()));
-
-  void _openApplicantsOf(Job job) {
-    FirebaseAnalytics.instance.logEvent(name: 'client_applicants_tap');
-    Navigator.pushNamed(context, '/applicants', arguments: job.id);
-  }
 
   String _jobWhen(Job job) => [
     if (formatWorkDays(job.startDate, job.endDate, job.weekdays) case final d?) d,
@@ -1902,242 +1881,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     final d = _toUtc(job.expiresAt).difference(DateTime.now().toUtc());
     final left = d.inDays > 0 ? '${d.inDays}일 ${d.inHours % 24}시간' : d.inHours > 0 ? '${d.inHours}시간' : '${d.inMinutes}분';
     return '공개 중 · $left 남음';
-  }
-
-  /// 카드의 다음 행동 하나 (공고 관리 목록과 같은 규칙)
-  (String, VoidCallback)? _nextAction(Job job) {
-    final reserved = isJobReserved(job);
-    if (reserved && !job.isPaid) return ('지금 바로 공개', () => _upgradeToInstant(job));
-    if (!reserved && job.isUrgent) return ('근처 알바생에게 긴급 호출', () => _openUrgentCall(job));
-    return null;
-  }
-
-  Widget _dashSectionTitle(String title, {String? count, VoidCallback? onMore, String moreLabel = '전체 보기'}) => Row(
-    crossAxisAlignment: CrossAxisAlignment.center,
-    children: [
-      Expanded(
-        child: Text.rich(
-          TextSpan(children: [
-            TextSpan(text: title),
-            if (count != null) TextSpan(text: ' $count', style: const TextStyle(color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
-          ]),
-          style: AppTextStyles.h3,
-        ),
-      ),
-      if (onMore != null)
-        TextButton(
-          onPressed: onMore,
-          style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
-          child: Text(moreLabel),
-        ),
-    ],
-  );
-
-  Widget _statCell(String label, int n, {bool accent = false}) => Expanded(
-    child: Container(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: accent ? AppColors.primaryLight : AppColors.bgMuted,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-      child: Column(
-        children: [
-          Text(label, style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.meta, color: accent ? AppColors.primaryDark : AppColors.textSecondary)),
-          const SizedBox(height: 2),
-          Text('$n', style: AppTextStyles.h3.copyWith(fontSize: AppFontSize.titleLg, color: accent ? AppColors.primaryDark : AppColors.textPrimary)),
-        ],
-      ),
-    ),
-  );
-
-  List<Widget> _jobBadges(Job job) => [
-    if (isJobReserved(job))
-      const JobSignalBadge(label: '공개 대기')
-    else
-      const JobSignalBadge(label: '모집중', signal: JobSignal.trust),
-    if (job.isUrgent) const JobSignalBadge(label: '긴급', signal: JobSignal.time, icon: Icons.bolt_rounded),
-    if (job.isSameDayPay) const JobSignalBadge(label: '당일지급', signal: JobSignal.money),
-  ];
-
-  // 모집 중 1개 — 큰 카드
-  Widget _liveHeroCard(Job job) {
-    final next = _nextAction(job);
-    return Material(
-      color: AppColors.bgCard,
-      shape: RoundedRectangleBorder(
-        side: const BorderSide(color: AppColors.border),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => Navigator.pushNamed(context, '/job-detail', arguments: job),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 4, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(child: Wrap(spacing: 6, runSpacing: 6, children: _jobBadges(job))),
-                  IconButton(
-                    tooltip: '공고 관리',
-                    onPressed: () => _openJobActions(job),
-                    icon: const Icon(Icons.more_horiz_rounded, color: AppColors.textTertiary),
-                  ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(job.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: AppTextStyles.h3.copyWith(fontSize: AppFontSize.titleLg)),
-                    const SizedBox(height: 4),
-                    Text(
-                      [if (_jobWhen(job).isNotEmpty) _jobWhen(job), formatJobPay(job.pay, job.payType, includeType: true)].join(' · '),
-                      style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: AppColors.textPrimary),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(_liveStatus(job), style: AppTextStyles.body2),
-                    const SizedBox(height: 14),
-                    Row(
-                      children: [
-                        _statCell('지원', job.applicantCount),
-                        const SizedBox(width: 6),
-                        // 답장 대기는 서버 요약값(모집 중 공고 합계) — 모집 중이 1개라 이 공고 값이다
-                        _statCell('답장 대기', unansweredCount, accent: unansweredCount > 0),
-                        const SizedBox(width: 6),
-                        _statCell('조회', job.viewCount),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    AppPrimaryButton(label: '지원자 보기', height: 50, onPressed: () => _openApplicantsOf(job)),
-                    if (next != null)
-                      Center(
-                        child: TextButton(
-                          onPressed: next.$2,
-                          child: Text('${next.$1} >'),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 모집 중 여러 개 — 작은 카드
-  Widget _liveCompactCard(Job job) {
-    final next = _nextAction(job);
-    final hasApplicants = job.applicantCount > 0;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Material(
-        color: AppColors.bgCard,
-        shape: RoundedRectangleBorder(
-          side: const BorderSide(color: AppColors.border),
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => Navigator.pushNamed(context, '/job-detail', arguments: job),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 4, 12),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 4),
-                      Text(job.title, maxLines: 1, overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.body1.copyWith(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w700)),
-                      const SizedBox(height: 2),
-                      Text(
-                        [if (_jobWhen(job).isNotEmpty) _jobWhen(job), formatJobPay(job.pay, job.payType, includeType: true)].join(' · '),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(_liveStatus(job), style: AppTextStyles.body2),
-                      if (next != null)
-                        GestureDetector(
-                          onTap: next.$2,
-                          behavior: HitTestBehavior.opaque,
-                          child: Padding(
-                            padding: const EdgeInsets.only(top: 6),
-                            child: Text('${next.$1} >',
-                                style: AppTextStyles.body2.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600)),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                // 지원자 수 — 누르면 지원자 목록
-                TextButton(
-                  onPressed: hasApplicants ? () => _openApplicantsOf(job) : null,
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.primary,
-                    disabledForegroundColor: AppColors.textSecondary,
-                  ),
-                  child: Text(hasApplicants ? '지원 ${job.applicantCount}' : '지원 없음'),
-                ),
-                IconButton(
-                  tooltip: '공고 관리',
-                  onPressed: () => _openJobActions(job),
-                  icon: const Icon(Icons.more_horiz_rounded, color: AppColors.textTertiary),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _pastJobRow(Job job, {required bool last}) {
-    final end = job.expiresAt ?? job.createdAt;
-    return Container(
-      constraints: const BoxConstraints(minHeight: 64),
-      decoration: BoxDecoration(
-        border: last ? null : const Border(bottom: BorderSide(color: AppColors.borderSub)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(job.title, maxLines: 1, overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600)),
-                const SizedBox(height: 2),
-                Text(
-                  [if (end != null) '${_toLocal(end).month}월 ${_toLocal(end).day}일 마감', '지원 ${job.applicantCount}명'].join(' · '),
-                  style: AppTextStyles.body2,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          FilledButton(
-            onPressed: () => _repost(job),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primaryLight,
-              foregroundColor: AppColors.primary,
-              minimumSize: const Size(0, 36),
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              textStyle: AppTextStyles.btnMd,
-            ),
-            child: const Text('다시 올리기'),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _choiceCard({required bool primary, required IconData icon, required String title, required String sub, required VoidCallback onTap}) {
@@ -2217,183 +1960,64 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     );
   }
 
-  Widget _todoRow(String title, {String? sub, String? trailing, required VoidCallback onTap, bool last = false}) => InkWell(
-    onTap: onTap,
-    child: Container(
-      constraints: const BoxConstraints(minHeight: 56),
-      decoration: BoxDecoration(border: last ? null : const Border(bottom: BorderSide(color: AppColors.borderSub))),
-      child: Row(
+  Widget _buildEmptyHome() => Scaffold(
+    backgroundColor: AppColors.bgCard,
+    appBar: const AlbailjuAppBar(title: '알바일주', brand: true),
+    body: RefreshIndicator(
+      onRefresh: () async {
+        await _loadFreeQuota();
+        await _loadMyJobs(page: 1);
+      },
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(title, style: AppTextStyles.body1),
-                if (sub != null) Text(sub, style: AppTextStyles.body2),
-              ],
-            ),
+          Text(
+            '${companyName.isEmpty ? '' : '$companyName '}사장님,\n오늘 사람이 필요하세요?',
+            style: AppTextStyles.h1.copyWith(fontWeight: FontWeight.w700, height: 1.4),
           ),
-          if (trailing != null)
-            Text(trailing, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.primaryDark)),
-          const SizedBox(width: 6),
-          const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.textTertiary),
+          const SizedBox(height: 8),
+          Text.rich(
+            const TextSpan(children: [
+              TextSpan(text: '올리면 근처 알바생에게 '),
+              TextSpan(text: '바로 알려요', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+            ]),
+            style: AppTextStyles.body1.copyWith(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 24),
+          _choiceCard(
+            primary: true,
+            icon: Icons.description_outlined,
+            title: '공고 올리기',
+            sub: freeRemaining == null ? '하루·단기 알바를 구해요' : '하루·단기 알바를 구해요 · 이번 달 무료 $freeRemaining회',
+            onTap: _goToPostJobFlow,
+          ),
+          const SizedBox(height: 10),
+          _choiceCard(
+            primary: false,
+            icon: Icons.campaign_outlined,
+            title: '채용 홍보',
+            sub: '내 공고를 알바생 홈에 30일 동안 크게 보여요',
+            onTap: _openPromotion,
+          ),
+          const SizedBox(height: 16),
+          const AdBannerWidget(placement: 'app_home_owner', margin: EdgeInsets.zero),
+          Container(height: 8, margin: const EdgeInsets.symmetric(vertical: 24), color: AppColors.bgMuted),
+          _howItWorks(),
         ],
       ),
     ),
   );
 
-  Widget _buildDashboard() {
-    final lives = myJobs.where(_isLive).toList()
-      // 지원자가 있는 공고(사장님이 볼 게 있는 것)부터
-      ..sort((a, b) => b.applicantCount.compareTo(a.applicantCount));
-    final past = myJobs.where((j) => !_isLive(j)).take(3).toList();
-    final band = Container(height: 8, margin: const EdgeInsets.symmetric(vertical: 24), color: AppColors.bgMuted);
-
-    final todos = <(String, String?, String?, VoidCallback)>[
-      if (unansweredCount > 0)
-        ('답장 기다리는 지원자', null, '$unansweredCount명', () => widget.onOpenApplicants?.call()),
-      if (!isSafeCompany)
-        ('안심기업 인증 받기', '공고에 인증 표시가 붙어요', null, () => Navigator.pushNamed(context, '/edit_profile')),
-    ];
-
-    return Scaffold(
-      backgroundColor: AppColors.bgCard,
-      appBar: AlbailjuAppBar(
-        title: '알바일주',
-        brand: true,
-        actions: [
-          if (lives.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(right: 12),
-              child: FilledButton.icon(
-                onPressed: _goToPostJobFlow,
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('올리기'),
-                style: FilledButton.styleFrom(
-                  backgroundColor: AppColors.primaryLight,
-                  foregroundColor: AppColors.primary,
-                  minimumSize: const Size(0, 36),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  textStyle: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await _fetchClientProfile();
-          await _loadSummaryData();
-          await _loadFreeQuota();
-          await _loadMyJobs(page: 1);
-        },
-        child: isLoading && myJobs.isEmpty
-            ? const AppSkeletonList(rows: 3)
-            : ListView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-                children: [
-                  if (lives.isEmpty) ...[
-                    Text(
-                      '${companyName.isEmpty ? '' : '$companyName '}사장님,\n오늘 사람이 필요하세요?',
-                      style: AppTextStyles.h1.copyWith(fontWeight: FontWeight.w700, height: 1.4),
-                    ),
-                    const SizedBox(height: 8),
-                    Text.rich(
-                      const TextSpan(children: [
-                        TextSpan(text: '올리면 근처 알바생에게 '),
-                        TextSpan(text: '바로 알려요', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
-                      ]),
-                      style: AppTextStyles.body1.copyWith(color: AppColors.textSecondary),
-                    ),
-                    const SizedBox(height: 24),
-                    _choiceCard(
-                      primary: true,
-                      icon: Icons.description_outlined,
-                      title: '공고 올리기',
-                      sub: freeRemaining == null ? '하루·단기 알바를 구해요' : '하루·단기 알바를 구해요 · 이번 달 무료 $freeRemaining회',
-                      onTap: _goToPostJobFlow,
-                    ),
-                    const SizedBox(height: 10),
-                    _choiceCard(
-                      primary: false,
-                      icon: Icons.campaign_outlined,
-                      title: '채용 홍보',
-                      sub: '내 공고를 알바생 홈에 30일 동안 크게 보여요',
-                      onTap: _openPromotion,
-                    ),
-                  ] else if (lives.length == 1) ...[
-                    Text('지금 모집 중', style: AppTextStyles.h1.copyWith(fontWeight: FontWeight.w700, height: 1.4)),
-                    const SizedBox(height: 14),
-                    _liveHeroCard(lives.first),
-                    if (todos.isNotEmpty) ...[
-                      const SizedBox(height: 28),
-                      _dashSectionTitle('할 일'),
-                      for (final (i, t) in todos.indexed)
-                        _todoRow(t.$1, sub: t.$2, trailing: t.$3, onTap: t.$4, last: i == todos.length - 1),
-                    ],
-                  ] else ...[
-                    Text.rich(
-                      TextSpan(children: [
-                        const TextSpan(text: '지금 모집 중 '),
-                        TextSpan(text: '${lives.length}', style: const TextStyle(color: AppColors.primary)),
-                      ]),
-                      style: AppTextStyles.h1.copyWith(fontWeight: FontWeight.w700, height: 1.4),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        _statCell('오늘 지원', todayCount),
-                        const SizedBox(width: 6),
-                        // 누르면 지원자 탭
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: () => widget.onOpenApplicants?.call(),
-                            child: Row(children: [_statCell('답장 대기', unansweredCount, accent: unansweredCount > 0)]),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        _statCell('이번 주 지원', weekCount),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    for (final j in lives) _liveCompactCard(j),
-                  ],
-                  const SizedBox(height: 16),
-                  const AdBannerWidget(placement: 'app_home_owner', margin: EdgeInsets.zero),
-                  if (past.isNotEmpty) ...[
-                    band,
-                    _dashSectionTitle('지난 공고', onMore: _openManage, moreLabel: totalCount > 3 ? '전체 보기 · 검색' : '전체 보기'),
-                    for (var i = 0; i < past.length; i++) _pastJobRow(past[i], last: i == past.length - 1),
-                  ] else if (lives.isEmpty) ...[
-                    band,
-                    _howItWorks(),
-                  ],
-                  if (lives.isNotEmpty) ...[
-                    const SizedBox(height: 20),
-                    Center(
-                      child: TextButton(
-                        onPressed: _openPromotion,
-                        style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
-                        child: const Text('내 공고를 더 크게 알리고 싶다면 · 채용 홍보 >'),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (!widget.manage) return _buildDashboard();
+    if (_loadedOnce && totalCount == 0) return _buildEmptyHome();
     final jobs = _filteredJobs();
 
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       appBar: AlbailjuAppBar(
-        title: '공고 관리',
+        title: '알바일주',
+        brand: true,
         actions: [
           TextButton.icon(
             onPressed: _goToPostJobFlow,
