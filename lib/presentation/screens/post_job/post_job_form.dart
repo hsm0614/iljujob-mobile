@@ -1623,7 +1623,7 @@ class _PostJobFormState extends State<PostJobForm>
           ),
     );
 
-    if (shouldRestore == true) {
+    if (shouldRestore != false) {
       await _restoreDraft();
     } else {
       await _clearDraft();
