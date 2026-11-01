@@ -16,7 +16,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 # https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
 # In Windows, build-name is used as the major, minor, and patch parts
 # of the product and file versions while build-number is used as the build suffix.
-version: 2.2.8+146
+version: 2.2.8+147
 
 environment:
   sdk: ^3.7.2
@@ -37,19 +37,20 @@ flutter:
       fonts:
         - asset: assets/fonts/Jalnan2TTF.ttf
     # 본문 글꼴 — 기기 글꼴(삼성·사용자 지정)마다 크기가 달라 갤럭시에서 깨지던 것 방지 (2026-10)
-    # Pretendard Std = 공식 서브셋(KS X 1001 한글 2,350자 + 영문). 희귀 글자는 기기 글꼴로 대체된다.
-    # w900은 선언 안 함 → ExtraBold로 그려진다. 라이선스: assets/fonts/Pretendard-OFL.txt
-    - family: Pretendard
+    # Noto Sans KR Std = 원본(assets/fonts/NotoSansKR-*.ttf, 앱엔 안 들어감)을 KS X 1001 한글 2,350자 + 기호 + 영문으로
+    # 줄이고 힌팅을 뺀 것(굵기당 640KB). 줄 높이 값은 Pretendard와 같은 1.193em로 고쳐 넣음(원본 1.448이면 높이 고정 칸에서 넘친다). 희귀 글자는 기기 글꼴로 대체된다. Pretendard에서 교체 (2026-11, 대표 결정)
+    # w900은 선언 안 함 → ExtraBold로 그려진다. 라이선스: assets/fonts/NotoSansKR-OFL.txt
+    - family: NotoSansKR
       fonts:
-        - asset: assets/fonts/PretendardStd-Regular.otf
+        - asset: assets/fonts/NotoSansKRStd-Regular.ttf
           weight: 400
-        - asset: assets/fonts/PretendardStd-Medium.otf
+        - asset: assets/fonts/NotoSansKRStd-Medium.ttf
           weight: 500
-        - asset: assets/fonts/PretendardStd-SemiBold.otf
+        - asset: assets/fonts/NotoSansKRStd-SemiBold.ttf
           weight: 600
-        - asset: assets/fonts/PretendardStd-Bold.otf
+        - asset: assets/fonts/NotoSansKRStd-Bold.ttf
           weight: 700
-        - asset: assets/fonts/PretendardStd-ExtraBold.otf
+        - asset: assets/fonts/NotoSansKRStd-ExtraBold.ttf
           weight: 800
   uses-material-design: true
   assets:

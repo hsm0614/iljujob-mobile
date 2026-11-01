@@ -317,7 +317,7 @@ class AppTheme {
   );
 
   static ThemeData get theme => ThemeData(
-        fontFamily: 'Pretendard', // 갤럭시·아이폰 같은 모양으로 (pubspec 주석 참고)
+        fontFamily: 'NotoSansKR', // 갤럭시·아이폰 같은 모양으로 (pubspec 주석 참고)
         // 누를 때: 안드로이드 물결 대신 살짝 어두워짐 (토스 press overlay · 당근도 물결 없음)
         splashFactory: NoSplash.splashFactory,
         splashColor: Colors.transparent,
