@@ -8,6 +8,7 @@ import 'dart:convert';
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
 import '../../../data/services/authenticated_http_client.dart';
+import '../../../data/services/ad_banner_service.dart';
 import '../../../widget/app_ui.dart';
 import '../../../data/services/ad_request_service.dart';
 import '../../../data/services/ad_store_purchase_service.dart';
@@ -45,6 +46,8 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
   // 스토어 가격(안드로이드). 없으면 기본 표시 가격
   static const _defaultPrice = '150,000원';
   final Map<String, String> _prices = {};
+  // 홈 배너 예시 — 지금 알바생 홈 맨 위에 실제로 걸려 있는 배너. 이미지를 고르기 전까지 미리보기에 보여 준다
+  String? _sampleBannerUrl;
   File? _image;
   List<AdEligibleJob> _jobs = const [];
   bool _jobsLoading = true;
@@ -67,7 +70,10 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
       _loadPrices();
     }
     _refreshJobs();
-    if (widget.api == null) _prefillCompany();
+    if (widget.api == null) {
+      _prefillCompany();
+      _loadSampleBanner();
+    }
   }
 
   // 화면 가격을 실제 결제 가격(스토어)과 맞춘다 — 고정 문구면 스토어 가격을 바꿀 때 어긋난다
@@ -81,6 +87,14 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
   }
 
   String _price(String kind) => _prices[kind] ?? _defaultPrice;
+
+  // 노출 기록은 남기지 않는다(logEvent 안 부름) — 광고주 노출 수를 부풀리지 않게
+  Future<void> _loadSampleBanner() async {
+    final banners = await AdBannerService.instance.fetchBanners('app_home_worker');
+    final url = banners.map((b) => b.imageUrl).where((u) => u.isNotEmpty).firstOrNull;
+    if (url == null || !mounted) return;
+    setState(() => _sampleBannerUrl = url.startsWith('http') ? url : '$baseUrl$url');
+  }
 
   // 가게 이름은 프로필에 이미 있다 — 다시 치게 하지 않는다
   Future<void> _prefillCompany() async {
@@ -480,6 +494,27 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
                                     ? Image.file(_image!, fit: BoxFit.cover)
                                     : _existingImageUrl != null
                                     ? Image.network('${_existingImageUrl!.startsWith('http') ? '' : baseUrl}$_existingImageUrl', fit: BoxFit.cover)
+                                    : _sampleBannerUrl != null
+                                    ? Stack(
+                                        fit: StackFit.expand,
+                                        children: [
+                                          Image.network(_sampleBannerUrl!, fit: BoxFit.cover,
+                                              errorBuilder: (_, _, _) => Container(color: AppColors.primaryLight)),
+                                          Positioned(
+                                            left: 6,
+                                            top: 6,
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: Colors.black.withValues(alpha: 0.6),
+                                                borderRadius: BorderRadius.circular(AppRadius.xs),
+                                              ),
+                                              child: Text('지금 걸려 있는 배너 예시',
+                                                  style: AppTextStyles.caption.copyWith(color: Colors.white)),
+                                            ),
+                                          ),
+                                        ],
+                                      )
                                     : Container(
                                         color: AppColors.primaryLight,
                                         alignment: Alignment.center,
@@ -526,6 +561,7 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
               Text(
                 _kind == 'home_banner'
                     ? '알바생 홈 맨 위에 걸려요. 글자는 크고 짧게, 가게 이름과 급여를 넣으면 눈에 잘 띄어요.'
+                        '${_image == null && _existingImageUrl == null && _sampleBannerUrl != null ? ' 이미지를 고르면 예시 대신 내 배너가 보여요.' : ''}'
                     : '알바생 홈 공고 사이에 나와요. 누르면 ${_destination == 'internal_job' ? '내 공고로' : '지원 페이지로'} 가요. 제목엔 하는 일과 급여를 함께 넣으세요.',
                 style: AppTextStyles.body2,
               ),
