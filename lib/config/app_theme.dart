@@ -23,6 +23,7 @@ class AppColors {
   static const bgBase    = Color(0xFFF2F4F6); // bgPage 별칭
   static const bgCard    = Color(0xFFFFFFFF); // 카드/시트 배경
   static const bgMuted   = Color(0xFFF2F4F6); // TDS grey100 // 비활성 배경 (칩, 인풋)
+  static const bgSoft    = Color(0xFFF7F8FA); // 흰 카드 안 숫자 칸 — bgMuted보다 한 단 옅게 (사장님 홈 시안, 2026-11)
 
   // ── Border ─────────────────────────────────────────────
   static const border    = Color(0xFFE5E8EB); // 일반 구분선
@@ -30,6 +31,7 @@ class AppColors {
 
   // ── Text ───────────────────────────────────────────────
   static const textPrimary   = Color(0xFF191F28); // 제목·강조
+  static const textBody      = Color(0xFF4E5968); // TDS grey700 // 제목 아래 정보 줄(날짜·급여) — 제목보다 옅고 보조보다 진하게
   static const textSecondary = Color(0xFF6B7684); // TDS grey600 (흰 바탕 4.6:1) // 본문
   static const textTertiary  = Color(0xFF8B95A1); // TDS grey500 // 힌트·보조
   static const textDisabled  = Color(0xFFD1D6DB); // TDS grey300 // 비활성

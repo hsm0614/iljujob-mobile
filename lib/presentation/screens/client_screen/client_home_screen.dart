@@ -883,59 +883,59 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     );
   }
 
-  // 위쪽 안내 줄 공용 모양 — 회색 바탕 한 줄, 오른쪽 화살표 (파랑은 누를 글자에만)
-  Widget _noticeRow({required IconData icon, required InlineSpan text, required VoidCallback? onTap}) {
+  Widget _jobCards(List<Job> list) => SliverList.builder(
+    itemCount: list.length,
+    itemBuilder: (context, index) => AppFadeSlideIn(
+      key: ValueKey('cjob_${list[index].id}'),
+      index: index,
+      child: _buildJobCard(list[index]),
+    ),
+  );
+
+  /// 시안 2번 '할 일' — 줄 목록 (위쪽 회색 알림 띠였던 것)
+  Widget _buildTodoSection() {
+    final rows = <(String, String?, String?, VoidCallback)>[
+      if (unansweredCount > 0)
+        ('답장 기다리는 지원자', null, '$unansweredCount명', () => widget.onOpenApplicants?.call()),
+      if (!isSafeCompany)
+        ('안심기업 인증 받기', '공고에 인증 표시가 붙어요', null, () => Navigator.pushNamed(context, '/edit_profile')),
+    ];
+    if (rows.isEmpty) return const SizedBox.shrink();
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-      child: Material(
-        color: AppColors.bgMuted,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppRadius.md),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
-            child: Row(
-              children: [
-                Icon(icon, size: 18, color: AppColors.textSecondary),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text.rich(text, style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary)),
+      padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('할 일', style: AppTextStyles.h3),
+          const SizedBox(height: 8),
+          for (final (i, r) in rows.indexed)
+            InkWell(
+              onTap: r.$4,
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 56),
+                decoration: BoxDecoration(
+                  border: i == rows.length - 1 ? null : const Border(bottom: BorderSide(color: AppColors.borderSub)),
                 ),
-                const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.textTertiary),
-              ],
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(r.$1, style: AppTextStyles.body1),
+                          if (r.$2 != null) Text(r.$2!, style: AppTextStyles.body2),
+                        ],
+                      ),
+                    ),
+                    if (r.$3 != null)
+                      Text(r.$3!, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.primaryDark)),
+                    const SizedBox(width: 6),
+                    const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.textTertiary),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  // 답장 기다리는 지원자 — 있을 때만
-  Widget _buildUnansweredBanner() {
-    if (unansweredCount <= 0) return const SizedBox.shrink();
-    return _noticeRow(
-      icon: Icons.mark_chat_unread_outlined,
-      onTap: widget.onOpenApplicants,
-      text: TextSpan(
-        children: [
-          const TextSpan(text: '답장 기다리는 지원자 '),
-          TextSpan(text: '$unansweredCount명', style: const TextStyle(fontWeight: FontWeight.w700)),
-        ],
-      ),
-    );
-  }
-
-  // 안심기업 인증 — 주황 카드 → 같은 회색 안내 줄 (인증 전까지 위에 남는다)
-  Widget _buildSafeCompanyPrompt() {
-    if (isSafeCompany) return const SizedBox.shrink();
-    return _noticeRow(
-      icon: Icons.verified_user_outlined,
-      onTap: () => Navigator.pushNamed(context, '/edit_profile'),
-      text: const TextSpan(
-        children: [
-          TextSpan(text: '안심기업 인증', style: TextStyle(fontWeight: FontWeight.w700)),
-          TextSpan(text: '을 받으면 공고에 인증 표시가 붙어요'),
         ],
       ),
     );
@@ -994,13 +994,20 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text.rich(
-            TextSpan(children: [
-              const TextSpan(text: '내 공고 '),
-              TextSpan(text: '$totalCount', style: const TextStyle(color: AppColors.primary)),
-            ]),
-            style: AppTextStyles.h1.copyWith(fontWeight: FontWeight.w700, height: 1.4),
-          ),
+          Builder(builder: (_) {
+            final live = myJobs.where(_isLive).length;
+            return Text.rich(
+              filterStatus == '마감'
+                  ? const TextSpan(text: '마감된 공고')
+                  : live == 0
+                  ? const TextSpan(text: '지금 모집 중인 공고가 없어요')
+                  : TextSpan(children: [
+                      const TextSpan(text: '지금 모집 중 '),
+                      TextSpan(text: '$live', style: const TextStyle(color: AppColors.primary)),
+                    ]),
+              style: AppTextStyles.h1.copyWith(fontWeight: FontWeight.w700, height: 1.4),
+            );
+          }),
           if (totalCount > 3)
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -1705,7 +1712,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
 
     Widget cell(String label, int n, VoidCallback? onTap, {bool accent = false}) => Expanded(
       child: Material(
-        color: accent ? AppColors.primaryLight : AppColors.bgMuted,
+        color: accent ? AppColors.primaryLight : AppColors.bgSoft,
         borderRadius: BorderRadius.circular(AppRadius.md),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -1736,7 +1743,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         child: InkWell(
           onTap: () => Navigator.pushNamed(context, '/job-detail', arguments: job),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 4, 16),
+            padding: const EdgeInsets.fromLTRB(16, 12, 4, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1769,7 +1776,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       const SizedBox(height: 4),
                       Text(
                         [if (when.isNotEmpty) when, formatJobPay(job.pay, job.payType, includeType: true)].join(' · '),
-                        style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: AppColors.textPrimary),
+                        style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: AppColors.textBody),
                       ),
                       const SizedBox(height: 6),
                       Text(status, style: AppTextStyles.body2),
@@ -2017,7 +2024,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const PostChooseScreen()))
                 .then((_) => _loadMyJobs(page: currentPage)),
             icon: const Icon(Icons.add_rounded, size: 18),
-            label: const Text('올리기'),
+            label: const Text('공고 올리기'),
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.primaryLight,
               foregroundColor: AppColors.primary,
@@ -2041,37 +2048,33 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _buildFilterHeader()),
-            SliverToBoxAdapter(
-              child: Container(
-                color: AppColors.bgCard,
-                child: Column(
-                  children: [
-                    // 원더 배너는 위 (대표 결정 10/29) — 공고 사이에 끼우면 카드 흐름이 끊긴다
-                    const AdBannerWidget(
-                      placement: 'app_home_owner',
-                      margin: EdgeInsets.fromLTRB(20, 0, 20, 12),
-                    ),
-                    _buildUnansweredBanner(),
-                    _buildSafeCompanyPrompt(),
-                    _buildSearchBar(),
-                  ],
-                ),
-              ),
-            ),
+            SliverToBoxAdapter(child: _buildSearchBar()),
             if (isLoading)
               const SliverFillRemaining(child: AppSkeletonList(rows: 4))
             else if (jobs.isEmpty)
               _buildEmptyJobsState(hasAnyJobs: myJobs.isNotEmpty)
             else ...[
-              SliverList.builder(
-                itemCount: jobs.length,
-                itemBuilder:
-                    (context, index) => AppFadeSlideIn(
-                      key: ValueKey('cjob_${jobs[index].id}'),
-                      index: index,
-                      child: _buildJobCard(jobs[index]),
-                    ),
+              _jobCards(jobs.where(_isLive).toList()),
+              SliverToBoxAdapter(child: _buildTodoSection()),
+              // 원더 배너 — 시안 2번 자리(모집 중 공고·할 일 다음). 10/29엔 맨 위였다
+              const SliverToBoxAdapter(
+                child: AdBannerWidget(placement: 'app_home_owner', margin: EdgeInsets.fromLTRB(20, 18, 20, 0)),
               ),
+              if (jobs.any((j) => !_isLive(j))) ...[
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(height: 8, margin: const EdgeInsets.only(top: 28, bottom: 22), color: AppColors.bgMuted),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 20),
+                        child: Text('지난 공고', style: AppTextStyles.h3),
+                      ),
+                    ],
+                  ),
+                ),
+                _jobCards(jobs.where((j) => !_isLive(j)).toList()),
+              ],
               SliverToBoxAdapter(child: _buildPaginationWidget()),
             ],
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
