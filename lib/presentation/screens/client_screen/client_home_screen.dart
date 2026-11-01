@@ -1665,6 +1665,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
 
   // 급구 '내 일감' 카드 뼈대 (2026-10): 상태 칩 → 근무일·시간(가장 큼) → 제목·급여(회색) → 지원·조회 두 칸 → 상태별 행동 한 줄.
   // 버튼 6개(큰 파란 띠 + 둥근 버튼 3개)였던 것 → 카드 자체가 지원자 목록 입구, 나머지는 ⋯ 안으로.
+  // 공고 카드 — 홈 시안 2번 모양(큰 카드·회색 숫자 칸·버튼 하나)을 모든 공고에 (대표 11-01).
+  // 모집 중·마감이 같은 카드, 접지 않고 페이지로 넘긴다.
   Widget _buildJobCard(Job job) {
     // 노출 기간이 끝난 공고도 마감으로 — '모집중'으로 남아 있었다
     final isClosed = !_isLive(job);
@@ -1692,132 +1694,130 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         const JobSignalBadge(label: '이용권 환급', signal: JobSignal.money),
     ];
 
-    // 상태별 행동 하나 (글자 링크) — 없으면 줄 자체가 없다
-    (String, String, VoidCallback)? next;
-    if (isClosed) {
-      next = ('', '같은 조건으로 다시 올리기', () => _repost(job));
-    } else if (publishTooLate) {
-      next = ('근무일보다 공개가 늦어요', '수정하기', () => Navigator.pushNamed(context, '/edit_job', arguments: job.id));
-    } else if (reserved && !job.isPaid) {
-      next = ('${publishRemainText(job)} 공개', '지금 바로 공개', () => _upgradeToInstant(job));
-    } else if (reserved) {
-      next = ('${publishRemainText(job)} 공개', '', () {});
-    } else if (job.isUrgent) {
-      next = ('', '근처 알바생에게 긴급 호출', () => _openUrgentCall(job));
-    } else if (pinned) {
-      next = ('상단 고정 ${pinnedRemainText(job)}', '', () {});
-    }
-
     void openApplicants() {
       FirebaseAnalytics.instance.logEvent(name: 'client_applicants_tap');
       Navigator.pushNamed(context, '/applicants', arguments: job.id);
     }
 
-    // 회색 바닥 위 흰 카드 한 장씩 — 8px 회색 띠로 자르던 것보다 공고 하나가 '한 덩어리'로 보인다
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-      child: DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        boxShadow: AppShadows.card,
-      ),
+    // 상태마다 지금 할 일 하나
+    final (String, VoidCallback) action =
+        isClosed
+            ? ('같은 조건으로 다시 올리기', () => _repost(job))
+            : publishTooLate
+            ? ('수정하기', () => Navigator.pushNamed(context, '/edit_job', arguments: job.id))
+            : reserved && !job.isPaid
+            ? ('지금 바로 공개', () => _upgradeToInstant(job))
+            : job.applicantCount > 0
+            ? ('지원자 보기', openApplicants)
+            : job.isUrgent
+            ? ('근처 알바생에게 긴급 호출', () => _openUrgentCall(job))
+            : ('근처 알바생 추천받기', () => _openRecommendedWorkersByJobId(job.id.toString()));
+
+    final status =
+        isClosed
+            ? (job.expiresAt != null ? '${_toLocal(job.expiresAt).month}월 ${_toLocal(job.expiresAt).day}일 마감' : '마감')
+            : [_liveStatus(job), if (pinned) '상단 고정 ${pinnedRemainText(job)}'].join(' · ');
+
+    Widget cell(String label, int n, VoidCallback? onTap) => Expanded(
       child: Material(
-      color: AppColors.bgCard,
-      borderRadius: BorderRadius.circular(AppRadius.lg),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () => Navigator.pushNamed(context, '/job-detail', arguments: job),
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(20, 16, 8, 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(child: Wrap(spacing: 6, runSpacing: 6, children: chips)),
-                  IconButton(
-                    tooltip: '공고 관리',
-                    onPressed: () => _openJobActions(job),
-                    icon: const Icon(Icons.more_horiz_rounded, color: AppColors.textTertiary),
-                  ),
-                ],
-              ),
-              Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 6),
-                    Text(
-                      when.isEmpty ? job.title : when,
-                      style: AppTextStyles.h3.copyWith(
-                        color: isClosed ? AppColors.textTertiary : AppColors.textPrimary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      [if (when.isNotEmpty) job.title, formatJobPay(job.pay, job.payType, includeType: true)].join(' · '),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.body2,
-                    ),
-                    const SizedBox(height: 6),
-                    // 지원자 숫자는 작게 — 지원자 관리는 '지원자' 탭이 한다 (홈과 겹쳤다, 대표 11-01)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            isClosed
-                                ? '${job.expiresAt != null ? '${_toLocal(job.expiresAt).month}월 ${_toLocal(job.expiresAt).day}일 ' : ''}마감 · 조회 ${job.viewCount}'
-                                : '${_liveStatus(job)} · 조회 ${job.viewCount}',
-                            style: AppTextStyles.body2,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: job.applicantCount > 0 ? openApplicants : null,
-                          behavior: HitTestBehavior.opaque,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 6),
-                            child: Text(
-                              job.applicantCount > 0 ? '지원 ${job.applicantCount}명 >' : '지원 없음',
-                              style: AppTextStyles.body2.copyWith(
-                                color: job.applicantCount > 0 ? AppColors.primary : AppColors.textSecondary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (next != null) ...[
-                      const SizedBox(height: 10),
-                      GestureDetector(
-                        onTap: next.$3,
-                        behavior: HitTestBehavior.opaque,
-                        child: Text.rich(
-                          TextSpan(
-                            style: AppTextStyles.body2,
-                            children: [
-                              if (next.$1.isNotEmpty) TextSpan(text: next.$1),
-                              if (next.$1.isNotEmpty && next.$2.isNotEmpty) const TextSpan(text: ' · '),
-                              if (next.$2.isNotEmpty)
-                                TextSpan(
-                                  text: '${next.$2} >',
-                                  style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
-                                ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
+        color: AppColors.bgMuted,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Column(
+              children: [
+                Text(label, style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.meta)),
+                const SizedBox(height: 2),
+                Text('$n', style: AppTextStyles.h3.copyWith(fontSize: AppFontSize.titleLg)),
+              ],
+            ),
           ),
         ),
       ),
-      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Material(
+        color: AppColors.bgCard,
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => Navigator.pushNamed(context, '/job-detail', arguments: job),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 4, 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: Wrap(spacing: 6, runSpacing: 6, children: chips)),
+                    IconButton(
+                      tooltip: '공고 관리',
+                      onPressed: () => _openJobActions(job),
+                      icon: const Icon(Icons.more_horiz_rounded, color: AppColors.textTertiary),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        job.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.h3.copyWith(
+                          fontSize: AppFontSize.titleLg,
+                          color: isClosed ? AppColors.textSecondary : AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        [if (when.isNotEmpty) when, formatJobPay(job.pay, job.payType, includeType: true)].join(' · '),
+                        style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: AppColors.textPrimary),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(status, style: AppTextStyles.body2),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          cell('지원', job.applicantCount, job.applicantCount > 0 ? openApplicants : null),
+                          const SizedBox(width: 6),
+                          cell('조회', job.viewCount, null),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      isClosed
+                          // 마감 공고는 한 단 낮은 버튼 — 모집 중 공고의 버튼이 먼저 보이게
+                          ? SizedBox(
+                              width: double.infinity,
+                              height: 48,
+                              child: FilledButton(
+                                onPressed: action.$2,
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: AppColors.primaryLight,
+                                  foregroundColor: AppColors.primary,
+                                  textStyle: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600),
+                                ),
+                                child: Text(action.$1),
+                              ),
+                            )
+                          : AppPrimaryButton(label: action.$1, height: 50, onPressed: action.$2),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -2014,21 +2014,24 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     final jobs = _filteredJobs();
 
     return Scaffold(
-      backgroundColor: AppColors.bgPage,
+      backgroundColor: AppColors.bgCard, // 시안 2번: 흰 바탕 + 테두리 카드
       appBar: AlbailjuAppBar(
         title: '알바일주',
         brand: true,
         actions: [
-          TextButton.icon(
+          FilledButton.icon(
             onPressed: _goToPostJobFlow,
-            icon: const Icon(Icons.add_rounded, size: 20),
-            label: const Text('공고 올리기'),
-            style: TextButton.styleFrom(
+            icon: const Icon(Icons.add_rounded, size: 18),
+            label: const Text('올리기'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primaryLight,
               foregroundColor: AppColors.primary,
-              textStyle: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700),
+              minimumSize: const Size(0, 36),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              textStyle: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
         ],
       ),
       body: RefreshIndicator(
