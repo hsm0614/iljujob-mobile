@@ -193,19 +193,31 @@ class JobListTile extends StatelessWidget {
                         haptic: !isApplied,
                         child: SizedBox(
                         width: _thumb,
-                        height: 40,
+                        height: 36,
                         child: FilledButton(
-                          // 한 화면에 여러 개라 꽉 찬 파랑 대신 연한 파랑 (주 행동 하나 원칙)
+                          // 한 화면에 여러 개라 꽉 찬 파랑 대신 연한 파랑 (주 행동 하나 원칙).
+                          // 알바생 홈 시안 A(2026-11): 작게·모서리 8·진한 파랑 글자 — 공고 내용보다 튀지 않게
                           style: FilledButton.styleFrom(
                             padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
                             backgroundColor: AppColors.primaryLight,
-                            foregroundColor: AppColors.primary,
+                            foregroundColor: AppColors.primaryDark,
                             disabledBackgroundColor: AppColors.bgMuted,
-                            disabledForegroundColor: AppColors.textTertiary,
-                            textStyle: AppTextStyles.btnSm,
+                            disabledForegroundColor: AppColors.textSecondary,
+                            textStyle: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600, letterSpacing: -0.2),
                           ),
                           onPressed: isApplied ? null : onApply,
-                          child: Text(isApplied ? '지원 완료' : '지원하기'),
+                          child: isApplied
+                              ? const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.check_rounded, size: 14),
+                                    SizedBox(width: 2),
+                                    Text('지원 완료'),
+                                  ],
+                                )
+                              : const Text('지원하기'),
                         ),
                       ),
                       ),

@@ -131,6 +131,14 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   static const _kRegionSigunguKey = 'job_list_region_sigungu';
   bool get _isNearScope => _scope == 'near';
 
+  // 알바생 홈 시안(2026-11): 내 주변이 적거나 없을 때 '조금 먼 공고'와 '최근 7일 근처 공고 수'.
+  // 전국 모집 중 공고가 12개(11-01)라 대부분 0~2개를 본다 — 빈 화면 대신 다음 행동을 준다
+  List<Job> _fartherJobs = [];
+  // 내 주변 빈 화면을 새 모양으로 그릴 때 — 검색·조건 때문이거나 위치를 모르면 기존 빈 화면
+  bool get _nearEmptyCase =>
+      _isNearScope && searchQuery.trim().isEmpty && !_hasConditions && currentLatitude != 0.0 && currentLongitude != 0.0;
+  int? _recentNearbyCount;
+
   // 검색창은 기본 접힘. 검색어가 있으면 목록 위 필터 칩으로 보인다.
   bool _searchExpanded = false;
   final FocusNode _searchFocus = FocusNode();
@@ -828,10 +836,54 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       allJobs = validJobs;
       // 정렬·당일지급·급여형 칩이 첫 로드에도 먹도록 같은 필터를 탄다
       _applyFilters();
+      if (_isNearScope && hasLocation && filtered.length < 8) {
+        unawaited(_loadFarther(req, filtered.map((j) => j.id).toSet(), countRecent: filtered.isEmpty));
+      } else if (mounted) {
+        setState(() {
+          _fartherJobs = [];
+          _recentNearbyCount = null;
+        });
+      }
     } catch (e) {
       debugPrint('_loadJobs 오류: $e');
     } finally {
       if (req == _jobsReqSeq) _isLoadingJobs = false;
+    }
+  }
+
+  /// 반경 밖 모집 중 공고를 가까운 순으로 5개 + (비었으면) 최근 7일 근처 공고 수
+  Future<void> _loadFarther(int req, Set<String> nearIds, {required bool countRecent}) async {
+    try {
+      final all = await JobService.fetchJobs(
+        clientId: null,
+        lat: currentLatitude,
+        lng: currentLongitude,
+        scope: 'nationwide',
+      );
+      final nowUtc = DateTime.now().toUtc();
+      double dist(Job j) => j.distanceKmFrom(currentLatitude, currentLongitude) ?? double.infinity;
+      final farther = all
+          .where((j) =>
+              !nearIds.contains(j.id) &&
+              j.status != 'closed' &&
+              (j.expiresAt == null || j.expiresAt!.isAfter(nowUtc)) &&
+              (j.publishAt == null || !j.publishAt!.isAfter(nowUtc)))
+          .toList()
+        ..sort((a, b) => dist(a).compareTo(dist(b)));
+      int? recent;
+      if (countRecent) {
+        final res = await http.get(Uri.parse(
+          '$baseUrl/api/job/recent-nearby-count?lat=$currentLatitude&lng=$currentLongitude&radiusKm=${selectedDistance.toStringAsFixed(0)}',
+        )).timeout(const Duration(seconds: 5));
+        if (res.statusCode == 200) recent = (jsonDecode(res.body)['count'] as num?)?.toInt();
+      }
+      if (req != _jobsReqSeq || !mounted) return;
+      setState(() {
+        _fartherJobs = farther.take(5).toList();
+        _recentNearbyCount = recent;
+      });
+    } catch (e) {
+      debugPrint('조금 먼 공고 로드 실패 (무시): $e');
     }
   }
 
@@ -1358,6 +1410,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
                   sliver: SliverToBoxAdapter(child: HomeNudges()),
                 ),
+                if (!_isGuest) SliverToBoxAdapter(child: _buildTodayCard()),
                 // ── 적용 중인 필터 ───────────────────────────────────
                 // 필터를 걸어둔 걸 잊으면 "공고가 없다"로 오해한다.
                 // 화면에 보이고, 여기서 바로 뗄 수 있어야 한다.
@@ -1374,8 +1427,15 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   ),
                 // 이미지 배너는 목록 맨 위 (대표 결정 2026-10-19). 배너 없으면 위젯이 스스로 숨는다
                 SliverToBoxAdapter(child: _buildBannerSlot()),
+                if (!isLoading && filteredJobs.isNotEmpty && _isNearScope)
+                  SliverToBoxAdapter(
+                    child: _listHeader('내 주변 공고',
+                        count: '${filteredJobs.length}', trailing: '${selectedDistance.toStringAsFixed(0)}km 안'),
+                  ),
                 if (isLoading)
                   _buildSkeletonList()
+                else if (filteredJobs.isEmpty && _nearEmptyCase)
+                  SliverToBoxAdapter(child: _buildNearEmpty())
                 else if (filteredJobs.isEmpty)
                   SliverFillRemaining(
                     hasScrollBody: false,
@@ -1415,7 +1475,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                       },
                     ),
                   ),
-                if (!isLoading &&
+                if (!isLoading && _isNearScope && _fartherJobs.isNotEmpty && filteredJobs.length < 8)
+                  SliverToBoxAdapter(child: _buildFartherSection())
+                else if (!isLoading &&
                     filteredJobs.isNotEmpty &&
                     filteredJobs.length < 8 &&
                     _scope != 'nationwide')
@@ -2844,8 +2906,6 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 selected: _sheetFilterCount > 0,
                 onTap: _openFilterSheet,
               ),
-              const SizedBox(width: 6),
-              if (!_isGuest) _buildTodayToggle(),
             ],
           ),
         ),
@@ -3006,55 +3066,150 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     ),
   );
 
-  Widget _buildTodayToggle() {
-    void toggle() {
-      setState(() => isAvailableToday = !isAvailableToday);
-      setAvailableToday(isAvailableToday);
-    }
-
-    return _hitArea(
-      toggle,
-      AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        height: 34,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color:
-              isAvailableToday
-                  ? AppColors.success.withValues(alpha: 0.1)
-                  : AppColors.bgMuted,
-          borderRadius: BorderRadius.circular(AppRadius.full),
+  /// '오늘 일할 수 있어요' — 켜 두면 사장님 긴급 호출·공고 지도 후보에 먼저 뜬다 (알바생 홈 시안, 2026-11)
+  Widget _buildTodayCard() => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+    child: Material(
+      color: AppColors.primaryLight,
+      borderRadius: BorderRadius.circular(AppRadius.md + 2),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppRadius.md + 2),
+        onTap: () {
+          setState(() => isAvailableToday = !isAvailableToday);
+          setAvailableToday(isAvailableToday);
+        },
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('오늘 일할 수 있어요', style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700)),
+                    Text('켜 두면 근처 사장님이 먼저 연락할 수 있어요',
+                        style: AppTextStyles.body2.copyWith(color: AppColors.textBody)),
+                  ],
+                ),
+              ),
+              Switch.adaptive(
+                value: isAvailableToday,
+                activeTrackColor: AppColors.primary,
+                onChanged: (v) {
+                  setState(() => isAvailableToday = v);
+                  setAvailableToday(v);
+                },
+              ),
+            ],
+          ),
         ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 7,
-              height: 7,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color:
-                    isAvailableToday
-                        ? AppColors.success
-                        : AppColors.textTertiary,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              '오늘 가능',
-              style: AppTextStyles.btnSm.copyWith(
-                color:
-                    isAvailableToday
-                        ? AppColors.badgeSameDay
-                        : AppColors.textSecondary,
-              ),
+      ),
+    ),
+  );
+
+  Widget _listHeader(String title, {String? count, String? trailing, VoidCallback? onTrailing}) => Padding(
+    padding: const EdgeInsets.fromLTRB(20, 24, 12, 4),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Text.rich(
+            TextSpan(children: [
+              TextSpan(text: title),
+              if (count != null) TextSpan(text: ' $count', style: const TextStyle(color: AppColors.primary)),
+            ]),
+            style: AppTextStyles.h2,
+          ),
+        ),
+        if (trailing != null)
+          onTrailing == null
+              ? Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Text(trailing, style: AppTextStyles.body2),
+                )
+              : TextButton(
+                  onPressed: onTrailing,
+                  style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
+                  child: Text(trailing),
+                ),
+      ],
+    ),
+  );
+
+  /// 내 주변 공고가 없을 때 (가장 흔한 상태) — 알림 켜기·오늘 가능·반경 넓히기
+  Widget _buildNearEmpty() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScreenAnalyticsService.instance.logEvent(
+        'worker_empty_jobs_shown',
+        params: {'cause': 'no_nearby_jobs', 'no_location': false},
+      );
+    });
+    final place = _myRegionLabel?.split(' ').last ?? '내 주변';
+    final wider = (selectedDistance * 2).clamp(5, 30).toDouble();
+    Widget chip(String label, VoidCallback onTap, {IconData? icon}) => Padding(
+      padding: const EdgeInsets.only(right: 8, bottom: 8),
+      child: ActionChip(
+        avatar: icon == null ? null : Icon(icon, size: 16, color: AppColors.primary),
+        label: Text(label),
+        onPressed: onTap,
+        labelStyle: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: AppColors.textPrimary),
+        backgroundColor: AppColors.bgCard,
+        side: const BorderSide(color: AppColors.border),
+        shape: const StadiumBorder(),
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('지금 $place 근처엔\n모집 중인 공고가 없어요',
+              style: AppTextStyles.h1.copyWith(fontWeight: FontWeight.w700, height: 1.4)),
+          if ((_recentNearbyCount ?? 0) > 0) ...[
+            const SizedBox(height: 8),
+            Text.rich(
+              TextSpan(children: [
+                const TextSpan(text: '최근 7일 이 근처에 공고 '),
+                TextSpan(text: '$_recentNearbyCount개', style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+                const TextSpan(text: '가 올라왔다 마감됐어요'),
+              ]),
+              style: AppTextStyles.body1.copyWith(color: AppColors.textSecondary),
             ),
           ],
-        ),
+          if (!_isGuest) ...[
+            const SizedBox(height: 20),
+            const PushOffBanner(
+              hero: true,
+              message: '공고는 3일만 보이고, 먼저 지원한 사람이 연락받기 쉬워요. 알림이 꺼져 있어요.',
+              source: 'worker_home_empty',
+            ),
+          ],
+          const SizedBox(height: 16),
+          Wrap(
+            children: [
+              if (wider > selectedDistance)
+                chip('반경 ${wider.toStringAsFixed(0)}km로 넓히기', () {
+                  setState(() => selectedDistance = wider);
+                  _loadJobs();
+                }, icon: Icons.radar_rounded),
+              chip('전국 공고', () => _setScope('nationwide')),
+            ],
+          ),
+        ],
       ),
     );
   }
+
+  /// 반경 밖 모집 중 공고 (가까운 순 5개)
+  Widget _buildFartherSection() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Container(height: 8, margin: const EdgeInsets.only(top: 20), color: AppColors.bgMuted),
+      _listHeader('조금 먼 공고', trailing: '전국 보기', onTrailing: () => _setScope('nationwide')),
+      for (var i = 0; i < _fartherJobs.length; i++)
+        _buildJobCard(_fartherJobs[i], last: i == _fartherJobs.length - 1),
+    ],
+  );
 
   String _formatDate(DateTime date) {
     final d = date.toLocal();

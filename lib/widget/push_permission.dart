@@ -140,7 +140,9 @@ Future<void> maybeShowPushPrimer(BuildContext context) async {
 class PushOffBanner extends StatefulWidget {
   final String message;
   final String source;
-  const PushOffBanner({super.key, required this.message, required this.source});
+  /// true = 알바생 홈 빈 화면의 큰 파란 상자 (2026-11 시안). 닫기 없음
+  final bool hero;
+  const PushOffBanner({super.key, required this.message, required this.source, this.hero = false});
 
   @override
   State<PushOffBanner> createState() => _PushOffBannerState();
@@ -177,7 +179,40 @@ class _PushOffBannerState extends State<PushOffBanner>
 
   @override
   Widget build(BuildContext context) {
-    if (!_off || _dismissed) return const SizedBox.shrink();
+    if (!_off || (_dismissed && !widget.hero)) return const SizedBox.shrink();
+    if (widget.hero) {
+      return Container(
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(AppRadius.lg)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('새 공고, 올라오면 바로 알려 드릴게요',
+                style: AppTextStyles.h3.copyWith(color: Colors.white)),
+            const SizedBox(height: 6),
+            Text(widget.message,
+                style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: Colors.white.withValues(alpha: 0.92))),
+            const SizedBox(height: 14),
+            SizedBox(
+              height: 46,
+              child: FilledButton(
+                onPressed: () async {
+                  await requestPushPermission(source: widget.source);
+                  await _check();
+                },
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: AppColors.primaryDark,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                  textStyle: AppTextStyles.body1.copyWith(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w700),
+                ),
+                child: const Text('알림 켜기'),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     // 목록 사이 얇은 회색 띠 (카드형은 공고 줄과 결이 달랐다 — 2026-10)
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 6, 12, 6),
