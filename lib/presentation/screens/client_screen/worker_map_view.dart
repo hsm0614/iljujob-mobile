@@ -38,7 +38,9 @@ class _Job {
   final int hourlyWage, applicantCount;
   final bool isPinnedNow, isUrgent;
   final String pay, payType, endDate, weekdays;
-  final DateTime? publishAt; // UTC
+  final DateTime? publishAt;
+  final DateTime? expiresAt; // 노출 마감 — 지난 공고는 지도에서 뺀다
+// UTC
   final Map<String, dynamic> raw; // 공고 상세(Job.fromJson)로 넘길 원본
 
   const _Job({
@@ -62,6 +64,7 @@ class _Job {
     required this.endDate,
     required this.weekdays,
     required this.publishAt,
+    this.expiresAt,
     required this.raw,
   });
 
@@ -86,6 +89,7 @@ class _Job {
     endDate: _ds(j['end_date']),
     weekdays: (j['weekdays'] ?? '').toString(),
     publishAt: DateTime.tryParse('${j['publish_at'] ?? ''}')?.toUtc(),
+    expiresAt: DateTime.tryParse('${j['expires_at'] ?? ''}')?.toUtc(),
     raw: j,
   );
 
@@ -122,6 +126,7 @@ class _Job {
 
   /// 공개 시각 전(무료 12시간 대기·예약) — 알바생 지도·목록에 아직 안 보인다
   bool get isReserved => publishAt != null && publishAt!.isAfter(DateTime.now().toUtc());
+  bool get isExpired => expiresAt != null && !expiresAt!.isAfter(DateTime.now().toUtc());
 
   Color get pinColor {
     if (isUrgent) return _red;
@@ -156,8 +161,11 @@ class _Worker {
   final int activityScore;
   final double distanceM;
   final bool alreadySent;
+  /// >0 이면 흐린 미리보기 칸(약 500m, 서버 /nearby-preview) — 이름·정밀좌표 없음
+  final int previewCount;
 
   const _Worker({
+    this.previewCount = 0,
     required this.id,
     required this.name,
     required this.profileImageUrl,
@@ -167,6 +175,18 @@ class _Worker {
     required this.distanceM,
     required this.alreadySent,
   });
+
+  factory _Worker.previewCell(int index, Map<String, dynamic> c) => _Worker(
+    id: -(index + 1), // 실제 알바생 id와 겹치지 않게 음수
+    name: '',
+    profileImageUrl: '',
+    lat: _d(c['lat']),
+    lng: _d(c['lng']),
+    activityScore: 0,
+    distanceM: 0,
+    alreadySent: false,
+    previewCount: _i(c['n']),
+  );
 
   factory _Worker.fromJson(Map<String, dynamic> j) => _Worker(
     id: _i(j['id']),
@@ -237,6 +257,8 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   String? _authToken;
 
   final Map<int, int> _countCache = {};
+  // 알바생 위치가 막힌 이유 (서버 code): JOB_NOT_PUBLIC · NEEDS_ENTITLEMENT. 없으면 막히지 않음
+  final Map<int, String> _mapBlock = {};
   final Map<int, List<_Worker>> _dotCache = {};
   // 직방 스타일 오버레이: LatLng → 화면 좌표
   final Map<int, Offset?> _jobScreenPos = {};
@@ -341,7 +363,8 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                   (j) =>
                       j.status != 'deleted' &&
                       j.status != 'closed' &&
-                      j.status != 'reserved',
+                      j.status != 'reserved' &&
+                      !j.isExpired,
                 )
                 .toList()
               ..sort((a, b) => (b.isUrgent ? 1 : 0) - (a.isUrgent ? 1 : 0));
@@ -628,7 +651,8 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     final workers = results[0] as List<_Worker>;
     final count = results[1] as int;
     debugPrint('[MAP][WORKER] 알바생 ${workers.length}명 / 반경 count=$count');
-    _dotCache[job.id] = workers;
+    // 흐린 미리보기는 담아 두지 않는다 — 구독하고 돌아오면 바로 진짜 위치로
+    if (!_mapBlock.containsKey(job.id)) _dotCache[job.id] = workers;
     setState(() {
       _currentWorkers = workers;
       _workerCount = count;
@@ -667,7 +691,16 @@ class _WorkerMapViewState extends State<WorkerMapView> {
           )
           .timeout(const Duration(seconds: 8));
       debugPrint('[MAP][WORKER] API status=${res.statusCode}');
+      if (res.statusCode == 403) {
+        // 공개 전이거나 구독·긴급이 아니면 이름·위치는 못 본다 → 흐린 칸으로 '얼마나 있는지'만
+        final code = (jsonDecode(res.body) as Map?)?['code']?.toString();
+        if (code != null) {
+          _mapBlock[jobId] = code;
+          return _fetchPreview(jobId);
+        }
+      }
       if (res.statusCode == 200) {
+        _mapBlock.remove(jobId);
         final body = jsonDecode(res.body);
         _directJobRemaining[jobId] =
             (body['remainingRecipients'] as num?)?.toInt() ?? 0;
@@ -691,6 +724,20 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       debugPrint('[MAP][WORKER] fetchWorkers 예외: $e');
     }
     return [];
+  }
+
+  Future<List<_Worker>> _fetchPreview(int jobId) async {
+    try {
+      final res = await http
+          .get(Uri.parse('$baseUrl/api/direct-message/nearby-preview?jobId=$jobId'), headers: _auth)
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200) return [];
+      final cells = (jsonDecode(res.body)['cells'] as List? ?? []).whereType<Map<String, dynamic>>().toList();
+      return [for (var i = 0; i < cells.length; i++) _Worker.previewCell(i, cells[i])];
+    } catch (e) {
+      debugPrint('[MAP][PREVIEW] 예외: $e');
+      return [];
+    }
   }
 
   Future<int> _fetchCount(int jobId) async {
@@ -1169,10 +1216,12 @@ class _WorkerMapViewState extends State<WorkerMapView> {
               Positioned(
                 left: p.dx - 14,
                 top: p.dy - 14,
-                child: GestureDetector(
-                  onTap: () => _showWorkerSheet(w),
-                  child: _WorkerDot(worker: w),
-                ),
+                child: w.previewCount > 0
+                    ? const IgnorePointer(child: _PreviewBlob())
+                    : GestureDetector(
+                        onTap: () => _showWorkerSheet(w),
+                        child: _WorkerDot(worker: w),
+                      ),
               ),
           ],
 
@@ -1356,6 +1405,45 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
                   color: AppColors.primary,
+                ),
+              ),
+            ),
+          ),
+
+        // ── 위치가 흐린 이유 한 줄 (공개 전 · 구독/긴급 아님) ──────────
+        if (!_mapMoving && _selectedJob != null && _mapBlock[_selectedJob!.id] != null)
+          Positioned(
+            top: topPad + 64,
+            left: 16,
+            right: 16,
+            child: Center(
+              child: Material(
+                color: AppColors.bgCard,
+                elevation: 0,
+                shape: const StadiumBorder(side: BorderSide(color: AppColors.border)),
+                child: InkWell(
+                  customBorder: const StadiumBorder(),
+                  onTap: _mapBlock[_selectedJob!.id] == 'NEEDS_ENTITLEMENT'
+                      ? () => Navigator.pushNamed(context, '/subscription/manage')
+                      : null,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+                    child: Text.rich(
+                      TextSpan(children: [
+                        TextSpan(
+                          text: '근처 알바생 $_workerCount명',
+                          style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                        ),
+                        if (_mapBlock[_selectedJob!.id] == 'JOB_NOT_PUBLIC')
+                          const TextSpan(text: ' · 공고가 공개되면 누군지 보여요')
+                        else ...[
+                          const TextSpan(text: ' · 구독하면 누군지 보고 연락할 수 있어요 '),
+                          const TextSpan(text: '>', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700)),
+                        ],
+                      ]),
+                      style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -1645,6 +1733,24 @@ class _TrianglePainter extends CustomPainter {
 }
 
 // ── 구직자 위치 도트 ──────────────────────────────────────────────
+/// 흐린 미리보기 칸 — 누가 어디 있는지가 아니라 '이 근처에 있다'만 보인다
+class _PreviewBlob extends StatelessWidget {
+  const _PreviewBlob();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 28,
+    height: 28,
+    decoration: BoxDecoration(
+      shape: BoxShape.circle,
+      gradient: RadialGradient(colors: [
+        AppColors.primary.withValues(alpha: 0.45),
+        AppColors.primary.withValues(alpha: 0.0),
+      ]),
+    ),
+  );
+}
+
 class _WorkerDot extends StatelessWidget {
   final _Worker worker;
   const _WorkerDot({required this.worker});
