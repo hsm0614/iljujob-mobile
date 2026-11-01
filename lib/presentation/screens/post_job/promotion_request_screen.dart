@@ -434,6 +434,108 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
         ),
       );
 
+  /// 알바생 홈에 실제로 보일 모습 — 입력하는 대로 바뀐다 (광고 카드는 home_main_screen 카드와 같은 모양)
+  Widget _homePreview() {
+    Widget skeletonRow() => Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.border))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(width: 140, height: 12, decoration: BoxDecoration(color: AppColors.bgMuted, borderRadius: BorderRadius.circular(4))),
+          const SizedBox(height: 8),
+          Container(width: 90, height: 10, decoration: BoxDecoration(color: AppColors.bgMuted, borderRadius: BorderRadius.circular(4))),
+        ],
+      ),
+    );
+    return ListenableBuilder(
+      listenable: Listenable.merge([_title, _subtitle]),
+      builder: (context, _) {
+        final title = _title.text.trim().isEmpty ? '주말 카페 홀서빙 급구' : _title.text.trim();
+        final sub = _subtitle.text.trim().isEmpty ? '일급 12만원 · 당일 지급' : _subtitle.text.trim();
+        return Padding(
+          padding: const EdgeInsets.only(top: 6, bottom: 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text('알바생 홈에 이렇게 보여요', style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Container(
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: AppColors.bgCard,
+                  border: Border.all(color: AppColors.border),
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                ),
+                child: _kind == 'home_banner'
+                    ? Column(
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              child: AspectRatio(
+                                aspectRatio: 4,
+                                child: _image != null
+                                    ? Image.file(_image!, fit: BoxFit.cover)
+                                    : _existingImageUrl != null
+                                    ? Image.network('${_existingImageUrl!.startsWith('http') ? '' : baseUrl}$_existingImageUrl', fit: BoxFit.cover)
+                                    : Container(
+                                        color: AppColors.primaryLight,
+                                        alignment: Alignment.center,
+                                        child: Text('여기에 배너 이미지 (1600×400)',
+                                            style: AppTextStyles.body2.copyWith(color: AppColors.primaryDark)),
+                                      ),
+                              ),
+                            ),
+                          ),
+                          skeletonRow(),
+                          skeletonRow(),
+                        ],
+                      )
+                    : Column(
+                        children: [
+                          skeletonRow(),
+                          // 알바생 홈 공고 사이 광고 카드와 같은 모양
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                            decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.border))),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('파트너 채용 · 광고', style: AppTextStyles.jobMeta),
+                                const SizedBox(height: 5),
+                                Text(title,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, height: 1.3)),
+                                const SizedBox(height: 3),
+                                Text(sub,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTextStyles.jobMeta.copyWith(color: AppColors.textSecondary)),
+                              ],
+                            ),
+                          ),
+                          skeletonRow(),
+                        ],
+                      ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _kind == 'home_banner'
+                    ? '알바생 홈 맨 위에 걸려요. 글자는 크고 짧게, 가게 이름과 급여를 넣으면 눈에 잘 띄어요.'
+                    : '알바생 홈 공고 사이에 나와요. 누르면 ${_destination == 'internal_job' ? '내 공고로' : '지원 페이지로'} 가요. 제목엔 하는 일과 급여를 함께 넣으세요.',
+                style: AppTextStyles.body2,
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _sectionTitle(String t) => Padding(
     padding: const EdgeInsets.only(top: 12, bottom: 12),
     child: Text(t, style: AppTextStyles.h3),
@@ -574,6 +676,7 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
                 sub: '알바생 홈 맨 위 · 가로 이미지(1600×400)가 필요해요',
                 trailing: _price('home_banner'),
               ),
+              _homePreview(),
               _sectionTitle('지원은 어디로 받을까요?'),
               _choice(
                 selected: _destination == 'internal_job',

@@ -117,6 +117,18 @@ void main() {
     expect(find.byKey(const Key('ad_destination_url')), findsNothing);
   });
 
+  testWidgets('미리보기 카드가 입력한 제목을 그대로 보여 준다', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: PromotionRequestScreen(api: FakeAdRequestApi(mine: const []))));
+    await tester.pumpAndSettle();
+    expect(find.text('알바생 홈에 이렇게 보여요'), findsOneWidget);
+    await tester.scrollUntilVisible(find.byKey(const Key('ad_title')), 200, scrollable: find.byType(Scrollable).first);
+    await tester.enterText(find.byKey(const Key('ad_title')), '야간 편의점 급구');
+    await tester.pump();
+    await tester.scrollUntilVisible(find.text('알바생 홈에 이렇게 보여요'), -200, scrollable: find.byType(Scrollable).first);
+    expect(find.text('야간 편의점 급구'), findsWidgets); // 미리보기 카드에도 보인다
+    expect(find.text('주말 카페 홀서빙 급구'), findsNothing); // 예시 문구는 사라진다
+  });
+
   testWidgets('채용 광고 신청은 공식 URL을 확인한 뒤 검수 대기로 제출한다', (tester) async {
     final api = FakeAdRequestApi();
     await tester.pumpWidget(
