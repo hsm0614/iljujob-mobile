@@ -30,6 +30,7 @@ import 'package:iljujob/presentation/screens/subscription_plans_screen.dart';
 import '../../../data/services/client_tracking_service.dart';
 import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 import 'package:iljujob/presentation/screens/post_job/promotion_request_screen.dart';
+import 'package:iljujob/presentation/screens/post_job/post_choose_screen.dart';
 
 DateTime _nowLocal() => DateTime.now();
 
@@ -964,31 +965,6 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   Widget _buildFilterHeader() {
     final single = totalPages <= 1; // 한 페이지일 때만 개수가 정확하다
     int n(String st) => myJobs.where((j) => st == '전체' || _isLive(j) == (st == '공고중')).length;
-    Widget tab(String label, String value) {
-      final on = filterStatus == value;
-      return Expanded(
-        child: InkWell(
-          onTap: () => setState(() => filterStatus = value),
-          child: Container(
-            height: 46,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: on ? AppColors.textPrimary : AppColors.border, width: on ? 2 : 1),
-              ),
-            ),
-            child: Text(
-              single ? '$label ${n(value)}' : label,
-              style: AppTextStyles.body1.copyWith(
-                fontWeight: on ? FontWeight.w700 : FontWeight.w500,
-                color: on ? AppColors.textPrimary : AppColors.textTertiary,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
     Widget chip(String label, bool on, VoidCallback onTap, {bool arrow = false}) => Padding(
       padding: const EdgeInsets.only(right: 8),
       child: Material(
@@ -1011,28 +987,37 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       ),
     );
 
+    // 시안 2번: 큰 제목 하나로 시작한다. 거르기·정렬은 공고가 많을 때만 (밑줄 탭은 관리 목록처럼 보였다)
     return Container(
       color: AppColors.bgCard,
+      padding: const EdgeInsets.fromLTRB(20, 12, 0, 0),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(children: [tab('전체', '전체'), tab('모집중', '공고중'), tab('마감', '마감')]),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            // 칩이 화면보다 짧으면 가운데로 몰린다 — 넓이를 화면 폭 이상으로 잡아 왼쪽에 붙인다
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minWidth: MediaQuery.sizeOf(context).width),
-              child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 12, 12),
-            child: Row(
-              children: [
-                chip(sortType, false, _pickSort, arrow: true),
-                for (final t in const ['일급', '주급'])
-                  chip(t, payTypeFilter == t, () => setState(() => payTypeFilter = payTypeFilter == t ? '전체' : t)),
-              ],
-            ),
+          Text.rich(
+            TextSpan(children: [
+              const TextSpan(text: '내 공고 '),
+              TextSpan(text: '$totalCount', style: const TextStyle(color: AppColors.primary)),
+            ]),
+            style: AppTextStyles.h1.copyWith(fontWeight: FontWeight.w700, height: 1.4),
+          ),
+          if (totalCount > 3)
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.only(top: 12, bottom: 4),
+              child: Row(
+                children: [
+                  for (final (label, value) in const [('전체', '전체'), ('모집중', '공고중'), ('마감', '마감')])
+                    chip(single ? '$label ${n(value)}' : label, filterStatus == value, () => setState(() => filterStatus = value)),
+                  if (totalCount >= 8) ...[
+                    chip(sortType, false, _pickSort, arrow: true),
+                    for (final t in const ['일급', '주급'])
+                      chip(t, payTypeFilter == t, () => setState(() => payTypeFilter = payTypeFilter == t ? '전체' : t)),
+                  ],
+                ],
               ),
             ),
-          ),
+          const SizedBox(height: 8),
         ],
       ),
     );
@@ -1718,9 +1703,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             ? (job.expiresAt != null ? '${_toLocal(job.expiresAt).month}월 ${_toLocal(job.expiresAt).day}일 마감' : '마감')
             : [_liveStatus(job), if (pinned) '상단 고정 ${pinnedRemainText(job)}'].join(' · ');
 
-    Widget cell(String label, int n, VoidCallback? onTap) => Expanded(
+    Widget cell(String label, int n, VoidCallback? onTap, {bool accent = false}) => Expanded(
       child: Material(
-        color: AppColors.bgMuted,
+        color: accent ? AppColors.primaryLight : AppColors.bgMuted,
         borderRadius: BorderRadius.circular(AppRadius.md),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -1729,9 +1714,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             padding: const EdgeInsets.symmetric(vertical: 10),
             child: Column(
               children: [
-                Text(label, style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.meta)),
+                Text(label, style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.meta, color: accent ? AppColors.primaryDark : null)),
                 const SizedBox(height: 2),
-                Text('$n', style: AppTextStyles.h3.copyWith(fontSize: AppFontSize.titleLg)),
+                Text('$n', style: AppTextStyles.h3.copyWith(fontSize: AppFontSize.titleLg, color: accent ? AppColors.primaryDark : null)),
               ],
             ),
           ),
@@ -1751,7 +1736,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         child: InkWell(
           onTap: () => Navigator.pushNamed(context, '/job-detail', arguments: job),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 4, 16),
+            padding: const EdgeInsets.fromLTRB(16, 10, 4, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -1761,6 +1746,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     IconButton(
                       tooltip: '공고 관리',
                       onPressed: () => _openJobActions(job),
+                      visualDensity: VisualDensity.compact,
                       icon: const Icon(Icons.more_horiz_rounded, color: AppColors.textTertiary),
                     ),
                   ],
@@ -1770,6 +1756,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      const SizedBox(height: 4),
                       Text(
                         job.title,
                         maxLines: 2,
@@ -1784,12 +1771,15 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         [if (when.isNotEmpty) when, formatJobPay(job.pay, job.payType, includeType: true)].join(' · '),
                         style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: AppColors.textPrimary),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
                       Text(status, style: AppTextStyles.body2),
                       const SizedBox(height: 14),
                       Row(
                         children: [
                           cell('지원', job.applicantCount, job.applicantCount > 0 ? openApplicants : null),
+                          const SizedBox(width: 6),
+                          cell('답장 대기', job.unansweredCount, job.unansweredCount > 0 ? openApplicants : null,
+                              accent: job.unansweredCount > 0),
                           const SizedBox(width: 6),
                           cell('조회', job.viewCount, null),
                         ],
@@ -1963,7 +1953,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   Widget _buildEmptyHome() => Scaffold(
     backgroundColor: AppColors.bgCard,
     appBar: const AlbailjuAppBar(title: '알바일주', brand: true),
-    body: RefreshIndicator(
+    body: DefaultTextStyle.merge(
+      style: const TextStyle(letterSpacing: -0.3),
+      child: RefreshIndicator(
       onRefresh: () async {
         await _loadFreeQuota();
         await _loadMyJobs(page: 1);
@@ -2006,6 +1998,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         ],
       ),
     ),
+    ),
   );
 
   @override
@@ -2020,7 +2013,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         brand: true,
         actions: [
           FilledButton.icon(
-            onPressed: _goToPostJobFlow,
+            // 시안 3번: 공고 올리기·채용 홍보 중 고르고 들어간다 (기본은 공고 올리기)
+            onPressed: () => Navigator.push(context, MaterialPageRoute<void>(builder: (_) => const PostChooseScreen()))
+                .then((_) => _loadMyJobs(page: currentPage)),
             icon: const Icon(Icons.add_rounded, size: 18),
             label: const Text('올리기'),
             style: FilledButton.styleFrom(
@@ -2034,7 +2029,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           const SizedBox(width: 12),
         ],
       ),
-      body: RefreshIndicator(
+      body: DefaultTextStyle.merge(
+        style: const TextStyle(letterSpacing: -0.3), // 시안 자간 — 따로 자간을 정한 제목 스타일은 그대로
+        child: RefreshIndicator(
         onRefresh: () async {
           await _fetchClientProfile();
           await _loadSummaryData();
@@ -2080,6 +2077,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             const SliverToBoxAdapter(child: SizedBox(height: 24)),
           ],
         ),
+      ),
       ),
     );
   }

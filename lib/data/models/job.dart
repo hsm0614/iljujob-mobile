@@ -247,6 +247,8 @@ class Job {
   final String? locationDetail; // 상세 주소
   final int? headcount; // 모집 인원
   final int? breakMinutes; // 휴게시간(분)
+  /// 답장 대기 — 사장님이 채팅에 한 번도 안 쓴 지원 (내 공고 목록에서만 옴)
+  final int unansweredCount;
 
   Job({
     required this.id,
@@ -304,6 +306,7 @@ class Job {
     this.locationDetail,
     this.headcount,
     this.breakMinutes,
+    this.unansweredCount = 0,
   });
 
   String get workingHours =>
@@ -491,6 +494,7 @@ class Job {
       locationDetail: (json['location_detail']?.toString().trim().isEmpty ?? true) ? null : json['location_detail'].toString().trim(),
       headcount: int.tryParse('${json['headcount'] ?? ''}'),
       breakMinutes: int.tryParse('${json['break_minutes'] ?? ''}'),
+      unansweredCount: int.tryParse('${json['unanswered_count'] ?? ''}') ?? 0,
     );
   }
   // Job 클래스 안에 추가 (toJson 위에)
@@ -597,6 +601,7 @@ class Job {
       locationDetail: locationDetail,
       headcount: headcount,
       breakMinutes: breakMinutes,
+      unansweredCount: unansweredCount,
     );
   }
 
