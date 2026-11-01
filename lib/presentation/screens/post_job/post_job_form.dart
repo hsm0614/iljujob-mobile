@@ -85,11 +85,13 @@ class PostJobForm extends StatefulWidget {
   final bool isRepost;
   final Job? existingJob;
   final VoidCallback? onSubmitComplete;
+  final void Function(Future<void> Function())? onDraftSaverReady;
   const PostJobForm({
     super.key,
     required this.isRepost,
     required this.existingJob,
     this.onSubmitComplete,
+    this.onDraftSaverReady,
   });
   @override
   State<PostJobForm> createState() => _PostJobFormState();
@@ -227,6 +229,7 @@ class _PostJobFormState extends State<PostJobForm>
   @override
   void initState() {
     super.initState();
+    widget.onDraftSaverReady?.call(_saveDraft);
     _trackPost('job_post_start');
     _fadeCtrl = AnimationController(
       vsync: this,
@@ -280,7 +283,7 @@ class _PostJobFormState extends State<PostJobForm>
       );
     }
     _draftSaveTimer?.cancel();
-    _saveDraft();
+    if (!_submitted) _saveDraft();
     _fadeCtrl.dispose();
     _contentScrollCtrl.dispose();
     _titleCtrl.dispose();
@@ -335,7 +338,7 @@ class _PostJobFormState extends State<PostJobForm>
   Future<void> _prevQ() async {
     FocusManager.instance.primaryFocus?.unfocus();
     if (_q == 0) {
-      Navigator.pop(context);
+      _requestExit();
       return;
     }
     await _fadeCtrl.reverse();
@@ -343,6 +346,11 @@ class _PostJobFormState extends State<PostJobForm>
     _scheduleDraftSave();
     _fadeCtrl.forward();
     _scrollToCurrent();
+  }
+
+  void _requestExit() {
+    FocusManager.instance.primaryFocus?.unfocus();
+    Navigator.of(context).pop();
   }
 
   // ── 날짜 유틸 ──
@@ -911,7 +919,8 @@ class _PostJobFormState extends State<PostJobForm>
         name: 'job_post_complete',
         parameters: {'type': postType, 'job_id': jobId ?? 0},
       );
-      unawaited(_clearDraft().catchError((_) {}));
+      _draftSaveTimer?.cancel();
+      await _clearDraft().catchError((_) {});
       if (!mounted) return;
       final isUrgent = passType == 'urgent';
       // 같은 요청번호로 이미 등록된 공고가 돌아오면(duplicate) 그 공고의 유료 여부를 따른다.
@@ -1439,7 +1448,7 @@ class _PostJobFormState extends State<PostJobForm>
   }
 
   Future<void> _saveDraft() async {
-    if (widget.isRepost || widget.existingJob != null) return;
+    if (_submitted || widget.isRepost || widget.existingJob != null) return;
     final hasDraft =
         _title.trim().isNotEmpty ||
         _category.isNotEmpty ||
@@ -1478,6 +1487,7 @@ class _PostJobFormState extends State<PostJobForm>
       'welfare': _welfareCtrl.text.trim(),
     });
     final prefs = await SharedPreferences.getInstance();
+    if (_submitted) return;
     if (!hasDraft) {
       await prefs.remove(_draftKey);
       return;
@@ -1503,6 +1513,11 @@ class _PostJobFormState extends State<PostJobForm>
         _locationCity = d['locationCity']?.toString() ?? '';
         _lat = (d['lat'] as num?)?.toDouble() ?? 0;
         _lng = (d['lng'] as num?)?.toDouble() ?? 0;
+        _extraLocations
+          ..clear()
+          ..addAll((d['locations'] as List? ?? const []).whereType<Map>().map(
+            (e) => JobLocation.fromJson(Map<String, dynamic>.from(e)),
+          ));
         _isShortTerm = d['isShortTerm'] as bool? ?? true;
         _startDate = DateTime.tryParse(d['startDate']?.toString() ?? '');
         _endDate = DateTime.tryParse(d['endDate']?.toString() ?? '');
@@ -1797,14 +1812,17 @@ class _PostJobFormState extends State<PostJobForm>
             padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
             child: Row(
               children: [
-                IconButton(
-                  tooltip: _q == 0 ? '닫기' : '이전',
-                  onPressed: _prevQ,
-                  icon: Icon(
-                    _q == 0 ? Icons.close : Icons.arrow_back_ios_new_rounded,
-                    size: 20,
-                    color: AppColors.textPrimary,
-                  ),
+                SizedBox(
+                  width: 64,
+                  child: _q == 0
+                      ? const SizedBox.shrink()
+                      : IconButton(
+                          tooltip: '이전 단계',
+                          onPressed: _prevQ,
+                          alignment: Alignment.centerLeft,
+                          icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                              size: 20, color: AppColors.textPrimary),
+                        ),
                 ),
                 // 상단바는 이것 하나 — 바깥 화면의 앱바·카드 틀은 없앴다(헤더가 두 번 나왔다)
                 Expanded(
@@ -1815,7 +1833,13 @@ class _PostJobFormState extends State<PostJobForm>
                     ),
                   ),
                 ),
-                const SizedBox(width: 48),
+                SizedBox(
+                  width: 64,
+                  child: TextButton(
+                    onPressed: _requestExit,
+                    child: const Text('나가기'),
+                  ),
+                ),
               ],
             ),
           ),
@@ -1898,8 +1922,10 @@ class _PostJobFormState extends State<PostJobForm>
             ),
             child: _q == _totalQ - 1
                 ? _NextBtn(
-                  onTap: _nextQ,
-          label:
+                    onTap: _suspLoaded && !(_suspension?.isSuspended ?? false)
+                        ? _nextQ
+                        : null,
+                    label:
                       !_suspLoaded
                           ? '계정 확인 중…'
                           : (_suspension?.isSuspended ?? false)

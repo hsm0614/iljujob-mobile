@@ -12,18 +12,42 @@ class PostJobScreen extends StatefulWidget {
 
 class _PostJobScreenState extends State<PostJobScreen> {
   bool _submitted = false;
+  bool _allowPop = false;
+  bool _leaveSheetOpen = false;
+  Future<void> Function()? _saveDraft;
 
   Future<void> _onPopInvoked(bool didPop) async {
-    if (didPop || !mounted) return;
+    if (didPop || !mounted || _leaveSheetOpen) return;
+
+    _leaveSheetOpen = true;
+    final args =
+        ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+    final isRepost = args?['isRepost'] == true || args?['existingJob'] != null;
 
     final leave = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const _LeaveConfirmSheet(),
+      builder: (_) => _LeaveConfirmSheet(canRestoreDraft: !isRepost),
     );
 
-    if (leave == true && mounted) Navigator.of(context).pop();
+    _leaveSheetOpen = false;
+    if (leave != true || !mounted) return;
+    try {
+      await _saveDraft?.call();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('임시 저장에 실패했어요. 다시 시도해 주세요.')),
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
+    setState(() => _allowPop = true);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) Navigator.of(context).pop();
+    });
   }
 
   @override
@@ -36,7 +60,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
 
     return PopScope(
       // 제출 완료 후엔 확인 없이 그냥 나간다.
-      canPop: _submitted,
+      canPop: _submitted || _allowPop,
       onPopInvokedWithResult: (didPop, _) => _onPopInvoked(didPop),
       // 앱바·회색 바탕·흰 카드 틀 제거 — 폼이 화면 전체를 쓰고 자기 상단 줄(뒤로·제목·진행 바)을 가진다
       child: GestureDetector(
@@ -44,6 +68,7 @@ class _PostJobScreenState extends State<PostJobScreen> {
         child: PostJobForm(
           isRepost: isRepost,
           existingJob: existingJob,
+          onDraftSaverReady: (saveDraft) => _saveDraft = saveDraft,
           onSubmitComplete: () => setState(() => _submitted = true),
         ),
       ),
@@ -52,7 +77,8 @@ class _PostJobScreenState extends State<PostJobScreen> {
 }
 
 class _LeaveConfirmSheet extends StatelessWidget {
-  const _LeaveConfirmSheet();
+  final bool canRestoreDraft;
+  const _LeaveConfirmSheet({required this.canRestoreDraft});
 
   @override
   Widget build(BuildContext context) {
@@ -61,7 +87,9 @@ class _LeaveConfirmSheet extends StatelessWidget {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppRadius.xxl),
+        ),
       ),
       padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottomSafe),
       child: Column(
@@ -106,8 +134,10 @@ class _LeaveConfirmSheet extends StatelessWidget {
           const SizedBox(height: 8),
 
           // 설명
-          const Text(
-            '나가도 입력한 내용은 임시 저장돼요.\n다음에 이어서 작성할 수 있어요.',
+          Text(
+            canRestoreDraft
+                ? '공고 정보는 임시 저장돼요.\n사진은 다시 추가해야 해요.'
+                : '다시 올리기 내용은 임시 저장되지 않아요.\n이 화면에서 나갈까요?',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: AppFontSize.button,
@@ -122,8 +152,7 @@ class _LeaveConfirmSheet extends StatelessWidget {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text(
-                '계속 작성하기'),
+              child: const Text('계속 작성하기'),
             ),
           ),
           const SizedBox(height: 10),
@@ -140,7 +169,10 @@ class _LeaveConfirmSheet extends StatelessWidget {
               ),
               child: const Text(
                 '나가기',
-                style: TextStyle(fontSize: AppFontSize.button, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontSize: AppFontSize.button,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
