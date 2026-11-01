@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iljujob/widget/app_ui.dart';
-import 'package:iljujob/widget/job_list_tile.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:io';
@@ -61,12 +60,22 @@ const _qTitles = [
   '공고 내용을 채워주세요',
 ];
 // 부제는 정보가 있을 때만 — 버튼 글자('공고 제목을 입력해주세요')와 같은 말을 되풀이하던 것 정리
+// 화면에 보이는 질문. _qTitles는 이벤트 step_name이라 바꾸지 않는다(버전 사이 집계가 갈라진다)
+const _qHeads = [
+  '어떤 일을 할 사람을\n찾고 계세요?',
+  '어떤 업종인가요?',
+  '어디서 일하나요?',
+  '언제 일하나요?',
+  '급여는 얼마인가요?',
+  '공고 내용을 확인해 주세요',
+];
+// *별표* 사이는 파랑으로 (_subText)
 const _qSubs = [
-  '알바생이 목록에서 가장 먼저 보는 한 줄이에요',
-  '고르면 세부 직종이 나와요',
-  '알바생 지도와 거리 계산에 쓰여요',
+  '알바생이 목록에서 *가장 먼저* 보는 한 줄이에요',
+  '알바생이 *관심 업종*으로 공고를 찾아요',
+  '알바생에게 *집에서 몇 km*인지 보여 줘요',
   '',
-  '최저시급 10,320원 이상이어야 해요',
+  '최저시급 *10,320원* 이상이어야 해요',
   '비워 둬도 올릴 수 있어요',
 ];
 const _jobPostStepEvents = [
@@ -1218,33 +1227,45 @@ class _PostJobFormState extends State<PostJobForm>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          children: [
-            const Expanded(child: Text('알바생에게 보이는 공고', style: AppTextStyles.h3)),
-            GestureDetector(
-              onTap: _openFullPreview,
-              child: Text('전체 보기', style: AppTextStyles.body2.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700)),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: AppColors.border),
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: IgnorePointer(
-            child: JobListTile(
-              pay: formatJobPay('$_pay', _payType),
-              payType: _payType,
-              negotiablePay: isNegotiablePayType(_payType),
-              title: _title,
-              schedule: schedule.isEmpty ? null : schedule,
-              location: _location,
-              divider: false,
-              badges: [if (_isSameDayPay) const JobSignalBadge(label: '당일지급', signal: JobSignal.money)],
-              onTap: () {},
+        // 알바생에게 보일 모습 요약 — 누르면 전체 미리보기
+        Material(
+          color: AppColors.bgMuted,
+          borderRadius: BorderRadius.circular(14),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: _openFullPreview,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('알바생에게 이렇게 보여요', style: AppTextStyles.body2),
+                        const SizedBox(height: 3),
+                        Text(_title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.body1.copyWith(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 3),
+                        Text(
+                          [
+                            if (schedule.isNotEmpty) schedule,
+                            formatJobPay('$_pay', _payType, includeType: true),
+                            if (_isSameDayPay) '당일지급',
+                          ].join(' · '),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: AppColors.textPrimary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Icon(Icons.chevron_right_rounded, size: 22, color: AppColors.textTertiary),
+                ],
+              ),
             ),
           ),
         ),
@@ -1263,9 +1284,7 @@ class _PostJobFormState extends State<PostJobForm>
               ),
             ),
           ),
-        const SizedBox(height: 28),
-        const Divider(height: 1, color: AppColors.borderSub),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
       ],
     );
   }
@@ -1808,54 +1827,35 @@ class _PostJobFormState extends State<PostJobForm>
     return SafeArea(
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
-            child: Row(
+          SizedBox(
+            height: 56,
+            child: Stack(
+              alignment: Alignment.center,
               children: [
-                SizedBox(
-                  width: 64,
-                  child: _q == 0
-                      ? const SizedBox.shrink()
-                      : IconButton(
-                          tooltip: '이전 단계',
-                          onPressed: _prevQ,
-                          alignment: Alignment.centerLeft,
-                          icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                              size: 20, color: AppColors.textPrimary),
-                        ),
+                Text(
+                  widget.isRepost ? '공고 다시 올리기' : '공고 올리기',
+                  style: AppTextStyles.h3.copyWith(fontWeight: FontWeight.w500),
                 ),
-                // 상단바는 이것 하나 — 바깥 화면의 앱바·카드 틀은 없앴다(헤더가 두 번 나왔다)
-                Expanded(
-                  child: Center(
-                    child: Text(
-                      widget.isRepost ? '공고 다시 올리기' : '공고 올리기',
-                      style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                Positioned(
+                  left: 4,
+                  child: IconButton(
+                    tooltip: _q == 0 ? '닫기' : '이전 단계',
+                    onPressed: _prevQ, // 첫 단계에선 나가기
+                    icon: Icon(_q == 0 ? Icons.close_rounded : Icons.arrow_back_ios_new_rounded,
+                        size: 22, color: AppColors.textPrimary),
+                  ),
+                ),
+                if (_q == 0)
+                  Positioned(
+                    right: 4,
+                    child: TextButton(
+                      onPressed: () => Navigator.push(context,
+                          MaterialPageRoute<void>(builder: (_) => const PromotionRequestScreen())),
+                      style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
+                      child: const Text('채용 홍보'),
                     ),
                   ),
-                ),
-                SizedBox(
-                  width: 64,
-                  child: TextButton(
-                    onPressed: _requestExit,
-                    child: const Text('나가기'),
-                  ),
-                ),
               ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.full),
-              // 입력 6단계 뒤에 '확인하고 올리기' 1화면이 더 있다(미리보기·등록 방식을 합침, 2026-10).
-              // 분모를 6으로 두면 마지막 입력에서 100%가 되어, 결제 결정이
-              // 남은 지점에서 "다 끝났다"는 신호를 준다(목표 경사 붕괴).
-              child: LinearProgressIndicator(
-                value: (_q + 1) / (_totalQ + 1),
-                minHeight: 3,
-                backgroundColor: AppColors.border,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-              ),
             ),
           ),
           // 급구식 쌓이는 폼 (2026-10, 대표): 답한 단계는 위에 요약 한 줄로 남고, 지금 질문이 아래에 펼쳐진다.
@@ -1878,24 +1878,13 @@ class _PostJobFormState extends State<PostJobForm>
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           // 몇 단계째인지는 위 진행바 하나로 — 'N / 7'까지 쓰면 같은 말을 두 번 한다
-                          Text(_qTitles[_q], style: AppTextStyles.h1),
+                          Text(_qHeads[_q], style: _headStyle),
                           if (_qSubs[_q].isNotEmpty) ...[
                             const SizedBox(height: 8),
-                            Text(_qSubs[_q], style: AppTextStyles.body2),
+                            _subText(_qSubs[_q]),
                           ],
-                          const SizedBox(height: 28),
+                          const SizedBox(height: 24),
                           _buildQ(),
-                          if (_q == 0) ...[
-                            const SizedBox(height: 28),
-                            const Divider(height: 1, color: AppColors.borderSub),
-                            const SizedBox(height: 16),
-                            TextButton.icon(
-                              onPressed: () => Navigator.push(context,
-                                MaterialPageRoute<void>(builder: (_) => const PromotionRequestScreen())),
-                              icon: const Icon(Icons.campaign_outlined, size: 18),
-                              label: const Text('채용 홍보 신청하기'),
-                            ),
-                          ],
                         ],
                       ),
                     ),
@@ -1942,6 +1931,23 @@ class _PostJobFormState extends State<PostJobForm>
         ],
       ),
     );
+  }
+
+  static final _headStyle = AppTextStyles.h1.copyWith(fontWeight: FontWeight.w700, height: 1.4);
+
+  /// 부제 — *별표* 사이를 파랑으로 (급구식 핵심 숫자 강조)
+  Widget _subText(String s) {
+    final parts = s.split('*');
+    return Text.rich(TextSpan(
+      style: AppTextStyles.body1.copyWith(color: AppColors.textSecondary),
+      children: [
+        for (var i = 0; i < parts.length; i++)
+          TextSpan(
+            text: parts[i],
+            style: i.isOdd ? const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600) : null,
+          ),
+      ],
+    ));
   }
 
   Widget _buildQ() {
@@ -2001,12 +2007,35 @@ class _PostJobFormState extends State<PostJobForm>
       // '알바'처럼 짧은 제목은 막지 않고 예시만 — 무슨 일인지 보여야 지원한다
       if (_title.isNotEmpty && _title.replaceAll(' ', '').length < 5)
         const Text('어디서 무슨 일인지 적어 주세요. 예) 카페 주말 홀서빙', style: AppTextStyles.body2),
+      // 빈 칸이면 예시 칩 — 누르면 그대로 채워진다
+      if (_title.isEmpty)
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final ex in const ['카페 주말 홀서빙', '물류센터 야간 상하차', '행사장 설치·철거'])
+              ActionChip(
+                label: Text(ex),
+                onPressed: () {
+                  _titleCtrl.text = ex;
+                  setState(() => _title = ex);
+                  _scheduleDraftSave();
+                },
+                labelStyle: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: AppColors.textPrimary),
+                backgroundColor: AppColors.bgCard,
+                side: const BorderSide(color: AppColors.border),
+                shape: const StadiumBorder(),
+              ),
+          ],
+        ),
       // 지난 공고로 채우기 — '공고 올리기' 앞의 선택 시트를 없애고 여기로 (2026-10, 대표)
       if (_recentJobs.isNotEmpty) ...[
-        const SizedBox(height: 20),
+        Container(height: 8, margin: const EdgeInsets.fromLTRB(0, 32, 0, 24), color: AppColors.bgMuted),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
           children: [
-            const Expanded(child: Text('또는 지난 공고로 채우기', style: AppTextStyles.body2)),
+            const Expanded(child: Text('지난 공고로 한 번에 채우기', style: AppTextStyles.h3)),
             GestureDetector(
               onTap: () async {
                 final job = await Navigator.push(
@@ -2015,58 +2044,89 @@ class _PostJobFormState extends State<PostJobForm>
                 );
                 if (job != null) _fillFromRecent(job);
               },
-              child: Text('전체 보기 >', style: AppTextStyles.body2.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600)),
+              child: Text('전체 보기', style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button)),
             ),
           ],
         ),
-        const SizedBox(height: 8),
-        for (final j in _recentJobs)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Material(
-              color: AppColors.bgMuted,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                onTap: () => _fillFromRecent(j),
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(14, 12, 12, 12),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${j['title'] ?? ''}',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              [
-                                formatJobPay('${j['pay'] ?? ''}', '${j['pay_type'] ?? ''}', includeType: true),
-                                if ('${j['location'] ?? ''}'.isNotEmpty) '${j['location']}',
-                              ].join(' · '),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.body2,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Text('채우기', style: AppTextStyles.body2.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700)),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
+        const SizedBox(height: 12),
+        for (final j in _recentJobs) _recentJobCard(j),
       ],
     ],
   );
+
+  Widget _recentJobCard(Map<String, dynamic> j) {
+    final cat = '${j['category'] ?? ''}';
+    final major = majorOfCategory(cat);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Material(
+        color: AppColors.bgCard,
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          onTap: () => _fillFromRecent(j),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (cat.isNotEmpty)
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 4),
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.bgMuted,
+                            borderRadius: BorderRadius.circular(AppRadius.xs),
+                          ),
+                          child: Text(
+                            major.isEmpty || major == cat ? cat : '$major › $cat',
+                            style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.meta),
+                          ),
+                        ),
+                      Text(
+                        '${j['title'] ?? ''}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.body1.copyWith(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w700),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        [
+                          formatJobPay('${j['pay'] ?? ''}', '${j['pay_type'] ?? ''}', includeType: true),
+                          if ('${j['location'] ?? ''}'.isNotEmpty) '${j['location']}',
+                        ].join(' · '),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  height: 36,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Text('채우기',
+                      style: AppTextStyles.btnMd.copyWith(color: AppColors.primary)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   /// 지난 공고로 모든 단계를 채우고 안내 — 이후 단계는 '다음'만 눌러 확인하면 된다
   void _fillFromRecent(Map<String, dynamic> job) {
@@ -2091,211 +2151,121 @@ class _PostJobFormState extends State<PostJobForm>
     }
 
     final selectedMajor = majorOf(_category);
+    // 고른 대분류(펼친 것 우선)의 세부 직종을 아래 회색 상자에
+    final openName = _majorCat.isNotEmpty ? _majorCat : (selectedMajor ?? '');
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Column(
-          children:
-              jobCategories.map((cat) {
-                final isSel = selectedMajor == cat.name;
-                final isOpen = _majorCat == cat.name;
-                return Semantics(
-                  button: true,
-                  selected: isSel,
-                  label:
-                      isSel && _category != cat.name
-                          ? '${cat.name}, $_category 선택됨'
-                          : cat.name,
-                  child: GestureDetector(
-                    onTap: () {
-                      final opening = !isOpen;
-                      setState(() => _majorCat = isOpen ? '' : cat.name);
-                      if (opening) {
-                        // AnimatedSize(220ms)가 끝난 뒤에 스크롤해야 한다.
-                        // 확장 도중에 maxScrollExtent를 읽으면 그 시점의 짧은
-                        // 높이를 기준으로 잡아서 세부직종 칩이 잘린 채 멈춘다.
-                        Future.delayed(const Duration(milliseconds: 300), () {
-                          if (!mounted || !_contentScrollCtrl.hasClients)
-                            return;
-                          _contentScrollCtrl
-                              .animateTo(
-                                _contentScrollCtrl.position.maxScrollExtent,
-                                duration: const Duration(milliseconds: 320),
-                                curve: Curves.easeOutCubic,
-                              )
-                              .then((_) {
-                                // 애니메이션 중 레이아웃이 더 자랐으면 한 번 더.
-                                if (!mounted ||
-                                    !_contentScrollCtrl.hasClients) {
-                                  return;
-                                }
-                                final max =
-                                    _contentScrollCtrl.position.maxScrollExtent;
-                                if (_contentScrollCtrl.offset < max - 1) {
-                                  _contentScrollCtrl.jumpTo(max);
-                                }
-                              });
-                        });
-                      }
-                    },
-                    child: Container(
-                      constraints: const BoxConstraints(minHeight: 58),
-                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: AppColors.bgCard,
-                        border: const Border(bottom: BorderSide(color: AppColors.borderSub)),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(cat.icon, size: 21, color: AppColors.textSecondary),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  cat.name,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTextStyles.body1.copyWith(
-                                    fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                if (isSel && _category.isNotEmpty && _category != cat.name)
-                                  Text(_category, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTextStyles.body2),
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            isSel ? Icons.check_circle_rounded : isOpen ? Icons.keyboard_arrow_up_rounded : Icons.chevron_right_rounded,
-                            size: 22,
-                            color: isSel || isOpen ? AppColors.primary : AppColors.textTertiary,
-                          ),
-                        ],
+        GridView.count(
+          crossAxisCount: 3,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 1.3,
+          children: [
+            for (final cat in jobCategories)
+              Semantics(
+                button: true,
+                selected: openName == cat.name,
+                label: selectedMajor == cat.name && _category != cat.name ? '${cat.name}, $_category 선택됨' : cat.name,
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() => _majorCat = cat.name);
+                    // AnimatedSize(220ms)가 끝난 뒤에 스크롤해야 세부 직종이 잘리지 않는다
+                    Future.delayed(const Duration(milliseconds: 300), () {
+                      if (!mounted || !_contentScrollCtrl.hasClients) return;
+                      _contentScrollCtrl.animateTo(
+                        _contentScrollCtrl.position.maxScrollExtent,
+                        duration: const Duration(milliseconds: 320),
+                        curve: Curves.easeOutCubic,
+                      );
+                    });
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 160),
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    decoration: BoxDecoration(
+                      color: openName == cat.name ? AppColors.primaryLight : AppColors.bgMuted,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: openName == cat.name ? AppColors.primary : Colors.transparent,
+                        width: 1.5,
                       ),
                     ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(cat.icon, size: 26, color: openName == cat.name ? AppColors.primary : AppColors.textSecondary),
+                        const SizedBox(height: 8),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            cat.name,
+                            maxLines: 1,
+                            style: AppTextStyles.body1.copyWith(
+                              fontSize: AppFontSize.button,
+                              fontWeight: openName == cat.name ? FontWeight.w600 : FontWeight.w400,
+                              color: openName == cat.name ? AppColors.primary : AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                );
-              }).toList(),
+                ),
+              ),
+          ],
         ),
         AnimatedSize(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
-          child:
-              _majorCat.isEmpty
-                  ? const SizedBox.shrink()
-                  : Builder(
-                    builder: (_) {
-                      final cat = jobCategories.firstWhere(
-                        (c) => c.name == _majorCat,
-                      );
-                      return Container(
-                        margin: const EdgeInsets.only(top: 20),
-                        padding: const EdgeInsets.fromLTRB(0, 4, 0, 12),
-                        decoration: BoxDecoration(
-                          color: AppColors.bgCard,
-                          border: const Border(top: BorderSide(color: AppColors.border)),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  '${cat.name} · 세부 직종',
-                                  style: AppTextStyles.body2.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textPrimary,
-                                  ),
-                                ),
-                                const Spacer(),
-                                Semantics(
-                                  button: true,
-                                  label: '$_majorCat 세부 직종 목록 닫기',
-                                  child: GestureDetector(
-                                    behavior: HitTestBehavior.opaque,
-                                    onTap: () => setState(() => _majorCat = ''),
-                                    child: const SizedBox(
-                                      width: 44,
-                                      height: 44,
-                                      child: Center(
-                                        child: Icon(
-                                          Icons.close_rounded,
-                                          size: 16,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            Wrap(
-                              spacing: 7,
-                              runSpacing: 7,
-                              children:
-                                  cat.sub.map((s) {
-                                    final sel = _category == s;
-                                    return Semantics(
-                                      button: true,
-                                      selected: sel,
-                                      label: s,
-                                      child: GestureDetector(
-                                        onTap: () {
-                                          setState(() {
-                                            _category = s;
-                                            _majorCat = '';
-                                          });
-                                          Future.delayed(
-                                            const Duration(milliseconds: 200),
-                                            _nextQ,
-                                          );
-                                        },
-                                        child: AnimatedContainer(
-                                          duration: const Duration(
-                                            milliseconds: 130,
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 14,
-                                            vertical: 8,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: sel ? AppColors.primary : AppColors.bgMuted,
-                                            borderRadius: BorderRadius.circular(
-                                              99,
-                                            ),
-                                            border: Border.all(
-                                              color:
-                                                  sel
-                                                      ? AppColors.primary
-                                                      : Colors.transparent,
-                                              width: sel ? 0 : 1,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            s,
-                                            style: TextStyle(
-                                              fontSize: AppFontSize.body2,
-                                              fontWeight:
-                                                  sel
-                                                      ? FontWeight.w700
-                                                      : FontWeight.w500,
-                                              color: sel ? Colors.white : AppColors.textSecondary,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  }).toList(),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
+          alignment: Alignment.topCenter,
+          child: openName.isEmpty
+              ? const SizedBox(width: double.infinity)
+              : Container(
+                  margin: const EdgeInsets.only(top: 20),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.bgMuted,
+                    borderRadius: BorderRadius.circular(14),
                   ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('$openName 중 어떤 일인가요?',
+                          style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final s in jobCategories.firstWhere((c) => c.name == openName).sub)
+                            ChoiceChip(
+                              label: Text(s),
+                              selected: _category == s,
+                              showCheckmark: false,
+                              onSelected: (_) {
+                                setState(() {
+                                  _category = s;
+                                  _majorCat = '';
+                                });
+                                Future.delayed(const Duration(milliseconds: 200), _nextQ);
+                              },
+                              labelStyle: AppTextStyles.body1.copyWith(
+                                fontWeight: _category == s ? FontWeight.w600 : FontWeight.w400,
+                                color: _category == s ? Colors.white : AppColors.textPrimary,
+                              ),
+                              selectedColor: AppColors.primary,
+                              backgroundColor: AppColors.bgCard,
+                              side: BorderSide(color: _category == s ? AppColors.primary : AppColors.border),
+                              shape: const StadiumBorder(),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
         ),
       ],
     );
@@ -2369,63 +2339,100 @@ class _PostJobFormState extends State<PostJobForm>
                 child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
               )
               : const Icon(Icons.my_location_rounded, size: 18, color: AppColors.primary),
-      label: Text(
-        _gpsLoading ? '위치 찾는 중…' : '현재 위치로 설정',
-        style: const TextStyle(
-          fontSize: AppFontSize.button,
-          fontWeight: FontWeight.w700,
-          color: AppColors.primary,
-        ),
-      ),
+      label: Text(_gpsLoading ? '위치 찾는 중…' : '지금 있는 곳으로 찾기'),
       style: OutlinedButton.styleFrom(
         minimumSize: const Size.fromHeight(48),
+        foregroundColor: AppColors.textPrimary,
+        backgroundColor: AppColors.bgCard,
+        side: const BorderSide(color: AppColors.border),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+        textStyle: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600),
       ),
     ),
   );
 
-  // 단기 근무 날짜 빠른 선택 (오늘/내일/모레) — 급구 페르소나 정조준
-  Widget _quickDateChips(DateTime today) {
-    Widget chip(String label, DateTime date) {
-      final sel = isSameDay(_startDate, date);
-      return Expanded(
-        child: Semantics(
+  // 단기 근무 날짜 — 오늘부터 나흘 타일 + 그 밖은 달력 (급구 시안)
+  Widget _dateTiles(DateTime today) {
+    const wd = ['월', '화', '수', '목', '금', '토', '일'];
+    Widget tile({required bool sel, required VoidCallback onTap, required Widget child, required String label, double? width}) =>
+        Semantics(
           button: true,
           selected: sel,
-          label: '$label 근무',
+          label: label,
           child: GestureDetector(
-            onTap:
-                () => setState(() {
-                  _startDate = date;
-                  _endDate = date;
-                }),
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              width: width,
+              height: 64,
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: sel ? AppColors.primary : AppColors.bgMuted,
+                color: sel ? AppColors.primaryLight : AppColors.bgMuted,
                 borderRadius: BorderRadius.circular(AppRadius.md),
+                border: Border.all(color: sel ? AppColors.primary : Colors.transparent, width: 1.5),
               ),
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: AppFontSize.button,
-                  fontWeight: FontWeight.w700,
-                  color: sel ? Colors.white : AppColors.textPrimary,
-                ),
+              child: child,
+            ),
+          ),
+        );
+
+    final quick = [for (var i = 0; i < 4; i++) today.add(Duration(days: i))];
+    final picked = _startDate != null && !quick.any((d) => isSameDay(_startDate, d));
+    return Row(
+      children: [
+        for (final d in quick) ...[
+          tile(
+            width: 58,
+            sel: isSameDay(_startDate, d),
+            label: '${d.month}월 ${d.day}일 근무',
+            onTap: () => setState(() {
+              _startDate = d;
+              _endDate = d;
+            }),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(d == today ? '오늘' : wd[d.weekday - 1],
+                    style: AppTextStyles.body2.copyWith(
+                        fontSize: AppFontSize.meta,
+                        color: isSameDay(_startDate, d) ? AppColors.primary : AppColors.textSecondary)),
+                Text('${d.day}',
+                    style: AppTextStyles.h3.copyWith(
+                        color: isSameDay(_startDate, d) ? AppColors.primary : AppColors.textPrimary)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+        Expanded(
+          child: tile(
+            sel: picked,
+            label: '근무 날짜 달력에서 고르기',
+            onTap: () async {
+              final p = await pickDateSheet(
+                context,
+                title: '근무 날짜 선택',
+                initial: _startDate,
+                firstDate: today,
+                lastDate: today.add(const Duration(days: 365)),
+              );
+              if (p != null) {
+                setState(() {
+                  _startDate = p;
+                  _endDate = p;
+                });
+              }
+            },
+            child: Text(
+              picked ? DateFormat('M월 d일 (E)', 'ko_KR').format(_startDate!) : '날짜 선택',
+              style: AppTextStyles.body1.copyWith(
+                fontSize: AppFontSize.button,
+                fontWeight: picked ? FontWeight.w600 : FontWeight.w400,
+                color: picked ? AppColors.primary : AppColors.textPrimary,
               ),
             ),
           ),
         ),
-      );
-    }
-
-    return Row(
-      children: [
-        chip('오늘', today),
-        const SizedBox(width: 8),
-        chip('내일', today.add(const Duration(days: 1))),
-        const SizedBox(width: 8),
-        chip('모레', today.add(const Duration(days: 2))),
       ],
     );
   }
@@ -2623,7 +2630,7 @@ class _PostJobFormState extends State<PostJobForm>
               // 있다. 아래 '현재 위치로 설정' 은 GPS 를 직접 쓰므로 그 경로를 안내한다.
               _showError(
                 '이 주소의 좌표를 찾지 못했어요.\n'
-                '가게에 계시다면 아래 «현재 위치로 설정» 을 눌러주세요.',
+                '가게에 계시다면 아래 «지금 있는 곳으로 찾기»를 눌러 주세요.',
               );
               return;
             }
@@ -2636,55 +2643,32 @@ class _PostJobFormState extends State<PostJobForm>
           },
           child: Container(
             width: double.infinity,
-            padding: const EdgeInsets.all(18),
+            constraints: const BoxConstraints(minHeight: 56),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               color: AppColors.bgMuted,
+              border: Border.all(color: AppColors.border),
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.place_outlined,
-                  size: 22,
-                  color: AppColors.textSecondary,
-                ),
-                const SizedBox(width: 12),
+                const Icon(Icons.search_rounded, size: 20, color: AppColors.textTertiary),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 폼 레이블은 검정 계열 (디자인 가이드).
-                      // _blue는 #EEF5FF 위에서 3.05:1로 AA도 미달.
-                      const Text(
-                        '근무지 주소',
-                        style: TextStyle(
-                          fontSize: AppFontSize.caption,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        _location.isNotEmpty ? _location : '주소를 검색해주세요',
-                        style: TextStyle(
-                          fontSize: AppFontSize.body1,
-                          fontWeight: FontWeight.w600,
-                          color: _location.isNotEmpty ? AppColors.textPrimary : AppColors.textSecondary,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    _location.isNotEmpty ? _location : '건물명, 도로명, 지번으로 검색',
+                    style: AppTextStyles.body1.copyWith(
+                      fontSize: AppFontSize.buttonLg,
+                      color: _location.isNotEmpty ? AppColors.textPrimary : AppColors.textTertiary,
+                    ),
                   ),
-                ),
-                Icon(
-                  Icons.chevron_right_rounded,
-                  color: AppColors.textSecondary,
                 ),
               ],
             ),
           ),
         ),
       ),
-      const SizedBox(height: 10),
+      const SizedBox(height: 8),
       _gpsButton(),
       if (_location.isNotEmpty) ...[
         const SizedBox(height: 24),
@@ -2695,17 +2679,12 @@ class _PostJobFormState extends State<PostJobForm>
 
   // Q3: 날짜 + 시간
   Widget _buildQ3() {
-    final df = DateFormat('M월 d일 (E)', 'ko_KR');
     final today = DateTime(
       DateTime.now().year,
       DateTime.now().month,
       DateTime.now().day,
     );
     const days = ['월', '화', '수', '목', '금', '토', '일'];
-    String fmtTime(TimeOfDay? t) {
-      if (t == null) return '';
-      return '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
-    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2736,82 +2715,7 @@ class _PostJobFormState extends State<PostJobForm>
         const SizedBox(height: 20),
 
         if (_isShortTerm) ...[
-          _quickDateChips(today),
-          const SizedBox(height: 12),
-          Semantics(
-            button: true,
-            label:
-                _startDate != null
-                    ? '근무 날짜 ${df.format(_startDate!)}, 변경하려면 두 번 탭'
-                    : '근무 날짜 선택',
-            child: GestureDetector(
-              onTap: () async {
-                final picked = await pickDateSheet(
-                  context,
-                  title: '근무 날짜 선택',
-                  initial: _startDate,
-                  firstDate: today,
-                  lastDate: today.add(const Duration(days: 365)),
-                );
-                if (picked != null) {
-                  setState(() {
-                    _startDate = picked;
-                    _endDate = picked;
-                  });
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 17,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.bgMuted,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.calendar_today_rounded,
-                      size: 18,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '근무 날짜',
-                            style: TextStyle(
-                              fontSize: AppFontSize.caption,
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            _startDate != null
-                                ? df.format(_startDate!)
-                                : '날짜를 선택해주세요',
-                            style: TextStyle(
-                              fontSize: AppFontSize.body1,
-                              color: _startDate != null ? AppColors.textPrimary : AppColors.textSecondary,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Icon(
-                      Icons.chevron_right,
-                      color: AppColors.textSecondary,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          _dateTiles(today),
         ] else ...[
           Row(
             children: [
@@ -2932,39 +2836,54 @@ class _PostJobFormState extends State<PostJobForm>
         if (!_timeNegotiable)
           Row(
             children: [
-              Expanded(
-                child: _TimeInputCard(
-                  label: '시작 시간',
-                  value: fmtTime(_startTime),
-                  onTap: () {
-                    _showTimeSheet();
-                  },
-                ),
+              Expanded(child: _TimeInputCard(label: '시작 시간', time: _startTime, onTap: _showTimeSheet)),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 8),
+                child: Text('—', style: TextStyle(color: AppColors.textTertiary)),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _TimeInputCard(
-                  label: '종료 시간',
-                  value: fmtTime(_endTime),
-                  onTap: () {
-                    _showTimeSheet();
-                  },
-                ),
-              ),
+              Expanded(child: _TimeInputCard(label: '종료 시간', time: _endTime, onTap: _showTimeSheet)),
             ],
           ),
-        // 근무시간 요약 — 누를 수 없는 정보라 파란 띠 대신 회색 한 줄(익일·총 시간만 짚는다)
+        // 근무시간 요약 — 누를 수 없는 정보라 회색 면 (익일·총 시간을 짚는다)
         if (!_timeNegotiable && _startTime != null && _endTime != null) ...[
-          const SizedBox(height: 10),
-          Text(
-            '${_toMin(_endTime!) <= _toMin(_startTime!) ? '다음 날 ${fmtTime(_endTime)}에 끝나요 · ' : ''}'
-            '총 ${_workMins() ~/ 60}시간${_workMins() % 60 == 0 ? '' : ' ${_workMins() % 60}분'} 근무',
-            style: AppTextStyles.body2,
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: AppColors.bgMuted,
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Column(
+              children: [
+                Text.rich(
+                  TextSpan(children: [
+                    const TextSpan(text: '총 근무시간  '),
+                    TextSpan(
+                      text: '${_workMins() ~/ 60}시간${_workMins() % 60 == 0 ? '' : ' ${_workMins() % 60}분'}',
+                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w700),
+                    ),
+                  ]),
+                  style: AppTextStyles.body1,
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  [
+                    if (_isShortTerm && _startDate != null) DateFormat('M월 d일(E)', 'ko_KR').format(_startDate!),
+                    '${_fmt12(_startTime!)} ~ ${_toMin(_endTime!) <= _toMin(_startTime!) ? '다음 날 ' : ''}${_fmt12(_endTime!)}',
+                  ].join(' '),
+                  style: AppTextStyles.body2,
+                ),
+              ],
+            ),
           ),
         ],
       ],
     );
   }
+
+  static String _fmt12(TimeOfDay t) =>
+      '${t.period == DayPeriod.am ? '오전' : '오후'} ${t.hourOfPeriod == 0 ? 12 : t.hourOfPeriod}:${t.minute.toString().padLeft(2, '0')}';
 
   void _showTimeSheet() {
     TimeOfDay align10(TimeOfDay t) {
@@ -3261,19 +3180,18 @@ class _PostJobFormState extends State<PostJobForm>
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 160),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+                      height: 38,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        color: sel ? AppColors.primary : AppColors.bgMuted,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
+                        color: sel ? AppColors.primary : AppColors.bgCard,
+                        borderRadius: BorderRadius.circular(AppRadius.full),
+                        border: Border.all(color: sel ? AppColors.primary : AppColors.border),
                       ),
                       child: Text(
                         t,
-                        style: TextStyle(
-                          fontSize: AppFontSize.button,
-                          fontWeight: FontWeight.w700,
+                        style: AppTextStyles.body1.copyWith(
+                          fontWeight: sel ? FontWeight.w600 : FontWeight.w400,
                           color: sel ? Colors.white : AppColors.textPrimary,
                         ),
                       ),
@@ -3291,7 +3209,7 @@ class _PostJobFormState extends State<PostJobForm>
           TextField(
             controller: _payCtrl,
             keyboardType: TextInputType.number,
-            style: AppTextStyles.h1,
+            style: AppTextStyles.h2.copyWith(fontWeight: FontWeight.w600),
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
               const _CommaNumberInputFormatter(),
@@ -3307,11 +3225,14 @@ class _PostJobFormState extends State<PostJobForm>
                       : '예) 100,000',
               suffixText: _payType == '시급' ? '원/시간' : '원',
               helperText:
-                  _payType == '월급'
+                  _hourlyFromDaily != null
+                      ? '시급으로 ${fmt.format(_hourlyFromDaily)}원 · 최저시급 ${fmt.format(minWagePerHour)}원 이상이에요'
+                      : _payType == '월급'
                       ? '최저 2,156,880원 이상 (209h 기준)'
                       : _payType == '시급'
                       ? '2026년 기준 최저시급 ${fmt.format(minWagePerHour)}원'
                       : '최저 ${fmt.format(minWagePerHour)}원/시간 이상',
+              helperStyle: AppTextStyles.body2,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 18,
@@ -3399,74 +3320,35 @@ class _PostJobFormState extends State<PostJobForm>
             _payType != '월급' &&
             !isNegotiablePayType(_payType)) ...[
           const SizedBox(height: 20),
-          const Divider(color: AppColors.border),
-          const SizedBox(height: 16),
-          Semantics(
-            toggled: _isSameDayPay,
-            label: '당일지급, 근무 당일 현금 지급',
-            child: GestureDetector(
-              onTap: () => setState(() => _isSameDayPay = !_isSameDayPay),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.bgMuted,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
-                child: Row(
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.payments_rounded, size: 22, color: AppColors.textSecondary),
-                    const SizedBox(width: 12),
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          '당일지급',
-                          style: TextStyle(
-                            fontSize: AppFontSize.body1,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
-                        ),
-                        Text(
-                          '근무 당일 현금 지급',
-                          style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    // 꺼진 상태를 꽉 찬 회색 원으로 두면 체크박스가 아니라
-                    // 비활성 점이나 로딩 인디케이터로 읽힌다. 빈 원 + 테두리로.
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 160),
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _isSameDayPay ? AppColors.primary : Colors.white,
-                        border: Border.all(
-                          color: _isSameDayPay ? AppColors.primary : AppColors.textTertiary,
-                          width: 1.5,
-                        ),
-                      ),
-                      child:
-                          _isSameDayPay
-                              ? const Icon(
-                                Icons.check_rounded,
-                                size: 14,
-                                color: Colors.white,
-                              )
-                              : null,
-                    ),
+                    Text('당일 지급', style: AppTextStyles.body1.copyWith(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text('일 끝나면 그날 바로 줘요', style: AppTextStyles.body2),
                   ],
                 ),
               ),
-            ),
+              Switch.adaptive(
+                value: _isSameDayPay,
+                activeTrackColor: AppColors.primary,
+                onChanged: (v) => setState(() => _isSameDayPay = v),
+              ),
+            ],
           ),
         ],
       ],
     );
   }
+
+  /// 일급을 근무시간으로 나눈 시급 — 시간이 정해진 일급일 때만
+  int? get _hourlyFromDaily =>
+      _payType == '일급' && _pay > 0 && !_timeNegotiable && _startTime != null && _endTime != null && _workMins() > 0
+          ? (_pay * 60 / _workMins()).round()
+          : null;
 
   // Q6: 공고 내용
   Widget _buildQ6() {
@@ -3474,71 +3356,42 @@ class _PostJobFormState extends State<PostJobForm>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Semantics(
-          button: true,
-          enabled: !_isAIGenerating,
-          label: _isAIGenerating ? '공고문 생성 중' : '공고문 작성 도움 받기',
-          child: GestureDetector(
-            onTap:
-                _isAIGenerating
-                    ? null
-                    : () async {
-                      if (!await _loadAiQuota()) return;
-                      // -1=무제한(pro), N>0=잔여, 0=소진
-                      if (_aiQuotaRemaining != 0) {
-                        _showAIDialog();
-                      } else {
-                        _showAiPaywall();
-                      }
-                    },
-            // 파란 꽉 찬 띠 + 알약 2개(제목이 '공고문 작성…'으로 잘렸다) → 연한 파랑 한 줄 (보조 행동)
-            child: Container(
-              padding: const EdgeInsets.fromLTRB(14, 14, 10, 14),
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: AppColors.primaryLight,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              child: Row(
-                children: [
-                  if (_isAIGenerating)
-                    const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                    )
-                  else
-                    const Icon(Icons.edit_note_rounded, size: 20, color: AppColors.primary),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      _isAIGenerating
-                          ? '공고문을 쓰고 있어요…'
-                          : _description.isNotEmpty
-                          ? '공고문 다시 써 받기'
-                          : '공고문 대신 써 드려요',
-                      style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.primary),
-                    ),
-                  ),
-                  if (!_isAIGenerating && _aiQuotaLoaded) ...[
-                    Text(
-                      _aiQuotaRemaining == -1
-                          ? '무제한'
-                          : _aiQuotaRemaining <= 0
-                          ? '이번 달 다 씀'
-                          : '이번 달 $_aiQuotaRemaining회 남음',
-                      style: AppTextStyles.caption,
-                    ),
-                    const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.primary),
-                  ],
-                ],
-              ),
+        // 공고문 대신 쓰기 — 칸 위 글자 링크 하나 (보조 행동, 급구 시안)
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Text('상세 내용',
+                  style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
             ),
-          ),
+            if (!_isAIGenerating && _aiQuotaLoaded && _aiQuotaRemaining > 0)
+              Text('이번 달 $_aiQuotaRemaining회', style: AppTextStyles.body2),
+            TextButton(
+              onPressed:
+                  _isAIGenerating
+                      ? null
+                      : () async {
+                        if (!await _loadAiQuota()) return;
+                        // -1=무제한(pro), N>0=잔여, 0=소진
+                        if (_aiQuotaRemaining != 0) {
+                          _showAIDialog();
+                        } else {
+                          _showAiPaywall();
+                        }
+                      },
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                textStyle: AppTextStyles.body1.copyWith(fontSize: AppFontSize.button, fontWeight: FontWeight.w600),
+              ),
+              child: Text(_isAIGenerating ? '쓰는 중…' : '대신 써 주기'),
+            ),
+          ],
         ),
+        const SizedBox(height: 4),
         Container(
           decoration: BoxDecoration(
             color: AppColors.bgMuted,
+            border: Border.all(color: AppColors.border),
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: TextField(
@@ -3547,10 +3400,13 @@ class _PostJobFormState extends State<PostJobForm>
             minLines: 5,
             keyboardType: TextInputType.multiline,
             textAlignVertical: TextAlignVertical.top,
-            style: const TextStyle(fontSize: AppFontSize.button, color: AppColors.textPrimary, height: 1.6),
+            style: const TextStyle(fontSize: AppFontSize.buttonLg, color: AppColors.textPrimary, height: 1.6),
             decoration: InputDecoration(
               border: InputBorder.none,
-              contentPadding: const EdgeInsets.all(14),
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              filled: false,
+              contentPadding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
               hintText: '근무 내용, 환경, 혜택 등을 자유롭게 적어주세요',
               hintStyle: const TextStyle(
                 fontSize: AppFontSize.body2,
@@ -3698,34 +3554,12 @@ class _PostJobFormState extends State<PostJobForm>
         ],
 
         const SizedBox(height: 20),
-        Row(
-          children: [
-            const Text(
-              '사진',
-              style: TextStyle(
-                fontSize: AppFontSize.body2,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: AppColors.bgMuted,
-                borderRadius: BorderRadius.circular(AppRadius.xs),
-              ),
-              child: const Text(
-                '선택',
-                style: TextStyle(fontSize: AppFontSize.caption, color: AppColors.textSecondary),
-              ),
-            ),
-            const Spacer(),
-            Text(
-              '$total / 10',
-              style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
-            ),
-          ],
+        Text.rich(
+          TextSpan(children: [
+            const TextSpan(text: '매장 사진 '),
+            TextSpan(text: '(선택)', style: AppTextStyles.body1.copyWith(color: AppColors.textSecondary)),
+          ]),
+          style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
         ),
         const SizedBox(height: 8),
         SizedBox(
@@ -3733,27 +3567,27 @@ class _PostJobFormState extends State<PostJobForm>
           child: ListView(
             scrollDirection: Axis.horizontal,
             children: [
-              GestureDetector(
-                onTap: _pickImages,
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  margin: const EdgeInsets.only(right: 8),
-                  decoration: BoxDecoration(
-                    color: AppColors.bgMuted,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  child: const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.add_photo_alternate_outlined,
-                        color: AppColors.textSecondary,
-                        size: 24,
-                      ),
-                      SizedBox(height: 4),
-                      Text('추가', style: TextStyle(fontSize: AppFontSize.caption, color: AppColors.textSecondary)),
-                    ],
+              Semantics(
+                button: true,
+                label: '사진 추가',
+                child: GestureDetector(
+                  onTap: _pickImages,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      color: AppColors.bgMuted,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.photo_camera_outlined, color: AppColors.textSecondary, size: 24),
+                        const SizedBox(height: 4),
+                        Text('$total / $_kMaxImages', style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.meta)),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -3889,61 +3723,52 @@ class _NextBtn extends StatelessWidget {
 
 class _TimeInputCard extends StatelessWidget {
   final String label;
-  final String value;
+  final TimeOfDay? time;
   final VoidCallback onTap;
 
-  const _TimeInputCard({
-    required this.label,
-    required this.value,
-    required this.onTap,
-  });
+  const _TimeInputCard({required this.label, required this.time, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    final hasValue = value.isNotEmpty;
+    final t = time;
+    final value = t == null ? null : '${t.hourOfPeriod == 0 ? 12 : t.hourOfPeriod}:${t.minute.toString().padLeft(2, '0')}';
     return Semantics(
       button: true,
-      label: hasValue ? "$label $value, 변경하려면 두 번 탭" : "$label 입력",
+      label: t != null ? '$label ${t.hour}시 ${t.minute}분, 변경하려면 두 번 탭' : '$label 입력',
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: AppColors.bgMuted,
+            border: Border.all(color: AppColors.border),
             borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.schedule_rounded,
-                size: 18,
-                color: AppColors.textSecondary,
-              ),
-              const SizedBox(width: 8),
+              if (t != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
+                  ),
+                  child: Text(t.period == DayPeriod.am ? '오전' : '오후',
+                      style: AppTextStyles.body2.copyWith(
+                          fontSize: AppFontSize.meta, fontWeight: FontWeight.w600, color: AppColors.primary)),
+                ),
+                const SizedBox(width: 8),
+              ],
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: const TextStyle(
-                        fontSize: AppFontSize.caption,
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      hasValue ? value : '입력',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: AppFontSize.body1,
-                        color: hasValue ? AppColors.textPrimary : AppColors.textSecondary,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  value ?? label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.body1.copyWith(
+                    fontSize: t != null ? AppFontSize.title : AppFontSize.body1,
+                    color: t != null ? AppColors.textPrimary : AppColors.textTertiary,
+                  ),
                 ),
               ),
             ],
@@ -4487,7 +4312,7 @@ class _PublishSheetState extends State<_PublishSheet> {
     switch (_choice) {
       case 'urgent':
         if (!_urgentOk) {
-          return (label: '결제하고 긴급 호출하기', note: '13,900원 · 아무도 답하지 않으면 돌려드려요', onTap: widget.onBuyPass, loading: false);
+          return (label: '13,900원 결제하고 긴급 호출하기', note: '아무도 답하지 않으면 돌려드려요', onTap: widget.onBuyPass, loading: false);
         }
         return (
           label: '긴급 호출로 올리기',
@@ -4507,14 +4332,14 @@ class _PublishSheetState extends State<_PublishSheet> {
             );
       case 'instant_7d':
         if (!_sevenDayOk) {
-          return (label: '결제하고 바로 올리기', note: '즉시 게시 7일권 11,900원', onTap: widget.onBuyPass, loading: false);
+          return (label: '11,900원 결제하고 올리기', note: null, onTap: widget.onBuyPass, loading: false);
         }
         if (!_canConfirm) return (label: '예약하기', note: '공개할 날짜와 시간을 골라 주세요', onTap: null, loading: false);
         return (label: _isScheduled ? '$_scheduledLabel에 올리기' : '바로 올리기',
           note: '7일권 $_sevenDayPassCount개 중 1개를 써요', onTap: _exec, loading: false);
       default:
         if (!_paidOk) {
-          return (label: '결제하고 바로 올리기', note: '즉시 게시 ${_durationPolicy == true ? '3' : '7'}일권 8,900원', onTap: widget.onBuyPass, loading: false);
+          return (label: '8,900원 결제하고 올리기', note: null, onTap: widget.onBuyPass, loading: false);
         }
         if (!_canConfirm) return (label: '예약하기', note: '공개할 날짜와 시간을 골라 주세요', onTap: null, loading: false);
         final note = _paidPassCount == -1 ? '구독 혜택으로 올려요' : '즉시 게시 이용권 $_paidPassCount개 중 1개를 써요';
@@ -4536,74 +4361,118 @@ class _PublishSheetState extends State<_PublishSheet> {
         _freeQuota == null ? null : (_freeExhausted ? '이번 달 다 씀' : '이번 달 ${_freeQuota!.remaining}회 남음');
     final cta = _cta;
 
-    Widget option({
-      required String value,
-      required String title,
-      required String tag,
-      required String sub,
-      bool recommended = false,
-    }) {
+    // 즉시 게시·무료 — 나란히 큰 카드 (급구 결제 선택 화면)
+    Widget bigCard({required String value, required String title, required String tag}) {
       final on = _choice == value;
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 2),
-        child: Material(
-          color: AppColors.bgCard,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-          ),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            onTap: () => setState(() => _choice = value),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(4, 16, 4, 16),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Icon(
-                    on ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
-                    size: 22,
-                    color: on ? AppColors.primary : AppColors.textDisabled,
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(child: Text(title, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary))),
-                            if (recommended) ...[
-                              const SizedBox(width: 6),
-                              Text('추천', style: AppTextStyles.caption.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700)),
-                            ],
-                            const Spacer(),
-                            Text(tag, style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                          ],
+      return Expanded(
+        child: Semantics(
+          button: true,
+          selected: on,
+          label: '$title, $tag',
+          child: AppPressScale(
+            scale: 0.98,
+            child: GestureDetector(
+              onTap: () => setState(() => _choice = value),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                height: 116,
+                decoration: BoxDecoration(
+                  color: on ? AppColors.primary : AppColors.bgMuted,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 10,
+                      right: 10,
+                      child: Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: on ? Colors.white : Colors.transparent,
+                          border: on ? null : Border.all(color: AppColors.textDisabled, width: 1.5),
                         ),
-                        // 세부 조건은 고른 줄에만 — 네 줄이 모두 설명을 달고 있으면 비교가 안 된다
-                        AnimatedSize(
-                          duration: const Duration(milliseconds: 180),
-                          curve: Curves.easeOut,
-                          alignment: Alignment.topCenter,
-                          child: on
-                              ? Padding(
-                                  padding: const EdgeInsets.only(top: 6),
-                                  child: Text(sub, style: AppTextStyles.body2),
-                                )
-                              : const SizedBox(width: double.infinity),
-                        ),
-                        const SizedBox(height: 14),
-                        const Divider(height: 1, color: AppColors.borderSub),
-                      ],
+                        child: on ? const Icon(Icons.check_rounded, size: 15, color: AppColors.primary) : null,
+                      ),
                     ),
-                  ),
-                ],
+                    Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(title,
+                              style: AppTextStyles.h3.copyWith(
+                                  fontSize: AppFontSize.titleLg,
+                                  color: on ? Colors.white : AppColors.textPrimary)),
+                          const SizedBox(height: 4),
+                          Text(tag,
+                              style: AppTextStyles.body1.copyWith(
+                                  color: on ? Colors.white : AppColors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
         ),
       );
     }
+
+    Widget rowCard({required String value, required String title, required String sub, required String tag}) {
+      final on = _choice == value;
+      return Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: AppSelectCard(
+          selected: on,
+          onTap: () => setState(() => _choice = value),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              children: [
+                Icon(
+                  on ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
+                  size: 22,
+                  color: on ? AppColors.primary : AppColors.textDisabled,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: AppTextStyles.body1.copyWith(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 2),
+                      Text(sub, style: AppTextStyles.body2),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(tag, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600)),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    final days = _choice == 'instant_7d' || _durationPolicy == false ? 7 : 3;
+    // 고른 것이 무엇을 해 주는지 — 체크 줄로 (긴 설명 문단 대신)
+    final checks = switch (_choice) {
+      'urgent' => [
+        '지금 바로 공개되고 하루 동안 맨 위에 걸려요',
+        '5km 안 알바생 10명에게 직접 연락할 수 있어요'
+            '${_urgentWorkersCount != null && _urgentWorkersCount! > 0 ? ' (지금 $_urgentWorkersCount명)' : ''}',
+        '아무도 답하지 않으면 돌려드려요',
+      ],
+      'free' => [
+        _freeLate(now) ? '$freeWhen 공개라 근무 시작보다 늦어요' : '$freeWhen 공개돼요',
+        '근처 알바생에게 한 번 알려요',
+        '3일 동안 목록에 보여요',
+      ],
+      _ when _durationPolicy == null => ['상품 정보를 확인하고 있어요'],
+      _ => ['지금 바로 공개돼요', '근처 알바생에게 두 번 알려요', '$days일 동안 목록에 보여요'],
+    };
 
     Widget chip(String label, bool on, VoidCallback onTap) => Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -4633,51 +4502,72 @@ class _PublishSheetState extends State<_PublishSheet> {
               children: [
                 if (widget.header != null) ...[const SizedBox(height: 4), widget.header!],
                 const SizedBox(height: 16),
-                Text('언제 공개할까요?', style: AppTextStyles.h1),
-                const SizedBox(height: 8),
-                Text(
+                Text('언제 공개할까요?', style: AppTextStyles.h1.copyWith(fontWeight: FontWeight.w700, height: 1.4)),
+                const SizedBox(height: 6),
+                Text.rich(
                   _reachableWorkersCount == null
-                      ? '올리는 방법에 따라 공개 시각과 알림이 달라요'
+                      ? const TextSpan(text: '올리는 방법에 따라 공개 시각과 알림이 달라요')
                       : _reachableWorkersCount == 0
-                      ? '근무지 30km 안에 최근 활동한 알바생이 아직 없어요'
-                      : '근무지 30km 안에 최근 활동한 알바생 $_reachableWorkersCount명',
-                  style: AppTextStyles.body2,
+                      ? const TextSpan(text: '근무지 30km 안에 최근 활동한 알바생이 아직 없어요')
+                      : TextSpan(children: [
+                          const TextSpan(text: '근무지 30km 안에 최근 활동한 알바생 '),
+                          TextSpan(
+                            text: '$_reachableWorkersCount명',
+                            style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                          ),
+                        ]),
+                  style: AppTextStyles.body1.copyWith(color: AppColors.textSecondary),
                 ),
-                const SizedBox(height: 16),
-                option(
-                  value: 'instant',
-                  title: _durationPolicy == true ? '즉시 게시 · 3일' : '즉시 게시',
-                  tag: _ownedTag(_paidPassCount, '8,900원'),
-                  recommended: true,
-                  sub: _durationPolicy == null
-                      ? '상품 정보 확인 중'
-                      : '지금 바로 공개되고, 근처 알바생에게 두 번 알려요. ${_durationPolicy == true ? '3' : '7'}일 동안 보여요.',
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    bigCard(value: 'instant', title: '즉시 게시', tag: _ownedTag(_paidPassCount, '8,900원')),
+                    const SizedBox(width: 10),
+                    bigCard(value: 'free', title: '무료 등록', tag: freeLeft ?? '무료'),
+                  ],
                 ),
                 if (_durationPolicy == true)
-                  option(
+                  rowCard(
                     value: 'instant_7d',
-                    title: '즉시 게시 · 7일',
+                    title: '즉시 게시 7일',
+                    sub: '일주일 내내 목록에 보여요',
                     tag: _ownedTag(_sevenDayPassCount, '11,900원'),
-                    sub: '지금 바로 공개되고, 근처 알바생에게 두 번 알려요. 7일 동안 보여요.',
                   ),
-                option(
+                rowCard(
                   value: 'urgent',
                   title: '긴급 호출',
+                  sub: '하루 동안 맨 위 + 근처 10명에게 직접 연락',
                   tag: _ownedTag(_urgentPassCount, '13,900원'),
-                  sub:
-                      '하루 동안 맨 위에 걸리고, 5km 안 알바생 10명에게 직접 연락할 수 있어요'
-                      '${_urgentWorkersCount != null && _urgentWorkersCount! > 0 ? ' (지금 $_urgentWorkersCount명)' : ''}'
-                      '. 아무도 답하지 않으면 돌려드려요.',
                 ),
-                option(
-                  value: 'free',
-                  title: '무료 등록',
-                  tag: freeLeft ?? '무료',
-                  sub:
-                      _freeLate(now)
-                          ? '$freeWhen 공개라 근무 시작보다 늦어요. 3일 동안 보여요.'
-                          : '$freeWhen 공개되고, 근처 알바생에게 한 번 알려요. 3일 동안 보여요.',
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: AppColors.bgMuted,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final (i, c) in checks.indexed)
+                        Padding(
+                          padding: EdgeInsets.only(top: i == 0 ? 0 : 8),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Padding(
+                                padding: EdgeInsets.only(top: 3),
+                                child: Icon(Icons.check_rounded, size: 16, color: AppColors.primary),
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(child: Text(c, style: AppTextStyles.body1.copyWith(color: AppColors.textPrimary))),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
+                const SizedBox(height: 8),
                 if ((_choice == 'instant' && _paidOk) || (_choice == 'instant_7d' && _sevenDayOk)) ...[
                   const SizedBox(height: 8),
                   Text('공개 시점', style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
@@ -4723,7 +4613,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                   Visibility(
                     visible: _choice != 'free',
                     maintainState: true,
-                    child: Padding(padding: const EdgeInsets.only(top: 12), child: widget.aiReplyCard!),
+                    child: widget.aiReplyCard!,
                   ),
                 if (widget.externalApplyEnabled && _choice != 'free') ...[
                   const SizedBox(height: 12),
@@ -4897,90 +4787,121 @@ class _AiReplyCardState extends State<_AiReplyCard> {
   Widget build(BuildContext context) {
     final ready = widget.missing.isEmpty;
     final on = ready && _on;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(14, 6, 6, 14),
-      decoration: BoxDecoration(color: AppColors.bgMuted, borderRadius: BorderRadius.circular(AppRadius.md)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    Widget pill(String label, bool sel, VoidCallback? onTap) => ChoiceChip(
+      label: Text(label),
+      selected: sel,
+      showCheckmark: false,
+      onSelected: onTap == null ? null : (_) => onTap(),
+      labelStyle: AppTextStyles.body2.copyWith(
+        fontSize: AppFontSize.button,
+        fontWeight: sel ? FontWeight.w600 : FontWeight.w400,
+        color: sel ? Colors.white : AppColors.textPrimary,
+      ),
+      selectedColor: AppColors.primary,
+      disabledColor: AppColors.primary, // '근무 날짜'는 늘 켜짐
+      backgroundColor: AppColors.bgCard,
+      side: BorderSide(color: sel ? AppColors.primary : AppColors.border),
+      shape: const StadiumBorder(),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: 20),
+        const Text('지원자 응대', style: AppTextStyles.h3),
+        const SizedBox(height: 4),
+        Text('유료 공고에서 쓸 수 있어요', style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button)),
+        const SizedBox(height: 12),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.bgCard,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: on ? AppColors.primary : AppColors.border, width: on ? 1.5 : 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text('AI가 지원자 먼저 응대',
-                    style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
-              ),
-              Switch.adaptive(
-                value: on,
-                activeTrackColor: AppColors.primary,
-                onChanged: ready ? (v) { setState(() => _on = v); _emit(); } : null,
-              ),
-            ],
-          ),
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: Text(
-              '지원하면 바로 조건을 물어보고 답을 요약해 알려드려요. 번호는 사장님이 직접 보낼 때만 나가요.',
-              style: AppTextStyles.caption,
-            ),
-          ),
-          if (!ready) ...[
-            const SizedBox(height: 10),
-            Text('이것만 채우면 켤 수 있어요', style: AppTextStyles.caption.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 4),
-            for (final m in widget.missing) Text('· $m', style: AppTextStyles.caption),
-            TextButton(onPressed: widget.onFill, style: TextButton.styleFrom(padding: EdgeInsets.zero), child: const Text('채우러 가기')),
-          ],
-          if (on) ...[
-            const SizedBox(height: 12),
-            Text('물어볼 것', style: AppTextStyles.caption.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Row(
+              Row(
                 children: [
-                  _SmallToggle('근무 날짜', true, () {}),
-                  const SizedBox(width: 6),
-                  for (final c in const [('experience', '경험'), ('vehicle', '차량')]) ...[
-                    _SmallToggle(c.$2, _checks.contains(c.$1), () {
-                      setState(() => _checks.contains(c.$1) ? _checks.remove(c.$1) : _checks.add(c.$1));
-                      _emit();
-                    }),
-                    if (c.$1 == 'experience') const SizedBox(width: 6),
-                  ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('AI가 먼저 물어봐 드려요',
+                            style: AppTextStyles.body1.copyWith(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 3),
+                        Text('지원하면 바로 아래 조건을 묻고, 답을 정리해 알려 드려요. 번호는 사장님이 보낼 때만 나가요.',
+                            style: AppTextStyles.body2),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Switch.adaptive(
+                    value: on,
+                    activeTrackColor: AppColors.primary,
+                    onChanged: ready ? (v) { setState(() => _on = v); _emit(); } : null,
+                  ),
                 ],
               ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: TextField(
-                controller: _customCtrl,
-                maxLength: 100,
-                onChanged: (_) => _emit(),
-                decoration: const InputDecoration(hintText: '직접 질문 (예: 보건증 있으세요?)', counterText: '', isDense: true, fillColor: AppColors.bgCard),
-              ),
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('성인만 받기', style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
-                      const Text('만 18세 미만 지원자에겐 정중히 안내해요', style: AppTextStyles.caption),
-                    ],
-                  ),
+              if (!ready) ...[
+                const SizedBox(height: 12),
+                Text('이것만 채우면 켤 수 있어요',
+                    style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 4),
+                for (final m in widget.missing) Text('· $m', style: AppTextStyles.body2),
+                TextButton(onPressed: widget.onFill, style: TextButton.styleFrom(padding: EdgeInsets.zero), child: const Text('채우러 가기')),
+              ],
+              if (on) ...[
+                const SizedBox(height: 14),
+                const Divider(height: 1, color: AppColors.borderSub),
+                const SizedBox(height: 14),
+                Text('물어볼 것', style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    pill('근무 날짜 가능', true, null),
+                    for (final c in const [('experience', '비슷한 경험'), ('vehicle', '차량 있음')])
+                      pill(c.$2, _checks.contains(c.$1), () {
+                        setState(() => _checks.contains(c.$1) ? _checks.remove(c.$1) : _checks.add(c.$1));
+                        _emit();
+                      }),
+                  ],
                 ),
-                Switch.adaptive(
-                  value: _adultOnly,
-                  activeTrackColor: AppColors.primary,
-                  onChanged: (v) { setState(() => _adultOnly = v); _emit(); },
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _customCtrl,
+                  maxLength: 100,
+                  onChanged: (_) => _emit(),
+                  decoration: const InputDecoration(hintText: '직접 질문 (예: 보건증 있으세요?)', counterText: '', isDense: true),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('성인만 받기', style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600)),
+                          Text('만 18세 미만 지원자에겐 정중히 안내해요', style: AppTextStyles.body2),
+                        ],
+                      ),
+                    ),
+                    Switch.adaptive(
+                      value: _adultOnly,
+                      activeTrackColor: AppColors.primary,
+                      onChanged: (v) { setState(() => _adultOnly = v); _emit(); },
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
-        ],
-      ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

@@ -366,327 +366,68 @@ class _AiInsightCard extends StatefulWidget {
   State<_AiInsightCard> createState() => _AiInsightCardState();
 }
 
+// 점수·등급은 뺐다(2026-11, 대표) — 숫자 하나로 공고를 채점하면 고칠 거리보다 불안을 준다.
+// 쓸모 있는 것(평균 대비 급여·고칠 점)만 문장으로.
 class _AiInsightCardState extends State<_AiInsightCard> {
-  bool _tipsExpanded = false;
-
-  Color _parseColor(String hex) {
-    try {
-      return Color(int.parse(hex.replaceFirst('#', 'FF'), radix: 16));
-    } catch (_) {
-      return AppColors.primary;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final fmt = NumberFormat('#,###');
 
-    // ── 로딩 ──
     if (widget.loading) {
       return Container(
         padding: const EdgeInsets.all(16),
         color: AppColors.bgCard,
-        child: Row(
+        child: const Row(
           children: [
-            const SizedBox(
+            SizedBox(
               width: 18,
               height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation(AppColors.primary),
-              ),
+              child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(AppColors.primary)),
             ),
-            const SizedBox(width: 12),
-            const Text(
-              '공고를 분석하고 있어요…',
-              style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
-            ),
+            SizedBox(width: 12),
+            Text('공고를 살펴보고 있어요…', style: AppTextStyles.body2),
           ],
         ),
       );
     }
 
-    if (widget.quality == null) return const SizedBox.shrink();
-
-    final q = widget.quality!;
-    final gradeColor = _parseColor(q.gradeColor);
+    final q = widget.quality;
     final pi = widget.payInsight;
+    final notes = <String>[
+      // 평균 '시급'과 비교하므로 시급 공고만 — 일급 12만원이 늘 '평균보다 높아요'로 나왔다
+      if (pi != null && pi.avgHourly > 0 && widget.payType == '시급')
+        switch (widget.pay / pi.avgHourly) {
+          >= 1.2 => '업종 평균 시급 ${fmt.format(pi.avgHourly)}원보다 높아요',
+          >= 0.95 => '업종 평균 시급 ${fmt.format(pi.avgHourly)}원과 비슷해요',
+          _ => '업종 평균 시급 ${fmt.format(pi.avgHourly)}원보다 낮아요',
+        },
+      ...?q?.tips.map((t) => t.msg),
+    ];
+    if (notes.isEmpty) return const SizedBox.shrink();
 
-    // 급여 위치 계산
-    String payPosition = '';
-    Color payPosColor = AppColors.textSecondary;
-    // 평균 '시급'과 비교하므로 시급 공고만 — 일급 12만원이 늘 '평균보다 높아요'로 나왔다
-    if (pi != null && pi.avgHourly > 0 && widget.payType == '시급') {
-      final ratio = widget.pay / pi.avgHourly;
-      if (ratio >= 1.2) {
-        payPosition = '평균보다 높아요';
-        payPosColor = AppColors.badgeSameDay;
-      } else if (ratio >= 0.95) {
-        payPosition = '평균 수준이에요';
-        payPosColor = AppColors.primary;
-      } else {
-        payPosition = '평균보다 낮아요';
-        payPosColor = AppColors.warningDark;
-      }
-    }
-
-    // 흰 섹션 안에 들어가므로 자기 테두리 상자는 없앴다(상자 속 상자)
     return Container(
-      color: AppColors.bgCard,
-      padding: const EdgeInsets.only(bottom: 4),
+      margin: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(color: AppColors.bgMuted, borderRadius: BorderRadius.circular(14)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── 헤더: 품질 점수 ──
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Row(
-              children: [
-                const Icon(Icons.analytics_outlined, size: 17, color: AppColors.primary),
-                const SizedBox(width: 6),
-                const Text(
-                  '공고 분석',
-                  style: TextStyle(
-                    fontSize: AppFontSize.button,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 14),
-
-          // ── 점수 + 등급 ──
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: gradeColor.withOpacity(0.1),
-                    border: Border.all(
-                      color: gradeColor.withOpacity(0.35),
-                      width: 2.5,
-                    ),
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${q.score}',
-                      style: TextStyle(
-                        fontSize: AppFontSize.h2,
-                        fontWeight: FontWeight.w800,
-                        color: gradeColor,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        q.gradeLabel,
-                        style: TextStyle(
-                          fontSize: AppFontSize.body1,
-                          fontWeight: FontWeight.w700,
-                          color: gradeColor,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(AppRadius.full),
-                        child: LinearProgressIndicator(
-                          value: q.score / 100,
-                          minHeight: 6,
-                          backgroundColor: const Color(0xFFF0F0F0),
-                          valueColor: AlwaysStoppedAnimation(gradeColor),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Divider(height: 1, color: AppColors.border),
-
-          // ── 3개 인사이트 행 ──
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                // ① 24시간 예상 지원자
-                _insightRow(
-                  icon: Icons.groups_outlined,
-                  label: '24시간 예상 지원자',
-                  value: q.predictLabel,
-                  valueColor: AppColors.primary,
-                ),
-                const SizedBox(height: 12),
-
-                // ② 업종 평균 대비 급여
-                if (payPosition.isNotEmpty) ...[
-                  _insightRow(
-                    icon: Icons.payments_outlined,
-                    label: '업종 평균 시급 ${fmt.format(pi!.avgHourly)}원 대비',
-                    value: payPosition,
-                    valueColor: payPosColor,
-                  ),
-                  const SizedBox(height: 12),
+          Text('올리기 전에 참고하세요',
+              style: AppTextStyles.body1.copyWith(fontSize: AppFontSize.button, fontWeight: FontWeight.w700)),
+          for (final n in notes)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('•', style: AppTextStyles.body1.copyWith(fontSize: AppFontSize.button, color: AppColors.primary)),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(n, style: AppTextStyles.body1.copyWith(fontSize: AppFontSize.button))),
                 ],
-
-                // ③ 유료 등록 시 차이 — 값은 등록방식 시트의 비교표와 반드시 일치해야 함
-                //    (즉시게시 = 즉시 공개·상단 고정 없음 / 긴급호출 = 24시간 상단 고정)
-                _insightRow(
-                  icon: Icons.vertical_align_top_rounded,
-                  label: '즉시게시로 등록 시',
-                  value: '12시간 기다리지 않고 즉시 공개 · 알림 2회',
-                  valueColor: AppColors.primary,
-                ),
-              ],
-            ),
-          ),
-
-          // ── 개선 팁 (있을 때만) ──
-          if (q.tips.isNotEmpty) ...[
-            const Divider(height: 1, color: AppColors.border),
-            GestureDetector(
-              onTap: () => setState(() => _tipsExpanded = !_tipsExpanded),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: gradeColor.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(AppRadius.xs),
-                      ),
-                      child: Text(
-                        '개선 포인트 ${q.tips.length}개',
-                        style: TextStyle(
-                          fontSize: AppFontSize.caption,
-                          color: gradeColor,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    Icon(
-                      _tipsExpanded
-                          ? Icons.keyboard_arrow_up
-                          : Icons.keyboard_arrow_down,
-                      size: 18,
-                      color: AppColors.textSecondary,
-                    ),
-                  ],
-                ),
               ),
             ),
-
-            if (_tipsExpanded)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                child: Column(
-                  children:
-                      q.tips
-                          .map(
-                            (tip) => Container(
-                              margin: const EdgeInsets.only(bottom: 8),
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color:
-                                    tip.impact == 'critical'
-                                        ? AppColors.errorLight
-                                        : tip.impact == 'high'
-                                        ? const Color(0xFFFFF8E1)
-                                        : AppColors.bgPage,
-                                borderRadius: BorderRadius.circular(AppRadius.sm),
-                                border: Border.all(
-                                  color:
-                                      tip.impact == 'critical'
-                                          ? AppColors.errorBorder
-                                          : tip.impact == 'high'
-                                          ? AppColors.warningBorder
-                                          : AppColors.border,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    tip.impact == 'critical'
-                                        ? Icons.error_outline
-                                        : tip.impact == 'high'
-                                        ? Icons.info_outline
-                                        : Icons.lightbulb_outline,
-                                    size: 16,
-                                    color:
-                                        tip.impact == 'critical'
-                                            ? AppColors.error
-                                            : tip.impact == 'high'
-                                            ? AppColors.warning
-                                            : AppColors.primary,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      tip.msg,
-                                      style: const TextStyle(
-                                        fontSize: AppFontSize.meta,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          )
-                          .toList(),
-                ),
-              ),
-          ],
         ],
       ),
     );
   }
-
-  Widget _insightRow({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color valueColor,
-  }) => Row(
-    children: [
-      Icon(icon, size: 16, color: AppColors.textSecondary),
-      const SizedBox(width: 8),
-      Expanded(
-        child: Text(
-          label,
-          style: const TextStyle(fontSize: AppFontSize.meta, color: AppColors.textSecondary),
-        ),
-      ),
-      // 12px 값 텍스트라 3:1(UI 컴포넌트)이 아니라 4.5:1이 기준이다.
-      // AppColors.primary(#3B8AFF)는 흰 배경에서 3.35:1이므로 진한 파랑으로 대체한다.
-      Text(
-        value,
-        style: TextStyle(
-          fontSize: AppFontSize.meta,
-          fontWeight: FontWeight.w700,
-          color: valueColor == AppColors.primary ? AppColors.primaryDark : valueColor,
-        ),
-      ),
-    ],
-  );
 }
