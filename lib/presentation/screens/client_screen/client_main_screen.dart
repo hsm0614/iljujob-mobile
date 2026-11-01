@@ -497,9 +497,9 @@ class _ClientMainScreenState extends State<ClientMainScreen>
               ),
               _navItem(
                 index: 2,
-                icon: Icons.work_outline_rounded,
-                activeIcon: Icons.work_rounded,
-                label: '내 공고',
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home_rounded,
+                label: '홈', // 2026-11 홈 시안 — 공고 관리 목록은 홈의 '전체 보기'
               ),
               _navItemChat(),
               _navItem(
