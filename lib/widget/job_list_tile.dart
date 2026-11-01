@@ -272,6 +272,18 @@ class _Thumb extends StatelessWidget {
                 height: size,
                 cacheWidth: (size * 3).round(),
                 fit: BoxFit.cover,
+                // 받아 오는 동안 회색 칸 → 다 받으면 부드럽게 나타난다 (캐시에서 바로 오면 페이드 없음)
+                frameBuilder: (_, child, frame, sync) => sync
+                    ? child
+                    : ColoredBox(
+                        color: AppColors.bgMuted,
+                        child: AnimatedOpacity(
+                          opacity: frame == null ? 0 : 1,
+                          duration: const Duration(milliseconds: 220),
+                          curve: Curves.easeOut,
+                          child: child,
+                        ),
+                      ),
                 errorBuilder:
                     (_, __, ___) => SizedBox(
                       width: size,

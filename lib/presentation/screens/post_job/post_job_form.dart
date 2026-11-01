@@ -943,9 +943,9 @@ class _PostJobFormState extends State<PostJobForm>
       // 같은 요청번호로 이미 등록된 공고가 돌아오면(duplicate) 그 공고의 유료 여부를 따른다.
       final serverPaid = result['is_paid'] == true || result['is_paid'] == 1;
       final isDelayed = !serverPaid && result['status'] == 'reserved';
-      final eta = DateTime.now().add(const Duration(hours: 12));
-      final etaStr =
-          '${eta.hour.toString().padLeft(2, '0')}:${eta.minute.toString().padLeft(2, '0')}';
+      // 공개 시각은 올리기 화면과 같은 계산으로 — 'now+12시간'을 '오늘 HH:MM'으로 써서 저녁에 올리면 날짜가 틀렸다
+      final nowKst = kstNow();
+      final etaStr = kstWhenLabel(freePublishAt(nowKst), nowKst);
       await showModalBottomSheet(
         context: context,
         isDismissible: false,
@@ -966,7 +966,13 @@ class _PostJobFormState extends State<PostJobForm>
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Container(
+                  // 끝난 순간을 또렷하게 (피크엔드) — 아이콘이 살짝 튀어 오른다
+                  TweenAnimationBuilder<double>(
+                    tween: Tween(begin: 0.6, end: 1),
+                    duration: const Duration(milliseconds: 420),
+                    curve: Curves.easeOutBack,
+                    builder: (_, v, child) => Transform.scale(scale: v, child: child),
+                    child: Container(
                     width: 68,
                     height: 68,
                     decoration: BoxDecoration(
@@ -993,9 +999,10 @@ class _PostJobFormState extends State<PostJobForm>
                               : AppColors.primary,
                     ),
                   ),
+                  ),
                   const SizedBox(height: 20),
                   Text(
-                    isUrgent ? '긴급 공고 등록 완료!' : '공고 등록 완료!',
+                    isUrgent ? '긴급 공고를 올렸어요' : isDelayed ? '공고를 올렸어요' : '공고가 공개됐어요',
                     style: const TextStyle(
                       fontSize: AppFontSize.h2,
                       fontWeight: FontWeight.w800,
@@ -1005,10 +1012,10 @@ class _PostJobFormState extends State<PostJobForm>
                   const SizedBox(height: 10),
                   Text(
                     isUrgent
-                        ? '공고가 즉시 노출됩니다.\n지금 바로 긴급 호출을 발송해보세요!'
+                        ? '지금 공개됐어요.\n근처 알바생에게 바로 연락해 보세요.'
                         : isDelayed
-                        ? '오늘 $etaStr 이후 구직자에게 노출됩니다.\n그 전까지 언제든 수정할 수 있어요.'
-                        : '지금 바로 구직자에게 노출됩니다.',
+                        ? '$etaStr에 공개되고 근처 알바생에게 알려요.\n그 전까지 언제든 고칠 수 있어요.'
+                        : '근처 알바생에게 알림이 가요.\n지원이 오면 바로 알려 드릴게요.',
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       fontSize: AppFontSize.button,
