@@ -1211,14 +1211,14 @@ class _PostJobFormState extends State<PostJobForm>
       children: [
         Row(
           children: [
-            const Expanded(child: Text('알바생에게 이렇게 보여요', style: AppTextStyles.body2)),
+            const Expanded(child: Text('알바생에게 보이는 공고', style: AppTextStyles.h3)),
             GestureDetector(
               onTap: _openFullPreview,
-              child: Text('전체 보기 >', style: AppTextStyles.body2.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600)),
+              child: Text('전체 보기', style: AppTextStyles.body2.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700)),
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
             border: Border.all(color: AppColors.border),
@@ -1254,9 +1254,9 @@ class _PostJobFormState extends State<PostJobForm>
               ),
             ),
           ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 28),
         const Divider(height: 1, color: AppColors.borderSub),
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
       ],
     );
   }
@@ -1682,7 +1682,7 @@ class _PostJobFormState extends State<PostJobForm>
 
   final GlobalKey _currentKey = GlobalKey();
 
-  static const _doneLabels = ['제목', '업종', '근무지', '일정', '급여', '내용'];
+  static const _doneLabels = ['공고 제목', '하는 일', '근무지', '근무 일정', '급여', '공고 내용'];
 
   String _doneValue(int i) {
     String hhmm(TimeOfDay t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
@@ -1719,7 +1719,7 @@ class _PostJobFormState extends State<PostJobForm>
       decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: AppColors.borderSub))),
       child: Row(
         children: [
-          SizedBox(width: 64, child: Text(_doneLabels[i], style: AppTextStyles.body2)),
+          SizedBox(width: 72, child: Text(_doneLabels[i], style: AppTextStyles.body2)),
           Expanded(
             child: Text(
               _doneValue(i),
@@ -1729,7 +1729,7 @@ class _PostJobFormState extends State<PostJobForm>
             ),
           ),
           const SizedBox(width: 8),
-          Text('수정', style: AppTextStyles.body2.copyWith(color: AppColors.primary)),
+          const Icon(Icons.edit_outlined, size: 18, color: AppColors.textSecondary),
         ],
       ),
     ),
@@ -1820,19 +1820,7 @@ class _PostJobFormState extends State<PostJobForm>
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-            child: SizedBox(width: double.infinity, child: SegmentedButton<String>(
-              segments: const [ButtonSegment(value: 'job', label: Text('일반 공고')),
-                ButtonSegment(value: 'promotion', label: Text('채용 홍보'))],
-              selected: const {'job'},
-              onSelectionChanged: (selection) {
-                if (selection.first == 'promotion') Navigator.push(context,
-                  MaterialPageRoute<void>(builder: (_) => const PromotionRequestScreen()));
-              },
-            )),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.full),
               // 입력 6단계 뒤에 '확인하고 올리기' 1화면이 더 있다(미리보기·등록 방식을 합침, 2026-10).
@@ -1840,7 +1828,7 @@ class _PostJobFormState extends State<PostJobForm>
               // 남은 지점에서 "다 끝났다"는 신호를 준다(목표 경사 붕괴).
               child: LinearProgressIndicator(
                 value: (_q + 1) / (_totalQ + 1),
-                minHeight: 4,
+                minHeight: 3,
                 backgroundColor: AppColors.border,
                 valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
               ),
@@ -1852,12 +1840,12 @@ class _PostJobFormState extends State<PostJobForm>
             child: SingleChildScrollView(
               controller: _contentScrollCtrl,
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   for (var i = 0; i < _q; i++) _doneRow(i),
-                  if (_q > 0) const SizedBox(height: 20),
+                  if (_q > 0) const SizedBox(height: 32),
                   KeyedSubtree(
                     key: _currentKey,
                     child: FadeTransition(
@@ -1867,18 +1855,29 @@ class _PostJobFormState extends State<PostJobForm>
                         children: [
                           Row(
                             children: [
-                              Expanded(child: Text(_qTitles[_q], style: AppTextStyles.h2)),
+                              Expanded(child: Text(_qTitles[_q], style: AppTextStyles.h1)),
                               const SizedBox(width: 12),
                               // 진행바 분모와 같아야 한다(마지막 '확인하고 올리기' 포함)
-                              Text('${_q + 1}/${_totalQ + 1}', style: AppTextStyles.caption),
+                              Text('${_q + 1} / ${_totalQ + 1}', style: AppTextStyles.body2),
                             ],
                           ),
                           if (_qSubs[_q].isNotEmpty) ...[
-                            const SizedBox(height: 4),
+                            const SizedBox(height: 8),
                             Text(_qSubs[_q], style: AppTextStyles.body2),
                           ],
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 28),
                           _buildQ(),
+                          if (_q == 0) ...[
+                            const SizedBox(height: 28),
+                            const Divider(height: 1, color: AppColors.borderSub),
+                            const SizedBox(height: 16),
+                            TextButton.icon(
+                              onPressed: () => Navigator.push(context,
+                                MaterialPageRoute<void>(builder: (_) => const PromotionRequestScreen())),
+                              icon: const Icon(Icons.campaign_outlined, size: 18),
+                              label: const Text('채용 홍보 신청하기'),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -1916,7 +1915,7 @@ class _PostJobFormState extends State<PostJobForm>
                         padding: const EdgeInsets.only(bottom: 8),
                         child: Text(_nextLabel, style: AppTextStyles.body2),
                       ),
-                    _NextBtn(onTap: _canNext ? _nextQ : null),
+                    _NextBtn(onTap: _canNext ? _nextQ : null, label: _q == 4 ? '공고 내용 작성하기' : '다음'),
                   ],
                 ),
           ),
@@ -1974,7 +1973,7 @@ class _PostJobFormState extends State<PostJobForm>
             fontWeight: FontWeight.w400,
           ),
           filled: true,
-          fillColor: AppColors.bgPage,
+          fillColor: AppColors.bgCard,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 18,
@@ -2086,13 +2085,7 @@ class _PostJobFormState extends State<PostJobForm>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GridView.count(
-          crossAxisCount: 2,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
-          childAspectRatio: 3.3,
+        Column(
           children:
               jobCategories.map((cat) {
                 final isSel = selectedMajor == cat.name;
@@ -2136,21 +2129,17 @@ class _PostJobFormState extends State<PostJobForm>
                         });
                       }
                     },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 160),
-                      padding: const EdgeInsets.symmetric(horizontal: 14),
+                    child: Container(
+                      constraints: const BoxConstraints(minHeight: 58),
+                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
                       decoration: BoxDecoration(
-                        color: isSel || isOpen ? AppColors.primaryLight : AppColors.bgMuted,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                        border: Border.all(
-                          color: isSel || isOpen ? AppColors.primary : Colors.transparent,
-                          width: 1.5,
-                        ),
+                        color: AppColors.bgCard,
+                        border: const Border(bottom: BorderSide(color: AppColors.borderSub)),
                       ),
                       child: Row(
                         children: [
-                          Icon(cat.icon, size: 20, color: isSel || isOpen ? AppColors.primary : AppColors.textSecondary),
-                          const SizedBox(width: 10),
+                          Icon(cat.icon, size: 21, color: AppColors.textSecondary),
+                          const SizedBox(width: 14),
                           Expanded(
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -2160,15 +2149,20 @@ class _PostJobFormState extends State<PostJobForm>
                                   cat.name,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: AppTextStyles.body2.copyWith(
+                                  style: AppTextStyles.body1.copyWith(
                                     fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
-                                    color: isSel || isOpen ? AppColors.primary : AppColors.textPrimary,
+                                    color: AppColors.textPrimary,
                                   ),
                                 ),
                                 if (isSel && _category.isNotEmpty && _category != cat.name)
-                                  Text(_category, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTextStyles.caption),
+                                  Text(_category, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTextStyles.body2),
                               ],
                             ),
+                          ),
+                          Icon(
+                            isSel ? Icons.check_circle_rounded : isOpen ? Icons.keyboard_arrow_up_rounded : Icons.chevron_right_rounded,
+                            size: 22,
+                            color: isSel || isOpen ? AppColors.primary : AppColors.textTertiary,
                           ),
                         ],
                       ),
@@ -2189,11 +2183,11 @@ class _PostJobFormState extends State<PostJobForm>
                         (c) => c.name == _majorCat,
                       );
                       return Container(
-                        margin: const EdgeInsets.only(top: 10),
-                        padding: const EdgeInsets.all(14),
+                        margin: const EdgeInsets.only(top: 20),
+                        padding: const EdgeInsets.fromLTRB(0, 4, 0, 12),
                         decoration: BoxDecoration(
-                          color: AppColors.bgMuted,
-                          borderRadius: BorderRadius.circular(AppRadius.lg),
+                          color: AppColors.bgCard,
+                          border: const Border(top: BorderSide(color: AppColors.border)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2260,7 +2254,7 @@ class _PostJobFormState extends State<PostJobForm>
                                             vertical: 8,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: sel ? AppColors.primary : Colors.white,
+                                            color: sel ? AppColors.primary : AppColors.bgMuted,
                                             borderRadius: BorderRadius.circular(
                                               99,
                                             ),
@@ -2268,23 +2262,9 @@ class _PostJobFormState extends State<PostJobForm>
                                               color:
                                                   sel
                                                       ? AppColors.primary
-                                                      : AppColors.border,
+                                                      : Colors.transparent,
                                               width: sel ? 0 : 1,
                                             ),
-                                            boxShadow:
-                                                sel
-                                                    ? []
-                                                    : [
-                                                      BoxShadow(
-                                                        color: Colors.black
-                                                            .withOpacity(0.04),
-                                                        blurRadius: 4,
-                                                        offset: const Offset(
-                                                          0,
-                                                          1,
-                                                        ),
-                                                      ),
-                                                    ],
                                           ),
                                           child: Text(
                                             s,
@@ -2650,9 +2630,9 @@ class _PostJobFormState extends State<PostJobForm>
             width: double.infinity,
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: AppColors.bgMuted,
+              color: AppColors.bgCard,
               borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: Colors.transparent),
+              border: Border.all(color: AppColors.border),
             ),
             child: Row(
               children: [
@@ -2776,14 +2756,12 @@ class _PostJobFormState extends State<PostJobForm>
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 15,
+                  vertical: 17,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.bgMuted,
+                  color: AppColors.bgCard,
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(
-                    color: Colors.transparent,
-                  ),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: Row(
                   children: [
@@ -2925,7 +2903,9 @@ class _PostJobFormState extends State<PostJobForm>
             ),
           ],
         ],
-        const SizedBox(height: 14),
+        const SizedBox(height: 20),
+        const Divider(height: 1, color: AppColors.borderSub),
+        const SizedBox(height: 16),
         GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: () => setState(() => _timeNegotiable = !_timeNegotiable),
@@ -3331,6 +3311,7 @@ class _PostJobFormState extends State<PostJobForm>
           TextField(
             controller: _payCtrl,
             keyboardType: TextInputType.number,
+            style: AppTextStyles.h1,
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
               const _CommaNumberInputFormatter(),
@@ -3352,13 +3333,19 @@ class _PostJobFormState extends State<PostJobForm>
                       ? '2026년 기준 최저시급 ${fmt.format(minWagePerHour)}원'
                       : '최저 ${fmt.format(minWagePerHour)}원/시간 이상',
               filled: true,
-              fillColor: AppColors.bgPage,
-              border: OutlineInputBorder(
+              fillColor: AppColors.bgCard,
+              enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(AppRadius.md),
+                borderSide: const BorderSide(color: AppColors.border),
               ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              ),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
-                vertical: 14,
+                vertical: 18,
               ),
             ),
             onChanged: (v) {
@@ -3612,9 +3599,9 @@ class _PostJobFormState extends State<PostJobForm>
                 duration: const Duration(milliseconds: 160),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _isSameDayPay ? AppColors.primaryLight : AppColors.bgMuted,
+                  color: AppColors.bgCard,
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: _isSameDayPay ? AppColors.primary : Colors.transparent, width: 1.5),
+                  border: Border.all(color: AppColors.border),
                 ),
                 child: Row(
                   children: [
@@ -3741,14 +3728,14 @@ class _PostJobFormState extends State<PostJobForm>
         ),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.bgPage,
+            color: AppColors.bgCard,
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(color: AppColors.border),
           ),
           child: TextField(
             controller: _descCtrl,
             maxLines: null,
-            minLines: 6,
+            minLines: 5,
             keyboardType: TextInputType.multiline,
             textAlignVertical: TextAlignVertical.top,
             style: const TextStyle(fontSize: AppFontSize.button, color: AppColors.textPrimary, height: 1.6),
@@ -4207,9 +4194,9 @@ class _TimeInputCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           decoration: BoxDecoration(
-            color: AppColors.bgMuted,
+            color: AppColors.bgCard,
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: Colors.transparent),
+            border: Border.all(color: AppColors.border),
           ),
           child: Row(
             children: [
@@ -4270,11 +4257,10 @@ class _ToggleBtn extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
           decoration: BoxDecoration(
-            color: selected ? AppColors.primaryLight : AppColors.bgMuted,
+            color: selected ? AppColors.primaryLight : AppColors.bgCard,
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
-              color: selected ? AppColors.primary : Colors.transparent,
-              width: 1.5,
+              color: selected ? AppColors.primaryMid : AppColors.border,
             ),
           ),
           child: Text(
@@ -4308,9 +4294,9 @@ class _SmallToggle extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: selected ? AppColors.primaryLight : AppColors.bgMuted,
+            color: selected ? AppColors.primaryLight : AppColors.bgCard,
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: selected ? AppColors.primary : Colors.transparent, width: 1.5),
+            border: Border.all(color: selected ? AppColors.primaryMid : AppColors.border),
           ),
           child: Center(
             child: Text(
@@ -4858,18 +4844,17 @@ class _PublishSheetState extends State<_PublishSheet> {
     }) {
       final on = _choice == value;
       return Padding(
-        padding: const EdgeInsets.only(bottom: 8),
+        padding: const EdgeInsets.only(bottom: 2),
         child: Material(
-          color: on ? AppColors.primaryLight : AppColors.bgCard,
+          color: AppColors.bgCard,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
-            side: BorderSide(color: on ? AppColors.primary : AppColors.border, width: on ? 1.5 : 1),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: InkWell(
-            borderRadius: BorderRadius.circular(AppRadius.lg),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             onTap: () => setState(() => _choice = value),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+              padding: const EdgeInsets.fromLTRB(4, 16, 4, 16),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -4878,24 +4863,26 @@ class _PublishSheetState extends State<_PublishSheet> {
                     size: 22,
                     color: on ? AppColors.primary : AppColors.textDisabled,
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 14),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Text(title, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                            Flexible(child: Text(title, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary))),
                             if (recommended) ...[
                               const SizedBox(width: 6),
-                              const JobSignalBadge(label: '추천'),
+                              Text('추천', style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
                             ],
-                            const Spacer(),
+                            const SizedBox(width: 8),
                             Text(tag, style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                           ],
                         ),
-                        const SizedBox(height: 4),
+                        const SizedBox(height: 6),
                         Text(sub, style: AppTextStyles.body2),
+                        const SizedBox(height: 14),
+                        const Divider(height: 1, color: AppColors.borderSub),
                       ],
                     ),
                   ),
@@ -4935,8 +4922,8 @@ class _PublishSheetState extends State<_PublishSheet> {
               children: [
                 if (widget.header != null) ...[const SizedBox(height: 4), widget.header!],
                 const SizedBox(height: 16),
-                Text('어떻게 올릴까요?', style: AppTextStyles.h2),
-                const SizedBox(height: 4),
+                Text('언제 공개할까요?', style: AppTextStyles.h1),
+                const SizedBox(height: 8),
                 Text(
                   _reachableWorkersCount == null
                       ? '올리는 방법에 따라 공개 시각과 알림이 달라요'
