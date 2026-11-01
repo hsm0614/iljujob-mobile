@@ -4,6 +4,7 @@ import 'package:flutter/material.dart'; // StatefulWidget 사용을 위해 필�
 import '../../config/constants.dart';
 import 'authenticated_http_client.dart';
 import '../../config/app_theme.dart';
+import '../../widget/app_ui.dart';
 
 class AIJobDescriptionService {
   static Future<({int remaining, String? plan, String yearMonth})>
@@ -142,50 +143,6 @@ class AIQualityReport {
 }
 
 // 프리셋 관리 클래스
-class AIPresetManager {
-  static const List<AIPreset> presets = [
-    AIPreset(
-      name: '친근한 톤',
-      tone: 'friendly',
-      description: '친근하고 따뜻한 느낌의 공고문',
-      icon: '😊',
-    ),
-    AIPreset(
-      name: '전문적인 톤',
-      tone: 'professional',
-      description: '격식있고 신뢰감 있는 공고문',
-      icon: '💼',
-    ),
-    AIPreset(
-      name: '캐주얼한 톤',
-      tone: 'casual',
-      description: '편안하고 자유로운 분위기의 공고문',
-      icon: '🎯',
-    ),
-  ];
-
-  static AIPreset getPresetByTone(String tone) {
-    return presets.firstWhere(
-      (preset) => preset.tone == tone,
-      orElse: () => presets.first,
-    );
-  }
-}
-
-class AIPreset {
-  final String name;
-  final String tone;
-  final String description;
-  final String icon;
-
-  const AIPreset({
-    required this.name,
-    required this.tone,
-    required this.description,
-    required this.icon,
-  });
-}
-
 // AI 공고문 생성 위젯
 class AIJobDescriptionWidget extends StatefulWidget {
   final String title;
@@ -224,288 +181,91 @@ class AIJobDescriptionWidget extends StatefulWidget {
 }
 
 class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
-  String selectedTone = 'friendly';
   bool isGenerating = false;
   String? generatedContent;
   AIQualityReport? qualityReport;
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      // 전체를 SafeArea로 감싸기
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SingleChildScrollView(
-          // ✅ 스크롤 가능하도록 추가
+    final content = generatedContent;
+    final issues = qualityReport?.issues ?? const <String>[];
+    return Material(
+      color: AppColors.bgCard,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+      child: SafeArea(
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(20, 8, 20, 12 + MediaQuery.of(context).viewInsets.bottom),
           child: Column(
             mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // 헤더
               Row(
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.auto_awesome,
-                      color: AppColors.primary,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'AI 공고문 생성',
-                          style: TextStyle(
-                            fontSize: AppFontSize.titleLg,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          '입력한 정보로 매력적인 공고문을 자동 생성합니다',
-                          style: TextStyle(fontSize: AppFontSize.meta, color: Colors.black54),
-                        ),
-                      ],
-                    ),
-                  ),
+                  const Expanded(child: Text('공고문 대신 써 드려요', style: AppTextStyles.h2)),
                   if (widget.onClose != null)
                     IconButton(
                       tooltip: '닫기',
                       onPressed: widget.onClose,
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary),
                     ),
                 ],
               ),
-              const SizedBox(height: 20),
-
-              // 톤 선택
-              const Text(
-                '공고문 스타일 선택',
-                style: TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 12),
-
-              Wrap(
-                spacing: 8,
-                children:
-                    AIPresetManager.presets.map((preset) {
-                      final isSelected = selectedTone == preset.tone;
-                      return GestureDetector(
-                        onTap: () => setState(() => selectedTone = preset.tone),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                isSelected
-                                    ? AppColors.primary
-                                    : AppColors.bgMuted,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color:
-                                  isSelected
-                                      ? AppColors.primary
-                                      : AppColors.textDisabled,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                preset.icon,
-                                style: const TextStyle(fontSize: AppFontSize.buttonLg),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                preset.name,
-                                style: TextStyle(
-                                  color:
-                                      isSelected
-                                          ? Colors.white
-                                          : Colors.black87,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }).toList(),
+              Text(
+                content == null ? '앞에서 입력한 내용으로 써요. 받아 보고 고칠 수 있어요.' : '마음에 들면 넣고, 아니면 다시 써 볼 수 있어요.',
+                style: AppTextStyles.body2,
               ),
               const SizedBox(height: 20),
-
-              // 생성 버튼
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: isGenerating ? null : _generateDescription,
-                  icon:
-                      isGenerating
-                          ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                          : const Icon(Icons.auto_awesome),
-                  label: Text(isGenerating ? 'AI 생성 중...' : '공고문 생성하기'),
-                ),
-              ),
-
-              // 생성된 내용 표시
-              if (generatedContent != null) ...[
-                const SizedBox(height: 20),
-                const Divider(),
-                const SizedBox(height: 16),
-
-                Row(
-                  children: [
-                    const Text(
-                      '생성된 공고문',
-                      style: TextStyle(
-                        fontSize: AppFontSize.buttonLg,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-
-                Container(
-                  width: double.infinity,
-                  constraints: const BoxConstraints(
-                    maxHeight: 200,
-                  ), // ✅ 최대 높이 제한
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.bgMuted,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: SingleChildScrollView(
-                    // ✅ 내용이 길 경우 스크롤
-                    child: Text(
-                      generatedContent!,
-                      style: const TextStyle(fontSize: AppFontSize.button, height: 1.5),
-                    ),
-                  ),
-                ),
-
-                // 품질 리포트
-                if (qualityReport != null &&
-                    (qualityReport!.hasIssues ||
-                        qualityReport!.suggestions.isNotEmpty)) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
+              if (content != null) ...[
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.orange.shade200),
+                      color: AppColors.bgMuted,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.lightbulb_outline,
-                              color: Colors.orange.shade700,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '한 번 확인해 주세요',
-                              style: TextStyle(
-                                fontSize: AppFontSize.meta,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.orange.shade700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (qualityReport!.issues.isNotEmpty) ...[
-                          const SizedBox(height: 8),
-                          ...qualityReport!.issues.map(
-                            (issue) => Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Text(
-                                '• $issue',
-                                style: TextStyle(
-                                  fontSize: AppFontSize.caption,
-                                  color: Colors.orange.shade700,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                        if (qualityReport!.suggestions.isNotEmpty) ...[
-                          const SizedBox(height: 4),
-                          ...qualityReport!.suggestions.map(
-                            (suggestion) => Padding(
-                              padding: const EdgeInsets.only(bottom: 4),
-                              child: Text(
-                                '$suggestion',
-                                style: TextStyle(
-                                  fontSize: AppFontSize.caption,
-                                  color: Colors.orange.shade600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ],
+                    child: SingleChildScrollView(
+                      child: Text(content, style: AppTextStyles.body1.copyWith(height: 1.6, color: AppColors.textPrimary)),
                     ),
                   ),
-                ],
-
+                ),
+                // 차별 표현·길이 문제만 — 있을 때만 한 줄씩
+                for (final issue in issues)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(issue, style: AppTextStyles.body2.copyWith(color: AppColors.error)),
+                  ),
                 const SizedBox(height: 16),
-
-                // 액션 버튼들
                 Row(
                   children: [
                     Expanded(
-                      child: OutlinedButton.icon(
-                        onPressed: _generateDescription,
-                        icon: const Icon(Icons.refresh),
-                        label: const Text('다시 생성'),
+                      child: SizedBox(
+                        height: 52,
+                        child: FilledButton(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.bgMuted,
+                            foregroundColor: AppColors.textPrimary,
+                          ),
+                          onPressed: isGenerating ? null : _generateDescription,
+                          child: const Text('다시 쓰기'),
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 8),
                     Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: () => widget.onGenerated(generatedContent!),
-                        icon: const Icon(Icons.check),
-                        label: const Text('적용하기'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                        ),
+                      flex: 2,
+                      child: AppPrimaryButton(
+                        label: '이 내용 넣기',
+                        onPressed: isGenerating ? null : () => widget.onGenerated(content),
                       ),
                     ),
                   ],
                 ),
-              ],
-
-              // 하단 여백 (키보드 대응)
-              SizedBox(
-                height: MediaQuery.of(context).viewInsets.bottom + 20,
-              ), // ✅ 추가 여백
+              ] else
+                AppPrimaryButton(
+                  label: isGenerating ? '쓰는 중이에요…' : '써 보기',
+                  loading: isGenerating,
+                  onPressed: _generateDescription,
+                ),
             ],
           ),
         ),
@@ -531,7 +291,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
         weekdays: widget.weekdays,
         companyName: widget.companyName,
         isShortTerm: widget.isShortTerm,
-        tone: selectedTone,
+        tone: 'friendly',
       );
 
       final report = AIJobDescriptionService.validateDescription(content);
@@ -545,10 +305,8 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
     } catch (e) {
       if (mounted) {
         final msg =
-            e is AIGenerationException ? e.message : 'AI 생성 중 오류가 발생했어요.';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg), backgroundColor: Colors.red),
-        );
+            e is AIGenerationException ? e.message : '공고문을 쓰지 못했어요. 잠시 후 다시 시도해 주세요.';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
       }
     } finally {
       if (mounted)
@@ -558,80 +316,14 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
     }
   }
 
-  void _showSubscriptionGate(BuildContext ctx) {
-    showModalBottomSheet(
-      context: ctx,
-      backgroundColor: Colors.transparent,
-      builder: (bCtx) {
-        final bottom = MediaQuery.of(bCtx).padding.bottom;
-        return Container(
-          padding: EdgeInsets.fromLTRB(24, 20, 24, 20 + bottom),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: AppColors.border,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                width: 60,
-                height: 60,
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(18),
-                ),
-                child: const Icon(
-                  Icons.workspace_premium_rounded,
-                  color: AppColors.primary,
-                  size: 30,
-                ),
-              ),
-              const SizedBox(height: 14),
-              const Text(
-                '구독자 전용 기능이에요',
-                style: TextStyle(
-                  fontSize: AppFontSize.title,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'AI 공고문 작성은 구독자만\n이용할 수 있어요.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: AppFontSize.button,
-                  color: AppColors.textSecondary,
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(bCtx);
-                    Navigator.pushNamed(ctx, '/subscribe');
-                  },
-                  child: const Text(
-                    '구독 플랜 보기'),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+  Future<void> _showSubscriptionGate(BuildContext ctx) async {
+    final go = await showAppSheet(
+      ctx,
+      title: '구독하면 쓸 수 있어요',
+      message: '공고문 대신 써 주기는 베이직 월 3회, 무제한은 횟수 제한 없이 쓸 수 있어요.',
+      confirmLabel: '구독 플랜 보기',
+      cancelLabel: '닫기',
     );
+    if (go && ctx.mounted) Navigator.pushNamed(ctx, '/subscribe');
   }
 }

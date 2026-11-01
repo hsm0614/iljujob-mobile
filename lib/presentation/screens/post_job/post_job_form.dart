@@ -488,7 +488,7 @@ class _PostJobFormState extends State<PostJobForm>
     } catch (_) {
       if (!mounted || silent) return false;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('AI 사용 횟수를 확인할 수 없어요. 잠시 후 다시 시도해주세요.')),
+        const SnackBar(content: Text('남은 횟수를 확인하지 못했어요. 잠시 후 다시 시도해 주세요.')),
       );
       return false;
     }
@@ -635,7 +635,7 @@ class _PostJobFormState extends State<PostJobForm>
             _payWarning =
                 _pay >= minWagePerHour
                     ? null
-                    : '최저시급 미달 · 최소 ${NumberFormat('#,###').format(minWagePerHour)}원 이상',
+                    : '최저시급보다 낮아요. 최소 ${NumberFormat('#,###').format(minWagePerHour)}원 이상',
       );
       return;
     }
@@ -648,7 +648,7 @@ class _PostJobFormState extends State<PostJobForm>
             _payWarning =
                 _pay >= minMonthly
                     ? null
-                    : '최저임금 미달 · 최소 ${NumberFormat('#,###').format(minMonthly)}원 이상',
+                    : '최저임금보다 낮아요. 최소 ${NumberFormat('#,###').format(minMonthly)}원 이상',
       );
       return;
     }
@@ -668,7 +668,7 @@ class _PostJobFormState extends State<PostJobForm>
             _payWarning =
                 _pay >= req
                     ? null
-                    : '최저시급 미달 · 최소 ${NumberFormat('#,###').format(req)}원 이상',
+                    : '최저시급보다 낮아요. 최소 ${NumberFormat('#,###').format(req)}원 이상',
       );
       return;
     }
@@ -696,7 +696,7 @@ class _PostJobFormState extends State<PostJobForm>
             _payWarning =
                 _pay >= req
                     ? null
-                    : '최저시급 미달 · 최소 ${NumberFormat('#,###').format(req)}원 이상',
+                    : '최저시급보다 낮아요. 최소 ${NumberFormat('#,###').format(req)}원 이상',
       );
       return;
     }
@@ -1212,8 +1212,8 @@ class _PostJobFormState extends State<PostJobForm>
         '${hhmm(_startTime!)}~${hhmm(_endTime!)}',
     ].join(' · ');
     final tips = [
-      if (_images.isEmpty && _imageUrls.isEmpty) '사진이 없어요 · 일하는 곳 사진을 넣을 수 있어요',
-      if (_description.trim().length < 20) '설명이 짧아요 · 하는 일과 준비물을 적어 주세요',
+      if (_images.isEmpty && _imageUrls.isEmpty) '일하는 곳 사진을 넣으면 지원이 늘어요',
+      if (_description.trim().length < 20) '하는 일과 준비물을 적어 주세요',
     ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1877,14 +1877,8 @@ class _PostJobFormState extends State<PostJobForm>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Row(
-                            children: [
-                              Expanded(child: Text(_qTitles[_q], style: AppTextStyles.h1)),
-                              const SizedBox(width: 12),
-                              // 진행바 분모와 같아야 한다(마지막 '확인하고 올리기' 포함)
-                              Text('${_q + 1} / ${_totalQ + 1}', style: AppTextStyles.body2),
-                            ],
-                          ),
+                          // 몇 단계째인지는 위 진행바 하나로 — 'N / 7'까지 쓰면 같은 말을 두 번 한다
+                          Text(_qTitles[_q], style: AppTextStyles.h1),
                           if (_qSubs[_q].isNotEmpty) ...[
                             const SizedBox(height: 8),
                             Text(_qSubs[_q], style: AppTextStyles.body2),
@@ -1918,7 +1912,7 @@ class _PostJobFormState extends State<PostJobForm>
             padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
             decoration: const BoxDecoration(
               color: AppColors.bgCard,
-              border: Border(top: BorderSide(color: AppColors.borderSub)),
+              boxShadow: AppShadows.bottomNav, // 다른 화면 하단 버튼 띠(AppBottomBar)와 같은 모양
             ),
             child: _q == _totalQ - 1
                 ? _NextBtn(
@@ -1998,26 +1992,15 @@ class _PostJobFormState extends State<PostJobForm>
             color: AppColors.textSecondary,
             fontWeight: FontWeight.w400,
           ),
-          filled: true,
-          fillColor: AppColors.bgCard,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 18,
           ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            borderSide: const BorderSide(color: AppColors.border),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(AppRadius.md),
-            borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-          ),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
         ),
       ),
       // '알바'처럼 짧은 제목은 막지 않고 예시만 — 무슨 일인지 보여야 지원한다
       if (_title.isNotEmpty && _title.replaceAll(' ', '').length < 5)
-        const Text('어디서 무슨 일인지 적으면 지원이 늘어요 · 예) 카페 주말 홀서빙', style: AppTextStyles.body2),
+        const Text('어디서 무슨 일인지 적어 주세요. 예) 카페 주말 홀서빙', style: AppTextStyles.body2),
       // 지난 공고로 채우기 — '공고 올리기' 앞의 선택 시트를 없애고 여기로 (2026-10, 대표)
       if (_recentJobs.isNotEmpty) ...[
         const SizedBox(height: 20),
@@ -2093,7 +2076,7 @@ class _PostJobFormState extends State<PostJobForm>
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
-          content: Text(_startDate == null ? '지난 공고 내용으로 채웠어요 · 근무 날짜만 새로 골라 주세요' : '지난 공고 내용으로 채웠어요 · 단계마다 확인해 주세요'),
+          content: Text(_startDate == null ? '지난 공고로 채웠어요. 근무 날짜만 골라 주세요' : '지난 공고로 채웠어요. 단계마다 확인해 주세요'),
         ),
       );
   }
@@ -2557,9 +2540,8 @@ class _PostJobFormState extends State<PostJobForm>
             child: Container(
               padding: const EdgeInsets.fromLTRB(14, 12, 6, 12),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.bgMuted,
                 borderRadius: BorderRadius.circular(AppRadius.md),
-                border: Border.all(color: AppColors.border),
               ),
               child: Row(
                 children: [
@@ -2656,9 +2638,8 @@ class _PostJobFormState extends State<PostJobForm>
             width: double.infinity,
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
-              color: AppColors.bgCard,
+              color: AppColors.bgMuted,
               borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: AppColors.border),
             ),
             child: Row(
               children: [
@@ -2785,9 +2766,8 @@ class _PostJobFormState extends State<PostJobForm>
                   vertical: 17,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.bgCard,
+                  color: AppColors.bgMuted,
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: AppColors.border),
                 ),
                 child: Row(
                   children: [
@@ -2876,8 +2856,7 @@ class _PostJobFormState extends State<PostJobForm>
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: sel ? AppColors.primary : AppColors.bgPage,
-                            border: Border.all(color: sel ? AppColors.primary : AppColors.border),
+                            color: sel ? AppColors.primary : AppColors.bgMuted,
                             borderRadius: BorderRadius.circular(AppRadius.md),
                           ),
                           child: Center(
@@ -2903,22 +2882,9 @@ class _PostJobFormState extends State<PostJobForm>
               decoration: InputDecoration(
                 hintText: '예) 주 3회, 주중 오후 가능',
                 hintStyle: const TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
-                filled: true,
-                fillColor: AppColors.bgPage,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
                   vertical: 14,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
             ),
@@ -3320,19 +3286,7 @@ class _PostJobFormState extends State<PostJobForm>
 
         // ── 직접 입력 필드
         if (isNegotiable)
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.primaryLight,
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: AppColors.primary.withOpacity(0.18)),
-            ),
-            child: const Text(
-              '금액은 공고에 급여 협의로 표시됩니다. 상세 정산 방식은 본문에 적어주세요.',
-              style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
-            ),
-          )
+          const Text('공고엔 \'급여 협의\'로 보여요. 정산 방식은 공고 내용에 적어 주세요.', style: AppTextStyles.body2)
         else
           TextField(
             controller: _payCtrl,
@@ -3358,17 +3312,6 @@ class _PostJobFormState extends State<PostJobForm>
                       : _payType == '시급'
                       ? '2026년 기준 최저시급 ${fmt.format(minWagePerHour)}원'
                       : '최저 ${fmt.format(minWagePerHour)}원/시간 이상',
-              filled: true,
-              fillColor: AppColors.bgCard,
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: const BorderSide(color: AppColors.border),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(AppRadius.md),
-                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-              ),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 18,
@@ -3382,35 +3325,7 @@ class _PostJobFormState extends State<PostJobForm>
           ),
         if (_payWarning != null) ...[
           const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFEF2F2),
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              border: Border.all(color: const Color(0xFFFECACA)),
-            ),
-            child: Row(
-              children: [
-                // Colors.red는 red.shade50 위에서 3.22:1 — AA 미달.
-                const Icon(
-                  Icons.error_outline,
-                  size: 16,
-                  color: AppColors.error,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _payWarning!,
-                    style: const TextStyle(
-                      fontSize: AppFontSize.meta,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.error,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          Text(_payWarning!, style: AppTextStyles.body2.copyWith(color: AppColors.error, fontWeight: FontWeight.w600)),
         ],
 
         // ── 급여 단위 되묻기 (입력 자리에서)
@@ -3436,174 +3351,44 @@ class _PostJobFormState extends State<PostJobForm>
           ),
         ],
 
-        // ── 임금 AI 리포트 버튼
+        // ── 같은 업종 급여 리포트 (SQL 통계 + Gemini 요약). 보조 행동이라 글자 링크 하나 — 'AI'를 앞세우지 않는다
         if (_category.isNotEmpty) ...[
-          const SizedBox(height: 10),
-          Semantics(
-            button: true,
-            label:
-                _subscriptionPlan != null
-                    ? '이 업종 임금 AI 리포트 보기'
-                    : '이 업종 임금 AI 리포트 보기, 구독자 전용',
-            child: GestureDetector(
-              onTap: () {
-                if (_subscriptionPlan != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder:
-                          (_) => WageReportScreen(
-                            category: _category,
-                            locationCity:
-                                _locationCity.isNotEmpty ? _locationCity : null,
-                            payType: _payType,
-                            currentPay: _pay > 0 ? _pay : null,
-                            hours: (_workMins() / 60).round().clamp(1, 24),
-                          ),
-                    ),
-                  );
-                } else {
-                  showModalBottomSheet(
-                    context: context,
-                    backgroundColor: Colors.transparent,
-                    builder:
-                        (_) => Container(
-                          decoration: const BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.vertical(
-                              top: Radius.circular(AppRadius.xxl),
-                            ),
-                          ),
-                          padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Center(
-                                child: Container(
-                                  width: 40,
-                                  height: 4,
-                                  decoration: BoxDecoration(
-                                    color: AppColors.border,
-                                    borderRadius: BorderRadius.circular(2),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 20),
-                              const Icon(
-                                Icons.analytics_rounded,
-                                color: AppColors.primary,
-                                size: 32,
-                              ),
-                              const SizedBox(height: 12),
-                              const Text(
-                                '임금 AI 리포트는 구독자 전용이에요',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: AppFontSize.buttonLg,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              const Text(
-                                '업종·지역·경쟁 공고 시급을 분석해\n적정 급여를 AI가 추천해 드려요.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: AppFontSize.body2,
-                                  color: AppColors.textSecondary,
-                                  height: 1.5,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton(
-                                  onPressed: () {
-                                    Navigator.pop(context);
-                                    Navigator.pushNamed(
-                                      context,
-                                      '/subscription/manage',
-                                    );
-                                  },
-                                  child: const Text(
-                                    '구독 시작하기'),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              SizedBox(
-                                width: double.infinity,
-                                child: TextButton(
-                                  onPressed: () => Navigator.pop(context),
-                                  child: const Text(
-                                    '닫기',
-                                    style: TextStyle(
-                                      color: AppColors.textSecondary,
-                                      fontSize: AppFontSize.button,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                  );
-                }
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color:
-                      _subscriptionPlan != null
-                          ? AppColors.primaryLight
-                          : AppColors.bgMuted,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                  border: Border.all(
-                    color:
-                        _subscriptionPlan != null
-                            ? AppColors.primaryMid
-                            : AppColors.textDisabled,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      _subscriptionPlan != null
-                          ? Icons.analytics_rounded
-                          : Icons.lock_outline_rounded,
-                      size: 16,
-                      color:
-                          _subscriptionPlan != null
-                              ? AppColors.primary
-                              : AppColors.textTertiary,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '이 업종 임금 AI 리포트 보기',
-                      style: TextStyle(
-                        fontSize: AppFontSize.meta,
-                        // #9CA3AF는 이 배경에서 2.5:1 — AA 미달
-                        color:
-                            _subscriptionPlan != null
-                                ? AppColors.primary
-                                : AppColors.textSecondary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.chevron_right_rounded,
-                      size: 14,
-                      color:
-                          _subscriptionPlan != null
-                              ? AppColors.primary
-                              : AppColors.textSecondary,
-                    ),
-                  ],
-                ),
+          const SizedBox(height: 4),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                foregroundColor: AppColors.primary,
+                textStyle: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600),
               ),
+              onPressed: () async {
+                if (_subscriptionPlan == null) {
+                  final go = await showAppSheet(
+                    context,
+                    title: '구독하면 볼 수 있어요',
+                    message: '같은 업종·지역 공고들이 얼마를 주는지, 지원이 많은 공고는 얼마였는지 보여 드려요.',
+                    confirmLabel: '구독 플랜 보기',
+                    cancelLabel: '닫기',
+                  );
+                  if (go && mounted) Navigator.pushNamed(context, '/subscription/manage');
+                  return;
+                }
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (_) => WageReportScreen(
+                          category: _category,
+                          locationCity: _locationCity.isNotEmpty ? _locationCity : null,
+                          payType: _payType,
+                          currentPay: _pay > 0 ? _pay : null,
+                          hours: (_workMins() / 60).round().clamp(1, 24),
+                        ),
+                  ),
+                );
+              },
+              child: const Text('이 업종 다른 공고는 얼마 주나요? >'),
             ),
           ),
         ],
@@ -3625,9 +3410,8 @@ class _PostJobFormState extends State<PostJobForm>
                 duration: const Duration(milliseconds: 160),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppColors.bgCard,
+                  color: AppColors.bgMuted,
                   borderRadius: BorderRadius.circular(AppRadius.md),
-                  border: Border.all(color: AppColors.border),
                 ),
                 child: Row(
                   children: [
@@ -3724,15 +3508,15 @@ class _PostJobFormState extends State<PostJobForm>
                       child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
                     )
                   else
-                    const Icon(Icons.auto_awesome_rounded, size: 18, color: AppColors.primary),
+                    const Icon(Icons.edit_note_rounded, size: 20, color: AppColors.primary),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       _isAIGenerating
-                          ? '공고문을 정리하고 있어요…'
+                          ? '공고문을 쓰고 있어요…'
                           : _description.isNotEmpty
-                          ? 'AI로 공고문 다시 쓰기'
-                          : 'AI로 공고문 쓰기',
+                          ? '공고문 다시 써 받기'
+                          : '공고문 대신 써 드려요',
                       style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.primary),
                     ),
                   ),
@@ -3754,9 +3538,8 @@ class _PostJobFormState extends State<PostJobForm>
         ),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.bgCard,
+            color: AppColors.bgMuted,
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.border),
           ),
           child: TextField(
             controller: _descCtrl,
@@ -3784,7 +3567,7 @@ class _PostJobFormState extends State<PostJobForm>
 
         if (_descAutoFilled) ...[
           const SizedBox(height: 6),
-          const Text('알바생이 자주 묻는 것만 빈칸으로 두었어요 · 안 채운 줄은 빼고 올라가요', style: AppTextStyles.caption),
+          const Text('빈칸으로 둔 줄은 빼고 올라가요', style: AppTextStyles.caption),
         ],
         // ── 장기 공고 전용 필드 ──────────────────────────
         if (!_isShortTerm) ...[
@@ -3861,9 +3644,8 @@ class _PostJobFormState extends State<PostJobForm>
           const SizedBox(height: 6),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.bgMuted,
               borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: AppColors.border),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
             child: TextField(
@@ -3894,9 +3676,8 @@ class _PostJobFormState extends State<PostJobForm>
           const SizedBox(height: 6),
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.bgMuted,
               borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: AppColors.border),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
             child: TextField(
@@ -3931,9 +3712,8 @@ class _PostJobFormState extends State<PostJobForm>
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.bgPage,
+                color: AppColors.bgMuted,
                 borderRadius: BorderRadius.circular(AppRadius.xs),
-                border: Border.all(color: AppColors.border),
               ),
               child: const Text(
                 '선택',
@@ -3960,9 +3740,8 @@ class _PostJobFormState extends State<PostJobForm>
                   height: 80,
                   margin: const EdgeInsets.only(right: 8),
                   decoration: BoxDecoration(
-                    color: AppColors.bgPage,
+                    color: AppColors.bgMuted,
                     borderRadius: BorderRadius.circular(AppRadius.md),
-                    border: Border.all(color: AppColors.border),
                   ),
                   child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -4018,101 +3797,15 @@ class _PostJobFormState extends State<PostJobForm>
     );
   }
 
-  void _showAiPaywall() {
-    final planLabel =
-        _subscriptionPlan == 'lite'
-            ? '베이직'
-            : _subscriptionPlan == 'standard'
-            ? '스탠다드'
-            : null;
-    final resetInfo =
-        planLabel != null
-            ? '$planLabel 플랜 · 다음 충전: $_aiQuotaResetText'
-            : '다음 충전: $_aiQuotaResetText';
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder:
-          (_) => Container(
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
-            ),
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: AppColors.border,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Icon(
-                  Icons.auto_awesome,
-                  color: AppColors.primary,
-                  size: 32,
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'AI 공고문 작성 횟수를 모두 사용했어요',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: AppFontSize.buttonLg,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  resetInfo,
-                  style: const TextStyle(
-                    fontSize: AppFontSize.body2,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '베이직은 월 3회, 무제한은 제한 없이 쓸 수 있어요',
-                  style: TextStyle(
-                    fontSize: AppFontSize.meta,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, '/subscription/manage');
-                    },
-                    child: const Text(
-                      '구독 플랜 보기'),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      '닫기',
-                      style: TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: AppFontSize.button,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+  Future<void> _showAiPaywall() async {
+    final go = await showAppSheet(
+      context,
+      title: '이번 달 횟수를 다 썼어요',
+      message: '다음 충전: $_aiQuotaResetText\n무제한 플랜은 횟수 제한 없이 쓸 수 있어요.',
+      confirmLabel: '구독 플랜 보기',
+      cancelLabel: '닫기',
     );
+    if (go && mounted) Navigator.pushNamed(context, '/subscription/manage');
   }
 
   void _showAIDialog() {
@@ -4191,11 +3884,7 @@ class _NextBtn extends StatelessWidget {
   const _NextBtn({required this.onTap, this.label = '다음'});
   // 모양은 테마 주 버튼 — 비활성은 연한 파랑(회색 버튼에 긴 문장을 넣던 것 대신 위에 안내 한 줄)
   @override
-  Widget build(BuildContext context) => SizedBox(
-    width: double.infinity,
-    height: 54,
-    child: ElevatedButton(onPressed: onTap, child: Text(label)),
-  );
+  Widget build(BuildContext context) => AppPrimaryButton(onPressed: onTap, label: label, height: 54);
 }
 
 class _TimeInputCard extends StatelessWidget {
@@ -4220,9 +3909,8 @@ class _TimeInputCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
           decoration: BoxDecoration(
-            color: AppColors.bgCard,
+            color: AppColors.bgMuted,
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: AppColors.border),
           ),
           child: Row(
             children: [
@@ -4283,11 +3971,9 @@ class _ToggleBtn extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 14),
           decoration: BoxDecoration(
-            color: selected ? AppColors.primaryLight : AppColors.bgCard,
+            color: selected ? AppColors.primaryLight : AppColors.bgMuted,
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(
-              color: selected ? AppColors.primaryMid : AppColors.border,
-            ),
+            border: Border.all(color: selected ? AppColors.primary : Colors.transparent),
           ),
           child: Text(
             label,
@@ -4320,9 +4006,9 @@ class _SmallToggle extends StatelessWidget {
           duration: const Duration(milliseconds: 160),
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: selected ? AppColors.primaryLight : AppColors.bgCard,
+            color: selected ? AppColors.primaryLight : AppColors.bgMuted,
             borderRadius: BorderRadius.circular(AppRadius.md),
-            border: Border.all(color: selected ? AppColors.primaryMid : AppColors.border),
+            border: Border.all(color: selected ? AppColors.primary : Colors.transparent),
           ),
           child: Center(
             child: Text(
@@ -4440,7 +4126,7 @@ class _ExternalApplyOption extends StatelessWidget {
                       ),
                       SizedBox(height: 3),
                       Text(
-                        '유료 공고에서만 가능 · 공고 상세 확인 후 외부 페이지로 이동',
+                        '유료 공고에서만 쓸 수 있어요',
                         style: TextStyle(fontSize: AppFontSize.caption, color: AppColors.textSecondary),
                       ),
                     ],
@@ -4463,8 +4149,6 @@ class _ExternalApplyOption extends StatelessWidget {
                 color: AppColors.textPrimary,
               ),
               decoration: InputDecoration(
-                filled: true,
-                fillColor: Colors.white,
                 hintText: 'https://example.com/apply',
                 hintStyle: const TextStyle(
                   fontSize: AppFontSize.body2,
@@ -4478,14 +4162,6 @@ class _ExternalApplyOption extends StatelessWidget {
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 12,
                   vertical: 13,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  borderSide: const BorderSide(color: AppColors.border),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  borderSide: const BorderSide(color: AppColors.border),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppRadius.md),
@@ -4510,9 +4186,8 @@ class _LaborNoticeState extends State<_LaborNotice> {
   @override
   Widget build(BuildContext context) => Container(
     decoration: BoxDecoration(
-      color: AppColors.bgPage,
+      color: AppColors.bgMuted,
       borderRadius: BorderRadius.circular(AppRadius.md),
-      border: Border.all(color: AppColors.border),
     ),
     child: Column(
       children: [
@@ -4812,7 +4487,7 @@ class _PublishSheetState extends State<_PublishSheet> {
     switch (_choice) {
       case 'urgent':
         if (!_urgentOk) {
-          return (label: '결제하고 긴급 호출하기', note: '긴급 호출 이용권 13,900원 · 아무도 답하지 않으면 환급돼요', onTap: widget.onBuyPass, loading: false);
+          return (label: '결제하고 긴급 호출하기', note: '13,900원 · 아무도 답하지 않으면 돌려드려요', onTap: widget.onBuyPass, loading: false);
         }
         return (
           label: '긴급 호출로 올리기',
@@ -4826,7 +4501,7 @@ class _PublishSheetState extends State<_PublishSheet> {
             ? (label: '무료로 올리기', note: '이번 달 무료 등록을 다 썼어요', onTap: null, loading: false)
             : (
               label: '무료로 올리기',
-              note: '${kstWhenLabel(freePublishAt(now), now)}에 공개돼요${_freeLate(now) ? ' · 근무 시작보다 늦어요' : ''}',
+              note: '${kstWhenLabel(freePublishAt(now), now)}에 공개돼요${_freeLate(now) ? '. 근무 시작보다 늦어요' : ''}',
               onTap: widget.onFreeSubmit,
               loading: false,
             );
@@ -4899,14 +4574,24 @@ class _PublishSheetState extends State<_PublishSheet> {
                             Flexible(child: Text(title, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary))),
                             if (recommended) ...[
                               const SizedBox(width: 6),
-                              Text('추천', style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
+                              Text('추천', style: AppTextStyles.caption.copyWith(color: AppColors.primary, fontWeight: FontWeight.w700)),
                             ],
-                            const SizedBox(width: 8),
+                            const Spacer(),
                             Text(tag, style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                           ],
                         ),
-                        const SizedBox(height: 6),
-                        Text(sub, style: AppTextStyles.body2),
+                        // 세부 조건은 고른 줄에만 — 네 줄이 모두 설명을 달고 있으면 비교가 안 된다
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 180),
+                          curve: Curves.easeOut,
+                          alignment: Alignment.topCenter,
+                          child: on
+                              ? Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Text(sub, style: AppTextStyles.body2),
+                                )
+                              : const SizedBox(width: double.infinity),
+                        ),
                         const SizedBox(height: 14),
                         const Divider(height: 1, color: AppColors.borderSub),
                       ],
@@ -4966,23 +4651,23 @@ class _PublishSheetState extends State<_PublishSheet> {
                   recommended: true,
                   sub: _durationPolicy == null
                       ? '상품 정보 확인 중'
-                      : '지금 바로 공개 · 알바생 알림 2회 · ${_durationPolicy == true ? '3' : '7'}일 노출',
+                      : '지금 바로 공개되고, 근처 알바생에게 두 번 알려요. ${_durationPolicy == true ? '3' : '7'}일 동안 보여요.',
                 ),
                 if (_durationPolicy == true)
                   option(
                     value: 'instant_7d',
                     title: '즉시 게시 · 7일',
                     tag: _ownedTag(_sevenDayPassCount, '11,900원'),
-                    sub: '지금 바로 공개 · 알바생 알림 2회 · 7일 노출',
+                    sub: '지금 바로 공개되고, 근처 알바생에게 두 번 알려요. 7일 동안 보여요.',
                   ),
                 option(
                   value: 'urgent',
                   title: '긴급 호출',
                   tag: _ownedTag(_urgentPassCount, '13,900원'),
                   sub:
-                      '즉시 게시 + 24시간 상단 고정 · 근처 5km 알바생 최대 10명에게 직접 연락'
+                      '하루 동안 맨 위에 걸리고, 5km 안 알바생 10명에게 직접 연락할 수 있어요'
                       '${_urgentWorkersCount != null && _urgentWorkersCount! > 0 ? ' (지금 $_urgentWorkersCount명)' : ''}'
-                      ' · 아무도 답하지 않으면 이용권 환급',
+                      '. 아무도 답하지 않으면 돌려드려요.',
                 ),
                 option(
                   value: 'free',
@@ -4990,8 +4675,8 @@ class _PublishSheetState extends State<_PublishSheet> {
                   tag: freeLeft ?? '무료',
                   sub:
                       _freeLate(now)
-                          ? '$freeWhen 공개라 근무 시작보다 늦어요 · 알림 1회 · 3일 노출'
-                          : '$freeWhen 공개 · 알바생 알림 1회 · 3일 노출',
+                          ? '$freeWhen 공개라 근무 시작보다 늦어요. 3일 동안 보여요.'
+                          : '$freeWhen 공개되고, 근처 알바생에게 한 번 알려요. 3일 동안 보여요.',
                 ),
                 if ((_choice == 'instant' && _paidOk) || (_choice == 'instant_7d' && _sevenDayOk)) ...[
                   const SizedBox(height: 8),
@@ -5272,13 +4957,19 @@ class _AiReplyCardState extends State<_AiReplyCard> {
                 controller: _customCtrl,
                 maxLength: 100,
                 onChanged: (_) => _emit(),
-                decoration: const InputDecoration(hintText: '직접 질문 (예: 보건증 있으세요?)', counterText: '', isDense: true),
+                decoration: const InputDecoration(hintText: '직접 질문 (예: 보건증 있으세요?)', counterText: '', isDense: true, fillColor: AppColors.bgCard),
               ),
             ),
             Row(
               children: [
                 Expanded(
-                  child: Text('성인만 받기 · 만 18세 미만이면 AI가 정중히 안내해요', style: AppTextStyles.caption),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('성인만 받기', style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600)),
+                      const Text('만 18세 미만 지원자에겐 정중히 안내해요', style: AppTextStyles.caption),
+                    ],
+                  ),
                 ),
                 Switch.adaptive(
                   value: _adultOnly,
