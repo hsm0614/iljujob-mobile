@@ -963,31 +963,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
 
   // 급구 '진행중 | 종료' 밑줄 탭 + 필터 칩 한 줄 (탭 두 줄 + 정렬·보기 버튼을 하나로)
   Widget _buildFilterHeader() {
-    final single = totalPages <= 1; // 한 페이지일 때만 개수가 정확하다
-    int n(String st) => myJobs.where((j) => st == '전체' || _isLive(j) == (st == '공고중')).length;
-    Widget chip(String label, bool on, VoidCallback onTap, {bool arrow = false}) => Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: Material(
-        color: on ? AppColors.primary : AppColors.bgCard,
-        shape: StadiumBorder(side: BorderSide(color: on ? AppColors.primary : AppColors.border)),
-        child: InkWell(
-          customBorder: const StadiumBorder(),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(label, style: AppTextStyles.body2.copyWith(color: on ? Colors.white : AppColors.textPrimary)),
-                if (arrow) Icon(Icons.keyboard_arrow_down_rounded, size: 16, color: on ? Colors.white : AppColors.textSecondary),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-
-    // 시안 2번: 큰 제목 하나로 시작한다. 거르기·정렬은 공고가 많을 때만 (밑줄 탭은 관리 목록처럼 보였다)
+    // 시안 2번: 큰 제목 하나로 시작한다. 목록이 모집 중·지난 공고로 나뉘어 거르기 알약은 뺐다
     return Container(
       color: AppColors.bgCard,
       padding: const EdgeInsets.fromLTRB(20, 12, 0, 0),
@@ -997,9 +973,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           Builder(builder: (_) {
             final live = myJobs.where(_isLive).length;
             return Text.rich(
-              filterStatus == '마감'
-                  ? const TextSpan(text: '마감된 공고')
-                  : live == 0
+              live == 0
                   ? const TextSpan(text: '지금 모집 중인 공고가 없어요')
                   : TextSpan(children: [
                       const TextSpan(text: '지금 모집 중 '),
@@ -1008,49 +982,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
               style: AppTextStyles.h1.copyWith(fontWeight: FontWeight.w700, height: 1.4),
             );
           }),
-          if (totalCount > 3)
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.only(top: 12, bottom: 4),
-              child: Row(
-                children: [
-                  for (final (label, value) in const [('전체', '전체'), ('모집중', '공고중'), ('마감', '마감')])
-                    chip(single ? '$label ${n(value)}' : label, filterStatus == value, () => setState(() => filterStatus = value)),
-                  if (totalCount >= 8) ...[
-                    chip(sortType, false, _pickSort, arrow: true),
-                    for (final t in const ['일급', '주급'])
-                      chip(t, payTypeFilter == t, () => setState(() => payTypeFilter = payTypeFilter == t ? '전체' : t)),
-                  ],
-                ],
-              ),
-            ),
           const SizedBox(height: 8),
         ],
       ),
     );
-  }
-
-  Future<void> _pickSort() async {
-    final v = await showModalBottomSheet<String>(
-      context: context,
-      builder:
-          (ctx) => SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const SizedBox(height: 8),
-                for (final t in const ['최신순', '오래된 순', '급여 높은 순'])
-                  AppMenuRow(
-                    label: t,
-                    trailing: sortType == t ? const Icon(Icons.check_rounded, color: AppColors.primary, size: 20) : const SizedBox.shrink(),
-                    onTap: () => Navigator.pop(ctx, t),
-                  ),
-                const SizedBox(height: 8),
-              ],
-            ),
-          ),
-    );
-    if (v != null && mounted) setState(() => sortType = v);
   }
 
   Widget _buildEmptyJobsState({required bool hasAnyJobs}) {
@@ -1774,10 +1709,20 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        [if (when.isNotEmpty) when, formatJobPay(job.pay, job.payType, includeType: true)].join(' · '),
-                        style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: AppColors.textBody),
-                      ),
+                      // 시안처럼 한 줄 — 날짜가 길면 날짜만 줄이고 급여는 끝까지 보인다 (갤럭시 큰 글씨에서 두 줄로 꺾였다)
+                      Builder(builder: (_) {
+                        final st = AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: AppColors.textBody);
+                        final pay = formatJobPay(job.pay, job.payType, includeType: true);
+                        return Row(
+                          children: [
+                            if (when.isNotEmpty) ...[
+                              Flexible(child: Text(when, maxLines: 1, overflow: TextOverflow.ellipsis, style: st)),
+                              Text(' · ', style: st),
+                            ],
+                            Text(pay, maxLines: 1, style: st),
+                          ],
+                        );
+                      }),
                       const SizedBox(height: 6),
                       Text(status, style: AppTextStyles.body2),
                       const SizedBox(height: 14),
