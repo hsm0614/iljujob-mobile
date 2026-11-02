@@ -48,6 +48,9 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
   final Map<String, String> _prices = {};
   // 홈 배너 예시 — 지금 알바생 홈 맨 위에 실제로 걸려 있는 배너. 이미지를 고르기 전까지 미리보기에 보여 준다
   String? _sampleBannerUrl;
+  // 문의 양식 미리 채우기용 (프로필)
+  String _managerName = '';
+  String _managerPhone = '';
   File? _image;
   List<AdEligibleJob> _jobs = const [];
   bool _jobsLoading = true;
@@ -102,9 +105,103 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
       final res = await AuthenticatedHttpClient.get(Uri.parse('$baseUrl/api/client/profile'));
       if (res.statusCode != 200) return;
       final raw = jsonDecode(res.body);
-      final name = '${(raw['data'] ?? raw)['company_name'] ?? ''}'.trim();
+      final d = raw['data'] ?? raw;
+      final name = '${d['company_name'] ?? ''}'.trim();
       if (mounted && _company.text.isEmpty && name.isNotEmpty) _company.text = name;
+      _managerName = '${d['manager_name'] ?? d['name'] ?? ''}'.trim();
+      _managerPhone = '${d['manager_phone'] ?? d['phone'] ?? ''}'.trim();
     } catch (_) {}
+  }
+
+  /// 광고·결제 문의 — 고객센터 대신 광고 문의 함으로 바로 (웹과 같은 곳, 어드민 한 곳에서 본다)
+  Future<void> _openInquiry({AdRequestSummary? payFor}) async {
+    final manager = TextEditingController(text: _managerName);
+    final company = TextEditingController(text: _company.text.trim());
+    final contact = TextEditingController(text: _managerPhone);
+    final message = TextEditingController(
+      text: payFor == null ? '' : "'${payFor.title}' (신청 ${payFor.id}번) 결제 방법을 알고 싶어요.",
+    );
+    final formKey = GlobalKey<FormState>();
+    String? need(String? v) => (v == null || v.trim().isEmpty) ? '입력해 주세요' : null;
+    var sending = false;
+    final sent = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, set) => Padding(
+          padding: EdgeInsets.fromLTRB(20, 20, 20, 16 + MediaQuery.of(ctx).viewInsets.bottom),
+          child: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(payFor == null ? '광고 문의' : '결제 문의', style: AppTextStyles.h2),
+                  const SizedBox(height: 4),
+                  Text('남겨 주신 연락처로 운영팀이 연락드려요', style: AppTextStyles.body2),
+                  const SizedBox(height: 16),
+                  TextFormField(controller: manager, validator: need, decoration: const InputDecoration(hintText: '담당자 이름')),
+                  const SizedBox(height: 8),
+                  TextFormField(controller: company, validator: need, decoration: const InputDecoration(hintText: '가게·회사 이름')),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: contact,
+                    validator: need,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(hintText: '연락처 (전화 또는 이메일)'),
+                  ),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: message,
+                    validator: need,
+                    maxLines: 4,
+                    maxLength: 500,
+                    decoration: const InputDecoration(hintText: '궁금한 점을 적어 주세요', counterText: ''),
+                  ),
+                  const SizedBox(height: 16),
+                  AppPrimaryButton(
+                    label: '문의 보내기',
+                    loading: sending,
+                    onPressed: sending
+                        ? null
+                        : () async {
+                            if (!formKey.currentState!.validate()) return;
+                            set(() => sending = true);
+                            try {
+                              await sendAdInquiry(
+                                manager: manager.text.trim(),
+                                company: company.text.trim(),
+                                contact: contact.text.trim(),
+                                // 어드민에서 웹 문의와 구분되게 앞에 출처
+                                message: '[앱 · ${payFor == null ? '채용 홍보' : '결제 문의'}] ${message.text.trim()}',
+                              );
+                              if (ctx.mounted) Navigator.pop(ctx, true);
+                            } catch (e) {
+                              set(() => sending = false);
+                              if (ctx.mounted) {
+                                ScaffoldMessenger.of(ctx).showSnackBar(
+                                  SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+                                );
+                              }
+                            }
+                          },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    // 컨트롤러는 닫히는 애니메이션 중에도 쓰여서 여기서 dispose하지 않는다 (리스너 없음 — GC가 거둔다)
+    if (sent == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('문의를 보냈어요. 남겨 주신 연락처로 연락드릴게요')),
+      );
+    }
   }
 
   void _pickJob(AdEligibleJob job) => setState(() {
@@ -588,7 +685,7 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
       // 아이폰은 앱 결제 없이 문의로 결제를 안내한다 (대표 11-01)
       action = Platform.isAndroid
           ? TextButton(onPressed: _busy ? null : () => _buyAd(request), child: const Text('결제하기'))
-          : TextButton(onPressed: () => Navigator.pushNamed(context, '/support'), child: const Text('결제 문의하기'));
+          : TextButton(onPressed: () => _openInquiry(payFor: request), child: const Text('결제 문의하기'));
     }
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -669,7 +766,7 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
                   },
                 ),
                 TextButton(
-                  onPressed: () => Navigator.pushNamed(context, '/support'),
+                  onPressed: () => _openInquiry(),
                   child: const Text('광고 문의하기'),
                 ),
               ],
@@ -833,7 +930,7 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
               _steps(),
               Center(
                 child: TextButton(
-                  onPressed: () => Navigator.pushNamed(context, '/support'),
+                  onPressed: () => _openInquiry(),
                   style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
                   child: const Text('광고 문의하기'),
                 ),

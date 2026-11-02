@@ -151,3 +151,21 @@ class AdRequestService implements AdRequestApi {
     return decoded['id'] as int;
   }
 }
+
+/// 광고·제휴 문의 — 웹 '광고 문의'와 같은 함(서버 ad_inquiries)으로 보낸다.
+/// 어드민 '광고 문의' 한 곳에서 보고, 접수되면 운영자 폰으로 알림이 간다 (2026-11)
+Future<void> sendAdInquiry({
+  required String manager,
+  required String company,
+  required String contact,
+  required String message,
+}) async {
+  final res = await http
+      .post(
+        Uri.parse('$baseUrl/api/ad-inquiry'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'manager': manager, 'company': company, 'contact': contact, 'message': message}),
+      )
+      .timeout(const Duration(seconds: 10));
+  if (res.statusCode != 200) throw Exception('문의를 보내지 못했어요. 잠시 후 다시 시도해 주세요.');
+}

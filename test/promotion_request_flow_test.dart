@@ -117,6 +117,16 @@ void main() {
     expect(find.byKey(const Key('ad_destination_url')), findsNothing);
   });
 
+  testWidgets('광고 문의하기는 고객센터가 아니라 광고 문의 양식을 연다', (tester) async {
+    await tester.pumpWidget(MaterialApp(home: PromotionRequestScreen(api: FakeAdRequestApi())));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('광고 문의하기'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('광고 문의하기'));
+    await tester.pumpAndSettle();
+    expect(find.text('광고 문의'), findsOneWidget);
+    expect(find.text('문의 보내기'), findsOneWidget);
+  });
+
   testWidgets('미리보기 카드가 입력한 제목을 그대로 보여 준다', (tester) async {
     await tester.pumpWidget(MaterialApp(home: PromotionRequestScreen(api: FakeAdRequestApi(mine: const []))));
     await tester.pumpAndSettle();
