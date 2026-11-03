@@ -180,7 +180,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
             child: ElevatedButton(
               onPressed: () {
                 Navigator.pop(context);
-                Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionPlansScreen()));
+                Navigator.push(context, MaterialPageRoute(builder: (_) => const SubscriptionPlansScreen(source: 'job_insight')));
               },
               child: const Text('구독 플랜 보기'),
             ),

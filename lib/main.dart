@@ -828,7 +828,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             companyPhone: args['companyPhone'],
           );
         },
-        '/subscribe': (_) => const SubscriptionPlansScreen(),
+        '/subscribe': (context) => SubscriptionPlansScreen(
+          source: ModalRoute.of(context)?.settings.arguments as String?,
+        ),
         '/nearby-workers': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
           if (args == null || args is! Map<String, dynamic>) {

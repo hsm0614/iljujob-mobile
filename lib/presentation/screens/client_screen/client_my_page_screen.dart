@@ -399,6 +399,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
                           (_sub?.active ?? false)
                               ? '/subscription/manage'
                               : '/subscribe',
+                          arguments: 'mypage',
                         );
                         if (mounted) _refreshAll();
                       },

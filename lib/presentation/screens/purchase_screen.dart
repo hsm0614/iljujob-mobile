@@ -709,7 +709,7 @@ class _UrgentTab extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () => Navigator.pushNamed(context, '/subscribe'),
+                    onPressed: () => Navigator.pushNamed(context, '/subscribe', arguments: 'purchase'),
                     child: const Text('구독 보기'),
                   ),
                 ],

@@ -874,7 +874,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         child: ElevatedButton(
                           onPressed: () {
                             Navigator.pop(ctx);
-                            Navigator.pushNamed(context, '/subscribe');
+                            Navigator.pushNamed(context, '/subscribe', arguments: 'home_talent_gate');
                           },
                           child: const Text(
                             '구독하기'),
@@ -1572,7 +1572,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         final purchased = await Navigator.push<bool>(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const SubscriptionPlansScreen(),
+                            builder: (_) => const SubscriptionPlansScreen(source: 'home_publish_now'),
                           ),
                         );
                         if (!mounted || purchased != true) return;

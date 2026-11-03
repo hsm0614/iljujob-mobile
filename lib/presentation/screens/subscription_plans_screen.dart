@@ -23,7 +23,10 @@ typedef _Plan = SubscriptionProductConfig;
 const _plans = subscriptionProductConfigs;
 
 class SubscriptionPlansScreen extends StatefulWidget {
-  const SubscriptionPlansScreen({super.key});
+  const SubscriptionPlansScreen({super.key, this.source});
+
+  /// 어디서 들어왔나 — subscription_page_view 의 properties.source (진입점별 전환을 재기 위해)
+  final String? source;
   @override
   State<SubscriptionPlansScreen> createState() =>
       _SubscriptionPlansScreenState();
@@ -48,7 +51,10 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       _purchaseSub = _iap.purchaseStream.listen(_onPurchase, onError: (_) {});
       _loadStorePrices();
     }
-    ClientTrackingService.instance.track('subscription_page_view');
+    ClientTrackingService.instance.track(
+      'subscription_page_view',
+      properties: {'source': widget.source ?? 'unknown'},
+    );
   }
 
   @override
@@ -88,7 +94,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
     final plan = _plan;
     ClientTrackingService.instance.track(
       'subscription_plan_tap',
-      properties: {'plan': plan.key},
+      properties: {'plan': plan.key, 'source': widget.source ?? 'unknown'},
     );
 
     try {
@@ -366,8 +372,9 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // 헤더
+                    // 60일 페이지 본 28명 중 플랜 누름 5명(11-03). 막연한 '더 빠르게' 대신 따로 살 때와의 비교를 먼저.
                     const Text(
-                      '알바일주 구독으로\n더 빠르게 채용하세요',
+                      '즉시 게시를 자주 쓰면\n구독이 더 저렴해요',
                       style: TextStyle(
                         fontSize: AppFontSize.h2,
                         fontWeight: FontWeight.w800,
@@ -377,7 +384,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      '결제 기간 동안 먼저 연락하고 지도에서 알릴 수 있어요',
+                      '즉시 게시 이용권은 1장 8,900원이에요',
                       style: TextStyle(
                         fontSize: AppFontSize.body2,
                         color: AppColors.textSecondary,
@@ -445,6 +452,14 @@ class _PlanCard extends StatelessWidget {
     required this.onTap,
   });
 
+  // 따로 살 때와 비교 (pass_product_config: 1장 8,900 · 3장 24,900 · 10장 69,900).
+  // 무제한: 13건 = 69,900+24,900 = 94,800 < 95,000, 14건부터 따로 사는 게 더 비싸다.
+  // ponytail: 가격이 바뀌면 손으로 고친다 — 상품표에서 계산하는 건 가격이 다시 바뀔 때.
+  static const _anchor = {
+    'lite': '즉시 게시 3장 묶음(24,900원)에 4,100원 더하면 먼저 연락 10명까지',
+    'pro': '한 달 공고 14건부터 따로 사는 것보다 저렴해요',
+  };
+
   @override
   Widget build(BuildContext context) {
     final summary = [
@@ -486,6 +501,11 @@ class _PlanCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(summary, style: AppTextStyles.body2),
+                      const SizedBox(height: 6),
+                      Text(
+                        _anchor[plan.key] ?? '',
+                        style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+                      ),
                     ],
                   ),
                 ),

@@ -148,7 +148,7 @@ class _WageReportScreenState extends State<WageReportScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => Navigator.pushNamed(context, '/subscribe'),
+                onPressed: () => Navigator.pushNamed(context, '/subscribe', arguments: 'wage_report'),
                 child: const Text(
                   '구독 플랜 보기'),
               ),

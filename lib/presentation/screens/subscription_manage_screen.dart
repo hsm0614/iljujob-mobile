@@ -394,7 +394,7 @@ class _SubscriptionManageScreenState extends State<SubscriptionManageScreen> {
                 child: AppPrimaryButton(
                   label: '구독 플랜 보기',
                   onPressed: () async {
-                    final result = await Navigator.pushNamed(context, '/subscribe');
+                    final result = await Navigator.pushNamed(context, '/subscribe', arguments: 'manage');
                     if (!mounted) return;
                     if (result == true) {
                       await _refresh();

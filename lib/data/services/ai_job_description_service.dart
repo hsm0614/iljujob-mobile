@@ -430,7 +430,7 @@ class _AIJobDescriptionWidgetState extends State<AIJobDescriptionWidget> {
       confirmLabel: '구독 플랜 보기',
       cancelLabel: '닫기',
     );
-    if (go && ctx.mounted) Navigator.pushNamed(ctx, '/subscribe');
+    if (go && ctx.mounted) Navigator.pushNamed(ctx, '/subscribe', arguments: 'ai_quota');
   }
 }
 
