@@ -22,6 +22,7 @@ import 'package:iljujob/widget/app_ui.dart';
 import 'package:iljujob/widget/app_motion.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
+import 'package:iljujob/widget/marketing_consent_sheet.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/presentation/widgets/albailju_common.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -319,6 +320,13 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           isSafeCompany = certUrl != null && certUrl.isNotEmpty;
           companyName = '${data['company_name'] ?? ''}'.trim();
         });
+        // 구버전 서버는 agreed_marketing 을 안 내려준다 — 그땐 묻지 않는다.
+        if (data.containsKey('agreed_marketing')) {
+          await MarketingConsentSheet.maybeShow(
+            context,
+            agreed: data['agreed_marketing'] == 1 || data['agreed_marketing'] == true,
+          );
+        }
       }
     } catch (e) {
       debugPrint('client profile error: $e');
