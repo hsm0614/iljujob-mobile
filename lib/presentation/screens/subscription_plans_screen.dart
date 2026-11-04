@@ -221,7 +221,12 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       final current = jsonDecode(status.body) as Map<String, dynamic>;
       if (!mounted) return;
       if (current['active'] == true) {
-        _showError('현재 구독이 끝난 뒤 새 기간권을 구매해 주세요. 중복 결제를 막기 위해 결제창을 열지 않았어요.');
+        // 베이직 중 무제한 → 남은 날만큼 차액만 (11-04 A안). 그 외 중복 구매는 계속 막는다
+        if (current['plan'] == 'lite' && plan.key == 'pro') {
+          await _upgradeWithPortOne();
+        } else {
+          _showError('현재 구독이 끝난 뒤 새 기간권을 구매해 주세요. 중복 결제를 막기 위해 결제창을 열지 않았어요.');
+        }
         return;
       }
       final result = await Navigator.push(
@@ -244,6 +249,52 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       if (mounted) _showError(Msg.server);
     } finally {
       if (mounted) setState(() => _processing = false);
+    }
+  }
+
+  Future<void> _upgradeWithPortOne() async {
+    final q = await AuthenticatedHttpClient.get(Uri.parse('$baseUrl/api/subscription/upgrade-quote'));
+    final quote = q.statusCode == 200 ? (jsonDecode(q.body) as Map)['quote'] : null;
+    if (quote is! Map || !mounted) {
+      _showError('지금은 업그레이드할 수 없어요. 고객센터로 문의해 주세요.');
+      return;
+    }
+    final amount = (quote['amount'] as num).toInt();
+    final days = quote['remainingDays'];
+    final go = await showAppSheet(
+      context,
+      title: '무제한으로 바로 바꿀까요?',
+      message:
+          '베이직이 $days일 남았어요.\n남은 기간의 차액 ${NumberFormat('#,###').format(amount)}원만 결제하면 지금부터 무제한이에요.\n끝나는 날은 그대로예요.',
+      confirmLabel: '${NumberFormat('#,###').format(amount)}원 결제',
+      cancelLabel: '닫기',
+    );
+    if (!go || !mounted) return;
+    ClientTrackingService.instance.track('subscription_upgrade_tap', properties: {'amount': amount, 'days': days});
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PortonePaymentScreen(
+          count: 1,
+          companyName: _companyName ?? '알바일주',
+          companyPhone: _companyPhone ?? '',
+          amount: amount,
+          productName: '알바일주 무제한 업그레이드 ($days일)',
+        ),
+      ),
+    );
+    if (result is! Map || result['imp_uid'] == null || !mounted) return;
+    final resp = await AuthenticatedHttpClient.postJson(
+      Uri.parse('$baseUrl/api/subscription/upgrade'),
+      body: {'impUid': result['imp_uid'].toString()},
+    );
+    if (!mounted) return;
+    if (resp.statusCode == 200) {
+      ClientTrackingService.instance.track('subscription_success', properties: {'plan': 'pro', 'upgrade': true});
+      _showSuccess();
+    } else {
+      final msg = (jsonDecode(resp.body) as Map?)?['message']?.toString();
+      _showError(msg ?? '업그레이드에 실패했어요. 고객센터로 문의해 주세요.');
     }
   }
 
