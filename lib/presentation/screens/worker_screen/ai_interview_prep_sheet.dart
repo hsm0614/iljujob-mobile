@@ -203,7 +203,7 @@ class _AiInterviewPrepSheetState extends State<AiInterviewPrepSheet> {
                       SizedBox(height: 16),
                       Text(
                         'AI가 면접 준비 가이드를 만들고 있어요...',
-                        style: TextStyle(color: Colors.black54, fontSize: AppFontSize.body2),
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: AppFontSize.body2),
                       ),
                       SizedBox(height: 6),
                       Text(

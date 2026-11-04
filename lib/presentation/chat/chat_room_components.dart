@@ -185,7 +185,7 @@ class ChatImageBubble extends StatelessWidget {
               width: 200,
               height: 200,
               alignment: Alignment.center,
-              color: Colors.black12,
+              color: AppColors.border,
               child: const SizedBox(
                 width: 20,
                 height: 20,
@@ -196,7 +196,7 @@ class ChatImageBubble extends StatelessWidget {
               width: 200,
               height: 200,
               alignment: Alignment.center,
-              color: Colors.black12,
+              color: AppColors.border,
               child: const Icon(Icons.broken_image),
             ),
           ),

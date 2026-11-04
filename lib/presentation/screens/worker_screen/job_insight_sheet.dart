@@ -88,7 +88,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.black12,
+                  color: AppColors.border,
                   borderRadius: BorderRadius.circular(99),
                 ),
               ),

@@ -144,7 +144,7 @@ class _RecommendedSectionState extends State<RecommendedSection> {
               const SizedBox(height: 10),
               const Text(
                 'AI가 나에게 맞는 공고를 찾는 중이에요...',
-                style: TextStyle(color: Colors.black54, fontSize: AppFontSize.body2),
+                style: TextStyle(color: AppColors.textSecondary, fontSize: AppFontSize.body2),
               ),
             ],
           ),
@@ -162,7 +162,7 @@ class _RecommendedSectionState extends State<RecommendedSection> {
           decoration: BoxDecoration(
             color: AppColors.bgMuted,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.black12),
+            border: Border.all(color: AppColors.border),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -180,7 +180,7 @@ class _RecommendedSectionState extends State<RecommendedSection> {
               const SizedBox(height: 6),
               const Text(
                 '프로필(성별/희망직종)과 위치를 채우면 추천 정확도가 확 올라가요.',
-                style: TextStyle(fontSize: AppFontSize.body2, color: Colors.black54, height: 1.2),
+                style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary, height: 1.2),
               ),
               const SizedBox(height: 12),
               Align(
@@ -217,7 +217,7 @@ class _RecommendedSectionState extends State<RecommendedSection> {
             const SizedBox(height: 6),
             Text(
               '총 ${items.length}개 추천',
-              style: const TextStyle(fontSize: AppFontSize.body2, color: Colors.black54),
+              style: const TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 10),
           ],
@@ -298,7 +298,7 @@ class _AiJobCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 meta,
-                style: const TextStyle(fontSize: AppFontSize.body2, color: Colors.black54),
+                style: const TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
               ),
 
               if (shown.isNotEmpty) ...[

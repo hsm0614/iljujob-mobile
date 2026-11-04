@@ -79,7 +79,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
     return InputDecoration(
       labelText: label,
       hintText: hint,
-      prefixIcon: icon != null ? Icon(icon, color: Colors.black45) : null,
+      prefixIcon: icon != null ? Icon(icon, color: AppColors.textTertiary) : null,
       filled: true,
       fillColor: kFill,
       border: OutlineInputBorder(
@@ -135,7 +135,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                   width: 40,
                   height: 4,
                   decoration: BoxDecoration(
-                    color: Colors.black12,
+                    color: AppColors.border,
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -164,7 +164,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                               fontSize: selected ? AppFontSize.titleLg : AppFontSize.buttonLg,
                               fontWeight:
                                   selected ? FontWeight.w800 : FontWeight.w500,
-                              color: selected ? kBrand : Colors.black87,
+                              color: selected ? kBrand : AppColors.textPrimary,
                             ),
                           ),
                         );
@@ -397,7 +397,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
                                           isSel
                                               ? FontWeight.w700
                                               : FontWeight.w500,
-                                      color: isSel ? kBrand : Colors.black87,
+                                      color: isSel ? kBrand : AppColors.textPrimary,
                                     ),
                                   ),
                                   selected: isSel,
