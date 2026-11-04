@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../widget/dev_account_switch.dart';
-import 'package:flutter/services.dart';
 import 'package:iljujob/config/app_theme.dart';
+import '../../widget/app_ui.dart';
 import 'worker_screen/home_main_screen.dart';
 import 'signup_client_screen/signup_client_choice_screen.dart';
 
+// 시안 BQvB3zzVYLBcMNbGP6Kznk 1번: 역할 두 줄이 주인공, '공고 먼저 보기'는 아래 글자 링크.
+// 예전엔 '공고 먼저 보기'가 가장 큰 파란 버튼이라 가입보다 먼저 눈에 들어왔다.
 class OnboardingScreen extends StatelessWidget {
   const OnboardingScreen({super.key});
 
@@ -16,98 +18,70 @@ class OnboardingScreen extends StatelessWidget {
     ).textScaler.clamp(minScaleFactor: 1.0, maxScaleFactor: 1.2);
 
     return Scaffold(
-      backgroundColor: AppColors.bgPage,
+      backgroundColor: AppColors.bgCard,
       body: SafeArea(
         child: MediaQuery(
           data: MediaQuery.of(context).copyWith(textScaler: textScaler),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 20),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(height: size.height * 0.10),
-
-                // 브랜드
-                const _BrandBlock(),
-
-                const SizedBox(height: 20),
-
-                // 기능 태그 (단색 아웃라인 필)
-                const _FeatureTags(),
-
-                SizedBox(height: size.height * 0.06),
-
-                // 역할 선택 레이블
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    '어떤 분이신가요?',
-                    style: TextStyle(
-                      fontSize: AppFontSize.buttonLg,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
+                SizedBox(height: size.height * 0.08),
+                const Text(
+                  '알바일주',
+                  style: TextStyle(
+                    fontFamily: 'Jalnan2TTF',
+                    fontSize: AppFontSize.h1,
+                    color: AppColors.primary,
                   ),
                 ),
-
-                const SizedBox(height: 14),
-
-                // 카드
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: _TypeCard(
-                        label: '알바생',
-                        icon: Icons.person_outline_rounded,
-                        subtitle: '원하는 날짜의\n일급·주급 알바 찾기',
-                        badge: null,
-                        isHighlighted: false,
-                        onTap:
-                            () =>
-                                Navigator.pushNamed(context, '/signup-choice'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _TypeCard(
-                        label: '사장님',
-                        icon: Icons.storefront_outlined,
-                        subtitle: '필요한 날에 맞춰\n구인 공고 등록하기',
-                        // 두 카드는 같은 무게 — 구직자 쪽이 비활성처럼 보이던 문제(2026-10)
-                        badge: null,
-                        isHighlighted: false,
-                        onTap:
-                            () => Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder:
-                                    (_) => const SignupClientChoiceScreen(),
-                              ),
-                            ),
-                      ),
-                    ),
-                  ],
-                ),
-                const DevAccountSwitchButton(),
-
-                const Spacer(),
-                SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: FilledButton(
-                    onPressed:
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const HomeMainScreen(),
-                          ),
-                        ),
-                    child: const Text('공고 먼저 보기'),
-                  ),
+                const SizedBox(height: 10),
+                Text(
+                  '필요한 날만 일하고,\n필요한 날만 뽑아요',
+                  style: AppTextStyles.h2.copyWith(fontSize: AppFontSize.h1, height: 1.35),
                 ),
                 const SizedBox(height: 8),
-                const Text('지원할 때 가입할 수 있어요', style: AppTextStyles.caption),
+                Text('일급·주급 단기 알바', style: AppTextStyles.body1.copyWith(color: AppColors.textBody)),
+                SizedBox(height: size.height * 0.06),
+                Text(
+                  '어떻게 쓰실 건가요?',
+                  style: AppTextStyles.body1.copyWith(color: AppColors.textBody, fontWeight: FontWeight.w600),
+                ),
+                const SizedBox(height: 12),
+                _RoleRow(
+                  title: '알바를 찾아요',
+                  subtitle: '내 근처 일급·주급 공고 보고 지원',
+                  onTap: () => Navigator.pushNamed(context, '/signup-choice'),
+                ),
+                const SizedBox(height: 10),
+                _RoleRow(
+                  title: '사람을 구해요',
+                  subtitle: '공고 올리고 지원자와 바로 채팅',
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SignupClientChoiceScreen()),
+                  ),
+                ),
+                const DevAccountSwitchButton(),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HomeMainScreen()),
+                  ),
+                  style: TextButton.styleFrom(
+                    minimumSize: const Size.fromHeight(44),
+                    foregroundColor: AppColors.textPrimary,
+                    textStyle: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  child: const Text('가입 없이 공고 먼저 볼게요'),
+                ),
+                const Text(
+                  '지원할 때 가입해도 돼요',
+                  style: AppTextStyles.caption,
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 20),
               ],
             ),
@@ -118,211 +92,49 @@ class OnboardingScreen extends StatelessWidget {
   }
 }
 
-// ─────────────────────────────────────────────
-// 브랜드 블록
-// ─────────────────────────────────────────────
-class _BrandBlock extends StatelessWidget {
-  const _BrandBlock();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Column(
-      children: [
-        Text(
-          '알바일주',
-          style: TextStyle(
-            fontFamily: 'Jalnan2TTF',
-            fontSize: AppFontSize.hero,
-            color: AppColors.primary,
-            letterSpacing: 0.5,
-          ),
-        ),
-        SizedBox(height: 8),
-        Text(
-          '필요한 날, 딱 맞는 알바',
-          style: TextStyle(
-            fontSize: AppFontSize.body1,
-            color: AppColors.textSecondary,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// 기능 키워드 태그 (아웃라인 필, 단색)
-// ─────────────────────────────────────────────
-class _FeatureTags extends StatelessWidget {
-  const _FeatureTags();
-
-  @override
-  Widget build(BuildContext context) {
-    const tags = ['긴급 호출', '즉시 게시', '일급·주급'];
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        for (int i = 0; i < tags.length; i++) ...[
-          if (i > 0)
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 6),
-              child: Text(
-                '·',
-                style: TextStyle(fontSize: AppFontSize.meta, color: AppColors.textTertiary),
-              ),
-            ),
-          _Tag(tags[i]),
-        ],
-      ],
-    );
-  }
-}
-
-class _Tag extends StatelessWidget {
-  final String label;
-  const _Tag(this.label);
-
-  @override
-  Widget build(BuildContext context) {
-    // 누를 수 없는 소개 문구라 버튼처럼 보이는 테두리 알약을 쓰지 않는다
-    return Text(
-      label,
-      style: const TextStyle(
-        fontSize: AppFontSize.body2,
-        color: AppColors.textSecondary,
-        fontWeight: FontWeight.w600,
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────
-// 선택 카드
-// ─────────────────────────────────────────────
-class _TypeCard extends StatefulWidget {
-  final String label;
-  final IconData icon;
+class _RoleRow extends StatelessWidget {
+  const _RoleRow({required this.title, required this.subtitle, required this.onTap});
+  final String title;
   final String subtitle;
-  final String? badge;
-  final bool isHighlighted;
   final VoidCallback onTap;
-
-  const _TypeCard({
-    required this.label,
-    required this.icon,
-    required this.subtitle,
-    required this.badge,
-    required this.isHighlighted,
-    required this.onTap,
-  });
-
-  @override
-  State<_TypeCard> createState() => _TypeCardState();
-}
-
-class _TypeCardState extends State<_TypeCard> {
-  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: '${widget.label}으로 시작하기',
-      child: AnimatedScale(
-        duration: const Duration(milliseconds: 100),
-        scale: _pressed ? 0.96 : 1.0,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            GestureDetector(
-              onTapDown: (_) => setState(() => _pressed = true),
-              onTapCancel: () => setState(() => _pressed = false),
-              onTap: () {
-                setState(() => _pressed = false);
-                HapticFeedback.lightImpact();
-                widget.onTap();
-              },
-              child: Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.bgCard,
-                  borderRadius: BorderRadius.circular(AppRadius.xl),
-                  border: Border.all(
-                    color:
-                        widget.isHighlighted
-                            ? AppColors.primaryMid
-                            : AppColors.border,
-                    width: widget.isHighlighted ? 1.5 : 1.0,
-                  ),
-                ),
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+      label: title,
+      child: AppPressScale(
+        child: Material(
+          color: AppColors.bgCard,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            onTap: onTap,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 84),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 16, 16, 16),
+                child: Row(
                   children: [
-                    // 아이콘
-                    // 파란 아이콘 상자 → 회색 아이콘만 (아이콘 상자 규칙)
-                    Icon(widget.icon, size: 26, color: AppColors.textSecondary),
-
-                    const SizedBox(height: 16),
-
-                    // 라벨
-                    Text(
-                      widget.label,
-                      style: AppTextStyles.h3,
-                    ),
-
-                    const SizedBox(height: 6),
-
-                    // 부제목
-                    Text(
-                      widget.subtitle,
-                      style: const TextStyle(
-                        fontSize: AppFontSize.meta,
-                        color: AppColors.textSecondary,
-                        height: 1.55,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title, style: AppTextStyles.h3),
+                          const SizedBox(height: 3),
+                          Text(subtitle, style: AppTextStyles.body1.copyWith(color: AppColors.textBody)),
+                        ],
                       ),
                     ),
-
-                    const SizedBox(height: 20),
-
-                    // 화살표
-                    Align(
-                      alignment: Alignment.centerRight,
-                      // 카드 전체가 버튼 — 파란 동그라미 화살표 대신 회색 화살표
-                      child: const Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary),
-                    ),
+                    const Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary),
                   ],
                 ),
               ),
             ),
-
-            // 뱃지
-            if (widget.badge != null)
-              Positioned(
-                top: -10,
-                right: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 9,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(AppRadius.full),
-                    boxShadow: AppShadows.button,
-                  ),
-                  child: Text(
-                    widget.badge!,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: AppFontSize.caption,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-              ),
-          ],
+          ),
         ),
       ),
     );

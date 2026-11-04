@@ -1004,6 +1004,23 @@ class _ChatListScreenState extends State<ChatListScreen>
           return title.contains(q) || other.contains(q) || lastMsg.contains(q);
         }).toList();
 
+    // 사장님: 답장을 기다리는 사람을 맨 위로 (시안 BQvB3zzVYLBcMNbGP6Kznk 4번).
+    // 30일 방 353개 중 사장님이 한 번이라도 답한 방 44%(11-04) — 묻히지 않게 따로 묶는다.
+    var awaitingCount = 0;
+    if (userType == 'client' && q.isEmpty) {
+      bool awaiting(dynamic c) {
+        final status = c['application_status'];
+        if (status == 'cancelled' || status == 'completed') return false;
+        final replied = c['client_replied'] == 1 || c['client_replied'] == true;
+        return !replied || c['last_sender_type'] == 'worker';
+      }
+      final waiting = filtered.where(awaiting).toList();
+      awaitingCount = waiting.length;
+      if (awaitingCount > 0) {
+        filtered = [...waiting, ...filtered.where((c) => !awaiting(c))];
+      }
+    }
+
     final unreadOnly =
         filtered.where((c) {
           final unread =
@@ -1118,6 +1135,17 @@ class _ChatListScreenState extends State<ChatListScreen>
                         _PrettyListView(
                           items: filtered,
                           itemBuilder: (c) => _buildChatItem(c),
+                          sections: awaitingCount == 0
+                              ? const {}
+                              : {
+                                  0: _SectionHeader(
+                                    title: '답장을 기다려요',
+                                    count: awaitingCount,
+                                    note: '지원하고 사장님 답장을 기다리는 사람이에요',
+                                  ),
+                                  if (awaitingCount < filtered.length)
+                                    awaitingCount: const _SectionHeader(title: '대화 중', divider: true),
+                                },
                           afterFirst:
                               q.isEmpty
                                   ? const AdBannerWidget(
@@ -1275,11 +1303,14 @@ class _PrettyListView extends StatelessWidget {
   final Widget Function(Map chat) itemBuilder;
   final Widget emptyState;
   final Widget? afterFirst;
+  /// 대화 목록 위치 → 그 대화 앞에 붙는 묶음 제목
+  final Map<int, Widget> sections;
   const _PrettyListView({
     required this.items,
     required this.itemBuilder,
     this.emptyState = const _EmptyState(),
     this.afterFirst,
+    this.sections = const {},
   });
 
   @override
@@ -1300,13 +1331,49 @@ class _PrettyListView extends StatelessWidget {
         }
         final itemIndex = afterFirst != null && i > slot ? i - 1 : i;
         final chat = items[itemIndex] as Map;
-        return AppFadeSlideIn(
+        final row = AppFadeSlideIn(
           key: ValueKey('room_in_${chat['id']}'),
           index: itemIndex,
           child: itemBuilder(chat),
         );
+        final header = sections[itemIndex];
+        return header == null ? row : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [header, row]);
       },
       itemCount: items.length + (afterFirst == null ? 0 : 1),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title, this.count, this.note, this.divider = false});
+  final String title;
+  final int? count;
+  final String? note;
+  final bool divider;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (divider) Container(height: 8, margin: const EdgeInsets.only(top: 8), color: AppColors.bgMuted),
+        Padding(
+          padding: EdgeInsets.fromLTRB(20, divider ? 18 : 12, 20, 4),
+          child: Text.rich(
+            TextSpan(children: [
+              TextSpan(text: title),
+              if (count != null)
+                TextSpan(text: ' $count', style: const TextStyle(color: AppColors.primary)),
+            ]),
+            style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+          ),
+        ),
+        if (note != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+            child: Text(note!, style: AppTextStyles.body2),
+          ),
+      ],
     );
   }
 }

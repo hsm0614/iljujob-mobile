@@ -12,12 +12,11 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'package:iljujob/config/constants.dart';
-import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/main.dart';
 import 'package:iljujob/presentation/screens/signup_worker_screen/signup_worker_screen.dart';
+import 'package:iljujob/presentation/screens/signup_worker_screen/worker_quick_setup_screen.dart';
 import 'package:iljujob/presentation/screens/AppleExtraInfoScreen.dart';
 import '../../../config/app_theme.dart';
-import '../../../config/messages.dart';
 
 const kBrand = AppColors.primary;
 
@@ -86,20 +85,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
       } else {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (_) => Scaffold(
-                  backgroundColor: AppColors.bgCard,
-                  appBar: AppBar(
-                    title: const Text('프로필 설정'),
-                    elevation: 0,
-                  ),
-                  body: SingleChildScrollView(
-                    padding: const EdgeInsets.all(20),
-                    child: _buildProfileSetupWidget(),
-                  ),
-                ),
-          ),
+          MaterialPageRoute(builder: (_) => const WorkerQuickSetupScreen()),
         );
       }
     } else {
@@ -264,295 +250,81 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
     );
   }
 
+  Widget _point(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 10),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 1),
+              child: Icon(Icons.check_rounded, size: 20, color: AppColors.primary),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text(text, style: AppTextStyles.body1.copyWith(height: 1.5))),
+          ],
+        ),
+      );
+
+  // 시안 BQvB3zzVYLBcMNbGP6Kznk 2번: 제목·좋은 점 두 줄 위, 가입 버튼은 엄지 닿는 아래
   @override
   Widget build(BuildContext context) {
     final isIOS = Platform.isIOS;
-
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        backgroundColor: AppColors.bgCard,
-        appBar: AppBar(
-          title: const Text('가입 방법 선택'),
-          elevation: 0,
-        ),
-        body: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text(
-                    '알바일주 시작하기',
-                    style: TextStyle(
-                      fontSize: AppFontSize.h2,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '카카오/애플로 간편하게 가입하고 바로 시작하세요.\n전화번호 인증은 나중에 프로필에서 선택할 수 있어요.',
-                    style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // 버튼을 감싸던 흰 카드 제거 (사장님 가입 화면과 같게)
-                  Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Kakao
-                        ElevatedButton.icon(
-                          onPressed: _signInWithKakao,
-                          // 카카오 아이콘 파일이 없어 항상 번개 대체 아이콘이 떴다 → 사장님 화면과 같은 말풍선
-                          icon: const Icon(Icons.chat_bubble, size: 20),
-                          label: Text(_loading ? '처리 중...' : '카카오로 시작하기'),
-                          style: _primaryBtnStyle(
-                            bg: const Color(0xFFFFE812),
-                            fg: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Google (숨김)
-                        // ElevatedButton.icon(
-                        //   onPressed: _signInWithGoogle,
-                        //   icon: Image.asset('assets/icons/google.png', height: 20, width: 20,
-                        //       errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata)),
-                        //   label: Text(_loading ? '처리 중...' : 'Google로 시작하기'),
-                        //   style: _primaryBtnStyle(bg: Colors.white, fg: AppColors.textPrimary).copyWith(
-                        //     side: WidgetStateProperty.all(const BorderSide(color: AppColors.border)),
-                        //   ),
-                        // ),
-                        // const SizedBox(height: 12),
-
-                        // Apple (iOS)
-                        if (isIOS)
-                          ElevatedButton.icon(
-                            onPressed: _signInWithApple,
-                            icon: const Icon(Icons.apple),
-                            label: Text(_loading ? '처리 중...' : 'Apple로 시작하기'),
-                            style: _primaryBtnStyle(
-                              bg: Colors.black,
-                              fg: Colors.white,
-                            ),
-                          ),
-                        const SizedBox(height: 12),
-                        // 휴대폰은 보조 버튼 — 파란 버튼이 카카오·애플과 경쟁했다
-                        OutlinedButton.icon(
-                          onPressed: _goPhoneSignup,
-                          icon: const Icon(Icons.phone_iphone),
-                          label: const Text('휴대폰 번호로 시작하기'),
-                          style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                        ),
-                      ],
-                    ),
-
-                  const SizedBox(height: 20),
-                  const Text(
-                    '가입 후 프로필을 채우면 사장님 연락을 더 많이 받을 수 있어요.',
-                    style: TextStyle(fontSize: AppFontSize.body2, color: AppColors.textSecondary),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileSetupWidget() {
-    final List<String> strengths = [];
-    final List<String> traits = [];
-    String? gender; // ⬅️ 성별 저장용
-
-    final strengthOptions = ['포장', '상하차', '물류', 'F&B', '사무보조', '기타'];
-    final traitOptions = ['꼼꼼해요', '책임감 있어요', '상냥해요', '빠릿해요', '체력이 좋아요', '성실해요'];
-
-    return StatefulBuilder(
-      // 👈 이게 포인트!
-      builder: (context, setState) {
-        return Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-          ),
-          padding: const EdgeInsets.all(20),
+    return Scaffold(
+      backgroundColor: AppColors.bgCard,
+      appBar: AppBar(elevation: 0),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ─────────────────────────────
-              // 1) 성별 선택 영역
-              // ─────────────────────────────
-              const Text(
-                '성별',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: AppFontSize.button),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 10,
-                children: [
-                  ChoiceChip(
-                    label: const Text('남자'),
-                    selected: gender == '남성',
-                    onSelected: (selected) {
-                      setState(() {
-                        gender = selected ? '남성' : null;
-                      });
-                    },
-                  ),
-                  ChoiceChip(
-                    label: const Text('여자'),
-                    selected: gender == '여성',
-                    onSelected: (selected) {
-                      setState(() {
-                        gender = selected ? '여성' : null;
-                      });
-                    },
-                  ),
-                  ChoiceChip(
-                    label: const Text('선택 안 함'),
-                    selected: gender == '선택안함',
-                    onSelected: (selected) {
-                      setState(() {
-                        gender = selected ? '선택안함' : null;
-                      });
-                    },
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // ─────────────────────────────
-              // 2) 자신 있는 업무
-              // ─────────────────────────────
-              const Text(
-                '자신 있는 업무 (2개까지)',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+              const Text('카카오로 바로 가입해요', style: AppTextStyles.h2),
+              const SizedBox(height: 8),
+              Text('가입하면 내 근처 공고에 바로 지원할 수 있어요',
+                  style: AppTextStyles.body1.copyWith(color: AppColors.textBody)),
+              const SizedBox(height: 32),
+              Container(
+                padding: const EdgeInsets.fromLTRB(18, 16, 18, 6),
+                decoration: BoxDecoration(
+                  color: AppColors.bgSoft,
+                  borderRadius: BorderRadius.circular(AppRadius.lg),
+                ),
+                child: Column(
+                  children: [
+                    _point('사장님과 채팅해도 내 번호는 안 보여요'),
+                    _point('근처 사장님이 급하게 사람을 찾으면 알림이 와요'),
+                  ],
                 ),
               ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 10,
-                runSpacing: 8,
-                children:
-                    strengthOptions.map((item) {
-                      final isSelected = strengths.contains(item);
-                      return FilterChip(
-                        label: Text(item),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          setState(() {
-                            if (selected && strengths.length < 2) {
-                              strengths.add(item);
-                            } else {
-                              strengths.remove(item);
-                            }
-                          });
-                        },
-                        selectedColor: kBrand.withOpacity(0.25),
-                      );
-                    }).toList(),
+              const Spacer(),
+              ElevatedButton.icon(
+                onPressed: _loading ? null : _signInWithKakao,
+                icon: const Icon(Icons.chat_bubble, size: 20),
+                label: Text(_loading ? '처리 중...' : '카카오로 시작하기'),
+                style: _primaryBtnStyle(bg: const Color(0xFFFEE500), fg: const Color(0xFF191919)),
               ),
-
-              const SizedBox(height: 20),
-
-              // ─────────────────────────────
-              // 3) 나를 표현하는 단어
-              // ─────────────────────────────
-              const Text(
-                '나를 표현하는 단어',
-                style: TextStyle(
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+              if (isIOS) ...[
+                const SizedBox(height: 10),
+                ElevatedButton.icon(
+                  onPressed: _loading ? null : _signInWithApple,
+                  icon: const Icon(Icons.apple),
+                  label: Text(_loading ? '처리 중...' : 'Apple로 시작하기'),
+                  style: _primaryBtnStyle(bg: Colors.black, fg: Colors.white),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 10,
-                runSpacing: 8,
-                children:
-                    traitOptions.map((item) {
-                      final isSelected = traits.contains(item);
-                      return FilterChip(
-                        label: Text(item),
-                        selected: isSelected,
-                        onSelected: (selected) {
-                          setState(() {
-                            if (selected) {
-                              traits.add(item);
-                            } else {
-                              traits.remove(item);
-                            }
-                          });
-                        },
-                        selectedColor: const Color(
-                          0xFF10B981,
-                        ).withOpacity(0.25),
-                      );
-                    }).toList(),
-              ),
-
-              const SizedBox(height: 24),
-
-              // ─────────────────────────────
-              // 4) 완료 버튼
-              // ─────────────────────────────
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () async {
-                    if (gender == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('성별을 선택해주세요.')),
-                      );
-                      return;
-                    }
-
-                    final prefs = await SharedPreferences.getInstance();
-                    final workerId = prefs.getInt('userId');
-
-                    try {
-                      await AuthenticatedHttpClient.postJson(
-                        Uri.parse('$baseUrl/api/worker/update-profile'),
-                        body: {
-                          'workerId': workerId,
-                          'strengths': strengths,
-                          'traits': traits,
-                          'gender': gender, // ⬅️ 서버로 같이 전송
-                        },
-                      );
-
-                      if (!context.mounted) return;
-                      Navigator.pushNamedAndRemoveUntil(
-                        context,
-                        '/home',
-                        (_) => false,
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text(Msg.saveFailed)),
-                      );
-                    }
-                  },
-                  child: const Text('완료하고 시작하기'),
+              ],
+              const SizedBox(height: 4),
+              TextButton(
+                onPressed: _loading ? null : _goPhoneSignup,
+                style: TextButton.styleFrom(
+                  minimumSize: const Size.fromHeight(44),
+                  foregroundColor: AppColors.textBody,
                 ),
+                child: const Text('휴대폰 번호로 시작하기'),
               ),
             ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

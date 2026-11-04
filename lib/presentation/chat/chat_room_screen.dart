@@ -74,6 +74,82 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   /// "새 메시지" 버튼으로 알린다.
   bool _hasNewBelow = false;
 
+  // 사장님 빠른 답장 (시안 BQvB3zzVYLBcMNbGP6Kznk 5번) — 알바생 마지막 말 하나당 AI 1회
+  List<String> _suggestions = const [];
+  Object? _suggestedFor;
+
+  Map<String, dynamic>? _lastTalk(ChatRoomController ctrl) {
+    for (final m in ctrl.messages.reversed) {
+      final s = m['sender'];
+      if (s == 'worker' || s == 'client') return m;
+    }
+    return null;
+  }
+
+  void _maybeFetchSuggestions(ChatRoomController ctrl) {
+    final last = _lastTalk(ctrl);
+    if (!ctrl.isClient || last == null || last['sender'] != 'worker' || last['id'] == null) return;
+    if (_suggestedFor == last['id']) return;
+    _suggestedFor = last['id'];
+    _suggestions = const [];
+    AuthenticatedHttpClient.get(Uri.parse('$baseUrl/api/chat/reply-suggestions/${ctrl.chatRoomId}'))
+        .timeout(const Duration(seconds: 10))
+        .then((res) {
+          if (!mounted || res.statusCode != 200 || _suggestedFor != last['id']) return;
+          final list = (jsonDecode(res.body)['suggestions'] as List?)?.whereType<String>().toList() ?? [];
+          setState(() => _suggestions = list);
+        })
+        .catchError((_) {});
+  }
+
+  Widget _buildQuickReplies(ChatRoomController ctrl) {
+    final last = _lastTalk(ctrl);
+    final waiting = ctrl.isClient && ctrl.inputEnabled && last?['sender'] == 'worker';
+    if (!waiting) return const SizedBox.shrink();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeFetchSuggestions(ctrl));
+    Widget chip(String label, VoidCallback onTap, {bool primary = false}) => Padding(
+          padding: const EdgeInsets.only(right: 6),
+          child: Material(
+            color: primary ? AppColors.primary : AppColors.bgCard,
+            shape: StadiumBorder(side: primary ? BorderSide.none : const BorderSide(color: AppColors.border)),
+            child: InkWell(
+              customBorder: const StadiumBorder(),
+              onTap: onTap,
+              child: Container(
+                height: 36,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                alignment: Alignment.center,
+                child: Text(
+                  label,
+                  style: AppTextStyles.body2.copyWith(
+                    fontSize: AppFontSize.button,
+                    color: primary ? Colors.white : AppColors.textPrimary,
+                    fontWeight: primary ? FontWeight.w600 : FontWeight.w400,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+    return SizedBox(
+      height: 44,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+        children: [
+          if (ctrl.workConfirmations.isEmpty) chip('출근 확정 보내기', () => _showProposeSheet(ctrl), primary: true),
+          // 바로 보내지 않고 입력창에 넣는다 — 고쳐서 보낼 수 있게
+          for (final s in _suggestions)
+            chip(s, () {
+              _messageController.text = s;
+              _messageController.selection = TextSelection.collapsed(offset: s.length);
+              _inputFocusNode.requestFocus();
+            }),
+        ],
+      ),
+    );
+  }
+
   // 긴급호출 수락/거절 상태 (worker 전용)
   String? _urgentCallStatus;
   bool _urgentCallBusy = false;
@@ -1358,7 +1434,12 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                               top: 6,
                               bottom: MediaQuery.of(context).padding.bottom + 6,
                             ),
-                            child: Row(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _buildQuickReplies(ctrl),
+                                Row(
                               children: [
                                 Expanded(
                                   child: Container(
@@ -1452,6 +1533,8 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                     ),
                                   ),
                                 ),
+                              ],
+                            ),
                               ],
                             ),
                           ),
