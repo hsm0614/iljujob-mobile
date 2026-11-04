@@ -1680,6 +1680,29 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               ),
             ],
           ),
+          if (_replyTimeText() case final t? when !_isOwner) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(AppRadius.md)),
+              child: Row(
+                children: [
+                  const Icon(Icons.chat_bubble_outline_rounded, size: 18, color: AppColors.primaryDark),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(children: [
+                        const TextSpan(text: '이 사장님은 보통 '),
+                        TextSpan(text: t, style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.primaryDark)),
+                        const TextSpan(text: ' 안에 답장해요'),
+                      ]),
+                      style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: AppColors.textPrimary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           // 지원 조건(이수증·검진 등)은 긴 설명 속에 묻혀 지원 뒤에야 알게 됐다 — 지원 버튼 전에 보이게
           if (requirements != null) ...[
             const SizedBox(height: 12),
@@ -1720,6 +1743,15 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       ],
     ),
   );
+
+  /// 사장님 답장 중앙값(서버 reply_median_min). 하루 넘으면 안 보인다 — '보통 3일'은 지원을 막기만 한다
+  String? _replyTimeText() {
+    final m = (clientProfile?['reply_median_min'] as num?)?.toInt();
+    if (m == null || m > 24 * 60) return null;
+    if (m < 10) return '10분';
+    if (m < 60) return '${((m + 9) ~/ 10) * 10}분';
+    return '${(m + 59) ~/ 60}시간';
+  }
 
   /// 일급이면 시급으로 환산 (휴게 빼고). 시간을 모르면 null
   String? _hourlyLine(Job job) {
@@ -2306,6 +2338,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             const SizedBox(height: 16),
             const Divider(height: 1),
 
+            if (((clientProfile?['worked_with_count'] as num?) ?? 0) > 0) ...[
+              const SizedBox(height: 12),
+              Text('알바일주에서 알바 ${clientProfile!['worked_with_count']}명과 함께 일했어요',
+                  style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: AppColors.textPrimary)),
+            ],
             // 이 회사의 다른 공고. 예전 '등록한 공고 0 · 채용 확정 0' 타일은 서버가 숫자를 안 줘 늘 0이었다
             if (((clientProfile?['job_count'] as num?) ?? 0) > 1 &&
                 userType == 'worker' &&
