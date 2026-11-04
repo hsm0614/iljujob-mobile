@@ -1,3 +1,4 @@
+import 'package:iljujob/utils/profile_completeness.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:iljujob/widget/app_motion.dart';
@@ -273,11 +274,6 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             ? '${(m / 1000).toStringAsFixed(1)}km'
             : '${m.toStringAsFixed(0)}m';
     return '$place · $dist';
-  }
-
-  String _applicantSummaryText() {
-    if (applicantCount <= 0) return '첫 지원 가능';
-    return '지원 $applicantCount명';
   }
 
   @override
@@ -718,15 +714,150 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       if (job.workingHours.replaceAll('~', '').trim().isNotEmpty)
         job.workingHours,
     ].join(' · ');
-    final ok = await showAppSheet(
-      context,
-      title: '이 조건으로 지원할까요?',
-      message: '$pay\n$when\n${_distanceOrLocationText()}',
-      confirmLabel: '지원하기',
-      cancelLabel: '공고 더 보기',
+    final completeness = await _myProfileCompleteness();
+    if (!mounted) return;
+    final ok = await _showApplyConfirm(
+      pay: job.isSameDayPay ? '$pay · 당일 지급' : pay,
+      when: when,
+      place: _distanceOrLocationText(),
+      completeness: completeness,
     );
-    if (!ok || !mounted) return;
+    if (ok != true || !mounted) return;
     await _applyToJob();
+  }
+
+  /// 지원 직전에 내 프로필 완성도 — 사장님이 보는 항목이라 지금 채울 이유가 가장 크다. 늦으면 건너뛴다
+  Future<({int percent, String? next})?> _myProfileCompleteness() async {
+    try {
+      final res = await AuthenticatedHttpClient.get(Uri.parse('$baseUrl/api/worker/profile'))
+          .timeout(const Duration(seconds: 3));
+      if (res.statusCode != 200) return null;
+      final raw = jsonDecode(res.body);
+      final data = raw is Map && raw['data'] is Map ? raw['data'] as Map : raw as Map;
+      return profileCompleteness(Map<String, dynamic>.from(data));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 지원 확인 (공고 상세 시안 2번) — 조건 표 + 프로필 완성도 + 감점 안내
+  Future<bool?> _showApplyConfirm({
+    required String pay,
+    required String when,
+    required String place,
+    required ({int percent, String? next})? completeness,
+  }) {
+    Widget row(String label, String value, {bool last = false}) => Container(
+      constraints: const BoxConstraints(minHeight: 44),
+      decoration: BoxDecoration(border: last ? null : const Border(bottom: BorderSide(color: AppColors.border))),
+      child: Row(
+        children: [
+          SizedBox(width: 56, child: Text(label, style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button))),
+          Expanded(
+            child: Text(value, textAlign: TextAlign.right, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+    );
+    return showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('이 조건으로 지원할까요?', style: AppTextStyles.h2),
+              const SizedBox(height: 4),
+              Text('지원하면 사장님과 채팅방이 열려요', style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button)),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                decoration: BoxDecoration(color: AppColors.bgSoft, borderRadius: BorderRadius.circular(AppRadius.lg)),
+                child: Column(children: [
+                  row('일정', when),
+                  row('급여', pay),
+                  row('장소', place, last: true),
+                ]),
+              ),
+              if (completeness != null && completeness.next != null) ...[
+                const SizedBox(height: 12),
+                Material(
+                  color: AppColors.bgCard,
+                  shape: RoundedRectangleBorder(
+                    side: const BorderSide(color: AppColors.border),
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(AppRadius.lg),
+                    onTap: () => Navigator.pushNamed(ctx, '/edit_profile_worker'),
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text.rich(
+                                  TextSpan(children: [
+                                    const TextSpan(text: '프로필 '),
+                                    TextSpan(text: '${completeness.percent}%', style: const TextStyle(color: AppColors.primaryDark)),
+                                    TextSpan(text: ' · ${completeness.next}${objectParticle(completeness.next!)} 넣으면 사장님이 먼저 봐요'),
+                                  ]),
+                                  style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                                ),
+                                const SizedBox(height: 8),
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(AppRadius.full),
+                                  child: LinearProgressIndicator(
+                                    value: completeness.percent / 100,
+                                    minHeight: 6,
+                                    backgroundColor: AppColors.bgMuted,
+                                    valueColor: const AlwaysStoppedAnimation(AppColors.primary),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(Icons.chevron_right_rounded, color: AppColors.textTertiary),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 14),
+              Text('출근이 확정된 뒤 취소하면 신뢰 점수가 3점 깎여요. 갈 수 있을 때만 지원해 주세요.',
+                  style: AppTextStyles.body2),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 54,
+                      child: FilledButton(
+                        style: FilledButton.styleFrom(backgroundColor: AppColors.bgMuted, foregroundColor: AppColors.textPrimary),
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('취소'),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    flex: 2,
+                    child: AppPrimaryButton(label: '지원하기', height: 54, onPressed: () => Navigator.pop(ctx, true)),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _applyToJob() async {
@@ -1040,6 +1171,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 _buildApplyHint(isButtonDisabled: isButtonDisabled),
                 const SizedBox(height: 8),
               ],
+              // AI 응대가 켜진 공고 — 지원하면 무엇이 일어나는지 미리 (시안)
+              if (widget.job.aiReplyOn && !isButtonDisabled && !hasExternalApply) ...[
+                Text('지원하면 AI가 바로 근무 가능한지 물어봐요',
+                    style: AppTextStyles.body2.copyWith(color: AppColors.textBody)),
+                const SizedBox(height: 8),
+              ],
               Row(
                 children: [
                   if (showPhoneApply)
@@ -1059,6 +1196,10 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       height: 52,
                       width: 52,
                       child: IconButton(
+                        style: IconButton.styleFrom(
+                          side: const BorderSide(color: AppColors.border),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
+                        ),
                         onPressed: _toggleBookmark,
                         tooltip: isBookmarked ? '관심 해제' : '관심 공고 저장',
                         icon: Icon(
@@ -1108,7 +1249,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                               ? '정지된 계정'
                               : isAgency
                               ? '앱으로 지원'
-                              : '지원하고 채팅 시작'),
+                              : '지원하기'),
                       ),
                     ),
                     ),
@@ -1386,16 +1527,15 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                 padding: const EdgeInsets.only(bottom: 24),
                 children: [
                   // 섹션은 화면 끝까지 흰 면, 사이는 8px 회색 띠 (리디자인 2026-10)
-                  _buildHeaderCard(postedLabel, postedUtc),
-                  const SizedBox(height: 8),
-                  _buildJobCoreSection(),
-                  if (widget.job.imageUrls.isNotEmpty) ...[
-                    const SizedBox(height: 8),
+                  // 사진은 맨 위 (공고 상세 시안, 2026-11 — 설명 아래 묻혀 있었다)
+                  if (widget.job.imageUrls.isNotEmpty)
                     _ImagesCarousel(
                       imageUrls: widget.job.imageUrls,
                       baseUrl: baseUrl,
                     ),
-                  ],
+                  _buildHeaderCard(postedLabel, postedUtc),
+                  const SizedBox(height: 8),
+                  _buildJobCoreSection(),
                   if (widget.job.lat != 0 && widget.job.lng != 0) ...[
                     const SizedBox(height: 8),
                     Container(
@@ -1516,22 +1656,36 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
               ],
             ],
           ),
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 14),
-          _factRow(Icons.calendar_today_outlined, _getWorkingPeriodText(job)),
-          if (hours != null)
-            _factRow(
-              Icons.schedule_outlined,
-              (job.breakMinutes ?? 0) > 0 ? '$hours · 휴게 ${_breakText(job.breakMinutes!)}' : hours,
-            ),
-          _factRow(Icons.near_me_outlined, _distanceOrLocationText()),
+          if (_hourlyLine(job) case final line?) ...[
+            const SizedBox(height: 2),
+            Text(line, style: AppTextStyles.body2.copyWith(color: AppColors.textBody)),
+          ],
+          const SizedBox(height: 18),
+          // 핵심 네 칸 (시안) — 줄 목록보다 한눈에 비교된다
+          GridView.count(
+            crossAxisCount: 2,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            childAspectRatio: 2.4,
+            children: [
+              _factCell('근무일', _getWorkingPeriodText(job)),
+              _factCell('시간', hours ?? '협의'),
+              _factCell('거리', _distanceOrLocationText()),
+              _factCell(
+                '모집',
+                job.headcount != null ? '${job.headcount}명' : '인원 협의',
+                sub: applicantCount > 0 ? '지원 $applicantCount명' : '첫 지원 가능',
+              ),
+            ],
+          ),
           // 지원 조건(이수증·검진 등)은 긴 설명 속에 묻혀 지원 뒤에야 알게 됐다 — 지원 버튼 전에 보이게
-          if (requirements != null)
+          if (requirements != null) ...[
+            const SizedBox(height: 12),
             _factRow(Icons.assignment_outlined, '지원 조건 · $requirements'),
-          if (job.headcount != null) _factRow(Icons.person_add_alt_outlined, '${job.headcount}명 모집'),
-          _factRow(Icons.groups_outlined, _applicantSummaryText()),
-          const SizedBox(height: 2),
+          ],
+          const SizedBox(height: 10),
           if (postedUtc != null)
             Text(
               widget.job.isScheduled
@@ -1542,6 +1696,50 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         ],
       ),
     );
+  }
+
+  Widget _factCell(String label, String value, {String? sub}) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+    decoration: BoxDecoration(color: AppColors.bgSoft, borderRadius: BorderRadius.circular(AppRadius.md)),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(label, style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.meta)),
+        const SizedBox(height: 2),
+        Text.rich(
+          TextSpan(children: [
+            TextSpan(text: value),
+            if (sub != null)
+              TextSpan(text: ' · $sub', style: const TextStyle(fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
+          ]),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700),
+        ),
+      ],
+    ),
+  );
+
+  /// 일급이면 시급으로 환산 (휴게 빼고). 시간을 모르면 null
+  String? _hourlyLine(Job job) {
+    if (job.payType != '일급' || job.isTimeNegotiable) return null;
+    final pay = int.tryParse(job.pay.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+    int? toMin(String? t) {
+      final m = RegExp(r'^(\d{1,2}):(\d{2})').firstMatch((t ?? '').trim());
+      return m == null ? null : int.parse(m[1]!) * 60 + int.parse(m[2]!);
+    }
+    final s = toMin(job.startTime), e = toMin(job.endTime);
+    if (pay <= 0 || s == null || e == null) return null;
+    var mins = e - s;
+    if (mins <= 0) mins += 24 * 60;
+    final brk = job.breakMinutes ?? 0;
+    final work = mins - brk;
+    if (work <= 0) return null;
+    final hourly = NumberFormat('#,###').format((pay * 60 / work).round());
+    return brk > 0
+        ? '시급으로 $hourly원 · 휴게 ${_breakText(brk)} 빼고 ${_breakText(work)}'
+        : '시급으로 $hourly원';
   }
 
   Widget _factRow(IconData icon, String text) {
@@ -1577,7 +1775,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('상세 설명', style: AppTextStyles.h3),
+          const Text('하는 일', style: AppTextStyles.h3),
           const SizedBox(height: 10),
           Text(description, style: AppTextStyles.body1.copyWith(height: 1.65)),
         ],

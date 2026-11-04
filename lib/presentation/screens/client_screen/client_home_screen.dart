@@ -30,6 +30,7 @@ import 'package:iljujob/presentation/screens/purchase_screen.dart';
 import 'package:iljujob/presentation/screens/subscription_plans_screen.dart';
 import '../../../data/services/client_tracking_service.dart';
 import 'package:iljujob/main.dart'; // sendFcmTokenUnified
+import 'package:iljujob/data/services/screen_analytics_service.dart';
 import 'package:iljujob/presentation/screens/post_job/promotion_request_screen.dart';
 import 'package:iljujob/presentation/screens/post_job/post_choose_screen.dart';
 
@@ -249,6 +250,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    ScreenAnalyticsService.instance.logScreenView('client_home'); // 탭 바탕 '/'로만 잡히던 사장님 홈
     ClientTrackingService.instance.init(baseUrl);
     ClientTrackingService.instance.startSession();
 

@@ -24,3 +24,11 @@ bool _filled(Object? v) {
   final done = profileItems.length - missing.length;
   return (percent: (done * 100 / profileItems.length).round(), next: missing.isEmpty ? null : missing.first);
 }
+
+/// '을/를' — 받침 있으면 을, 없으면 를 ('자기소개를', '가능한 요일을')
+String objectParticle(String word) {
+  if (word.isEmpty) return '을';
+  final c = word.codeUnitAt(word.length - 1);
+  if (c < 0xAC00 || c > 0xD7A3) return '을';
+  return (c - 0xAC00) % 28 == 0 ? '를' : '을';
+}

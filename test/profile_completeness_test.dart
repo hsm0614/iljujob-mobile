@@ -20,4 +20,10 @@ void main() {
     expect(r.percent, 100);
     expect(r.next, isNull);
   });
+
+  test('을/를은 받침에 따라', () {
+    expect(objectParticle('자기소개'), '를');
+    expect(objectParticle('가능한 요일'), '을');
+    expect(objectParticle('프로필 사진'), '을');
+  });
 }

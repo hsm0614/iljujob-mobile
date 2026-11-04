@@ -776,7 +776,15 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         );
       },
       navigatorObservers: [
-        FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+        // 이름 없는 화면('(not set)' 11,807회)과 탭 바탕 '/'(11,073회)는 세지 않는다 — 28일 기록의 절반이 이름 없이 쌓여
+        // 어떤 화면인지 몰랐다(11-03). 탭 화면은 각자 logScreenView('worker_home' 등)로 이름을 남긴다
+        FirebaseAnalyticsObserver(
+          analytics: FirebaseAnalytics.instance,
+          routeFilter: (route) {
+            final name = route?.settings.name;
+            return route is PageRoute && name != null && name.isNotEmpty && name != '/';
+          },
+        ),
       ],
       home: widget.startScreen,
       routes: {
