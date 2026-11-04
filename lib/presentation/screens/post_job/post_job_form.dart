@@ -3386,7 +3386,7 @@ class _PostJobFormState extends State<PostJobForm>
                     confirmLabel: '구독 플랜 보기',
                     cancelLabel: '닫기',
                   );
-                  if (go && mounted) Navigator.pushNamed(context, '/subscription/manage');
+                  if (go && mounted) Navigator.pushNamed(context, '/subscribe', arguments: 'post_wage_report');
                   return;
                 }
                 Navigator.push(
@@ -3769,7 +3769,7 @@ class _PostJobFormState extends State<PostJobForm>
       confirmLabel: '구독 플랜 보기',
       cancelLabel: '닫기',
     );
-    if (go && mounted) Navigator.pushNamed(context, '/subscription/manage');
+    if (go && mounted) Navigator.pushNamed(context, '/subscribe', arguments: 'post_ai_quota');
   }
 
   void _showAIDialog() {
