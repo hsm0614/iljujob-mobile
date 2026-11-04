@@ -74,6 +74,39 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   /// "새 메시지" 버튼으로 알린다.
   bool _hasNewBelow = false;
 
+  // 사장님에게 보이는 알바생 요약 한 줄 — 프로필을 열지 않고도 누군지 알게
+  String? _workerSummary;
+  bool _summaryAsked = false;
+
+  Future<void> _loadWorkerSummary(int workerId) async {
+    _summaryAsked = true;
+    Future<Map?> getJson(String path) async {
+      try {
+        final res = await AuthenticatedHttpClient.get(Uri.parse('$baseUrl$path')).timeout(const Duration(seconds: 5));
+        final body = res.statusCode == 200 ? jsonDecode(res.body) : null;
+        return body is Map ? body : null;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    final r = await Future.wait([
+      getJson('/api/worker/profile?id=$workerId'),
+      getJson('/api/worker/activity-score?workerId=$workerId'),
+    ]);
+    if (!mounted) return;
+    final score = (r[1]?['total_score'] as num?)?.toInt() ?? 0;
+    final done = int.tryParse('${r[0]?['completed_count'] ?? 0}') ?? 0;
+    final grade = AppGradeBadge.gradeOf(score);
+    setState(() {
+      _workerSummary = [
+        grade == 'NEW' ? '신규' : '$grade등급',
+        done > 0 ? '출근 $done번' : '첫 알바',
+        '프로필 보기',
+      ].join(' · ');
+    });
+  }
+
   // 사장님 빠른 답장 (시안 BQvB3zzVYLBcMNbGP6Kznk 5번) — 알바생 마지막 말 하나당 AI 1회
   List<String> _suggestions = const [];
   Object? _suggestedFor;
@@ -1137,8 +1170,9 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
     if (ctrl.userType == 'client') {
       targetName = widget.jobInfo['user_name']?.toString();
       targetThumbnailUrl = widget.jobInfo['user_thumbnail_url']?.toString();
-      final wId = int.tryParse(widget.jobInfo['worker_id']?.toString() ?? '');
+      final wId = int.tryParse(widget.jobInfo['worker_id']?.toString() ?? '') ?? ctrl.roomWorkerId;
       if (wId != null) {
+        if (!_summaryAsked) WidgetsBinding.instance.addPostFrameCallback((_) => _loadWorkerSummary(wId));
         onProfileTap =
             () =>
                 Navigator.pushNamed(context, '/worker-profile', arguments: wId);
@@ -1229,11 +1263,16 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                 ),
                 const SizedBox(width: 10),
                 Flexible(
-                  child: AlbailjuChatAppBarTitle(
-                    name: targetName ?? '상대방',
-                    userType: ctrl.userType,
-                    status: ctrl.status,
-                    jobTitle: jobTitle,
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onProfileTap,
+                    child: AlbailjuChatAppBarTitle(
+                      name: targetName ?? '상대방',
+                      userType: ctrl.userType,
+                      status: ctrl.status,
+                      jobTitle: jobTitle,
+                      summary: ctrl.isClient ? _workerSummary : null,
+                    ),
                   ),
                 ),
               ],

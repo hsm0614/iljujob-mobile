@@ -215,6 +215,8 @@ class AlbailjuChatAppBarTitle extends StatelessWidget {
   final String userType;
   final String status;
   final String jobTitle;
+  /// 사장님에게만: 'A등급 · 출근 5번 · 프로필 보기' (시안 BQvB3zzVYLBcMNbGP6Kznk 5번)
+  final String? summary;
 
   const AlbailjuChatAppBarTitle({
     super.key,
@@ -222,6 +224,7 @@ class AlbailjuChatAppBarTitle extends StatelessWidget {
     required this.userType,
     required this.status,
     required this.jobTitle,
+    this.summary,
   });
 
   @override
@@ -257,6 +260,13 @@ class AlbailjuChatAppBarTitle extends StatelessWidget {
             style: AppTextStyles.caption.copyWith(
               color: isPending ? AppColors.badgeUrgent : AppColors.textSecondary,
             ),
+          )
+        else if (summary != null)
+          Text(
+            summary!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.caption.copyWith(color: AppColors.textBody),
           ),
       ],
     );
