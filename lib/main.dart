@@ -31,6 +31,7 @@ import 'presentation/screens/worker_screen/edit_worker_profile_screen.dart';
 import 'presentation/screens/worker_screen/applicant_list_screen.dart';
 import 'presentation/screens/worker_screen/worker_profile_screen.dart';
 import 'presentation/screens/client_screen/client_profile_screen.dart';
+import 'package:iljujob/widget/sheet_recede.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/presentation/chat/chat_room_screen.dart';
 import 'package:iljujob/data/models/job.dart';
@@ -776,6 +777,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         );
       },
       navigatorObservers: [
+        SheetRecedeObserver(),
         // 이름 없는 화면('(not set)' 11,807회)과 탭 바탕 '/'(11,073회)는 세지 않는다 — 28일 기록의 절반이 이름 없이 쌓여
         // 어떤 화면인지 몰랐다(11-03). 탭 화면은 각자 logScreenView('worker_home' 등)로 이름을 남긴다
         FirebaseAnalyticsObserver(

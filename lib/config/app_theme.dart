@@ -5,6 +5,7 @@
 // 화면에서는 AppColors.primary 등으로 참조
 
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/sheet_recede.dart';
 
 // ─────────────────────────────────────────────────────────
 // 색상 토큰
@@ -327,8 +328,9 @@ class AppTheme {
         // 화면 전환: 안드로이드도 iOS처럼 오른쪽에서 밀려 들어온다 (기본은 확대·페이드라 플랫폼마다 달랐다)
         pageTransitionsTheme: const PageTransitionsTheme(
           builders: {
-            TargetPlatform.android: CupertinoPageTransitionsBuilder(),
-            TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
+            // 바텀시트가 열리면 아래 화면이 살짝 물러난다 (widget/sheet_recede.dart)
+            TargetPlatform.android: RecedePageTransitionsBuilder(),
+            TargetPlatform.iOS: RecedePageTransitionsBuilder(),
           },
         ),
         useMaterial3: true,
