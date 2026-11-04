@@ -254,6 +254,9 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   int? _selectingJob;
   /// 상태 필터: all · reply(답장할 차례) · pending · confirmed · completed
   String _filter = 'all';
+  // 지원자 탭은 '사람' 중심 (시안 3번, 2026-11 — 공고 숫자는 홈이 맡는다). 'jobs'는 예전 공고별 보기(여러 명 메시지)
+  String _view = 'people';
+  String _peopleTab = 'todo'; // todo · scheduled · done
   bool _sortByScore = false;
   final Map<int, String> _visiblePhones = {};
   final Set<int> _phoneLoading = {};
@@ -753,7 +756,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       appBar: AlbailjuAppBar(
-        title: '지원자 관리',
+        title: '지원자',
         brand: true,
         actions: [
           IconButton(
@@ -770,6 +773,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
               ? _buildError()
               : _groups.isEmpty
               ? _buildEmpty()
+              : _view == 'people'
+              ? RefreshIndicator(onRefresh: _fetch, child: _buildPeopleView())
               : RefreshIndicator(
                 onRefresh: _fetch,
                 child: Column(
@@ -778,6 +783,15 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                       child: ListView(
                         padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                         children: [
+                          TextButton.icon(
+                            onPressed: () => setState(() {
+                              _view = 'people';
+                              _selectingJob = null;
+                            }),
+                            icon: const Icon(Icons.arrow_back_rounded, size: 18),
+                            label: const Text('사람별로 보기'),
+                            style: TextButton.styleFrom(foregroundColor: AppColors.textSecondary),
+                          ),
                           _buildSummaryRow(),
                           const SizedBox(height: 12),
                           ..._pagedGroups.map(_buildJobCard),
@@ -802,6 +816,179 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                 ),
               )
               : null,
+    );
+  }
+
+  // ─── 사람별 보기 (기본) ─────────────────────────────────────────
+  // 홈 = 공고(공개·노출·숫자), 지원자 탭 = 사람(답장 → 확정 → 출근). 모든 공고의 지원자를 한 줄로, 할 일 순서로
+  List<(ApplicantModel, JobApplicantGroup)> get _people => [
+    for (final g in _groups)
+      for (final a in g.applicants)
+        if (!a.isCanceled) (a, g),
+  ];
+
+  static DateTime? _ymd(String? s) {
+    final d = DateTime.tryParse((s ?? '').trim());
+    return d == null ? null : DateTime(d.year, d.month, d.day);
+  }
+
+  Widget _buildPeopleView() {
+    final all = _people;
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final reply = all.where((p) => p.$1.needsReply).toList()
+      ..sort((x, y) => y.$1.appliedAt.compareTo(x.$1.appliedAt));
+    final toConfirm = all
+        .where((p) => !p.$1.needsReply && (p.$1.stage == 'pending' || p.$1.stage == 'proposed') && p.$2.jobStatus == 'active')
+        .toList()
+      ..sort((x, y) => y.$1.safeActivityScore.compareTo(x.$1.safeActivityScore));
+    final scheduled = all.where((p) => p.$1.stage == 'confirmed').toList();
+    final done = all.where((p) => p.$1.stage == 'completed' || p.$1.stage == 'no_show').toList();
+    // 오늘·내일 출근 — 확정된 사람 중 공고 근무일이 오늘이나 내일
+    final soon = scheduled.where((p) {
+      final d = _ymd(p.$2.startDate);
+      return d != null && !d.isBefore(today) && d.difference(today).inDays <= 1;
+    }).toList();
+
+    Widget chip(String key, String label) => Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: _peopleTab == key,
+        showCheckmark: false,
+        onSelected: (_) => setState(() => _peopleTab = key),
+        labelStyle: AppTextStyles.body2.copyWith(
+          fontSize: AppFontSize.button,
+          fontWeight: FontWeight.w600,
+          color: _peopleTab == key ? Colors.white : AppColors.textPrimary,
+        ),
+        selectedColor: AppColors.primary,
+        backgroundColor: AppColors.bgCard,
+        side: BorderSide(color: _peopleTab == key ? AppColors.primary : AppColors.border),
+        shape: const StadiumBorder(),
+      ),
+    );
+
+    Widget section(String title, List<(ApplicantModel, JobApplicantGroup)> list, {bool accent = false}) {
+      if (list.isEmpty) return const SizedBox.shrink();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 20, 4, 8),
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(text: '$title '),
+                TextSpan(text: '${list.length}', style: const TextStyle(color: AppColors.primary)),
+              ]),
+              style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(color: AppColors.bgCard, borderRadius: BorderRadius.circular(AppRadius.lg)),
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final (i, (a, g)) in list.indexed) ...[
+                  // 어느 공고 지원자인지 — 사람 줄 위 작은 꼬리표
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(color: AppColors.bgMuted, borderRadius: BorderRadius.circular(AppRadius.xs)),
+                        child: Text(g.jobTitle, maxLines: 1, overflow: TextOverflow.ellipsis,
+                            style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.meta)),
+                      ),
+                    ),
+                  ),
+                  _buildApplicantRow(a, g, isLast: i == list.length - 1),
+                ],
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+
+    final body = switch (_peopleTab) {
+      'scheduled' => [section('출근 예정', scheduled)],
+      'done' => [section('함께 일한 사람', done)],
+      _ => [section('답장해 주세요', reply), section('확정만 남았어요', toConfirm)],
+    };
+    final empty = switch (_peopleTab) {
+      'scheduled' => scheduled.isEmpty,
+      'done' => done.isEmpty,
+      _ => reply.isEmpty && toConfirm.isEmpty,
+    };
+
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      children: [
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              chip('todo', '할 일 ${reply.length + toConfirm.length}'),
+              chip('scheduled', '출근 예정 ${scheduled.length}'),
+              chip('done', '함께 일한 사람'),
+              ActionChip(
+                label: const Text('공고별로'),
+                onPressed: () => setState(() => _view = 'jobs'),
+                labelStyle: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: AppColors.textSecondary),
+                backgroundColor: AppColors.bgCard,
+                side: const BorderSide(color: AppColors.border),
+                shape: const StadiumBorder(),
+              ),
+            ],
+          ),
+        ),
+        // 확정된 사람이 없으면 숨긴다 (사장님들이 출근 확정을 잘 안 눌러 대부분 비어 있다)
+        if (_peopleTab == 'todo' && soon.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 16),
+            padding: const EdgeInsets.fromLTRB(16, 14, 8, 6),
+            decoration: BoxDecoration(color: AppColors.primaryLight, borderRadius: BorderRadius.circular(AppRadius.lg)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('곧 출근해요', style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w700, color: AppColors.primaryDark)),
+                for (final (a, g) in soon)
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text('${a.workerName} · ${g.jobTitle}', maxLines: 1, overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700)),
+                    subtitle: Text(
+                      [
+                        _ymd(g.startDate) == today ? '오늘' : '내일',
+                        if ((g.startTime ?? '').isNotEmpty) g.startTime!,
+                      ].join(' '),
+                      style: AppTextStyles.body2,
+                    ),
+                    trailing: TextButton(onPressed: () => _goToChat(a, g), child: const Text('채팅')),
+                  ),
+              ],
+            ),
+          ),
+        if (empty)
+          Padding(
+            padding: const EdgeInsets.only(top: 48),
+            child: Text(
+              switch (_peopleTab) {
+                'scheduled' => '출근 확정한 사람이 아직 없어요',
+                'done' => '함께 일한 사람이 아직 없어요',
+                _ => '지금 할 일이 없어요. 새 지원이 오면 알려 드릴게요',
+              },
+              textAlign: TextAlign.center,
+              style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button),
+            ),
+          )
+        else
+          ...body,
+        const SizedBox(height: 20),
+        Text('공고별 지원·조회 숫자는 홈에서 봐요', textAlign: TextAlign.center, style: AppTextStyles.body2),
+      ],
     );
   }
 

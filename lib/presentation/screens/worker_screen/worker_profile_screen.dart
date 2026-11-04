@@ -366,11 +366,15 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
   Widget _resumeSection() {
     String v(String k) => (profile![k] ?? '').toString().trim();
     final intro = v('introduction');
+    // '물류,기타'처럼 쉼표 목록 — 칩으로 (시안 4번, 2026-11). 가능 시간만 문장이라 줄로 남긴다
+    List<String> split(String k) =>
+        v(k).replaceAll(RegExp(r'[\[\]"]'), '').split(',').map((e) => e.trim()).where((e) => e.isNotEmpty && e != 'null').toList();
+    final days = split('available_days');
+    final chipGroups = <(String, List<String>)>[
+      ('희망하는 일', split('desired_work')),
+      ('나의 강점', [...split('strengths'), ...split('traits')]),
+    ].where((g) => g.$2.isNotEmpty).toList();
     final rows = <(String, String)>[
-      ('강점', v('strengths')),
-      ('성격', v('traits')),
-      ('희망 업무', v('desired_work')),
-      ('가능 요일', v('available_days')),
       ('가능 시간', v('available_times')),
     ].where((r) => r.$2.isNotEmpty).toList();
     final history = (profile!['work_history'] as List?) ?? const [];
@@ -380,8 +384,63 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
       return d == null ? '' : '${d.month}월 ${d.day}일';
     }
 
+    Widget chips(List<String> items) => Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: [
+        for (final c in items)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+            decoration: BoxDecoration(
+              border: Border.all(color: AppColors.border),
+              borderRadius: BorderRadius.circular(AppRadius.full),
+            ),
+            child: Text(c, style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: AppColors.textPrimary)),
+          ),
+      ],
+    );
+    const week = ['월', '화', '수', '목', '금', '토', '일'];
+
     return Column(
       children: [
+        // 사장님이 고를 때 먼저 보는 것: 언제 되나 · 무슨 일 원하나 · 어떤 사람인가 (이력서 열람 동의 때만)
+        if (canViewResume && (days.isNotEmpty || chipGroups.isNotEmpty))
+          _section('이런 사람이에요', [
+            if (days.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text('가능한 요일', style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  for (final d in week)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: days.any((x) => x.startsWith(d)) ? AppColors.primary : AppColors.bgMuted,
+                        ),
+                        child: Text(d,
+                            style: AppTextStyles.body2.copyWith(
+                              fontSize: AppFontSize.button,
+                              fontWeight: FontWeight.w600,
+                              color: days.any((x) => x.startsWith(d)) ? Colors.white : AppColors.textTertiary,
+                            )),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+            for (final (title, items) in chipGroups) ...[
+              const SizedBox(height: 16),
+              Text(title, style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              const SizedBox(height: 8),
+              chips(items),
+            ],
+          ]),
         // 자기소개 — 이 화면에서 유일하게 본인 목소리가 들어가는 자리라 크게
         if (canViewResume && intro.isNotEmpty)
           _section('자기소개', [
