@@ -2068,7 +2068,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
         final safeBottom = MediaQuery.of(sheetCtx).viewPadding.bottom;
         final Color accent = danger ? AppColors.error : kBrandBlue;
         final Color accentBg =
-            danger ? const Color(0xFFFFE4E6) : kBrandBlue.withOpacity(0.10);
+            danger ? AppColors.errorLight : kBrandBlue.withOpacity(0.10);
 
         return SafeArea(
           top: false,
@@ -2696,7 +2696,7 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
                           child: OutlinedButton(
                             style: OutlinedButton.styleFrom(
                               foregroundColor: AppColors.error,
-                              side: const BorderSide(color: Color(0xFFFCA5A5)),
+                              side: const BorderSide(color: AppColors.errorBorder),
                             ),
                             onPressed:
                                 _saving

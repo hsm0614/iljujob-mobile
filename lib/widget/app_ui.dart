@@ -506,6 +506,106 @@ Future<bool> showAppSheet(
   return ok == true;
 }
 
+/// 신고 바텀시트 (공고·알바생·사장님 공용). 사유를 고르기 전엔 버튼이 꺼져 있다.
+/// 보내기는 부르는 쪽이 한다 — 고른 사유와 상세 내용만 돌려준다. 닫으면 null.
+Future<({String reason, String detail})?> showReportSheet(
+  BuildContext context, {
+  required String title,
+  required List<String> reasons,
+}) {
+  final detail = TextEditingController();
+  String? picked;
+  return showModalBottomSheet<({String reason, String detail})>(
+    context: context,
+    isScrollControlled: true,
+    builder:
+        (ctx) => StatefulBuilder(
+          builder:
+              (ctx, setState) => Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                ),
+                child: SafeArea(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 12),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(title, style: AppTextStyles.h2),
+                        const SizedBox(height: 6),
+                        Text(
+                          '운영팀이 확인하고 24시간 안에 조치해요.',
+                          style: AppTextStyles.body2,
+                        ),
+                        const SizedBox(height: 16),
+                        for (final r in reasons)
+                          Semantics(
+                            button: true,
+                            selected: picked == r,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              onTap: () => setState(() => picked = r),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 14,
+                                  horizontal: 4,
+                                ),
+                                child: Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(r, style: AppTextStyles.body1),
+                                    ),
+                                    Icon(
+                                      picked == r
+                                          ? Icons.check_circle_rounded
+                                          : Icons.circle_outlined,
+                                      size: 22,
+                                      color:
+                                          picked == r
+                                              ? AppColors.primary
+                                              : AppColors.textDisabled,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          controller: detail,
+                          maxLines: 3,
+                          style: AppTextStyles.body1,
+                          decoration: InputDecoration(
+                            hintText: '자세한 내용 (선택)',
+                            filled: true,
+                            fillColor: AppColors.bgMuted,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(AppRadius.md),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        AppPrimaryButton(
+                          label: '신고하기',
+                          onPressed:
+                              picked == null
+                                  ? null
+                                  : () => Navigator.pop(ctx, (
+                                    reason: picked!,
+                                    detail: detail.text.trim(),
+                                  )),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+        ),
+  );
+}
+
 /// 설정·메뉴 묶음 (2026-10 마이 리디자인, 토스·당근 설정 화면 참고).
 /// 화면 폭 가득 흰 블록 + 작은 회색 머리글. 블록 사이 간격은 바탕(bgPage)이 만든다.
 class AppMenuSection extends StatelessWidget {

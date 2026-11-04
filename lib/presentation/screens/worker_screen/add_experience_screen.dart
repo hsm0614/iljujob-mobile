@@ -23,7 +23,7 @@ class AddExperienceScreen extends StatefulWidget {
 class _AddExperienceScreenState extends State<AddExperienceScreen> {
   // --- UI 상수 ---
   static const kBrand = AppColors.primary;
-  static const kBorder = Color(0xFFE2E7EF);
+  static const kBorder = AppColors.border;
   static const kFill = Colors.white;
 
   final _formKey = GlobalKey<FormState>();

@@ -1336,85 +1336,28 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     );
   }
 
-  void _showReportDialog() {
-    final TextEditingController reasonDetailController =
-        TextEditingController();
-    String? selectedCategory;
-
-    final List<String> reasonCategories = [
-      '사기 또는 허위 공고',
-      '불법 또는 음란성 콘텐츠',
-      '중복/도배/광고성',
-      '연락 불가/잠수',
-      '기타',
-    ];
-
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('공고 신고하기'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('문제가 되는 내용을 선택해주세요.\n운영팀이 확인 후 24시간 이내 조치합니다.'),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedCategory,
-                  onChanged: (val) => selectedCategory = val,
-                  items:
-                      reasonCategories
-                          .map(
-                            (c) => DropdownMenuItem(value: c, child: Text(c)),
-                          )
-                          .toList(),
-                  decoration: const InputDecoration(
-                    labelText: '신고 사유',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: reasonDetailController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    hintText: '상세한 내용을 작성해주세요 (선택)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('취소'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  final category = selectedCategory;
-                  final detail = reasonDetailController.text.trim();
-
-                  if (category == null || category.isEmpty) {
-                    _showSnack('신고 사유를 선택해주세요.');
-                    return;
-                  }
-
-                  final prefs = await SharedPreferences.getInstance();
-                  final userId = prefs.getInt('userId');
-                  final jobId = int.tryParse(widget.job.id.toString());
-
-                  if (userId != null && jobId != null) {
-                    Navigator.pop(context);
-                    await _submitReport(category, detail, jobId, userId);
-                  } else {
-                    _showSnack(Msg.loginRequired);
-                  }
-                },
-                child: const Text('신고하기'),
-              ),
-            ],
-          ),
+  Future<void> _showReportDialog() async {
+    final r = await showReportSheet(
+      context,
+      title: '이 공고를 신고할까요?',
+      reasons: const [
+        '사기 또는 허위 공고',
+        '불법 또는 음란성 콘텐츠',
+        '중복/도배/광고성',
+        '연락 불가/잠수',
+        '기타',
+      ],
     );
+    if (r == null || !mounted) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getInt('userId');
+    final jobId = int.tryParse(widget.job.id.toString());
+    if (userId == null || jobId == null) {
+      _showSnack(Msg.loginRequired);
+      return;
+    }
+    await _submitReport(r.reason, r.detail, jobId, userId);
   }
 
   Widget _buildReviewSummary() {

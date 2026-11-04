@@ -13,6 +13,7 @@ import '../../../config/constants.dart';
 import '../../../data/services/authenticated_http_client.dart';
 import 'package:iljujob/presentation/screens/worker_screen/add_experience_screen.dart';
 import '../../../config/app_theme.dart';
+import '../../../widget/app_ui.dart';
 
 // =====================
 // 알바일주 색상 팔레트 (worker_calendar_screen과 통일)
@@ -1234,16 +1235,17 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
         duration: const Duration(milliseconds: 120),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primaryLight : Colors.white,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: selected ? kBrandBlue : kBorder),
+          color: selected ? AppColors.primary : AppColors.bgCard,
+          borderRadius: BorderRadius.circular(AppRadius.full),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.border,
+          ),
         ),
         child: Text(
           text,
-          style: TextStyle(
+          style: AppTextStyles.body2.copyWith(
             fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            fontSize: AppFontSize.body2,
-            color: selected ? kBrandBlue : kMuted,
+            color: selected ? Colors.white : AppColors.textPrimary,
           ),
         ),
       ),
@@ -1468,7 +1470,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  '사장님이 가장 먼저 읽는 내용이에요. 2~3줄이면 충분해요!',
+                  '사장님이 가장 먼저 읽는 내용이에요. 2~3줄이면 충분해요.',
                   style: TextStyle(fontSize: AppFontSize.body2, color: kMuted),
                 ),
                 const SizedBox(height: 10),
@@ -1581,11 +1583,16 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                               });
                             },
                           ),
-                          _pillChip(
-                            '전체 해제',
-                            _selectedDays.isEmpty,
-                            () => setState(() => _selectedDays.clear()),
-                          ),
+                          if (_selectedDays.isNotEmpty)
+                            TextButton(
+                              onPressed:
+                                  () => setState(() => _selectedDays.clear()),
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.textSecondary,
+                                textStyle: AppTextStyles.body2,
+                              ),
+                              child: const Text('전체 해제'),
+                            ),
                         ],
                       ),
                     ],
@@ -1638,11 +1645,11 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 경력
-                _sectionTitle('경력', sub: '일한 곳/기간을 간단히 써두면 신뢰도가 올라가요'),
+                _sectionTitle('경력', sub: '일한 곳과 기간만 적어도 돼요'),
                 if (_experiences.isEmpty)
                   _emptyCard(
                     icon: Icons.work_outline_rounded,
-                    label: '등록된 경력이 없어요.\n간단히라도 추가하면 신뢰도가 확 올라가요.',
+                    label: '아직 경력이 없어요.\n한 줄만 적어도 사장님이 판단하기 쉬워요.',
                   )
                 else
                   ..._experiences.map((e) => _buildExperienceItem(e)),
@@ -1960,32 +1967,11 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
       bottomNavigationBar:
           _initialLoading
               ? null
-              : SafeArea(
-                top: false,
-                child: Container(
-                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    border: Border(top: BorderSide(color: kBorder, width: 0.5)),
-                  ),
-                  child: SizedBox(
-                    height: 52,
-                    child: ElevatedButton(
-                      onPressed: _saving ? null : _saveProfile,
-                      child:
-                          _saving
-                              ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                              : const Text(
-                                '저장하기'),
-                    ),
-                  ),
+              : AppBottomBar(
+                child: AppPrimaryButton(
+                  label: '저장하기',
+                  loading: _saving,
+                  onPressed: _saveProfile,
                 ),
               ),
     );
@@ -2056,7 +2042,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
           const SizedBox(height: 8),
           Text(
             done >= total
-                ? '완성! 사장님에게 가장 신뢰가는 프로필이에요'
+                ? '프로필을 다 채웠어요'
                 : '${next.first}만 채워도 사장님 신뢰가 올라가요',
             style: const TextStyle(
               fontSize: AppFontSize.meta,

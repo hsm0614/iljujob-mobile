@@ -20,7 +20,7 @@ import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/widget/app_ui.dart';
 
 // ── 디자인 토큰 ───────────────────────────────────────────────────
-const _red = Color(0xFFFF3B30);
+const _red = AppColors.badgeUrgent; // 긴급 = 주황 (DESIGN.md Two-Signal)
 // 알림 발송 버튼(누를 수 있음) — 보라 폐지, CTA 파랑 (2026-10)
 
 // ── 공고 모델 ─────────────────────────────────────────────────────
@@ -1035,7 +1035,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
                     children: [
                       CircleAvatar(
                         radius: 28,
-                        backgroundColor: const Color(0xFFF2F4F6),
+                        backgroundColor: AppColors.bgMuted,
                         backgroundImage:
                             worker.profileImageUrl.isNotEmpty
                                 ? NetworkImage(worker.profileImageUrl)
@@ -1167,7 +1167,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(msg),
-          backgroundColor: isError ? _red : AppColors.gradeB,
+          backgroundColor: isError ? AppColors.error : AppColors.gradeB,
           duration: const Duration(seconds: 3),
         ),
       );

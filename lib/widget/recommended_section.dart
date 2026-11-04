@@ -363,7 +363,7 @@ class _ReasonChip extends StatelessWidget {
         style: const TextStyle(
           fontSize: AppFontSize.meta,
           fontWeight: FontWeight.w800,
-          color: Color(0xFF1E2A3A),
+          color: AppColors.textPrimary,
         ),
       ),
     );

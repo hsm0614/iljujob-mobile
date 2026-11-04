@@ -117,116 +117,45 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
     }
   }
 
-  void _showReportDialog(String targetType, int targetId) {
-    final TextEditingController memoController = TextEditingController();
-    String? selectedReason;
+  Future<void> _showReportDialog(String targetType, int targetId) async {
+    final r = await showReportSheet(
+      context,
+      title: '이 사용자를 신고할까요?',
+      reasons: const [
+        '음란하거나 부적절한 콘텐츠',
+        '폭력 또는 위협적인 언행',
+        '욕설/혐오/차별 표현',
+        '허위 정보 또는 사기 의심',
+        '기타',
+      ],
+    );
+    if (r == null || !mounted) return;
 
-    final List<String> reasonOptions = [
-      '음란하거나 부적절한 콘텐츠',
-      '폭력 또는 위협적인 언행',
-      '욕설/혐오/차별 표현',
-      '허위 정보 또는 사기 의심',
-      '기타',
-    ];
+    final prefs = await SharedPreferences.getInstance();
+    final reporterId = prefs.getInt('userId') ?? 0;
+    final reporterType = prefs.getString('userType');
 
-    showDialog(
-      context: context,
-      builder:
-          (_) => AlertDialog(
-            title: const Text('사용자 신고'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DropdownButtonFormField<String>(
-                  initialValue: selectedReason,
-                  items:
-                      reasonOptions
-                          .map(
-                            (reason) => DropdownMenuItem<String>(
-                              value: reason,
-                              child: Text(reason),
-                            ),
-                          )
-                          .toList(),
-                  onChanged: (val) {
-                    selectedReason = val;
-                  },
-                  decoration: const InputDecoration(
-                    labelText: '신고 사유 선택',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: memoController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    hintText: '상세 내용을 입력해주세요 (선택)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '※ 신고된 내용은 검토 후 24시간 이내에 조치됩니다.',
-                  style: TextStyle(
-                    fontSize: AppFontSize.meta,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('취소'),
-              ),
-
-              ElevatedButton(
-                onPressed: () async {
-                  if (selectedReason == null || selectedReason!.isEmpty) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('신고 사유를 선택해주세요')),
-                    );
-                    return;
-                  }
-
-                  Navigator.pop(context); // 다이얼로그 닫기
-
-                  final prefs = await SharedPreferences.getInstance();
-                  final reporterId = prefs.getInt('userId') ?? 0;
-                  final reporterType = prefs.getString('userType');
-
-                  final response = await AuthenticatedHttpClient.postJson(
-                    Uri.parse('$baseUrl/api/user-report'),
-                    body: {
-                      'reporterId': reporterId,
-                      if (reporterType != null && reporterType.isNotEmpty)
-                        'reporterType': reporterType,
-                      'targetId': targetId,
-                      'targetType': targetType,
-                      'reasonCategory': selectedReason,
-                      'reasonDetail': memoController.text.trim(),
-                    },
-                  );
-
-                  if (response.statusCode == 200) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('신고를 접수했어요. 검토 후 24시간 이내에 조치할게요.'),
-                      ),
-                    );
-                  } else {
-                    ScaffoldMessenger.of(
-                      context,
-                    ).showSnackBar(SnackBar(content: Text(Msg.server)));
-                  }
-                },
-                child: const Text('신고'),
-              ),
-            ],
-          ),
+    final response = await AuthenticatedHttpClient.postJson(
+      Uri.parse('$baseUrl/api/user-report'),
+      body: {
+        'reporterId': reporterId,
+        if (reporterType != null && reporterType.isNotEmpty)
+          'reporterType': reporterType,
+        'targetId': targetId,
+        'targetType': targetType,
+        'reasonCategory': r.reason,
+        'reasonDetail': r.detail,
+      },
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          response.statusCode == 200
+              ? '신고를 접수했어요. 검토 후 24시간 이내에 조치할게요.'
+              : Msg.server,
+        ),
+      ),
     );
   }
 

@@ -604,78 +604,15 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   Future<void> _showCancelBlockedByCalendarDialog(
     ChatRoomController ctrl,
   ) async {
-    final go = await showDialog<bool>(
-      context: context,
-      barrierDismissible: true,
-      builder:
-          (_) => Dialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(18, 18, 18, 14),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
-                    children: [
-                      Icon(
-                        Icons.event_available_rounded,
-                        color: AppColors.primary,
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          '이미 캘린더에 등록된 일정이에요',
-                          style: TextStyle(
-                            fontSize: AppFontSize.buttonLg,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    ctrl.canCancel
-                        ? '이 공고는 근무확정(캘박) 상태라 바로 지원 취소가 불가해요.\n먼저 "캘박 취소"를 하거나 캘린더에서 일정을 확인해 주세요.'
-                        : '이 공고는 근무확정(캘박) 상태라 바로 지원 취소가 불가해요.\n현재는 취소 가능 시간이 지나 캘박 취소도 제한될 수 있어요.\n캘린더에서 일정을 확인해 주세요.',
-                    style: const TextStyle(
-                      fontSize: AppFontSize.body2,
-                      height: 1.4,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Navigator.of(context).pop(false),
-                          child: const Text(
-                            '닫기',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: ElevatedButton(
-                          onPressed: () => Navigator.of(context).pop(true),
-                          child: const Text(
-                            '캘린더로 이동'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
+    final go = await showAppSheet(
+      context,
+      title: '이미 캘린더에 등록된 일정이에요',
+      message:
+          ctrl.canCancel
+              ? '출근이 확정된 공고라 바로 지원을 취소할 수 없어요.\n출근 확정을 먼저 취소하거나 캘린더에서 일정을 확인해 주세요.'
+              : '출근이 확정된 공고라 바로 지원을 취소할 수 없어요.\n취소할 수 있는 시간도 지났어요. 캘린더에서 일정을 확인해 주세요.',
+      confirmLabel: '캘린더로 이동',
+      cancelLabel: '닫기',
     );
 
     if (go == true) {
