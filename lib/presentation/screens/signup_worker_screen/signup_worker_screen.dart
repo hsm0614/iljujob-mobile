@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:uuid/uuid.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/main.dart'; // ✅ sendFcmTokenUnified 사용을 위해
 import 'package:iljujob/presentation/screens/webview_screen.dart';
@@ -51,12 +52,16 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
   ];
 
   bool _signupCompleted = false;
+  final String _signupAttemptId = const Uuid().v4();
 
   @override
   void initState() {
     super.initState();
     // 구직자 가입 퍼널의 분모. 이게 없어 "가입→첫 지원 8%"가 어디서 깨지는지 못 봤다.
-    ScreenAnalyticsService.instance.logEvent('worker_signup_start');
+    ScreenAnalyticsService.instance.logEvent(
+      'worker_signup_start',
+      attemptId: _signupAttemptId,
+    );
     _getCurrentLocation();
   }
 
@@ -67,6 +72,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
       ScreenAnalyticsService.instance.logEvent(
         'worker_signup_abandon',
         params: {'step': _currentPage},
+        attemptId: _signupAttemptId,
       );
     }
     _pageController.dispose();
@@ -208,6 +214,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
         ScreenAnalyticsService.instance.logEvent(
           'worker_signup_step_complete',
           params: {'step': 0, 'name': 'phone_verified'},
+          attemptId: _signupAttemptId,
         );
 
         // ✅ 신규 회원 → 다음 단계
@@ -344,6 +351,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
   // 회원가입 제출
   // ============================================================
   Future<void> _submitSignupData() async {
+    if (_isLoading || _signupCompleted) return;
     if (!_agreedTerms || !_agreedPrivacy) {
       _showSnackbar('필수 약관에 동의해주세요');
       return;
@@ -399,7 +407,6 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
 
       if (data['success']) {
         _signupCompleted = true;
-        ScreenAnalyticsService.instance.logEvent('worker_signup_complete');
         final prefs = await SharedPreferences.getInstance();
         await _saveAuthCommon(
           prefs: prefs,
@@ -409,6 +416,11 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
           userPhone: _phoneController.text,
           userIdOrClientId: data['workerId'] as int,
           userName: _nameController.text,
+        );
+        // 토큰 저장 뒤에 기록해야 가입 완료가 로그인 전 대기열에 남지 않는다.
+        ScreenAnalyticsService.instance.logEvent(
+          'worker_signup_complete',
+          attemptId: _signupAttemptId,
         );
 
         // ✅ main.dart의 통합 FCM 함수 사용
@@ -752,8 +764,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                               color: Colors.white,
                             ),
                           )
-                          : const Text(
-                            '본인인증 하기'),
+                          : const Text('본인인증 하기'),
                 ),
               ),
               const SizedBox(height: 12),
@@ -884,6 +895,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                             ScreenAnalyticsService.instance.logEvent(
                               'worker_signup_step_complete',
                               params: {'step': 1, 'name': 'profile'},
+                              attemptId: _signupAttemptId,
                             );
                             _pageController.nextPage(
                               duration: const Duration(milliseconds: 300),
@@ -901,8 +913,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                               color: Colors.white,
                             ),
                           )
-                          : const Text(
-                            '다음'),
+                          : const Text('다음'),
                 ),
               ),
               const SizedBox(height: 24),
@@ -1051,8 +1062,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
                                 color: Colors.white,
                               ),
                             )
-                            : const Text(
-                              '가입 완료'),
+                            : const Text('가입 완료'),
                   ),
                 ),
               ],

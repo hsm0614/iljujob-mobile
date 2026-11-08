@@ -6,6 +6,8 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:synchronized/synchronized.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../config/constants.dart';
 import 'authenticated_http_client.dart';
@@ -15,6 +17,8 @@ class ScreenAnalyticsService {
   static final ScreenAnalyticsService instance = ScreenAnalyticsService._();
 
   static const _dedupeWindow = Duration(minutes: 5);
+  static const _uuid = Uuid();
+  final Lock _deliveryLock = Lock();
   final Map<String, DateTime> _lastSentAt = {};
 
   Future<void> logScreenView(String screenName) async {
@@ -62,12 +66,28 @@ class ScreenAnalyticsService {
   ///
   /// 서버는 user_type을 토큰에서 직접 읽어 client_events에 저장한다.
   /// 구직자·사장님이 같은 테이블을 쓰므로 그 구분자가 필수다.
-  void logEvent(String eventName, {Map<String, Object?>? params}) {
+  void logEvent(
+    String eventName, {
+    Map<String, Object?>? params,
+    String? attemptId,
+  }) {
     // fire-and-forget. 계측이 UX를 막으면 안 된다.
-    unawaited(_sendEvent(eventName, params));
+    final eventId = _uuid.v4();
+    final occurredAt = DateTime.now().toUtc().toIso8601String();
+    unawaited(
+      _deliveryLock.synchronized(
+        () => _sendEvent(eventName, params, eventId, attemptId, occurredAt),
+      ),
+    );
   }
 
-  Future<void> _sendEvent(String eventName, Map<String, Object?>? params) async {
+  Future<void> _sendEvent(
+    String eventName,
+    Map<String, Object?>? params,
+    String eventId,
+    String? attemptId,
+    String occurredAt,
+  ) async {
     try {
       // Firebase는 num/String만 받는다. 나머지는 문자열로 눌러 담는다.
       final fbParams = <String, Object>{};
@@ -89,14 +109,16 @@ class ScreenAnalyticsService {
       // 큐에 담아두고 로그인 후 첫 이벤트에서 함께 올린다.
       // (GA4 쪽은 위에서 이미 토큰 없이 전송되므로 영향 없음)
       if (token.isEmpty) {
-        await _enqueue(eventName, params);
+        await _enqueue(eventName, params, eventId, attemptId, occurredAt);
         return;
       }
 
       await _flushQueue(token);
-      await _post(token, eventName, params, null);
+      await _post(token, eventName, params, eventId, attemptId, occurredAt);
     } catch (_) {
-      // 계측 실패는 조용히 넘긴다.
+      try {
+        await _enqueue(eventName, params, eventId, attemptId, occurredAt);
+      } catch (_) {}
     }
   }
 
@@ -104,9 +126,11 @@ class ScreenAnalyticsService {
     String token,
     String eventName,
     Map<String, Object?>? params,
-    String? occurredAt,
+    String eventId,
+    String? attemptId,
+    String occurredAt,
   ) async {
-    await http
+    final response = await http
         .post(
           Uri.parse('$baseUrl/api/tracking/event'),
           headers: {
@@ -115,12 +139,17 @@ class ScreenAnalyticsService {
           },
           body: jsonEncode({
             'event_type': eventName,
+            'event_id': eventId,
+            if (attemptId != null) 'attempt_id': attemptId,
             if (params != null) 'properties': params,
             'platform': _platform,
-            if (occurredAt != null) 'occurred_at': occurredAt,
+            'occurred_at': occurredAt,
           }),
         )
         .timeout(const Duration(seconds: 3));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw StateError('tracking response ${response.statusCode}');
+    }
   }
 
   // ── 로그인 이전 이벤트 큐 ──────────────────────────────
@@ -128,15 +157,24 @@ class ScreenAnalyticsService {
   static const _queueKey = 'analytics_pending_events';
   static const _queueMax = 50;
 
-  Future<void> _enqueue(String eventName, Map<String, Object?>? params) async {
+  Future<void> _enqueue(
+    String eventName,
+    Map<String, Object?>? params,
+    String eventId,
+    String? attemptId,
+    String occurredAt,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final list = prefs.getStringList(_queueKey) ?? [];
-    list.add(jsonEncode({
-      'event_type': eventName,
-      if (params != null) 'properties': params,
-      // 실제 발생 시각. 나중에 올리므로 서버 수신 시각과 다르다.
-      'occurred_at': DateTime.now().toUtc().toIso8601String(),
-    }));
+    list.add(
+      jsonEncode({
+        'event_type': eventName,
+        'event_id': eventId,
+        if (attemptId != null) 'attempt_id': attemptId,
+        if (params != null) 'properties': params,
+        'occurred_at': occurredAt,
+      }),
+    );
     if (list.length > _queueMax) {
       list.removeRange(0, list.length - _queueMax);
     }
@@ -148,18 +186,37 @@ class ScreenAnalyticsService {
     final list = prefs.getStringList(_queueKey) ?? [];
     if (list.isEmpty) return;
 
-    // 먼저 비우고 보낸다. 전송 실패로 큐가 영원히 안 비는 상황을 막는다.
-    await prefs.remove(_queueKey);
-    for (final raw in list) {
+    final remaining = <String>[];
+    final cutoff = DateTime.now().toUtc().subtract(const Duration(days: 7));
+    // 복귀 직후 이벤트 하나가 오래된 대기열 50건에 막히지 않도록 10건만 처리한다.
+    for (var i = 0; i < list.length && i < 10; i++) {
+      final raw = list[i];
       try {
         final e = jsonDecode(raw) as Map<String, dynamic>;
+        // 구버전 대기열은 ID가 없어 중복 방지가 불가능하다.
+        final eventId = e['event_id']?.toString();
+        final occurredAt = e['occurred_at']?.toString();
+        final at = DateTime.tryParse(occurredAt ?? '');
+        if (eventId == null || at == null || at.isBefore(cutoff)) continue;
         await _post(
           token,
           e['event_type'] as String,
           (e['properties'] as Map?)?.cast<String, Object?>(),
-          e['occurred_at'] as String?,
+          eventId,
+          e['attempt_id']?.toString(),
+          occurredAt!,
         );
-      } catch (_) {}
+      } catch (_) {
+        remaining.add(raw);
+        remaining.addAll(list.skip(i + 1));
+        break;
+      }
+    }
+    if (list.length > 10 && remaining.isEmpty) remaining.addAll(list.skip(10));
+    if (remaining.isEmpty) {
+      await prefs.remove(_queueKey);
+    } else {
+      await prefs.setStringList(_queueKey, remaining);
     }
   }
 

@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import '../../data/services/iap_platform.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../config/app_theme.dart';
 import '../../config/constants.dart';
@@ -42,6 +43,27 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   StreamSubscription<List<PurchaseDetails>>? _purchaseSub;
   final Set<String> _handledIds = {};
   final Map<String, String> _storePrices = {};
+  String? _paymentAttemptId;
+  String? _paymentPlan;
+
+  void _trackPayment(String outcome, {String? reason, String? stage}) {
+    final attemptId = _paymentAttemptId;
+    if (attemptId == null) return;
+    ClientTrackingService.instance.track(
+      'payment_$outcome',
+      attemptId: attemptId,
+      properties: {
+        'product': 'subscription_${_paymentPlan ?? _selectedPlan}',
+        'provider': Platform.isIOS ? 'app_store' : 'portone',
+        if (reason != null) 'reason': reason,
+        if (stage != null) 'stage': stage,
+        'source': widget.source ?? 'unknown',
+      },
+    );
+    if (outcome == 'success' || outcome == 'cancel' || outcome == 'failed') {
+      _paymentAttemptId = null;
+    }
+  }
 
   @override
   void initState() {
@@ -92,6 +114,9 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   Future<void> _purchase() async {
     if (_processing) return;
     final plan = _plan;
+    _paymentAttemptId = const Uuid().v4();
+    _paymentPlan = plan.key;
+    _trackPayment('tap');
     ClientTrackingService.instance.track(
       'subscription_plan_tap',
       properties: {'plan': plan.key, 'source': widget.source ?? 'unknown'},
@@ -106,9 +131,19 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                   as Map<String, dynamic>)['v3ProductsPublic'] !=
               true) {
         if (mounted) _showError('새 구독 상품을 준비 중입니다. 잠시 뒤 다시 확인해 주세요.');
+        _trackPayment(
+          'failed',
+          reason: 'product_unavailable',
+          stage: 'eligibility',
+        );
         return;
       }
     } catch (_) {
+      _trackPayment(
+        'failed',
+        reason: 'status_check_failed',
+        stage: 'eligibility',
+      );
       if (mounted) _showError('구독 상품 상태를 확인할 수 없습니다. 잠시 뒤 다시 시도해 주세요.');
       return;
     }
@@ -134,13 +169,24 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       if (resp.productDetails.isEmpty) {
         throw Exception('상품 정보를 불러올 수 없습니다. ($productId)');
       }
-      await _iap.buyNonConsumable(
-        purchaseParam: PurchaseParam(productDetails: resp.productDetails.first),
+      await _startStorePurchase(
+        PurchaseParam(productDetails: resp.productDetails.first),
       );
     } catch (e) {
+      _trackPayment(
+        'failed',
+        reason: 'store_start_failed',
+        stage: 'store_checkout',
+      );
       setState(() => _processing = false);
       _showError(e.toString());
     }
+  }
+
+  // iOS 결제창 진입은 상품 조회 성공 후에만 센다.
+  Future<void> _startStorePurchase(PurchaseParam purchaseParam) async {
+    _trackPayment('start', stage: 'store_checkout');
+    await _iap.buyNonConsumable(purchaseParam: purchaseParam);
   }
 
   void _onPurchase(List<PurchaseDetails> purchases) async {
@@ -155,14 +201,22 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
         _handledIds.add(purchaseKey);
         final activated = await _activateIosOnServer(p);
         if (activated) {
+          _trackPayment('success', stage: 'server_verified');
           if (p.pendingCompletePurchase) await _iap.completePurchase(p);
         } else {
+          _trackPayment(
+            'failed',
+            reason: 'server_verification_failed',
+            stage: 'fulfillment',
+          );
           _handledIds.remove(purchaseKey);
         }
       } else if (p.status == PurchaseStatus.error) {
+        _trackPayment('failed', reason: 'store_error', stage: 'store_checkout');
         setState(() => _processing = false);
         _showError('결제 중 오류가 발생했어요.');
       } else if (p.status == PurchaseStatus.canceled) {
+        _trackPayment('cancel', stage: 'store_checkout');
         setState(() => _processing = false);
       }
     }
@@ -225,10 +279,16 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
         if (current['plan'] == 'lite' && plan.key == 'pro') {
           await _upgradeWithPortOne();
         } else {
+          _trackPayment(
+            'failed',
+            reason: 'subscription_already_active',
+            stage: 'eligibility',
+          );
           _showError('현재 구독이 끝난 뒤 새 기간권을 구매해 주세요. 중복 결제를 막기 위해 결제창을 열지 않았어요.');
         }
         return;
       }
+      _trackPayment('start', stage: 'portone_checkout');
       final result = await Navigator.push(
         context,
         MaterialPageRoute(
@@ -244,8 +304,15 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       );
       if (result is Map && result['imp_uid'] != null) {
         await _activatePortOneOnServer(result['imp_uid']?.toString());
+      } else {
+        _trackPayment('cancel', stage: 'portone_checkout');
       }
     } catch (_) {
+      _trackPayment(
+        'failed',
+        reason: 'checkout_error',
+        stage: 'portone_checkout',
+      );
       if (mounted) _showError(Msg.server);
     } finally {
       if (mounted) setState(() => _processing = false);
@@ -253,9 +320,17 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   }
 
   Future<void> _upgradeWithPortOne() async {
-    final q = await AuthenticatedHttpClient.get(Uri.parse('$baseUrl/api/subscription/upgrade-quote'));
-    final quote = q.statusCode == 200 ? (jsonDecode(q.body) as Map)['quote'] : null;
+    final q = await AuthenticatedHttpClient.get(
+      Uri.parse('$baseUrl/api/subscription/upgrade-quote'),
+    );
+    final quote =
+        q.statusCode == 200 ? (jsonDecode(q.body) as Map)['quote'] : null;
     if (quote is! Map || !mounted) {
+      _trackPayment(
+        'failed',
+        reason: 'upgrade_quote_unavailable',
+        stage: 'eligibility',
+      );
       _showError('지금은 업그레이드할 수 없어요. 고객센터로 문의해 주세요.');
       return;
     }
@@ -269,30 +344,50 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       confirmLabel: '${NumberFormat('#,###').format(amount)}원 결제',
       cancelLabel: '닫기',
     );
-    if (!go || !mounted) return;
-    ClientTrackingService.instance.track('subscription_upgrade_tap', properties: {'amount': amount, 'days': days});
+    if (!go || !mounted) {
+      _trackPayment('cancel', stage: 'upgrade_confirmation');
+      return;
+    }
+    ClientTrackingService.instance.track(
+      'subscription_upgrade_tap',
+      properties: {'amount': amount, 'days': days},
+    );
+    _trackPayment('start', stage: 'portone_checkout');
     final result = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => PortonePaymentScreen(
-          count: 1,
-          companyName: _companyName ?? '알바일주',
-          companyPhone: _companyPhone ?? '',
-          amount: amount,
-          productName: '알바일주 무제한 업그레이드 ($days일)',
-        ),
+        builder:
+            (_) => PortonePaymentScreen(
+              count: 1,
+              companyName: _companyName ?? '알바일주',
+              companyPhone: _companyPhone ?? '',
+              amount: amount,
+              productName: '알바일주 무제한 업그레이드 ($days일)',
+            ),
       ),
     );
-    if (result is! Map || result['imp_uid'] == null || !mounted) return;
+    if (result is! Map || result['imp_uid'] == null || !mounted) {
+      _trackPayment('cancel', stage: 'portone_checkout');
+      return;
+    }
     final resp = await AuthenticatedHttpClient.postJson(
       Uri.parse('$baseUrl/api/subscription/upgrade'),
       body: {'impUid': result['imp_uid'].toString()},
     );
     if (!mounted) return;
     if (resp.statusCode == 200) {
-      ClientTrackingService.instance.track('subscription_success', properties: {'plan': 'pro', 'upgrade': true});
+      _trackPayment('success', stage: 'server_verified');
+      ClientTrackingService.instance.track(
+        'subscription_success',
+        properties: {'plan': 'pro', 'upgrade': true},
+      );
       _showSuccess();
     } else {
+      _trackPayment(
+        'failed',
+        reason: 'server_verification_failed',
+        stage: 'fulfillment',
+      );
       final msg = (jsonDecode(resp.body) as Map?)?['message']?.toString();
       _showError(msg ?? '업그레이드에 실패했어요. 고객센터로 문의해 주세요.');
     }
@@ -307,6 +402,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
       );
       if (!mounted) return resp.statusCode == 200;
       if (resp.statusCode == 200) {
+        _trackPayment('success', stage: 'server_verified');
         ClientTrackingService.instance.track(
           'subscription_success',
           properties: {'plan': _selectedPlan},
@@ -315,8 +411,14 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
         return true;
       }
       _showError('구독 활성화에 실패했어요. 고객센터에 문의해주세요.');
+      _trackPayment(
+        'failed',
+        reason: 'server_verification_failed',
+        stage: 'fulfillment',
+      );
       return false;
     } catch (_) {
+      _trackPayment('failed', reason: 'network_error', stage: 'fulfillment');
       if (mounted) _showError(Msg.server);
       return false;
     }
@@ -339,7 +441,9 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
         return Container(
           decoration: const BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xxl)),
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(AppRadius.xxl),
+            ),
           ),
           padding: EdgeInsets.fromLTRB(20, 28, 20, 24 + bottom),
           child: Column(
@@ -386,8 +490,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                     Navigator.pop(context);
                     Navigator.pop(context, true);
                   },
-                  child: const Text(
-                    '확인'),
+                  child: const Text('확인'),
                 ),
               ),
             ],
@@ -518,51 +621,69 @@ class _PlanCard extends StatelessWidget {
       '먼저 연락 ${plan.directMonthly}명',
       plan.aiJobMonthly < 0 ? 'AI 공고문 무제한' : 'AI 공고문 ${plan.aiJobMonthly}회',
     ].join(' · ');
-    final price = displayPrice ?? '${NumberFormat('#,###').format(plan.price)}원';
+    final price =
+        displayPrice ?? '${NumberFormat('#,###').format(plan.price)}원';
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: AppSelectCard(
         selected: selected,
         onTap: onTap,
         child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Icon(
-                  selected ? Icons.radio_button_checked_rounded : Icons.radio_button_off_rounded,
-                  size: 22,
-                  color: selected ? AppColors.primary : AppColors.textDisabled,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Text(plan.name, style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                          if (plan.recommended) ...[const SizedBox(width: 6), const JobSignalBadge(label: '추천')],
-                          const Spacer(),
-                          Text(
-                            displayPrice == '가격 확인 중' ? price : '$price/월',
-                            style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+          padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(
+                selected
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_off_rounded,
+                size: 22,
+                color: selected ? AppColors.primary : AppColors.textDisabled,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          plan.name,
+                          style: AppTextStyles.body1.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
                           ),
+                        ),
+                        if (plan.recommended) ...[
+                          const SizedBox(width: 6),
+                          const JobSignalBadge(label: '추천'),
                         ],
+                        const Spacer(),
+                        Text(
+                          displayPrice == '가격 확인 중' ? price : '$price/월',
+                          style: AppTextStyles.body1.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(summary, style: AppTextStyles.body2),
+                    const SizedBox(height: 6),
+                    Text(
+                      _anchor[plan.key] ?? '',
+                      style: AppTextStyles.body2.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
-                      const SizedBox(height: 4),
-                      Text(summary, style: AppTextStyles.body2),
-                      const SizedBox(height: 6),
-                      Text(
-                        _anchor[plan.key] ?? '',
-                        style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ),
       ),
     );
   }
@@ -759,7 +880,8 @@ class _BottomCta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final checking = displayPrice == '가격 확인 중';
-    final price = displayPrice ?? '${NumberFormat('#,###').format(plan.price)}원';
+    final price =
+        displayPrice ?? '${NumberFormat('#,###').format(plan.price)}원';
     final note =
         checking
             ? 'App Store 가격을 확인하고 있어요'

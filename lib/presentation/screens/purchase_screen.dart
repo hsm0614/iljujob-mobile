@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../data/services/iap_platform.dart';
 
@@ -16,6 +17,7 @@ import '../../config/constants.dart';
 import '../../data/models/pass_product_config.dart';
 import '../../data/services/commerce_catalog_service.dart';
 import '../../data/services/authenticated_http_client.dart';
+import '../../data/services/client_tracking_service.dart';
 import 'potrone_screen.dart';
 
 // ── 디자인 토큰 ──
@@ -75,6 +77,31 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   bool _isPurchasing = false;
   String? _pendingPassType; // 결제 중인 패스 타입
   final Set<String> _handledPurchaseIds = {};
+  String? _paymentAttemptId;
+
+  void _trackPayment(String outcome, {String? reason, String? stage}) {
+    final attemptId = _paymentAttemptId;
+    if (attemptId == null) return;
+    ClientTrackingService.instance.track(
+      'payment_$outcome',
+      attemptId: attemptId,
+      properties: {
+        'product': _pendingPassType ?? 'pass',
+        'provider': Platform.isIOS ? 'app_store' : 'portone',
+        if (reason != null) 'reason': reason,
+        if (stage != null) 'stage': stage,
+      },
+    );
+    if (outcome == 'success' || outcome == 'cancel' || outcome == 'failed') {
+      _paymentAttemptId = null;
+    }
+  }
+
+  void _beginPayment(String passType) {
+    _paymentAttemptId = const Uuid().v4();
+    _pendingPassType = passType;
+    _trackPayment('tap');
+  }
 
   String formatPrice(int n) => '${formatter.format(n)}원';
 
@@ -195,7 +222,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
 
     setState(() => _isPurchasing = true);
     _handledPurchaseIds.clear();
-    _pendingPassType = passType;
+    _beginPayment(passType);
     _purchaseCompleter = Completer<PurchaseDetails>();
 
     try {
@@ -222,6 +249,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
         throw Exception('상품 조회 실패\n$detail');
       }
 
+      _trackPayment('start', stage: 'store_checkout');
       await _iap.buyConsumable(
         purchaseParam: PurchaseParam(productDetails: resp.productDetails.first),
         // 서버 검증과 이용권 지급이 끝난 뒤에만 consume한다.
@@ -232,6 +260,11 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
       await _purchaseCompleter!.future.timeout(const Duration(minutes: 5));
       if (mounted) await _refreshPassCount();
     } catch (e) {
+      _trackPayment(
+        'failed',
+        reason: 'store_or_verification_error',
+        stage: 'app_store',
+      );
       if (mounted) _showErrorDialog('결제 처리 중 오류: $e');
     } finally {
       _pendingPassType = null;
@@ -273,6 +306,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
             if (p.pendingCompletePurchase) await _iap.completePurchase(p);
           }
           if (!_purchaseCompleterIsDone) _purchaseCompleter?.complete(p);
+          _trackPayment('success', stage: 'server_verified');
 
           if (mounted) {
             final isUrgent =
@@ -292,6 +326,11 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
             }
           }
         } catch (e) {
+          _trackPayment(
+            'failed',
+            reason: 'server_verification_failed',
+            stage: 'fulfillment',
+          );
           _handledPurchaseIds.remove(purchaseKey);
           // 영구 실패만 거래를 끝낸다. 네트워크·서버 오류는 끝내지 않아야
           // StoreKit 이 다음에 다시 전달해 이용권을 받을 수 있다.
@@ -311,6 +350,11 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
 
       if (p.status == PurchaseStatus.error ||
           p.status == PurchaseStatus.canceled) {
+        _trackPayment(
+          p.status == PurchaseStatus.canceled ? 'cancel' : 'failed',
+          reason: p.status == PurchaseStatus.error ? 'store_error' : null,
+          stage: 'store_checkout',
+        );
         if (!_purchaseCompleterIsDone) _purchaseCompleter?.completeError('취소됨');
         if (mounted) setState(() => _isPurchasing = false);
       }
@@ -326,7 +370,9 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   }) async {
     if (!mounted || _isPurchasing) return;
     setState(() => _isPurchasing = true);
+    _beginPayment(passType);
     try {
+      _trackPayment('start', stage: 'portone_checkout');
       final result = await Navigator.push(
         context,
         MaterialPageRoute(
@@ -349,8 +395,15 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
           count: count,
           passType: passType,
         );
+      } else {
+        _trackPayment('cancel', stage: 'portone_checkout');
       }
     } catch (_) {
+      _trackPayment(
+        'failed',
+        reason: 'checkout_error',
+        stage: 'portone_checkout',
+      );
       if (mounted) _showErrorDialog('결제 화면을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.');
     } finally {
       if (mounted) setState(() => _isPurchasing = false);
@@ -381,6 +434,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
       } catch (_) {}
 
       if (res.statusCode == 200 && data['ok'] == true) {
+        _trackPayment('success', stage: 'server_verified');
         if (!mounted) return;
         await _refreshPassCount();
         if (widget.fromPostJob) {
@@ -390,12 +444,18 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
           await _showBought(passType);
         }
       } else {
+        _trackPayment(
+          'failed',
+          reason: 'server_verification_failed',
+          stage: 'fulfillment',
+        );
         final message = data['message'] ?? '이용권 지급에 실패했습니다.';
         if (mounted) {
           _showErrorDialog('결제는 완료됐으나 지급 오류입니다.\n고객센터에 문의해주세요.\n\n($message)');
         }
       }
     } catch (_) {
+      _trackPayment('failed', reason: 'network_error', stage: 'fulfillment');
       if (mounted) _showErrorDialog('네트워크 오류입니다. 잠시 후 다시 시도해주세요.');
     }
   }
@@ -709,7 +769,12 @@ class _UrgentTab extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () => Navigator.pushNamed(context, '/subscribe', arguments: 'purchase'),
+                    onPressed:
+                        () => Navigator.pushNamed(
+                          context,
+                          '/subscribe',
+                          arguments: 'purchase',
+                        ),
                     child: const Text('구독 보기'),
                   ),
                 ],
@@ -782,52 +847,52 @@ class _OptionRow extends StatelessWidget {
     child: AppSelectCard(
       selected: selected,
       onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
-          child: Row(
-            children: [
-              Icon(
-                selected
-                    ? Icons.radio_button_checked_rounded
-                    : Icons.radio_button_off_rounded,
-                size: 22,
-                color: selected ? AppColors.primary : AppColors.textDisabled,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Text(
-                          title,
-                          style: AppTextStyles.body1.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+        child: Row(
+          children: [
+            Icon(
+              selected
+                  ? Icons.radio_button_checked_rounded
+                  : Icons.radio_button_off_rounded,
+              size: 22,
+              color: selected ? AppColors.primary : AppColors.textDisabled,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        title,
+                        style: AppTextStyles.body1.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
                         ),
-                        if (tag != null) ...[
-                          const SizedBox(width: 6),
-                          JobSignalBadge(label: tag!),
-                        ],
+                      ),
+                      if (tag != null) ...[
+                        const SizedBox(width: 6),
+                        JobSignalBadge(label: tag!),
                       ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(sub, style: AppTextStyles.body2),
-                  ],
-                ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(sub, style: AppTextStyles.body2),
+                ],
               ),
-              Text(
-                price,
-                style: AppTextStyles.body1.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textPrimary,
-                ),
+            ),
+            Text(
+              price,
+              style: AppTextStyles.body1.copyWith(
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
               ),
-            ],
-          ),
+            ),
+          ],
         ),
+      ),
     ),
   );
 }
