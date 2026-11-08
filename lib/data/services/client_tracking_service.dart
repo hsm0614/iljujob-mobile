@@ -8,13 +8,16 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:synchronized/synchronized.dart';
 import 'package:uuid/uuid.dart';
 import 'tracking_delivery_policy.dart';
+import '../../config/constants.dart' as config;
 
 class ClientTrackingService {
   static final ClientTrackingService _instance = ClientTrackingService._();
   static ClientTrackingService get instance => _instance;
   ClientTrackingService._();
 
-  String? _baseUrl;
+  // 결제·가입 직후 화면은 사장님 홈을 거치지 않을 수 있다.
+  // 앱 시작 시 기본 API 주소를 갖고 있어야 첫 이벤트가 유실되지 않는다.
+  String? _baseUrl = config.baseUrl;
   int? _sessionId;
   DateTime? _sessionStart;
   String? _appVersion;
