@@ -20,6 +20,7 @@ import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/widget/recommended_section.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/widget/app_ui.dart';
+import 'package:iljujob/widget/push_permission.dart';
 import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 
 class HomeScreen extends StatefulWidget {
@@ -59,6 +60,16 @@ class _HomeScreenState extends State<HomeScreen> {
       (_) => _maybeShowPromoIfHomeTab(),
     );
     WidgetsBinding.instance.addPostFrameCallback((_) => _openPendingApplyJob());
+    // 알림 권한 안내 — 공고 상세까지 안 가는 신규가 많아 홈에서도 한 번 묻는다.
+    // 다른 화면·팝업이 위에 떠 있으면(지원 이어가기·프로모) 건너뛰고 다음 기회(공고 상세)에 맡긴다.
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? false)) return;
+      maybeShowPushPrimer(
+        context,
+        source: 'home_primer',
+        title: '근처에 새 일급 공고가 올라오면\n바로 알려드릴까요?',
+      );
+    });
   }
 
   /// 비로그인 상태에서 '지원하기'를 누르고 가입했다면 그 공고로 돌려보낸다 (한 번만)

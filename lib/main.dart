@@ -349,6 +349,13 @@ Future<void> syncNotificationStatus() async {
       await sendFcmTokenUnified();
       debugPrint('✅ 알림 허용($status) — 토큰 갱신');
     } else if (status == AuthorizationStatus.denied) {
+      // Android 13+ 는 아직 묻지 않은 상태도 denied 로 준다. 그때 지우면 가입 때 저장한 토큰이
+      // 첫 실행·복귀마다 날아갔다(11-10 실측: 10~11월 Android 신규 61%). 실제로 물어본 뒤에만 지운다.
+      final asked = (await SharedPreferences.getInstance()).getBool('push_permission_asked') ?? false;
+      if (Platform.isAndroid && !asked) {
+        debugPrint('⏳ Android 알림 권한 아직 안 물음 — 토큰 그대로 둠');
+        return;
+      }
       await _clearFcmToken();
       debugPrint('🔕 알림 거부 — 서버 토큰 삭제');
     } else {

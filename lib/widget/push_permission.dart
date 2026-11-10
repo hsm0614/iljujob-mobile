@@ -9,7 +9,7 @@ import 'package:iljujob/main.dart' show sendFcmTokenUnified;
 
 /// 알림 권한 — 앱을 켜자마자 묻지 않는다.
 /// 이유를 모르는 첫 실행 팝업에서 거부가 많았다(9월 신규 구직자 58% 토큰 없음).
-/// 구직자는 첫 공고 상세를 본 뒤, 사장님은 홈 진입 시 한 번.
+/// 구직자는 홈 첫 진입 또는 첫 공고 상세 뒤 안내 시트로, 사장님은 홈 진입 시 한 번.
 ///
 /// 거부된 뒤에는 OS 가 다시 묻지 않으므로 설정 화면으로 보낸다.
 /// Android 13+ 는 묻기 전에도 상태가 denied 로 보여서 '물어봤는지'를 따로 기억한다.
@@ -61,8 +61,13 @@ Future<bool> requestPushPermission({required String source}) async {
   return ok;
 }
 
-/// 구직자 첫 공고 상세 뒤 한 번: 왜 필요한지 먼저 말하고 묻는다.
-Future<void> maybeShowPushPrimer(BuildContext context) async {
+/// 구직자 홈 첫 진입(가입 직후 포함) 또는 첫 공고 상세 뒤, 둘 중 먼저 오는 곳에서 한 번:
+/// 왜 필요한지 먼저 말하고 묻는다. 공고 상세까지 안 가는 사람이 많아 홈에서도 묻는다(11-10: 신규 구직자 60% 토큰 없음).
+Future<void> maybeShowPushPrimer(
+  BuildContext context, {
+  String source = 'job_detail_primer',
+  String title = '이런 공고, 근처에 올라오면\n바로 알려드릴까요?',
+}) async {
   final prefs = await SharedPreferences.getInstance();
   if (prefs.getBool(_kPrimerShownKey) ?? false) return;
   if (await isPushAllowed()) return;
@@ -89,7 +94,7 @@ Future<void> maybeShowPushPrimer(BuildContext context) async {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '이런 공고, 근처에 올라오면\n바로 알려드릴까요?',
+                  title,
                   textAlign: TextAlign.center,
                   style: AppTextStyles.h3.copyWith(
                     color: AppColors.textPrimary,
@@ -127,11 +132,11 @@ Future<void> maybeShowPushPrimer(BuildContext context) async {
         ),
   );
   if (want == true) {
-    await requestPushPermission(source: 'job_detail_primer');
+    await requestPushPermission(source: source);
   } else {
     ScreenAnalyticsService.instance.logEvent(
       'push_permission',
-      params: {'source': 'job_detail_primer', 'result': 'later'},
+      params: {'source': source, 'result': 'later'},
     );
   }
 }
