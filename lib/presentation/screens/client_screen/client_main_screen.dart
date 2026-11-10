@@ -321,35 +321,10 @@ class _ClientMainScreenState extends State<ClientMainScreen>
       debugPrint('FCM token: $token');
     });
 
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      if (message.notification != null) {
-        _showNotification(message);
-      }
-    });
+    // 앱이 켜져 있을 때 오는 푸시는 main.dart 가 한 번만 띄운다(탭하면 열 화면 정보 포함).
+    // 여기서도 띄우면 같은 id 로 덮어써 탭해도 아무 데도 안 갔다.
   }
 
-  Future<void> _showNotification(RemoteMessage message) async {
-    final notification = message.notification;
-
-    if (notification != null) {
-      const androidDetails = AndroidNotificationDetails(
-        'basic_channel',
-        '기본 채널',
-        channelDescription: '일반 알림을 위한 채널',
-        importance: Importance.max,
-        priority: Priority.high,
-      );
-
-      const platformDetails = NotificationDetails(android: androidDetails);
-
-      await flutterLocalNotificationsPlugin.show(
-        notification.hashCode,
-        notification.title,
-        notification.body,
-        platformDetails,
-      );
-    }
-  }
 
   Future<void> _initSocket() async {
     try {

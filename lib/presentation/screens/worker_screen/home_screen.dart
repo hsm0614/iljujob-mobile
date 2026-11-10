@@ -6,13 +6,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../data/services/job_service.dart';
 import 'job_detail_screen.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'home_main_screen.dart';
 import 'package:iljujob/presentation/screens/worker_screen/my_applied_jobs_screen.dart';
 import '../../chat/chat_list_screen.dart';
 import 'home_my_page_screen.dart';
 import '../../../config/constants.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:iljujob/data/services/promo_service.dart';
 import 'package:iljujob/data/models/promo_model.dart';
 import 'package:iljujob/data/services/ai_api.dart';
@@ -41,8 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
   String userType = 'worker';
   Timer? _unreadTimer;
   IO.Socket? socket;
-  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
 
   bool _promoShownThisSession = false;
   late final PromoService promoService = PromoService(baseUrl);
@@ -55,7 +51,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _homeOpened = _selectedIndex == 2;
     _homeMainScreen = HomeMainScreen(onAiRecommend: _openRecommendSheet);
     _initializeHomeScreen();
-    _setupFirebaseMessagingListeners();
+    // 앱이 켜져 있을 때 오는 푸시는 main.dart 가 한 번만 띄운다(탭하면 열 화면 정보 포함).
+    // 여기서도 띄우면 같은 id 로 덮어써 탭해도 아무 데도 안 갔다.
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => _maybeShowPromoIfHomeTab(),
     );
@@ -232,29 +229,6 @@ class _HomeScreenState extends State<HomeScreen> {
   // 실패해도 아무도 몰랐고, userId 없이 phone 만 보내 매칭도 약했다.
   Future<void> _sendFcmTokenToServer(String? phone, String? userType) =>
       sendFcmTokenUnified();
-
-  void _setupFirebaseMessagingListeners() {
-    FirebaseMessaging.onMessage.listen(_showNotification);
-  }
-
-  Future<void> _showNotification(RemoteMessage message) async {
-    final notification = message.notification;
-    if (notification == null) return;
-    await flutterLocalNotificationsPlugin.show(
-      notification.hashCode,
-      notification.title,
-      notification.body,
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          'basic_channel',
-          '기본 채널',
-          channelDescription: '일반 알림을 위한 채널',
-          importance: Importance.max,
-          priority: Priority.high,
-        ),
-      ),
-    );
-  }
 
   Future<void> _loadUserInfoAndUnreadCount() async {
     final prefs = await SharedPreferences.getInstance();
