@@ -624,6 +624,49 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
   // 지원 취소 확인 다이얼로그
   // ─────────────────────────────────────────────
 
+  /// 알바생 출근 확인 응답. [못 가요]만 확인을 받는다(파괴적 작업이라 다이얼로그 예외)
+  Future<void> _workerStatus(
+    BuildContext context,
+    ChatRoomController ctrl,
+    WorkConfirmation confirm,
+    String status,
+  ) async {
+    if (status == 'cancelled') {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder:
+            (_) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              title: const Text(
+                '이 근무에 못 가시나요?',
+                style: TextStyle(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w700),
+              ),
+              content: const Text(
+                '사장님에게 바로 알려요.\n수락 후 취소하면 활동 점수가 3점 깎여요.',
+                style: TextStyle(fontSize: AppFontSize.button, color: AppColors.textSecondary),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('닫기', style: TextStyle(color: AppColors.textSecondary)),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text(
+                    '못 가요',
+                    style: TextStyle(color: AppColors.error, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
+            ),
+      );
+      if (ok != true) return;
+    }
+    await ctrl.respondToWorkConfirmation(confirm, status);
+  }
+
   Future<void> _confirmNoShow(
     BuildContext context,
     ChatRoomController ctrl,
@@ -1334,6 +1377,14 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                           ctrl,
                                           confirm,
                                         ),
+                                    onWorkerStatusWorkConfirmation:
+                                        (confirm, status) =>
+                                            _workerStatus(
+                                              context,
+                                              ctrl,
+                                              confirm,
+                                              status,
+                                            ),
                                     onRetryMessage: ctrl.retryMessage,
                                     inputOverlayHeight: 112,
                                   ),

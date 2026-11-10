@@ -13,6 +13,8 @@ class WorkConfirmationCard extends StatelessWidget {
   final VoidCallback? onAccept;
   final VoidCallback? onReject;
   final VoidCallback? onNoShow;
+  /// 알바생 출근 확인 응답: day_before_confirmed / day_of_confirmed / checked_in / cancelled
+  final void Function(String status)? onWorkerStatus;
 
   const WorkConfirmationCard({
     super.key,
@@ -21,7 +23,22 @@ class WorkConfirmationCard extends StatelessWidget {
     this.onAccept,
     this.onReject,
     this.onNoShow,
+    this.onWorkerStatus,
   });
+
+  /// 알바생 주 버튼 (라벨, 다음 상태). 근무일 오늘 여부로 갈린다 — 서버 workConfirmationRules와 같은 표
+  (String, String)? _workerNext() {
+    final s = confirm.status;
+    final today = isWorkDateToday(confirm.workDate);
+    if (s == 'day_of_confirmed') return ('도착했어요', 'checked_in');
+    if (today && ['accepted', 'scheduled', 'day_before_confirmed'].contains(s)) {
+      return ('출발해요', 'day_of_confirmed');
+    }
+    if (!today && !isWorkDatePast(confirm.workDate) && ['accepted', 'scheduled'].contains(s)) {
+      return ('갈게요', 'day_before_confirmed');
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,6 +59,8 @@ class WorkConfirmationCard extends StatelessWidget {
         expiredProposal ? '지난 제안' : _statusLabel(confirm.status);
     final statusColor =
         expiredProposal ? AppColors.textTertiary : _statusColor(confirm.status);
+    final workerNext =
+        userType == 'worker' && onWorkerStatus != null ? _workerNext() : null;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
@@ -115,7 +134,30 @@ class WorkConfirmationCard extends StatelessWidget {
             ],
             if (!isPast) ...[
               const SizedBox(height: 16),
-              _StatusHint(status: confirm.status),
+              _StatusHint(status: confirm.status, userType: userType),
+            ],
+
+            // 알바생 출근 확인 (수락 이후 ~ 출근 전)
+            if (workerNext != null) ...[
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => onWorkerStatus!('cancelled'),
+                      child: const Text('못 가요'),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: () => onWorkerStatus!(workerNext.$2),
+                      child: Text(workerNext.$1),
+                    ),
+                  ),
+                ],
+              ),
             ],
 
             // 액션 버튼 (구직자가 proposed 상태일 때만)
@@ -215,7 +257,8 @@ class _Row extends StatelessWidget {
 /// 상태값 순서는 work_confirmations.status 와 같다.
 class _StatusHint extends StatelessWidget {
   final String status;
-  const _StatusHint({required this.status});
+  final String userType;
+  const _StatusHint({required this.status, required this.userType});
 
   static const _steps = ['제안', '수락', '전날', '당일', '출근', '완료'];
 
@@ -233,9 +276,11 @@ class _StatusHint extends StatelessWidget {
   Widget build(BuildContext context) {
     final text = switch (status) {
       'proposed' => '수락하면 근무가 확정돼요.',
-      'accepted' || 'scheduled' => '근무가 확정됐어요. 전날 18시에 확인 알림이 가요.',
-      'day_before_confirmed' => '전날 확인 완료. 출근 2시간 전에 당일 확인 알림이 가요.',
-      'day_of_confirmed' => '당일 확인 완료. 출근하면 정산 달력에 반영돼요.',
+      'accepted' || 'scheduled' when userType == 'client' =>
+        '알바생이 아직 출근 확인 전이에요. 전날 18시에 알바생에게 물어봐요.',
+      'accepted' || 'scheduled' => '근무가 확정됐어요. 전날 18시에 출근 확인을 물어봐요.',
+      'day_before_confirmed' => '내일 출근 확인 완료. 당일 시작 3시간 전에 한 번 더 물어봐요.',
+      'day_of_confirmed' => '출발 확인 완료.',
       'checked_in' => '출근 확인 완료. 근무 완료 처리만 남았어요.',
       _ => '출근 확정이 진행 중이에요.',
     };

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:iljujob/main.dart' show openChatRoomById;
 
 import '../../../config/app_theme.dart';
 import '../../../config/constants.dart';
@@ -33,6 +34,9 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
   }
 
   Future<void> _open(Map<String, dynamic> it) async {
+    // 근무 확인 알림(id 음수)은 채팅방으로
+    final roomId = int.tryParse('${it['chat_room_id'] ?? ''}');
+    if (roomId != null) return openChatRoomById(roomId);
     final id = it['job_id'];
     if (id == null) return;
     try {
@@ -102,7 +106,7 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
               itemBuilder: (context, i) {
                 final it = items[i];
                 return InkWell(
-                  onTap: it['job_id'] == null ? null : () => _open(it),
+                  onTap: it['job_id'] == null && it['chat_room_id'] == null ? null : () => _open(it),
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
                     child: Column(

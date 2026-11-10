@@ -22,6 +22,11 @@ bool isWorkDatePast(String? workDate, {DateTime? now}) {
   return d.compareTo(_ymd(now ?? DateTime.now())) < 0;
 }
 
+/// 근무일이 오늘(기기 날짜)이면 true
+bool isWorkDateToday(String? workDate, {DateTime? now}) =>
+    (workDate ?? '').length >= 10 &&
+    workDate!.substring(0, 10) == _ymd(now ?? DateTime.now());
+
 /// [workStatus]: work_confirmations 최신 상태 · [urgentStatus]: direct_message_logs 상태
 /// · [applicationStatus]: 서버 목록의 applied/confirmed/completed/cancelled
 ChatStage? chatStageOf({

@@ -40,6 +40,8 @@ class ChatMessageList extends StatelessWidget {
   final void Function(WorkConfirmation confirm)? onAcceptWorkConfirmation;
   final void Function(WorkConfirmation confirm)? onRejectWorkConfirmation;
   final void Function(WorkConfirmation confirm)? onNoShowWorkConfirmation;
+  final void Function(WorkConfirmation confirm, String status)?
+  onWorkerStatusWorkConfirmation;
   final double inputOverlayHeight;
 
   /// 전송 실패 메시지 탭 → 재전송
@@ -59,6 +61,7 @@ class ChatMessageList extends StatelessWidget {
     this.onAcceptWorkConfirmation,
     this.onRejectWorkConfirmation,
     this.onNoShowWorkConfirmation,
+    this.onWorkerStatusWorkConfirmation,
     this.inputOverlayHeight = 112,
     this.onRetryMessage,
   });
@@ -214,6 +217,10 @@ class ChatMessageList extends StatelessWidget {
           onNoShow:
               userType == 'client'
                   ? () => onNoShowWorkConfirmation?.call(confirm)
+                  : null,
+          onWorkerStatus:
+              userType == 'worker' && onWorkerStatusWorkConfirmation != null
+                  ? (s) => onWorkerStatusWorkConfirmation!(confirm, s)
                   : null,
         );
       case _RowKind.nudge:

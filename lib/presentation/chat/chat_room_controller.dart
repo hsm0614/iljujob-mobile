@@ -825,7 +825,17 @@ class ChatRoomController extends ChangeNotifier {
         onShowSnackbar?.call('출근 확정 제안을 수락했어요. 근무일에 꼭 출근해주세요!');
         onWorkConfirmationAccepted?.call(confirm);
       } else if (nextStatus == 'cancelled') {
-        onShowSnackbar?.call('출근 확정 제안을 거절했어요.');
+        onShowSnackbar?.call(
+          confirm.status == 'proposed'
+              ? '출근 확정 제안을 거절했어요.'
+              : '근무를 취소했어요. 사장님에게 알렸어요.',
+        );
+      } else if (const {
+        'day_before_confirmed',
+        'day_of_confirmed',
+        'checked_in',
+      }.contains(nextStatus)) {
+        onShowSnackbar?.call('사장님에게 알렸어요.');
       }
     } catch (e) {
       debugPrint('처리에 실패했어요: $e');
