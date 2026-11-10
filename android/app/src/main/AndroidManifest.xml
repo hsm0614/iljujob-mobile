@@ -104,6 +104,9 @@
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
 
+            <!-- 링크는 app_links로 받는다(main.dart _openJobLink). Flutter 기본 처리는 경로를 라우트로 밀어 넣어 끈다 -->
+            <meta-data android:name="flutter_deeplinking_enabled" android:value="false" />
+
             <!-- 딥링크 (albailju://callback) -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

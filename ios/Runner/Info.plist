@@ -53,6 +53,8 @@
 	<array>
 		<string>iPhoneOS</string>
 	</array>
+	<key>FlutterDeepLinkingEnabled</key>
+	<false/>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

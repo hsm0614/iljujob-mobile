@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:app_links/app_links.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_core/firebase_core.dart';
@@ -517,6 +518,43 @@ Future<void> _handleChatNotification(RemoteMessage message) async {
   }
 }
 
+/// 웹 앱 안내 화면의 "앱에서 이 공고 열기" — albailju://job/{id}.
+/// 로그인 전이면 기억해 뒀다가 구직자 홈이 열릴 때 연다(openPendingJobLink).
+/// albailju://callback(결제 복귀)은 웹뷰가 처리하므로 여기선 무시한다.
+int? _pendingJobLinkId;
+
+Future<void> _openJobLink(Uri uri) async {
+  if (uri.scheme != 'albailju' || uri.host != 'job') return;
+  final id = int.tryParse(uri.pathSegments.isEmpty ? '' : uri.pathSegments.first);
+  if (id == null) return;
+  final token = await AuthenticatedHttpClient.accessToken();
+  if (token.isEmpty) {
+    _pendingJobLinkId = id;
+    return;
+  }
+  final job = await JobService.fetchJobByIdWithToken(id, token);
+  if (job == null) {
+    final ctx = navigatorKey.currentContext;
+    if (ctx != null && ctx.mounted) {
+      ScaffoldMessenger.of(ctx).showSnackBar(
+        const SnackBar(content: Text('마감됐거나 삭제된 공고예요')),
+      );
+    }
+    return;
+  }
+  navigatorKey.currentState?.push(
+    MaterialPageRoute(builder: (_) => JobDetailScreen(job: job)),
+  );
+}
+
+/// 로그인·가입 직후 구직자 홈에서 부른다 — 링크로 들어왔던 공고로 이어 준다.
+Future<void> openPendingJobLink() async {
+  final id = _pendingJobLinkId;
+  if (id == null) return;
+  _pendingJobLinkId = null;
+  await _openJobLink(Uri.parse('albailju://job/$id'));
+}
+
 /// 홈 카드 등에서 채팅방 열기 — 푸시 탭과 같은 경로(상세 조회 후 이동).
 Future<void> openChatRoomById(int chatRoomId) =>
     _handleChatNotification(RemoteMessage(data: {'chatRoomId': '$chatRoomId'}));
@@ -717,6 +755,11 @@ void main() async {
 
   WidgetsBinding.instance.addPostFrameCallback((_) async {
     await _maybeShowUpgradeDialog(upgrader);
+  });
+
+  // 콜드 스타트 링크도 이 스트림으로 온다(app_links 6). 첫 화면이 뜬 뒤 구독
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    AppLinks().uriLinkStream.listen(_openJobLink);
   });
 
   await _handleInitialMessage(prefs, refreshedUserType);

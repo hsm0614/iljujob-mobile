@@ -51,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _homeOpened = _selectedIndex == 2;
     _homeMainScreen = HomeMainScreen(onAiRecommend: _openRecommendSheet);
     _initializeHomeScreen();
+    WidgetsBinding.instance.addPostFrameCallback((_) => openPendingJobLink());
     // 앱이 켜져 있을 때 오는 푸시는 main.dart 가 한 번만 띄운다(탭하면 열 화면 정보 포함).
     // 여기서도 띄우면 같은 id 로 덮어써 탭해도 아무 데도 안 갔다.
     WidgetsBinding.instance.addPostFrameCallback(

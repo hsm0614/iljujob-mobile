@@ -109,6 +109,7 @@ dependencies:
   flutter_local_notifications: ^17.1.2
   badges: ^3.1.1
   url_launcher: ^6.3.2
+  app_links: ^6.4.1 # albailju://job/{id} 링크 수신 (원래 kakao sdk 경유로 들어와 있던 것)
   visibility_detector: ^0.4.0+2
   firebase_core: ^4.1.1
   firebase_messaging: 16.0.2
