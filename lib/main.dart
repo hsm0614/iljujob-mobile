@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_core/firebase_core.dart';
@@ -423,7 +424,22 @@ Future<void> _handleLocalNotificationPayload(String? payload) async {
   }
 }
 
+/// 행사 모집처럼 우리 웹 페이지로 보내는 푸시 — route 에 albailju.co.kr 주소를 넣으면 앱 안 브라우저로 연다.
+/// 다른 도메인은 열지 않는다(어드민 오입력·피싱 방지).
+Future<bool> _openPushUrl(Map<String, dynamic> data) async {
+  final uri = Uri.tryParse('${data['route'] ?? ''}');
+  if (uri == null || uri.scheme != 'https' ||
+      (uri.host != 'albailju.co.kr' && uri.host != 'www.albailju.co.kr')) {
+    return false;
+  }
+  if (!await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+  return true;
+}
+
 Future<void> _handleNotificationData(Map<String, String> data) async {
+  if (await _openPushUrl(data)) return;
   final type = data['type'];
   // nearby_job_alert도 공고 알림(서버가 jobId 포함) — 예전엔 new_nearby_job만 봐서 탭해도 안 열렸다
   if (type == 'new_nearby_job' ||
@@ -535,6 +551,7 @@ Future<void> _handleInitialMessage(
   final type = initialMessage.data['type'];
 
   WidgetsBinding.instance.addPostFrameCallback((_) async {
+    if (await _openPushUrl(initialMessage.data)) return;
     if (type == 'new_nearby_job' ||
         type == 'custom_matched_job' ||
         type == 'nearby_job_alert') {
