@@ -76,6 +76,8 @@ import 'package:iljujob/presentation/screens/client_screen/nearby_workers_screen
 import 'package:iljujob/config/api_headers.dart';
 import 'package:iljujob/config/crashlytics_error_policy.dart';
 import 'package:iljujob/presentation/screens/force_update_screen.dart';
+import 'package:iljujob/presentation/vacancy/vacancy_recovery_screen.dart';
+import 'package:iljujob/presentation/vacancy/vacancy_offers_screen.dart';
 
 // ============================================================
 // 전역 변수
@@ -446,6 +448,23 @@ Future<bool> _openPushUrl(Map<String, dynamic> data) async {
   return true;
 }
 
+/// 결원 복구 푸시 → 화면. 사장님: 취소·미응답 알림 → 대체 후보, 알바생: 제안·마감 → 받은 제안
+bool _openVacancy(NavigatorState? nav, Map<String, dynamic> data) {
+  final type = data['type'];
+  if (type == 'vacancy_offer' || type == 'vacancy_closed') {
+    nav?.pushNamed('/vacancy-offers');
+    return true;
+  }
+  final confirmId = int.tryParse('${data['confirmId'] ?? ''}');
+  final recover = type == 'work_d1_no_answer' || type == 'work_no_response_warning' ||
+      (type == 'work_confirmation_cancelled' && data['vacancy'] == '1');
+  if (recover && confirmId != null) {
+    nav?.pushNamed('/vacancy-recovery', arguments: confirmId);
+    return true;
+  }
+  return false;
+}
+
 Future<void> _handleNotificationData(Map<String, String> data) async {
   if (await _openPushUrl(data)) return;
   final type = data['type'];
@@ -464,6 +483,8 @@ Future<void> _handleNotificationData(Map<String, String> data) async {
   } else if (type == 'ad_request_review') {
     // 채용 홍보 검수 결과 — 내 신청이 맨 위에 보이는 화면으로
     navigatorKey.currentState?.pushNamed('/promotion');
+  } else if (_openVacancy(navigatorKey.currentState, data)) {
+    // 결원 복구 화면으로 열었다
   } else if (data['chatRoomId'] != null || data['roomId'] != null) {
     // 채팅 초대·동의 결과 푸시는 예전 서버가 roomId 로만 보냈다(눌러도 안 열렸음).
     await _handleChatNotification(RemoteMessage(data: data));
@@ -619,6 +640,8 @@ Future<void> _handleInitialMessage(
       navigator.pushNamed('/nearby-workers', arguments: <String, dynamic>{...initialMessage.data});
     } else if (userType == 'client' && type == 'ad_request_review') {
       navigator.pushNamed('/promotion');
+    } else if (_openVacancy(navigator, initialMessage.data)) {
+      // 결원 복구 화면으로 열었다
     } else if (initialMessage.data['chatRoomId'] != null ||
         initialMessage.data['roomId'] != null) {
       final homeWithChatTab =
@@ -921,6 +944,12 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           );
         },
         '/subscription/manage': (_) => const SubscriptionManageScreen(),
+        '/vacancy-offers': (_) => const VacancyOffersScreen(),
+        '/vacancy-recovery': (context) {
+          final id = ModalRoute.of(context)?.settings.arguments;
+          if (id is! int) return const Scaffold(body: Center(child: Text('잘못된 접근입니다.')));
+          return VacancyRecoveryScreen(confirmId: id);
+        },
         '/job-detail': (context) {
           final args = ModalRoute.of(context)?.settings.arguments;
           if (args == null || args is! Job) {

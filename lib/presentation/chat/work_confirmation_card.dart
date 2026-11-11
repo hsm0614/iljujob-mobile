@@ -137,6 +137,19 @@ class WorkConfirmationCard extends StatelessWidget {
               _StatusHint(status: confirm.status, userType: userType),
             ],
 
+            // 사장님: 알바생이 취소했거나 아직 출근 확인 전이면 대체 후보 찾기 (결원 복구)
+            if (userType == 'client' && !isWorkDatePast(confirm.workDate) &&
+                ['cancelled', 'accepted', 'scheduled'].contains(confirm.status)) ...[
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pushNamed(context, '/vacancy-recovery', arguments: confirm.id),
+                  child: Text(confirm.status == 'cancelled' ? '대체 후보 찾기' : '답이 없나요? 대체 후보 보기'),
+                ),
+              ),
+            ],
+
             // 알바생 출근 확인 (수락 이후 ~ 출근 전)
             if (workerNext != null) ...[
               const SizedBox(height: 16),
