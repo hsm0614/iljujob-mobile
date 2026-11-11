@@ -1009,6 +1009,9 @@ class _ChatListScreenState extends State<ChatListScreen>
     var awaitingCount = 0;
     if (userType == 'client' && q.isEmpty) {
       bool awaiting(dynamic c) {
+        // 공고 없는 방(job_id 0 — '알바일주 안내' 운영 메시지)은 지원자가 아니다. 읽어도 계속 여기 남았다(11-11)
+        final jobId = int.tryParse('${c['job_id'] ?? ''}') ?? 0;
+        if (jobId <= 0) return false;
         final status = c['application_status'];
         if (status == 'cancelled' || status == 'completed') return false;
         final replied = c['client_replied'] == 1 || c['client_replied'] == true;
