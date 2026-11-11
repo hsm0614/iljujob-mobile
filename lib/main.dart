@@ -456,7 +456,7 @@ bool _openVacancy(NavigatorState? nav, Map<String, dynamic> data) {
     return true;
   }
   final confirmId = int.tryParse('${data['confirmId'] ?? ''}');
-  final recover = type == 'work_d1_no_answer' || type == 'work_no_response_warning' ||
+  final recover = type == 'work_d1_no_answer' || type == 'work_no_response_warning' || type == 'vacancy_auto_sent' ||
       (type == 'work_confirmation_cancelled' && data['vacancy'] == '1');
   if (recover && confirmId != null) {
     nav?.pushNamed('/vacancy-recovery', arguments: confirmId);

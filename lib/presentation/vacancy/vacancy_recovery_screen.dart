@@ -16,6 +16,7 @@ class _VacancyRecoveryScreenState extends State<VacancyRecoveryScreen> {
   Map<String, dynamic>? _data;
   String? _error;
   bool _sending = false;
+  bool? _auto;
   final _picked = <int>{};
   final _message = TextEditingController();
 
@@ -23,7 +24,31 @@ class _VacancyRecoveryScreenState extends State<VacancyRecoveryScreen> {
   void initState() {
     super.initState();
     _load();
+    VacancyService.autoVacancy().then((v) => mounted ? setState(() => _auto = v) : null);
   }
+
+  Future<void> _toggleAuto(bool on) async {
+    setState(() => _auto = on);
+    try {
+      await VacancyService.setAutoVacancy(on);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _auto = !on);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+  }
+
+  // 일주 매니저 위임 스위치 — 고르는 화면·진행 화면 둘 다 맨 아래
+  Widget _autoSwitch() => _auto == null
+      ? const SizedBox.shrink()
+      : SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          value: _auto!,
+          onChanged: _toggleAuto,
+          title: const Text('다음부터 자동으로 대타 찾기', style: AppTextStyles.body1),
+          subtitle: const Text('알바생이 취소하면 일주 매니저가 후보 5명에게 바로 제안을 보내고 알려드려요. 확정은 먼저 수락한 분으로 돼요.',
+              style: AppTextStyles.body2),
+        );
 
   @override
   void dispose() {
@@ -49,7 +74,8 @@ class _VacancyRecoveryScreenState extends State<VacancyRecoveryScreen> {
   Future<void> _send() async {
     setState(() => _sending = true);
     try {
-      final n = await VacancyService.send(widget.confirmId, _picked.toList(), _message.text.trim());
+      final n = await VacancyService.send(widget.confirmId, _picked.toList(), _message.text.trim(),
+          aiWritten: (_data?['draft'] as Map?)?['by'] == 'ai');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$n명에게 보냈어요. 먼저 수락한 한 분과 확정돼요.')));
       _data = null;
@@ -130,6 +156,9 @@ class _VacancyRecoveryScreenState extends State<VacancyRecoveryScreen> {
           maxLength: 500,
           onChanged: (_) => setState(() {}),
         ),
+        if (aiWritten) const Text('받는 분께는 "AI가 쓴 안내문"으로 표시돼요.', style: AppTextStyles.caption),
+        const Divider(height: 32),
+        _autoSwitch(),
       ],
     );
   }
@@ -147,6 +176,10 @@ class _VacancyRecoveryScreenState extends State<VacancyRecoveryScreen> {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
       children: [
         Text(filled ? '대체 근무자가 확정됐어요' : '${offers.length}명에게 보냈어요', style: AppTextStyles.h2),
+        if (r['isAuto'] == true) ...[
+          const SizedBox(height: 4),
+          const Text('일주 매니저가 자동으로 보냈어요', style: AppTextStyles.body2),
+        ],
         const SizedBox(height: 4),
         Text(filled ? '채팅에서 근무 카드를 확인하세요.' : '먼저 수락한 한 분과 확정되면 알려드려요.', style: AppTextStyles.body2),
         const SizedBox(height: 16),
@@ -162,6 +195,8 @@ class _VacancyRecoveryScreenState extends State<VacancyRecoveryScreen> {
           const SizedBox(height: 8),
           OutlinedButton(onPressed: _load, child: const Text('새로고침')),
         ],
+        const Divider(height: 32),
+        _autoSwitch(),
       ],
     );
   }

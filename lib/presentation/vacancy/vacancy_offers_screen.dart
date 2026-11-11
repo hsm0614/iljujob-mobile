@@ -97,6 +97,11 @@ class _VacancyOffersScreenState extends State<VacancyOffersScreen> {
                               Text(o['location'].toString(), style: AppTextStyles.body2),
                             const SizedBox(height: 12),
                             Text(o['message']?.toString() ?? '', style: AppTextStyles.body2),
+                            // AI 기본법: 생성형 AI가 쓴 글은 받는 사람에게 표시
+                            if (o['aiWritten'] == 1 || o['aiWritten'] == true) ...[
+                              const SizedBox(height: 4),
+                              const Text('AI가 쓴 안내문이에요', style: AppTextStyles.caption),
+                            ],
                             const SizedBox(height: 16),
                             Row(children: [
                               Expanded(

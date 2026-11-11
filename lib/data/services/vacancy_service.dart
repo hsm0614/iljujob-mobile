@@ -12,14 +12,26 @@ class VacancyService {
     return body;
   }
 
-  static Future<int> send(int confirmId, List<int> workerIds, String message) async {
+  static Future<int> send(int confirmId, List<int> workerIds, String message, {bool aiWritten = false}) async {
     final r = await AuthenticatedHttpClient.postJson(
       Uri.parse('$baseUrl/api/vacancy/confirm/$confirmId/send'),
-      body: {'workerIds': workerIds, 'message': message},
+      body: {'workerIds': workerIds, 'message': message, 'aiWritten': aiWritten},
     );
     final body = jsonDecode(r.body) as Map<String, dynamic>;
     if (r.statusCode != 201) throw VacancyException(body['message']?.toString() ?? '보내지 못했어요');
     return (body['sent'] as num?)?.toInt() ?? 0;
+  }
+
+  /// 일주 매니저 '자동 대타' — 알바생이 취소하면 상위 5명에게 바로 제안
+  static Future<bool> autoVacancy() async {
+    final r = await AuthenticatedHttpClient.get(Uri.parse('$baseUrl/api/vacancy/settings'));
+    if (r.statusCode != 200) return false;
+    return (jsonDecode(r.body) as Map)['autoVacancy'] == true;
+  }
+
+  static Future<void> setAutoVacancy(bool on) async {
+    final r = await AuthenticatedHttpClient.putJson(Uri.parse('$baseUrl/api/vacancy/settings'), body: {'autoVacancy': on});
+    if (r.statusCode != 200) throw VacancyException('설정을 바꾸지 못했어요');
   }
 
   static Future<List<Map<String, dynamic>>> myOffers() async {
