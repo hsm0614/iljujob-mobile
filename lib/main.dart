@@ -450,6 +450,36 @@ Future<bool> _openPushUrl(Map<String, dynamic> data) async {
   return true;
 }
 
+Future<void> _openRepostNudge(NavigatorState? navigator, Map<String, dynamic> data) async {
+  if (navigator == null) return;
+  final jobId = int.tryParse('${data['jobId'] ?? ''}');
+  try {
+    final job = await JobService.fetchRepostSource(jobId: jobId);
+    if (!navigator.mounted) return;
+    if (job == null) {
+      if (jobId == null) {
+        // 가입 직후 첫 공고 안내도 예전부터 같은 type을 사용한다.
+        navigator.pushNamed('/post_job');
+      } else {
+        ScaffoldMessenger.maybeOf(navigator.context)?.showSnackBar(
+          const SnackBar(content: Text('지난 공고를 불러오지 못했어요. 내 공고에서 다시 선택해 주세요.')),
+        );
+      }
+      return;
+    }
+    ScreenAnalyticsService.instance.logEvent(
+      'client_repost_nudge_open',
+      params: {'campaign': '${data['campaign'] ?? ''}', 'source_job_id': job.id},
+    );
+    navigator.pushNamed('/post_job', arguments: {'isRepost': true, 'existingJob': job});
+  } catch (_) {
+    if (!navigator.mounted) return;
+    ScaffoldMessenger.maybeOf(navigator.context)?.showSnackBar(
+      const SnackBar(content: Text('지난 공고를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.')),
+    );
+  }
+}
+
 /// 결원 복구 푸시 → 화면. 사장님: 취소·미응답 알림 → 대체 후보, 알바생: 제안·마감 → 받은 제안
 bool _openVacancy(NavigatorState? nav, Map<String, dynamic> data) {
   final type = data['type'];
@@ -487,7 +517,9 @@ Future<void> _handleNotificationData(Map<String, String> data) async {
     await _handleJobNotification(RemoteMessage(data: data));
   } else if (type == 'inquiry') {
     navigatorKey.currentState?.pushNamed('/inquiry');
-  } else if (type == 'repost_nudge' || type == 'zero_applicant_care') {
+  } else if (type == 'repost_nudge') {
+    await _openRepostNudge(navigatorKey.currentState, data);
+  } else if (type == 'zero_applicant_care') {
     navigatorKey.currentState?.pushNamed('/post_job');
   } else if (type == 'urgent_not_sent') {
     // 긴급 호출로 올리고 아무에게도 안 보냈을 때 — 후보 고르는 화면으로 바로
@@ -645,8 +677,9 @@ Future<void> _handleInitialMessage(
       }
     } else if (type == 'inquiry') {
       navigator.pushNamed('/inquiry');
-    } else if (userType == 'client' &&
-        (type == 'repost_nudge' || type == 'zero_applicant_care')) {
+    } else if (userType == 'client' && type == 'repost_nudge') {
+      await _openRepostNudge(navigator, initialMessage.data);
+    } else if (userType == 'client' && type == 'zero_applicant_care') {
       navigator.pushNamed('/post_job');
     } else if (type == 'urgent_not_sent') {
       navigator.pushNamed('/nearby-workers', arguments: <String, dynamic>{...initialMessage.data});

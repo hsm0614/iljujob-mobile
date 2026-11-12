@@ -550,6 +550,13 @@ class _PostJobFormState extends State<PostJobForm>
         _payCtrl.text = NumberFormat('#,###').format(_pay);
         _description = job.description ?? '';
         _descCtrl.text = _description;
+        _isSameDayPay = job.isSameDayPay;
+        _locDetailCtrl.text = job.locationDetail ?? '';
+        _headcount = job.headcount ?? 1;
+        _breakMinutes = job.breakMinutes;
+        _requiredCertsCtrl.text = job.requiredCerts ?? '';
+        _welfareCtrl.text = job.welfare ?? '';
+        _imageUrls = List<String>.from(job.imageUrls);
         final weekdaysText = job.weekdays?.trim() ?? '';
         _isShortTerm = weekdaysText.isEmpty;
         if (weekdaysText == '협의' || weekdaysText.startsWith('협의:')) {
@@ -568,12 +575,18 @@ class _PostJobFormState extends State<PostJobForm>
                   .where((d) => d.trim().isNotEmpty)
                   .toList();
         }
-        // startDate는 UTC → 로컬로 변환해서 날짜 표기 기준 맞춤
-        _startDate = job.startDate?.toLocal();
-        _endDate = job.endDate?.toLocal() ?? job.startDate?.toLocal();
+        // 재공고는 이전 근무일을 복사하지 않는다. 새 날짜를 직접 선택해야 게시할 수 있다.
+        _startDate = null;
+        _endDate = null;
         _startTime = _parseTime(job.startTime);
         _endTime = _parseTime(job.endTime);
         _timeNegotiable = job.isTimeNegotiable;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('지난 공고를 불러왔어요. 새 근무일과 급여·조건을 확인해 주세요.')),
+        );
       });
     }
     if (!mounted) return;

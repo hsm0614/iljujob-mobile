@@ -578,6 +578,21 @@ class JobService {
     return null;
   }
 
+  /// 알림의 공고 ID는 서버에서 현재 로그인한 사장님 소유인지 다시 검사한다.
+  static Future<Job?> fetchRepostSource({int? jobId}) async {
+    final uri = jobId == null
+        ? Uri.parse('$baseUrl/api/job/my-jobs?page=1&limit=1')
+        : Uri.parse('$baseUrl/api/job/$jobId/repost-source');
+    final response = await AuthenticatedHttpClient.get(uri).timeout(const Duration(seconds: 8));
+    if (response.statusCode != 200) return null;
+    final decoded = jsonDecode(response.body);
+    final source = jobId == null
+        ? (decoded['jobs'] as List?)?.firstOrNull
+        : decoded;
+    if (source is! Map<String, dynamic>) return null;
+    return Job.fromJson(source);
+  }
+
   // ─── 9. 즉시 게시 ─────────────────────────────────────
   static Future<void> publishNow(int jobId, {String passType = 'instant'}) async {
     final uri = Uri.parse('$baseUrl/api/job/$jobId/publish-now');
