@@ -438,7 +438,9 @@ class _ProposeWorkConfirmationSheetState
   bool _profileLoaded = false;
   bool _profileEditing = false;
   final _rep = TextEditingController();
+  final _biz = TextEditingController();
   final _addr = TextEditingController();
+  final _placeCtrl = TextEditingController(); // 근무 장소 — 공고 주소로 채우고, 비었거나 틀리면 직접 고친다
   String _payDay = _payDays.first;
   String _payMethod = '계좌이체';
 
@@ -452,6 +454,7 @@ class _ProposeWorkConfirmationSheetState
   @override
   void initState() {
     super.initState();
+    _placeCtrl.text = widget.jobLocation?.trim() ?? '';
     _startTime = _parseTime(widget.defaultStartTime);
     _endTime = _parseTime(widget.defaultEndTime);
 
@@ -481,6 +484,7 @@ class _ProposeWorkConfirmationSheetState
       final p = await ContractService.profile();
       final m = p.profile;
       _rep.text = m['repName']?.toString() ?? '';
+      _biz.text = m['bizNumber']?.toString() ?? '';
       _addr.text = m['bizAddress']?.toString() ?? '';
       final pd = m['payDay']?.toString() ?? '';
       if (_payDays.contains(pd)) _payDay = pd;
@@ -498,21 +502,27 @@ class _ProposeWorkConfirmationSheetState
   void dispose() {
     _wageCtrl.dispose();
     _rep.dispose();
+    _biz.dispose();
     _addr.dispose();
+    _placeCtrl.dispose();
     super.dispose();
   }
 
   bool get _isWeekdaysJob =>
       widget.weekdays != null && widget.weekdays!.trim().isNotEmpty;
 
+  // 서버가 형식까지 검사한다(대표자 숫자 금지·사업자번호 10자리·주소). 여기선 빈 칸만 막는다
   bool get _profileReady =>
-      _rep.text.trim().isNotEmpty && _addr.text.trim().isNotEmpty;
+      _rep.text.trim().isNotEmpty &&
+      _biz.text.replaceAll(RegExp(r'\D'), '').length == 10 &&
+      _addr.text.trim().isNotEmpty;
 
   bool get _canSubmit =>
       _date != null &&
       _startTime != null &&
       _endTime != null &&
       _wageCtrl.text.trim().isNotEmpty &&
+      (!_withContract || _placeCtrl.text.trim().length >= 2) &&
       (!_withContract || (_profileLoaded && _profileReady));
 
   // 밤샘 근무(종료 < 시작)는 다음 날 종료로 계산
@@ -539,6 +549,7 @@ class _ProposeWorkConfirmationSheetState
       if (_withContract && _profileEditing) {
         await ContractService.saveProfile({
           'repName': _rep.text.trim(),
+          'bizNumber': _biz.text.trim(),
           'bizAddress': _addr.text.trim(),
           'payDay': _payDay,
           'payMethod': _payMethod,
@@ -555,7 +566,7 @@ class _ProposeWorkConfirmationSheetState
         startTime: hm(_startTime!),
         endTime: hm(_endTime!),
         hourlyWage: _wage ?? 0,
-        location: widget.jobLocation,
+        location: _placeCtrl.text.trim().isEmpty ? widget.jobLocation : _placeCtrl.text.trim(),
         contract: _withContract,
       );
       if (mounted) {
@@ -568,6 +579,8 @@ class _ProposeWorkConfirmationSheetState
         setState(() {
           _loading = false;
           _error = e.toString().replaceFirst('Exception: ', '');
+          // 사업주 정보가 형식에 안 맞으면 그 칸들을 펼쳐서 고치게 한다
+          if (e is WorkConfirmationException && e.code == 'NEED_CONTRACT_PROFILE') _profileEditing = true;
         });
       }
     }
@@ -680,6 +693,15 @@ class _ProposeWorkConfirmationSheetState
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 16),
+
+            _FieldLabel('근무 장소'),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _placeCtrl,
+              decoration: _inputDeco('근무할 곳 주소'),
+              onChanged: (_) => setState(() {}),
             ),
             const SizedBox(height: 16),
 
@@ -799,11 +821,11 @@ class _ProposeWorkConfirmationSheetState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('대표자 ${_rep.text} · $_payDay 지급 · $_payMethod',
+                  Text('대표자 ${_rep.text} · 사업자 ${_biz.text}',
                       style: AppTextStyles.body2
                           .copyWith(color: AppColors.textPrimary)),
                   const SizedBox(height: 2),
-                  Text(_addr.text,
+                  Text('$_payDay 지급 · $_payMethod · ${_addr.text}',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.caption),
@@ -828,7 +850,16 @@ class _ProposeWorkConfirmationSheetState
           const SizedBox(height: 6),
           TextField(
             controller: _rep,
-            decoration: _inputDeco('사업자등록증의 대표자'),
+            decoration: _inputDeco('사업자등록증의 대표자 실명'),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 12),
+          _FieldLabel('사업자등록번호'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _biz,
+            keyboardType: TextInputType.number,
+            decoration: _inputDeco('숫자 10자리'),
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 12),
@@ -836,7 +867,7 @@ class _ProposeWorkConfirmationSheetState
           const SizedBox(height: 6),
           TextField(
             controller: _addr,
-            decoration: _inputDeco('사업장 주소'),
+            decoration: _inputDeco('도로명·지번까지 (예: 인천 연수구 송도동 1)'),
             onChanged: (_) => setState(() {}),
           ),
           const SizedBox(height: 12),

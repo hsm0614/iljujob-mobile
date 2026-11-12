@@ -103,8 +103,13 @@ class WorkConfirmationService {
       return jsonDecode(resp.body)['confirmId'] as int;
     }
     String msg = '근무 확정 제안 실패';
-    try { msg = (jsonDecode(resp.body) as Map)['message']?.toString() ?? msg; } catch (_) {}
-    throw Exception(msg);
+    String? code;
+    try {
+      final b = jsonDecode(resp.body) as Map;
+      msg = b['message']?.toString() ?? msg;
+      code = b['code']?.toString();
+    } catch (_) {}
+    throw WorkConfirmationException(msg, code: code);
   }
 
   static Future<void> updateStatus(
@@ -149,7 +154,8 @@ class WorkConfirmationService {
 /// 서버가 알려준 이유(본인인증 불일치 등) — 화면에 그대로 보여준다
 class WorkConfirmationException implements Exception {
   final String message;
-  WorkConfirmationException(this.message);
+  final String? code; // NEED_CONTRACT_PROFILE 등
+  WorkConfirmationException(this.message, {this.code});
   @override
   String toString() => message;
 }
