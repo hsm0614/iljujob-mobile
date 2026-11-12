@@ -79,6 +79,7 @@ import 'package:iljujob/presentation/screens/force_update_screen.dart';
 import 'package:iljujob/presentation/vacancy/vacancy_recovery_screen.dart';
 import 'package:iljujob/presentation/vacancy/vacancy_offers_screen.dart';
 import 'package:iljujob/presentation/agent/job_rescue_screen.dart';
+import 'package:iljujob/presentation/agent/regulars_screen.dart';
 
 // ============================================================
 // 전역 변수
@@ -460,6 +461,10 @@ bool _openVacancy(NavigatorState? nav, Map<String, dynamic> data) {
   final rescueJobId = int.tryParse('${data['jobId'] ?? ''}');
   if (type == 'job_rescue' && rescueJobId != null) {
     nav?.pushNamed('/job-rescue', arguments: rescueJobId);
+    return true;
+  }
+  if (type == 'regulars_suggest' && rescueJobId != null) {
+    nav?.pushNamed('/regulars', arguments: rescueJobId);
     return true;
   }
   final confirmId = int.tryParse('${data['confirmId'] ?? ''}');
@@ -952,6 +957,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         },
         '/subscription/manage': (_) => const SubscriptionManageScreen(),
         '/vacancy-offers': (_) => const VacancyOffersScreen(),
+        '/regulars': (context) {
+          final id = ModalRoute.of(context)?.settings.arguments;
+          if (id is! int) return const Scaffold(body: Center(child: Text('잘못된 접근입니다.')));
+          return RegularsScreen(jobId: id);
+        },
         '/job-rescue': (context) {
           final id = ModalRoute.of(context)?.settings.arguments;
           if (id is! int) return const Scaffold(body: Center(child: Text('잘못된 접근입니다.')));

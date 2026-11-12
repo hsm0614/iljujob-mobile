@@ -1068,9 +1068,18 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         children: [
           _buildJobCardHeader(group),
           if (group.applicants.isEmpty)
-            const Padding(
-              padding: EdgeInsets.fromLTRB(16, 4, 16, 20),
-              child: Text('아직 지원자가 없어요', style: AppTextStyles.body2),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 8, 12),
+              child: Row(
+                children: [
+                  const Expanded(child: Text('아직 지원자가 없어요', style: AppTextStyles.body2)),
+                  // 일주 매니저: 전에 함께 일한 알바생을 이 공고로 다시 부른다
+                  TextButton(
+                    onPressed: () => Navigator.pushNamed(context, '/regulars', arguments: group.jobId),
+                    child: const Text('단골 다시 부르기'),
+                  ),
+                ],
+              ),
             )
           else ...[
             for (final (i, a) in showList.indexed)
