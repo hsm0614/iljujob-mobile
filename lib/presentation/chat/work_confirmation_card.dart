@@ -432,6 +432,7 @@ class _ProposeWorkConfirmationSheetState
   String? _wageNote; // 일급 → 시급 환산 안내
   bool _loading = false;
   bool _withContract = true;
+  bool _contractsAvailable = false; // 서버가 허용할 때만 계약서 칸을 보인다
   String? _error;
 
   // 근로계약서 정보 (사장님 1회 입력)
@@ -486,6 +487,8 @@ class _ProposeWorkConfirmationSheetState
   Future<void> _loadProfile() async {
     try {
       final p = await ContractService.profile();
+      _contractsAvailable = p.available;
+      if (!p.available) _withContract = false;
       final m = p.profile;
       _rep.text = m['repName']?.toString() ?? '';
       _biz.text = m['bizNumber']?.toString() ?? '';
@@ -497,7 +500,7 @@ class _ProposeWorkConfirmationSheetState
       // 처음이거나 지급일이 고를 수 있는 값이 아니면 펼쳐서 확인받는다
       _profileEditing = !p.complete || !_payDays.contains(pd);
     } catch (_) {
-      _profileEditing = true;
+      _withContract = false; // 계약서 정보를 못 불러오면 계약서 없이 제안
     }
     if (mounted) setState(() => _profileLoaded = true);
   }
@@ -788,7 +791,8 @@ class _ProposeWorkConfirmationSheetState
             const Divider(height: 1, color: AppColors.border),
             const SizedBox(height: 12),
 
-            // 근로계약서
+            // 근로계약서 — 서버가 허용한 계정만
+            if (_contractsAvailable) ...[
             Row(
               children: [
                 const Expanded(
@@ -808,6 +812,7 @@ class _ProposeWorkConfirmationSheetState
                 ),
               ],
             ),
+            ],
             if (_withContract) ...[
               const SizedBox(height: 10),
               if (!_profileLoaded)

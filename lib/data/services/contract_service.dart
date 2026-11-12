@@ -4,11 +4,15 @@ import 'authenticated_http_client.dart';
 
 /// 자체 전자 근로계약서 (서버 /api/contracts, 2026-11-12)
 class ContractService {
-  static Future<({Map<String, dynamic> profile, bool complete})> profile() async {
+  static Future<({Map<String, dynamic> profile, bool complete, bool available})> profile() async {
     final r = await AuthenticatedHttpClient.get(Uri.parse('$baseUrl/api/contracts/profile'));
     final body = jsonDecode(r.body) as Map<String, dynamic>;
     if (r.statusCode != 200) throw Exception(body['message'] ?? '불러오지 못했어요');
-    return (profile: (body['profile'] as Map).cast<String, dynamic>(), complete: body['complete'] == true);
+    return (
+      profile: (body['profile'] as Map).cast<String, dynamic>(),
+      complete: body['complete'] == true,
+      available: body['available'] != false, // 노무사 검토 전엔 내부 계정만(서버 CONTRACTS_PUBLIC)
+    );
   }
 
   static Future<void> saveProfile(Map<String, String> p) async {
