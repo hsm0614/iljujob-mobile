@@ -140,7 +140,8 @@ class WorkConfirmationCard extends StatelessWidget {
             ],
 
             // 근로계약서(자체 전자서명) — 양쪽 모두 언제든 열람·저장(교부)
-            if (confirm.contractStatus == 'signed' || confirm.contractStatus == 'client_signed') ...[
+            if (confirm.contractStatus == 'signed' ||
+                (confirm.contractStatus == 'client_signed' && !(isProposed && userType == 'worker'))) ...[
               const SizedBox(height: 8),
               TextButton.icon(
                 onPressed: () => openLaborContract(context, confirm.id),
@@ -187,6 +188,11 @@ class WorkConfirmationCard extends StatelessWidget {
 
             // 액션 버튼 (구직자가 proposed 상태일 때만)
             if (isProposed && userType == 'worker' && !isPast) ...[
+              // 클릭 동의 고지 — 버튼 바로 위에 있어야 [수락하기]가 서명 의사표시가 된다
+              if (confirm.contractStatus == 'client_signed') ...[
+                const SizedBox(height: 12),
+                _ContractNotice(onView: () => openLaborContract(context, confirm.id)),
+              ],
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -916,6 +922,34 @@ class _Choices extends StatelessWidget {
             if (o != options.last) const SizedBox(width: 8),
           ],
         ],
+      );
+}
+
+class _ContractNotice extends StatelessWidget {
+  final VoidCallback onView;
+  const _ContractNotice({required this.onView});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+        decoration: BoxDecoration(
+          color: AppColors.bgMuted,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.description_outlined, size: 18, color: AppColors.textSecondary),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                '수락하면 위 조건의 근로계약서에 전자서명돼요. 서명한 계약서는 언제든 다시 볼 수 있어요.',
+                style: AppTextStyles.caption,
+              ),
+            ),
+            TextButton(onPressed: onView, child: const Text('계약서 보기')),
+          ],
+        ),
       );
 }
 
