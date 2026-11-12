@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../config/constants.dart';
@@ -1110,37 +1112,74 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
   // ──────────────────────────────────────────
   // UI 헬퍼
   // ──────────────────────────────────────────
-  /// ChatGPT·Claude 등에 쓴 자기소개를 붙여넣으면 AI가 프로필 칸 요약만 채운다(원문은 저장 안 함, 저장은 본인이)
+  // AI 메모리 가져오기 — ChatGPT·Claude가 이미 기억하는 나(경력·가능 시간·강점)를 알바 프로필 형식으로 받아 온다.
+  // 그 AI에 요청 문장을 채워 열고 → 답을 붙여넣거나 메모리 파일(.txt·.md·.json)을 고른다. 원문은 저장하지 않고 요약만 채운다
+  static const _memoryPrompt =
+      '지금까지 나에 대해 기억하고 있는 내용(메모리)과 우리 대화를 바탕으로, 단기 알바 지원용 프로필을 정리해 줘.\n'
+      '항목: 1) 일해 본 경험(업종·기간) 2) 잘하는 것·강점 3) 일할 수 있는 요일·시간대 4) 해 보고 싶은 일 5) 사장님께 보여줄 2~3문장 자기소개\n'
+      '이름·연락처·주소·건강·정치·종교 같은 민감한 정보는 빼고, 모르는 항목은 "모름"으로 써 줘.';
+
+  Future<void> _openAiWithPrompt(String base) async {
+    await Clipboard.setData(const ClipboardData(text: _memoryPrompt));
+    await launchUrl(Uri.parse('$base${Uri.encodeQueryComponent(_memoryPrompt)}'), mode: LaunchMode.externalApplication);
+  }
+
   Future<void> _fillFromPersona() async {
     final ctrl = TextEditingController();
     final text = await showModalBottomSheet<String>(
       context: context,
       isScrollControlled: true,
       backgroundColor: AppColors.bgCard,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('AI 자기소개로 채우기', style: AppTextStyles.h2),
-            const SizedBox(height: 6),
-            const Text('ChatGPT·Claude에 써 둔 자기소개나 경력을 붙여넣으세요. 원문은 저장하지 않고, 요약만 채워요. 저장 전에 고칠 수 있어요.',
-                style: AppTextStyles.body2),
-            const SizedBox(height: 12),
-            TextField(
-              controller: ctrl,
-              minLines: 5,
-              maxLines: 10,
-              maxLength: 3000,
-              decoration: const InputDecoration(hintText: '여기에 붙여넣기 — 키보드 마이크로 1분 동안 말해도 돼요', border: OutlineInputBorder()),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => Padding(
+          padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 24),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('AI 메모리로 프로필 채우기', style: AppTextStyles.h2),
+                const SizedBox(height: 6),
+                const Text('ChatGPT·Claude가 기억하는 내 경력·가능 시간을 가져와요. 원문은 저장하지 않고 요약만 채우고, 저장 전에 고칠 수 있어요.',
+                    style: AppTextStyles.body2),
+                const SizedBox(height: 14),
+                const Text('1. 쓰는 AI에서 가져오기', style: AppTextStyles.body1),
+                const SizedBox(height: 6),
+                Row(children: [
+                  Expanded(child: OutlinedButton(onPressed: () => _openAiWithPrompt('https://chatgpt.com/?q='), child: const Text('ChatGPT'))),
+                  const SizedBox(width: 8),
+                  Expanded(child: OutlinedButton(onPressed: () => _openAiWithPrompt('https://claude.ai/new?q='), child: const Text('Claude'))),
+                ]),
+                const SizedBox(height: 4),
+                const Text('요청 문장이 채워진 채 열려요(복사도 돼 있어요). 답이 나오면 복사해서 돌아오세요.', style: AppTextStyles.caption),
+                const SizedBox(height: 14),
+                const Text('2. 답을 붙여넣거나 메모리 파일 고르기', style: AppTextStyles.body1),
+                const SizedBox(height: 6),
+                TextField(
+                  controller: ctrl,
+                  minLines: 4,
+                  maxLines: 8,
+                  decoration: const InputDecoration(hintText: '여기에 붙여넣기 — 키보드 마이크로 말해도 돼요', border: OutlineInputBorder()),
+                ),
+                TextButton.icon(
+                  onPressed: () async {
+                    final f = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['txt', 'md', 'json'], withData: true);
+                    final bytes = f?.files.single.bytes;
+                    if (bytes == null) return;
+                    final body = utf8.decode(bytes, allowMalformed: true);
+                    setSheet(() => ctrl.text = body.length > 20000 ? body.substring(0, 20000) : body);
+                  },
+                  icon: const Icon(Icons.attach_file_rounded, size: 18),
+                  label: const Text('메모리 파일 고르기 (.txt·.md·.json)'),
+                ),
+                const SizedBox(height: 4),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('요약해서 채우기')),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('요약해서 채우기')),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -1539,12 +1578,12 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                   '사장님이 가장 먼저 읽는 내용이에요. 2~3줄이면 충분해요.',
                   style: TextStyle(fontSize: AppFontSize.body2, color: kMuted),
                 ),
-                // AI 페르소나 가져오기 — ChatGPT·Claude에 쓴 소개로 칸 채우기
+                // AI 메모리 가져오기 — ChatGPT·Claude가 기억하는 나로 칸 채우기
                 TextButton.icon(
                   onPressed: _fillFromPersona,
                   style: TextButton.styleFrom(padding: EdgeInsets.zero),
                   icon: const Icon(Icons.auto_awesome_outlined, size: 16),
-                  label: const Text('ChatGPT·Claude 자기소개로 채우기'),
+                  label: const Text('ChatGPT·Claude 메모리로 채우기'),
                 ),
                 const SizedBox(height: 10),
                 Container(
