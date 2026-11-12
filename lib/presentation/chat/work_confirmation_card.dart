@@ -441,6 +441,10 @@ class _ProposeWorkConfirmationSheetState
   final _biz = TextEditingController();
   final _addr = TextEditingController();
   final _placeCtrl = TextEditingController(); // 근무 장소 — 공고 주소로 채우고, 비었거나 틀리면 직접 고친다
+  final _dutyCtrl = TextEditingController(); // 계약서 업무 내용 — 비우면 공고 분야·제목
+  int? _breakMinutes; // 계약서 휴게시간 — null이면 공고 값 또는 법정 최소
+  int? _minBreak; // 미리보기에서 받은 법정 최소
+  bool _previewing = false;
   String _payDay = _payDays.first;
   String _payMethod = '계좌이체';
 
@@ -505,6 +509,7 @@ class _ProposeWorkConfirmationSheetState
     _biz.dispose();
     _addr.dispose();
     _placeCtrl.dispose();
+    _dutyCtrl.dispose();
     super.dispose();
   }
 
@@ -539,6 +544,63 @@ class _ProposeWorkConfirmationSheetState
 
   int? get _wage => int.tryParse(_wageCtrl.text.replaceAll(',', ''));
 
+  static String _hm(TimeOfDay t) =>
+      '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:00';
+  String? get _location => _placeCtrl.text.trim().isEmpty ? widget.jobLocation : _placeCtrl.text.trim();
+  Map<String, dynamic> get _contractTerms => {
+        if (_dutyCtrl.text.trim().isNotEmpty) 'contractDuty': _dutyCtrl.text.trim(),
+        if (_breakMinutes != null) 'contractBreakMinutes': _breakMinutes,
+      };
+
+  Future<void> _saveProfileIfEditing() async {
+    if (!_withContract || !_profileEditing) return;
+    await ContractService.saveProfile({
+      'repName': _rep.text.trim(),
+      'bizNumber': _biz.text.trim(),
+      'bizAddress': _addr.text.trim(),
+      'payDay': _payDay,
+      'payMethod': _payMethod,
+    });
+  }
+
+  // 보내기 전에 실제 계약서를 본다 — 서버가 제안과 같은 규칙으로 만든다(저장·서명 없음)
+  Future<void> _preview() async {
+    if (!_canSubmit) return;
+    setState(() {
+      _previewing = true;
+      _error = null;
+    });
+    try {
+      await _saveProfileIfEditing();
+      final r = await ContractService.preview({
+        'jobId': widget.jobId,
+        'workerId': widget.workerId,
+        'workDate': DateFormat('yyyy-MM-dd').format(_date!),
+        'startTime': _hm(_startTime!),
+        'endTime': _hm(_endTime!),
+        'hourlyWage': _wage ?? 0,
+        'location': _location,
+        ..._contractTerms,
+      });
+      if (!mounted) return;
+      setState(() {
+        _previewing = false;
+        if (_dutyCtrl.text.trim().isEmpty) _dutyCtrl.text = r['duty']?.toString() ?? '';
+        _minBreak = (r['minBreakMinutes'] as num?)?.toInt();
+        _breakMinutes ??= (r['breakMinutes'] as num?)?.toInt();
+        if (_profileEditing) _profileEditing = false; // 저장됐다
+      });
+      await showContractPreview(context, r['html'].toString());
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _previewing = false;
+          _error = e.toString().replaceFirst('Exception: ', '');
+        });
+      }
+    }
+  }
+
   Future<void> _submit() async {
     if (!_canSubmit) return;
     setState(() {
@@ -546,28 +608,19 @@ class _ProposeWorkConfirmationSheetState
       _error = null;
     });
     try {
-      if (_withContract && _profileEditing) {
-        await ContractService.saveProfile({
-          'repName': _rep.text.trim(),
-          'bizNumber': _biz.text.trim(),
-          'bizAddress': _addr.text.trim(),
-          'payDay': _payDay,
-          'payMethod': _payMethod,
-        });
-      }
-      String hm(TimeOfDay t) =>
-          '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:00';
+      await _saveProfileIfEditing();
       await WorkConfirmationService.propose(
         chatRoomId: widget.chatRoomId,
         jobId: widget.jobId,
         workerId: widget.workerId,
         clientId: widget.clientId,
         workDate: DateFormat('yyyy-MM-dd').format(_date!),
-        startTime: hm(_startTime!),
-        endTime: hm(_endTime!),
+        startTime: _hm(_startTime!),
+        endTime: _hm(_endTime!),
         hourlyWage: _wage ?? 0,
-        location: _placeCtrl.text.trim().isEmpty ? widget.jobLocation : _placeCtrl.text.trim(),
+        location: _location,
         contract: _withContract,
+        contractTerms: _contractTerms,
       );
       if (mounted) {
         widget.onPropose({'success': true});
@@ -770,6 +823,36 @@ class _ProposeWorkConfirmationSheetState
                 _profileSummary()
               else
                 _profileForm(),
+              const SizedBox(height: 12),
+              _FieldLabel('업무 내용'),
+              const SizedBox(height: 6),
+              TextField(
+                controller: _dutyCtrl,
+                maxLength: 100,
+                decoration: _inputDeco('비우면 공고 분야·제목으로 들어가요').copyWith(counterText: ''),
+              ),
+              const SizedBox(height: 12),
+              _FieldLabel(_minBreak == null ? '휴게시간' : '휴게시간 (법정 최소 $_minBreak분)'),
+              const SizedBox(height: 6),
+              _Choices(
+                options: const ['자동', '30분', '60분', '90분'],
+                value: _breakMinutes == null ? '자동' : '$_breakMinutes분',
+                onChanged: (o) => setState(() => _breakMinutes = o == '자동' ? null : int.parse(o.replaceAll('분', ''))),
+              ),
+              const SizedBox(height: 4),
+              const Text('자동은 공고의 휴게시간, 없으면 법정 최소(4시간 근무 30분·8시간 근무 60분)예요.',
+                  style: AppTextStyles.caption),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _canSubmit && !_previewing && !_loading ? _preview : null,
+                  icon: _previewing
+                      ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.visibility_outlined, size: 18),
+                  label: const Text('계약서 미리보기'),
+                ),
+              ),
             ],
 
             if (_error != null) ...[

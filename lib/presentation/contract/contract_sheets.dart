@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:iljujob/config/constants.dart';
@@ -16,6 +17,23 @@ Future<void> openLaborContract(BuildContext context, int confirmId) async {
   }
   await launchUrl(Uri.parse(url), mode: LaunchMode.inAppBrowserView);
 }
+
+/// 사장님: 보내기 전 계약서 미리보기(서버가 만든 실제 계약서 화면). 닫고 시트에서 고친다
+Future<void> showContractPreview(BuildContext context, String html) => Navigator.of(context).push(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (ctx) => Scaffold(
+          appBar: AppBar(title: const Text('계약서 미리보기')),
+          body: InAppWebView(initialData: InAppWebViewInitialData(data: html, mimeType: 'text/html', encoding: 'utf-8')),
+          bottomNavigationBar: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+              child: ElevatedButton(onPressed: () => Navigator.pop(ctx), child: const Text('닫고 계속 고치기')),
+            ),
+          ),
+        ),
+      ),
+    );
 
 /// 일주봇 메시지 [PDF 열기] — 로그인한 당사자에게 10분짜리 링크를 받아 연다
 Future<void> openLaborContractPdf(BuildContext context, int contractId) async {

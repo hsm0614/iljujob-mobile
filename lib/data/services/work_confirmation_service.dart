@@ -83,6 +83,7 @@ class WorkConfirmationService {
     required int hourlyWage,
     String? location,
     bool contract = false,
+    Map<String, dynamic>? contractTerms, // 사장님이 미리보기에서 고친 업무 내용·휴게시간
   }) async {
     final resp = await AuthenticatedHttpClient.postJson(
       Uri.parse('$baseUrl/api/work-confirmation'),
@@ -97,6 +98,7 @@ class WorkConfirmationService {
         'hourlyWage': hourlyWage,
         'location': location,
         if (contract) 'contract': true,
+        if (contract) ...?contractTerms,
       },
     );
     if (resp.statusCode == 201) {
