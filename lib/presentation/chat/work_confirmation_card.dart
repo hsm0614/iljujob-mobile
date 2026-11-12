@@ -943,7 +943,7 @@ class _ContractNotice extends StatelessWidget {
             const SizedBox(width: 8),
             const Expanded(
               child: Text(
-                '수락하면 위 조건의 근로계약서에 전자서명돼요. 서명한 계약서는 언제든 다시 볼 수 있어요.',
+                '수락하면 본인인증 후 위 조건의 근로계약서에 전자서명돼요. 서명한 계약서는 언제든 다시 볼 수 있어요.',
                 style: AppTextStyles.caption,
               ),
             ),

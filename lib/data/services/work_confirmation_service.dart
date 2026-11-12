@@ -112,13 +112,23 @@ class WorkConfirmationService {
     String status, {
     String actorType = 'worker',
     bool signContract = false,
+    String? identityImpUid, // 근로계약서 서명 직전 본인인증(다날)
   }) async {
     final resp = await AuthenticatedHttpClient.patchJson(
       Uri.parse('$baseUrl/api/work-confirmation/$confirmId/status'),
-      body: {'status': status, 'actorType': actorType, if (signContract) 'signContract': true},
+      body: {
+        'status': status,
+        'actorType': actorType,
+        if (signContract) 'signContract': true,
+        if (identityImpUid != null) 'identityImpUid': identityImpUid,
+      },
     );
     if (resp.statusCode != 200) {
-      throw Exception('상태 업데이트 실패: ${resp.body}');
+      String? msg;
+      try {
+        msg = (jsonDecode(resp.body) as Map)['message']?.toString();
+      } catch (_) {}
+      throw WorkConfirmationException(msg ?? '상태 업데이트 실패');
     }
   }
 
@@ -134,4 +144,12 @@ class WorkConfirmationService {
     }
     return [];
   }
+}
+
+/// 서버가 알려준 이유(본인인증 불일치 등) — 화면에 그대로 보여준다
+class WorkConfirmationException implements Exception {
+  final String message;
+  WorkConfirmationException(this.message);
+  @override
+  String toString() => message;
 }

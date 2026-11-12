@@ -20,6 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iljujob/data/models/job.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/config/app_theme.dart';
+import 'package:iljujob/presentation/contract/contract_sheets.dart';
 import 'package:iljujob/presentation/widgets/albailju_common.dart';
 import 'package:iljujob/presentation/screens/worker_screen/job_detail_screen.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
@@ -1356,9 +1357,18 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                     workConfirmations: ctrl.workConfirmations,
                                     onAcceptWorkConfirmation:
                                         (confirm) async {
-                                          // 사장님이 서명한 근로계약서가 있으면 [수락하기] 한 번 = 알바생 서명(카드에 고지 문구)
-                                          await ctrl.respondToWorkConfirmation(confirm, 'accepted',
-                                              signContract: confirm.contractStatus == 'client_signed');
+                                          // 사장님이 서명한 근로계약서가 있으면 [수락하기] → 본인인증 → 수락과 함께 알바생 서명
+                                          if (confirm.contractStatus == 'client_signed') {
+                                            final impUid = await verifyIdentityForSigning(context);
+                                            if (impUid == null) {
+                                              ctrl.onShowSnackbar?.call('본인인증을 마쳐야 수락과 서명이 돼요.');
+                                              return;
+                                            }
+                                            await ctrl.respondToWorkConfirmation(confirm, 'accepted',
+                                                signContract: true, identityImpUid: impUid);
+                                            return;
+                                          }
+                                          await ctrl.respondToWorkConfirmation(confirm, 'accepted');
                                         },
                                     onRejectWorkConfirmation:
                                         (confirm) =>

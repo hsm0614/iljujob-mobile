@@ -810,6 +810,7 @@ class ChatRoomController extends ChangeNotifier {
     WorkConfirmation confirm,
     String nextStatus, {
     bool signContract = false,
+    String? identityImpUid,
   }) async {
     if (_disposed || workLoading) return;
     workLoading = true;
@@ -820,6 +821,7 @@ class ChatRoomController extends ChangeNotifier {
         nextStatus,
         actorType: userType,
         signContract: signContract,
+        identityImpUid: identityImpUid,
       );
       await fetchWorkConfirmations();
       await fetchWorkState();
@@ -841,7 +843,7 @@ class ChatRoomController extends ChangeNotifier {
       }
     } catch (e) {
       debugPrint('처리에 실패했어요: $e');
-      if (!_disposed) onShowSnackbar?.call(Msg.server);
+      if (!_disposed) onShowSnackbar?.call(e is WorkConfirmationException ? e.message : Msg.server);
     } finally {
       if (_disposed) return;
       workLoading = false;
