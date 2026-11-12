@@ -8,6 +8,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../contract/contract_sheets.dart';
+import 'chat_translate.dart';
 import 'package:iljujob/config/app_theme.dart';
 import '../../data/services/work_confirmation_service.dart';
 import 'chat_room_helpers.dart';
@@ -445,6 +446,21 @@ class _MessageBubble extends StatelessWidget {
                                       isMe
                                           ? Colors.white
                                           : AppColors.textPrimary,
+                                ),
+                                // 길게 눌러 [번역] — 외국인 알바생과 사장님 사이 (상대 메시지만)
+                                contextMenuBuilder: (ctx, st) => AdaptiveTextSelectionToolbar.buttonItems(
+                                  anchors: st.contextMenuAnchors,
+                                  buttonItems: [
+                                    ...st.contextMenuButtonItems,
+                                    if (!isMe)
+                                      ContextMenuButtonItem(
+                                        label: '번역',
+                                        onPressed: () {
+                                          ContextMenuController.removeAny();
+                                          showChatTranslation(context, messageText);
+                                        },
+                                      ),
+                                  ],
                                 ),
                               ),
                     ),
