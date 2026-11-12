@@ -7,6 +7,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:iljujob/config/app_theme.dart';
 import '../../data/services/work_confirmation_service.dart';
 import 'chat_room_helpers.dart';
@@ -540,8 +541,12 @@ class _BotMessageBubble extends StatelessWidget {
   final String message;
   const _BotMessageBubble({required this.message});
 
+  static final _contractPdf = RegExp(r'https://albailju\.co\.kr/api/contracts/pdf/[0-9a-f]{32}');
+
   @override
   Widget build(BuildContext context) {
+    final pdf = _contractPdf.firstMatch(message)?.group(0);
+    final text = pdf == null ? message : message.replaceFirst(pdf, '').trim();
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
       child: Center(
@@ -577,7 +582,7 @@ class _BotMessageBubble extends StatelessWidget {
               ),
               const SizedBox(height: 6),
               Text(
-                message,
+                text,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: AppFontSize.body2,
@@ -585,6 +590,18 @@ class _BotMessageBubble extends StatelessWidget {
                   height: 1.5,
                 ),
               ),
+              // 서명 끝난 근로계약서 — 일주봇이 양쪽 채팅방에 올린 PDF(교부)
+              if (pdf != null) ...[
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => launchUrl(Uri.parse(pdf), mode: LaunchMode.inAppBrowserView),
+                    icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                    label: const Text('근로계약서 PDF 열기'),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
