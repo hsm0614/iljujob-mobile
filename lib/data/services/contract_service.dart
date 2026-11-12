@@ -16,6 +16,13 @@ class ContractService {
     if (r.statusCode != 200) throw Exception((jsonDecode(r.body) as Map)['message'] ?? '저장하지 못했어요');
   }
 
+  /// 일주봇 메시지의 '계약서 #번호' — 당사자만, 링크는 10분짜리
+  static Future<Map<String, dynamic>?> byId(int id) async {
+    final r = await AuthenticatedHttpClient.get(Uri.parse('$baseUrl/api/contracts/$id'));
+    if (r.statusCode != 200) return null;
+    return ((jsonDecode(r.body) as Map)['contract'] as Map?)?.cast<String, dynamic>();
+  }
+
   /// 근무 카드의 계약서 — 없으면 null
   static Future<Map<String, dynamic>?> forConfirmation(int confirmId) async {
     final r = await AuthenticatedHttpClient.get(Uri.parse('$baseUrl/api/contracts/confirm/$confirmId'));

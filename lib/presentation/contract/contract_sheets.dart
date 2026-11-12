@@ -17,6 +17,17 @@ Future<void> openLaborContract(BuildContext context, int confirmId) async {
   await launchUrl(Uri.parse(url), mode: LaunchMode.inAppBrowserView);
 }
 
+/// 일주봇 메시지 [PDF 열기] — 로그인한 당사자에게 10분짜리 링크를 받아 연다
+Future<void> openLaborContractPdf(BuildContext context, int contractId) async {
+  final c = await ContractService.byId(contractId);
+  final url = c?['pdfUrl'] as String?;
+  if (url == null) {
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('계약서를 열 수 없어요.')));
+    return;
+  }
+  await launchUrl(Uri.parse(url), mode: LaunchMode.inAppBrowserView);
+}
+
 /// 알바생: 근로계약서 서명 직전 본인인증(가입 때와 같은 다날 PASS·문자). 성공하면 imp_uid, 취소·실패면 null
 Future<String?> verifyIdentityForSigning(BuildContext context) async {
   try {
