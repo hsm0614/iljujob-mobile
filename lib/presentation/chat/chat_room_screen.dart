@@ -3,6 +3,7 @@
 // 채팅방 화면 — build() 전담.
 // 모든 상태/로직은 ChatRoomController에 있음.
 
+import '../contract/contract_sheets.dart';
 import 'dart:io';
 import 'dart:ui';
 
@@ -1360,11 +1361,16 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                                         () => _showProposeSheet(ctrl),
                                     workConfirmations: ctrl.workConfirmations,
                                     onAcceptWorkConfirmation:
-                                        (confirm) =>
-                                            ctrl.respondToWorkConfirmation(
-                                              confirm,
-                                              'accepted',
-                                            ),
+                                        (confirm) async {
+                                          // 사장님이 서명한 근로계약서가 있으면 수락 = 알바생 서명
+                                          if (confirm.contractStatus == 'client_signed') {
+                                            final ok = await confirmWorkerContractSign(context, confirm.id);
+                                            if (!ok) return;
+                                            await ctrl.respondToWorkConfirmation(confirm, 'accepted', signContract: true);
+                                            return;
+                                          }
+                                          await ctrl.respondToWorkConfirmation(confirm, 'accepted');
+                                        },
                                     onRejectWorkConfirmation:
                                         (confirm) =>
                                             ctrl.respondToWorkConfirmation(

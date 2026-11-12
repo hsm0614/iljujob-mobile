@@ -808,8 +808,9 @@ class ChatRoomController extends ChangeNotifier {
 
   Future<void> respondToWorkConfirmation(
     WorkConfirmation confirm,
-    String nextStatus,
-  ) async {
+    String nextStatus, {
+    bool signContract = false,
+  }) async {
     if (_disposed || workLoading) return;
     workLoading = true;
     _notify();
@@ -818,6 +819,7 @@ class ChatRoomController extends ChangeNotifier {
         confirm.id,
         nextStatus,
         actorType: userType,
+        signContract: signContract,
       );
       await fetchWorkConfirmations();
       await fetchWorkState();

@@ -16,6 +16,8 @@ class WorkConfirmation {
   final String status;
   final String? workerName;
   final String? companyName;
+  /// 근로계약서: null(없음) · client_signed(알바생 서명 전) · signed · void
+  final String? contractStatus;
 
   /// 카드가 제안된 시각(UTC). 서버는 proposed_at 을 UTC_TIMESTAMP() 로 쓰고
   /// wc.* 로 그대로 내려준다. 이걸 안 읽으면 카드를 대화 흐름에 끼워넣을
@@ -37,6 +39,7 @@ class WorkConfirmation {
     this.workerName,
     this.companyName,
     this.proposedAt,
+    this.contractStatus,
   });
 
   factory WorkConfirmation.fromJson(Map<String, dynamic> j) => WorkConfirmation(
@@ -54,6 +57,7 @@ class WorkConfirmation {
     workerName: j['worker_name']?.toString(),
     companyName: j['company_name']?.toString(),
     proposedAt: _parseUtc(j['proposed_at']),
+    contractStatus: j['contract_status']?.toString(),
   );
 
   static DateTime? _parseUtc(dynamic v) {
@@ -78,6 +82,7 @@ class WorkConfirmationService {
     required String endTime,
     required int hourlyWage,
     String? location,
+    bool contract = false,
   }) async {
     final resp = await AuthenticatedHttpClient.postJson(
       Uri.parse('$baseUrl/api/work-confirmation'),
@@ -91,22 +96,26 @@ class WorkConfirmationService {
         'endTime': endTime,
         'hourlyWage': hourlyWage,
         'location': location,
+        if (contract) 'contract': true,
       },
     );
     if (resp.statusCode == 201) {
       return jsonDecode(resp.body)['confirmId'] as int;
     }
-    throw Exception('근무 확정 제안 실패: ${resp.body}');
+    String msg = '근무 확정 제안 실패';
+    try { msg = (jsonDecode(resp.body) as Map)['message']?.toString() ?? msg; } catch (_) {}
+    throw Exception(msg);
   }
 
   static Future<void> updateStatus(
     int confirmId,
     String status, {
     String actorType = 'worker',
+    bool signContract = false,
   }) async {
     final resp = await AuthenticatedHttpClient.patchJson(
       Uri.parse('$baseUrl/api/work-confirmation/$confirmId/status'),
-      body: {'status': status, 'actorType': actorType},
+      body: {'status': status, 'actorType': actorType, if (signContract) 'signContract': true},
     );
     if (resp.statusCode != 200) {
       throw Exception('상태 업데이트 실패: ${resp.body}');

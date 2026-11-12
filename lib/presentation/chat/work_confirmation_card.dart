@@ -5,6 +5,7 @@ import 'package:iljujob/utils/apply_stage.dart';
 import 'package:intl/intl.dart';
 import '../../config/app_theme.dart';
 import '../../data/services/work_confirmation_service.dart';
+import '../contract/contract_sheets.dart';
 
 // ── 채팅 내 출근 확정 카드 ──────────────────────────────────
 class WorkConfirmationCard extends StatelessWidget {
@@ -135,6 +136,16 @@ class WorkConfirmationCard extends StatelessWidget {
             if (!isPast) ...[
               const SizedBox(height: 16),
               _StatusHint(status: confirm.status, userType: userType),
+            ],
+
+            // 근로계약서(자체 전자서명) — 양쪽 모두 언제든 열람·저장(교부)
+            if (confirm.contractStatus == 'signed' || confirm.contractStatus == 'client_signed') ...[
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () => openLaborContract(context, confirm.id),
+                icon: const Icon(Icons.description_outlined, size: 16),
+                label: Text(confirm.contractStatus == 'signed' ? '근로계약서 보기 · 서명 완료' : '근로계약서 보기 · 알바생 서명 전'),
+              ),
             ],
 
             // 사장님: 알바생이 취소했거나 아직 출근 확인 전이면 대체 후보 찾기 (결원 복구)
@@ -405,6 +416,7 @@ class _ProposeWorkConfirmationSheetState
   TimeOfDay? _endTime;
   final _wageCtrl = TextEditingController();
   bool _loading = false;
+  bool _withContract = true;
 
   @override
   void initState() {
@@ -465,6 +477,9 @@ class _ProposeWorkConfirmationSheetState
 
   Future<void> _submit() async {
     if (!_canSubmit) return;
+    // 근로계약서: 사업장 정보가 없으면 한 번 입력받는다
+    if (_withContract && !await ensureContractProfile(context)) return;
+    if (!mounted) return;
     setState(() => _loading = true);
     try {
       final wage = int.tryParse(_wageCtrl.text.replaceAll(',', '')) ?? 0;
@@ -480,6 +495,7 @@ class _ProposeWorkConfirmationSheetState
             '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}:00',
         hourlyWage: wage,
         location: widget.jobLocation,
+        contract: _withContract,
       );
       if (mounted) {
         widget.onPropose({'success': true});
@@ -490,7 +506,7 @@ class _ProposeWorkConfirmationSheetState
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+        ).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
       }
     }
   }
@@ -722,7 +738,16 @@ class _ProposeWorkConfirmationSheetState
                     ),
                   ],
 
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 20),
+                  CheckboxListTile(
+                    contentPadding: EdgeInsets.zero,
+                    value: _withContract,
+                    onChanged: (v) => setState(() => _withContract = v ?? false),
+                    title: const Text('근로계약서 함께 보내기', style: AppTextStyles.body1),
+                    subtitle: const Text('체크하고 제안하면 이 조건의 근로계약서에 사장님이 전자서명한 것으로 기록돼요. 알바생이 수락하면 서명이 끝나요.',
+                        style: AppTextStyles.caption),
+                  ),
+                  const SizedBox(height: 12),
 
                   SizedBox(
                     width: double.infinity,
