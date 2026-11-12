@@ -35,7 +35,8 @@ Future<void> showContractPreview(BuildContext context, String html) => Navigator
       ),
     );
 
-/// 일주봇 메시지 [PDF 열기] — 로그인한 당사자에게 10분짜리 링크를 받아 연다
+/// 일주봇 메시지 [PDF 저장] — 로그인한 당사자에게 10분짜리 링크를 받아 폰 브라우저로 내려받는다
+/// (iOS: 파일 앱 '다운로드', 안드로이드: 다운로드 폴더). 새 패키지 없이 브라우저 다운로드를 쓴다
 Future<void> openLaborContractPdf(BuildContext context, int contractId) async {
   final c = await ContractService.byId(contractId);
   final url = c?['pdfUrl'] as String?;
@@ -43,7 +44,7 @@ Future<void> openLaborContractPdf(BuildContext context, int contractId) async {
     if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('계약서를 열 수 없어요.')));
     return;
   }
-  await launchUrl(Uri.parse(url), mode: LaunchMode.inAppBrowserView);
+  await launchUrl(Uri.parse('$url?download=1'), mode: LaunchMode.externalApplication);
 }
 
 /// 알바생: 근로계약서 서명 직전 본인인증(가입 때와 같은 다날 PASS·문자). 성공하면 imp_uid, 취소·실패면 null

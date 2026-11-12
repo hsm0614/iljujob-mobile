@@ -615,8 +615,8 @@ class _BotMessageBubble extends StatelessWidget {
                   width: double.infinity,
                   child: OutlinedButton.icon(
                     onPressed: () => openLaborContractPdf(context, contractId),
-                    icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-                    label: const Text('근로계약서 PDF 열기'),
+                    icon: const Icon(Icons.download_rounded, size: 18),
+                    label: const Text('근로계약서 PDF 저장'),
                   ),
                 ),
               ],
