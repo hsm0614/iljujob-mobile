@@ -65,7 +65,7 @@ class _AdminSafeCompanyScreenState extends State<AdminSafeCompanyScreen> {
                   margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: ListTile(
                     title: Text(company['company_name'] ?? '회사명 없음'),
-                    subtitle: Text('담당자: ${company['manager_name']}'),
+                    subtitle: Text('담당자: ${company['manager_name']} · 사업자 ${company['biz_number'] ?? '없음'}${company['nts_status'] != null ? ' · 국세청: ${company['nts_status']}' : ''}'),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
