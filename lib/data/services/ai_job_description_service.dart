@@ -1,6 +1,7 @@
 //services/ai_job_description_service.dart
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart'; // StatefulWidget 사용을 위해 필요
 import 'package:http/http.dart' as http;
 import '../../config/constants.dart';
@@ -103,6 +104,28 @@ class AIJobDescriptionService {
     'isShortTerm': isShortTerm,
     'tone': tone,
   };
+
+  /// 사진으로 공고 만들기 — 전단·메모 사진 → 공고 칸 초안(사진에 있는 숫자만). AI 공고 작성 월 횟수 1회 사용
+  static Future<Map<String, dynamic>> draftFromPhoto(File photo, List<String> categories) async {
+    final bytes = await photo.readAsBytes();
+    final lower = photo.path.toLowerCase();
+    final resp = await AuthenticatedHttpClient.postJson(
+      Uri.parse('$baseUrl/api/ai/job-from-photo'),
+      body: {
+        'image': base64Encode(bytes),
+        'mime': lower.endsWith('.png') ? 'image/png' : 'image/jpeg',
+        'categories': categories,
+      },
+    ).timeout(const Duration(seconds: 45));
+    Map<String, dynamic> data = {};
+    try {
+      data = jsonDecode(resp.body) as Map<String, dynamic>;
+    } catch (_) {}
+    if (resp.statusCode != 200 || data['draft'] is! Map) {
+      throw AIGenerationException(data['message']?.toString() ?? '사진을 읽지 못했어요. 다시 시도해주세요.');
+    }
+    return (data['draft'] as Map).cast<String, dynamic>();
+  }
 
   static Future<String> generateJobDescription({
     required String title,

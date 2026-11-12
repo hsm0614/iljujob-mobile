@@ -153,6 +153,7 @@ class _PostJobFormState extends State<PostJobForm>
   // 선택 항목 (2026-11, 급구 시안) — 서버 jobs.location_detail·headcount·break_minutes
   final _locDetailCtrl = TextEditingController();
   int _headcount = 1;
+  bool _photoDrafting = false; // 사진으로 채우는 중
   int? _breakMinutes; // null = 안 정함
   String _description = '';
   bool _externalApplyEnabled = false;
@@ -2054,6 +2055,42 @@ class _PostJobFormState extends State<PostJobForm>
               ),
           ],
         ),
+      // 사진으로 채우기 — 가게에 붙인 전단·메모·카톡 캡처를 찍으면 AI가 칸을 채운다 (2026-11)
+      Container(height: 8, margin: const EdgeInsets.fromLTRB(0, 32, 0, 24), color: AppColors.bgMuted),
+      Material(
+        color: AppColors.bgCard,
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          onTap: _photoDrafting ? null : _fillFromPhoto,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
+            child: Row(
+              children: [
+                const Icon(Icons.photo_camera_outlined, color: AppColors.textSecondary),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('전단·메모 사진으로 채우기', style: AppTextStyles.body1),
+                      SizedBox(height: 2),
+                      Text('사진 속 글자를 AI가 읽어 칸을 채워요 · AI 공고 작성 1회', style: AppTextStyles.caption),
+                    ],
+                  ),
+                ),
+                if (_photoDrafting)
+                  const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                else
+                  const Icon(Icons.chevron_right, color: AppColors.textTertiary),
+              ],
+            ),
+          ),
+        ),
+      ),
       // 지난 공고로 채우기 — '공고 올리기' 앞의 선택 시트를 없애고 여기로 (2026-10, 대표)
       if (_recentJobs.isNotEmpty) ...[
         Container(height: 8, margin: const EdgeInsets.fromLTRB(0, 32, 0, 24), color: AppColors.bgMuted),
@@ -2152,6 +2189,64 @@ class _PostJobFormState extends State<PostJobForm>
         ),
       ),
     );
+  }
+
+  /// 사진으로 채우기 — 사진에서 읽은 칸만 덮어쓴다(근무지·좌표는 그대로: 주소 검색으로 정해야 지도에 뜬다)
+  Future<void> _fillFromPhoto() async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      backgroundColor: AppColors.bgCard,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('사진 찍기'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('앨범에서 고르기'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null) return;
+    final x = await ImagePicker().pickImage(source: source, imageQuality: 80, maxWidth: 1600, maxHeight: 1600);
+    if (x == null || !mounted) return;
+    setState(() => _photoDrafting = true);
+    try {
+      final cats = [for (final c in jobCategories) ...c.sub];
+      final d = await AIJobDescriptionService.draftFromPhoto(File(x.path), cats);
+      if (!mounted) return;
+      var filled = 0;
+      setState(() {
+        if (d['title'] is String) { _title = d['title']; _titleCtrl.text = _title; filled++; }
+        final cat = d['category']?.toString() ?? '';
+        if (cat.isNotEmpty && majorOfCategory(cat).isNotEmpty) { _category = cat; _majorCat = majorOfCategory(cat); filled++; }
+        if (d['payType'] is String) { _payType = d['payType']; filled++; }
+        if (d['pay'] is num) { _pay = (d['pay'] as num).toInt(); _payCtrl.text = NumberFormat('#,###').format(_pay); filled++; }
+        final st = _parseTime(d['startTime']?.toString()), et = _parseTime(d['endTime']?.toString());
+        if (st != null) { _startTime = st; filled++; }
+        if (et != null) { _endTime = et; filled++; }
+        final sd = DateTime.tryParse(d['startDate']?.toString() ?? ''), ed = DateTime.tryParse(d['endDate']?.toString() ?? '');
+        if (sd != null) { _startDate = sd; _endDate = ed ?? sd; filled++; }
+        if (d['headcount'] is num) { _headcount = (d['headcount'] as num).toInt(); filled++; }
+        if (d['description'] is String) { _description = d['description']; _descCtrl.text = _description; filled++; }
+      });
+      _scheduleDraftSave();
+      _trackPost('job_post_fill_from_photo');
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text('사진에서 $filled칸을 채웠어요. 근무지와 빈 칸은 직접 확인해 주세요')));
+    } catch (e) {
+      if (mounted) _showError(e is AIGenerationException ? e.message : '사진을 읽지 못했어요. 다시 시도해주세요.');
+    } finally {
+      if (mounted) setState(() => _photoDrafting = false);
+    }
   }
 
   /// 지난 공고로 모든 단계를 채우고 안내 — 이후 단계는 '다음'만 눌러 확인하면 된다
