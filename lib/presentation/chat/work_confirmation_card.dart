@@ -1,8 +1,10 @@
+import 'dart:convert';
 // lib/presentation/chat/work_confirmation_card.dart
 import 'package:flutter/material.dart';
 import 'package:iljujob/utils/chat_stage.dart';
 import 'package:iljujob/utils/apply_stage.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../config/app_theme.dart';
 import '../../data/services/work_confirmation_service.dart';
 import '../../data/services/contract_service.dart';
@@ -431,7 +433,9 @@ class ProposeWorkConfirmationSheet extends StatefulWidget {
       _ProposeWorkConfirmationSheetState();
 }
 
-const _payDays = ['근무 당일', '근무 다음 날', '매주 금요일'];
+// 급여 지급일 — 당일·다음 날·매주 N요일·매월 N일(숫자로 고른다). 저장은 계약서에 그대로 들어갈 문장
+const _payModes = ['근무 당일', '근무 다음 날', '매주', '매월'];
+const _weekdays = ['월', '화', '수', '목', '금', '토', '일'];
 
 class _ProposeWorkConfirmationSheetState
     extends State<ProposeWorkConfirmationSheet> {
@@ -448,15 +452,35 @@ class _ProposeWorkConfirmationSheetState
   // 근로계약서 정보 (사장님 1회 입력)
   bool _profileLoaded = false;
   bool _profileEditing = false;
+  final _bizName = TextEditingController(); // 상호 — 앱 계정 이름과 사업자등록증 상호가 다를 수 있다
   final _rep = TextEditingController();
   final _biz = TextEditingController();
+  bool _hasCertificate = false;
+  bool _scanning = false;
   final _addr = TextEditingController();
   final _placeCtrl = TextEditingController(); // 근무 장소 — 공고 주소로 채우고, 비었거나 틀리면 직접 고친다
   final _dutyCtrl = TextEditingController(); // 계약서 업무 내용 — 비우면 공고 분야·제목
   int? _breakMinutes; // 계약서 휴게시간 — null이면 공고 값 또는 법정 최소
   int? _minBreak; // 미리보기에서 받은 법정 최소
   bool _previewing = false;
-  String _payDay = _payDays.first;
+  String _payMode = _payModes.first;
+  String _payWeekday = '금';
+  String _payMonthDay = '10'; // '1'~'31' 또는 '말일'
+  String get _payDay => switch (_payMode) {
+        '매주' => '매주 $_payWeekday요일',
+        '매월' => _payMonthDay == '말일' ? '매월 말일' : '매월 $_payMonthDay일',
+        _ => _payMode,
+      };
+  // 저장된 문장 → 고르는 값. 못 알아보면 false(펼쳐서 다시 고르게)
+  bool _readPayDay(String s) {
+    if (s == '근무 당일' || s == '근무 다음 날') { _payMode = s; return true; }
+    final w = RegExp(r'^매주 ([월화수목금토일])요일$').firstMatch(s);
+    if (w != null) { _payMode = '매주'; _payWeekday = w.group(1)!; return true; }
+    final m = RegExp(r'^매월 (\d{1,2})일$').firstMatch(s);
+    if (m != null && int.parse(m.group(1)!) >= 1 && int.parse(m.group(1)!) <= 31) { _payMode = '매월'; _payMonthDay = m.group(1)!; return true; }
+    if (s == '매월 말일') { _payMode = '매월'; _payMonthDay = '말일'; return true; }
+    return false;
+  }
   String _payMethod = '계좌이체';
 
   static TimeOfDay? _parseTime(String? s) {
@@ -494,21 +518,55 @@ class _ProposeWorkConfirmationSheetState
     _loadProfile();
   }
 
+  // 사업자등록증 → 상호·사업자번호·대표자·주소. 등록한 서류가 있으면 그걸, 없거나 못 읽으면 사진을 받는다
+  Future<void> _scanCertificate() async {
+    setState(() {
+      _scanning = true;
+      _error = null;
+    });
+    try {
+      Map<String, dynamic>? d;
+      if (_hasCertificate) {
+        try {
+          d = await ContractService.scanCertificate();
+        } catch (_) {}
+      }
+      if (d == null) {
+        final x = await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 85, maxWidth: 2000);
+        if (x == null) return;
+        final bytes = await x.readAsBytes();
+        d = await ContractService.scanCertificate(imageBase64: base64Encode(bytes), mime: 'image/jpeg');
+      }
+      if (!mounted) return;
+      setState(() {
+        if (d!['bizName'] != null) _bizName.text = d['bizName'].toString();
+        if (d['bizNumber'] != null) _biz.text = d['bizNumber'].toString();
+        if (d['repName'] != null) _rep.text = d['repName'].toString();
+        if (d['bizAddress'] != null) _addr.text = d['bizAddress'].toString();
+      });
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _scanning = false);
+    }
+  }
+
   Future<void> _loadProfile() async {
     try {
       final p = await ContractService.profile();
       _contractsAvailable = p.available;
       if (!p.available) _withContract = false;
       final m = p.profile;
+      _hasCertificate = p.hasCertificate;
+      _bizName.text = m['bizName']?.toString() ?? '';
       _rep.text = m['repName']?.toString() ?? '';
       _biz.text = m['bizNumber']?.toString() ?? '';
       _addr.text = m['bizAddress']?.toString() ?? '';
-      final pd = m['payDay']?.toString() ?? '';
-      if (_payDays.contains(pd)) _payDay = pd;
+      final pdOk = _readPayDay(m['payDay']?.toString() ?? '');
       final pm = m['payMethod']?.toString() ?? '';
       if (pm == '현금' || pm == '계좌이체') _payMethod = pm;
       // 처음이거나 지급일이 고를 수 있는 값이 아니면 펼쳐서 확인받는다
-      _profileEditing = !p.complete || !_payDays.contains(pd);
+      _profileEditing = !p.complete || !pdOk;
     } catch (_) {
       _withContract = false; // 계약서 정보를 못 불러오면 계약서 없이 제안
     }
@@ -518,6 +576,7 @@ class _ProposeWorkConfirmationSheetState
   @override
   void dispose() {
     _wageCtrl.dispose();
+    _bizName.dispose();
     _rep.dispose();
     _biz.dispose();
     _addr.dispose();
@@ -531,6 +590,7 @@ class _ProposeWorkConfirmationSheetState
 
   // 서버가 형식까지 검사한다(대표자 숫자 금지·사업자번호 10자리·주소). 여기선 빈 칸만 막는다
   bool get _profileReady =>
+      _bizName.text.trim().isNotEmpty &&
       _rep.text.trim().isNotEmpty &&
       _biz.text.replaceAll(RegExp(r'\D'), '').length == 10 &&
       _addr.text.trim().isNotEmpty;
@@ -568,6 +628,7 @@ class _ProposeWorkConfirmationSheetState
   Future<void> _saveProfileIfEditing() async {
     if (!_withContract || !_profileEditing) return;
     await ContractService.saveProfile({
+      'bizName': _bizName.text.trim(),
       'repName': _rep.text.trim(),
       'bizNumber': _biz.text.trim(),
       'bizAddress': _addr.text.trim(),
@@ -919,7 +980,7 @@ class _ProposeWorkConfirmationSheetState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('대표자 ${_rep.text} · 사업자 ${_biz.text}',
+                  Text('${_bizName.text} · 대표 ${_rep.text} · ${_biz.text}',
                       style: AppTextStyles.body2
                           .copyWith(color: AppColors.textPrimary)),
                   const SizedBox(height: 2),
@@ -943,6 +1004,26 @@ class _ProposeWorkConfirmationSheetState
         children: [
           const Text('계약서에 들어갈 사업장 정보예요. 한 번 저장하면 다음부터 자동으로 채워져요.',
               style: AppTextStyles.caption),
+          const SizedBox(height: 8),
+          // 사업자등록증을 AI가 읽어 채운다 — 사업자번호는 검증번호까지 맞을 때만. 다르면 아래에서 직접 고친다
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _scanning ? null : _scanCertificate,
+              icon: _scanning
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.document_scanner_outlined, size: 18),
+              label: Text(_hasCertificate ? '등록한 사업자등록증으로 채우기' : '사업자등록증 찍어서 채우기'),
+            ),
+          ),
+          const SizedBox(height: 12),
+          _FieldLabel('상호 (사업자등록증 기준)'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _bizName,
+            decoration: _inputDeco('사업자등록증의 상호 — 앱 가게 이름과 달라도 돼요'),
+            onChanged: (_) => setState(() {}),
+          ),
           const SizedBox(height: 12),
           _FieldLabel('대표자 이름'),
           const SizedBox(height: 6),
@@ -972,10 +1053,39 @@ class _ProposeWorkConfirmationSheetState
           _FieldLabel('급여 지급일'),
           const SizedBox(height: 6),
           _Choices(
-            options: _payDays,
-            value: _payDay,
-            onChanged: (v) => setState(() => _payDay = v),
+            options: _payModes,
+            value: _payMode,
+            onChanged: (v) => setState(() => _payMode = v),
           ),
+          if (_payMode == '매주') ...[
+            const SizedBox(height: 8),
+            _Choices(options: _weekdays, value: _payWeekday, onChanged: (v) => setState(() => _payWeekday = v)),
+          ],
+          if (_payMode == '매월') ...[
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(color: AppColors.bgMuted, borderRadius: BorderRadius.circular(AppRadius.md)),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: _payMonthDay,
+                      items: [
+                        for (var d = 1; d <= 31; d++) DropdownMenuItem(value: '$d', child: Text('$d일')),
+                        const DropdownMenuItem(value: '말일', child: Text('말일')),
+                      ],
+                      onChanged: (v) => setState(() => _payMonthDay = v ?? _payMonthDay),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Text('에 지급', style: AppTextStyles.body2),
+              ],
+            ),
+          ],
+          const SizedBox(height: 4),
+          Text('계약서에 "$_payDay 지급"으로 들어가요', style: AppTextStyles.caption),
           const SizedBox(height: 12),
           _FieldLabel('지급 방법'),
           const SizedBox(height: 6),
