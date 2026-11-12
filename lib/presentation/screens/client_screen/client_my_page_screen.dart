@@ -14,6 +14,7 @@ import '../../../widget/dev_account_switch.dart';
 import '../../../widget/app_ui.dart';
 import '../../../widget/app_motion.dart';
 import '../worker_screen/labor_consult_screen.dart';
+import '../../agent/ai_manager_screen.dart';
 
 class ClientMyPageScreen extends StatefulWidget {
   const ClientMyPageScreen({super.key});
@@ -375,6 +376,19 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(height: 8),
+                // 알바일주 주력 = AI 알바 채용 (2026-11-12 대표) — 매니저 설정을 맨 위에
+                AppMenuSection(
+                  title: 'AI 일주 매니저',
+                  children: [
+                    AppMenuRow(
+                      icon: Icons.auto_awesome_outlined,
+                      label: 'AI 매니저 설정',
+                      subtitle: '자동 대타 · 매장 안내서 · 매니저가 하는 일',
+                      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AiManagerScreen())),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 AppMenuSection(

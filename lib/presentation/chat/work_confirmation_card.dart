@@ -7,6 +7,7 @@ import '../../config/app_theme.dart';
 import '../../data/services/work_confirmation_service.dart';
 import '../../data/services/contract_service.dart';
 import '../contract/contract_sheets.dart';
+import '../agent/store_qa_sheet.dart';
 
 // ── 채팅 내 출근 확정 카드 ──────────────────────────────────
 class WorkConfirmationCard extends StatelessWidget {
@@ -149,6 +150,15 @@ class WorkConfirmationCard extends StatelessWidget {
                 label: Text(confirm.contractStatus == 'signed' ? '근로계약서 보기 · 서명 완료' : '근로계약서 보기 · 알바생 서명 전'),
               ),
             ],
+
+            // 알바생: 매장에 물어보기(사장님 매장 안내서 기반 AI)
+            if (userType == 'worker' && !isPast &&
+                ['proposed', 'accepted', 'scheduled', 'day_before_confirmed', 'day_of_confirmed', 'checked_in'].contains(confirm.status))
+              TextButton.icon(
+                onPressed: () => showStoreQaSheet(context, confirm.id),
+                icon: const Icon(Icons.storefront_outlined, size: 16),
+                label: const Text('매장에 물어보기'),
+              ),
 
             // 사장님: 알바생이 취소했거나 아직 출근 확인 전이면 대체 후보 찾기 (결원 복구)
             if (userType == 'client' && !isWorkDatePast(confirm.workDate) &&
