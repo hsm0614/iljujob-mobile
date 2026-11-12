@@ -363,17 +363,12 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
             workerId: workerId,
             clientId: clientId,
             jobLocation: jobSource['location']?.toString(),
-            // 일급 공고의 급여(예: 41,280원)가 '시급' 칸에 들어가 시간을 곱한 예상 금액이
-            // 터무니없이 나왔다(운영 카드 61건 중 31건이 2만 원 이상 '시급'). 시급 공고일 때만 채운다
-            defaultWage:
-                jobSource['pay_type']?.toString() == '시급'
-                    ? int.tryParse(
-                      (jobSource['pay'] ?? '').toString().replaceAll(
-                        RegExp(r'[^0-9]'),
-                        '',
-                      ),
-                    )
-                    : null,
+            // 급여는 그대로 넘기고 시트가 시급으로 바꾼다(일급 ÷ 근무시간). 예전엔 일급이 '시급' 칸에 그대로 들어갔다
+            defaultWage: int.tryParse(
+              (jobSource['pay'] ?? '').toString().replaceAll(RegExp(r'[^0-9]'), ''),
+            ),
+            payType: jobSource['pay_type']?.toString(),
+            defaultDate: jobSource['start_date']?.toString(),
             defaultStartTime: jobSource['start_time']?.toString(),
             defaultEndTime: jobSource['end_time']?.toString(),
             weekdays: jobSource['weekdays']?.toString(),

@@ -5,6 +5,7 @@ import 'package:iljujob/utils/apply_stage.dart';
 import 'package:intl/intl.dart';
 import '../../config/app_theme.dart';
 import '../../data/services/work_confirmation_service.dart';
+import '../../data/services/contract_service.dart';
 import '../contract/contract_sheets.dart';
 
 // ── 채팅 내 출근 확정 카드 ──────────────────────────────────
@@ -378,13 +379,16 @@ class _StatusHint extends StatelessWidget {
 }
 
 // ── 근무 확정 제안 바텀시트 (사장님용) ────────────────────────
+// 공고 값(근무일·시간·급여)으로 자동 채움. 근로계약서 정보도 이 시트 안에서 확인·수정(중첩 시트 없음)
 class ProposeWorkConfirmationSheet extends StatefulWidget {
   final int chatRoomId;
   final int jobId;
   final int workerId;
   final int clientId;
   final String? jobLocation;
-  final int? defaultWage; // 공고 시급 자동 채움
+  final int? defaultWage; // 공고 급여 그대로 — 시급이 아니면 시트가 시급으로 바꾼다
+  final String? payType; // 시급·일급·주급·월급
+  final String? defaultDate; // 공고 start_date
   final String? defaultStartTime; // "09:00"
   final String? defaultEndTime; // "18:00"
   final String? weekdays; // 장기 공고 여부 ("월화수" 등, 있으면 장기)
@@ -398,6 +402,8 @@ class ProposeWorkConfirmationSheet extends StatefulWidget {
     required this.clientId,
     this.jobLocation,
     this.defaultWage,
+    this.payType,
+    this.defaultDate,
     this.defaultStartTime,
     this.defaultEndTime,
     this.weekdays,
@@ -409,91 +415,140 @@ class ProposeWorkConfirmationSheet extends StatefulWidget {
       _ProposeWorkConfirmationSheetState();
 }
 
+const _payDays = ['근무 당일', '근무 다음 날', '매주 금요일'];
+
 class _ProposeWorkConfirmationSheetState
     extends State<ProposeWorkConfirmationSheet> {
   DateTime? _date;
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
   final _wageCtrl = TextEditingController();
+  String? _wageNote; // 일급 → 시급 환산 안내
   bool _loading = false;
   bool _withContract = true;
+  String? _error;
+
+  // 근로계약서 정보 (사장님 1회 입력)
+  bool _profileLoaded = false;
+  bool _profileEditing = false;
+  final _rep = TextEditingController();
+  final _addr = TextEditingController();
+  String _payDay = _payDays.first;
+  String _payMethod = '계좌이체';
+
+  static TimeOfDay? _parseTime(String? s) {
+    final p = (s ?? '').split(':');
+    if (p.length < 2) return null;
+    final h = int.tryParse(p[0]), m = int.tryParse(p[1]);
+    return h == null || m == null ? null : TimeOfDay(hour: h, minute: m);
+  }
 
   @override
   void initState() {
     super.initState();
-    // 공고 데이터 자동 채움
-    if (widget.defaultWage != null && widget.defaultWage! > 0) {
-      _wageCtrl.text = widget.defaultWage.toString();
+    _startTime = _parseTime(widget.defaultStartTime);
+    _endTime = _parseTime(widget.defaultEndTime);
+
+    // 근무일: 공고 첫 근무일이 오늘 이후면 그대로
+    final d = DateTime.tryParse((widget.defaultDate ?? '').trim());
+    if (d != null) {
+      final day = DateTime(d.year, d.month, d.day);
+      final now = DateTime.now();
+      if (!day.isBefore(DateTime(now.year, now.month, now.day))) _date = day;
     }
-    if (widget.defaultStartTime != null) {
-      final parts = widget.defaultStartTime!.split(':');
-      if (parts.length >= 2) {
-        _startTime = TimeOfDay(
-          hour: int.tryParse(parts[0]) ?? 9,
-          minute: int.tryParse(parts[1]) ?? 0,
-        );
-      }
+
+    // 급여: 시급은 그대로, 일급은 공고 근무시간으로 나눠 시급으로(10원 단위 올림)
+    final pay = widget.defaultWage ?? 0;
+    final type = widget.payType ?? '시급';
+    if (pay > 0 && type == '시급') {
+      _wageCtrl.text = '$pay';
+    } else if (pay > 0 && type == '일급' && _estimatedHours != null) {
+      final hourly = ((pay / _estimatedHours!) / 10).ceil() * 10;
+      _wageCtrl.text = '$hourly';
+      _wageNote = '일급 ${NumberFormat('#,###').format(pay)}원 ÷ ${_fmtHours(_estimatedHours!)}시간으로 계산했어요';
     }
-    if (widget.defaultEndTime != null) {
-      final parts = widget.defaultEndTime!.split(':');
-      if (parts.length >= 2) {
-        _endTime = TimeOfDay(
-          hour: int.tryParse(parts[0]) ?? 18,
-          minute: int.tryParse(parts[1]) ?? 0,
-        );
-      }
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final p = await ContractService.profile();
+      final m = p.profile;
+      _rep.text = m['repName']?.toString() ?? '';
+      _addr.text = m['bizAddress']?.toString() ?? '';
+      final pd = m['payDay']?.toString() ?? '';
+      if (_payDays.contains(pd)) _payDay = pd;
+      final pm = m['payMethod']?.toString() ?? '';
+      if (pm == '현금' || pm == '계좌이체') _payMethod = pm;
+      // 처음이거나 지급일이 고를 수 있는 값이 아니면 펼쳐서 확인받는다
+      _profileEditing = !p.complete || !_payDays.contains(pd);
+    } catch (_) {
+      _profileEditing = true;
     }
+    if (mounted) setState(() => _profileLoaded = true);
   }
 
   @override
   void dispose() {
     _wageCtrl.dispose();
+    _rep.dispose();
+    _addr.dispose();
     super.dispose();
   }
 
   bool get _isWeekdaysJob =>
       widget.weekdays != null && widget.weekdays!.trim().isNotEmpty;
 
+  bool get _profileReady =>
+      _rep.text.trim().isNotEmpty && _addr.text.trim().isNotEmpty;
+
   bool get _canSubmit =>
       _date != null &&
       _startTime != null &&
       _endTime != null &&
-      _wageCtrl.text.trim().isNotEmpty;
+      _wageCtrl.text.trim().isNotEmpty &&
+      (!_withContract || (_profileLoaded && _profileReady));
 
+  // 밤샘 근무(종료 < 시작)는 다음 날 종료로 계산
   double? get _estimatedHours {
     if (_startTime == null || _endTime == null) return null;
-    final diff =
-        (_endTime!.hour * 60 + _endTime!.minute) -
+    var diff = (_endTime!.hour * 60 + _endTime!.minute) -
         (_startTime!.hour * 60 + _startTime!.minute);
-    return diff > 0 ? diff / 60.0 : null;
+    if (diff <= 0) diff += 24 * 60;
+    return diff / 60.0;
   }
 
-  int? get _estimatedPay {
-    final hours = _estimatedHours;
-    final wage = int.tryParse(_wageCtrl.text.replaceAll(',', ''));
-    if (hours == null || wage == null) return null;
-    return (hours * wage).round();
-  }
+  static String _fmtHours(double h) =>
+      h == h.roundToDouble() ? h.toInt().toString() : h.toStringAsFixed(1);
+
+  int? get _wage => int.tryParse(_wageCtrl.text.replaceAll(',', ''));
 
   Future<void> _submit() async {
     if (!_canSubmit) return;
-    // 근로계약서: 사업장 정보가 없으면 한 번 입력받는다
-    if (_withContract && !await ensureContractProfile(context)) return;
-    if (!mounted) return;
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
-      final wage = int.tryParse(_wageCtrl.text.replaceAll(',', '')) ?? 0;
+      if (_withContract && _profileEditing) {
+        await ContractService.saveProfile({
+          'repName': _rep.text.trim(),
+          'bizAddress': _addr.text.trim(),
+          'payDay': _payDay,
+          'payMethod': _payMethod,
+        });
+      }
+      String hm(TimeOfDay t) =>
+          '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:00';
       await WorkConfirmationService.propose(
         chatRoomId: widget.chatRoomId,
         jobId: widget.jobId,
         workerId: widget.workerId,
         clientId: widget.clientId,
         workDate: DateFormat('yyyy-MM-dd').format(_date!),
-        startTime:
-            '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}:00',
-        endTime:
-            '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}:00',
-        hourlyWage: wage,
+        startTime: hm(_startTime!),
+        endTime: hm(_endTime!),
+        hourlyWage: _wage ?? 0,
         location: widget.jobLocation,
         contract: _withContract,
       );
@@ -502,11 +557,12 @@ class _ProposeWorkConfirmationSheetState
         Navigator.pop(context);
       }
     } catch (e) {
-      setState(() => _loading = false);
+      // 스낵바는 시트 뒤에 가려져 안 보였다 — 시트 안에 보여준다
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+        setState(() {
+          _loading = false;
+          _error = e.toString().replaceFirst('Exception: ', '');
+        });
       }
     }
   }
@@ -516,20 +572,30 @@ class _ProposeWorkConfirmationSheetState
     final pad =
         MediaQuery.of(context).viewInsets.bottom +
         MediaQuery.of(context).padding.bottom;
-    final estPay = _estimatedPay;
-    final estHours = _estimatedHours;
+    final hours = _estimatedHours;
+    final wage = _wage;
+    final lowWage = wage != null && wage > 0 && wage < _minWage;
 
     String fmt(TimeOfDay t) =>
         '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
+    Future<void> pickTime(bool start) async {
+      final t = await showTimePicker(
+        context: context,
+        initialTime: (start ? _startTime : _endTime) ??
+            TimeOfDay(hour: start ? 9 : 18, minute: 0),
+      );
+      if (t != null) setState(() => start ? _startTime = t : _endTime = t);
+    }
+
     return Padding(
       padding: EdgeInsets.only(bottom: pad + 16),
       child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 핸들바
             const SizedBox(height: 12),
             Center(
               child: Container(
@@ -541,241 +607,316 @@ class _ProposeWorkConfirmationSheetState
                 ),
               ),
             ),
+            const SizedBox(height: 20),
+            const Text('출근 확정 제안', style: AppTextStyles.h2),
+            const SizedBox(height: 4),
+            Text(
+              _isWeekdaysJob
+                  ? '${widget.weekdays} 공고예요 · 첫 출근 날짜를 골라 주세요'
+                  : '공고 조건으로 채워 뒀어요. 알바생이 수락하면 근무가 확정돼요',
+              style: AppTextStyles.body2,
+            ),
+            const SizedBox(height: 20),
+
+            _FieldLabel('근무 날짜'),
+            const SizedBox(height: 6),
+            _Tile(
+              text: _date == null
+                  ? '날짜를 선택하세요'
+                  : DateFormat('M월 d일(E)', 'ko_KR').format(_date!),
+              isEmpty: _date == null,
+              icon: Icons.calendar_today_rounded,
+              onTap: () async {
+                final now = DateTime.now();
+                final d = await showDatePicker(
+                  context: context,
+                  initialDate: _date ?? now.add(const Duration(days: 1)),
+                  firstDate: DateTime(now.year, now.month, now.day),
+                  lastDate: now.add(const Duration(days: 60)),
+                  locale: const Locale('ko'),
+                );
+                if (d != null) setState(() => _date = d);
+              },
+            ),
             const SizedBox(height: 16),
 
-            // 헤더 카드
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.primaryLight,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: AppColors.primary.withValues(alpha: 0.18),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.event_available_rounded,
-                        size: 20,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '출근 확정 제안',
-                            style: TextStyle(
-                              fontSize: AppFontSize.buttonLg,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.textPrimary,
-                            ),
-                          ),
-                          SizedBox(height: 2),
-                          Text(
-                            '알바생이 수락하면 근무가 확정돼요',
-                            style: TextStyle(
-                              fontSize: AppFontSize.meta,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // 필드 영역
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 장기 공고 안내
-                  if (_isWeekdaysJob) ...[
-                    Text('${widget.weekdays} 공고예요 · 첫 출근 날짜를 골라 주세요', style: AppTextStyles.body2),
-                    const SizedBox(height: 16),
-                  ],
-
-                  // 근무 날짜
-                  _FieldLabel('근무 날짜'),
-                  const SizedBox(height: 6),
-                  _Tile(
-                    text:
-                        _date == null
-                            ? '날짜를 선택하세요'
-                            : DateFormat('M월 d일(E)', 'ko_KR').format(_date!),
-                    isEmpty: _date == null,
-                    icon: Icons.calendar_today_rounded,
-                    onTap: () async {
-                      final d = await showDatePicker(
-                        context: context,
-                        initialDate: DateTime.now().add(
-                          const Duration(days: 1),
-                        ),
-                        firstDate: DateTime.now(),
-                        lastDate: DateTime.now().add(const Duration(days: 60)),
-                        locale: const Locale('ko'),
-                      );
-                      if (d != null) setState(() => _date = d);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 근무 시간
-                  Row(
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _FieldLabel('시작 시간'),
-                            const SizedBox(height: 6),
-                            _Tile(
-                              text:
-                                  _startTime == null
-                                      ? '시작 시간'
-                                      : fmt(_startTime!),
-                              isEmpty: _startTime == null,
-                              icon: Icons.access_time_rounded,
-                              onTap: () async {
-                                final t = await showTimePicker(
-                                  context: context,
-                                  initialTime: const TimeOfDay(
-                                    hour: 9,
-                                    minute: 0,
-                                  ),
-                                );
-                                if (t != null) setState(() => _startTime = t);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _FieldLabel('종료 시간'),
-                            const SizedBox(height: 6),
-                            _Tile(
-                              text: _endTime == null ? '종료 시간' : fmt(_endTime!),
-                              isEmpty: _endTime == null,
-                              icon: Icons.access_time_rounded,
-                              onTap: () async {
-                                final t = await showTimePicker(
-                                  context: context,
-                                  initialTime: const TimeOfDay(
-                                    hour: 18,
-                                    minute: 0,
-                                  ),
-                                );
-                                if (t != null) setState(() => _endTime = t);
-                              },
-                            ),
-                          ],
-                        ),
+                      _FieldLabel('시작'),
+                      const SizedBox(height: 6),
+                      _Tile(
+                        text: _startTime == null ? '시작 시간' : fmt(_startTime!),
+                        isEmpty: _startTime == null,
+                        icon: Icons.access_time_rounded,
+                        onTap: () => pickTime(true),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 16),
-
-                  // 시급
-                  _FieldLabel('시급'),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: _wageCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: '시급을 입력하세요',
-                      suffixText: '원',
-                      filled: true,
-                      fillColor: AppColors.bgMuted,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 13,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _FieldLabel('종료'),
+                      const SizedBox(height: 6),
+                      _Tile(
+                        text: _endTime == null ? '종료 시간' : fmt(_endTime!),
+                        isEmpty: _endTime == null,
+                        icon: Icons.access_time_rounded,
+                        onTap: () => pickTime(false),
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(
-                          color: AppColors.primary,
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                    onChanged: (_) => setState(() {}),
+                    ],
                   ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
 
-                  // 예상 급여 요약
-                  if (estPay != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      '${estHours!.toStringAsFixed(1)}시간 · 총 ${NumberFormat('#,###').format(estPay)}원',
-                      style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
-                    ),
-                  ],
+            _FieldLabel('시급'),
+            const SizedBox(height: 6),
+            TextField(
+              controller: _wageCtrl,
+              keyboardType: TextInputType.number,
+              decoration: _inputDeco('시급을 입력하세요', suffix: '원'),
+              onChanged: (_) => setState(() => _wageNote = null),
+            ),
+            const SizedBox(height: 6),
+            if (lowWage)
+              Text(
+                '최저시급(${NumberFormat('#,###').format(_minWage)}원)보다 낮아요',
+                style: AppTextStyles.caption.copyWith(color: AppColors.error),
+              )
+            else if (_wageNote != null)
+              Text(_wageNote!, style: AppTextStyles.caption),
+            if (hours != null && wage != null && wage > 0) ...[
+              const SizedBox(height: 2),
+              Text(
+                '${_fmtHours(hours)}시간 · 총 ${NumberFormat('#,###').format((hours * wage).round())}원',
+                style: AppTextStyles.body2.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+            const SizedBox(height: 20),
+            const Divider(height: 1, color: AppColors.border),
+            const SizedBox(height: 12),
 
-                  const SizedBox(height: 20),
-                  CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: _withContract,
-                    onChanged: (v) => setState(() => _withContract = v ?? false),
-                    title: const Text('근로계약서 함께 보내기', style: AppTextStyles.body1),
-                    subtitle: const Text('체크하고 제안하면 이 조건의 근로계약서에 사장님이 전자서명한 것으로 기록돼요. 알바생이 수락하면 서명이 끝나요.',
-                        style: AppTextStyles.caption),
+            // 근로계약서
+            Row(
+              children: [
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('근로계약서 함께 보내기', style: AppTextStyles.body1),
+                      SizedBox(height: 2),
+                      Text('제안하면 사장님 전자서명, 알바생이 수락하면 서명 완료',
+                          style: AppTextStyles.caption),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: _canSubmit && !_loading ? _submit : null,
-                      child:
-                          _loading
-                              ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                              : const Text(
-                                '제안 보내기'),
-                    ),
+                ),
+                Switch.adaptive(
+                  value: _withContract,
+                  onChanged: (v) => setState(() => _withContract = v),
+                ),
+              ],
+            ),
+            if (_withContract) ...[
+              const SizedBox(height: 10),
+              if (!_profileLoaded)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Center(
+                    child: SizedBox(
+                        width: 18, height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2)),
                   ),
-                  const SizedBox(height: 4),
-                ],
+                )
+              else if (!_profileEditing)
+                _profileSummary()
+              else
+                _profileForm(),
+            ],
+
+            if (_error != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.errorLight,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  border: Border.all(color: AppColors.errorBorder),
+                ),
+                child: Text(_error!,
+                    style: AppTextStyles.body2.copyWith(color: AppColors.error)),
+              ),
+            ],
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _canSubmit && !_loading ? _submit : null,
+                child: _loading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('제안 보내기'),
               ),
             ),
+            const SizedBox(height: 4),
           ],
         ),
       ),
     );
   }
+
+  Widget _profileSummary() => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(14, 10, 4, 10),
+        decoration: BoxDecoration(
+          color: AppColors.bgMuted,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('대표자 ${_rep.text} · $_payDay 지급 · $_payMethod',
+                      style: AppTextStyles.body2
+                          .copyWith(color: AppColors.textPrimary)),
+                  const SizedBox(height: 2),
+                  Text(_addr.text,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.caption),
+                ],
+              ),
+            ),
+            TextButton(
+              onPressed: () => setState(() => _profileEditing = true),
+              child: const Text('수정'),
+            ),
+          ],
+        ),
+      );
+
+  Widget _profileForm() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('계약서에 들어갈 사업장 정보예요. 한 번 저장하면 다음부터 자동으로 채워져요.',
+              style: AppTextStyles.caption),
+          const SizedBox(height: 12),
+          _FieldLabel('대표자 이름'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _rep,
+            decoration: _inputDeco('사업자등록증의 대표자'),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 12),
+          _FieldLabel('사업장 주소'),
+          const SizedBox(height: 6),
+          TextField(
+            controller: _addr,
+            decoration: _inputDeco('사업장 주소'),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 12),
+          _FieldLabel('급여 지급일'),
+          const SizedBox(height: 6),
+          _Choices(
+            options: _payDays,
+            value: _payDay,
+            onChanged: (v) => setState(() => _payDay = v),
+          ),
+          const SizedBox(height: 12),
+          _FieldLabel('지급 방법'),
+          const SizedBox(height: 6),
+          _Choices(
+            options: const ['계좌이체', '현금'],
+            value: _payMethod,
+            onChanged: (v) => setState(() => _payMethod = v),
+          ),
+        ],
+      );
+}
+
+const _minWage = 10320; // 2026 최저시급 — 서버 lib/laborContract.js MIN_WAGE 와 같이
+
+InputDecoration _inputDeco(String hint, {String? suffix}) => InputDecoration(
+      hintText: hint,
+      suffixText: suffix,
+      filled: true,
+      fillColor: AppColors.bgMuted,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+      ),
+    );
+
+/// 고르는 칸 — 선택된 것만 파랑(선택 표시)
+class _Choices extends StatelessWidget {
+  final List<String> options;
+  final String value;
+  final ValueChanged<String> onChanged;
+  const _Choices({required this.options, required this.value, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) => Row(
+        children: [
+          for (final o in options) ...[
+            Expanded(
+              child: Material(
+                color: o == value ? AppColors.primaryLight : AppColors.bgMuted,
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                  onTap: () => onChanged(o),
+                  child: Container(
+                    height: 44,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(
+                        color: o == value ? AppColors.primary : Colors.transparent,
+                      ),
+                    ),
+                    child: Text(
+                      o,
+                      style: AppTextStyles.body2.copyWith(
+                        color: o == value ? AppColors.primary : AppColors.textSecondary,
+                        fontWeight: o == value ? FontWeight.w600 : FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            if (o != options.last) const SizedBox(width: 8),
+          ],
+        ],
+      );
 }
 
 class _FieldLabel extends StatelessWidget {

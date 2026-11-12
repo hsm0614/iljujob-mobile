@@ -380,8 +380,9 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
             workerId: applicant.workerId,
             clientId: prefs.getInt('userId') ?? 0,
             jobLocation: group.location,
-            // 시급 공고일 때만 채운다 (채팅방과 같은 규칙 — 일급이 '시급' 칸에 들어갔었다)
-            defaultWage: group.payType == '시급' ? group.pay : null,
+            defaultWage: group.pay, // 시트가 시급으로 바꾼다(일급 ÷ 근무시간)
+            payType: group.payType,
+            defaultDate: group.startDate,
             defaultStartTime: group.startTime,
             defaultEndTime: group.endTime,
             weekdays: group.weekdays,
