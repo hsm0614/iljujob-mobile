@@ -1110,6 +1110,72 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
   // ──────────────────────────────────────────
   // UI 헬퍼
   // ──────────────────────────────────────────
+  /// ChatGPT·Claude 등에 쓴 자기소개를 붙여넣으면 AI가 프로필 칸 요약만 채운다(원문은 저장 안 함, 저장은 본인이)
+  Future<void> _fillFromPersona() async {
+    final ctrl = TextEditingController();
+    final text = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.bgCard,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('AI 자기소개로 채우기', style: AppTextStyles.h2),
+            const SizedBox(height: 6),
+            const Text('ChatGPT·Claude에 써 둔 자기소개나 경력을 붙여넣으세요. 원문은 저장하지 않고, 요약만 채워요. 저장 전에 고칠 수 있어요.',
+                style: AppTextStyles.body2),
+            const SizedBox(height: 12),
+            TextField(
+              controller: ctrl,
+              minLines: 5,
+              maxLines: 10,
+              maxLength: 3000,
+              decoration: const InputDecoration(hintText: '여기에 붙여넣기 — 키보드 마이크로 1분 동안 말해도 돼요', border: OutlineInputBorder()),
+            ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(onPressed: () => Navigator.pop(ctx, ctrl.text.trim()), child: const Text('요약해서 채우기')),
+            ),
+          ],
+        ),
+      ),
+    );
+    ctrl.dispose();
+    if (text == null || text.length < 20 || !mounted) return;
+    _toast('AI가 요약하는 중이에요…');
+    try {
+      final r = await AuthenticatedHttpClient.postJson(
+        Uri.parse('$baseUrl/api/ai/worker-profile-draft'),
+        body: {
+          'text': text,
+          'works': [for (final v in _workCategoryMap.values) ...v],
+          'strengths': _strengthOptions,
+        },
+      );
+      final b = jsonDecode(r.body) as Map<String, dynamic>;
+      if (r.statusCode != 200) {
+        _toast(b['message']?.toString() ?? '요약하지 못했어요');
+        return;
+      }
+      final d = (b['draft'] as Map).cast<String, dynamic>();
+      List<String> l(String k) => (d[k] as List? ?? const []).map((e) => e.toString()).toList();
+      setState(() {
+        if ((d['introduction'] ?? '').toString().isNotEmpty) _introductionCtrl.text = d['introduction'].toString();
+        if (l('desiredWork').isNotEmpty) _selectedWorks = {..._selectedWorks, ...l('desiredWork')}.toList();
+        if (l('strengths').isNotEmpty) _selectedStrengths = {..._selectedStrengths, ...l('strengths')}.toList();
+        if (l('days').isNotEmpty) _selectedDays = {..._selectedDays, ...l('days')}.toList();
+        if (l('times').isNotEmpty) _selectedTimes = {..._selectedTimes, ...l('times')}.toList();
+      });
+      _toast('채웠어요. 확인하고 저장해 주세요');
+    } catch (_) {
+      _toast('요약하지 못했어요. 잠시 후 다시 해 주세요');
+    }
+  }
+
   void _toast(String msg) {
     if (!mounted) return;
     ScaffoldMessenger.maybeOf(context)?.showSnackBar(
@@ -1472,6 +1538,13 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
                 const Text(
                   '사장님이 가장 먼저 읽는 내용이에요. 2~3줄이면 충분해요.',
                   style: TextStyle(fontSize: AppFontSize.body2, color: kMuted),
+                ),
+                // AI 페르소나 가져오기 — ChatGPT·Claude에 쓴 소개로 칸 채우기
+                TextButton.icon(
+                  onPressed: _fillFromPersona,
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                  icon: const Icon(Icons.auto_awesome_outlined, size: 16),
+                  label: const Text('ChatGPT·Claude 자기소개로 채우기'),
                 ),
                 const SizedBox(height: 10),
                 Container(

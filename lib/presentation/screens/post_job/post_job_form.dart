@@ -626,6 +626,27 @@ class _PostJobFormState extends State<PostJobForm>
     return d;
   }
 
+  /// 주휴수당 안내 — 요일 지정 장기 공고가 주 15시간 이상이면 1주 개근 시 더 줘야 하는 돈(근로기준법 55조).
+  /// 월급(209시간)은 이미 포함이라 뺀다. 계산은 안내용 — 정확한 금액은 실제 근무 기록 기준
+  String? get _weeklyHolidayHint {
+    if (_isShortTerm || _longTermMode != '요일 지정' || _weekdays.isEmpty || _pay <= 0) return null;
+    if (_payType == '월급' || isNegotiablePayType(_payType)) return null;
+    final dayMin = _workMins() - (_breakMinutes ?? 0);
+    if (dayMin <= 0) return null;
+    final weekH = dayMin * _weekdays.length / 60.0;
+    if (weekH < 15) return null;
+    final hourly = switch (_payType) {
+      '시급' => _pay.toDouble(),
+      '일급' => _pay / (dayMin / 60.0),
+      '주급' => _pay / weekH,
+      _ => 0.0,
+    };
+    if (hourly <= 0) return null;
+    final extra = (weekH.clamp(0, 40) / 40 * 8 * hourly).round();
+    final h = weekH == weekH.roundToDouble() ? weekH.toInt().toString() : weekH.toStringAsFixed(1);
+    return '주 $h시간 근무라 주휴수당 대상이에요. 1주 개근하면 약 ${NumberFormat('#,###').format(extra)}원을 더 줘야 해요.';
+  }
+
   int _inclDays(DateTime s, DateTime e) =>
       DateTime(
         e.year,
@@ -3436,6 +3457,10 @@ class _PostJobFormState extends State<PostJobForm>
         if (_payWarning != null) ...[
           const SizedBox(height: 8),
           Text(_payWarning!, style: AppTextStyles.body2.copyWith(color: AppColors.error, fontWeight: FontWeight.w600)),
+        ],
+        if (_payWarning == null && _weeklyHolidayHint != null) ...[
+          const SizedBox(height: 8),
+          Text(_weeklyHolidayHint!, style: AppTextStyles.body2),
         ],
 
         // ── 급여 단위 되묻기 (입력 자리에서)
