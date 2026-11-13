@@ -84,6 +84,7 @@ class WorkConfirmationService {
     String? location,
     bool contract = false,
     Map<String, dynamic>? contractTerms, // 사장님이 미리보기에서 고친 업무 내용·휴게시간
+    String? identityImpUid, // 계약서를 붙이면 사장님 서명 = 본인인증(다날)
   }) async {
     final resp = await AuthenticatedHttpClient.postJson(
       Uri.parse('$baseUrl/api/work-confirmation'),
@@ -99,6 +100,7 @@ class WorkConfirmationService {
         'location': location,
         if (contract) 'contract': true,
         if (contract) ...?contractTerms,
+        if (contract && identityImpUid != null) 'identityImpUid': identityImpUid,
       },
     );
     if (resp.statusCode == 201) {

@@ -683,6 +683,13 @@ class _ProposeWorkConfirmationSheetState
     });
     try {
       await _saveProfileIfEditing();
+      // 계약서를 붙이면 사장님도 본인인증 후 서명(누가 서명했는지 계약서에 남는다)
+      String? impUid;
+      if (_withContract) {
+        if (!mounted) return;
+        impUid = await verifyIdentityForSigning(context);
+        if (impUid == null) throw Exception('본인인증을 마쳐야 근로계약서와 함께 보낼 수 있어요.');
+      }
       await WorkConfirmationService.propose(
         chatRoomId: widget.chatRoomId,
         jobId: widget.jobId,
@@ -695,6 +702,7 @@ class _ProposeWorkConfirmationSheetState
         location: _location,
         contract: _withContract,
         contractTerms: _contractTerms,
+        identityImpUid: impUid,
       );
       if (mounted) {
         widget.onPropose({'success': true});
@@ -872,7 +880,7 @@ class _ProposeWorkConfirmationSheetState
                     children: [
                       Text('근로계약서 함께 보내기', style: AppTextStyles.body1),
                       SizedBox(height: 2),
-                      Text('제안하면 사장님 전자서명, 알바생이 수락하면 서명 완료',
+                      Text('보낼 때 본인인증으로 사장님 서명, 알바생이 수락하면 서명 완료',
                           style: AppTextStyles.caption),
                     ],
                   ),
