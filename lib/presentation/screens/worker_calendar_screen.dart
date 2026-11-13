@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/picker_sheets.dart';
 import 'package:iljujob/widget/app_motion.dart';
 import 'package:flutter/services.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -2359,14 +2360,10 @@ class _SessionEditSheetState extends State<SessionEditSheet> {
   }
 
   Future<void> _pickTime({required bool isStart}) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: isStart ? _startT : _endT,
-      builder:
-          (context, child) => MediaQuery(
-            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-            child: child ?? const SizedBox.shrink(),
-          ),
+    final picked = await pickTimeSheet(
+      context,
+      initial: isStart ? _startT : _endT,
+      title: isStart ? '시작 시간' : '종료 시간',
     );
     if (picked != null && mounted) {
       setState(() => isStart ? _startT = picked : _endT = picked);

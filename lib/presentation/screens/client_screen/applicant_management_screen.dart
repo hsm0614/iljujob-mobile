@@ -617,7 +617,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.lg)),
       ),
       builder: (ctx) {
-        final bottom = MediaQuery.of(ctx).viewInsets.bottom;
+        final bottom = MediaQuery.of(ctx).viewInsets.bottom + MediaQuery.paddingOf(ctx).bottom;
         return Padding(
           padding: EdgeInsets.fromLTRB(18, 18, 18, bottom + 18),
           child: Column(

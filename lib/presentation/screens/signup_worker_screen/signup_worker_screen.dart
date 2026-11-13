@@ -511,7 +511,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
           (context) => StatefulBuilder(
             builder:
                 (context, setModalState) => Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + MediaQuery.paddingOf(context).bottom),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [

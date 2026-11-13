@@ -15,7 +15,6 @@ import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/presentation/screens/post_job/job_preview_detail_screen.dart';
 import 'package:iljujob/presentation/screens/policy_detail_screen.dart';
 import 'package:iljujob/presentation/screens/post_job/SelectPreviousJobScreen.dart';
-import 'package:time_picker_spinner/time_picker_spinner.dart';
 import 'package:iljujob/core/suspension.dart';
 import 'package:iljujob/core/suspension_guard.dart';
 import '../../../data/services/ai_job_description_service.dart';
@@ -3223,31 +3222,10 @@ class _PostJobFormState extends State<PostJobForm>
                                 const SizedBox(height: 8),
                                 SizedBox(
                                   height: each,
-                                  child: TimePickerSpinner(
+                                  child: KoTimeWheel(
                                     key: const ValueKey('s'),
-                                    is24HourMode: false,
-                                    minutesInterval: 10,
-                                    // #9CA3AF는 흰 배경 2.54:1 — AA 미달.
-                                    // 스크롤로 골라야 하는 숫자라 읽혀야 한다.
-                                    normalTextStyle: const TextStyle(
-                                      fontSize: AppFontSize.buttonLg,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                    highlightedTextStyle: const TextStyle(
-                                      fontSize: AppFontSize.titleLg,
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    spacing: 40,
-                                    itemHeight: 40,
-                                    isForce2Digits: true,
-                                    time: DateTime(
-                                      2000,
-                                      1,
-                                      1,
-                                      s.hour,
-                                      s.minute,
-                                    ),
+                                    hour: s.hour,
+                                    minute: s.minute,
                                     onTimeChange:
                                         (dt) => set(
                                           () =>
@@ -3270,31 +3248,10 @@ class _PostJobFormState extends State<PostJobForm>
                                 const SizedBox(height: 8),
                                 SizedBox(
                                   height: each,
-                                  child: TimePickerSpinner(
+                                  child: KoTimeWheel(
                                     key: const ValueKey('e'),
-                                    is24HourMode: false,
-                                    minutesInterval: 10,
-                                    // #9CA3AF는 흰 배경 2.54:1 — AA 미달.
-                                    // 스크롤로 골라야 하는 숫자라 읽혀야 한다.
-                                    normalTextStyle: const TextStyle(
-                                      fontSize: AppFontSize.buttonLg,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                    highlightedTextStyle: const TextStyle(
-                                      fontSize: AppFontSize.titleLg,
-                                      color: AppColors.primary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                    spacing: 40,
-                                    itemHeight: 40,
-                                    isForce2Digits: true,
-                                    time: DateTime(
-                                      2000,
-                                      1,
-                                      1,
-                                      e.hour,
-                                      e.minute,
-                                    ),
+                                    hour: e.hour,
+                                    minute: e.minute,
                                     onTimeChange:
                                         (dt) => set(
                                           () =>

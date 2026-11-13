@@ -5,7 +5,6 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:kpostal/kpostal.dart';
 import 'package:intl/intl.dart';
-import 'package:flutter_time_picker_spinner/flutter_time_picker_spinner.dart';
 
 import 'package:iljujob/data/services/job_service.dart';
 import 'package:iljujob/utils/pay_display.dart';
@@ -459,29 +458,10 @@ class _EditJobScreenState extends State<EditJobScreen> {
                               const SizedBox(height: 8),
                               SizedBox(
                                 height: each,
-                                child: TimePickerSpinner(
+                                child: KoTimeWheel(
                                   key: const ValueKey('startSpinner'),
-                                  is24HourMode: false,
-                                  minutesInterval: 10,
-                                  normalTextStyle: const TextStyle(
-                                    fontSize: AppFontSize.buttonLg,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                  highlightedTextStyle: const TextStyle(
-                                    fontSize: AppFontSize.titleLg,
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  spacing: 40,
-                                  itemHeight: 40,
-                                  isForce2Digits: true,
-                                  time: DateTime(
-                                    2000,
-                                    1,
-                                    1,
-                                    selectedStart.hour,
-                                    selectedStart.minute,
-                                  ),
+                                  hour: selectedStart.hour,
+                                  minute: selectedStart.minute,
                                   onTimeChange:
                                       (dt) => applyStart(
                                         TimeOfDay.fromDateTime(dt),
@@ -496,29 +476,10 @@ class _EditJobScreenState extends State<EditJobScreen> {
                               const SizedBox(height: 8),
                               SizedBox(
                                 height: each,
-                                child: TimePickerSpinner(
+                                child: KoTimeWheel(
                                   key: const ValueKey('endSpinner'),
-                                  is24HourMode: false,
-                                  minutesInterval: 10,
-                                  normalTextStyle: const TextStyle(
-                                    fontSize: AppFontSize.buttonLg,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                  highlightedTextStyle: const TextStyle(
-                                    fontSize: AppFontSize.titleLg,
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  spacing: 40,
-                                  itemHeight: 40,
-                                  isForce2Digits: true,
-                                  time: DateTime(
-                                    2000,
-                                    1,
-                                    1,
-                                    selectedEnd.hour,
-                                    selectedEnd.minute,
-                                  ),
+                                  hour: selectedEnd.hour,
+                                  minute: selectedEnd.minute,
                                   onTimeChange:
                                       (dt) =>
                                           applyEnd(TimeOfDay.fromDateTime(dt)),

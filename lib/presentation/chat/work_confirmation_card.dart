@@ -1,6 +1,7 @@
 import 'dart:convert';
 // lib/presentation/chat/work_confirmation_card.dart
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/picker_sheets.dart';
 import 'package:iljujob/utils/chat_stage.dart';
 import 'package:iljujob/utils/apply_stage.dart';
 import 'package:intl/intl.dart';
@@ -752,10 +753,11 @@ class _ProposeWorkConfirmationSheetState
         '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
     Future<void> pickTime(bool start) async {
-      final t = await showTimePicker(
-        context: context,
-        initialTime: (start ? _startTime : _endTime) ??
+      final t = await pickTimeSheet(
+        context,
+        initial: (start ? _startTime : _endTime) ??
             TimeOfDay(hour: start ? 9 : 18, minute: 0),
+        title: start ? '시작 시간' : '종료 시간',
       );
       if (t != null) setState(() => start ? _startTime = t : _endTime = t);
     }
@@ -800,12 +802,12 @@ class _ProposeWorkConfirmationSheetState
               icon: Icons.calendar_today_rounded,
               onTap: () async {
                 final now = DateTime.now();
-                final d = await showDatePicker(
-                  context: context,
-                  initialDate: _date ?? now.add(const Duration(days: 1)),
+                final d = await pickDateSheet(
+                  context,
+                  initial: _date ?? now.add(const Duration(days: 1)),
                   firstDate: DateTime(now.year, now.month, now.day),
                   lastDate: now.add(const Duration(days: 60)),
-                  locale: const Locale('ko'),
+                  title: '근무 날짜',
                 );
                 if (d != null) setState(() => _date = d);
               },

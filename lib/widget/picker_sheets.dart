@@ -7,10 +7,10 @@
 //  전부 이 파일의 바텀시트로 통일한다.
 // ════════════════════════════════════════════════════════
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'package:time_picker_spinner/time_picker_spinner.dart';
 
 const _blue = AppColors.primary;
 const _border = AppColors.border;
@@ -80,8 +80,7 @@ Widget _confirmButton(BuildContext ctx, {required VoidCallback? onPressed}) =>
             disabledBackgroundColor: _border,
             disabledForegroundColor: AppColors.textSecondary,
           ),
-          child: const Text(
-            '선택 완료'),
+          child: const Text('선택 완료'),
         ),
       ),
     );
@@ -116,6 +115,11 @@ Future<DateTime?> pickDateSheet(
                   const SizedBox(height: 4),
                   TableCalendar(
                     locale: 'ko_KR',
+                    // 토요일까지 빨강이던 것 — 한국 달력처럼 일요일만
+                    weekendDays: const [DateTime.sunday],
+                    daysOfWeekStyle: const DaysOfWeekStyle(
+                      weekendStyle: TextStyle(color: AppColors.urgentCall),
+                    ),
                     focusedDay: focused,
                     firstDay: firstDate,
                     lastDay: lastDate,
@@ -128,7 +132,7 @@ Future<DateTime?> pickDateSheet(
                     onPageChanged: (f) => set(() => focused = f),
                     calendarStyle: const CalendarStyle(
                       todayDecoration: BoxDecoration(
-                        color: Color(0xFFCCDEFF),
+                        color: AppColors.primaryLight,
                         shape: BoxShape.circle,
                       ),
                       todayTextStyle: TextStyle(
@@ -206,31 +210,54 @@ Future<TimeOfDay?> pickTimeSheet(
                   const SizedBox(height: 8),
                   SizedBox(
                     height: 200,
-                    child: TimePickerSpinner(
-                      is24HourMode: false,
-                      minutesInterval: 10,
-                      normalTextStyle: const TextStyle(
-                        fontSize: AppFontSize.buttonLg,
-                        color: AppColors.textSecondary,
-                      ),
-                      highlightedTextStyle: const TextStyle(
-                        fontSize: AppFontSize.titleLg,
-                        color: _blue,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      spacing: 40,
-                      itemHeight: 40,
-                      isForce2Digits: true,
-                      time: DateTime(2000, 1, 1, picked.hour, picked.minute),
+                    child: KoTimeWheel(
+                      hour: picked.hour,
+                      minute: picked.minute,
                       onTimeChange:
                           (dt) => set(
                             () => picked = align10(TimeOfDay.fromDateTime(dt)),
                           ),
                     ),
                   ),
-                  _confirmButton(ctx, onPressed: () => Navigator.pop(ctx, picked)),
+                  _confirmButton(
+                    ctx,
+                    onPressed: () => Navigator.pop(ctx, picked),
+                  ),
                 ],
               ),
         ),
+  );
+}
+
+/// 10분 단위 시간 바퀴. 오전/오후를 한국어로 보여준다
+/// (time_picker_spinner는 'AM/PM' 영어가 패키지에 고정돼 있었다).
+class KoTimeWheel extends StatelessWidget {
+  final int hour;
+  final int minute;
+  final ValueChanged<DateTime> onTimeChange;
+  const KoTimeWheel({
+    super.key,
+    required this.hour,
+    required this.minute,
+    required this.onTimeChange,
+  });
+
+  @override
+  Widget build(BuildContext context) => CupertinoTheme(
+    data: const CupertinoThemeData(
+      textTheme: CupertinoTextThemeData(
+        dateTimePickerTextStyle: TextStyle(
+          fontSize: AppFontSize.buttonLg,
+          color: AppColors.textPrimary,
+        ),
+      ),
+    ),
+    child: CupertinoDatePicker(
+      mode: CupertinoDatePickerMode.time,
+      minuteInterval: 10,
+      // 간격에 안 맞는 초기값(09:15 등)이면 CupertinoDatePicker가 assert로 죽는다
+      initialDateTime: DateTime(2000, 1, 1, hour, (minute ~/ 10) * 10),
+      onDateTimeChanged: onTimeChange,
+    ),
   );
 }

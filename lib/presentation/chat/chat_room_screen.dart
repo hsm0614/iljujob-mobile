@@ -725,7 +725,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
               color: Colors.white,
               borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 36),
+            padding: EdgeInsets.fromLTRB(24, 16, 24, 36 + MediaQuery.paddingOf(context).bottom),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,

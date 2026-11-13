@@ -74,7 +74,7 @@ class _ClientBusinessInfoScreenState extends State<ClientBusinessInfoScreen> {
                     20,
                     24,
                     20,
-                    MediaQuery.of(ctx).viewInsets.bottom + 36,
+                    MediaQuery.of(ctx).viewInsets.bottom + MediaQuery.paddingOf(ctx).bottom + 36,
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
