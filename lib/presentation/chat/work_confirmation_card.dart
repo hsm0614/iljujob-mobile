@@ -10,6 +10,7 @@ import '../../data/services/work_confirmation_service.dart';
 import '../../data/services/contract_service.dart';
 import '../contract/contract_sheets.dart';
 import '../agent/store_qa_sheet.dart';
+import '../../utils/condition_guard.dart';
 
 // ── 채팅 내 출근 확정 카드 ──────────────────────────────────
 class WorkConfirmationCard extends StatelessWidget {
@@ -197,6 +198,16 @@ class WorkConfirmationCard extends StatelessWidget {
                 ],
               ),
             ],
+
+            // 알바생 조건 지킴이 — 수락 전에 최저시급·공고 조건과 비교
+            if (isProposed && userType == 'worker' && !isPast)
+              _ConditionGuard(checks: checkConditions(
+                hourly: confirm.hourlyWage,
+                start: confirm.startTime.substring(0, 5),
+                end: confirm.endTime.substring(0, 5),
+                jobPay: confirm.jobPay,
+                jobPayType: confirm.jobPayType,
+              )),
 
             // 액션 버튼 (구직자가 proposed 상태일 때만)
             if (isProposed && userType == 'worker' && !isPast) ...[
@@ -511,9 +522,12 @@ class _ProposeWorkConfirmationSheetState
     if (pay > 0 && type == '시급') {
       _wageCtrl.text = '$pay';
     } else if (pay > 0 && type == '일급' && _estimatedHours != null) {
-      final hourly = ((pay / _estimatedHours!) / 10).ceil() * 10;
+      // 계약서는 휴게를 뺀 시간으로 급여를 계산한다 → 같은 기준으로 나눠야 일급만큼 받는다
+      final span = (_estimatedHours! * 60).round();
+      final workH = (span - legalBreakMinutes(span)) / 60.0;
+      final hourly = ((pay / workH) / 10).ceil() * 10;
       _wageCtrl.text = '$hourly';
-      _wageNote = '일급 ${NumberFormat('#,###').format(pay)}원 ÷ ${_fmtHours(_estimatedHours!)}시간으로 계산했어요';
+      _wageNote = '일급 ${NumberFormat('#,###').format(pay)}원 ÷ 실근로 ${_fmtHours(workH)}시간(휴게 ${legalBreakMinutes(span)}분 뺌)으로 계산했어요';
     }
     _loadProfile();
   }
@@ -611,6 +625,10 @@ class _ProposeWorkConfirmationSheetState
     if (diff <= 0) diff += 24 * 60;
     return diff / 60.0;
   }
+
+  // 계약서와 같은 기준: 고른 휴게시간, 없으면 법정 최소
+  int _breakFor(double spanH) => _breakMinutes ?? legalBreakMinutes((spanH * 60).round());
+  double _workHours(double spanH) => ((spanH * 60).round() - _breakFor(spanH)) / 60.0;
 
   static String _fmtHours(double h) =>
       h == h.roundToDouble() ? h.toInt().toString() : h.toStringAsFixed(1);
@@ -859,7 +877,7 @@ class _ProposeWorkConfirmationSheetState
             if (hours != null && wage != null && wage > 0) ...[
               const SizedBox(height: 2),
               Text(
-                '${_fmtHours(hours)}시간 · 총 ${NumberFormat('#,###').format((hours * wage).round())}원',
+                '실근로 ${_fmtHours(_workHours(hours))}시간(휴게 ${_breakFor(hours)}분) · 총 ${NumberFormat('#,###').format((_workHours(hours) * wage).round())}원',
                 style: AppTextStyles.body2.copyWith(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w600,
@@ -1170,6 +1188,45 @@ class _Choices extends StatelessWidget {
           ],
         ],
       );
+}
+
+class _ConditionGuard extends StatelessWidget {
+  final List<(bool, String)> checks;
+  const _ConditionGuard({required this.checks});
+
+  @override
+  Widget build(BuildContext context) {
+    if (checks.isEmpty) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      decoration: BoxDecoration(color: AppColors.bgMuted, borderRadius: BorderRadius.circular(AppRadius.md)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('조건 확인', style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 4),
+          for (final (ok, text) in checks)
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(ok ? Icons.check_circle_outline_rounded : Icons.error_outline_rounded,
+                      size: 16, color: ok ? AppColors.textSecondary : AppColors.error),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(text,
+                        style: AppTextStyles.body2.copyWith(color: ok ? AppColors.textSecondary : AppColors.error)),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
 
 class _ContractNotice extends StatelessWidget {

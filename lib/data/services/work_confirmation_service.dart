@@ -18,6 +18,8 @@ class WorkConfirmation {
   final String? companyName;
   /// 근로계약서: null(없음) · client_signed(알바생 서명 전) · signed · void
   final String? contractStatus;
+  final int? jobPay; // 공고 급여 — 알바생 조건 지킴이가 비교
+  final String? jobPayType;
 
   /// 카드가 제안된 시각(UTC). 서버는 proposed_at 을 UTC_TIMESTAMP() 로 쓰고
   /// wc.* 로 그대로 내려준다. 이걸 안 읽으면 카드를 대화 흐름에 끼워넣을
@@ -40,6 +42,8 @@ class WorkConfirmation {
     this.companyName,
     this.proposedAt,
     this.contractStatus,
+    this.jobPay,
+    this.jobPayType,
   });
 
   factory WorkConfirmation.fromJson(Map<String, dynamic> j) => WorkConfirmation(
@@ -58,6 +62,8 @@ class WorkConfirmation {
     companyName: j['company_name']?.toString(),
     proposedAt: _parseUtc(j['proposed_at']),
     contractStatus: j['contract_status']?.toString(),
+    jobPay: int.tryParse('${j['job_pay'] ?? ''}'.replaceAll(RegExp(r'[^0-9]'), '')),
+    jobPayType: j['job_pay_type']?.toString(),
   );
 
   static DateTime? _parseUtc(dynamic v) {
