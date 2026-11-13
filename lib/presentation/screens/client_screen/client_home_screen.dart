@@ -1196,22 +1196,39 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             ),
           ),
         );
-        Widget line(String label, String value, {bool locked = false}) => InkWell(
+        // 메뉴 한 줄 — 아이콘 + 이름 + 설명, 오른쪽은 '구독' 표시 또는 화살표
+        Widget line(IconData icon, String label, String value, {String? sub, bool locked = false}) => InkWell(
           onTap: () => Navigator.pop(ctx, value),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             child: Row(
               children: [
-                Expanded(child: Text(label, style: AppTextStyles.body1)),
+                Icon(icon, size: 20, color: AppColors.textSecondary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(label, style: AppTextStyles.body1),
+                      if (sub != null) Text(sub, style: AppTextStyles.caption),
+                    ],
+                  ),
+                ),
                 if (locked)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(color: AppColors.bgMuted, borderRadius: BorderRadius.circular(AppRadius.full)),
                     child: const Text('구독', style: AppTextStyles.caption),
-                  ),
+                  )
+                else
+                  const Icon(Icons.chevron_right_rounded, size: 20, color: AppColors.textTertiary),
               ],
             ),
           ),
+        );
+        Widget section(String title) => Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+          child: Text(title, style: AppTextStyles.caption.copyWith(fontWeight: FontWeight.w700)),
         );
 
         return SafeArea(
@@ -1246,6 +1263,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         tile(Icons.edit_outlined, '수정', 'edit')
                       else
                         tile(Icons.description_outlined, '공고 보기', 'detail'),
+                      const SizedBox(width: 8),
+                      tile(Icons.replay_rounded, '단골 부르기', 'regulars'),
                     ],
                   ),
                 ),
@@ -1254,12 +1273,18 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                     child: AppPrimaryButton(label: primary.$1, onPressed: () => Navigator.pop(ctx, primary.$2)),
                   ),
-                const SizedBox(height: 12),
-                const Divider(height: 1, color: AppColors.borderSub),
-                line('공고 인사이트', 'insight', locked: true),
-                if (!isClosed) line('맞춤 인재 추천', 'recommend', locked: true),
-                line('임금 리포트 · 같은 업종 급여 비교', 'wage'),
-                if (job.isPaid && !isClosed) line(job.aiReplyOn ? 'AI 응대 끄기' : 'AI 응대 켜기', 'ai-reply'),
+                const SizedBox(height: 8),
+                // 알바일주 주력 = AI 채용 — 매니저가 대신 하는 일을 한곳에
+                section('AI 일주 매니저'),
+                if (!isClosed)
+                  line(Icons.auto_fix_high_outlined, '공고 살리기', 'rescue', sub: '지원이 안 오는 이유를 찾아 고친 안을 보여줘요'),
+                if (job.isPaid && !isClosed)
+                  line(Icons.smart_toy_outlined, job.aiReplyOn ? 'AI 응대 끄기' : 'AI 응대 켜기', 'ai-reply', sub: '지원자에게 가능 시간·경험을 대신 물어요'),
+                if (!isClosed) line(Icons.person_search_outlined, '맞춤 인재 추천', 'recommend', locked: true),
+                section('분석'),
+                line(Icons.insights_outlined, '공고 인사이트', 'insight', locked: true),
+                line(Icons.payments_outlined, '임금 리포트', 'wage', sub: '같은 업종·지역 급여 비교'),
+                const SizedBox(height: 8),
                 const Divider(height: 1, color: AppColors.borderSub),
                 InkWell(
                   onTap: () => Navigator.pop(ctx, 'delete'),
@@ -1283,6 +1308,11 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         break;
       case 'detail':
         Navigator.pushNamed(context, '/job-detail', arguments: job);
+        break;
+      case 'regulars':
+      case 'rescue':
+        final jid = int.tryParse(job.id.toString());
+        if (jid != null) Navigator.pushNamed(context, v == 'regulars' ? '/regulars' : '/job-rescue', arguments: jid);
         break;
       case 'applicants':
         FirebaseAnalytics.instance.logEvent(name: 'client_applicants_tap');
