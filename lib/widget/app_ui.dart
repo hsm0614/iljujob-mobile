@@ -923,8 +923,10 @@ class AppProfileHeader extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: AppTextStyles.h3,
                   ),
-                  const SizedBox(height: 2),
-                  Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTextStyles.body2),
+                  if (subtitle.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTextStyles.body2),
+                  ],
                 ],
               ),
             ),

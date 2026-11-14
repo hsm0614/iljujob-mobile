@@ -35,7 +35,7 @@ class _WorkerMyPageScreenState extends State<WorkerMyPageScreen> {
   // ===== Profile State =====
   bool _loading = true;
   String _name = '이름 미등록';
-  String _phone = '전화번호';
+  String _phone = ''; // 없으면 비운다 — '전화번호'라는 글자가 값처럼 보였다(11-15)
   String _imagePath = '';
 
   // ===== Settlement Summary =====
@@ -801,9 +801,9 @@ class _TrustRow extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            next == null
+                            keepWords(next == null
                                 ? '최고 등급이에요. 사장님 후보 목록 맨 위에 보여요'
-                                : '$next등급까지 ${to - score}점',
+                                : '$next등급까지 ${to - score}점'),
                             style: AppTextStyles.caption.copyWith(
                               color: AppColors.textSecondary,
                             ),
