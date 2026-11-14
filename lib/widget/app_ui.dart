@@ -284,16 +284,10 @@ class AppBottomNavItem extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: EdgeInsets.all(isActive ? 6 : 0),
-                decoration: BoxDecoration(
-                  color:
-                      isActive
-                          ? AppColors.primary.withValues(alpha: 0.10)
-                          : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                ),
+              // 선택 표시는 채운 아이콘 + 파란 글씨만. 예전 연파랑 알약은 선택될 때만 여백이 생겨
+              // 라벨이 4px 내려앉았다(S22 실측 11-15)
+              Padding(
+                padding: const EdgeInsets.all(4),
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
@@ -315,7 +309,8 @@ class AppBottomNavItem extends StatelessWidget {
                             vertical: 1,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.badgeNew,
+                            // 안 읽음 = 주황(시간 신호) — 채팅 목록 뱃지와 같은 색
+                            color: AppColors.badgeUrgent,
                             borderRadius: BorderRadius.circular(AppRadius.full),
                           ),
                           child: Text(

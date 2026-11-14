@@ -1686,26 +1686,32 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             ? (job.expiresAt != null ? '${_toLocal(job.expiresAt).month}월 ${_toLocal(job.expiresAt).day}일 마감' : '마감')
             : [_liveStatus(job), if (pinned) '상단 고정 ${pinnedRemainText(job)}'].join(' · ');
 
+    // 숫자 장부 한 줄 — 회색 상자 셋은 '통계 카드 템플릿'처럼 보였다. 누를 수 있는 칸만 파랑(CTA Blue)
     Widget cell(String label, int n, VoidCallback? onTap, {bool accent = false}) => Expanded(
-      child: Material(
-        color: accent ? AppColors.primaryLight : AppColors.bgSoft,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Column(
-              children: [
-                Text(label, style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.meta, color: accent ? AppColors.primaryDark : null)),
-                const SizedBox(height: 2),
-                Text('$n', style: AppTextStyles.h3.copyWith(fontSize: AppFontSize.titleLg, color: accent ? AppColors.primaryDark : null)),
-              ],
-            ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(label, style: AppTextStyles.body2.copyWith(color: accent ? AppColors.primaryDark : null)),
+              const SizedBox(width: 6),
+              Text(
+                '$n',
+                style: AppTextStyles.jobPayHero.copyWith(
+                  color: accent ? AppColors.primary : n == 0 ? AppColors.textTertiary : AppColors.textPrimary,
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
+    Widget rule() => Container(width: 1, height: 16, color: AppColors.border);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
@@ -1750,33 +1756,38 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         ),
                       ),
                       const SizedBox(height: 4),
-                      // 시안처럼 한 줄 — 날짜가 길면 날짜만 줄이고 급여는 끝까지 보인다 (갤럭시 큰 글씨에서 두 줄로 꺾였다)
-                      Builder(builder: (_) {
-                        final st = AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: AppColors.textBody);
-                        final pay = formatJobPay(job.pay, job.payType, includeType: true);
-                        return Row(
-                          children: [
-                            if (when.isNotEmpty) ...[
-                              Flexible(child: Text(when, maxLines: 1, overflow: TextOverflow.ellipsis, style: st)),
-                              Text(' · ', style: st),
-                            ],
-                            Text(pay, maxLines: 1, style: st),
-                          ],
-                        );
-                      }),
-                      const SizedBox(height: 6),
-                      Text(status, style: AppTextStyles.body2),
-                      const SizedBox(height: 14),
+                      // 날짜·시간은 한 줄에 우겨넣지 않는다 — 줄임표가 근무 시간을 통째로 가렸다(S22 실측 11-15)
+                      if (when.isNotEmpty)
+                        Text(
+                          when,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: AppColors.textBody),
+                        ),
+                      const SizedBox(height: 2),
+                      Text.rich(
+                        TextSpan(children: [
+                          TextSpan(
+                            text: formatJobPay(job.pay, job.payType, includeType: true),
+                            style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                          ),
+                          TextSpan(text: '  ·  $status'),
+                        ]),
+                        style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button),
+                      ),
+                      const SizedBox(height: 12),
+                      const Divider(height: 1, thickness: 1, color: AppColors.borderSub),
                       Row(
                         children: [
                           cell('지원', job.applicantCount, job.applicantCount > 0 ? openApplicants : null),
-                          const SizedBox(width: 6),
+                          rule(),
                           cell('답장 대기', job.unansweredCount, job.unansweredCount > 0 ? openApplicants : null,
                               accent: job.unansweredCount > 0),
-                          const SizedBox(width: 6),
+                          rule(),
                           cell('조회', job.viewCount, null),
                         ],
                       ),
+                      const Divider(height: 1, thickness: 1, color: AppColors.borderSub),
                       const SizedBox(height: 14),
                       isClosed
                           // 마감 공고는 한 단 낮은 버튼 — 모집 중 공고의 버튼이 먼저 보이게

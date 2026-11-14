@@ -476,6 +476,14 @@ class _WorkerMapViewState extends State<WorkerMapView> {
   }
 
   // ── 직방 스타일: toScreenPoint 우선, 실패 시 fromScreenPoint 보간 ────────
+  // 안드로이드 SDK는 물리 픽셀을 돌려준다(S22: 지도 가운데가 540,889 / 화면 360×593) — 그대로 쓰면
+  // 공고 핀·알바생 점이 전부 화면 밖에 그려졌다(11-15 실측). iOS는 포인트 단위라 그대로 쓴다.
+  Future<Offset?> _toScreen(km.LatLng pos) async {
+    final p = await _ctrl!.toScreenPoint(position: pos);
+    if (p == null || !Platform.isAndroid || !mounted) return p;
+    return p / MediaQuery.devicePixelRatioOf(context);
+  }
+
   Future<void> _updateCardPositions() async {
     if (_ctrl == null || !mounted) {
       debugPrint('[MAP][CARD] 스킵 — ctrl=${_ctrl != null}, mounted=$mounted');
@@ -499,7 +507,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
 
     for (final j in jobsWithLoc) {
       try {
-        final p = await _ctrl!.toScreenPoint(position: j.pos);
+        final p = await _toScreen(j.pos);
         if (p != null) {
           newJobPos[j.id] = p;
           nativeOk++;
@@ -513,7 +521,7 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     }
     for (final w in workersWithLoc) {
       try {
-        final p = await _ctrl!.toScreenPoint(position: w.pos);
+        final p = await _toScreen(w.pos);
         if (p != null) newWorkerPos[w.id] = p;
       } catch (_) {}
     }
@@ -663,10 +671,11 @@ class _WorkerMapViewState extends State<WorkerMapView> {
     final workersWithLoc = workers.where((w) => w.hasLocation).toList();
     if (_ctrl != null && workersWithLoc.isNotEmpty) {
       if (mounted) setState(() => _mapMoving = true);
-      final pts = [job.pos, ...workersWithLoc.map((w) => w.pos)];
-      debugPrint('[MAP][WORKER] fitPoints ${pts.length}개');
+      // fitPoints는 5km 안 점들인데도 한반도 전체로 줌아웃했다(S22 실측 11-15, kakao_maps_flutter 0.1.1).
+      // 서버가 반경 5km만 주니 공고 중심 + 5km가 들어오는 고정 줌으로 충분하다.
+      debugPrint('[MAP][WORKER] 공고 중심 5km 줌 (알바생 ${workersWithLoc.length}명)');
       await _ctrl!.moveCamera(
-        cameraUpdate: km.CameraUpdate(fitPoints: pts, padding: 80),
+        cameraUpdate: km.CameraUpdate(position: job.pos, zoomLevel: 12, type: 0),
         animation: const km.CameraAnimation(
           duration: 500,
           autoElevation: true,

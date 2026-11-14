@@ -343,7 +343,7 @@ class _ClientActions extends StatelessWidget {
     } else if (!isActive) {
       line = '지금은 출근 확정을 제안할 수 없어요';
     } else {
-      line = '조건이 맞으면 출근 확정을 제안해 보세요';
+      line = '조건이 맞으면 제안해 보세요'; // 옆 버튼이 '출근 확정 제안' — 길게 쓰면 '보/세요'로 꺾였다
       label = onProposeWorkConfirmation != null ? '출근 확정 제안' : '채용 확정';
       onTap = onProposeWorkConfirmation ?? onConfirmHire;
     }

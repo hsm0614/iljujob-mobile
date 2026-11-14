@@ -564,7 +564,9 @@ class _BotMessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final m = _contractRef.firstMatch(message);
     final contractId = m == null ? null : int.tryParse(m.group(1)!);
-    final text = m == null ? message : message.replaceFirst(m.group(0)!, '').trim();
+    final body = m == null ? message : message.replaceFirst(m.group(0)!, '').trim();
+    // 머리글에 '일주봇'이 이미 있다 — 서버 문구 끝의 '— 일주봇 🤖' 서명은 한 번 더 말하는 셈이라 뗀다(지난 메시지 포함)
+    final text = body.replaceFirst(RegExp(r'\s*—\s*일주봇\s*🤖?\s*$'), '');
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
       child: Center(
@@ -576,8 +578,10 @@ class _BotMessageBubble extends StatelessWidget {
             color: AppColors.bgMuted,
             borderRadius: BorderRadius.circular(AppRadius.lg),
           ),
+          // 안내문은 '• 시간: …' 목록이 많다 — 가운데 정렬이면 글머리표가 줄마다 들쭉날쭉해진다(11-15)
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Row(
                 mainAxisSize: MainAxisSize.min,
@@ -601,7 +605,6 @@ class _BotMessageBubble extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 text,
-                textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: AppFontSize.body2,
                   color: AppColors.textSecondary,

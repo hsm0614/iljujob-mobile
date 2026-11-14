@@ -246,7 +246,9 @@ class ChatRoomController extends ChangeNotifier {
     // 나머지는 병렬로 (await 없이)
     unawaited(checkIfReviewed());
     unawaited(loadJobInfo());
-    unawaited(refreshLocationAndDistance());
+    // 들어오자마자 OS 위치 팝업을 띄우지 않는다 — 사장님 채팅방에도 이유 없이 떴다(S22 11-15).
+    // 알바생이 이미 허용했을 때만 조용히 거리를 잰다. 권한 요청은 [도착했어요](checkinNow)에서.
+    if (!isClient) unawaited(refreshLocationAndDistance(prompt: false));
     unawaited(fetchWorkState());
     unawaited(fetchWorkConfirmations());
     unawaited(fetchCheckinStatus());
@@ -1097,8 +1099,12 @@ class ChatRoomController extends ChangeNotifier {
     } catch (_) {}
   }
 
-  Future<void> refreshLocationAndDistance() async {
+  Future<void> refreshLocationAndDistance({bool prompt = true}) async {
     if (_disposed) return;
+    if (!prompt) {
+      final p = await Geolocator.checkPermission();
+      if (p != LocationPermission.always && p != LocationPermission.whileInUse) return;
+    }
     if (geoLoading) return;
     geoLoading = true;
     geoError = null;

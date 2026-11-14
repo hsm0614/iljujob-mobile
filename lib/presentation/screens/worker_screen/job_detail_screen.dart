@@ -1502,24 +1502,16 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
             Text(line, style: AppTextStyles.body2.copyWith(color: AppColors.textBody)),
           ],
           const SizedBox(height: 18),
-          // 핵심 네 칸 (시안) — 줄 목록보다 한눈에 비교된다
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: 8,
-            crossAxisSpacing: 8,
-            childAspectRatio: 2.4,
-            children: [
-              _factCell('근무일', _getWorkingPeriodText(job)),
-              _factCell('시간', hours ?? '협의'),
-              _factCell('거리', _distanceOrLocationText()),
-              _factCell(
-                '모집',
-                job.headcount != null ? '${job.headcount}명' : '인원 협의',
-                sub: applicantCount > 0 ? '지원 $applicantCount명' : '첫 지원 가능',
-              ),
-            ],
+          // 핵심 네 줄 — 작업 지시서처럼 라벨·값 장부. 2×2 회색 칸은 값이 '송도…'로 잘렸다(S22 실측 11-15)
+          const Divider(height: 1, thickness: 1, color: AppColors.border),
+          _factCell('근무일', _getWorkingPeriodText(job)),
+          _factCell('시간', hours ?? '협의'),
+          _factCell('위치', _distanceOrLocationText()),
+          _factCell(
+            '모집',
+            job.headcount != null ? '${job.headcount}명' : '인원 협의',
+            sub: applicantCount > 0 ? '지원 $applicantCount명' : '첫 지원 가능',
+            last: true,
           ),
           if (_replyTimeText() case final t? when !_isOwner) ...[
             const SizedBox(height: 12),
@@ -1562,24 +1554,24 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     );
   }
 
-  Widget _factCell(String label, String value, {String? sub}) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-    decoration: BoxDecoration(color: AppColors.bgSoft, borderRadius: BorderRadius.circular(AppRadius.md)),
-    child: Column(
+  Widget _factCell(String label, String value, {String? sub, bool last = false}) => Container(
+    padding: const EdgeInsets.symmetric(vertical: 11),
+    decoration: BoxDecoration(
+      border: last ? null : const Border(bottom: BorderSide(color: AppColors.borderSub)),
+    ),
+    child: Row(
       crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(label, style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.meta)),
-        const SizedBox(height: 2),
-        Text.rich(
-          TextSpan(children: [
-            TextSpan(text: value),
-            if (sub != null)
-              TextSpan(text: ' · $sub', style: const TextStyle(fontWeight: FontWeight.w500, color: AppColors.textSecondary)),
-          ]),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700),
+        SizedBox(width: 56, child: Text(label, style: AppTextStyles.body2.copyWith(height: 1.55))),
+        Expanded(
+          child: Text.rich(
+            TextSpan(children: [
+              TextSpan(text: value),
+              if (sub != null)
+                TextSpan(text: '  ·  $sub', style: const TextStyle(fontWeight: FontWeight.w400, color: AppColors.textSecondary)),
+            ]),
+            style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600, height: 1.4),
+          ),
         ),
       ],
     ),

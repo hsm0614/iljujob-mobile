@@ -108,7 +108,7 @@ class _PostChooseScreenState extends State<PostChooseScreen> {
               icon: Icons.description_outlined,
               title: '공고 올리기',
               body: '하루·단기 알바를 직접 구해요. 지원자와 채팅으로 바로 이야기해요.',
-              price: '무료 월 3회 · 즉시 게시 8,900원부터',
+              price: '무료 월 3회\n즉시 게시 8,900원부터', // 한 줄이면 '원부/터'로 꺾였다
               onTap: () => setState(() => _promotion = false),
             ),
             const SizedBox(height: 10),
@@ -117,7 +117,7 @@ class _PostChooseScreenState extends State<PostChooseScreen> {
               icon: Icons.campaign_outlined,
               title: '채용 홍보',
               body: '내 공고를 알바생 홈에 30일 동안 크게 보여요. 배너나 광고 카드로 올라가요.',
-              price: '검수 후 게시 · 30일 150,000원',
+              price: '검수 후 게시\n30일 150,000원',
               onTap: () => setState(() => _promotion = true),
             ),
           ],
