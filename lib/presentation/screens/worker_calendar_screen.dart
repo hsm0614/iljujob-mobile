@@ -999,6 +999,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
       child: Container(
+        width: double.infinity, // 내용 폭으로 줄어 가운데 좁게 떠 있었다(11-15)
         padding: const EdgeInsets.all(14),
         decoration: _cardDecoration(),
         // 같은 크기 세 칸 → 이달 합계 큰 숫자 하나 + 완료·예정 한 줄 (2026-10, 화면의 포인트 하나)
@@ -1099,10 +1100,8 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                   ),
                 ),
                 const SizedBox(width: 8),
-                // 근무 데이터가 없으면 "정리 완료" 뱃지도 없음 (빈 상태에 성취 뱃지 금지)
-                if (overdue > 0 ||
-                    _scheduledSessionCount > 0 ||
-                    _completedSessionCount > 0)
+                // 할 일이 있을 때만 — 예정 근무만 있는데 '정리 완료'(완료율 0%)는 말이 안 됐다(11-15)
+                if (overdue > 0)
                   GestureDetector(
                     onTap: _showOverdueSheet,
                     child: _pill(
@@ -1956,16 +1955,17 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
                     horizontal: 10,
                     vertical: 4,
                   ),
+                  // 누를 수 없는 정보 — 파랑 대신 중립 칩(CTA Blue)
                   decoration: BoxDecoration(
-                    color: kBrandBlue.withOpacity(0.10),
-                    borderRadius: BorderRadius.circular(999),
+                    color: AppColors.bgMuted,
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                   child: Text(
                     '총 $dayCount일 근무',
                     style: const TextStyle(
                       fontSize: AppFontSize.caption,
-                      fontWeight: FontWeight.w900,
-                      color: kBrandBlue,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textSecondary,
                     ),
                   ),
                 ),
