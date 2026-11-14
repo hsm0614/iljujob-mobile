@@ -1485,7 +1485,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     ),
                   ),
                 // 이미지 배너는 내 주변 공고 다음 (시안대로 내림, 대표 11-02 — 10-19엔 목록 맨 위). 배너 없으면 스스로 숨는다
-                if (!isLoading)
+                // 주변 공고가 3건 이하면 파트너 광고 칸이 목록 끝에 붙어 배너와 광고 둘이 연달아 섰다(S22 11-15)
+                // → 그때는 배너를 아래 '조금 먼 공고' 뒤로 내린다. 노출 수는 그대로
+                if (!isLoading && filteredJobs.length > 3)
                   SliverToBoxAdapter(
                     child: Container(
                       color: AppColors.bgCard,
@@ -1500,6 +1502,14 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     filteredJobs.length < 8 &&
                     _scope != 'nationwide')
                   SliverToBoxAdapter(child: _buildFewJobsFooter()),
+                if (!isLoading && filteredJobs.length <= 3)
+                  SliverToBoxAdapter(
+                    child: Container(
+                      color: AppColors.bgCard,
+                      padding: const EdgeInsets.only(top: 12),
+                      child: _buildBannerSlot(),
+                    ),
+                  ),
                 const SliverToBoxAdapter(child: SizedBox(height: 24)),
               ],
             ),
