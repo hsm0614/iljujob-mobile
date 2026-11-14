@@ -12,6 +12,7 @@ import '../../data/services/contract_service.dart';
 import '../contract/contract_sheets.dart';
 import '../agent/store_qa_sheet.dart';
 import '../../utils/condition_guard.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // ── 채팅 내 출근 확정 카드 ──────────────────────────────────
 class WorkConfirmationCard extends StatelessWidget {
@@ -209,6 +210,17 @@ class WorkConfirmationCard extends StatelessWidget {
                 jobPay: confirm.jobPay,
                 jobPayType: confirm.jobPayType,
               )),
+
+            // 수락한 근무 → 내 캘린더에(2시간 전 알림 포함). 노쇼 줄이기
+            if (userType == 'worker' && confirm.calendarUrl != null && !isPast)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: () => launchUrl(Uri.parse(confirm.calendarUrl!), mode: LaunchMode.externalApplication),
+                  icon: const Icon(Icons.event_outlined, size: 18),
+                  label: const Text('캘린더에 추가'),
+                ),
+              ),
 
             // 액션 버튼 (구직자가 proposed 상태일 때만)
             if (isProposed && userType == 'worker' && !isPast) ...[

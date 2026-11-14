@@ -20,6 +20,7 @@ class WorkConfirmation {
   final String? contractStatus;
   final int? jobPay; // 공고 급여 — 알바생 조건 지킴이가 비교
   final String? jobPayType;
+  final String? calendarUrl; // 알바생에게만 — .ics(서명된 링크)
 
   /// 카드가 제안된 시각(UTC). 서버는 proposed_at 을 UTC_TIMESTAMP() 로 쓰고
   /// wc.* 로 그대로 내려준다. 이걸 안 읽으면 카드를 대화 흐름에 끼워넣을
@@ -44,6 +45,7 @@ class WorkConfirmation {
     this.contractStatus,
     this.jobPay,
     this.jobPayType,
+    this.calendarUrl,
   });
 
   factory WorkConfirmation.fromJson(Map<String, dynamic> j) => WorkConfirmation(
@@ -64,6 +66,7 @@ class WorkConfirmation {
     contractStatus: j['contract_status']?.toString(),
     jobPay: int.tryParse('${j['job_pay'] ?? ''}'.replaceAll(RegExp(r'[^0-9]'), '')),
     jobPayType: j['job_pay_type']?.toString(),
+    calendarUrl: j['calendar_url']?.toString(),
   );
 
   static DateTime? _parseUtc(dynamic v) {
