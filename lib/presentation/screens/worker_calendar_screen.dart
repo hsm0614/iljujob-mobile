@@ -52,6 +52,7 @@ Future<DateTime?> showCalendarBottomPicker(
   DateTime? picked;
 
   await showModalBottomSheet<void>(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
     context: context,
     isScrollControlled: true,
     useSafeArea: true,
@@ -770,6 +771,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     int batchCreatedCount = 0;
 
     final saved = await showModalBottomSheet<bool>(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       isScrollControlled: true,
       useSafeArea: false,
@@ -1745,6 +1747,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     final overdue = _overdueScheduledCount;
 
     showModalBottomSheet(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
@@ -2060,6 +2063,7 @@ class _WorkerCalendarScreenState extends State<WorkerCalendarScreen> {
     bool danger = false,
   }) {
     return showModalBottomSheet<bool>(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: false,

@@ -431,6 +431,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
 
   void _showSuccess() {
     showModalBottomSheet(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       isDismissible: false,
       enableDrag: false,

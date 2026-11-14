@@ -16,21 +16,12 @@ const _blue = AppColors.primary;
 const _border = AppColors.border;
 const _text = AppColors.textPrimary;
 
-Widget _grip() => Container(
-  width: 40,
-  height: 4,
-  decoration: BoxDecoration(
-    color: AppColors.border,
-    borderRadius: BorderRadius.circular(999),
-  ),
-);
 
 Widget _sheetHeader(BuildContext ctx, String title) => Padding(
-  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+  // 손잡이는 테마(bottomSheetTheme) — 직접 그리던 것과 두 개가 됐다
+  padding: const EdgeInsets.fromLTRB(20, 0, 20, 0),
   child: Column(
     children: [
-      _grip(),
-      const SizedBox(height: 16),
       Row(
         children: [
           const SizedBox(width: 44),

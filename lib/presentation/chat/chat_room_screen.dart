@@ -717,6 +717,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         widget.jobInfo['job_title']?.toString() ??
         '공고';
     showModalBottomSheet(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       backgroundColor: Colors.transparent,
       builder:

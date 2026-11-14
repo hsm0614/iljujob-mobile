@@ -458,11 +458,28 @@ class AppTheme {
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         // BottomSheet
+        // 스위치: 꺼짐도 테두리 없는 회색 트랙 + 흰 원 — 안드로이드 기본(진한 테두리·회색 원)이 켜짐과 따로 놀았다(11-15)
+        switchTheme: SwitchThemeData(
+          thumbColor: const WidgetStatePropertyAll(Colors.white),
+          trackColor: WidgetStateProperty.resolveWith(
+            (s) => s.contains(WidgetState.selected) ? AppColors.primary : AppColors.textDisabled,
+          ),
+          trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
+          // M3는 꺼짐 원이 작다(16) — 투명 아이콘을 주면 켜짐과 같은 크기(24)로 그린다
+          thumbIcon: const WidgetStatePropertyAll(Icon(Icons.circle, color: Colors.transparent)),
+        ),
+        // 시트 표준(11-15): 70개 시트가 손잡이(직접 그림 28·기본 4·없음)·모서리(16/20/24)가 제각각이었다.
+        // 기본 손잡이 + 상단 24px(DESIGN.md) 하나로. 직접 그린 시트는 호출부에서 showDragHandle: false.
         bottomSheetTheme: const BottomSheetThemeData(
           backgroundColor: AppColors.bgCard,
+          surfaceTintColor: Colors.transparent,
+          showDragHandle: true,
+          dragHandleColor: AppColors.textDisabled,
+          dragHandleSize: Size(36, 4),
+          clipBehavior: Clip.antiAlias,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(
-              top: Radius.circular(AppRadius.xl),
+              top: Radius.circular(AppRadius.xxl),
             ),
           ),
         ),

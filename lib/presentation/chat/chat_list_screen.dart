@@ -297,6 +297,7 @@ class _ChatListScreenState extends State<ChatListScreen>
             : '내 채팅 목록에서만 사라집니다.\n구직자에게 채팅이 종료됐다는 안내가 전달됩니다.';
 
     final confirm = await showModalBottomSheet<bool>(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

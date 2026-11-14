@@ -20,6 +20,7 @@ class MarketingConsentSheet {
     if (!context.mounted) return;
 
     final accepted = await showModalBottomSheet<bool>(
+      showDragHandle: false, // 손잡이를 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(

@@ -118,6 +118,7 @@ class _AddExperienceScreenState extends State<AddExperienceScreen> {
     String temp = selectedYear ?? yearOptions.first;
 
     await showModalBottomSheet(
+      showDragHandle: false, // 손잡이를 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(

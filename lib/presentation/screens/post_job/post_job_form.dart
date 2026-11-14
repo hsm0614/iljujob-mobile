@@ -755,6 +755,7 @@ class _PostJobFormState extends State<PostJobForm>
 
   /// 프로젝트 규칙: 사용자 확인 모달은 AlertDialog 대신 바텀시트.
   void _showError(String msg) => showModalBottomSheet(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
     context: context,
     backgroundColor: Colors.transparent,
     builder:
@@ -1612,6 +1613,7 @@ class _PostJobFormState extends State<PostJobForm>
     if (raw == null || raw.isEmpty || !mounted) return;
 
     final shouldRestore = await showModalBottomSheet<bool>(
+      showDragHandle: false, // 손잡이를 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
@@ -3849,6 +3851,7 @@ class _PostJobFormState extends State<PostJobForm>
     }
     setState(() => _isAIGenerating = true);
     showModalBottomSheet(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       isScrollControlled: true,
       useSafeArea: true,

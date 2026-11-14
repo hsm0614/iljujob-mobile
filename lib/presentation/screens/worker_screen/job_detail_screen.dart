@@ -169,6 +169,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     final payInt =
         int.tryParse(widget.job.pay.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
     showModalBottomSheet(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,

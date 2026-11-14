@@ -565,6 +565,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
     final isEdit = edit != null;
 
     await showModalBottomSheet<void>(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -743,6 +744,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
     );
 
     await showModalBottomSheet<void>(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
@@ -1005,6 +1007,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
     Color confirmColor = AppColors.error,
   }) async {
     final result = await showModalBottomSheet<bool>(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       backgroundColor: Colors.transparent,
       builder: (ctx) {
@@ -2226,6 +2229,7 @@ Future<DateTime?> showKoWheelDatePickerSheet(
   String pretty(DateTime d) => '${d.year}년 ${d.month}월 ${d.day}일';
 
   return showModalBottomSheet<DateTime>(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
     context: context,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black.withOpacity(0.35),

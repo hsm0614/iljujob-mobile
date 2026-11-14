@@ -790,18 +790,7 @@ class _ProposeWorkConfirmationSheetState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 12),
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: AppColors.border,
-                  borderRadius: BorderRadius.circular(99),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
+            // 손잡이는 테마(bottomSheetTheme)
             const Text('출근 확정 제안', style: AppTextStyles.h2),
             const SizedBox(height: 4),
             Text(

@@ -771,6 +771,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
       if (!mounted) return;
 
       await showModalBottomSheet(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
         context: context,
         isScrollControlled: true,
         useRootNavigator: true,
@@ -803,6 +804,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     if (!mounted) return;
 
     await showModalBottomSheet(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
@@ -1451,6 +1453,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
 
     // 무료 공고 → 즉시게시 확인 바텀시트
     final selectedPassType = await showModalBottomSheet<String>(
+      showDragHandle: false, // 손잡이를 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
@@ -1537,6 +1540,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     } on NoPassException {
       if (!mounted) return;
       showModalBottomSheet(
+      showDragHandle: false, // 손잡이를 직접 그린 시트 — 테마 손잡이와 겹친다
         context: context,
         backgroundColor: Colors.white,
         shape: const RoundedRectangleBorder(

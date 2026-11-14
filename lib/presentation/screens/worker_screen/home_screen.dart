@@ -428,6 +428,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _openRecommendSheet() async {
     if (!mounted) return;
     await showModalBottomSheet(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       isScrollControlled: true,
       useRootNavigator: false,

@@ -341,6 +341,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
     );
 
     showModalBottomSheet(
+      showDragHandle: false, // 손잡이를 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       isScrollControlled: true,
       enableDrag: true,
@@ -658,6 +659,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
   /// 프로젝트 규칙: 사용자 확인 모달은 AlertDialog 대신 바텀시트.
   void _showError(String msg) {
     showModalBottomSheet(
+      showDragHandle: false, // 투명 배경에 직접 그린 시트 — 테마 손잡이와 겹친다
       context: context,
       backgroundColor: Colors.transparent,
       builder:
