@@ -638,17 +638,14 @@ class _InstantTabState extends State<_InstantTab> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
             children: [
+              // 보유 개수는 한 줄 — 회색 상자 두 개가 페이지 배경과 같은 색이라 글자만 떠 보였다(S22 11-15)
               _OwnedLine(
-                label: durationPolicy ? '보유 즉시 게시 3일권' : '보유 즉시 게시 이용권',
-                count: widget.remainingCount,
+                label: '가지고 있는 이용권',
+                value:
+                    durationPolicy
+                        ? '3일권 ${widget.remainingCount}개 · 7일권 ${widget.remainingSevenDay}개'
+                        : '${widget.remainingCount}개',
               ),
-              if (durationPolicy) ...[
-                const SizedBox(height: 8),
-                _OwnedLine(
-                  label: '보유 즉시 게시 7일권',
-                  count: widget.remainingSevenDay,
-                ),
-              ],
               const SizedBox(height: 20),
               Text(
                 durationPolicy ? '기간과 횟수를 고르세요' : '몇 개 살까요?',
@@ -662,7 +659,7 @@ class _InstantTabState extends State<_InstantTab> {
                   title: '${o['days']}일 · ${o['count']}회',
                   sub:
                       o['count'] == 1
-                          ? '공고 1건을 바로 공개 · 알바생 알림 2회'
+                          ? '바로 공개 · 알바생 알림 2회'
                           : '회당 ${widget.formatPrice(((o['price'] as int) / (o['count'] as int)).floor())}'
                               '${_discount(o) > 0 ? ' · ${_discount(o)}% 할인' : ''}',
                   price: widget.formatPrice(o['price'] as int),
@@ -739,7 +736,7 @@ class _UrgentTab extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
             children: [
-              _OwnedLine(label: '보유 긴급 호출 이용권', count: remainingCount),
+              _OwnedLine(label: '가지고 있는 긴급 호출', value: '${remainingCount}개'),
               const SizedBox(height: 20),
               const Text('갑자기 사람이 빌 때', style: AppTextStyles.h2),
               const SizedBox(height: 4),
@@ -799,21 +796,21 @@ class _UrgentTab extends StatelessWidget {
 // ════════════════════════════════════════════════════════
 class _OwnedLine extends StatelessWidget {
   final String label;
-  final int count;
-  const _OwnedLine({required this.label, required this.count});
+  final String value;
+  const _OwnedLine({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
     decoration: BoxDecoration(
-      color: AppColors.bgMuted,
+      color: AppColors.bgCard,
       borderRadius: BorderRadius.circular(AppRadius.md),
     ),
     child: Row(
       children: [
         Expanded(child: Text(label, style: AppTextStyles.body2)),
         Text(
-          '$count개',
+          value,
           style: AppTextStyles.body1.copyWith(
             fontWeight: FontWeight.w700,
             color: AppColors.textPrimary,

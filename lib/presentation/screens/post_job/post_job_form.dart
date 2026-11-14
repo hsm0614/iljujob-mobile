@@ -68,7 +68,7 @@ const _qHeads = [
   '급여는 얼마인가요?',
   '공고 내용을 확인해 주세요',
 ];
-// *별표* 사이는 파랑으로 (_subText)
+// *별표* 사이는 진하게 (_subText)
 const _qSubs = [
   '알바생이 목록에서 *가장 먼저* 보는 한 줄이에요',
   '알바생이 *관심 업종*으로 공고를 찾아요',
@@ -1974,7 +1974,7 @@ class _PostJobFormState extends State<PostJobForm>
 
   static final _headStyle = AppTextStyles.h1.copyWith(fontWeight: FontWeight.w700, height: 1.4);
 
-  /// 부제 — *별표* 사이를 파랑으로 (급구식 핵심 숫자 강조)
+  /// 부제 — *별표* 사이를 진하게 (핵심 숫자 강조)
   Widget _subText(String s) {
     final parts = s.split('*');
     return Text.rich(TextSpan(
@@ -1983,7 +1983,8 @@ class _PostJobFormState extends State<PostJobForm>
         for (var i = 0; i < parts.length; i++)
           TextSpan(
             text: parts[i],
-            style: i.isOdd ? const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600) : null,
+            // 파랑은 누르는 것에만(DESIGN.md CTA Blue) — 강조는 진한 글씨로
+            style: i.isOdd ? const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w700) : null,
           ),
       ],
     ));
@@ -2068,7 +2069,7 @@ class _PostJobFormState extends State<PostJobForm>
           ],
         ),
       // 사진으로 채우기 — 가게에 붙인 전단·메모·카톡 캡처를 찍으면 AI가 칸을 채운다 (2026-11)
-      Container(height: 8, margin: const EdgeInsets.fromLTRB(0, 32, 0, 24), color: AppColors.bgMuted),
+      Container(height: 1, margin: const EdgeInsets.fromLTRB(0, 32, 0, 28), color: AppColors.border), // 들여 쓴 8px 회색 띠는 떠 보였다 → 선 하나
       Material(
         color: AppColors.bgCard,
         shape: RoundedRectangleBorder(
@@ -2105,7 +2106,7 @@ class _PostJobFormState extends State<PostJobForm>
       ),
       // 지난 공고로 채우기 — '공고 올리기' 앞의 선택 시트를 없애고 여기로 (2026-10, 대표)
       if (_recentJobs.isNotEmpty) ...[
-        Container(height: 8, margin: const EdgeInsets.fromLTRB(0, 32, 0, 24), color: AppColors.bgMuted),
+        Container(height: 1, margin: const EdgeInsets.fromLTRB(0, 32, 0, 28), color: AppColors.border), // 들여 쓴 8px 회색 띠는 떠 보였다 → 선 하나
         Row(
           crossAxisAlignment: CrossAxisAlignment.baseline,
           textBaseline: TextBaseline.alphabetic,
