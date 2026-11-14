@@ -1739,101 +1739,21 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     );
   }
 
+  // 아이콘·큰 숫자·라벨 두 칸(통계 템플릿)이 상세에서 혼자 튀었다 → 사장님 화면과 같은 한 줄(11-15)
   Widget _buildStatsSection() {
-    final label = _interestLabel(viewCount, bookmarkCount, applicantCount);
-
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      color: AppColors.bgCard,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: Row(
         children: [
-          Row(
-            children: [
-              const Text('공고 통계', style: AppTextStyles.h3),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                // 누를 수 없는 분류 — 파랑 대신 중립 (CTA Blue 규칙)
-                decoration: BoxDecoration(
-                  color: AppColors.bgMuted,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: AppFontSize.caption,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // ✅ 숫자는 “k 포맷”으로 예쁘게
-          Row(
-            children: [
-              _statItem(
-                icon: Icons.remove_red_eye,
-                iconColor: AppColors.textTertiary,
-                label: '열람',
-                valueText: _formatCount(viewCount),
-              ),
-              _verticalDivider(),
-              _statItem(
-                icon: Icons.favorite_border_rounded,
-                iconColor: AppColors.textTertiary,
-                label: '저장',
-                valueText: _formatCount(bookmarkCount),
-              ),
-            ],
+          Text(_interestLabel(viewCount, bookmarkCount, applicantCount), style: AppTextStyles.body2),
+          const Spacer(),
+          Text(
+            '열람 ${_formatCount(viewCount)} · 저장 ${_formatCount(bookmarkCount)}',
+            style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
           ),
         ],
       ),
-    );
-  }
-
-  Widget _statItem({
-    required IconData icon,
-    required Color iconColor,
-    required String label,
-    required String valueText,
-    bool emphasize = false,
-  }) {
-    return Expanded(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 22, color: iconColor),
-          const SizedBox(height: 4),
-          Text(
-            valueText,
-            style: TextStyle(
-              fontSize: emphasize ? AppFontSize.titleLg : AppFontSize.buttonLg,
-              fontWeight: emphasize ? FontWeight.w900 : FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: TextStyle(fontSize: AppFontSize.caption, color: AppColors.textSecondary),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _verticalDivider() {
-    return Container(
-      width: 1,
-      height: 40,
-      margin: const EdgeInsets.symmetric(horizontal: 8),
-      color: AppColors.border,
     );
   }
 
