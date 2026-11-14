@@ -453,7 +453,7 @@ Future<bool> showAppSheet(
                 if (message != null) ...[
                   const SizedBox(height: 8),
                   Text(
-                    message,
+                    keepWords(message), // 확인 시트 설명은 낱말 단위로
                     style: AppTextStyles.body1.copyWith(
                       color: AppColors.textSecondary,
                       height: 1.5,

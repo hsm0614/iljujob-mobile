@@ -365,7 +365,16 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
       LocationPermission perm = await Geolocator.checkPermission();
       if (perm == LocationPermission.denied) {
-        perm = await Geolocator.requestPermission();
+        // OS 팝업 앞에 이유 한 장 — 홈에 들어오자마자 설명 없이 팝업이 떴다(S22 11-15)
+        final ok = mounted &&
+            await showAppSheet(
+              context,
+              title: '내 주변 공고를 보여 드릴게요',
+              message: '집에서 가까운 일을 거리순으로 보여 드리고, 근처 사장님이 급하게 사람을 찾을 때 연락받을 수 있어요.',
+              confirmLabel: '위치 허용',
+              cancelLabel: '나중에',
+            );
+        if (ok) perm = await Geolocator.requestPermission();
       }
       if (perm == LocationPermission.denied ||
           perm == LocationPermission.deniedForever) {
