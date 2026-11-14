@@ -1265,7 +1265,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                 ChatRoomJobPanel(
                     jobSource: ctrl.jobSource,
                     userType: ctrl.userType,
-                    isConfirmed: ctrl.isConfirmed,
+                    isConfirmed: ctrl.isConfirmed || ctrl.hasAcceptedWork,
                     isCompleted: ctrl.isCompleted,
                     hasPendingWorkConfirmation: ctrl.hasPendingWorkConfirmation,
                     workConfirmationStatus: ctrl.openWorkConfirmation?.status,

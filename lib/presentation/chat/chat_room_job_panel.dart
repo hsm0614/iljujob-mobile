@@ -490,7 +490,8 @@ class _WorkerActions extends StatelessWidget {
       if (!isWeekdaysJob && hasWorkSession) ('캘린더 보기', onOpenCalendar),
       if (!isWeekdaysJob && hasWorkSession && canCancel && !workDayPassed)
         ('일정 취소', workLoading ? null : onCancelWorkSession),
-      if (!ended && !_isCancelled) ('지원 취소', workLoading ? null : onCancelApplication),
+      // 확정 뒤 취소는 근무 카드 [못 가요] — 여기서 '지원 취소'까지 보이면 두 갈래가 된다
+      if (!ended && !_isCancelled && !_hireConfirmed) ('지원 취소', workLoading ? null : onCancelApplication),
     ];
 
     final btnStyle = ButtonStyle(

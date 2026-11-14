@@ -174,6 +174,13 @@ class ChatRoomController extends ChangeNotifier {
     return openWorkConfirmation != null;
   }
 
+  /// 근무 약속을 알바생이 수락했다(이후 단계 포함). 단골 부르기·먼저 제안으로 열린 방은 지원 기록이 없어
+  /// applications.is_confirmed만 보면 수락 뒤에도 '조건을 맞춰 보세요'·'지원 취소'가 남았다(11-15)
+  bool get hasAcceptedWork => workConfirmations.any(
+    (c) => const {'accepted', 'scheduled', 'day_before_confirmed', 'day_of_confirmed', 'checked_in', 'completed'}
+        .contains(c.status),
+  );
+
   bool get hasPendingWorkConfirmation {
     return hasOpenWorkConfirmation;
   }
@@ -828,7 +835,10 @@ class ChatRoomController extends ChangeNotifier {
       await fetchWorkConfirmations();
       await fetchWorkState();
       if (nextStatus == 'accepted') {
-        onShowSnackbar?.call('출근 확정 제안을 수락했어요. 근무일에 꼭 출근해주세요!');
+        // 완료 화면이 같은 말을 한다 — 알림 띠가 그 위 [캘린더에서 보기]를 가렸다(11-15)
+        if (onWorkConfirmationAccepted == null) {
+          onShowSnackbar?.call('출근 확정 제안을 수락했어요. 근무일에 꼭 출근해주세요!');
+        }
         onWorkConfirmationAccepted?.call(confirm);
       } else if (nextStatus == 'cancelled') {
         onShowSnackbar?.call(

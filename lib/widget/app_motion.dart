@@ -216,7 +216,7 @@ class _AppSuccessPageState extends State<_AppSuccessPage>
                 rise(
                   text,
                   Text(
-                    widget.message!,
+                    keepWords(widget.message!),
                     textAlign: TextAlign.center,
                     style: AppTextStyles.body1.copyWith(
                       color: AppColors.textSecondary,
