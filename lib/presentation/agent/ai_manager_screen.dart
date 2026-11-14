@@ -64,9 +64,12 @@ class _AiManagerScreenState extends State<AiManagerScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
+        // 흰 바탕 — 회색 페이지 위에선 회색으로 채운 안내서 입력칸이 안 보였다(S22 11-15)
+        backgroundColor: AppColors.bgCard,
         appBar: AppBar(title: const Text('AI 일주 매니저')),
         body: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+          // 아래 시스템 내비 바만큼 더 — 마지막 줄 '채팅 번역'이 가려졌다
+          padding: EdgeInsets.fromLTRB(20, 16, 20, 32 + MediaQuery.paddingOf(context).bottom),
           children: [
             const Text('공고부터 출근까지, AI 매니저가 대신 챙겨요', style: AppTextStyles.h2),
             const SizedBox(height: 6),
@@ -100,9 +103,9 @@ class _AiManagerScreenState extends State<AiManagerScreen> {
               onChanged: (_) => setState(() {}),
               decoration: const InputDecoration(
                 hintText: '예) 후문으로 들어와서 주방 김실장님 찾기 / 검은 바지·운동화 / 앞치마는 매장에서 드려요 / 주차는 건물 지하 1시간 무료',
-                border: OutlineInputBorder(),
               ),
             ),
+            const SizedBox(height: 4),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(

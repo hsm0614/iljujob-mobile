@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:app_settings/app_settings.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iljujob/widget/app_ui.dart';
 import '../../../data/services/notificaion_service.dart';
 
@@ -18,11 +19,16 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   bool pushConsent = true;
   bool smsConsent = false;
   bool emailConsent = false;
+  // 사장님·알바생 공용 화면 — 설명을 알바생 말('사장님 답장')로만 써서 사장님에게도 그렇게 보였다(11-15)
+  bool _isClient = false;
 
   @override
   void initState() {
     super.initState();
     _loadSettings();
+    SharedPreferences.getInstance().then((p) {
+      if (mounted) setState(() => _isClient = p.getString('userType') == 'client');
+    });
   }
 
   Future<void> _loadSettings() async {
@@ -91,7 +97,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             children: [
               AppMenuRow(
                 label: '휴대폰 알림 설정',
-                subtitle: '알림이 안 오면 여기서 알바일주 알림을 켜 주세요',
+                subtitle: keepWords('알림이 안 오면 여기서 알바일주 알림을 켜 주세요'),
                 value: '열기',
                 onTap: AppSettings.openAppSettings,
               ),
@@ -103,7 +109,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
             children: [
               _toggle(
                 '지원·채팅 알림',
-                subtitle: '사장님 답장, 채용 확정, 출근 확인',
+                subtitle: _isClient ? '새 지원자, 알바생 답장, 출근 확인' : '사장님 답장, 채용 확정, 출근 확인',
                 value: matchAlert,
                 onChanged: (v) => setState(() => matchAlert = v),
               ),
