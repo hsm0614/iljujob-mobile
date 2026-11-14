@@ -527,8 +527,9 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                   children: [
                     // 헤더
                     // 60일 페이지 본 28명 중 플랜 누름 5명(11-03). 막연한 '더 빠르게' 대신 따로 살 때와의 비교를 먼저.
+                    // '구독이 더 저렴해요'는 베이직(29,000원/3회 = 회당 9,667원)엔 틀린 말이었다(11-15) — 맞는 비교만
                     const Text(
-                      '즉시 게시를 자주 쓰면\n구독이 더 저렴해요',
+                      '한 달에 공고를\n여러 번 올린다면',
                       style: TextStyle(
                         fontSize: AppFontSize.h2,
                         fontWeight: FontWeight.w800,
@@ -672,7 +673,7 @@ class _PlanCard extends StatelessWidget {
                     Text(summary, style: AppTextStyles.body2),
                     const SizedBox(height: 6),
                     Text(
-                      _anchor[plan.key] ?? '',
+                      keepWords(_anchor[plan.key] ?? ''),
                       style: AppTextStyles.body2.copyWith(
                         fontWeight: FontWeight.w600,
                         color: AppColors.textPrimary,
@@ -695,10 +696,10 @@ class _CompareTable extends StatelessWidget {
   const _CompareTable({required this.selectedPlan});
 
   static const _rows = [
-    ['즉시게시', '3회/기간', '무제한'],
-    ['먼저 연락', '10명/기간', '50명/기간'],
+    ['즉시 게시', '월 3회', '무제한'],
+    ['먼저 연락', '월 10명', '월 50명'],
     ['공고당 연락', '10명', '20명'],
-    ['지도 알림', '2회/기간', '8회/기간'],
+    ['지도 알림', '월 2회', '월 8회'],
     ['공고당 알림', '1회', '2회'],
     ['AI 공고문', '월 3회', '무제한'],
   ];

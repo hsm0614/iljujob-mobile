@@ -406,7 +406,7 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
                       icon: Icons.workspace_premium_outlined,
                       label: (_sub?.active ?? false) ? '구독 관리' : '구독하기',
                       subtitle:
-                          (_sub?.active ?? false) ? null : '매달 이용권을 더 싸게 받아요',
+                          (_sub?.active ?? false) ? null : '즉시 게시·직접 연락을 매달 받아요', // '더 싸게'는 베이직엔 틀린 말(11-15)
                       onTap: () async {
                         await Navigator.pushNamed(
                           context,

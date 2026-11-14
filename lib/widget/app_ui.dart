@@ -70,6 +70,10 @@ class JobSignalBadge extends StatelessWidget {
   }
 }
 
+/// 한글은 Flutter가 글자 사이 아무 데서나 줄을 바꾼다('8,900원부/터', '더하/면'). 낱말 안 글자 사이에
+/// 단어 결합자(U+2060)를 넣어 띄어쓰기에서만 꺾이게 한다. 두 줄 넘게 갈 수 있는 짧은 설명 문구에 쓴다.
+String keepWords(String s) => s.split(' ').map((w) => w.characters.join('\u2060')).join(' ');
+
 class AppPrimaryButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final String label;
