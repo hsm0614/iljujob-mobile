@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:app_settings/app_settings.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
@@ -15,6 +17,7 @@ import 'package:iljujob/main.dart' show sendFcmTokenUnified;
 /// Android 13+ 는 묻기 전에도 상태가 denied 로 보여서 '물어봤는지'를 따로 기억한다.
 const _kAskedKey = 'push_permission_asked';
 const _kPrimerShownKey = 'push_primer_shown';
+const _kFirstApplyPromptedKey = 'push_first_apply_prompted';
 
 Future<bool> isPushAllowed() async {
   try {
@@ -35,7 +38,7 @@ Future<bool> requestPushPermission({required String source}) async {
   final before =
       (await FirebaseMessaging.instance.getNotificationSettings())
           .authorizationStatus;
-  if (asked && before == AuthorizationStatus.denied) {
+  if (before == AuthorizationStatus.denied && (asked || Platform.isIOS)) {
     ScreenAnalyticsService.instance.logEvent(
       'push_permission',
       params: {'source': source, 'result': 'open_settings'},
@@ -137,6 +140,77 @@ Future<void> maybeShowPushPrimer(
     ScreenAnalyticsService.instance.logEvent(
       'push_permission',
       params: {'source': source, 'result': 'later'},
+    );
+  }
+}
+
+/// 첫 지원에 성공한 뒤 한 번만 답장 알림을 안내한다. 홈 안내와 별도 기회지만
+/// 이미 권한을 받은 사람에게는 창을 띄우지 않고 토큰 동기화만 시도한다.
+Future<void> maybeShowFirstApplyPushPrimer(BuildContext context) async {
+  final prefs = await SharedPreferences.getInstance();
+  if (prefs.getBool(_kFirstApplyPromptedKey) ?? false) return;
+  await prefs.setBool(_kFirstApplyPromptedKey, true);
+  if (await isPushAllowed()) {
+    await sendFcmTokenUnified();
+    return;
+  }
+  if (!context.mounted) return;
+
+  final want = await showModalBottomSheet<bool>(
+    context: context,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    ),
+    builder:
+        (ctx) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.notifications_active_outlined,
+                  size: 36,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '사장님 답장이 오면\n알려드릴까요?',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.h3,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '알림이 꺼져 있어도 채팅에서 답장을 확인할 수 있어요.',
+                  textAlign: TextAlign.center,
+                  style: AppTextStyles.body2.copyWith(
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(ctx, true),
+                    child: const Text('답장 알림 받기'),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx, false),
+                  child: const Text('나중에'),
+                ),
+              ],
+            ),
+          ),
+        ),
+  );
+  if (want == true) {
+    await requestPushPermission(source: 'first_apply_reply');
+  } else {
+    ScreenAnalyticsService.instance.logEvent(
+      'push_permission',
+      params: {'source': 'first_apply_reply', 'result': 'later'},
     );
   }
 }

@@ -519,6 +519,8 @@ Future<void> _handleNotificationData(Map<String, String> data) async {
     navigatorKey.currentState?.pushNamed('/inquiry');
   } else if (type == 'repost_nudge') {
     await _openRepostNudge(navigatorKey.currentState, data);
+  } else if (type == 'job_closed' && data['role'] == 'client') {
+    await _openRepostNudge(navigatorKey.currentState, data);
   } else if (type == 'zero_applicant_care') {
     navigatorKey.currentState?.pushNamed('/post_job');
   } else if (type == 'urgent_not_sent') {
@@ -678,6 +680,8 @@ Future<void> _handleInitialMessage(
     } else if (type == 'inquiry') {
       navigator.pushNamed('/inquiry');
     } else if (userType == 'client' && type == 'repost_nudge') {
+      await _openRepostNudge(navigator, initialMessage.data);
+    } else if (userType == 'client' && type == 'job_closed') {
       await _openRepostNudge(navigator, initialMessage.data);
     } else if (userType == 'client' && type == 'zero_applicant_care') {
       navigator.pushNamed('/post_job');
