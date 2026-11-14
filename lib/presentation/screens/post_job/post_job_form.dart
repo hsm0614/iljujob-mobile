@@ -3373,7 +3373,7 @@ class _PostJobFormState extends State<PostJobForm>
             style: AppTextStyles.h2.copyWith(fontWeight: FontWeight.w600),
             inputFormatters: [
               FilteringTextInputFormatter.digitsOnly,
-              const _CommaNumberInputFormatter(),
+              const CommaNumberInputFormatter(),
             ],
             decoration: InputDecoration(
               hintText:
@@ -5096,26 +5096,3 @@ class _AiReplyCardState extends State<_AiReplyCard> {
   }
 }
 
-class _CommaNumberInputFormatter extends TextInputFormatter {
-  const _CommaNumberInputFormatter();
-
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
-    if (digits.isEmpty) {
-      return const TextEditingValue(
-        text: '',
-        selection: TextSelection.collapsed(offset: 0),
-      );
-    }
-
-    final formatted = NumberFormat('#,###').format(int.parse(digits));
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-  }
-}

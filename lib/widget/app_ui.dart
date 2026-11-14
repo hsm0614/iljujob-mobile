@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
 import 'package:iljujob/config/app_theme.dart';
 
 /// 공고 신호 뱃지. 색 의미가 고정돼 있다 (DESIGN.md — The Two-Signal Rule):
@@ -1050,6 +1051,31 @@ class AppGradeBadge extends StatelessWidget {
         '$g · $score점',
         style: TextStyle(fontSize: AppFontSize.caption, fontWeight: FontWeight.w700, color: fg),
       ),
+    );
+  }
+}
+
+/// 금액 입력칸 '13750' → '13,750' (공고 작성·출근 제안 공용). 읽을 땐 쉼표를 떼고 파싱한다.
+class CommaNumberInputFormatter extends TextInputFormatter {
+  const CommaNumberInputFormatter();
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) {
+      return const TextEditingValue(
+        text: '',
+        selection: TextSelection.collapsed(offset: 0),
+      );
+    }
+
+    final formatted = NumberFormat('#,###').format(int.parse(digits));
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
 }

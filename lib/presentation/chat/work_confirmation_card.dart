@@ -13,6 +13,7 @@ import '../contract/contract_sheets.dart';
 import '../agent/store_qa_sheet.dart';
 import '../../utils/condition_guard.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:iljujob/widget/app_ui.dart';
 
 // ── 채팅 내 출근 확정 카드 ──────────────────────────────────
 class WorkConfirmationCard extends StatelessWidget {
@@ -528,18 +529,25 @@ class _ProposeWorkConfirmationSheetState
       final now = DateTime.now();
       if (!day.isBefore(DateTime(now.year, now.month, now.day))) _date = day;
     }
+    // 요일 공고면 공고 요일 중 가장 가까운 날로 — 월~금 공고에 '11월 15일(일)'이 채워져 있었다(11-15)
+    final wd = widget.weekdays ?? '';
+    if (_date != null && wd.trim().isNotEmpty) {
+      for (var i = 0; i < 7 && !wd.contains(_weekdays[_date!.weekday - 1]); i++) {
+        _date = _date!.add(const Duration(days: 1));
+      }
+    }
 
     // 급여: 시급은 그대로, 일급은 공고 근무시간으로 나눠 시급으로(10원 단위 올림)
     final pay = widget.defaultWage ?? 0;
     final type = widget.payType ?? '시급';
     if (pay > 0 && type == '시급') {
-      _wageCtrl.text = '$pay';
+      _wageCtrl.text = NumberFormat('#,###').format(pay);
     } else if (pay > 0 && type == '일급' && _estimatedHours != null) {
       // 계약서는 휴게를 뺀 시간으로 급여를 계산한다 → 같은 기준으로 나눠야 일급만큼 받는다
       final span = (_estimatedHours! * 60).round();
       final workH = (span - legalBreakMinutes(span)) / 60.0;
       final hourly = ((pay / workH) / 10).ceil() * 10;
-      _wageCtrl.text = '$hourly';
+      _wageCtrl.text = NumberFormat('#,###').format(hourly);
       _wageNote = '일급 ${NumberFormat('#,###').format(pay)}원 ÷ 실근로 ${_fmtHours(workH)}시간(휴게 ${legalBreakMinutes(span)}분 뺌)으로 계산했어요';
     }
     _loadProfile();
@@ -798,7 +806,7 @@ class _ProposeWorkConfirmationSheetState
             const SizedBox(height: 4),
             Text(
               _isWeekdaysJob
-                  ? '${widget.weekdays} 공고예요 · 첫 출근 날짜를 골라 주세요'
+                  ? '${widget.weekdays!.replaceAll(',', '·')} 공고예요 · 첫 출근 날짜를 골라 주세요'
                   : '공고 조건으로 채워 뒀어요. 알바생이 수락하면 근무가 확정돼요',
               style: AppTextStyles.body2,
             ),
@@ -877,6 +885,7 @@ class _ProposeWorkConfirmationSheetState
             TextField(
               controller: _wageCtrl,
               keyboardType: TextInputType.number,
+              inputFormatters: const [CommaNumberInputFormatter()], // 금액은 쉼표 — '13750'으로 보였다(11-15)
               decoration: _inputDeco('시급을 입력하세요', suffix: '원'),
               onChanged: (_) => setState(() => _wageNote = null),
             ),

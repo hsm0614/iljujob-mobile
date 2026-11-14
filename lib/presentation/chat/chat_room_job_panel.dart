@@ -124,7 +124,10 @@ class ChatRoomJobPanel extends StatelessWidget {
   String? get _workDayLabel {
     final d = _lastWorkDay;
     if (d == null) return null;
-    final md = '${int.parse(d.substring(5, 7))}/${int.parse(d.substring(8, 10))}';
+    String fmt(String x) => '${int.parse(x.substring(5, 7))}/${int.parse(x.substring(8, 10))}';
+    // 여러 날 공고는 '11/15~11/16' — 끝날만 쓰면 일주봇 안내('11월 15일')와 날짜가 달라 보였다(11-15)
+    final s = (_pick(['start_date', 'startDate']) ?? '').toString();
+    final md = s.length >= 10 && s.substring(0, 10) != d ? '${fmt(s)}~${fmt(d)}' : fmt(d);
     return _workDayPassed ? '$md 지난 근무' : md;
   }
 
@@ -198,7 +201,8 @@ class ChatRoomJobPanel extends StatelessWidget {
                               ),
                             ],
                           ),
-                          maxLines: 1,
+                          // 야간(22:00~07:00)·여러 날이면 한 줄을 넘는다 — 시간이 '07:0…'로 잘렸다
+                          maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ],
