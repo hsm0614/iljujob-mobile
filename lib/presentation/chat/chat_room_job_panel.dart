@@ -247,6 +247,7 @@ class ChatRoomJobPanel extends StatelessWidget {
                 isConfirmed: isConfirmed,
                 workerWorkConfirmed: workerWorkConfirmed,
                 workDayPassed: _workDayPassed,
+                proposalWaiting: workConfirmationStatus == 'proposed',
                 onAddToCalendar: onAddToCalendar,
                 onOpenCalendar: onOpenCalendar,
                 onCancelWorkSession: onCancelWorkSession,
@@ -395,6 +396,8 @@ class _WorkerActions extends StatelessWidget {
   final bool workerWorkConfirmed;
   /// 근무일이 지났으면 '캘린더 추가'·'지원 취소' 대신 후기만 — 6/9 공고에 큰 파란 '캘린더에 추가하기'가 떠 있었다
   final bool workDayPassed;
+  /// 사장님 출근 제안이 와서 알바생 답을 기다린다
+  final bool proposalWaiting;
   final VoidCallback? onAddToCalendar;
   final VoidCallback? onOpenCalendar;
   final VoidCallback? onCancelWorkSession;
@@ -415,6 +418,7 @@ class _WorkerActions extends StatelessWidget {
     required this.isConfirmed,
     required this.workerWorkConfirmed,
     this.workDayPassed = false,
+    this.proposalWaiting = false,
     this.checkinDistanceM,
     this.onAddToCalendar,
     this.onOpenCalendar,
@@ -478,6 +482,10 @@ class _WorkerActions extends StatelessWidget {
     } else if (_hireConfirmed) {
       line = '출근 확정됐어요 · 근무일에 알림이 가요';
       icon = Icons.event_available_rounded;
+    } else if (proposalWaiting) {
+      // 제안이 와 있는데 '조건을 맞춰 보세요'로 남아 답할 게 있다는 게 안 보였다(11-15)
+      line = '출근 제안이 왔어요 · 아래 카드에서 답해 주세요';
+      icon = Icons.mark_email_unread_outlined;
     } else {
       line = '채팅으로 근무 조건을 맞춰 보세요';
     }
