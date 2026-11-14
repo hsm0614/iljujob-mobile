@@ -12,6 +12,9 @@ import android.view.WindowManager
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
+import com.android.installreferrer.api.InstallReferrerClient
+import com.android.installreferrer.api.InstallReferrerStateListener
+import java.util.concurrent.atomic.AtomicBoolean
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
@@ -35,6 +38,34 @@ class MainActivity : FlutterActivity() {
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "albailju/acquisition")
+            .setMethodCallHandler { call, result ->
+                if (call.method != "getInstallReferrer") {
+                    result.notImplemented()
+                    return@setMethodCallHandler
+                }
+                val client = InstallReferrerClient.newBuilder(this).build()
+                val completed = AtomicBoolean(false)
+                fun finish(referrer: String?) {
+                    if (completed.compareAndSet(false, true)) {
+                        runOnUiThread { result.success(referrer) }
+                        try { client.endConnection() } catch (_: Exception) {}
+                    }
+                }
+                try {
+                    client.startConnection(object : InstallReferrerStateListener {
+                        override fun onInstallReferrerSetupFinished(responseCode: Int) {
+                            val referrer = if (responseCode == InstallReferrerClient.InstallReferrerResponse.OK) {
+                                try { client.installReferrer.installReferrer } catch (_: Exception) { null }
+                            } else null
+                            finish(referrer)
+                        }
+
+                        override fun onInstallReferrerServiceDisconnected() { finish(null) }
+                    })
+                } catch (_: Exception) { finish(null) }
+            }
 
         adBillingChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "albailju/ad_billing")
         adBillingClient = BillingClient.newBuilder(this)

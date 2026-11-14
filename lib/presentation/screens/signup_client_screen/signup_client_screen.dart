@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/main.dart';
+import 'package:iljujob/data/services/acquisition_service.dart';
 import 'package:iljujob/presentation/screens/TermsDetailScreen.dart';
 import 'package:iljujob/presentation/screens/webview_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -153,6 +154,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
     }
     setState(() => _isLoading = true);
     try {
+      final acquisition = await AcquisitionService.forSignup();
       final response = await http.post(
         Uri.parse('$baseUrl/api/client/check'),
         headers: {'Content-Type': 'application/json'},
@@ -160,6 +162,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
           'phone': phone,
           'fcmToken': await FirebaseMessaging.instance.getToken(), // ✅ 추가
           'verificationToken': _identityVerificationToken,
+          if (acquisition != null) 'acquisition': acquisition,
         }),
       );
       final data = jsonDecode(response.body);

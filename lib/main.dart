@@ -52,6 +52,7 @@ import 'package:iljujob/data/services/job_service.dart';
 import 'package:iljujob/data/services/fcm_token_payload.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
+import 'package:iljujob/data/services/acquisition_service.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:iljujob/presentation/screens/mypagescreen/block_detail_screen.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -591,6 +592,7 @@ Future<void> _handleChatNotification(RemoteMessage message) async {
 int? _pendingJobLinkId;
 
 Future<void> _openJobLink(Uri uri) async {
+  await AcquisitionService.captureDeepLink(uri);
   if (uri.scheme != 'albailju' || uri.host != 'job') return;
   final id = int.tryParse(uri.pathSegments.isEmpty ? '' : uri.pathSegments.first);
   if (id == null) return;
@@ -751,6 +753,7 @@ Widget _determineStartScreen({
 // ============================================================
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  AcquisitionService.capturePlayInstallReferrer();
   debugPrint('🚀 [main.dart] Flutter 바인딩 초기화 완료');
 
   kakao.KakaoSdk.init(
