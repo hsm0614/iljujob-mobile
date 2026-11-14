@@ -761,7 +761,8 @@ class _UrgentTab extends StatelessWidget {
                 children: [
                   const Expanded(
                     child: Text(
-                      '매달 쓴다면 구독이 더 저렴해요',
+                      // V3 구독엔 긴급 호출 이용권이 없다 — '더 저렴'은 비교 대상이 틀린 말이었다. 비슷한 건 직접 연락(월 10·50명)
+                      '알바생에게 직접 연락할 일이 많다면 구독도 있어요',
                       style: AppTextStyles.body2,
                     ),
                   ),

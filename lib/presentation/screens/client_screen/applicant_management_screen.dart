@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:iljujob/widget/app_ui.dart';
+import 'package:iljujob/presentation/screens/worker_screen/worker_profile_screen.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -395,12 +396,20 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
   }
 
   // 채팅(=채용) 전에 지원자 프로필·신뢰도 확인
-  void _goToWorkerProfile(ApplicantModel applicant) {
+  void _goToWorkerProfile(ApplicantModel applicant, JobApplicantGroup group) {
     if (applicant.workerId <= 0) return;
-    Navigator.pushNamed(
+    Navigator.push(
       context,
-      '/worker-profile',
-      arguments: applicant.workerId,
+      MaterialPageRoute(
+        builder:
+            (ctx) => WorkerProfileScreen(
+              workerId: applicant.workerId,
+              onChat: () {
+                Navigator.pop(ctx);
+                _goToChat(applicant, group);
+              },
+            ),
+      ),
     );
   }
 
@@ -1251,7 +1260,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
 
     return InkWell(
       // 선택 중이면 행 전체가 체크, 아니면 프로필(채팅 전 지원자 확인)
-      onTap: selecting ? () => _toggleApplicant(group, applicant) : () => _goToWorkerProfile(applicant),
+      onTap: selecting ? () => _toggleApplicant(group, applicant) : () => _goToWorkerProfile(applicant, group),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
         child: Row(

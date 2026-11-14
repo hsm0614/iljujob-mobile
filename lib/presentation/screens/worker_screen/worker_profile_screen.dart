@@ -10,7 +10,11 @@ import '../../../widget/app_ui.dart';
 class WorkerProfileScreen extends StatefulWidget {
   final int workerId;
 
-  const WorkerProfileScreen({super.key, required this.workerId});
+  /// 지원자 목록에서 열었을 때만 — 보고 나서 할 일(채팅)이 없어 막다른 화면이었다(11-15).
+  /// 채팅방 '프로필 보기'에서는 넘기지 않는다(뒤로 가면 그 채팅이다).
+  final VoidCallback? onChat;
+
+  const WorkerProfileScreen({super.key, required this.workerId, this.onChat});
 
   @override
   State<WorkerProfileScreen> createState() => _WorkerProfileScreenState();
@@ -184,6 +188,10 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar:
+          widget.onChat == null || isLoading || isBlocked
+              ? null
+              : AppBottomBar(child: AppPrimaryButton(label: '채팅하기', onPressed: widget.onChat)),
       backgroundColor: AppColors.bgPage,
       appBar: AppBar(
         title: const Text('알바생 프로필'),
