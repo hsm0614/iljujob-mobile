@@ -180,6 +180,7 @@ class ChatImageBubble extends StatelessWidget {
             imageUrl: imageUrl,
             width: 200,
             height: 200,
+            memCacheWidth: 600, // 200pt × 3배 화면. 채팅방 사진을 원본 크기로 디코드하고 있었다
             fit: BoxFit.cover,
             placeholder: (_, __) => Container(
               width: 200,

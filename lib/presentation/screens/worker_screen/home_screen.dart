@@ -145,6 +145,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: imageHeight,
                         child: Image.network(
                           p.imageUrl,
+                          cacheWidth: 1080,
                           fit: BoxFit.cover,
                           loadingBuilder:
                               (c, child, progress) =>

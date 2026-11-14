@@ -656,6 +656,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                       decoration: const BoxDecoration(color: AppColors.bgMuted),
                       child: Image.network(
                         '$baseUrl${banner.imageUrl}',
+                        cacheWidth: 1080,
                         fit: BoxFit.contain,
                         alignment: Alignment.center,
                         filterQuality: FilterQuality.high,

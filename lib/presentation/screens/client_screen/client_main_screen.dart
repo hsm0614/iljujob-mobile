@@ -227,6 +227,7 @@ class _ClientMainScreenState extends State<ClientMainScreen>
                       fit: BoxFit.contain,
                       child: Image.network(
                         imageUrl,
+                        cacheWidth: 1080,
                         errorBuilder:
                             (c, e, s) => const Icon(
                               Icons.image_not_supported,

@@ -127,6 +127,7 @@ class _EventItem extends StatelessWidget {
                         )
                         : Image.network(
                           img,
+                          cacheWidth: 1080,
                           fit: BoxFit.contain,
                           errorBuilder:
                               (_, __, ___) => const Icon(
