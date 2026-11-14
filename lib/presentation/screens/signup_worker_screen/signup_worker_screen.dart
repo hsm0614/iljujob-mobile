@@ -465,8 +465,8 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
 
   ButtonStyle _primaryBtnStyle({bool enabled = true}) {
     return ElevatedButton.styleFrom(
-      backgroundColor: enabled ? kBrand : const Color(0xFFC4DCFF),
-      foregroundColor: Colors.white,
+      backgroundColor: enabled ? kBrand : AppColors.bgMuted, // 비활성 = 회색(DESIGN.md)
+      foregroundColor: enabled ? Colors.white : AppColors.textTertiary,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       minimumSize: const Size.fromHeight(52),

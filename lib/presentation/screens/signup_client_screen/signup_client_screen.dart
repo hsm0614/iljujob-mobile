@@ -304,8 +304,8 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
 
   ButtonStyle _primaryBtnStyle({bool enabled = true}) {
     return ElevatedButton.styleFrom(
-      backgroundColor: enabled ? AppColors.primary : const Color(0xFFC4DCFF),
-      foregroundColor: Colors.white,
+      backgroundColor: enabled ? AppColors.primary : AppColors.bgMuted, // 비활성 = 회색(DESIGN.md)
+      foregroundColor: enabled ? Colors.white : AppColors.textTertiary,
       elevation: 0,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
       minimumSize: const Size.fromHeight(52),

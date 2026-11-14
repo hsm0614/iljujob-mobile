@@ -309,8 +309,9 @@ class AppTheme {
   static final ButtonStyle _primaryButtonStyle = ElevatedButton.styleFrom(
     backgroundColor: AppColors.primary,
     foregroundColor: Colors.white,
-    disabledBackgroundColor: const Color(0xFFC4DCFF), // 파랑 35% — 비활성도 '파란 버튼'으로 읽힌다
-    disabledForegroundColor: Colors.white,
+    // 비활성 = 회색 바탕 + 힌트 글씨(DESIGN.md). 연파랑은 '눌러도 되는 버튼'으로 읽혔다(11-15 대표 결정)
+    disabledBackgroundColor: AppColors.bgMuted,
+    disabledForegroundColor: AppColors.textTertiary,
     elevation: 0,
     shadowColor: Colors.transparent,
     minimumSize: const Size(64, 52),

@@ -3912,7 +3912,7 @@ class _NextBtn extends StatelessWidget {
   final VoidCallback? onTap;
   final String label;
   const _NextBtn({required this.onTap, this.label = '다음'});
-  // 모양은 테마 주 버튼 — 비활성은 연한 파랑(회색 버튼에 긴 문장을 넣던 것 대신 위에 안내 한 줄)
+  // 모양은 테마 주 버튼 — 비활성은 회색, 못 넘어가는 이유는 버튼 위 안내 한 줄
   @override
   Widget build(BuildContext context) => AppPrimaryButton(onPressed: onTap, label: label, height: 54);
 }
