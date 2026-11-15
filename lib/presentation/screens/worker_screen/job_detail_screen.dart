@@ -1,6 +1,7 @@
 import 'package:iljujob/utils/profile_completeness.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:iljujob/widget/job_description_text.dart';
 import 'package:iljujob/widget/app_motion.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
@@ -1643,7 +1644,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         children: [
           const Text('하는 일', style: AppTextStyles.h3),
           const SizedBox(height: 10),
-          Text(description, style: AppTextStyles.body1.copyWith(height: 1.65)),
+          // 사장님 원문을 소제목·목록·문단으로 나눠 보여 준다 (글자는 그대로)
+          JobDescriptionText(description),
         ],
       ),
     );
