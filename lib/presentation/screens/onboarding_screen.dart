@@ -28,13 +28,9 @@ class OnboardingScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(height: size.height * 0.08),
-                const Text(
-                  '알바일주',
-                  style: TextStyle(
-                    fontFamily: 'Jalnan2TTF',
-                    fontSize: AppFontSize.h1,
-                    color: AppColors.primary,
-                  ),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: AlbailjuLockup(height: 40),
                 ),
                 const SizedBox(height: 10),
                 Text(

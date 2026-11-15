@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:iljujob/config/app_theme.dart';
+import 'package:iljujob/widget/app_ui.dart';
 
 class SplashScreen extends StatefulWidget {
   final Widget nextScreen;
@@ -26,13 +28,17 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+    // 네이티브 스플래시(파랑 + 흰 일주이)와 이어지게 같은 바탕 (2026-11)
+    return const Scaffold(
+      backgroundColor: AppColors.primary,
       body: Center(
-        child: Image.asset(
-          'assets/splash5.png',
-          fit: BoxFit.contain,
-          width: 300,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Iljui(size: 128, mood: IljuiMood.white, animate: true),
+            SizedBox(height: 20),
+            AlbailjuLockup(height: 40, onBlue: true),
+          ],
         ),
       ),
     );

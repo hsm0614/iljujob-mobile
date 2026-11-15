@@ -24,12 +24,12 @@ environment:
 flutter_native_splash:
   android: true
   ios: true
-  color: "#1675F4"  # 전체 배경 파랑
-  image: assets/splash_glyph_white_432.png  # 투명배경 흰 글리프
+  color: "#3B8AFF"  # 브랜드 파랑 (2026-11 일주이 리브랜딩)
+  image: assets/brand/splash_iljui_white_432.png  # 투명배경 흰 일주이
 
   android_12:
-    color: "#1675F4"
-    image: assets/splash_glyph_white_432.png
+    color: "#3B8AFF"
+    image: assets/brand/splash_iljui_white_432.png
     # icon_background_color: "#1675F4"  ← 이 줄을 넣지 말아야 원형 배경이 사라집니다!
 flutter:
   fonts:
@@ -61,6 +61,7 @@ flutter:
     - assets/terms/marketing_terms.txt
     - assets/terms/location_terms.txt
     - assets/images/noshow_banner.png
+    - assets/brand/
     - assets/images/logo_mark.png   # 알바일주 심볼 (파트너 락업용, 웹 favicon과 동일)
     - assets/partners/wonder_logo.png  # 원더 제공 자산 (앱 logo 남색_텍스트조합)
     - assets/policies/wage_policy.md
@@ -163,7 +164,7 @@ dependency_overrides:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "assets/logo1_512.png"  # 새 로고 경로로 수정
+  image_path: "assets/brand/app_icon_1024.png"  # 일주이 (2026-11)
   min_sdk_android: 21
   remove_alpha_ios: true
 # For information on the generic Dart part of this file, see the

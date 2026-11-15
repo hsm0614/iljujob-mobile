@@ -379,14 +379,30 @@ class AppEmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: const BoxDecoration(
-                color: AppColors.bgMuted,
-                shape: BoxShape.circle,
+            // 일주이(시무룩) + 화면 맥락 아이콘 작은 배지 (2026-11)
+            SizedBox(
+              width: 84,
+              height: 84,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Iljui(size: 84, mood: IljuiMood.sad),
+                  Positioned(
+                    right: -2,
+                    bottom: 2,
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: AppColors.bgCard,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Icon(icon, size: 15, color: AppColors.textSecondary),
+                    ),
+                  ),
+                ],
               ),
-              child: Icon(icon, size: 30, color: AppColors.textTertiary),
             ),
             const SizedBox(height: 16),
             Text(title, textAlign: TextAlign.center, style: AppTextStyles.h3),
@@ -1103,4 +1119,81 @@ class CommaNumberInputFormatter extends TextInputFormatter {
       selection: TextSelection.collapsed(offset: formatted.length),
     );
   }
+}
+
+// ─────────────────────────────────────────────────────────
+// 브랜드 캐릭터 일주이 (2026-11 리브랜딩). 원본 SVG: design/logo-2026-11/final/
+// ─────────────────────────────────────────────────────────
+enum IljuiMood { normal, happy, sad, white }
+
+/// 일주이. [animate]면 숨쉬듯 오르내린다(동작 줄이기 설정이면 멈춤).
+class Iljui extends StatefulWidget {
+  final double size;
+  final IljuiMood mood;
+  final bool animate;
+
+  const Iljui({super.key, this.size = 72, this.mood = IljuiMood.normal, this.animate = false});
+
+  @override
+  State<Iljui> createState() => _IljuiState();
+}
+
+class _IljuiState extends State<Iljui> with SingleTickerProviderStateMixin {
+  late final AnimationController _c =
+      AnimationController(vsync: this, duration: const Duration(milliseconds: 2800));
+
+  static const _asset = {
+    IljuiMood.normal: 'assets/brand/iljui.png',
+    IljuiMood.happy: 'assets/brand/iljui_happy.png',
+    IljuiMood.sad: 'assets/brand/iljui_sad.png',
+    IljuiMood.white: 'assets/brand/iljui_white.png',
+  };
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final still = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    if (widget.animate && !still) {
+      if (!_c.isAnimating) _c.repeat(reverse: true);
+    } else {
+      _c.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final img = Image.asset(_asset[widget.mood]!, width: widget.size, height: widget.size);
+    if (!widget.animate) return img;
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (_, child) {
+        final t = Curves.easeInOut.transform(_c.value);
+        return Transform.translate(
+          offset: Offset(0, -widget.size * 0.04 * t),
+          child: Transform.scale(scaleX: 1 + 0.02 * t, scaleY: 1 - 0.01 * t, child: child),
+        );
+      },
+      child: img,
+    );
+  }
+}
+
+/// 일주이 + '알바일주' 워드마크 가로 조합. [onBlue]면 파랑 바탕용 흰 버전.
+class AlbailjuLockup extends StatelessWidget {
+  final double height;
+  final bool onBlue;
+  const AlbailjuLockup({super.key, this.height = 26, this.onBlue = false});
+
+  @override
+  Widget build(BuildContext context) => Image.asset(
+    onBlue ? 'assets/brand/lockup_white.png' : 'assets/brand/lockup.png',
+    height: height,
+    semanticLabel: '알바일주',
+  );
 }
