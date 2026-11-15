@@ -17,6 +17,7 @@ import 'package:iljujob/presentation/screens/signup_worker_screen/signup_worker_
 import 'package:iljujob/presentation/screens/signup_worker_screen/worker_quick_setup_screen.dart';
 import 'package:iljujob/presentation/screens/AppleExtraInfoScreen.dart';
 import '../../../config/app_theme.dart';
+import 'package:iljujob/widget/worker_consent_sheet.dart';
 
 const kBrand = AppColors.primary;
 
@@ -76,6 +77,9 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
       await prefs.setBool('worker_first_home_skip_primer', true);
     }
 
+    if (!mounted) return;
+    // 소셜 가입엔 약관 화면이 없었다 — 휴대폰 가입과 같은 동의를 여기서 받는다.
+    if (isNewUser) await showSignupConsentSheet(context);
     if (!mounted) return;
 
     if (isNewUser) {

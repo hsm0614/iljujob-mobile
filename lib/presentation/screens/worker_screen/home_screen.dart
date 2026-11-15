@@ -19,6 +19,7 @@ import 'package:iljujob/widget/recommended_section.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/widget/app_ui.dart';
 import 'package:iljujob/widget/push_permission.dart';
+import 'package:iljujob/widget/worker_consent_sheet.dart';
 import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 
 class HomeScreen extends StatefulWidget {
@@ -67,6 +68,9 @@ class _HomeScreenState extends State<HomeScreen> {
         await prefs.remove('worker_first_home_skip_primer');
         return; // 빈 목록에는 기존 알림 배너가 있으므로 안내 시트를 겹치지 않는다.
       }
+      if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? false)) return;
+      // 위치·광고성 정보 동의가 없으면 그것부터(알림 권한도 같이 묻는다). 보여줬으면 이번엔 끝.
+      if (await maybeShowNearbyConsentSheet(context)) return;
       if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? false)) return;
       maybeShowPushPrimer(
         context,
