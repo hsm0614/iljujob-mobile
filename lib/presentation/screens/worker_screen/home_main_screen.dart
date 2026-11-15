@@ -67,6 +67,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   double currentLatitude = 0.0;
   double currentLongitude = 0.0;
   double selectedDistance = 30;
+  bool _firstHomeNearby = false;
+  bool _firstHomeNearbyLogged = false;
   int _itemsToShow = 10;
   bool isLoading = true;
   // ── 필터 규칙 (2026-10) ────────────────────────────────────
@@ -130,6 +132,15 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   static const _kRegionSidoKey = 'job_list_region_sido';
   static const _kRegionSigunguKey = 'job_list_region_sigungu';
   bool get _isNearScope => _scope == 'near';
+
+  bool _withinSelectedDistance(Job job) {
+    if (_firstHomeNearby) {
+      if (job.isNationwide) return false;
+      final km = job.distanceKmFrom(currentLatitude, currentLongitude);
+      return km != null && km <= 5;
+    }
+    return job.withinRadiusKm(currentLatitude, currentLongitude, selectedDistance);
+  }
 
   // 알바생 홈 시안(2026-11): 내 주변이 적거나 없을 때 '조금 먼 공고'와 '최근 7일 근처 공고 수'.
   // 전국 모집 중 공고가 12개(11-01)라 대부분 0~2개를 본다 — 빈 화면 대신 다음 행동을 준다
@@ -340,11 +351,16 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
   Future<void> _initGps() async {
     final prefs = await SharedPreferences.getInstance();
+    if (prefs.getBool('worker_first_home_nearby') ?? false) {
+      _firstHomeNearby = true;
+      selectedDistance = 5;
+      await prefs.remove('worker_first_home_nearby');
+    }
     // 기본은 '내 주변'. 앱바에는 내 위치의 시·군·구 이름을 보여준다(아래 위치 확인 뒤)
     // 앱을 켤 때는 늘 내 위치부터. '전국'은 빈 화면·목록 끝에서 한 번 넓혀 보는 것이라 기억하지 않는다
     // (예전엔 한 번 누르면 영구 기본값이 돼 '디폴트가 전국'으로 보였다 — 2026-10-24 대표 폰 실측)
     final saved = prefs.getString(_kScopeKey);
-    _scope = saved == 'region' ? 'region' : 'near';
+    _scope = _firstHomeNearby ? 'near' : (saved == 'region' ? 'region' : 'near');
     _regionSido = prefs.getString(_kRegionSidoKey);
     _regionSigungu = prefs.getString(_kRegionSigunguKey);
     if (_scope == 'region' && (_regionSido ?? '').isEmpty) _scope = 'near';
@@ -820,13 +836,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         // 목록·필터 양쪽에서 같은 판단을 하도록 모아뒀다.
         filtered =
             validJobs
-                .where(
-                  (j) => j.withinRadiusKm(
-                    currentLatitude,
-                    currentLongitude,
-                    selectedDistance,
-                  ),
-                )
+                .where(_withinSelectedDistance)
                 .toList();
       }
 
@@ -855,6 +865,13 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       allJobs = validJobs;
       // 정렬·당일지급·급여형 칩이 첫 로드에도 먹도록 같은 필터를 탄다
       _applyFilters();
+      if (_firstHomeNearby && hasLocation && !_firstHomeNearbyLogged) {
+        _firstHomeNearbyLogged = true;
+        ScreenAnalyticsService.instance.logEvent(
+          'worker_first_home_nearby_shown',
+          params: {'count': filteredJobs.length, 'radius_km': 5},
+        );
+      }
       if (_isNearScope && hasLocation && filtered.length < 8) {
         unawaited(_loadFarther(req, filtered.map((j) => j.id).toSet(), countRecent: filtered.isEmpty));
       } else if (mounted) {
@@ -937,13 +954,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     if (_isNearScope && currentLatitude != 0.0 && currentLongitude != 0.0) {
       tempJobs =
           tempJobs
-              .where(
-                (job) => job.withinRadiusKm(
-                  currentLatitude,
-                  currentLongitude,
-                  selectedDistance,
-                ),
-              )
+              .where(_withinSelectedDistance)
               .toList();
     }
 
@@ -2309,6 +2320,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
   Future<void> _setScope(String scope, {String? sido, String? sigungu}) async {
     setState(() {
+      _firstHomeNearby = false;
       _scope = scope;
       if (scope == 'region') {
         _regionSido = sido;
@@ -2501,13 +2513,14 @@ class _HomeMainScreenState extends State<HomeMainScreen>
           value: selectedDistance,
           onChanged:
               (value) => setState(() {
+                _firstHomeNearby = false;
                 selectedDistance = value;
               }),
           onChangeEnd: (value) async {
             if (currentLatitude == 0.0 || currentLongitude == 0.0) {
               await _init();
             }
-            _applyFiltersThrottled();
+            await _loadJobs();
           },
         ),
         const SizedBox(height: 4),
@@ -3009,7 +3022,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
               Icons.zoom_out_map_rounded,
               '반경 ${wider.toStringAsFixed(0)}km로 넓혀 보기',
               () {
-                setState(() => selectedDistance = wider);
+                setState(() {
+                  _firstHomeNearby = false;
+                  selectedDistance = wider;
+                });
                 _loadJobs();
               },
             ),
@@ -3276,7 +3292,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             const SizedBox(height: 20),
             const PushOffBanner(
               hero: true,
-              message: '공고는 3일만 보이고, 먼저 지원한 사람이 연락받기 쉬워요. 알림이 꺼져 있어요.',
+              message: '가까운 공고가 생기면 알려드릴게요. 알림을 켜 주세요.',
               source: 'worker_home_empty',
             ),
           ],
@@ -3285,7 +3301,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             children: [
               if (wider > selectedDistance)
                 chip('반경 ${wider.toStringAsFixed(0)}km로 넓히기', () {
-                  setState(() => selectedDistance = wider);
+                  setState(() {
+                    _firstHomeNearby = false;
+                    selectedDistance = wider;
+                  });
                   _loadJobs();
                 }, icon: Icons.radar_rounded),
               chip('전국 공고', () => _setScope('nationwide')),

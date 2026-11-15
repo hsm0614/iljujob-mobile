@@ -205,6 +205,9 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
 
         // ✅ main.dart의 통합 FCM 함수 사용
         await sendFcmTokenUnified();
+        if (mounted) {
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (_) => false);
+        }
 
         if (!mounted) return;
         Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
@@ -417,6 +420,8 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
           userIdOrClientId: data['workerId'] as int,
           userName: _nameController.text,
         );
+        await prefs.setBool('worker_first_home_nearby', true);
+        await prefs.setBool('worker_first_home_skip_primer', true);
         // 토큰 저장 뒤에 기록해야 가입 완료가 로그인 전 대기열에 남지 않는다.
         ScreenAnalyticsService.instance.logEvent(
           'worker_signup_complete',

@@ -71,6 +71,10 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
 
     final isNewUser = data['isNewUser'] == true;
     final provider = data['socialProvider'] ?? '';
+    if (isNewUser) {
+      await prefs.setBool('worker_first_home_nearby', true);
+      await prefs.setBool('worker_first_home_skip_primer', true);
+    }
 
     if (!mounted) return;
 

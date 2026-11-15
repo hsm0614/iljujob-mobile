@@ -60,7 +60,13 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) => _openPendingApplyJob());
     // 알림 권한 안내 — 공고 상세까지 안 가는 신규가 많아 홈에서도 한 번 묻는다.
     // 다른 화면·팝업이 위에 떠 있으면(지원 이어가기·프로모) 건너뛰고 다음 기회(공고 상세)에 맡긴다.
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    Future.delayed(const Duration(milliseconds: 1500), () async {
+      if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? false)) return;
+      final prefs = await SharedPreferences.getInstance();
+      if (prefs.getBool('worker_first_home_skip_primer') ?? false) {
+        await prefs.remove('worker_first_home_skip_primer');
+        return; // 빈 목록에는 기존 알림 배너가 있으므로 안내 시트를 겹치지 않는다.
+      }
       if (!mounted || !(ModalRoute.of(context)?.isCurrent ?? false)) return;
       maybeShowPushPrimer(
         context,
