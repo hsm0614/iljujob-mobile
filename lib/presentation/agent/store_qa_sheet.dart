@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
+import '../../widget/app_ui.dart';
 import '../../config/constants.dart';
 import '../../data/services/authenticated_http_client.dart';
 
@@ -53,7 +54,7 @@ class _StoreQaState extends State<_StoreQa> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('매장에 물어보기', style: AppTextStyles.h2),
+            const AppSheetHeader('매장에 물어보기', padding: EdgeInsets.zero),
             const SizedBox(height: 4),
             const Text('사장님이 적어 둔 매장 안내서에서 AI가 찾아 답해요.', style: AppTextStyles.body2),
             const SizedBox(height: 12),

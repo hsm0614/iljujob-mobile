@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:iljujob/config/app_theme.dart';
+import 'package:iljujob/widget/app_ui.dart';
 import 'package:intl/intl.dart';
 import 'package:iljujob/data/services/job_insight_service.dart';
 import 'package:iljujob/presentation/screens/subscription_plans_screen.dart';
@@ -94,41 +95,15 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
               ),
               const SizedBox(height: 16),
 
-              // ── 헤더 ──
+              // ── 헤더 ── 다른 고르는 시트와 같은 머리(제목+닫기). 파란 아이콘 상자는 뺐다
+              const AppSheetHeader('공고 통계', padding: EdgeInsets.fromLTRB(20, 0, 8, 0)),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(Icons.bar_chart_rounded, size: 18, color: Colors.white),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            '공고 통계',
-                            style: TextStyle(
-                              fontSize: AppFontSize.title,
-                              fontWeight: FontWeight.w800,
-                              color: _text,
-                            ),
-                          ),
-                          Text(
-                            widget.jobTitle,
-                            style: const TextStyle(fontSize: AppFontSize.meta, color: _label),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  widget.jobTitle,
+                  maxLines: 1,
+                  style: const TextStyle(fontSize: AppFontSize.meta, color: _label),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(height: 16),
@@ -137,7 +112,7 @@ class _JobInsightSheetState extends State<JobInsightSheet> {
               // ── 본문 ──
               Expanded(
                 child: _isLoading
-                    ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(_blue)))
+                    ? const AppSkeletonList(rows: 4)
                     : _needsSubscription
                     ? _buildSubscriptionGate()
                     : _error != null

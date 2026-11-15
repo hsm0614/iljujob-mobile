@@ -536,17 +536,7 @@ class _ChatListScreenState extends State<ChatListScreen>
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: AppFontSize.buttonLg,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-                const SizedBox(height: 12),
+                AppSheetHeader(title, padding: const EdgeInsets.only(left: 4, bottom: 4)),
                 if (userType == 'worker') ...[
                   _ChatActionTile(
                     icon: Icons.cancel_outlined,

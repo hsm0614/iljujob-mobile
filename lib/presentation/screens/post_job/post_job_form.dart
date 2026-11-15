@@ -2215,6 +2215,7 @@ class _PostJobFormState extends State<PostJobForm>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            const AppSheetHeader('사진 고르기'),
             ListTile(
               leading: const Icon(Icons.photo_camera_outlined),
               title: const Text('사진 찍기'),

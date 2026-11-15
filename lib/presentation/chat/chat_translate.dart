@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
 import '../../config/constants.dart';
 import '../../data/services/authenticated_http_client.dart';
+import '../../widget/app_motion.dart';
+import '../../widget/app_ui.dart';
 
 const _langs = {'ko', 'en', 'zh', 'vi', 'th', 'ru', 'uz', 'mn', 'ne', 'km', 'id', 'ja', 'tl', 'my'};
 
@@ -37,10 +39,11 @@ Future<void> showChatTranslation(BuildContext context, String text) => showModal
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                const AppSheetHeader('번역', padding: EdgeInsets.zero),
                 Text(text, style: AppTextStyles.caption, maxLines: 4, overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 12),
                 if (snap.connectionState != ConnectionState.done)
-                  const Center(child: Padding(padding: EdgeInsets.all(12), child: CircularProgressIndicator(strokeWidth: 2)))
+                  const AppShimmer(height: 48) // 번역 기다리는 동안 빛줄기
                 else if (snap.hasError)
                   Text(snap.error.toString().replaceFirst('Exception: ', ''),
                       style: AppTextStyles.body2.copyWith(color: AppColors.error))

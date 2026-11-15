@@ -408,15 +408,7 @@ class _MyAppliedJobsScreenState extends State<MyAppliedJobsScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-                  child: Text(
-                    job.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.body2,
-                  ),
-                ),
+                AppSheetHeader(job.title, padding: const EdgeInsets.fromLTRB(20, 0, 8, 4)),
                 AppMenuRow(
                   label: '목록에서 숨기기',
                   subtitle: '이 기기에서만 안 보여요',

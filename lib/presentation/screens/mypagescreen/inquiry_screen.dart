@@ -69,6 +69,7 @@ class _InquiryScreenState extends State<InquiryScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                const AppSheetHeader('사진 첨부'),
                 ListTile(
                   leading: const Icon(Icons.photo_library),
                   title: const Text('앨범에서 선택'),

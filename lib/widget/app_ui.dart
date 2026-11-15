@@ -440,14 +440,22 @@ class AppEmptyState extends StatelessWidget {
 /// 확인 시트([showAppSheet])는 버튼으로 닫으니 쓰지 않는다.
 class AppSheetHeader extends StatelessWidget {
   final String title;
-  const AppSheetHeader(this.title, {super.key});
+  /// 시트 본문이 이미 좌우 여백을 주면 그에 맞춘다(기본 20 · 오른쪽은 닫기 버튼 몫으로 8)
+  final EdgeInsetsGeometry padding;
+  const AppSheetHeader(
+    this.title, {
+    super.key,
+    this.padding = const EdgeInsets.fromLTRB(20, 12, 8, 4),
+  });
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(20, 12, 8, 4),
+    padding: padding,
     child: Row(
       children: [
-        Expanded(child: Text(title, style: AppTextStyles.h3)),
+        Expanded(
+          child: Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTextStyles.h3),
+        ),
         IconButton(
           tooltip: '닫기',
           icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary),

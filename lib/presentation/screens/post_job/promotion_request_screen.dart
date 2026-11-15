@@ -139,7 +139,7 @@ class _PromotionRequestScreenState extends State<PromotionRequestScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(payFor == null ? '광고 문의' : '결제 문의', style: AppTextStyles.h2),
+                  AppSheetHeader(payFor == null ? '광고 문의' : '결제 문의', padding: EdgeInsets.zero),
                   const SizedBox(height: 4),
                   Text('남겨 주신 연락처로 운영팀이 연락드려요', style: AppTextStyles.body2),
                   const SizedBox(height: 16),

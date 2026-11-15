@@ -853,7 +853,7 @@ class _ScoreDetailSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('내 신뢰도 $score점', style: AppTextStyles.h2),
+            AppSheetHeader('내 신뢰도 $score점', padding: EdgeInsets.zero),
             const SizedBox(height: 4),
             Text(
               '점수가 높을수록 사장님 긴급 호출 후보 목록 위쪽에 보여요.',

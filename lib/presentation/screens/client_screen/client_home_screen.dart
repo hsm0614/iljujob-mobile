@@ -1246,7 +1246,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(job.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: AppTextStyles.h3),
+                      AppSheetHeader(job.title, padding: EdgeInsets.zero),
                       const SizedBox(height: 2),
                       Text(
                         // 한 줄이면 급여가 '120,0…'로 숫자 중간에서 잘렸다 — 낱말 단위로 두 줄까지
