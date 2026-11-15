@@ -124,7 +124,7 @@ Future<void> _initFirebaseAndAnalytics() async {
 }
 
 Future<void> _initializeLocalNotifications() async {
-  const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+  const androidInit = AndroidInitializationSettings('@drawable/ic_stat_iljui');
   const iosInit = DarwinInitializationSettings(
     requestAlertPermission: false,
     requestBadgePermission: false,

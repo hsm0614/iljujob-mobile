@@ -75,6 +75,14 @@
             android:name="com.kakao.sdk.AppKey"
             android:value="@string/kakao_app_key" />
 
+        <!-- FCM 알림 아이콘: 상태바는 흰 실루엣만 그린다 — 앱 아이콘을 쓰면 흰 네모로 보였다 (2026-11 일주이) -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_iljui" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/ic_launcher_background" />
+
         <!-- FCM 기본 채널 -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
