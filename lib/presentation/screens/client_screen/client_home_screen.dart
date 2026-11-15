@@ -1674,18 +1674,19 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     }
 
     // 상태마다 지금 할 일 하나
+    // 숫자 줄 오른쪽 작은 버튼이라 짧은 이름 (대표 시안 B, 11-15)
     final (String, VoidCallback) action =
         isClosed
-            ? ('같은 조건으로 다시 올리기', () => _repost(job))
+            ? ('다시 올리기', () => _repost(job))
             : publishTooLate
             ? ('수정하기', () => Navigator.pushNamed(context, '/edit_job', arguments: job.id))
             : reserved && !job.isPaid
-            ? ('지금 바로 공개', () => _upgradeToInstant(job))
+            ? ('바로 공개', () => _upgradeToInstant(job))
             : job.applicantCount > 0
             ? ('지원자 보기', openApplicants)
             : job.isUrgent
-            ? ('근처 알바생에게 긴급 호출', () => _openUrgentCall(job))
-            : ('근처 알바생 추천받기', () => _openRecommendedWorkersByJobId(job.id.toString()));
+            ? ('긴급 호출', () => _openUrgentCall(job))
+            : ('추천받기', () => _openRecommendedWorkersByJobId(job.id.toString()));
 
     final status =
         isClosed
@@ -1693,25 +1694,25 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             : [_liveStatus(job), if (pinned) '상단 고정 ${pinnedRemainText(job)}'].join(' · ');
 
     // 숫자 장부 한 줄 — 회색 상자 셋은 '통계 카드 템플릿'처럼 보였다. 누를 수 있는 칸만 파랑(CTA Blue)
+    // 숫자 위 · 이름 아래로 쌓아 폭을 줄였다 — 오른쪽에 할 일 버튼이 들어간다
     Widget cell(String label, int n, VoidCallback? onTap, {bool accent = false}) => Expanded(
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: Column(
             children: [
-              Text(label, style: AppTextStyles.body2.copyWith(color: accent ? AppColors.primaryDark : null)),
-              const SizedBox(width: 6),
-              // 새 지원·답장 대기가 늘면 숫자가 톡 — 새로고침 뒤 무엇이 바뀌었는지 바로 보인다
               AppBumpNumber(
                 value: n,
                 style: AppTextStyles.jobPayHero.copyWith(
                   color: accent ? AppColors.primary : n == 0 ? AppColors.textTertiary : AppColors.textPrimary,
                 ),
+              ),
+              Text(
+                label,
+                maxLines: 1,
+                style: AppTextStyles.caption.copyWith(color: accent ? AppColors.primaryDark : AppColors.textSecondary),
               ),
             ],
           ),
@@ -1804,26 +1805,27 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                               accent: job.unansweredCount > 0),
                           rule(),
                           cell('조회', job.viewCount, null),
-                        ],
-                      ),
-                      const Divider(height: 1, thickness: 1, color: AppColors.borderSub),
-                      const SizedBox(height: 14),
-                      isClosed
-                          // 마감 공고는 한 단 낮은 버튼 — 모집 중 공고의 버튼이 먼저 보이게
-                          ? SizedBox(
-                              width: double.infinity,
-                              height: 48,
+                          const SizedBox(width: 8),
+                          // 할 일 하나 — 카드마다 꽉 찬 파란 버튼이 화면을 무겁게 했다 → 연파랑 작은 버튼(마감은 회색)
+                          AppPressScale(
+                            child: SizedBox(
+                              height: 38,
                               child: FilledButton(
                                 onPressed: action.$2,
                                 style: FilledButton.styleFrom(
-                                  backgroundColor: AppColors.primaryLight,
-                                  foregroundColor: AppColors.primary,
-                                  textStyle: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w600),
+                                  minimumSize: Size.zero,
+                                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.sm)),
+                                  backgroundColor: isClosed ? AppColors.bgMuted : AppColors.primaryLight,
+                                  foregroundColor: isClosed ? AppColors.textPrimary : AppColors.primaryDark,
+                                  textStyle: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600),
                                 ),
                                 child: Text(action.$1),
                               ),
-                            )
-                          : AppPrimaryButton(label: action.$1, height: 50, onPressed: action.$2),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 ),
