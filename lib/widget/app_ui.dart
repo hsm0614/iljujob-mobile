@@ -296,13 +296,21 @@ class AppBottomNavItem extends StatelessWidget {
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    Icon(
-                      isActive ? activeIcon : icon,
-                      size: 21,
-                      color:
-                          isActive
-                              ? AppColors.primary
-                              : AppColors.textSecondary,
+                    // 고른 탭 아이콘이 작아졌다 튕기며 커진다 (열쇠가 바뀌면 다시 재생)
+                    TweenAnimationBuilder<double>(
+                      key: ValueKey(isActive),
+                      tween: Tween(begin: isActive ? 0.72 : 1.0, end: 1.0),
+                      duration: const Duration(milliseconds: 450),
+                      curve: Curves.elasticOut,
+                      builder: (_, sc, c) => Transform.scale(scale: sc, child: c),
+                      child: Icon(
+                        isActive ? activeIcon : icon,
+                        size: 21,
+                        color:
+                            isActive
+                                ? AppColors.primary
+                                : AppColors.textSecondary,
+                      ),
                     ),
                     if (badgeLabel != null)
                       Positioned(
