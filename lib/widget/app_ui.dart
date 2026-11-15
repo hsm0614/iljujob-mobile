@@ -428,6 +428,28 @@ class AppEmptyState extends StatelessWidget {
   }
 }
 
+/// 고르는 시트(정렬·필터·위치 등)의 머리: 제목 + 닫기. 시트마다 제목·닫기 유무가 달라 매번 다른 창처럼 보였다(2026-11-15).
+/// 확인 시트([showAppSheet])는 버튼으로 닫으니 쓰지 않는다.
+class AppSheetHeader extends StatelessWidget {
+  final String title;
+  const AppSheetHeader(this.title, {super.key});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(20, 12, 8, 4),
+    child: Row(
+      children: [
+        Expanded(child: Text(title, style: AppTextStyles.h3)),
+        IconButton(
+          tooltip: '닫기',
+          icon: const Icon(Icons.close_rounded, color: AppColors.textSecondary),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ],
+    ),
+  );
+}
+
 /// 확인·안내용 바텀시트 (가운데 AlertDialog 대신 — DESIGN.md 바텀시트 원칙).
 /// [cancelLabel] 이 없으면 버튼 하나짜리 안내. 확인을 누르면 true.
 /// 되돌릴 수 없는 경고(노쇼·차단·지원 취소)와 이미지 미리보기는 예외로 팝업을 쓴다.

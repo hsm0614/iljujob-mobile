@@ -1211,20 +1211,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(20, 16, 8, 4),
-                        child: Row(
-                          children: [
-                            const Text('필터', style: AppTextStyles.h3),
-                            const Spacer(),
-                            IconButton(
-                              tooltip: '닫기',
-                              icon: const Icon(Icons.close_rounded),
-                              onPressed: () => Navigator.pop(ctx),
-                            ),
-                          ],
-                        ),
-                      ),
+                      const AppSheetHeader('필터'),
                       Flexible(
                         child: SingleChildScrollView(
                           padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
@@ -2716,51 +2703,25 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   /// 앱바 제목 탭 → '일하고 싶은 위치를 설정해주세요' (급구 레퍼런스).
   /// 주소 검색 · 현재 위치 · 주소 예시, 아래에 반경·지역·전국 보기.
   void _openScopeSheet() {
-    Widget example(String title, String sample) => Padding(
-      padding: const EdgeInsets.only(bottom: 18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: AppTextStyles.body1),
-          const SizedBox(height: 4),
-          Text('예시 : $sample', style: AppTextStyles.body2),
-        ],
-      ),
-    );
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder:
+          // 2026-11-15: 자주 쓰는 범위(반경·지역·전국)가 입력 예시 3덩이 아래 맨 끝에 있었다 → 위로.
+          // 주소 입력은 아래로, 예시는 한 줄로
           (ctx) => SafeArea(
-            child: SizedBox(
-              height: MediaQuery.of(ctx).size.height * 0.85,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
               child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(0, 0, 0, 12),
                 children: [
-                  const Text('일하고 싶은 위치를 설정해주세요', style: AppTextStyles.h2),
-                  const SizedBox(height: 28),
-                  // 누르면 주소 검색(카카오 우편번호) 화면
-                  InkWell(
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      _pickWorkAddress();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      decoration: const BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(color: AppColors.border),
-                        ),
-                      ),
-                      child: Text(
-                        '도로명, 지번, 건물명',
-                        style: AppTextStyles.body1.copyWith(
-                          color: AppColors.textTertiary,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                  const AppSheetHeader('어디 공고를 볼까요?'),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
                   SizedBox(
                     height: 52,
                     child: TextButton.icon(
@@ -2776,14 +2737,9 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                         await _useCurrentLocation();
                       },
                       icon: const Icon(Icons.my_location_rounded, size: 18),
-                      label: const Text('현재 위치로 주소찾기'),
+                      label: const Text('현재 위치로 보기'),
                     ),
                   ),
-                  const SizedBox(height: 28),
-                  example('도로명 + 건물번호', '주흥1길 12, 부산 센텀중앙로 97'),
-                  example('동/읍/면/리 + 번지', '반포동 742-16, 재송동 1208-2'),
-                  example('건물명, 아파트명', '반포자이아파트, 센텀스카이비즈'),
-                  const Divider(),
                   const SizedBox(height: 8),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
@@ -2833,6 +2789,37 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                       Navigator.pop(ctx);
                       _setScope('nationwide');
                     },
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(),
+                  const SizedBox(height: 12),
+                  Text('다른 동네로 찾기', style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  // 누르면 주소 검색(카카오 우편번호) 화면
+                  InkWell(
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      _pickWorkAddress();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(color: AppColors.border),
+                        ),
+                      ),
+                      child: Text(
+                        '도로명, 지번, 건물명',
+                        style: AppTextStyles.body1.copyWith(
+                          color: AppColors.textTertiary,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text('예: 반포동 742-16 · 센텀중앙로 97 · 반포자이아파트', style: AppTextStyles.caption),
+                      ],
+                    ),
                   ),
                 ],
               ),
@@ -2906,9 +2893,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 8),
+                const AppSheetHeader('정렬'),
                 for (final t in const ['추천순', '최신순', '거리순', '급여 높은 순'])
                   ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 20),
                     title: Text(t, style: AppTextStyles.body1),
                     trailing:
                         sortType == t
@@ -3098,10 +3086,10 @@ class _HomeMainScreenState extends State<HomeMainScreen>
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.full),
           onTap: onTap,
+          // alignment를 주면 Wrap 안(필터 시트)에서 줄 폭을 꽉 채운 막대가 됐다 → 글자만큼
           child: Container(
             height: 34,
             padding: const EdgeInsets.symmetric(horizontal: 12),
-            alignment: Alignment.center,
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
