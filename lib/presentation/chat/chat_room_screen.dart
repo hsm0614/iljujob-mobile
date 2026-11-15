@@ -1327,7 +1327,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                     Positioned.fill(
                       child:
                           ctrl.isLoading
-                              ? const Center(child: CircularProgressIndicator())
+                              ? const AppSkeletonList(rows: 8, bubbles: true)
                               : ctrl.messages.isEmpty &&
                                   ctrl.workConfirmations.isEmpty
                               ? _buildEmptyChatNotice(ctrl.isClient)

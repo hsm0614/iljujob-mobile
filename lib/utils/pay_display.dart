@@ -20,12 +20,14 @@ String formatJobPay(
 }
 
 /// '월,화,수,목,금' → '평일', 7일 → '매일', '협의: 주 3회 이상' → '주 3회 이상'. 없으면 null
-String? formatWeekdays(String? raw) {
+String? formatWeekdays(String? raw, {bool short = false}) {
   final v = (raw ?? '').trim();
   if (v.isEmpty) return null;
   if (v.startsWith('협의')) {
     final t = v.replaceFirst(RegExp(r'^협의\s*:?\s*'), '').trim();
-    return t.isEmpty ? '요일 협의' : t;
+    // [short] 목록 카드: 사장님이 쓴 긴 설명('주 4일,3개월 이상,월,화,…')이 한 줄을 다 먹어 시간이 잘렸다 → 첫 조각만
+    final v2 = short ? t.split(',').first.trim() : t;
+    return v2.isEmpty ? '요일 협의' : v2;
   }
   const order = '월화수목금토일';
   final days =

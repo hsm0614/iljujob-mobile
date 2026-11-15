@@ -52,8 +52,8 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _shimmerCtrl = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 1200),
-  )..repeat(reverse: true);
+    duration: const Duration(milliseconds: 1300),
+  )..repeat(); // 왼쪽 → 오른쪽으로 한 방향 흐름
   String? _workerGender;
 
   List<Job> allJobs = [];
@@ -1715,16 +1715,32 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                 color: AppColors.bgCard,
                 border: Border(bottom: BorderSide(color: AppColors.border)),
               ),
-              child: Column(
+              // 공고 줄과 같은 뼈대: 왼쪽 글 4줄 + 오른쪽 그림 칸·버튼
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _shimmerBox(120, 22),
-                  const SizedBox(height: 10),
-                  _shimmerBox(double.infinity, 15),
-                  const SizedBox(height: 8),
-                  _shimmerBox(170, 12),
-                  const SizedBox(height: 6),
-                  _shimmerBox(130, 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _shimmerBox(120, 12),
+                        const SizedBox(height: 10),
+                        _shimmerBox(double.infinity, 16),
+                        const SizedBox(height: 8),
+                        _shimmerBox(150, 12),
+                        const SizedBox(height: 8),
+                        _shimmerBox(100, 20),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    children: [
+                      _shimmerBox(80, 56, radius: AppRadius.md),
+                      const SizedBox(height: 6),
+                      _shimmerBox(80, 36, radius: AppRadius.sm),
+                    ],
+                  ),
                 ],
               ),
             );
@@ -1737,16 +1753,17 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
   Widget _shimmerBox(double width, double height, {double radius = 6}) {
     // 흐르는 shimmer 그라디언트
-    final shimmerValue = _shimmerCtrl.value;
+    final shimmerValue = _shimmerCtrl.value * 1.6 - 0.3; // 화면 밖에서 들어와 밖으로 나간다
     return Container(
       width: width == double.infinity ? null : width,
       height: height,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(radius),
         gradient: LinearGradient(
+          // 가운데 빛줄기: 예전엔 bgPage(=bgMuted 같은 색)라 흐름이 안 보였다
           colors: const [
             AppColors.bgMuted,
-            AppColors.bgPage,
+            AppColors.bgCard,
             AppColors.bgMuted,
           ],
           stops: [
@@ -2609,7 +2626,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
     // 전부 상단 위치줄·뱃지·AI 요약에 이미 있는 내용이라 카드만 길어졌다.
 
     final schedule = [
-      if (formatWeekdays(job.weekdays) case final w?) w,
+      if (formatWeekdays(job.weekdays, short: true) case final w?) w,
       if (job.startDate != null && job.endDate != null)
         _formatDate(job.startDate!) == _formatDate(job.endDate!)
             ? _formatDate(job.startDate!) // 하루짜리는 '10.19' 한 번만
@@ -2629,6 +2646,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
       schedule: schedule.isEmpty ? null : schedule,
       location: locationLine,
       badges: displayBadges,
+      category: job.category,
       // 레퍼런스의 회색 태그(설거지·주방보조…). 업종 이름만 — 지금 데이터로 정확한 것
       tags: [if (_leafCategory(job.category) case final c when c.isNotEmpty) c],
       imageUrl:

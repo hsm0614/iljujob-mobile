@@ -229,7 +229,7 @@ class _BookmarkedJobsScreenState extends State<BookmarkedJobsScreen> {
                               title: job.title,
                               schedule:
                                   [
-                                    if (formatWeekdays(job.weekdays)
+                                    if (formatWeekdays(job.weekdays, short: true)
                                         case final w?)
                                       w,
                                     if (job.workingHours.trim().isNotEmpty)
@@ -245,6 +245,7 @@ class _BookmarkedJobsScreenState extends State<BookmarkedJobsScreen> {
                                         .join(' '),
                               ].join(' · '),
                               divider: i < jobs.length - 1,
+                              category: job.category,
                               imageUrl:
                                   raw == null
                                       ? null

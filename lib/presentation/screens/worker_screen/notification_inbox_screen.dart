@@ -76,7 +76,7 @@ class _NotificationInboxScreenState extends State<NotificationInboxScreen> {
           future: _items,
           builder: (context, snap) {
             if (snap.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
+              return const AppSkeletonList(avatar: true);
             }
             if (snap.hasError) {
               return AppEmptyState(

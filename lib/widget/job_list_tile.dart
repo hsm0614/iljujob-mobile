@@ -21,6 +21,9 @@ class JobListTile extends StatelessWidget {
   final List<String> tags;
 
   final String? imageUrl;
+
+  /// 업종(잎 이름). 사진이 없을 때 업종 아이콘 칸의 그림·색을 고른다
+  final String category;
   final bool isBookmarked;
   final bool isApplied;
 
@@ -35,7 +38,6 @@ class JobListTile extends StatelessWidget {
   final VoidCallback? onApply;
 
   static const _thumb = 80.0;
-  static const defaultImage = 'assets/images/logo_mark.png';
 
   const JobListTile({
     super.key,
@@ -52,6 +54,7 @@ class JobListTile extends StatelessWidget {
     this.badges = const [],
     this.tags = const [],
     this.imageUrl,
+    this.category = '',
     this.isBookmarked = false,
     this.isApplied = false,
     this.isPinned = false,
@@ -108,7 +111,17 @@ class JobListTile extends StatelessWidget {
                               height: 28,
                               child: Align(
                                 alignment: Alignment.centerRight,
-                                child: Icon(
+                                // 누르면 하트가 톡 튀어나온다 (해제는 그냥 바뀐다)
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 320),
+                                  transitionBuilder: (child, a) => ScaleTransition(
+                                    scale: child.key == const ValueKey(true)
+                                        ? CurvedAnimation(parent: a, curve: Curves.elasticOut)
+                                        : a,
+                                    child: child,
+                                  ),
+                                  child: Icon(
+                                  key: ValueKey(isBookmarked),
                                   isBookmarked
                                       ? Icons.favorite_rounded
                                       : Icons.favorite_border_rounded,
@@ -119,6 +132,7 @@ class JobListTile extends StatelessWidget {
                                           : AppColors.textTertiary,
                                   semanticLabel:
                                       isBookmarked ? '관심 공고 해제' : '관심 공고 추가',
+                                ),
                                 ),
                               ),
                             ),
@@ -186,7 +200,7 @@ class JobListTile extends StatelessWidget {
                 width: _thumb,
                 child: Column(
                   children: [
-                    _Thumb(imageUrl: hasImage ? imageUrl : null, size: _thumb),
+                    _Thumb(imageUrl: hasImage ? imageUrl : null, size: _thumb, category: category),
                     if (onApply != null) ...[
                       const SizedBox(height: 6),
                       AppPressScale(
@@ -208,8 +222,11 @@ class JobListTile extends StatelessWidget {
                             textStyle: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600, letterSpacing: -0.2),
                           ),
                           onPressed: isApplied ? null : onApply,
-                          child: isApplied
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 220),
+                            child: isApplied
                               ? const Row(
+                                  key: ValueKey('applied'),
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     Icon(Icons.check_rounded, size: 14),
@@ -217,7 +234,8 @@ class JobListTile extends StatelessWidget {
                                     Text('지원 완료'),
                                   ],
                                 )
-                              : const Text('지원하기'),
+                              : const Text('지원하기', key: ValueKey('apply')),
+                          ),
                         ),
                       ),
                       ),
@@ -236,36 +254,53 @@ class JobListTile extends StatelessWidget {
 class _Thumb extends StatelessWidget {
   final String? imageUrl;
   final double size;
-  const _Thumb({required this.imageUrl, required this.size});
-  static const _compact = 48.0;
+  final String category;
+  const _Thumb({required this.imageUrl, required this.size, this.category = ''});
+  static const _compact = 56.0;
+
+  /// 사진 없는 공고가 대부분이라 회색 심볼이 줄마다 반복돼 목록이 비어 보였다(2026-11-15 실기기).
+  /// 업종별 연한 바탕 + 아이콘으로 — 무슨 일인지 그림으로 먼저 읽힌다. 뱃지가 아니라 Two-Signal과 무관.
+  static (IconData, Color, Color) _look(String c) {
+    bool has(List<String> ks) => ks.any(c.contains);
+    if (has(['홀서빙', '주방', '설거지', '패스트푸드', '요리', '음식'])) {
+      return (Icons.restaurant_rounded, const Color(0xFFFFF1E6), const Color(0xFFE07B39));
+    }
+    if (has(['카페', '바리스타', '베이커리'])) {
+      return (Icons.local_cafe_rounded, const Color(0xFFF6EFE8), const Color(0xFF9A6B45));
+    }
+    if (has(['물류', '택배', '상하차', '배송', '검품', '포장'])) {
+      return (Icons.local_shipping_rounded, const Color(0xFFE8F6F1), const Color(0xFF2F9A78));
+    }
+    if (has(['건설', '제조', '생산', '조립', '반도체', '노무', '청소'])) {
+      return (Icons.construction_rounded, const Color(0xFFFFF6DD), const Color(0xFFC08A12));
+    }
+    if (has(['행사', '진행', '이벤트', '모델', '도우미', '시식', '홍보', '캐릭터'])) {
+      return (Icons.celebration_rounded, const Color(0xFFEEF5FF), const Color(0xFF3B8AFF));
+    }
+    if (has(['편의점', '매장', '판매', '마트'])) {
+      return (Icons.storefront_rounded, const Color(0xFFFDEEF2), const Color(0xFFD45C7A));
+    }
+    if (has(['사무', '데이터', '안내', '접수', '상담'])) {
+      return (Icons.badge_rounded, const Color(0xFFEDF1F7), const Color(0xFF5B6B85));
+    }
+    return (Icons.work_rounded, AppColors.bgMuted, AppColors.textTertiary);
+  }
 
   @override
   Widget build(BuildContext context) {
-    // 사진이 없으면 알바일주 심볼 (대표 결정). 파란 심볼도 반복되면 시선이 쏠려
-    // 회색 톤(바탕 #F2F4F6 + 심볼 #B0B8C1): logo_mark R 채널(바탕 26 · 심볼 255) 선형 매핑
-    final fallback = ColorFiltered(
-      colorFilter: const ColorFilter.matrix(<double>[
-        -0.288, 0, 0, 0, 249.5, //
-        -0.262, 0, 0, 0, 250.8, //
-        -0.231, 0, 0, 0, 252.0, //
-        0, 0, 0, 1, 0,
-      ]),
-      child: Image.asset(JobListTile.defaultImage, height: _compact),
-    );
-    // 사진 없는 기업이 대부분이라 정사각 심볼이 줄 높이를 다 먹었다 —
-    // 없으면 낮은 띠(폭 그대로, 높이 48)로 줄여 한 화면에 공고가 더 보이게
-    final placeholder = Container(
+    final (icon, bg, fg) = _look(category);
+    Widget fallback({double? h}) => Container(
       width: size,
-      height: _compact,
-      color: AppColors.bgMuted,
+      height: h ?? _compact,
+      color: bg,
       alignment: Alignment.center,
-      child: fallback,
+      child: Icon(icon, size: 26, color: fg),
     );
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.md),
       child:
           imageUrl == null
-              ? placeholder
+              ? fallback()
               : Image.network(
                 imageUrl!,
                 width: size,
@@ -284,15 +319,7 @@ class _Thumb extends StatelessWidget {
                           child: child,
                         ),
                       ),
-                errorBuilder:
-                    (_, __, ___) => SizedBox(
-                      width: size,
-                      height: size,
-                      child: ColoredBox(
-                        color: AppColors.bgMuted,
-                        child: Center(child: fallback),
-                      ),
-                    ),
+                errorBuilder: (_, __, ___) => fallback(h: size),
               ),
     );
   }

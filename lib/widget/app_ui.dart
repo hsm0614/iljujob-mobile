@@ -712,7 +712,15 @@ class AppMenuRow extends StatelessWidget {
 class AppSkeletonList extends StatefulWidget {
   final int rows;
   final bool avatar;
-  const AppSkeletonList({super.key, this.rows = 6, this.avatar = false});
+
+  /// 채팅방: 말풍선이 왼쪽·오른쪽 번갈아 놓인 모양
+  final bool bubbles;
+  const AppSkeletonList({
+    super.key,
+    this.rows = 6,
+    this.avatar = false,
+    this.bubbles = false,
+  });
 
   @override
   State<AppSkeletonList> createState() => _AppSkeletonListState();
@@ -749,7 +757,22 @@ class _AppSkeletonListState extends State<AppSkeletonList>
         padding: EdgeInsets.zero,
         itemCount: widget.rows,
         itemBuilder:
-            (_, i) => Padding(
+            (_, i) => widget.bubbles
+                ? Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  child: Align(
+                    alignment: i % 3 == 1 ? Alignment.centerRight : Alignment.centerLeft,
+                    child: Container(
+                      width: [180.0, 140.0, 220.0, 120.0][i % 4],
+                      height: i % 4 == 2 ? 56 : 40,
+                      decoration: BoxDecoration(
+                        color: i % 3 == 1 ? AppColors.primaryLight : AppColors.bgMuted,
+                        borderRadius: BorderRadius.circular(AppRadius.lg),
+                      ),
+                    ),
+                  ),
+                )
+                : Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,

@@ -75,6 +75,7 @@ class _RecentJobsScreenState extends State<RecentJobsScreen> {
                 title: job.title,
                 schedule: job.workingHours,
                 location: job.location,
+                category: job.category,
                 imageUrl:
                     raw == null ? null : (raw.startsWith('http') ? raw : '$baseUrl$raw'),
                 onTap: () => Navigator.push(
