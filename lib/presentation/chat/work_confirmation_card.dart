@@ -12,6 +12,7 @@ import '../../data/services/contract_service.dart';
 import '../contract/contract_sheets.dart';
 import '../agent/store_qa_sheet.dart';
 import '../../utils/condition_guard.dart';
+import '../../utils/minimum_wage.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:iljujob/widget/app_ui.dart';
 
@@ -208,6 +209,7 @@ class WorkConfirmationCard extends StatelessWidget {
                 hourly: confirm.hourlyWage,
                 start: confirm.startTime.substring(0, 5),
                 end: confirm.endTime.substring(0, 5),
+                workDateYmd: confirm.workDate,
                 jobPay: confirm.jobPay,
                 jobPayType: confirm.jobPayType,
               )),
@@ -789,7 +791,8 @@ class _ProposeWorkConfirmationSheetState
         MediaQuery.of(context).padding.bottom;
     final hours = _estimatedHours;
     final wage = _wage;
-    final lowWage = wage != null && wage > 0 && wage < _minWage;
+    final minWage = minimumHourlyWageForDate(_date);
+    final lowWage = wage != null && wage > 0 && wage < minWage;
 
     String fmt(TimeOfDay t) =>
         '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
@@ -903,7 +906,7 @@ class _ProposeWorkConfirmationSheetState
             const SizedBox(height: 6),
             if (lowWage)
               Text(
-                '최저시급(${NumberFormat('#,###').format(_minWage)}원)보다 낮아요',
+                '최저시급(${NumberFormat('#,###').format(minWage)}원)보다 낮아요',
                 style: AppTextStyles.caption.copyWith(color: AppColors.error),
               )
             else if (_wageNote != null)
@@ -1157,8 +1160,6 @@ class _ProposeWorkConfirmationSheetState
         ],
       );
 }
-
-const _minWage = 10320; // 2026 최저시급 — 서버 lib/laborContract.js MIN_WAGE 와 같이
 
 InputDecoration _inputDeco(String hint, {String? suffix}) => InputDecoration(
       hintText: hint,

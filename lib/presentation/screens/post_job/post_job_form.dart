@@ -30,6 +30,7 @@ import 'post_job_controller.dart' show getCurrentLocation;
 import 'promotion_request_screen.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/utils/date_ymd.dart';
+import 'package:iljujob/utils/minimum_wage.dart';
 import 'package:iljujob/widget/picker_sheets.dart';
 import 'package:iljujob/widget/free_limit_sheet.dart';
 import 'package:iljujob/utils/nationwide_hint.dart';
@@ -38,8 +39,6 @@ import 'package:iljujob/config/job_categories.dart';
 import '../../../config/messages.dart';
 import 'package:uuid/uuid.dart';
 
-// 2026년 적용 최저시급
-const int minWagePerHour = 10320;
 const int _kMaxImages = 10;
 const int _totalQ = 6;
 const String _draftKey = 'post_job_draft_v1';
@@ -74,7 +73,7 @@ const _qSubs = [
   '알바생이 *관심 업종*으로 공고를 찾아요',
   '알바생에게 *집에서 몇 km*인지 보여 줘요',
   '',
-  '최저시급 *10,320원* 이상이어야 해요',
+  '', // 급여 질문은 근무일 기준 최저시급으로 동적 표시
   '비워 둬도 올릴 수 있어요',
 ];
 const _jobPostStepEvents = [
@@ -107,6 +106,10 @@ class PostJobForm extends StatefulWidget {
 
 class _PostJobFormState extends State<PostJobForm>
     with TickerProviderStateMixin {
+  int get _minWagePerHour => minimumHourlyWageForRange(
+    _isShortTerm ? _startDate : null,
+    _isShortTerm ? _endDate : null,
+  );
   int _q = 0;
   bool _submitted = false;
   final String _attemptId = const Uuid().v4();
@@ -660,16 +663,16 @@ class _PostJobFormState extends State<PostJobForm>
       setState(
         () =>
             _payWarning =
-                _pay >= minWagePerHour
+                _pay >= _minWagePerHour
                     ? null
-                    : '최저시급보다 낮아요. 최소 ${NumberFormat('#,###').format(minWagePerHour)}원 이상',
+                    : '최저시급보다 낮아요. 최소 ${NumberFormat('#,###').format(_minWagePerHour)}원 이상',
       );
       return;
     }
 
     // ── 월급: 209시간 기준 최저 월급여 검증
     if (_payType == '월급') {
-      const int minMonthly = 2156880; // 10,320 × 209h
+      final minMonthly = _minWagePerHour * monthlyMinimumWageHours;
       setState(
         () =>
             _payWarning =
@@ -689,7 +692,7 @@ class _PostJobFormState extends State<PostJobForm>
 
     // ── 일급
     if (_payType == '일급') {
-      final req = (minWagePerHour * hours).ceil();
+      final req = (_minWagePerHour * hours).ceil();
       setState(
         () =>
             _payWarning =
@@ -717,7 +720,7 @@ class _PostJobFormState extends State<PostJobForm>
           return;
         }
       }
-      final req = (minWagePerHour * hours * dpw).ceil();
+      final req = (_minWagePerHour * hours * dpw).ceil();
       setState(
         () =>
             _payWarning =
@@ -1920,9 +1923,11 @@ class _PostJobFormState extends State<PostJobForm>
                         children: [
                           // 몇 단계째인지는 위 진행바 하나로 — 'N / 7'까지 쓰면 같은 말을 두 번 한다
                           Text(_qHeads[_q], style: _headStyle),
-                          if (_qSubs[_q].isNotEmpty) ...[
+                          if (_q == 4 || _qSubs[_q].isNotEmpty) ...[
                             const SizedBox(height: 8),
-                            _subText(_qSubs[_q]),
+                            _subText(_q == 4
+                                ? '최저시급 *${NumberFormat('#,###').format(_minWagePerHour)}원* 이상이어야 해요'
+                                : _qSubs[_q]),
                           ],
                           const SizedBox(height: 24),
                           _buildQ(),
@@ -2522,10 +2527,13 @@ class _PostJobFormState extends State<PostJobForm>
             width: 58,
             sel: isSameDay(_startDate, d),
             label: '${d.month}월 ${d.day}일 근무',
-            onTap: () => setState(() {
-              _startDate = d;
-              _endDate = d;
-            }),
+            onTap: () {
+              setState(() {
+                _startDate = d;
+                _endDate = d;
+              });
+              _validatePay();
+            },
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -2558,6 +2566,7 @@ class _PostJobFormState extends State<PostJobForm>
                   _startDate = p;
                   _endDate = p;
                 });
+                _validatePay();
               }
             },
             child: Text(
@@ -2850,21 +2859,27 @@ class _PostJobFormState extends State<PostJobForm>
             _ToggleBtn(
               '단기',
               _isShortTerm,
-              () => setState(() {
-                _isShortTerm = true;
-                if (_payType == '월급') _payType = '시급';
-              }),
+              () {
+                setState(() {
+                  _isShortTerm = true;
+                  if (_payType == '월급') _payType = '시급';
+                });
+                _validatePay();
+              },
             ),
             const SizedBox(width: 10),
             _ToggleBtn(
               '장기 (1개월+)',
               !_isShortTerm,
-              () => setState(() {
-                _isShortTerm = false;
-                _startDate = null;
-                _endDate = null;
-                _payType = '월급';
-              }),
+              () {
+                setState(() {
+                  _isShortTerm = false;
+                  _startDate = null;
+                  _endDate = null;
+                  _payType = '월급';
+                });
+                _validatePay();
+              },
             ),
           ],
         ),
@@ -3383,9 +3398,9 @@ class _PostJobFormState extends State<PostJobForm>
                   _payType == '월급'
                       ? '예) 2,500,000'
                       : _payType == '주급'
-                      ? '예) 412,800'
+                      ? '예) ${NumberFormat('#,###').format(_minWagePerHour * 40)}'
                       : _payType == '시급'
-                      ? '예) 10,320'
+                      ? '예) ${NumberFormat('#,###').format(_minWagePerHour)}'
                       : '예) 100,000',
               suffixText: _payType == '시급' ? '원/시간' : '원',
               // 최저시급은 위 부제에 이미 있다 — 여기선 부제에 없는 것만
@@ -3393,7 +3408,7 @@ class _PostJobFormState extends State<PostJobForm>
                   _hourlyFromDaily != null
                       ? '시급으로 ${fmt.format(_hourlyFromDaily)}원'
                       : _payType == '월급'
-                      ? '월급은 최저 2,156,880원 이상 (209시간 기준)'
+                      ? '월급은 최저 ${NumberFormat('#,###').format(_minWagePerHour * monthlyMinimumWageHours)}원 이상 (209시간 기준)'
                       : null,
               helperStyle: AppTextStyles.body2,
               contentPadding: const EdgeInsets.symmetric(
@@ -3825,7 +3840,7 @@ class _PostJobFormState extends State<PostJobForm>
           onUrlChanged: (_) => _scheduleDraftSave(),
         ),
         const SizedBox(height: 20),
-        _LaborNotice(),
+        _LaborNotice(minWagePerHour: _minWagePerHour),
       ],
     );
   }
@@ -4202,6 +4217,9 @@ class _ExternalApplyOption extends StatelessWidget {
 }
 
 class _LaborNotice extends StatefulWidget {
+  final int minWagePerHour;
+  const _LaborNotice({required this.minWagePerHour});
+
   @override
   State<_LaborNotice> createState() => _LaborNoticeState();
 }
@@ -4250,9 +4268,9 @@ class _LaborNoticeState extends State<_LaborNotice> {
             dense: true,
             leading: const Icon(Icons.gavel_rounded, size: 16, color: AppColors.primary),
             title: const Text('최저임금법 준수', style: TextStyle(fontSize: AppFontSize.meta)),
-            subtitle: const Text(
-              '2026년 기준 시급 10,320원 이상',
-              style: TextStyle(fontSize: AppFontSize.caption),
+            subtitle: Text(
+              '${widget.minWagePerHour == minimumHourlyWage2027 ? 2027 : 2026}년 근무 기준 시급 ${NumberFormat('#,###').format(widget.minWagePerHour)}원 이상',
+              style: const TextStyle(fontSize: AppFontSize.caption),
             ),
             trailing: const Icon(Icons.chevron_right, size: 14),
             onTap:

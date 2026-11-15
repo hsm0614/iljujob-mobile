@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import 'package:iljujob/data/services/job_service.dart';
 import 'package:iljujob/utils/pay_display.dart';
+import 'package:iljujob/utils/minimum_wage.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/config/job_categories.dart';
 import 'package:iljujob/widget/picker_sheets.dart';
@@ -65,7 +66,10 @@ class EditJobScreen extends StatefulWidget {
 
 class _EditJobScreenState extends State<EditJobScreen> {
   // ===== Brand =====
-  static const int minWagePerHour = 10320; // 2026년 적용
+  int get minWagePerHour => minimumHourlyWageForRange(
+    isShortTerm ? _Tx.toKst(startDateUtc) : null,
+    isShortTerm ? _Tx.toKst(endDateUtc) : null,
+  );
 
   final _formKey = GlobalKey<FormState>();
   final _scroll = ScrollController();
@@ -598,7 +602,7 @@ class _EditJobScreenState extends State<EditJobScreen> {
       return;
     }
     if (payType == '월급') {
-      const minMonthly = 2156880; // 10,320 × 209h
+      final minMonthly = minWagePerHour * monthlyMinimumWageHours;
       setState(
         () =>
             _payWarning =
