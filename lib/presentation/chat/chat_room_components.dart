@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:iljujob/presentation/chat/chat_image_screen.dart';
 import '../../config/app_theme.dart';
+import '../../widget/app_motion.dart';
 
 // ─────────────────────────────────────────────
 // 지원 취소 확인 다이얼로그
@@ -182,17 +183,7 @@ class ChatImageBubble extends StatelessWidget {
             height: 200,
             memCacheWidth: 600, // 200pt × 3배 화면. 채팅방 사진을 원본 크기로 디코드하고 있었다
             fit: BoxFit.cover,
-            placeholder: (_, __) => Container(
-              width: 200,
-              height: 200,
-              alignment: Alignment.center,
-              color: AppColors.border,
-              child: const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            ),
+            placeholder: (_, __) => const AppShimmer(width: 200, height: 200),
             errorWidget: (_, __, ___) => Container(
               width: 200,
               height: 200,

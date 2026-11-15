@@ -2172,16 +2172,15 @@ class _ImagesCarousel extends StatelessWidget {
                 ),
               );
             },
-            child: Container(
+            // 받는 동안 빛줄기 → 부드럽게 나타난다 (예전엔 회색 칸에서 툭)
+            child: Image.network(
+              fullUrl,
               width: double.infinity,
               height: 200,
-              decoration: BoxDecoration(
-                color: AppColors.border,
-                image: DecorationImage(
-                  image: NetworkImage(fullUrl),
-                  fit: BoxFit.cover,
-                ),
-              ),
+              fit: BoxFit.cover,
+              cacheWidth: 1200,
+              frameBuilder: appImageFrame,
+              errorBuilder: (_, __, ___) => const ColoredBox(color: AppColors.bgMuted),
             ),
           );
         },

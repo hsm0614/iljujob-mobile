@@ -1706,8 +1706,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             children: [
               Text(label, style: AppTextStyles.body2.copyWith(color: accent ? AppColors.primaryDark : null)),
               const SizedBox(width: 6),
-              Text(
-                '$n',
+              // 새 지원·답장 대기가 늘면 숫자가 톡 — 새로고침 뒤 무엇이 바뀌었는지 바로 보인다
+              AppBumpNumber(
+                value: n,
                 style: AppTextStyles.jobPayHero.copyWith(
                   color: accent ? AppColors.primary : n == 0 ? AppColors.textTertiary : AppColors.textPrimary,
                 ),

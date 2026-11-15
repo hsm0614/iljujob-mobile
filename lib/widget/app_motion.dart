@@ -33,6 +33,171 @@ class AppCountUp extends StatelessWidget {
   }
 }
 
+/// 사진 받아 오는 동안 그 칸에 빛줄기가 왼쪽→오른쪽으로 흐른다 (2026-11-15). 회색 칸만 있으면 '멈춘 것'처럼 보였다.
+class AppShimmer extends StatefulWidget {
+  final double? width;
+  final double? height;
+  const AppShimmer({super.key, this.width, this.height});
+
+  @override
+  State<AppShimmer> createState() => _AppShimmerState();
+}
+
+class _AppShimmerState extends State<AppShimmer>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1300),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: _c,
+    builder: (_, __) {
+      final v = _c.value * 1.6 - 0.3;
+      return Container(
+        width: widget.width,
+        height: widget.height,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: const [AppColors.bgMuted, AppColors.bgCard, AppColors.bgMuted],
+            stops: [
+              (v - 0.3).clamp(0.0, 1.0),
+              v.clamp(0.0, 1.0),
+              (v + 0.3).clamp(0.0, 1.0),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+/// Image.network 의 frameBuilder 로 쓴다: 받는 동안 빛줄기 → 다 받으면 0.22초에 걸쳐 나타난다.
+/// 캐시에서 바로 오면(sync) 그대로. 부모가 크기를 정해 줘야 한다(width·height 또는 Stack expand).
+Widget appImageFrame(BuildContext context, Widget child, int? frame, bool sync) {
+  if (sync) return child;
+  return Stack(
+    fit: StackFit.passthrough,
+    children: [
+      if (frame == null) const Positioned.fill(child: AppShimmer()),
+      AnimatedOpacity(
+        opacity: frame == null ? 0 : 1,
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOut,
+        child: child,
+      ),
+    ],
+  );
+}
+
+/// [on]이 꺼짐→켜짐으로 바뀌는 순간 [child] 뒤로 레이더 원이 두 번 퍼진다 (한 번만, 0.9초).
+/// '오늘 일할 수 있어요'를 켰을 때 "이제 사장님에게 보여요"를 느끼게 (2026-11-15).
+class AppRadarPulse extends StatefulWidget {
+  final bool on;
+  final Widget child;
+  const AppRadarPulse({super.key, required this.on, required this.child});
+
+  @override
+  State<AppRadarPulse> createState() => _AppRadarPulseState();
+}
+
+class _AppRadarPulseState extends State<AppRadarPulse>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+  );
+
+  @override
+  void didUpdateWidget(AppRadarPulse old) {
+    super.didUpdateWidget(old);
+    if (widget.on && !old.on) _c.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Stack(
+    alignment: Alignment.center,
+    clipBehavior: Clip.none,
+    children: [
+      for (final delay in const [0.0, 0.3])
+        AnimatedBuilder(
+          animation: _c,
+          builder: (_, __) {
+            final t = ((_c.value - delay) / (1 - delay)).clamp(0.0, 1.0);
+            if (t == 0 || t == 1) return const SizedBox.shrink();
+            return IgnorePointer(
+              child: Container(
+                width: 24 + 72 * t,
+                height: 24 + 72 * t,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: 0.5 * (1 - t)),
+                    width: 2,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      widget.child,
+    ],
+  );
+}
+
+/// 숫자가 늘어나는 순간 한 번 톡 커졌다 돌아온다 (사장님 홈 지원·답장 대기). 처음 그릴 땐 가만히.
+class AppBumpNumber extends StatefulWidget {
+  final int value;
+  final TextStyle style;
+  const AppBumpNumber({super.key, required this.value, required this.style});
+
+  @override
+  State<AppBumpNumber> createState() => _AppBumpNumberState();
+}
+
+class _AppBumpNumberState extends State<AppBumpNumber>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 500),
+  );
+  late final Animation<double> _s = TweenSequence([
+    TweenSequenceItem(tween: Tween(begin: 1.0, end: 1.35).chain(CurveTween(curve: Curves.easeOut)), weight: 35),
+    TweenSequenceItem(tween: Tween(begin: 1.35, end: 1.0).chain(CurveTween(curve: Curves.elasticOut)), weight: 65),
+  ]).animate(_c);
+
+  @override
+  void didUpdateWidget(AppBumpNumber old) {
+    super.didUpdateWidget(old);
+    if (widget.value > old.value) _c.forward(from: 0);
+  }
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => ScaleTransition(
+    scale: _s,
+    child: Text('${widget.value}', style: widget.style),
+  );
+}
+
 /// 목록 줄이 처음 그려질 때 아래에서 살짝 떠오른다. [index]마다 40ms씩 늦게, 8번째부터는 같이.
 /// 스크롤로 새로 들어오는 줄엔 다시 재생되지 않게 처음 그려질 때 한 번만.
 class AppFadeSlideIn extends StatefulWidget {

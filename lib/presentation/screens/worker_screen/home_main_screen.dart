@@ -3152,12 +3152,21 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('오늘 일할 수 있어요', style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700)),
-                    Text('켜 두면 사장님이 먼저 연락해요',
-                        style: AppTextStyles.body2.copyWith(color: AppColors.textBody)),
+                    // 켜면 문구가 '보이는 중'으로 바뀐다 — 레이더 원과 함께 켜졌다는 걸 확인시킨다
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: Text(
+                        isAvailableToday ? '근처 사장님에게 내가 보이는 중이에요' : '켜 두면 사장님이 먼저 연락해요',
+                        key: ValueKey(isAvailableToday),
+                        style: AppTextStyles.body2.copyWith(color: AppColors.textBody),
+                      ),
+                    ),
                   ],
                 ),
               ),
-              Switch.adaptive(
+              AppRadarPulse(
+                on: isAvailableToday,
+                child: Switch.adaptive(
                 value: isAvailableToday,
                 activeTrackColor: AppColors.primary,
                 onChanged: (v) {
@@ -3165,6 +3174,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                   setAvailableToday(v);
                   if (!_todayCoachSeen) _dismissTodayCoach();
                 },
+              ),
               ),
             ],
           ),

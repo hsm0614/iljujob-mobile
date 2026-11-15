@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 import '../config/app_theme.dart';
+import 'app_motion.dart';
 import '../config/constants.dart';
 import '../data/models/ad_banner.dart';
 import '../data/services/ad_banner_service.dart';
@@ -263,7 +264,7 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
                           (_) => _onImageLoaded(banner.id),
                         );
                       }
-                      return child;
+                      return appImageFrame(context, child, frame, wasSyncLoaded);
                     },
                     errorBuilder: (context, error, stackTrace) {
                       WidgetsBinding.instance.addPostFrameCallback(

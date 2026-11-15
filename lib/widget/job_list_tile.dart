@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../config/app_theme.dart';
+import 'app_motion.dart';
 import 'app_ui.dart';
 
 /// 공고 목록 한 줄 (2026-10 대표 레퍼런스: 흰 줄 + 구분선, 오른쪽 사진 + 아래 관심 버튼).
@@ -327,18 +328,8 @@ class _Thumb extends StatelessWidget {
                 height: size,
                 cacheWidth: (size * 3).round(),
                 fit: BoxFit.cover,
-                // 받아 오는 동안 회색 칸 → 다 받으면 부드럽게 나타난다 (캐시에서 바로 오면 페이드 없음)
-                frameBuilder: (_, child, frame, sync) => sync
-                    ? child
-                    : ColoredBox(
-                        color: AppColors.bgMuted,
-                        child: AnimatedOpacity(
-                          opacity: frame == null ? 0 : 1,
-                          duration: const Duration(milliseconds: 220),
-                          curve: Curves.easeOut,
-                          child: child,
-                        ),
-                      ),
+                // 받아 오는 동안 빛줄기 → 다 받으면 부드럽게 나타난다 (캐시에서 바로 오면 그대로)
+                frameBuilder: appImageFrame,
                 errorBuilder: (_, __, ___) => fallback(h: size),
               ),
     );
