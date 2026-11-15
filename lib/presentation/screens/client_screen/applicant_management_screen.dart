@@ -15,6 +15,7 @@ import '../../widgets/albailju_common.dart';
 import '../../../config/app_theme.dart';
 import '../../../config/messages.dart';
 import '../../../utils/pay_display.dart';
+import '../../../utils/store_review.dart';
 
 // ─── 모델 ────────────────────────────────────────────────────────
 
@@ -306,6 +307,9 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
         _selectedByJob.clear();
         _selectingJob = null;
       });
+      if (groups.any((g) => g.applicants.any((a) => !a.isCanceled))) {
+        Future.delayed(const Duration(seconds: 2), maybeRequestStoreReview);
+      }
     } on AuthSessionExpiredException {
       _redirectToOnboarding();
     } catch (e) {

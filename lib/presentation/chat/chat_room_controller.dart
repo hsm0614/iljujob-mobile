@@ -12,6 +12,7 @@ import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:uuid/uuid.dart';
 
 import '../../config/constants.dart';
+import '../../utils/store_review.dart';
 import '../../data/services/ai_api.dart';
 import '../../data/services/authenticated_http_client.dart';
 import '../../data/services/work_confirmation_service.dart';
@@ -852,6 +853,7 @@ class ChatRoomController extends ChangeNotifier {
         'checked_in',
       }.contains(nextStatus)) {
         onShowSnackbar?.call('사장님에게 알렸어요.');
+        if (nextStatus == 'checked_in') maybeRequestStoreReview();
       }
     } catch (e) {
       debugPrint('처리에 실패했어요: $e');

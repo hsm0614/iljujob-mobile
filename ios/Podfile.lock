@@ -232,6 +232,8 @@ PODS:
   - in_app_purchase_storekit (0.0.1):
     - Flutter
     - FlutterMacOS
+  - in_app_review (2.0.0):
+    - Flutter
   - kakao_flutter_sdk_common (1.10.0):
     - Flutter
   - kakao_map_plugin (0.0.1):
@@ -297,6 +299,7 @@ DEPENDENCIES:
   - iamport_webview_flutter (from `.symlinks/plugins/iamport_webview_flutter/ios`)
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - in_app_purchase_storekit (from `.symlinks/plugins/in_app_purchase_storekit/darwin`)
+  - in_app_review (from `.symlinks/plugins/in_app_review/ios`)
   - kakao_flutter_sdk_common (from `.symlinks/plugins/kakao_flutter_sdk_common/ios`)
   - kakao_map_plugin (from `.symlinks/plugins/kakao_map_plugin/ios`)
   - kakao_map_sdk (from `.symlinks/plugins/kakao_map_sdk/ios`)
@@ -380,6 +383,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/image_picker_ios/ios"
   in_app_purchase_storekit:
     :path: ".symlinks/plugins/in_app_purchase_storekit/darwin"
+  in_app_review:
+    :path: ".symlinks/plugins/in_app_review/ios"
   kakao_flutter_sdk_common:
     :path: ".symlinks/plugins/kakao_flutter_sdk_common/ios"
   kakao_map_plugin:
@@ -446,6 +451,7 @@ SPEC CHECKSUMS:
   iamport_webview_flutter: 8ba550569efb70160727ef56eac2ee5468a78cbd
   image_picker_ios: e0ece4aa2a75771a7de3fa735d26d90817041326
   in_app_purchase_storekit: 22cca7d08eebca9babdf4d07d0baccb73325d3c8
+  in_app_review: 7dd1ea365263f834b8464673f9df72c80c17c937
   kakao_flutter_sdk_common: 682b3606698f87467788598dc2dc09d4e6867fbd
   kakao_map_plugin: 4d54a08bb9f59383c361f6f2d5526b5359ccb728
   kakao_map_sdk: cbc70e71f9b6176e2ece211e920c5bca469bebff
