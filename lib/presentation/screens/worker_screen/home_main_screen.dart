@@ -1516,13 +1516,16 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     ),
                   ),
                 if (!isLoading && _isNearScope && _fartherJobs.isNotEmpty && filteredJobs.length < 8)
-                  SliverToBoxAdapter(child: _buildFartherSection())
+                  SliverToBoxAdapter(child: _buildFartherSection(withBanner: filteredJobs.length <= 3))
                 else if (!isLoading &&
                     filteredJobs.isNotEmpty &&
                     filteredJobs.length < 8 &&
                     _scope != 'nationwide')
                   SliverToBoxAdapter(child: _buildFewJobsFooter()),
-                if (!isLoading && filteredJobs.length <= 3)
+                // 조금 먼 공고가 있으면 배너는 그 목록 가운데(2번째 뒤)에 들어간다 — 맨 아래는 거의 안 보였다(대표 11-15)
+                if (!isLoading &&
+                    filteredJobs.length <= 3 &&
+                    !(_isNearScope && _fartherJobs.isNotEmpty && filteredJobs.length < 8))
                   SliverToBoxAdapter(
                     child: Container(
                       color: AppColors.bgCard,
@@ -3316,15 +3319,26 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   }
 
   /// 반경 밖 모집 중 공고 (가까운 순 5개)
-  Widget _buildFartherSection() => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      Container(height: 8, margin: const EdgeInsets.only(top: 20), color: AppColors.bgMuted),
-      _listHeader('조금 먼 공고', trailing: '전국 보기', onTrailing: () => _setScope('nationwide')),
-      for (var i = 0; i < _fartherJobs.length; i++)
-        _buildJobCard(_fartherJobs[i], last: i == _fartherJobs.length - 1),
-    ],
-  );
+  Widget _buildFartherSection({bool withBanner = false}) {
+    final at = _fartherJobs.length < 2 ? _fartherJobs.length : 2;
+    Widget banner() => Container(
+      color: AppColors.bgCard,
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: _buildBannerSlot(),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(height: 8, margin: const EdgeInsets.only(top: 20), color: AppColors.bgMuted),
+        _listHeader('조금 먼 공고', trailing: '전국 보기', onTrailing: () => _setScope('nationwide')),
+        for (var i = 0; i < _fartherJobs.length; i++) ...[
+          if (withBanner && i == at) banner(),
+          _buildJobCard(_fartherJobs[i], last: i == _fartherJobs.length - 1 || (withBanner && i == at - 1)),
+        ],
+        if (withBanner && at == _fartherJobs.length) banner(),
+      ],
+    );
+  }
 
   String _formatDate(DateTime date) {
     final d = date.toLocal();
