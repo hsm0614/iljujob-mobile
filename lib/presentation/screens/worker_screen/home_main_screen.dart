@@ -2392,7 +2392,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('지역으로 보기', style: AppTextStyles.h3),
+                      const AppSheetHeader('지역으로 보기', padding: EdgeInsets.zero),
                       const SizedBox(height: 4),
                       Text(
                         '지금 공고가 있는 지역만 보여드려요.',

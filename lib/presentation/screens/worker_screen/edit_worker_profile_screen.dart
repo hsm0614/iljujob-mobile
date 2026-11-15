@@ -1141,7 +1141,7 @@ class _EditWorkerProfileScreenState extends State<EditWorkerProfileScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('AI 메모리로 프로필 채우기', style: AppTextStyles.h2),
+                const AppSheetHeader('AI 메모리로 프로필 채우기', padding: EdgeInsets.zero),
                 const SizedBox(height: 6),
                 const Text('ChatGPT·Claude가 기억하는 내 경력·가능 시간을 가져와요. 원문은 저장하지 않고 요약만 채우고, 저장 전에 고칠 수 있어요.',
                     style: AppTextStyles.body2),

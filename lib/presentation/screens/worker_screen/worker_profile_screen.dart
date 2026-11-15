@@ -124,6 +124,7 @@ class _WorkerProfileScreenState extends State<WorkerProfileScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                const AppSheetHeader('더보기'),
                 ListTile(
                   title: const Text('신고하기'),
                   onTap: () {
