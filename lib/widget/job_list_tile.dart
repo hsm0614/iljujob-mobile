@@ -251,6 +251,54 @@ class JobListTile extends StatelessWidget {
   }
 }
 
+/// 사진 없는 공고가 대부분이라 회색 심볼이 줄마다 반복돼 목록이 비어 보였다(2026-11-15 실기기).
+/// 업종별 연한 바탕 + 아이콘으로 — 무슨 일인지 그림으로 먼저 읽힌다. 뱃지가 아니라 Two-Signal과 무관.
+(IconData, Color, Color) jobCategoryLook(String c) {
+  bool has(List<String> ks) => ks.any(c.contains);
+  if (has(['홀서빙', '주방', '설거지', '패스트푸드', '요리', '음식'])) {
+    return (Icons.restaurant_rounded, const Color(0xFFFFF1E6), const Color(0xFFE07B39));
+  }
+  if (has(['카페', '바리스타', '베이커리'])) {
+    return (Icons.local_cafe_rounded, const Color(0xFFF6EFE8), const Color(0xFF9A6B45));
+  }
+  if (has(['물류', '택배', '상하차', '배송', '검품', '포장'])) {
+    return (Icons.local_shipping_rounded, const Color(0xFFE8F6F1), const Color(0xFF2F9A78));
+  }
+  if (has(['건설', '제조', '생산', '조립', '반도체', '노무', '청소'])) {
+    return (Icons.construction_rounded, const Color(0xFFFFF6DD), const Color(0xFFC08A12));
+  }
+  if (has(['행사', '진행', '이벤트', '모델', '도우미', '시식', '홍보', '캐릭터'])) {
+    return (Icons.celebration_rounded, const Color(0xFFEEF5FF), const Color(0xFF3B8AFF));
+  }
+  if (has(['편의점', '매장', '판매', '마트'])) {
+    return (Icons.storefront_rounded, const Color(0xFFFDEEF2), const Color(0xFFD45C7A));
+  }
+  if (has(['사무', '데이터', '안내', '접수', '상담'])) {
+    return (Icons.badge_rounded, const Color(0xFFEDF1F7), const Color(0xFF5B6B85));
+  }
+  return (Icons.work_rounded, AppColors.bgMuted, AppColors.textTertiary);
+}
+
+
+/// 업종 아이콘 칸 — 사진이 없는 자리(사장님 공고 카드 제목 옆 등)
+class JobCategoryIcon extends StatelessWidget {
+  final String category;
+  final double size;
+  const JobCategoryIcon({super.key, required this.category, this.size = 40});
+
+  @override
+  Widget build(BuildContext context) {
+    final (icon, bg, fg) = jobCategoryLook(category);
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(AppRadius.md)),
+      alignment: Alignment.center,
+      child: Icon(icon, size: size * 0.5, color: fg),
+    );
+  }
+}
+
 class _Thumb extends StatelessWidget {
   final String? imageUrl;
   final double size;
@@ -258,37 +306,9 @@ class _Thumb extends StatelessWidget {
   const _Thumb({required this.imageUrl, required this.size, this.category = ''});
   static const _compact = 56.0;
 
-  /// 사진 없는 공고가 대부분이라 회색 심볼이 줄마다 반복돼 목록이 비어 보였다(2026-11-15 실기기).
-  /// 업종별 연한 바탕 + 아이콘으로 — 무슨 일인지 그림으로 먼저 읽힌다. 뱃지가 아니라 Two-Signal과 무관.
-  static (IconData, Color, Color) _look(String c) {
-    bool has(List<String> ks) => ks.any(c.contains);
-    if (has(['홀서빙', '주방', '설거지', '패스트푸드', '요리', '음식'])) {
-      return (Icons.restaurant_rounded, const Color(0xFFFFF1E6), const Color(0xFFE07B39));
-    }
-    if (has(['카페', '바리스타', '베이커리'])) {
-      return (Icons.local_cafe_rounded, const Color(0xFFF6EFE8), const Color(0xFF9A6B45));
-    }
-    if (has(['물류', '택배', '상하차', '배송', '검품', '포장'])) {
-      return (Icons.local_shipping_rounded, const Color(0xFFE8F6F1), const Color(0xFF2F9A78));
-    }
-    if (has(['건설', '제조', '생산', '조립', '반도체', '노무', '청소'])) {
-      return (Icons.construction_rounded, const Color(0xFFFFF6DD), const Color(0xFFC08A12));
-    }
-    if (has(['행사', '진행', '이벤트', '모델', '도우미', '시식', '홍보', '캐릭터'])) {
-      return (Icons.celebration_rounded, const Color(0xFFEEF5FF), const Color(0xFF3B8AFF));
-    }
-    if (has(['편의점', '매장', '판매', '마트'])) {
-      return (Icons.storefront_rounded, const Color(0xFFFDEEF2), const Color(0xFFD45C7A));
-    }
-    if (has(['사무', '데이터', '안내', '접수', '상담'])) {
-      return (Icons.badge_rounded, const Color(0xFFEDF1F7), const Color(0xFF5B6B85));
-    }
-    return (Icons.work_rounded, AppColors.bgMuted, AppColors.textTertiary);
-  }
-
   @override
   Widget build(BuildContext context) {
-    final (icon, bg, fg) = _look(category);
+    final (icon, bg, fg) = jobCategoryLook(category);
     Widget fallback({double? h}) => Container(
       width: size,
       height: h ?? _compact,

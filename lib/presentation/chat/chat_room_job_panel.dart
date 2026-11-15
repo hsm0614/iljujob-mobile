@@ -6,6 +6,7 @@
 // - ChatRoomWaitingBanner : 클라이언트 대기 배너
 // - ChatRoomCancelledBanner : 알바생 취소 배너
 
+import 'package:iljujob/widget/job_list_tile.dart';
 import 'package:flutter/material.dart';
 import 'package:iljujob/utils/pay_display.dart';
 import 'package:iljujob/utils/chat_stage.dart';
@@ -157,18 +158,10 @@ class ChatRoomJobPanel extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 4),
               child: Row(
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: AppColors.bgMuted,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    child: const Icon(
-                      Icons.work_outline_rounded,
-                      size: 22,
-                      color: AppColors.textSecondary,
-                    ),
+                  // 업종 아이콘 칸 (목록과 같은 색). 업종이 없으면 회색 가방
+                  JobCategoryIcon(
+                    category: (_pick(['category']) ?? '').toString(),
+                    size: 44,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -195,7 +188,8 @@ class ChatRoomJobPanel extends StatelessWidget {
                                 text: [
                                   '',
                                   if (_workDayLabel case final d?) d,
-                                  if (_timeText.isNotEmpty) _timeText,
+                                  // 줄바꿈이 '10:00 ~ / 18:00'처럼 시간 가운데서 끊겼다 → 시간은 한 덩어리
+                                  if (_timeText.isNotEmpty) _timeText.replaceAll(' ', '\u00A0'),
                                 ].join(' · '),
                                 style: AppTextStyles.jobMeta,
                               ),
