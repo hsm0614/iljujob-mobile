@@ -20,6 +20,7 @@ import 'package:iljujob/presentation/screens/worker_screen/job_insight_sheet.dar
 import 'package:iljujob/presentation/screens/client_screen/wage_report_screen.dart';
 import 'package:iljujob/widget/app_ui.dart';
 import 'package:iljujob/widget/app_motion.dart';
+import 'package:iljujob/widget/job_list_tile.dart';
 import 'package:iljujob/config/app_theme.dart';
 import 'package:iljujob/widget/ad_banner_widget.dart';
 import 'package:iljujob/widget/marketing_consent_sheet.dart';
@@ -1751,14 +1752,26 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 4),
-                      Text(
-                        job.title,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.h3.copyWith(
-                          fontSize: AppFontSize.titleLg,
-                          color: isClosed ? AppColors.textSecondary : AppColors.textPrimary,
-                        ),
+                      // 업종 아이콘 칸 — 흰 카드만 반복되던 홈에 무슨 공고인지 그림 한 점 (알바생 목록과 같은 색)
+                      Row(
+                        children: [
+                          Opacity(
+                            opacity: isClosed ? 0.5 : 1,
+                            child: JobCategoryIcon(category: job.category, size: 36),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              job.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.h3.copyWith(
+                                fontSize: AppFontSize.titleLg,
+                                color: isClosed ? AppColors.textSecondary : AppColors.textPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 4),
                       // 날짜·시간은 한 줄에 우겨넣지 않는다 — 줄임표가 근무 시간을 통째로 가렸다(S22 실측 11-15)
@@ -1961,7 +1974,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
 
   Widget _buildEmptyHome() => Scaffold(
     backgroundColor: AppColors.bgCard,
-    appBar: const AlbailjuAppBar(title: '알바일주', brand: true),
+    appBar: const AlbailjuAppBar(titleWidget: AlbailjuLockup(), brand: true),
     body: DefaultTextStyle.merge(
       style: const TextStyle(letterSpacing: -0.3),
       child: RefreshIndicator(
@@ -2018,7 +2031,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     return Scaffold(
       backgroundColor: AppColors.bgCard, // 시안 2번: 흰 바탕 + 테두리 카드
       appBar: AlbailjuAppBar(
-        title: '알바일주',
+        titleWidget: const AlbailjuLockup(),
         brand: true,
         actions: [
           FilledButton.icon(
