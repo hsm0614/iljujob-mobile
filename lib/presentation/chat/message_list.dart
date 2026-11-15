@@ -170,9 +170,14 @@ class ChatMessageList extends StatelessWidget {
     final ordered = rows.reversed.toList(growable: false);
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
+    // 줄마다 열쇠 — 새 메시지가 맨 아래(0번)에 끼어들어도 기존 줄의 상태(등장 애니메이션·출근 카드 진행)가 따라간다
+    final keys = [for (var i = 0; i < ordered.length; i++) _rowKey(ordered[i], i)];
+    final keyIndex = {for (var i = 0; i < keys.length; i++) keys[i]: i};
+
     return ListView.builder(
       controller: scrollController,
       reverse: true,
+      findChildIndexCallback: (k) => k is ValueKey<String> ? keyIndex[k.value] : null,
       padding: EdgeInsets.only(
         left: 8,
         right: 8,
@@ -180,9 +185,28 @@ class ChatMessageList extends StatelessWidget {
         bottom: inputOverlayHeight + bottomInset,
       ),
       itemCount: ordered.length,
-      itemBuilder: (context, i) => _buildRow(ordered[i]),
+      itemBuilder: (context, i) {
+        final row = ordered[i];
+        final child = _buildRow(row);
+        // 방금 오간 메시지만 아래에서 톡 올라온다 — 채팅방을 열 때 쌓인 과거 메시지는 그대로
+        final fresh = row.kind == _RowKind.message &&
+            DateTime.now().difference(row.when!).abs() < const Duration(seconds: 8);
+        return KeyedSubtree(
+          key: ValueKey<String>(keys[i]),
+          child: _MessageEntrance(animate: fresh, child: child), // 늘 감싸 둔다 — 8초 뒤 트리가 바뀌어 다시 그려지지 않게
+        );
+      },
     );
   }
+
+  static String _rowKey(_Row r, int i) => switch (r.kind) {
+    _RowKind.message =>
+      'm:${r.msg!['clientTempId'] ?? r.msg!['id'] ?? r.msg!['createdAtMs'] ?? i}',
+    _RowKind.confirm => 'c:${r.confirm!.id}',
+    _RowKind.divider => 'd:${r.text}',
+    _RowKind.bot => 'b:${r.text.hashCode}:$i',
+    _RowKind.nudge => 'n',
+  };
 
   Widget _buildRow(_Row row) {
     switch (row.kind) {
@@ -474,9 +498,13 @@ class _MessageBubble extends StatelessWidget {
                     left: isMe ? 0 : 6,
                     top: 2,
                   ),
-                  child:
+                  // 전송 중… → 시간으로 부드럽게 바뀐다
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child:
                       isFailed
                           ? GestureDetector(
+                            key: const ValueKey('failed'),
                             onTap: onRetry,
                             child: const Row(
                               mainAxisSize: MainAxisSize.min,
@@ -501,12 +529,14 @@ class _MessageBubble extends StatelessWidget {
                           : isPending
                           ? const Text(
                             '전송 중…',
+                            key: ValueKey('pending'),
                             style: TextStyle(
                               fontSize: AppFontSize.caption,
                               color: AppColors.textTertiary,
                             ),
                           )
                           : Row(
+                            key: const ValueKey('sent'),
                             mainAxisSize: MainAxisSize.min,
                             mainAxisAlignment:
                                 isMe
@@ -539,6 +569,7 @@ class _MessageBubble extends StatelessWidget {
                               ],
                             ],
                           ),
+                  ),
                 ),
               ],
             ),
@@ -708,4 +739,23 @@ class _HireNudgeBubble extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 방금 오간 말풍선: 아래에서 살짝 올라오며 나타난다 (0.22초, 한 번만)
+class _MessageEntrance extends StatelessWidget {
+  final Widget child;
+  final bool animate; // 처음 그려질 때만 본다 (TweenAnimationBuilder의 begin)
+  const _MessageEntrance({required this.child, required this.animate});
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+    tween: Tween(begin: animate ? 0 : 1, end: 1),
+    duration: const Duration(milliseconds: 220),
+    curve: Curves.easeOutCubic,
+    builder: (_, t, c) => Opacity(
+      opacity: t,
+      child: Transform.translate(offset: Offset(0, 12 * (1 - t)), child: c),
+    ),
+    child: child,
+  );
 }

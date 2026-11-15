@@ -354,50 +354,70 @@ class _StatusHint extends StatelessWidget {
     };
     final cur = _current;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    // 단계가 바뀌면 선이 다음 점까지 차오르고, 지난 점엔 체크가 톡 튀어나온다 (2026-11-15).
+    // begin==end라 카드가 처음 그려질 땐 움직이지 않고, 상태가 바뀔 때만 움직인다.
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: cur.toDouble(), end: cur.toDouble()),
+      duration: const Duration(milliseconds: 700),
+      curve: Curves.easeInOutCubic,
+      builder: (context, v, _) {
+        final now = v.round();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (var i = 0; i < _steps.length; i++) ...[
-              _dot(done: i < cur, now: i == cur),
-              if (i < _steps.length - 1)
-                Expanded(
-                  child: Container(
-                    height: 2,
-                    color: i < cur ? AppColors.primary : AppColors.border,
+            Row(
+              children: [
+                for (var i = 0; i < _steps.length; i++) ...[
+                  _dot(done: v - i > 0.98, now: i == now && v - i <= 0.98),
+                  if (i < _steps.length - 1)
+                    Expanded(
+                      child: Container(
+                        height: 2,
+                        color: AppColors.border,
+                        alignment: Alignment.centerLeft,
+                        child: FractionallySizedBox(
+                          widthFactor: (v - i).clamp(0.0, 1.0),
+                          child: Container(color: AppColors.primary),
+                        ),
+                      ),
+                    ),
+                ],
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                for (var i = 0; i < _steps.length; i++)
+                  Text(
+                    _steps[i],
+                    style: AppTextStyles.caption.copyWith(
+                      color:
+                          i == now
+                              ? AppColors.textPrimary
+                              : i < now
+                              ? AppColors.textSecondary
+                              : AppColors.textTertiary,
+                      fontWeight: i == now ? FontWeight.w700 : FontWeight.w500,
+                    ),
                   ),
-                ),
-            ],
+              ],
+            ),
+            const SizedBox(height: 10),
+            // 안내 문구도 바뀔 때 부드럽게
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 250),
+              child: Text(text, key: ValueKey(text), style: AppTextStyles.body2),
+            ),
           ],
-        ),
-        const SizedBox(height: 6),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            for (var i = 0; i < _steps.length; i++)
-              Text(
-                _steps[i],
-                style: AppTextStyles.caption.copyWith(
-                  color:
-                      i == cur
-                          ? AppColors.textPrimary
-                          : i < cur
-                          ? AppColors.textSecondary
-                          : AppColors.textTertiary,
-                  fontWeight: i == cur ? FontWeight.w700 : FontWeight.w500,
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        Text(text, style: AppTextStyles.body2),
-      ],
+        );
+      },
     );
   }
 
   Widget _dot({required bool done, required bool now}) {
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
       width: 16,
       height: 16,
       decoration: BoxDecoration(
@@ -413,10 +433,12 @@ class _StatusHint extends StatelessWidget {
           width: now ? 4 : 2,
         ),
       ),
-      child:
-          done
-              ? const Icon(Icons.check_rounded, size: 10, color: Colors.white)
-              : null,
+      child: AnimatedScale(
+        scale: done ? 1 : 0,
+        duration: const Duration(milliseconds: 420),
+        curve: Curves.elasticOut,
+        child: const Icon(Icons.check_rounded, size: 10, color: Colors.white),
+      ),
     );
   }
 }
