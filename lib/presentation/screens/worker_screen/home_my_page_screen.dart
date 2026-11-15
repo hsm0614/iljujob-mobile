@@ -709,6 +709,45 @@ String _gradeLabel(String grade) => switch (grade) {
   _ => (null, 100, 100),
 };
 
+/// 등급 = 일주이가 자란 정도 (2026-11): NEW 씨앗 · C 새싹 · B 잎 · A 꽃봉오리 · S 꽃.
+/// 그림만으론 등급을 못 읽으니 글자 배지를 같이 단다.
+class _GradeIljui extends StatelessWidget {
+  final String grade;
+  final Color color;
+  const _GradeIljui({required this.grade, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final key = const {'S', 'A', 'B', 'C'}.contains(grade) ? grade.toLowerCase() : 'new';
+    return SizedBox(
+      width: 48,
+      height: 52,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Image.asset('assets/brand/grade_$key.png', width: 44, height: 50, semanticLabel: '$grade등급'),
+          Positioned(
+            right: -4,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: BoxDecoration(
+                color: AppColors.bgCard,
+                borderRadius: BorderRadius.circular(AppRadius.full),
+                border: Border.all(color: color),
+              ),
+              child: Text(
+                grade,
+                style: AppTextStyles.caption.copyWith(color: color, fontWeight: FontWeight.w800),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _TrustRow extends StatelessWidget {
   final bool loading;
   final int score;
@@ -748,28 +787,7 @@ class _TrustRow extends StatelessWidget {
                 )
                 : Row(
                   children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: color.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                      ),
-                      padding: const EdgeInsets.symmetric(horizontal: 6),
-                      // 'NEW'가 40px 칸에서 두 줄로 꺾이던 것
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          grade,
-                          maxLines: 1,
-                          style: AppTextStyles.h3.copyWith(
-                            color: color,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                    ),
+                    _GradeIljui(grade: grade, color: color),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(

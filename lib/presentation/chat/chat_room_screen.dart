@@ -920,7 +920,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
       ),
       child: Row(
         children: [
-          const Icon(Icons.smart_toy_outlined, size: 15, color: AppColors.textSecondary),
+          const Iljui(size: 18), // AI 일주 매니저 = 일주이
           const SizedBox(width: 6),
           Expanded(
             child: Text(
