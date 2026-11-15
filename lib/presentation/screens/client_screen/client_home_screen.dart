@@ -1975,7 +1975,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
 
   Widget _buildEmptyHome() => Scaffold(
     backgroundColor: AppColors.bgCard,
-    appBar: const AlbailjuAppBar(title: '알바일주', brand: true),
+    appBar: const AlbailjuAppBar(titleWidget: AlbailjuLockup(), brand: true),
     body: DefaultTextStyle.merge(
       style: const TextStyle(letterSpacing: -0.3),
       child: RefreshIndicator(
@@ -2032,7 +2032,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     return Scaffold(
       backgroundColor: AppColors.bgCard, // 시안 2번: 흰 바탕 + 테두리 카드
       appBar: AlbailjuAppBar(
-        title: '알바일주',
+        titleWidget: const AlbailjuLockup(),
         brand: true,
         actions: [
           FilledButton.icon(

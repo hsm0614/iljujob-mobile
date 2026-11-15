@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -320,6 +322,7 @@ class _AppSuccessPageState extends State<_AppSuccessPage>
   Widget build(BuildContext context) {
     final pop = _seg(0, 0.45, Curves.elasticOut);
     final draw = _seg(0.2, 0.55);
+    final hop = _seg(0.45, 0.8, Curves.easeOut);
     final text = _seg(0.35, 0.8);
     final rest = _seg(0.55, 1);
 
@@ -350,20 +353,45 @@ class _AppSuccessPageState extends State<_AppSuccessPage>
                 ),
               ),
               const Spacer(flex: 2),
+              // 신남 일주이가 튀어나와 한 번 깡충 + 체크 배지 (2026-11 리브랜딩)
               ScaleTransition(
                 scale: pop,
-                child: Container(
-                  width: 88,
-                  height: 88,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                  child: AnimatedBuilder(
-                    animation: draw,
-                    builder:
-                        (_, __) =>
-                            CustomPaint(painter: _CheckPainter(draw.value)),
+                child: AnimatedBuilder(
+                  animation: hop,
+                  builder:
+                      (_, child) => Transform.translate(
+                        offset: Offset(0, -18 * math.sin(math.pi * hop.value)),
+                        child: child,
+                      ),
+                  child: SizedBox(
+                    width: 120,
+                    height: 120,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        const Iljui(size: 120, mood: IljuiMood.happy),
+                        Positioned(
+                          right: 0,
+                          bottom: 4,
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: AppColors.bgCard, width: 3),
+                            ),
+                            child: AnimatedBuilder(
+                              animation: draw,
+                              builder:
+                                  (_, __) => CustomPaint(
+                                    painter: _CheckPainter(draw.value),
+                                  ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

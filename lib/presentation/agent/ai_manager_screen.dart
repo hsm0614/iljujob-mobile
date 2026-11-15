@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../config/app_theme.dart';
+import '../../widget/app_ui.dart';
 import '../../config/constants.dart';
 import '../../data/services/authenticated_http_client.dart';
 import '../../data/services/vacancy_service.dart';
@@ -71,9 +72,23 @@ class _AiManagerScreenState extends State<AiManagerScreen> {
           // 아래 시스템 내비 바만큼 더 — 마지막 줄 '채팅 번역'이 가려졌다
           padding: EdgeInsets.fromLTRB(20, 16, 20, 32 + MediaQuery.paddingOf(context).bottom),
           children: [
-            const Text('공고부터 출근까지, AI 매니저가 대신 챙겨요', style: AppTextStyles.h2),
-            const SizedBox(height: 6),
-            const Text('채용 확정·돈이 드는 일은 사장님이 마지막에 정해요.', style: AppTextStyles.body2),
+            // AI 일주 매니저의 얼굴 = 일주이 (2026-11 리브랜딩)
+            const Row(
+              children: [
+                Iljui(size: 64, animate: true),
+                SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('공고부터 출근까지, AI 매니저가 대신 챙겨요', style: AppTextStyles.h2),
+                      SizedBox(height: 6),
+                      Text('채용 확정·돈이 드는 일은 사장님이 마지막에 정해요.', style: AppTextStyles.body2),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 20),
             SwitchListTile.adaptive(
               contentPadding: EdgeInsets.zero,
