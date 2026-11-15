@@ -25,11 +25,14 @@ flutter_native_splash:
   android: true
   ios: true
   color: "#3B8AFF"  # 브랜드 파랑 (2026-11 일주이 리브랜딩)
-  image: assets/brand/splash_iljui_white_432.png  # 투명배경 흰 일주이
+  image: assets/brand/splash_iljui_white_640.png  # 투명배경 흰 일주이 (4x 기준 160pt)
+  branding: assets/brand/splash_branding_white.png  # 아래 흰 워드마크
+  branding_bottom_padding: 48
 
   android_12:
     color: "#3B8AFF"
-    image: assets/brand/splash_iljui_white_432.png
+    image: assets/brand/splash_iljui_white_android12.png  # 원형 안쪽 2/3에 들어가게
+    branding: assets/brand/splash_branding_white.png
     # icon_background_color: "#1675F4"  ← 이 줄을 넣지 말아야 원형 배경이 사라집니다!
 flutter:
   fonts:
