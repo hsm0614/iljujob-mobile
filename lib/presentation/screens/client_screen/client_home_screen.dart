@@ -1283,7 +1283,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 section('AI 일주 매니저'),
                 if (!isClosed)
                   line(Icons.auto_fix_high_outlined, '공고 살리기', 'rescue', sub: '지원이 안 오는 이유를 찾아 고친 안을 보여줘요'),
-                if (job.isPaid && !isClosed)
+                if (!isClosed) // 쓸 수 있는지는 서버가 판단(막히면 안내 문구)
                   line(Icons.smart_toy_outlined, job.aiReplyOn ? 'AI 응대 끄기' : 'AI 응대 켜기', 'ai-reply', sub: '지원자에게 가능 시간·경험을 대신 물어요'),
                 if (!isClosed) line(Icons.person_search_outlined, '맞춤 인재 추천', 'recommend', locked: true),
                 section('분석'),

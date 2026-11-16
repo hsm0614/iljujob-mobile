@@ -930,7 +930,8 @@ class _PostJobFormState extends State<PostJobForm>
         externalApplyEnabled: isPaid && _externalApplyEnabled,
         externalApplyUrl: externalApplyUrl,
         requestId: _attemptId,
-        aiReply: isPaid && _aiReply['enabled'] == true && _aiMissing.isEmpty ? _aiReply : null,
+        // 무료 공고도 보낸다 — 쓸 수 있는지는 서버 유료 범위(체험 중 전체, 뒤엔 이용권 공고·구독)
+        aiReply: _aiReply['enabled'] == true && _aiMissing.isEmpty ? _aiReply : null,
         locationDetail: _locDetailCtrl.text,
         headcount: _headcount,
         breakMinutes: _timeNegotiable ? null : _breakMinutes,
@@ -4804,11 +4805,7 @@ class _PublishSheetState extends State<_PublishSheet> {
                 ],
                 if (widget.aiReplyCard != null)
                   // 무료로 바꿨다 돌아와도 고른 질문이 남게 상태 유지
-                  Visibility(
-                    visible: _choice != 'free',
-                    maintainState: true,
-                    child: widget.aiReplyCard!,
-                  ),
+                  widget.aiReplyCard!,
                 if (widget.externalApplyEnabled && _choice != 'free') ...[
                   const SizedBox(height: 12),
                   const Text('알바생은 공고를 본 뒤 외부 신청 페이지로 이동해요', style: AppTextStyles.caption),
