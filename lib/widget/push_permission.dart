@@ -16,8 +16,38 @@ import 'package:iljujob/main.dart' show sendFcmTokenUnified;
 /// 거부된 뒤에는 OS 가 다시 묻지 않으므로 설정 화면으로 보낸다.
 /// Android 13+ 는 묻기 전에도 상태가 denied 로 보여서 '물어봤는지'를 따로 기억한다.
 const _kAskedKey = 'push_permission_asked';
-const _kPrimerShownKey = 'push_primer_shown';
+const _kPrimerShownKey =
+    'push_primer_shown'; // 11-16 이전 앱: 한 번 보여 주면 true (= 1회로 센다)
+const _kPrimerCountKey = 'push_primer_count';
+const _kPrimerLastKey = 'push_primer_last_ms';
 const _kFirstApplyPromptedKey = 'push_first_apply_prompted';
+
+// 11-16: 안내를 한 번만 띄우면 '나중에' 누른 사람은 영영 안 물었다 — 30일 312명이 '나중에'(허용 143명),
+// OS 팝업까지 간 사람은 152명 중 9명만 거부. 활동 알바생 46%가 토큰 없음. 3일 간격으로 최대 5번까지 다시 묻는다.
+const _kPrimerMaxAsks = 5;
+const _kPrimerGap = Duration(days: 3);
+
+/// 안내 창을 지금 띄워도 되는지. 띄우기로 했으면 [_markPrimerShown]을 부른다.
+@visibleForTesting
+Future<bool> pushPrimerDue(SharedPreferences prefs) async {
+  final count =
+      prefs.getInt(_kPrimerCountKey) ??
+      ((prefs.getBool(_kPrimerShownKey) ?? false) ? 1 : 0);
+  if (count >= _kPrimerMaxAsks) return false;
+  final last = prefs.getInt(_kPrimerLastKey) ?? 0;
+  return DateTime.now().millisecondsSinceEpoch - last >=
+      _kPrimerGap.inMilliseconds;
+}
+
+@visibleForTesting
+Future<void> markPushPrimerShown(SharedPreferences prefs) async {
+  final count =
+      prefs.getInt(_kPrimerCountKey) ??
+      ((prefs.getBool(_kPrimerShownKey) ?? false) ? 1 : 0);
+  await prefs.setInt(_kPrimerCountKey, count + 1);
+  await prefs.setInt(_kPrimerLastKey, DateTime.now().millisecondsSinceEpoch);
+  await prefs.setBool(_kPrimerShownKey, true);
+}
 
 Future<bool> isPushAllowed() async {
   try {
@@ -72,9 +102,9 @@ Future<void> maybeShowPushPrimer(
   String title = '이런 공고, 근처에 올라오면\n바로 알려드릴까요?',
 }) async {
   final prefs = await SharedPreferences.getInstance();
-  if (prefs.getBool(_kPrimerShownKey) ?? false) return;
   if (await isPushAllowed()) return;
-  await prefs.setBool(_kPrimerShownKey, true);
+  if (!await pushPrimerDue(prefs)) return;
+  await markPushPrimerShown(prefs);
   if (!context.mounted) return;
 
   final want = await showModalBottomSheet<bool>(
@@ -148,12 +178,18 @@ Future<void> maybeShowPushPrimer(
 /// 이미 권한을 받은 사람에게는 창을 띄우지 않고 토큰 동기화만 시도한다.
 Future<void> maybeShowFirstApplyPushPrimer(BuildContext context) async {
   final prefs = await SharedPreferences.getInstance();
-  if (prefs.getBool(_kFirstApplyPromptedKey) ?? false) return;
-  await prefs.setBool(_kFirstApplyPromptedKey, true);
   if (await isPushAllowed()) {
-    await sendFcmTokenUnified();
+    if (!(prefs.getBool(_kFirstApplyPromptedKey) ?? false)) {
+      await prefs.setBool(_kFirstApplyPromptedKey, true);
+      await sendFcmTokenUnified();
+    }
     return;
   }
+  // 첫 지원 때는 무조건, 그 뒤 지원 때는 홈 안내와 같은 간격·횟수 안에서 다시 묻는다
+  final first = !(prefs.getBool(_kFirstApplyPromptedKey) ?? false);
+  if (!first && !await pushPrimerDue(prefs)) return;
+  await prefs.setBool(_kFirstApplyPromptedKey, true);
+  await markPushPrimerShown(prefs);
   if (!context.mounted) return;
 
   final want = await showModalBottomSheet<bool>(
@@ -219,9 +255,15 @@ Future<void> maybeShowFirstApplyPushPrimer(BuildContext context) async {
 class PushOffBanner extends StatefulWidget {
   final String message;
   final String source;
+
   /// true = 알바생 홈 빈 화면의 큰 파란 상자 (2026-11 시안). 닫기 없음
   final bool hero;
-  const PushOffBanner({super.key, required this.message, required this.source, this.hero = false});
+  const PushOffBanner({
+    super.key,
+    required this.message,
+    required this.source,
+    this.hero = false,
+  });
 
   @override
   State<PushOffBanner> createState() => _PushOffBannerState();
@@ -262,15 +304,25 @@ class _PushOffBannerState extends State<PushOffBanner>
     if (widget.hero) {
       return Container(
         padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(AppRadius.lg)),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('새 공고, 올라오면 바로 알려 드릴게요',
-                style: AppTextStyles.h3.copyWith(color: Colors.white)),
+            Text(
+              '새 공고, 올라오면 바로 알려 드릴게요',
+              style: AppTextStyles.h3.copyWith(color: Colors.white),
+            ),
             const SizedBox(height: 6),
-            Text(widget.message,
-                style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button, color: Colors.white.withValues(alpha: 0.92))),
+            Text(
+              widget.message,
+              style: AppTextStyles.body2.copyWith(
+                fontSize: AppFontSize.button,
+                color: Colors.white.withValues(alpha: 0.92),
+              ),
+            ),
             const SizedBox(height: 14),
             SizedBox(
               height: 46,
@@ -282,8 +334,13 @@ class _PushOffBannerState extends State<PushOffBanner>
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: AppColors.primaryDark,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppRadius.md)),
-                  textStyle: AppTextStyles.body1.copyWith(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w700),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  textStyle: AppTextStyles.body1.copyWith(
+                    fontSize: AppFontSize.buttonLg,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
                 child: const Text('알림 켜기'),
               ),

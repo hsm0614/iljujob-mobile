@@ -719,10 +719,10 @@ Future<Widget?> _checkForceUpdate() async {
       if (data['force_update'] == true) {
         return ForceUpdateScreen(
           iosUrl:
-              data['ios_url'] ?? 'https://apps.apple.com/kr/app/id6744899891',
+              data['ios_url'] ?? 'https://apps.apple.com/kr/app/id6748399207',
           androidUrl:
               data['android_url'] ??
-              'https://play.google.com/store/apps/details?id=com.iljujob',
+              'https://play.google.com/store/apps/details?id=kr.co.iljujob',
         );
       }
     }
