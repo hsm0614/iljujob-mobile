@@ -224,6 +224,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
 
     setState(() => _isLoading = true);
     try {
+      final acquisition = await AcquisitionService.forSignup();
       final response = await http.post(
         Uri.parse('$baseUrl/api/client/signup'),
         headers: {'Content-Type': 'application/json'},
@@ -236,6 +237,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
           'locationConsent': _agreedLocation,
           'fcmToken': await FirebaseMessaging.instance.getToken(), // ✅ 추가
           'verificationToken': _identityVerificationToken,
+          if (acquisition != null) 'acquisition': acquisition,
         }),
       );
       final data = jsonDecode(response.body);
