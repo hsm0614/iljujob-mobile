@@ -81,6 +81,7 @@ import 'package:iljujob/presentation/vacancy/vacancy_recovery_screen.dart';
 import 'package:iljujob/presentation/vacancy/vacancy_offers_screen.dart';
 import 'package:iljujob/presentation/agent/job_rescue_screen.dart';
 import 'package:iljujob/presentation/agent/regulars_screen.dart';
+import 'package:iljujob/presentation/agent/ai_manager_screen.dart';
 
 // ============================================================
 // 전역 변수
@@ -518,6 +519,11 @@ Future<void> _handleNotificationData(Map<String, String> data) async {
     await _handleJobNotification(RemoteMessage(data: data));
   } else if (type == 'inquiry') {
     navigatorKey.currentState?.pushNamed('/inquiry');
+  } else if (type == 'ai_manager_trial') {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.getString('userType') == 'client') {
+      navigatorKey.currentState?.pushNamed('/ai-manager');
+    }
   } else if (type == 'repost_nudge') {
     await _openRepostNudge(navigatorKey.currentState, data);
   } else if (type == 'job_closed' && data['role'] == 'client') {
@@ -681,6 +687,8 @@ Future<void> _handleInitialMessage(
       }
     } else if (type == 'inquiry') {
       navigator.pushNamed('/inquiry');
+    } else if (userType == 'client' && type == 'ai_manager_trial') {
+      navigator.pushNamed('/ai-manager');
     } else if (userType == 'client' && type == 'repost_nudge') {
       await _openRepostNudge(navigator, initialMessage.data);
     } else if (userType == 'client' && type == 'job_closed') {
@@ -954,6 +962,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         '/edit_job': (context) => const EditJobScreen(),
         '/mypage': (context) => const WorkerMyPageScreen(),
         '/client-mypage': (context) => const ClientMyPageScreen(),
+        '/ai-manager': (context) => const AiManagerScreen(),
         '/bookmarked-jobs': (context) => const BookmarkedJobsScreen(),
         '/notices': (context) => const NoticeListScreen(),
         '/events': (context) => const EventScreen(),
