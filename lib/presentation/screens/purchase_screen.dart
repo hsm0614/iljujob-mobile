@@ -62,6 +62,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   int remainingInstant = 0;
   int remainingInstant7 = 0;
   int remainingUrgent = 0;
+  int _urgentPrice = 13900;
   List<Map<String, dynamic>> _instantOptions = const [];
   bool _catalogReady = false;
 
@@ -154,10 +155,36 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
     }
   }
 
+  // iOS는 애플이 실제로 받는 가격을 보여 준다. App Store Connect 가격이 상품표와 달라도
+  // 화면 금액과 결제창 금액이 어긋나지 않게(2026-11-20: 5장 화면 36,900원 · 애플 22,000원).
+  Future<void> _applyStorePrices(List<Map<String, dynamic>> options) async {
+    try {
+      final resp = await _iap.queryProductDetails({
+        ..._kIosInstant.values,
+        _kIosInstant7,
+        _kIosUrgent1,
+      });
+      final won = {
+        for (final p in resp.productDetails)
+          if (p.currencyCode == 'KRW') p.id: p.rawPrice.round(),
+      };
+      for (final o in options) {
+        final id =
+            o['passType'] == 'instant_7d'
+                ? _kIosInstant7
+                : _kIosInstant[o['count']];
+        if (won[id] != null) o['price'] = won[id];
+      }
+      final urgent = won[_kIosUrgent1];
+      if (urgent != null) _urgentPrice = urgent;
+    } catch (_) {}
+  }
+
   Future<void> _loadCatalog() async {
     try {
       final products = await const CommerceCatalogService().fetchProducts();
       final options = instantOptionsForCatalog(products);
+      if (Platform.isIOS) await _applyStorePrices(options);
       if (mounted) {
         setState(() {
           _instantOptions = options;
@@ -583,6 +610,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                   ),
                 _UrgentTab(
                   remainingCount: remainingUrgent,
+                  price: formatPrice(_urgentPrice),
                   isPurchasing: _isPurchasing,
                   onBuy: _payUrgent,
                 ),
@@ -699,8 +727,10 @@ class _UrgentTab extends StatelessWidget {
   final int remainingCount;
   final bool isPurchasing;
   final VoidCallback onBuy;
+  final String price;
   const _UrgentTab({
     required this.remainingCount,
+    required this.price,
     required this.isPurchasing,
     required this.onBuy,
   });
@@ -748,7 +778,7 @@ class _UrgentTab extends StatelessWidget {
               _OptionRow(
                 title: '1회',
                 sub: '공고 1건',
-                price: '13,900원',
+                price: price,
                 selected: true,
                 onTap: () {},
               ),
@@ -782,7 +812,7 @@ class _UrgentTab extends StatelessWidget {
         ),
         AppBottomBar(
           child: AppPrimaryButton(
-            label: '13,900원 결제하기',
+            label: '$price 결제하기',
             loading: isPurchasing,
             onPressed: onBuy,
           ),
