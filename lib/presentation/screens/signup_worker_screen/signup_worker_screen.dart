@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:uuid/uuid.dart';
+import 'package:iljujob/data/services/acquisition_service.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/main.dart'; // ✅ sendFcmTokenUnified 사용을 위해
 import 'package:iljujob/presentation/screens/webview_screen.dart';
@@ -383,6 +384,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
         url,
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
+          if (await AcquisitionService.forSignup() case final acq?) 'acquisition': acq,
           'phone': _phoneController.text,
           'name': _nameController.text,
           'gender': _gender,

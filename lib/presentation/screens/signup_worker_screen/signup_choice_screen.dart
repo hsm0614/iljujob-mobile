@@ -12,6 +12,7 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'package:iljujob/config/constants.dart';
+import 'package:iljujob/data/services/acquisition_service.dart';
 import 'package:iljujob/main.dart';
 import 'package:iljujob/presentation/screens/signup_worker_screen/signup_worker_screen.dart';
 import 'package:iljujob/presentation/screens/signup_worker_screen/worker_quick_setup_screen.dart';
@@ -159,6 +160,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
         body: jsonEncode({
           'provider': 'kakao',
           'accessToken': token.accessToken,
+          if (await AcquisitionService.forSignup() case final acq?) 'acquisition': acq,
         }),
       );
 
@@ -237,6 +239,7 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
           'idToken': identityToken,
           'rawNonce': rawNonce,
           'name': fullName,
+          if (await AcquisitionService.forSignup() case final acq?) 'acquisition': acq,
         }),
       );
       final data = jsonDecode(res.body);
