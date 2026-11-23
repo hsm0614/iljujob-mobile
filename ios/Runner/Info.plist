@@ -8,6 +8,11 @@
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>ko</string>
+		<string>en</string>
+	</array>
 	<key>CFBundleDisplayName</key>
 	<string>알바일주</string>
 	<key>CFBundleExecutable</key>
