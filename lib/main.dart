@@ -1,5 +1,6 @@
 import 'package:iljujob/presentation/screens/post_job/promotion_request_screen.dart';
 import 'dart:convert';
+import 'dart:async' show unawaited;
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -53,6 +54,7 @@ import 'package:iljujob/data/services/fcm_token_payload.dart';
 import 'package:iljujob/data/services/authenticated_http_client.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
 import 'package:iljujob/data/services/acquisition_service.dart';
+import 'package:iljujob/data/services/appsflyer_attribution_service.dart';
 import 'package:jwt_decoder/jwt_decoder.dart';
 import 'package:iljujob/presentation/screens/mypagescreen/block_detail_screen.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -761,6 +763,7 @@ Widget _determineStartScreen({
 // ============================================================
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  unawaited(AppsFlyerAttributionService.initialize());
   AcquisitionService.capturePlayInstallReferrer();
   debugPrint('🚀 [main.dart] Flutter 바인딩 초기화 완료');
 

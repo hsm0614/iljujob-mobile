@@ -11,6 +11,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/acquisition_service.dart';
+import 'package:iljujob/data/services/appsflyer_attribution_service.dart';
 import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 import 'package:iljujob/presentation/screens/signup_client_screen/signup_client_screen.dart';
 import 'package:iljujob/presentation/screens/signup_client_screen/client_extra_info_screen.dart';
@@ -79,6 +80,10 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
 
     final isAdmin   = data['isAdmin'] ?? false;
     final isNewUser = data['isNewUser'] ?? false;
+
+    if (isNewUser && !isAdmin) {
+      AppsFlyerAttributionService.logEvent('sign_up_client');
+    }
 
     if (isAdmin) {
       Navigator.pushNamedAndRemoveUntil(context, '/admin', (_) => false);

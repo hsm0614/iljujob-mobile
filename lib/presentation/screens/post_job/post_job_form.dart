@@ -9,6 +9,7 @@ import 'package:kpostal/kpostal.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:intl/intl.dart';
 import 'package:iljujob/data/services/job_service.dart';
+import 'package:iljujob/data/services/appsflyer_attribution_service.dart';
 import 'package:iljujob/data/models/job.dart';
 import 'dart:convert';
 import 'package:iljujob/config/constants.dart';
@@ -950,6 +951,10 @@ class _PostJobFormState extends State<PostJobForm>
       FirebaseAnalytics.instance.logEvent(
         name: 'job_post_complete',
         parameters: {'type': postType, 'job_id': jobId ?? 0},
+      );
+      AppsFlyerAttributionService.logEvent(
+        'job_post_complete',
+        values: {'type': postType},
       );
       _draftSaveTimer?.cancel();
       await _clearDraft().catchError((_) {});

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/main.dart';
 import 'package:iljujob/data/services/acquisition_service.dart';
+import 'package:iljujob/data/services/appsflyer_attribution_service.dart';
 import 'package:iljujob/presentation/screens/TermsDetailScreen.dart';
 import 'package:iljujob/presentation/screens/webview_screen.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -259,6 +260,7 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
         // 구글애즈 앱 캠페인 전환 신호(보조). 기본 전환은 job_post_complete지만,
         // 사장님 가입 자체도 설치보다는 훨씬 나은 신호다.
         FirebaseAnalytics.instance.logEvent(name: 'sign_up_client');
+        AppsFlyerAttributionService.logEvent('sign_up_client');
         if (!mounted) return;
         Navigator.pushNamedAndRemoveUntil(
           context,
