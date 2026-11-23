@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:iljujob/data/services/install_tracker.dart';
+import 'package:iljujob/data/services/client_tracking_service.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/main.dart';
 import 'package:iljujob/data/services/acquisition_service.dart';
@@ -261,6 +263,8 @@ class _SignupClientScreenState extends State<SignupClientScreen> {
         // 사장님 가입 자체도 설치보다는 훨씬 나은 신호다.
         FirebaseAnalytics.instance.logEvent(name: 'sign_up_client');
         AppsFlyerAttributionService.logEvent('sign_up_client');
+        ClientTrackingService.instance.track('employer_signup_complete', properties: {'method': 'phone'});
+        InstallTracker.report(); // 설치 기록을 새 계정에 연결
         if (!mounted) return;
         Navigator.pushNamedAndRemoveUntil(
           context,

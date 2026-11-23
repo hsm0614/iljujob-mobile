@@ -145,6 +145,18 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   // 알바생 홈 시안(2026-11): 내 주변이 적거나 없을 때 '조금 먼 공고'와 '최근 7일 근처 공고 수'.
   // 전국 모집 중 공고가 12개(11-01)라 대부분 0~2개를 본다 — 빈 화면 대신 다음 행동을 준다
   List<Job> _fartherJobs = [];
+
+  // 빈 화면 이벤트는 build 안에서 찍혀 다시 그릴 때마다 쌓였다(30일 283명에게 5,090회, 11-23) → 홈 화면당 원인별 1회
+  final Set<String> _emptyLogged = {};
+  void _logEmptyOnce(String cause, bool noLocation) {
+    if (!_emptyLogged.add(cause)) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ScreenAnalyticsService.instance.logEvent(
+        'worker_empty_jobs_shown',
+        params: {'cause': cause, 'no_location': noLocation},
+      );
+    });
+  }
   // 내 주변 빈 화면을 새 모양으로 그릴 때 — 검색·조건 때문이거나 위치를 모르면 기존 빈 화면
   bool get _nearEmptyCase =>
       _isNearScope && searchQuery.trim().isEmpty && !_hasConditions && currentLatitude != 0.0 && currentLongitude != 0.0;
@@ -1873,15 +1885,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
 
     // 30일간 283명에게 5,090회(인당 18회) 노출됐다.
     // build 중이므로 프레임 이후에 보낸다.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ScreenAnalyticsService.instance.logEvent(
-        'worker_empty_jobs_shown',
-        params: {
-          'cause': hasQuery ? 'search' : 'no_nearby_jobs',
-          'no_location': noLocation,
-        },
-      );
-    });
+    _logEmptyOnce(hasQuery ? 'search' : 'no_nearby_jobs', noLocation);
 
     final regionName = [
       _regionSido,
@@ -3251,12 +3255,7 @@ class _HomeMainScreenState extends State<HomeMainScreen>
   Widget _buildNearEmpty() => Container(color: AppColors.bgCard, child: _nearEmptyBody());
 
   Widget _nearEmptyBody() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ScreenAnalyticsService.instance.logEvent(
-        'worker_empty_jobs_shown',
-        params: {'cause': 'no_nearby_jobs', 'no_location': false},
-      );
-    });
+    _logEmptyOnce('no_nearby_jobs', false);
     final place = _myRegionLabel?.split(' ').last ?? '내 주변';
     final wider = (selectedDistance * 2).clamp(5, 30).toDouble();
     Widget chip(String label, VoidCallback onTap, {IconData? icon}) => Padding(

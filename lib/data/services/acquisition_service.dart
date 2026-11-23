@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import 'install_tracker.dart';
 
 /// 확인 가능한 첫 유입만 기기에 보관한다. 출처가 없으면 미상으로 둔다.
 class AcquisitionService {
@@ -99,6 +102,7 @@ class AcquisitionService {
       if (safeCampaign != null) 'utm_campaign': safeCampaign,
       'landing_path': '/app-install',
     });
+    unawaited(InstallTracker.report()); // 유료 설치 판정은 첫 실행 뒤에 온다 — 설치 기록에도 반영
   }
 
   static Future<void> _store(Map<String, String>? acquisition) async {

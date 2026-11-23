@@ -11,6 +11,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import 'package:iljujob/data/services/install_tracker.dart';
+import 'package:iljujob/data/services/screen_analytics_service.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/acquisition_service.dart';
 import 'package:iljujob/main.dart';
@@ -76,6 +78,9 @@ class _SignupChoiceScreenState extends State<SignupChoiceScreen> {
     if (isNewUser) {
       await prefs.setBool('worker_first_home_nearby', true);
       await prefs.setBool('worker_first_home_skip_primer', true);
+      // 간편가입(가입의 ~75%)은 가입 완료가 안 찍혀 이벤트가 실제의 13%뿐이었다(11-23)
+      ScreenAnalyticsService.instance.logEvent('worker_signup_complete', params: {'method': provider});
+      InstallTracker.report(); // 설치 기록을 새 계정에 연결
     }
 
     if (!mounted) return;

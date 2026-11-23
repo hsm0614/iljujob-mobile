@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:uuid/uuid.dart';
+import 'package:iljujob/data/services/install_tracker.dart';
 import 'package:iljujob/data/services/acquisition_service.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/main.dart'; // ✅ sendFcmTokenUnified 사용을 위해
@@ -429,6 +430,7 @@ class _SignupWorkerScreenState extends State<SignupWorkerScreen> {
           'worker_signup_complete',
           attemptId: _signupAttemptId,
         );
+        InstallTracker.report(); // 설치 기록을 새 계정에 연결
 
         // ✅ main.dart의 통합 FCM 함수 사용
         await sendFcmTokenUnified();

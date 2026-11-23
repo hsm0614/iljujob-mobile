@@ -1,3 +1,4 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'dart:convert';
 import 'dart:io' show Platform;
 import 'dart:math';
@@ -9,6 +10,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import 'package:iljujob/data/services/install_tracker.dart';
+import 'package:iljujob/data/services/client_tracking_service.dart';
 import 'package:iljujob/config/constants.dart';
 import 'package:iljujob/data/services/acquisition_service.dart';
 import 'package:iljujob/data/services/appsflyer_attribution_service.dart';
@@ -83,6 +86,10 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
 
     if (isNewUser && !isAdmin) {
       AppsFlyerAttributionService.logEvent('sign_up_client');
+      // 간편가입도 전화번호 가입과 같은 가입 완료 신호(서버 퍼널·구글애즈 Firebase 전환)
+      FirebaseAnalytics.instance.logEvent(name: 'sign_up_client');
+      ClientTrackingService.instance.track('employer_signup_complete', properties: {'method': 'social'});
+      InstallTracker.report(); // 설치 기록을 새 계정에 연결
     }
 
     if (isAdmin) {
