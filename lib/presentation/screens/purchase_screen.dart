@@ -338,18 +338,17 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
           if (mounted) {
             final isUrgent =
                 p.productID == _kIosUrgent1 || _pendingPassType == 'urgent';
+            final bought = isUrgent
+                ? 'urgent'
+                : p.productID == _kIosInstant7
+                ? 'instant_7d'
+                : 'instant';
             await _refreshPassCount();
             if (widget.fromPostJob) {
               await Future.delayed(const Duration(milliseconds: 600));
-              if (mounted) Navigator.pop(context, {'success': true});
+              if (mounted) Navigator.pop(context, {'success': true, 'passType': bought});
             } else {
-              await _showBought(
-                isUrgent
-                    ? 'urgent'
-                    : p.productID == _kIosInstant7
-                    ? 'instant_7d'
-                    : 'instant',
-              );
+              await _showBought(bought);
             }
           }
         } catch (e) {
@@ -466,7 +465,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
         await _refreshPassCount();
         if (widget.fromPostJob) {
           await Future.delayed(const Duration(milliseconds: 600));
-          if (mounted) Navigator.pop(context, {'success': true});
+          if (mounted) Navigator.pop(context, {'success': true, 'passType': passType});
         } else {
           await _showBought(passType);
         }

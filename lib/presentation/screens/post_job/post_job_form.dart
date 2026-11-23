@@ -1419,7 +1419,16 @@ class _PostJobFormState extends State<PostJobForm>
               // 시트를 다시 열면 _PublishSheet.initState가 잔여를 재조회한다.
               if (result is Map && result['success'] == true && mounted) {
                 _trackPost('job_post_payment_success');
-                _showPublishSheet();
+                // 산 이용권으로 바로 올린다. 전에는 게시 방법 시트를 다시 띄워 같은 선택을 한 번 더 받았다.
+                // 긴급 호출은 즉시 노출이라 예약시각을 비운다(onUrgentSubmit과 같게).
+                final bought = result['passType']?.toString();
+                if (bought == 'instant' || bought == 'instant_7d' || bought == 'urgent') {
+                  if (bought == 'urgent') publishAt = null;
+                  _trackPost('job_post_paid_publish_start', properties: {'pass_type': bought, 'after_payment': true});
+                  _submit(isPaid: true, passType: bought);
+                } else {
+                  _showPublishSheet();
+                }
               } else {
                 // payment_start 40 건 중 success 는 14 건뿐인데, 나머지 26 건이
                 // 취소인지 결제 실패인지 구분할 기록이 없었다.
