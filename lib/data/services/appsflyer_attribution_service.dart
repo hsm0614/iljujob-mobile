@@ -1,7 +1,9 @@
+import 'dart:async' show unawaited;
 import 'dart:io' show Platform;
 
 import 'package:appsflyer_sdk/appsflyer_sdk.dart';
 import 'package:flutter/foundation.dart';
+import 'package:iljujob/data/services/acquisition_service.dart';
 
 /// 네이버 앱광고의 설치·인앱 전환을 제휴 MMP로 전송한다.
 /// Dev Key는 공개 저장소에 넣지 않고 스토어 빌드의 dart-define으로 주입한다.
@@ -19,6 +21,11 @@ class AppsFlyerAttributionService {
       await _sdk.init(
         devKey: _devKey,
         appId: Platform.isIOS ? _iosAppId : null,
+      );
+      await _sdk.registerConversionListener(
+        onConversionDataSuccess: (data) {
+          unawaited(AcquisitionService.captureAppsFlyerInstall(data));
+        },
       );
       await _sdk.registerSessionReadyListener(() async {
         try {

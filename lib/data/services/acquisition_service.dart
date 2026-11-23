@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Android의 확인 가능한 첫 유입만 기기에 보관한다. 출처가 없으면 미상으로 둔다.
+/// 확인 가능한 첫 유입만 기기에 보관한다. 출처가 없으면 미상으로 둔다.
 class AcquisitionService {
   static const _channel = MethodChannel('albailju/acquisition');
   static const _firstTouchKey = 'acquisition_first_touch_v1';
@@ -81,6 +81,23 @@ class AcquisitionService {
     await _store(fromLink(uri));
   }
 
+  /// AppsFlyer가 네이버 설치로 판정한 경우에만 사장님 가입 출처로 보관한다.
+  static Future<void> captureAppsFlyerInstall(
+    Map<String, dynamic> response,
+  ) async {
+    final data = response['payload'];
+    final attribution = data is Map ? data : response;
+    if (attribution['media_source'] != 'naver_int') return;
+    final campaign = attribution['campaign'];
+    final safeCampaign = campaign is String ? _safe(campaign, 150) : null;
+    await _store({
+      'utm_source': 'naver',
+      'utm_medium': 'cpc',
+      if (safeCampaign != null) 'utm_campaign': safeCampaign,
+      'landing_path': '/app-install',
+    });
+  }
+
   static Future<void> _store(Map<String, String>? acquisition) async {
     if (acquisition == null) return;
     final prefs = await SharedPreferences.getInstance();
@@ -92,7 +109,6 @@ class AcquisitionService {
   }
 
   static Future<Map<String, String>?> forSignup() async {
-    if (!_isAndroid) return null;
     await capturePlayInstallReferrer();
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_firstTouchKey);
