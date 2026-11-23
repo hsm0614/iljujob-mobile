@@ -1595,6 +1595,12 @@ class _PostJobFormState extends State<PostJobForm>
         _isShortTerm = d['isShortTerm'] as bool? ?? true;
         _startDate = DateTime.tryParse(d['startDate']?.toString() ?? '');
         _endDate = DateTime.tryParse(d['endDate']?.toString() ?? '');
+        // 임시저장 뒤 날짜가 지나면 등록 때 PAST_WORK_DATE로 막혔다(30일 3회) — 다시 불러오기(_fillFromJob)와 같게 비운다
+        final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+        if ((_endDate ?? _startDate)?.isBefore(today) ?? false) {
+          _startDate = null;
+          _endDate = null;
+        }
         _weekdays = List<String>.from(d['weekdays'] as List? ?? const []);
         _longTermMode = d['longTermMode']?.toString() ?? '요일 지정';
         _negotiationText = d['negotiationText']?.toString() ?? '';

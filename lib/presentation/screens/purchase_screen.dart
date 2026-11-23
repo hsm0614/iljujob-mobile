@@ -570,7 +570,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
     return Scaffold(
       backgroundColor: AppColors.bgPage,
       appBar: AppBar(
-        title: const Text('이용권 구매'),
+        title: Text(widget.fromPostJob ? '바로 올리기' : '이용권 구매'),
         bottom: TabBar(
           controller: _tabCtrl,
           labelColor: AppColors.primary,
@@ -606,6 +606,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
                     isPurchasing: _isPurchasing,
                     onSelect: _payInstant,
                     formatPrice: formatPrice,
+                    fromPostJob: widget.fromPostJob,
                   ),
                 _UrgentTab(
                   remainingCount: remainingUrgent,
@@ -634,7 +635,9 @@ class _InstantTab extends StatefulWidget {
   final bool isPurchasing;
   final void Function(Map<String, dynamic> option) onSelect;
   final String Function(int) formatPrice;
+  final bool fromPostJob;
   const _InstantTab({
+    this.fromPostJob = false,
     required this.remainingCount,
     required this.remainingSevenDay,
     required this.options,
@@ -648,6 +651,9 @@ class _InstantTab extends StatefulWidget {
 
 class _InstantTabState extends State<_InstantTab> {
   late String _selectedId = widget.options.first['id'] as String;
+  // 공고 올리다 넘어온 사장님 10명 중 3명만 상품을 눌렀다(11-23, 30일) — '몇 개 살까요?' 묶음 목록에서 멈췄다.
+  // 이 공고 하나를 올리러 온 것이니 1회권만 먼저 보이고 묶음은 접는다.
+  late bool _showBundles = !widget.fromPostJob;
 
   @override
   Widget build(BuildContext context) {
@@ -674,14 +680,21 @@ class _InstantTabState extends State<_InstantTab> {
                         : '${widget.remainingCount}개',
               ),
               const SizedBox(height: 20),
-              Text(
-                durationPolicy ? '기간과 횟수를 고르세요' : '몇 개 살까요?',
-                style: AppTextStyles.h2,
-              ),
-              const SizedBox(height: 4),
-              const Text('남은 이용권은 만료 없이 다음 공고에 써요', style: AppTextStyles.body2),
+              if (widget.fromPostJob) ...[
+                const Text('결제하면 이 공고가 바로 공개돼요', style: AppTextStyles.h2),
+                const SizedBox(height: 4),
+                const Text('무료로 올리면 12시간 뒤에 공개돼요. 남은 이용권은 만료 없이 다음 공고에 써요.',
+                    style: AppTextStyles.body2),
+              ] else ...[
+                Text(
+                  durationPolicy ? '기간과 횟수를 고르세요' : '몇 개 살까요?',
+                  style: AppTextStyles.h2,
+                ),
+                const SizedBox(height: 4),
+                const Text('남은 이용권은 만료 없이 다음 공고에 써요', style: AppTextStyles.body2),
+              ],
               const SizedBox(height: 16),
-              for (final o in widget.options)
+              for (final o in widget.options.where((o) => _showBundles || o['count'] == 1))
                 _OptionRow(
                   title: '${o['days']}일 · ${o['count']}회',
                   sub:
@@ -694,12 +707,19 @@ class _InstantTabState extends State<_InstantTab> {
                   selected: _selectedId == o['id'],
                   onTap: () => setState(() => _selectedId = o['id'] as String),
                 ),
+              if (!_showBundles)
+                TextButton(
+                  onPressed: () => setState(() => _showBundles = true),
+                  child: const Text('여러 개 사면 회당 더 싸요 · 묶음 보기'),
+                ),
             ],
           ),
         ),
         AppBottomBar(
           child: AppPrimaryButton(
-            label: '${widget.formatPrice(price)} 결제하기',
+            label: widget.fromPostJob
+                ? '${widget.formatPrice(price)} 결제하고 바로 올리기'
+                : '${widget.formatPrice(price)} 결제하기',
             loading: widget.isPurchasing,
             onPressed: () => widget.onSelect(opt),
           ),
