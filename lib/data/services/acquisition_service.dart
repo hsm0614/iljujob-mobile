@@ -81,17 +81,20 @@ class AcquisitionService {
     await _store(fromLink(uri));
   }
 
-  /// AppsFlyer가 네이버 설치로 판정한 경우에만 사장님 가입 출처로 보관한다.
+  /// AppsFlyer가 유료 광고 설치로 판정한 경우(네이버·구글)만 사장님 가입 출처로 보관한다.
+  static const _paidMedia = {'naver_int': 'naver', 'googleadwords_int': 'google'};
+
   static Future<void> captureAppsFlyerInstall(
     Map<String, dynamic> response,
   ) async {
     final data = response['payload'];
     final attribution = data is Map ? data : response;
-    if (attribution['media_source'] != 'naver_int') return;
+    final source = _paidMedia[attribution['media_source']];
+    if (source == null) return;
     final campaign = attribution['campaign'];
     final safeCampaign = campaign is String ? _safe(campaign, 150) : null;
     await _store({
-      'utm_source': 'naver',
+      'utm_source': source,
       'utm_medium': 'cpc',
       if (safeCampaign != null) 'utm_campaign': safeCampaign,
       'landing_path': '/app-install',

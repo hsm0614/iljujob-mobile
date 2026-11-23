@@ -59,4 +59,19 @@ void main() {
       debugDefaultTargetPlatformOverride = null;
     }
   });
+
+  test('AppsFlyer 구글 광고 설치는 google, 자연 설치는 미상 (iOS)', () async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    SharedPreferences.setMockInitialValues({});
+    try {
+      await AcquisitionService.captureAppsFlyerInstall({'media_source': 'organic'});
+      expect(await AcquisitionService.forSignup(), isNull);
+      await AcquisitionService.captureAppsFlyerInstall({
+        'payload': {'media_source': 'googleadwords_int', 'campaign': 'App-4'},
+      });
+      expect((await AcquisitionService.forSignup())?['utm_source'], 'google');
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
 }
