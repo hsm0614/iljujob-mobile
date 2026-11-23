@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../config/app_theme.dart';
+import '../../../config/constants.dart';
 import '../../../widget/app_ui.dart';
 
 /// 고객센터 (2026-10 리디자인). 파란 헤더 카드·그림자 카드 → 질문 한 줄 + 할 일 줄.
@@ -52,6 +53,12 @@ class SupportScreen extends StatelessWidget {
                 label: '전화 상담',
                 value: '070-4792-3001',
                 onTap: () => launchUrl(Uri.parse('tel:$_phone')),
+              ),
+              AppMenuRow(
+                icon: Icons.chat_bubble_outline_rounded,
+                label: '카카오톡 상담',
+                value: '알바일주 채널',
+                onTap: () => launchUrl(Uri.parse(kakaoChannelChatUrl), mode: LaunchMode.externalApplication),
               ),
             ],
           ),

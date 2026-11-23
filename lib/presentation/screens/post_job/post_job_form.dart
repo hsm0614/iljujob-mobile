@@ -38,6 +38,7 @@ import 'package:iljujob/utils/publish_timing.dart';
 import 'package:iljujob/config/job_categories.dart';
 import '../../../config/messages.dart';
 import 'package:uuid/uuid.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // 2026년 적용 최저시급
 const int minWagePerHour = 10320;
@@ -2107,6 +2108,39 @@ class _PostJobFormState extends State<PostJobForm>
                   const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
                 else
                   const Icon(Icons.chevron_right, color: AppColors.textTertiary),
+              ],
+            ),
+          ),
+        ),
+      ),
+      // 카톡으로 맡기기 — 직접 쓰기 번거로운 사장님은 채널 채팅으로 대행 접수 (2026-11-23, 할 일판 #173)
+      const SizedBox(height: 10),
+      Material(
+        color: AppColors.bgCard,
+        shape: RoundedRectangleBorder(
+          side: const BorderSide(color: AppColors.border),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+          onTap: () => launchUrl(Uri.parse(kakaoChannelChatUrl), mode: LaunchMode.externalApplication),
+          child: const Padding(
+            padding: EdgeInsets.fromLTRB(16, 14, 14, 14),
+            child: Row(
+              children: [
+                Icon(Icons.chat_bubble_outline_rounded, color: AppColors.textSecondary),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('카카오톡으로 맡기기', style: AppTextStyles.body1),
+                      SizedBox(height: 2),
+                      Text('구인 내용만 보내주시면 대신 올려드려요 · 첫 1건 무료', style: AppTextStyles.caption),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: AppColors.textTertiary),
               ],
             ),
           ),
