@@ -46,7 +46,7 @@ const subscriptionProductConfigs = [
     key: 'lite',
     name: '베이직',
     price: 29000,
-    instantCredits: 3,
+    instantCredits: 4, // 3→4회(2026-11-23) — 서버 productCatalog PLAN_TABLES v3와 같이
     urgentCredits: 0,
     maxRecipients: 10,
     directMonthly: 10,
