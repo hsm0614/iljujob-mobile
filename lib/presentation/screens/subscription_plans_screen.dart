@@ -698,7 +698,7 @@ class _CompareTable extends StatelessWidget {
   const _CompareTable({required this.selectedPlan});
 
   static const _rows = [
-    ['즉시 게시', '월 3회', '무제한'],
+    ['즉시 게시', '월 4회', '무제한'],
     ['먼저 연락', '월 10명', '월 50명'],
     ['공고당 연락', '10명', '20명'],
     ['지도 알림', '월 2회', '월 8회'],
