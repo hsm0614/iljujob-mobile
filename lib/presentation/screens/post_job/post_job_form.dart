@@ -1427,6 +1427,9 @@ class _PostJobFormState extends State<PostJobForm>
                   'result': result is Map ? result['reason']?.toString() : null,
                   'cancelled': result == null,
                 });
+                // 결제 화면에서 그냥 나오면 폼에 멈춰 있었다(30일 10건, 다시 등록 0).
+                // 게시 방법을 다시 띄워 무료 예약 게시로라도 올릴 수 있게 한다.
+                if (mounted) _showPublishSheet();
               }
             },
           ),
