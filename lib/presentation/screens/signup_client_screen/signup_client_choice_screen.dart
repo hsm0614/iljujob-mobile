@@ -186,6 +186,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
       final fullName = [credential.givenName, credential.familyName]
           .where((e) => e != null && e.isNotEmpty)
           .join(' ');
+      final acquisition = await AcquisitionService.forSignup();
 
       final res = await http.post(
         Uri.parse('$baseUrl/api/client/social-login'),
@@ -195,6 +196,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
           'idToken':  identityToken,
           'rawNonce': rawNonce,
           'name':     fullName.isNotEmpty ? fullName : null,
+          if (acquisition != null) 'acquisition': acquisition,
         }),
       );
 

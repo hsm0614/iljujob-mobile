@@ -1,5 +1,6 @@
 import 'dart:async'; // TimeoutException
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Clipboard
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -316,6 +317,80 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
     }
   }
 
+  // #233 사장님→사장님 소개: 추천 코드 = 소개한 사장님 전화번호(서버 apply-referral).
+  Future<void> _openReferralSheet() async {
+    final prefs = await SharedPreferences.getInstance();
+    final myPhone = prefs.getString('userPhone') ?? '';
+    final codeCtrl = TextEditingController();
+    String? notice;
+    if (!mounted) return;
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheet) => Padding(
+          padding: EdgeInsets.fromLTRB(20, 8, 20, MediaQuery.of(ctx).viewInsets.bottom + MediaQuery.paddingOf(ctx).bottom + 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text('사장님 소개하기', style: AppTextStyles.h2),
+              const SizedBox(height: 6),
+              Text('소개받은 사장님이 가입하고 추천인에 내 번호를 넣은 뒤 첫 공고를 올리면, 두 분 모두 즉시 게시 이용권 1장(8,900원 상당)을 받아요. 한 달에 10명까지.',
+                  style: AppTextStyles.body2.copyWith(color: AppColors.textSecondary)),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: myPhone.isEmpty
+                    ? null
+                    : () async {
+                        await Clipboard.setData(ClipboardData(
+                            text: '알바일주에서 단기 알바 구하고 있어요. 가입할 때 추천인에 제 번호 $myPhone 를 넣고 공고를 올리면 우리 둘 다 즉시 게시 이용권 1장을 받아요. https://albailju.co.kr/app?src=owner_referral'));
+                        setSheet(() => notice = '복사했어요. 카톡·문자에 붙여 넣어 보내 주세요.');
+                      },
+                child: const Text('소개 문구 복사'),
+              ),
+              const SizedBox(height: 24),
+              Text('나를 소개해 준 사장님이 있나요?', style: AppTextStyles.body1.copyWith(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 8),
+              Row(children: [
+                Expanded(
+                  child: TextField(
+                    controller: codeCtrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: const InputDecoration(hintText: '소개한 사장님 전화번호'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                OutlinedButton(
+                  onPressed: () async {
+                    final code = codeCtrl.text.replaceAll(RegExp(r'[^0-9]'), '');
+                    if (code.length < 10) return;
+                    try {
+                      final res = await AuthenticatedHttpClient.postJson(
+                        Uri.parse('$baseUrl/api/client/apply-referral'),
+                        body: {'referralCode': code},
+                      );
+                      final msg = (jsonDecode(res.body) as Map)['message']?.toString();
+                      setSheet(() => notice = msg ?? '적용했어요.');
+                    } catch (_) {
+                      setSheet(() => notice = '적용하지 못했어요. 잠시 후 다시 해 주세요.');
+                    }
+                  },
+                  child: const Text('적용'),
+                ),
+              ]),
+              if (notice != null) ...[
+                const SizedBox(height: 10),
+                Text(notice!, style: AppTextStyles.body2.copyWith(fontWeight: FontWeight.w600)),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+    codeCtrl.dispose();
+  }
+
   // 2026-10 리디자인: 알바생 마이와 같은 뼈대 (화면 폭 흰 블록 + 회색 아이콘 줄, 토스·당근 마이).
   // 알바생의 '이번 달 일한 금액' 자리에 사장님은 '남은 이용권' — 공고 올릴 때 가장 먼저 궁금한 것.
   @override
@@ -417,6 +492,12 @@ class _ClientMyPageScreenState extends State<ClientMyPageScreen> {
                         );
                         if (mounted) _refreshAll();
                       },
+                    ),
+                    AppMenuRow(
+                      icon: Icons.handshake_outlined,
+                      label: '사장님 소개하기',
+                      subtitle: '소개받은 사장님이 공고를 올리면 두 분 모두 즉시 게시 1장',
+                      onTap: _openReferralSheet,
                     ),
                     AppMenuRow(
                       icon: Icons.notifications_none_rounded,
