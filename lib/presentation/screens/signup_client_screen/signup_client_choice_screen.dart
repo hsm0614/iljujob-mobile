@@ -10,6 +10,7 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import 'package:iljujob/config/constants.dart';
+import 'package:iljujob/data/services/acquisition_service.dart';
 import 'package:iljujob/main.dart'; // sendFcmTokenUnified
 import 'package:iljujob/presentation/screens/signup_client_screen/signup_client_screen.dart';
 import 'package:iljujob/presentation/screens/signup_client_screen/client_extra_info_screen.dart';
@@ -109,6 +110,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
       final token = isInstalled
           ? await kakao.UserApi.instance.loginWithKakaoTalk()
           : await kakao.UserApi.instance.loginWithKakaoAccount();
+      final acquisition = await AcquisitionService.forSignup();
 
       final res = await http.post(
         Uri.parse('$baseUrl/api/client/social-login'),
@@ -116,6 +118,7 @@ class _SignupClientChoiceScreenState extends State<SignupClientChoiceScreen> {
         body: jsonEncode({
           'provider': 'kakao',
           'accessToken': token.accessToken,
+          if (acquisition != null) 'acquisition': acquisition,
         }),
       );
 
