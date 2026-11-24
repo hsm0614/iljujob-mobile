@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../config/constants.dart';
 import '../../../data/services/authenticated_http_client.dart';
 import '../../../data/services/screen_analytics_service.dart';
+import '../../../data/services/client_tracking_service.dart';
 import '../../chat/chat_room_screen.dart'; // 경로 맞게 수정
 import '../../chat/work_confirmation_card.dart';
 import '../../widgets/albailju_common.dart';
@@ -272,6 +273,8 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
     _fetch();
   }
 
+  bool _promiseNudgeLogged = false;
+
   Future<void> _fetch() async {
     setState(() {
       _loading = true;
@@ -309,6 +312,19 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       });
       if (groups.any((g) => g.applicants.any((a) => !a.isCanceled))) {
         Future.delayed(const Duration(seconds: 2), maybeRequestStoreReview);
+      }
+      // #259 노출: 화면 한 번에 1회 — 근무 약속 보내기 줄이 붙은 지원자 수
+      final promisable = groups
+          .where((g) => g.jobStatus == 'active')
+          .expand((g) => g.applicants)
+          .where((a) => a.stage == 'pending')
+          .length;
+      if (promisable > 0 && !_promiseNudgeLogged) {
+        _promiseNudgeLogged = true;
+        ClientTrackingService.instance.track(
+          'work_promise_nudge_view',
+          properties: {'surface': 'applicant_row', 'count': promisable},
+        );
       }
     } on AuthSessionExpiredException {
       _redirectToOnboarding();
@@ -1331,14 +1347,27 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   if (!selecting && canPropose)
+                    // #259: 링크만 있으면 왜 보내야 하는지 몰라 27명 중 3명만 보냈다 — 켜지는 장치를 한 줄로 붙인다.
+                    // 환급(유료 공고만)은 이 목록이 유료 여부를 모르니 채팅방 안내에서만 말한다
                     GestureDetector(
                       behavior: HitTestBehavior.opaque,
-                      onTap: () => _proposeFromRow(applicant, group),
+                      onTap: () {
+                        ClientTrackingService.instance.track('work_promise_nudge_tap', properties: {'surface': 'applicant_row'});
+                        _proposeFromRow(applicant, group);
+                      },
                       child: Padding(
                         padding: const EdgeInsets.only(top: 6),
-                        child: Text(
-                          '출근 확정 제안하기',
-                          style: AppTextStyles.body2.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600),
+                        child: Text.rich(
+                          TextSpan(
+                            style: AppTextStyles.body2,
+                            children: [
+                              TextSpan(
+                                text: '근무 약속 보내기',
+                                style: AppTextStyles.body2.copyWith(color: AppColors.primary, fontWeight: FontWeight.w600),
+                              ),
+                              const TextSpan(text: ' · 전날·당일 출근 확인 알림이 가요'),
+                            ],
+                          ),
                         ),
                       ),
                     ),

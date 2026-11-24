@@ -24,6 +24,7 @@ import 'package:iljujob/presentation/contract/contract_sheets.dart';
 import 'package:iljujob/presentation/widgets/albailju_common.dart';
 import 'package:iljujob/presentation/screens/worker_screen/job_detail_screen.dart';
 import 'package:iljujob/data/services/screen_analytics_service.dart';
+import 'package:iljujob/data/services/client_tracking_service.dart';
 import 'package:iljujob/utiles/keyboard_mode.dart';
 
 import 'chat_room_controller.dart';
@@ -171,7 +172,9 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
         children: [
-          if (ctrl.workConfirmations.isEmpty) chip('출근 확정 보내기', () => _showProposeSheet(ctrl), primary: true),
+          // 근무 약속 안내 줄이 떠 있으면 그 줄의 [보내기]가 같은 일을 한다
+          if (ctrl.workConfirmations.isEmpty && _promiseNudgeKind(ctrl) == null)
+            chip('근무 약속 보내기', () => _showProposeSheet(ctrl), primary: true),
           // 바로 보내지 않고 입력창에 넣는다 — 고쳐서 보낼 수 있게
           for (final s in _suggestions)
             chip(s, () {
@@ -179,6 +182,87 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
               _messageController.selection = TextSelection.collapsed(offset: s.length);
               _inputFocusNode.requestFocus();
             }),
+        ],
+      ),
+    );
+  }
+
+  // ── 근무 약속 권하기 (#259, plans/2026-11-24-work-promise-nudge.md) ──
+  // 지원자 받은 사장님 27명 중 약속을 보낸 건 3명 — 노쇼 보호(전날·당일 확인·환급)가 대부분 한 번도 안 켜졌다.
+  // 'propose' = 대화는 오갔는데 약속 없음 · 'stale' = 보낸 지 24시간 넘게 수락 안 됨. 닫으면 그 방에서 종류별로 다시 안 뜬다.
+  Set<String> _promiseNudgeClosed = const {};
+  String? _promiseNudgeLogged;
+
+  String _promiseNudgeKey(int roomId, String kind) => 'work_promise_nudge_closed_${roomId}_$kind';
+
+  Future<void> _loadPromiseNudgeClosed(int roomId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final closed = {
+      for (final k in const ['propose', 'stale'])
+        if (prefs.getBool(_promiseNudgeKey(roomId, k)) == true) k,
+    };
+    if (mounted && closed.isNotEmpty) setState(() => _promiseNudgeClosed = closed);
+  }
+
+  String? _promiseNudgeKind(ChatRoomController ctrl) {
+    if (!ctrl.isClient || !ctrl.inputEnabled || ctrl.isLoading) return null;
+    final String kind;
+    final confirmations = ctrl.workConfirmations;
+    if (confirmations.isEmpty) {
+      final senders = ctrl.messages.map((m) => m['sender']).toSet();
+      if (!senders.contains('client') || !senders.contains('worker')) return null;
+      kind = 'propose';
+    } else {
+      final open = confirmations.where((c) => c.status == 'proposed' && !isWorkDatePast(c.workDate));
+      final at = open.isEmpty ? null : open.first.proposedAt;
+      if (at == null || DateTime.now().toUtc().difference(at) < const Duration(hours: 24)) return null;
+      kind = 'stale';
+    }
+    return _promiseNudgeClosed.contains(kind) ? null : kind;
+  }
+
+  Widget _buildWorkPromiseNudge(ChatRoomController ctrl) {
+    final kind = _promiseNudgeKind(ctrl);
+    if (kind == null) return const SizedBox.shrink();
+    final props = {'surface': kind == 'stale' ? 'chat_stale' : 'chat', 'job_paid': ctrl.isPaidJob};
+    if (_promiseNudgeLogged != kind) {
+      _promiseNudgeLogged = kind;
+      ClientTrackingService.instance.track('work_promise_nudge_view', properties: props);
+    }
+    // 결과 약속은 쓰지 않는다(노쇼 없음 X) — 실제로 켜지는 장치만. 환급은 유료 공고만(서버 FREE_JOB_NO_REFUND)
+    final text = kind == 'stale'
+        ? '알바생이 근무 약속을 아직 수락하지 않았어요'
+        : '근무 약속을 보내면 전날·당일 출근 확인 알림이 가요${ctrl.isPaidJob ? ' · 노쇼면 이용권 1장 환급' : ''}';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(8, 0, 0, 2),
+      child: Row(
+        children: [
+          Expanded(child: Text(text, style: AppTextStyles.body2, maxLines: 2, overflow: TextOverflow.ellipsis)),
+          TextButton(
+            onPressed: () {
+              ClientTrackingService.instance.track('work_promise_nudge_tap', properties: props);
+              if (kind == 'propose') {
+                _showProposeSheet(ctrl);
+                return;
+              }
+              // 진행 중인 약속이 있으면 새로 보낼 수 없다(서버 409) — 알바생에게 수락을 부탁하는 말을 입력창에 넣는다
+              const ask = '근무 약속 보냈어요! 채팅방 위 카드에서 [수락하기]를 눌러 주시면 전날·당일 출근 알림을 드려요.';
+              _messageController.text = ask;
+              _messageController.selection = const TextSelection.collapsed(offset: ask.length);
+              _inputFocusNode.requestFocus();
+            },
+            child: Text(kind == 'stale' ? '수락 부탁하기' : '보내기'),
+          ),
+          IconButton(
+            tooltip: '닫기',
+            icon: const Icon(Icons.close_rounded, size: 18),
+            color: AppColors.textTertiary,
+            onPressed: () async {
+              setState(() => _promiseNudgeClosed = {..._promiseNudgeClosed, kind});
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool(_promiseNudgeKey(ctrl.chatRoomId, kind), true);
+            },
+          ),
         ],
       ),
     );
@@ -198,6 +282,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
     // 컨트롤러에 UI 콜백 주입
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final ctrl = context.read<ChatRoomController>();
+      _loadPromiseNudgeClosed(ctrl.chatRoomId);
 
       ctrl.onShowSnackbar = (msg) {
         if (!mounted) return;
@@ -1471,6 +1556,7 @@ class _ChatRoomViewState extends State<_ChatRoomView> {
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
+                                _buildWorkPromiseNudge(ctrl),
                                 _buildQuickReplies(ctrl),
                                 Row(
                               children: [
