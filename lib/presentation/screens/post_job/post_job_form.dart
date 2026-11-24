@@ -145,6 +145,8 @@ class _PostJobFormState extends State<PostJobForm>
   String _payType = '시급';
   int _pay = 0;
   bool _isSameDayPay = false;
+  // 전화로도 지원 받기(#270) — 알바생 [전화로 지원]은 지원 기록을 남긴 뒤 사장님 번호로 건다
+  bool _allowPhoneApply = false;
   // 장기 공고 전용
   bool _isAlwaysOpen = false;
   // 전국 노출 — 숙식·셔틀 제공 공고에만 뜬다. 켜면 거리 필터를 넘어 노출된다.
@@ -552,6 +554,7 @@ class _PostJobFormState extends State<PostJobForm>
         _description = job.description ?? '';
         _descCtrl.text = _description;
         _isSameDayPay = job.isSameDayPay;
+        _allowPhoneApply = job.allowPhoneApply;
         _locDetailCtrl.text = job.locationDetail ?? '';
         _headcount = job.headcount ?? 1;
         _breakMinutes = job.breakMinutes;
@@ -918,6 +921,7 @@ class _PostJobFormState extends State<PostJobForm>
         isScheduled: publishAt != null,
         publishAt: publishAtUtcStr, // UTC ISO 문자열
         isSameDayPay: _isSameDayPay,
+        allowPhoneApply: _allowPhoneApply,
         isPaid: isPaid,
         passType: passType,
         isAgency: clientId == 1,
@@ -1492,6 +1496,7 @@ class _PostJobFormState extends State<PostJobForm>
       _weekdays =
           job['weekdays'] != null ? (job['weekdays'] as String).split(',') : [];
       _isSameDayPay = job['is_same_day_pay'] == 1;
+      _allowPhoneApply = job['allow_phone_apply'] == 1 || job['allow_phone_apply'] == true;
       _locDetailCtrl.text = job['location_detail']?.toString() ?? '';
       _headcount = int.tryParse('${job['headcount'] ?? ''}') ?? 1;
       _breakMinutes = int.tryParse('${job['break_minutes'] ?? ''}');
@@ -1550,6 +1555,7 @@ class _PostJobFormState extends State<PostJobForm>
       'payType': _payType,
       'pay': _pay,
       'isSameDayPay': _isSameDayPay,
+      'allowPhoneApply': _allowPhoneApply,
       'description': _description,
       'externalApplyEnabled': _externalApplyEnabled,
       'externalApplyUrl': _externalApplyUrlCtrl.text.trim(),
@@ -1612,6 +1618,7 @@ class _PostJobFormState extends State<PostJobForm>
         _pay = d['pay'] as int? ?? 0;
         _payCtrl.text = _pay > 0 ? NumberFormat('#,###').format(_pay) : '';
         _isSameDayPay = d['isSameDayPay'] as bool? ?? false;
+        _allowPhoneApply = d['allowPhoneApply'] == true;
         _description = d['description']?.toString() ?? '';
         _descCtrl.text = _description;
         _externalApplyEnabled = d['externalApplyEnabled'] as bool? ?? false;
@@ -3873,6 +3880,30 @@ class _PostJobFormState extends State<PostJobForm>
           ),
         ),
         const SizedBox(height: 24),
+        // 사장님 41%가 채팅에 번호를 직접 적었다(30일) — 전화로 받고 싶은 사장님은 켜고, 지원 기록은 남긴다
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('전화로도 지원 받기', style: AppTextStyles.body1.copyWith(fontSize: AppFontSize.buttonLg, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 2),
+                  Text('알바생이 사장님 휴대폰으로 바로 전화해요 · 전화한 알바생도 지원자 목록에 남아요', style: AppTextStyles.body2),
+                ],
+              ),
+            ),
+            Switch.adaptive(
+              value: _allowPhoneApply,
+              activeTrackColor: AppColors.primary,
+              onChanged: (v) {
+                setState(() => _allowPhoneApply = v);
+                _scheduleDraftSave();
+              },
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
         _ExternalApplyOption(
           enabled: _externalApplyEnabled,
           controller: _externalApplyUrlCtrl,
@@ -4756,17 +4787,21 @@ class _PublishSheetState extends State<_PublishSheet> {
                 const SizedBox(height: 16),
                 Text('언제 공개할까요?', style: AppTextStyles.h1.copyWith(fontWeight: FontWeight.w700, height: 1.4)),
                 const SizedBox(height: 6),
+                // 결제 전 기대치(11-24 대표 결정): 30km는 서울 전체라 부풀려 보였다. 지원은 5km 밀도를 따라간다
+                // (90일 지원 0 공고 — 서울 유료 9% vs 지방 45%). 5km를 먼저, 적으면 그대로 말한다.
                 Text.rich(
-                  _reachableWorkersCount == null
+                  _urgentWorkersCount == null
                       ? const TextSpan(text: '올리는 방법에 따라 공개 시각과 알림이 달라요')
-                      : _reachableWorkersCount == 0
-                      ? const TextSpan(text: '근무지 30km 안에 최근 활동한 알바생이 아직 없어요')
                       : TextSpan(children: [
-                          const TextSpan(text: '근무지 30km 안에 최근 활동한 알바생 '),
-                          TextSpan(
-                            text: '$_reachableWorkersCount명',
-                            style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
-                          ),
+                          TextSpan(text: _urgentWorkersCount == 0 ? '근무지 5km 안에 최근 활동한 알바생이 아직 없어요' : '근무지 5km 안에 최근 활동한 알바생 '),
+                          if (_urgentWorkersCount! > 0)
+                            TextSpan(
+                              text: '$_urgentWorkersCount명',
+                              style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600),
+                            ),
+                          if ((_reachableWorkersCount ?? 0) > 0) TextSpan(text: ' (30km 안 $_reachableWorkersCount명)'),
+                          if (_urgentWorkersCount! < 10)
+                            const TextSpan(text: '\n근처 알바생이 적어 바로 공개해도 지원이 늦을 수 있어요. 무료 등록이나 공고 대행부터 써 보세요.'),
                         ]),
                   style: AppTextStyles.body1.copyWith(color: AppColors.textSecondary),
                 ),
