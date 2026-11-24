@@ -46,6 +46,8 @@ class ApplicantModel {
   final String? lastSenderType;
   /// 최신 근무 약속 상태 (proposed/accepted/…/completed/no_show)
   final String? workStatus;
+  /// 'phone' = 공고의 [전화로 지원]으로 들어온 지원(#270)
+  final String? applyChannel;
   // AI 응대(유료 공고) — asking·complete·handed_off·capped·failed·declined_minor
   final String? aiStatus;
   final String? aiSummary;
@@ -70,6 +72,7 @@ class ApplicantModel {
     this.lastSentAt,
     this.lastSenderType,
     this.workStatus,
+    this.applyChannel,
     this.aiStatus,
     this.aiSummary,
   });
@@ -102,6 +105,7 @@ class ApplicantModel {
       lastSentAt: j['last_sent_at'] != null ? DateTime.tryParse('${j['last_sent_at']}') : null,
       lastSenderType: j['last_sender_type']?.toString(),
       workStatus: j['work_status']?.toString(),
+      applyChannel: j['apply_channel']?.toString(),
       aiStatus: j['ai_status']?.toString(),
       aiSummary: j['ai_summary']?.toString(),
     );
@@ -1248,6 +1252,7 @@ class _ApplicantManagementScreenState extends State<ApplicantManagementScreen> {
       if (applicant.age > 0) '${applicant.age}세',
       if (applicant.genderLabel.isNotEmpty) applicant.genderLabel,
       '${_timeAgo(applicant.appliedAt)} 지원',
+      if (applicant.applyChannel == 'phone') '전화로 지원',
     ].join(' · ');
     // 상태 배지는 진행된 단계만. '처리 필요'는 거의 모든 행에 붙어 정보가 없었다(Everyone-Has-It)
     final status = switch (applicant.stage) {

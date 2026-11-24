@@ -953,6 +953,48 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     }
   }
 
+  // 사장님이 켠 [전화로 지원](#270): 지원 기록을 먼저 남기고 — 서버는 그때만 번호를 준다 — 전화 앱을 연다.
+  // 이미 지원했으면(409) 번호만 받아 다시 건다.
+  Future<void> _phoneApply() async {
+    final s = _suspension ??
+        const SuspensionState(suspendedType: null, suspendedUntil: null, suspendedReason: null);
+    if (!guardSuspended(context, s)) return;
+    final params = {'job_id': widget.job.id, 'category': widget.job.category, 'channel': 'phone'};
+    ScreenAnalyticsService.instance.logEvent('worker_apply_tap', params: params);
+    final prefs = await SharedPreferences.getInstance();
+    final workerId = prefs.getInt('userId');
+    if (workerId == null) {
+      _showSnack(Msg.loginRequired);
+      return;
+    }
+    try {
+      final res = await AuthenticatedHttpClient.postJson(
+        Uri.parse('$baseUrl/api/job/apply'),
+        body: {'workerId': workerId, 'jobId': widget.job.id, 'channel': 'phone'},
+      );
+      Map<String, dynamic> data = const {};
+      try {
+        data = Map<String, dynamic>.from(jsonDecode(res.body) as Map);
+      } catch (_) {}
+      final phone = (data['phone'] ?? '').toString();
+      if ((res.statusCode == 200 || res.statusCode == 409) && phone.isNotEmpty) {
+        if (res.statusCode == 200) {
+          ScreenAnalyticsService.instance.logEvent('worker_apply_complete', params: params);
+          final jobIdInt = int.tryParse(widget.job.id.toString());
+          if (jobIdInt != null) LogService.instance.logEvent(eventType: LogService.apply, jobId: jobIdInt);
+          await _fetchApplicantCount();
+          if (mounted) setState(() => hasApplied = true);
+        }
+        await _callAgencyPhone(phone);
+        return;
+      }
+      ScreenAnalyticsService.instance.logEvent('worker_apply_fail', params: {...params, 'status': res.statusCode});
+      _showSnack(data['message']?.toString() ?? Msg.applyFailed);
+    } catch (_) {
+      _showSnack(Msg.network);
+    }
+  }
+
   Future<void> _callAgencyPhone(String phone) async {
     final uri = Uri.parse('tel:$phone');
     if (await canLaunchUrl(uri)) {
@@ -1043,7 +1085,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     final isAgency = (widget.job.isAgency == true);
     final agencyPhone =
         widget.job.agencyPhone?.trim().replaceAll(RegExp(r'[^0-9+]'), '') ?? '';
-    final showPhoneApply = isAgency && agencyPhone.isNotEmpty;
+    final agencyPhoneApply = isAgency && agencyPhone.isNotEmpty;
+    // 사장님이 켠 전화 지원 — 번호는 지원 API가 준다. 이미 지원했어도 다시 걸 수 있게 hasApplied로는 막지 않는다
+    final showPhoneApply = agencyPhoneApply || widget.job.allowPhoneApply;
 
     final isSuspended = _suspension?.isSuspended ?? false;
     final hasExternalApply = widget.job.hasExternalApply;
@@ -1084,7 +1128,11 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                       child: SizedBox(
                         height: 50,
                         child: OutlinedButton.icon(
-                          onPressed: () => _callAgencyPhone(agencyPhone),
+                          onPressed: agencyPhoneApply
+                              ? () => _callAgencyPhone(agencyPhone)
+                              : (isClosed || isBlocked || (_suspension?.isSuspended ?? false))
+                              ? null
+                              : _phoneApply,
                           icon: const Icon(Icons.call_outlined, size: 18),
                           label: Text('전화로 지원', style: AppTextStyles.btnLg),
                         ),

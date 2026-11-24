@@ -227,6 +227,8 @@ class Job {
   final bool isUrgent;
   final bool isAgency;
   final String? agencyPhone;
+  /// 사장님이 켜면 알바생에게 [전화로 지원] — 번호는 지원 API가 지원 기록을 남긴 뒤에만 준다(#270)
+  final bool allowPhoneApply;
   final String? agencyEmail;
   final String? agencyNote;
   final bool externalApplyEnabled;
@@ -290,6 +292,7 @@ class Job {
     this.isUrgent = false,
     this.isAgency = false,
     this.agencyPhone,
+    this.allowPhoneApply = false,
     this.agencyEmail,
     this.agencyNote,
     this.externalApplyEnabled = false,
@@ -449,6 +452,7 @@ class Job {
           json['isAgency'] == true,
 
       agencyPhone: (json['agency_phone'] ?? json['agencyPhone'])?.toString(),
+      allowPhoneApply: json['allow_phone_apply'] == 1 || json['allow_phone_apply'] == true,
       agencyEmail: (json['agency_email'] ?? json['agencyEmail'])?.toString(),
       agencyNote: (json['agency_note'] ?? json['agencyNote'])?.toString(),
       externalApplyEnabled:
@@ -590,6 +594,7 @@ class Job {
       isUrgent: isUrgent,
       isAgency: isAgency,
       agencyPhone: agencyPhone,
+      allowPhoneApply: allowPhoneApply,
       agencyEmail: agencyEmail,
       agencyNote: agencyNote,
       externalApplyEnabled: externalApplyEnabled,
@@ -643,6 +648,7 @@ class Job {
       'is_paid': isPaid ? 1 : 0,
       'is_agency': isAgency ? 1 : 0,
       'agency_phone': agencyPhone,
+      'allow_phone_apply': allowPhoneApply ? 1 : 0,
       'agency_email': agencyEmail,
       'agency_note': agencyNote,
       'external_apply_enabled': externalApplyEnabled ? 1 : 0,
