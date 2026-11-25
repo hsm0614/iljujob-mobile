@@ -74,4 +74,38 @@ void main() {
       debugDefaultTargetPlatformOverride = null;
     }
   });
+
+  test('확인된 유료 설치는 Play의 일반 organic 표기를 교정한다', () async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    SharedPreferences.setMockInitialValues({
+      'acquisition_first_touch_v1': 'utm_source=google-play&utm_medium=organic&landing_path=%2Fplay-install',
+    });
+    try {
+      await AcquisitionService.captureAppsFlyerInstall({
+        'media_source': 'naver_int',
+        'campaign': 'owner_launch',
+      });
+      expect(await AcquisitionService.forSignup(), {
+        'utm_source': 'naver',
+        'utm_medium': 'cpc',
+        'utm_campaign': 'owner_launch',
+        'landing_path': '/app-install',
+      });
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
+
+  test('이미 확인한 채널은 뒤늦은 MMP 응답으로 덮지 않는다', () async {
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    SharedPreferences.setMockInitialValues({
+      'acquisition_first_touch_v1': 'utm_source=threads&utm_medium=social',
+    });
+    try {
+      await AcquisitionService.captureAppsFlyerInstall({'media_source': 'naver_int'});
+      expect((await AcquisitionService.forSignup())?['utm_source'], 'threads');
+    } finally {
+      debugDefaultTargetPlatformOverride = null;
+    }
+  });
 }

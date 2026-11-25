@@ -85,7 +85,10 @@ class AcquisitionService {
   }
 
   /// AppsFlyer가 유료 광고 설치로 판정한 경우(네이버·구글)만 사장님 가입 출처로 보관한다.
-  static const _paidMedia = {'naver_int': 'naver', 'googleadwords_int': 'google'};
+  static const _paidMedia = {
+    'naver_int': 'naver',
+    'googleadwords_int': 'google',
+  };
 
   static Future<void> captureAppsFlyerInstall(
     Map<String, dynamic> response,
@@ -101,14 +104,25 @@ class AcquisitionService {
       'utm_medium': 'cpc',
       if (safeCampaign != null) 'utm_campaign': safeCampaign,
       'landing_path': '/app-install',
-    });
+    }, replacePlayOrganic: true);
     unawaited(InstallTracker.report()); // 유료 설치 판정은 첫 실행 뒤에 온다 — 설치 기록에도 반영
   }
 
-  static Future<void> _store(Map<String, String>? acquisition) async {
+  static Future<void> _store(
+    Map<String, String>? acquisition, {
+    bool replacePlayOrganic = false,
+  }) async {
     if (acquisition == null) return;
     final prefs = await SharedPreferences.getInstance();
-    if (prefs.containsKey(_firstTouchKey)) return;
+    final previous = prefs.getString(_firstTouchKey);
+    if (previous != null) {
+      final first = Uri.splitQueryString(previous);
+      if (!replacePlayOrganic ||
+          first['utm_source'] != 'google-play' ||
+          first['utm_medium'] != 'organic') {
+        return;
+      }
+    }
     await prefs.setString(
       _firstTouchKey,
       Uri(queryParameters: acquisition).query,
