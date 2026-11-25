@@ -1129,7 +1129,12 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
                         height: 50,
                         child: OutlinedButton.icon(
                           onPressed: agencyPhoneApply
-                              ? () => _callAgencyPhone(agencyPhone)
+                              ? () {
+                                  final jobIdInt = int.tryParse(widget.job.id.toString());
+                                  if (jobIdInt != null) LogService.instance.logEvent(eventType: LogService.call, jobId: jobIdInt);
+                                  ScreenAnalyticsService.instance.logEvent('agency_call_click', params: {'job_id': widget.job.id.toString()});
+                                  _callAgencyPhone(agencyPhone);
+                                }
                               : (isClosed || isBlocked || (_suspension?.isSuspended ?? false))
                               ? null
                               : _phoneApply,

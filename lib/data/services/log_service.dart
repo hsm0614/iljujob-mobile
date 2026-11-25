@@ -12,6 +12,7 @@ class LogService {
   static const String apply    = 'apply';
   static const String bookmark = 'bookmark';
   static const String view     = 'view';
+  static const String call     = 'call'; // 대행 공고 [전화로 지원] — 업체에 직접 거는 전화는 지원 기록이 안 남아서(11-25)
 
   /// 행동 로그 전송 (fire & forget — 실패해도 UI 영향 없음)
   Future<void> logEvent({
