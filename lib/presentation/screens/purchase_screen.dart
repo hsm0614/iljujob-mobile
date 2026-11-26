@@ -49,7 +49,9 @@ class _StoreVerifyFailure implements Exception {
 
 class PurchasePassScreen extends StatefulWidget {
   final bool fromPostJob;
-  const PurchasePassScreen({super.key, this.fromPostJob = false});
+  /// 0 = 즉시 게시, 1 = 긴급 호출(홈 노출 현황의 '맨 위로 올리기', #393)
+  final int initialTab;
+  const PurchasePassScreen({super.key, this.fromPostJob = false, this.initialTab = 0});
   @override
   State<PurchasePassScreen> createState() => _PurchasePassScreenState();
 }
@@ -109,7 +111,7 @@ class _PurchasePassScreenState extends State<PurchasePassScreen>
   @override
   void initState() {
     super.initState();
-    _tabCtrl = TabController(length: 2, vsync: this);
+    _tabCtrl = TabController(length: 2, vsync: this, initialIndex: widget.initialTab.clamp(0, 1));
     _refreshPassCount();
     _loadCatalog();
     _loadUserInfo();

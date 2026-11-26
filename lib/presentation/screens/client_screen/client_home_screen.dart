@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:intl/intl.dart';
 import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
@@ -94,6 +95,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   // Data
   List<Job> myJobs = [];
+  // 내 공고 노출 현황(#393) — jobId → {rank, total, nearbyWorkers, live}. 서버 lib/jobExposure(앱 추천순과 같은 규칙)
+  Map<int, Map<String, dynamic>> _exposure = const {};
+  bool _exposureLogged = false;
   bool isLoading = false;
   static const String _bannerHideUntilKey = 'client_banner_hide_until';
   static const String _legacyBannerHiddenKey = 'client_banner_hidden';
@@ -393,6 +397,7 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
           totalCount = data['pagination']['totalCount'] ?? 0;
           _loadedOnce = true;
         });
+        _loadExposure();
       } else {
         _toast('공고 목록을 불러오지 못했습니다.');
       }
@@ -402,6 +407,241 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     } finally {
       if (!mounted) return;
       setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> _loadExposure() async {
+    try {
+      final res = await AuthenticatedHttpClient.get(Uri.parse('$baseUrl/api/job/my-exposure'));
+      if (res.statusCode != 200 || !mounted) return;
+      final items = (jsonDecode(res.body)['items'] as List? ?? const []).whereType<Map>();
+      setState(() => _exposure = {
+            for (final m in items) (m['jobId'] as num).toInt(): Map<String, dynamic>.from(m),
+          });
+      if (!_exposureLogged && _exposure.isNotEmpty) {
+        _exposureLogged = true;
+        ClientTrackingService.instance.track('exposure_view', properties: {'jobs': _exposure.length});
+      }
+    } catch (_) {}
+  }
+
+  // 노출 상자(시안 NYdpq8sSEqndUtisbNbQGW ①) — 남의 공고 내용 없이 내 순위만. 숫자는 서버가 알바생 위치별로 센 중간값
+  Widget _exposureBox(Job job, {required bool reserved}) {
+    final exp = _exposure[int.tryParse(job.id.toString())];
+    Widget box(List<Widget> children, {VoidCallback? onTap}) => Material(
+          color: AppColors.bgMuted,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: children),
+            ),
+          ),
+        );
+    if (reserved) {
+      if (job.isPaid) return const SizedBox.shrink(); // 예약 게시(유료) — 사장님이 고른 시각
+      return box([
+        Text.rich(
+          const TextSpan(children: [
+            TextSpan(text: '아직 알바생에게 '),
+            TextSpan(text: '안 보여요', style: TextStyle(fontWeight: FontWeight.w700)),
+          ]),
+          style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontSize: AppFontSize.button),
+        ),
+        const SizedBox(height: 4),
+        const Text('지금 공개하면 주변 공고 중 맨 위(최신)부터 보여요', style: AppTextStyles.body2),
+      ]);
+    }
+    final rank = (exp?['rank'] as num?)?.toInt();
+    final total = (exp?['total'] as num?)?.toInt();
+    final nearby = (exp?['nearbyWorkers'] as num?)?.toInt() ?? 0;
+    if (exp == null || rank == null || total == null || total < 2) return const SizedBox.shrink();
+    final segs = total.clamp(2, 12);
+    final pos = ((rank - 1) / (total - 1) * (segs - 1)).round();
+    return box(
+      [
+        Row(
+          children: [
+            Expanded(
+              child: Text.rich(
+                TextSpan(children: [
+                  TextSpan(text: '주변 공고 $total개 중 $rank번째', style: const TextStyle(fontWeight: FontWeight.w700)),
+                  const TextSpan(text: '로 보여요'),
+                ]),
+                style: AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontSize: AppFontSize.button),
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.textTertiary),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            for (var i = 0; i < segs; i++)
+              Expanded(
+                child: Container(
+                  height: 6,
+                  margin: EdgeInsets.only(right: i == segs - 1 ? 0 : 3),
+                  decoration: BoxDecoration(
+                    color: i == pos ? AppColors.textPrimary : i < pos ? AppColors.textDisabled : AppColors.border,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text('30km 안 활동 알바생 ${NumberFormat('#,###').format(nearby)}명 · 위에 있는 공고부터 먼저 봐요', style: AppTextStyles.body2),
+      ],
+      onTap: () => _openExposureSheet(job, exp),
+    );
+  }
+
+  // 노출 상자를 누르면(시안 ②) — 내 위치·숫자·긴급 호출이 해 주는 일. 즉시 게시는 순서를 안 바꾼다고 적는다
+  Future<void> _openExposureSheet(Job job, Map<String, dynamic> exp) async {
+    final rank = (exp['rank'] as num).toInt();
+    final total = (exp['total'] as num).toInt();
+    final nearby = (exp['nearbyWorkers'] as num?)?.toInt() ?? 0;
+    ClientTrackingService.instance.track('exposure_sheet_open', properties: {'job_id': job.id, 'rank': rank, 'total': total});
+    final canRaise = !job.isUrgent && !isJobPinned(job);
+    final fmt = NumberFormat('#,###');
+    Widget ladder(String n, String label, {bool me = false}) => Container(
+          margin: const EdgeInsets.only(bottom: 6),
+          padding: EdgeInsets.symmetric(horizontal: me ? 10 : 0, vertical: me ? 8 : 0),
+          decoration: me
+              ? BoxDecoration(
+                  color: AppColors.bgCard,
+                  border: Border.all(color: AppColors.textPrimary),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                )
+              : null,
+          child: Row(
+            children: [
+              SizedBox(width: 22, child: Text(n, textAlign: TextAlign.right, style: AppTextStyles.body2)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: me
+                      ? AppTextStyles.body2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600)
+                      : AppTextStyles.body2.copyWith(color: AppColors.textTertiary),
+                ),
+              ),
+            ],
+          ),
+        );
+    Widget stat(String n, String label) => Expanded(
+          child: Column(children: [
+            Text(n, style: AppTextStyles.h3),
+            Text(label, style: AppTextStyles.caption),
+          ]),
+        );
+    Widget check(String t) => Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            const Padding(
+              padding: EdgeInsets.only(top: 2),
+              child: Icon(Icons.check_rounded, size: 16, color: AppColors.primary),
+            ),
+            const SizedBox(width: 8),
+            Expanded(child: Text(t, style: AppTextStyles.body2.copyWith(color: AppColors.textBody))),
+          ]),
+        );
+    final go = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('내 공고는 $rank번째에 보여요', style: AppTextStyles.h2),
+              const SizedBox(height: 6),
+              const Text('알바생 목록은 가까운 곳, 최근에 올린 공고부터 보여요. 30km 안 활동 알바생들의 목록을 기준으로 했어요.',
+                  style: AppTextStyles.body2),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(color: AppColors.bgMuted, borderRadius: BorderRadius.circular(AppRadius.md)),
+                child: Column(children: [
+                  for (var i = 1; i < rank && i <= 3; i++) ladder('$i', '다른 공고'),
+                  if (rank > 4) ladder('…', '4~${rank - 1}번째'),
+                  ladder('$rank', '내 공고 · ${job.title}', me: true),
+                  if (rank < total) ladder('…', '${rank + 1}~$total번째'),
+                ]),
+              ),
+              const SizedBox(height: 16),
+              Row(children: [
+                stat('${fmt.format(nearby)}명', '근처 활동 알바생'),
+                stat('${job.viewCount}명', '공고 본 사람'),
+                stat('${job.applicantCount}명', '지원'),
+              ]),
+              if (canRaise) ...[
+                const SizedBox(height: 16),
+                const Divider(height: 1, color: AppColors.border),
+                const SizedBox(height: 16),
+                const Text('맨 위로 올리려면 · 긴급 호출', style: AppTextStyles.h3),
+                const SizedBox(height: 8),
+                check('24시간 동안 목록 맨 위에 고정돼요'),
+                check('근처 활동 알바생 10명에게 직접 메시지를 보내요'),
+                check('아무도 답하지 않으면 이용권을 돌려드려요'),
+                const Text('즉시 게시 이용권은 공개를 앞당겨 주고, 목록 순서는 바꾸지 않아요.', style: AppTextStyles.caption),
+                const SizedBox(height: 16),
+                AppPrimaryButton(label: '긴급 호출로 맨 위에 올리기', onPressed: () => Navigator.pop(ctx, true)),
+                Center(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('지금은 괜찮아요', style: TextStyle(color: AppColors.textSecondary)),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+    if (go == true) await _raiseToTop(job);
+  }
+
+  // 기존 공고를 긴급 호출로(서버 upgrade-urgent: 이용권 1장 → 24시간 고정). 이용권이 없으면(402) 긴급 탭에서 사고 돌아와 바로 적용
+  Future<void> _raiseToTop(Job job) async {
+    ClientTrackingService.instance.track('exposure_raise_tap', properties: {'job_id': job.id});
+    final uri = Uri.parse('$baseUrl/api/job/${job.id}/upgrade-urgent');
+    try {
+      var res = await AuthenticatedHttpClient.postJson(uri, body: const {});
+      if (res.statusCode == 402) {
+        if (!mounted) return;
+        final bought = await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const PurchasePassScreen(fromPostJob: true, initialTab: 1)),
+        );
+        if (bought is! Map || bought['success'] != true) return;
+        res = await AuthenticatedHttpClient.postJson(uri, body: const {});
+      }
+      if (res.statusCode == 200) {
+        ClientTrackingService.instance.track('exposure_raise_done', properties: {'job_id': job.id});
+        _toast('24시간 동안 맨 위에 고정됐어요. 근처 알바생에게 직접 연락해 보세요.');
+        await _loadMyJobs();
+        await _openUrgentCall(job);
+        return;
+      }
+      var msg = '맨 위로 올리지 못했어요. 잠시 후 다시 시도해 주세요.';
+      try {
+        msg = (jsonDecode(res.body)['message'] ?? msg).toString();
+      } catch (_) {}
+      _toast(msg);
+    } catch (_) {
+      _toast('인터넷 연결을 확인해 주세요.');
     }
   }
 
@@ -1651,6 +1891,12 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
         !job.publishAt!.isBefore(job.endDate!.add(const Duration(days: 1)));
     final pinned = isJobPinned(job);
     final when = _jobWhen(job);
+    // 순위가 4번째 밖이고 공개 6시간이 지나도 지원 0명일 때만 '맨 위로 올리기'(#393). 즉시 게시는 순서를 안 바꿔서 권하지 않는다
+    final exp = _exposure[int.tryParse(job.id.toString())];
+    final expRank = (exp?['rank'] as num?)?.toInt();
+    final liveFor = DateTime.now().toUtc().difference((job.publishAt ?? job.createdAt ?? DateTime.now()).toUtc());
+    final suggestTop = !isClosed && !reserved && !job.isUrgent && !pinned && job.applicantCount == 0 &&
+        expRank != null && expRank > 3 && liveFor.inHours >= 6;
     final chips = <Widget>[
       if (isClosed)
         const JobSignalBadge(label: '마감')
@@ -1684,6 +1930,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
             ? ('바로 공개', () => _upgradeToInstant(job))
             : job.applicantCount > 0
             ? ('지원자 보기', openApplicants)
+            : suggestTop
+            ? ('맨 위로 올리기', () => _openExposureSheet(job, exp!))
             : job.isUrgent
             ? ('긴급 호출', () => _openUrgentCall(job))
             : ('추천받기', () => _openRecommendedWorkersByJobId(job.id.toString()));
@@ -1795,6 +2043,10 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                         ]),
                         style: AppTextStyles.body2.copyWith(fontSize: AppFontSize.button),
                       ),
+                      if (!isClosed && !publishTooLate) ...[
+                        const SizedBox(height: 10),
+                        _exposureBox(job, reserved: reserved),
+                      ],
                       const SizedBox(height: 12),
                       const Divider(height: 1, thickness: 1, color: AppColors.borderSub),
                       Row(
