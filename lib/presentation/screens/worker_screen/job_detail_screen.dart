@@ -221,13 +221,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       if (widget.autoApply) _autoApplyFromList();
     });
 
-    // 첫 공고 상세를 본 구직자에게 한 번, 왜 알림이 필요한지 말하고 묻는다.
-    // 목록에서 바로 지원하는 경우엔 지원 흐름이 알림 권한을 따로 묻는다
-    Future.delayed(const Duration(seconds: 2), () async {
-      final prefs = await SharedPreferences.getInstance();
-      if (!mounted || widget.autoApply || prefs.getString('userType') != 'worker') return;
-      await maybeShowPushPrimer(context);
-    });
+    // 알림 권한은 여기서 묻지 않는다 — 상세 2초 뒤 시트가 지원 버튼을 가렸다(#410).
+    // 구직자 홈 첫 진입과 지원 직후(maybeShowFirstApplyPushPrimer)에서 묻는다.
     _loadLocationContext();
     final jobId = int.tryParse(widget.job.id.toString());
     if (jobId != null) {
@@ -299,11 +294,15 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     return '회사 정보를 찾을 수 없습니다.';
   }
 
+  // 세 요청을 차례로 기다리던 동안(시간 제한 없음) 화면 전체가 빈 틀이었다(#410).
+  // 동시에 보내고 3초까지만 기다린다. 늦게 온 값은 도착할 때 채워진다.
   Future<void> _initializePage() async {
-    await _fetchApplicantCount();
-    await _fetchClientProfile();
-    await _fetchCounts();
-    setState(() => isLoading = false);
+    await Future.wait([
+      _fetchApplicantCount(),
+      _fetchClientProfile(),
+      _fetchCounts(),
+    ]).timeout(const Duration(seconds: 3), onTimeout: () => const []);
+    if (mounted) setState(() => isLoading = false);
   }
 
   @override
@@ -444,7 +443,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        setState(() => applicantCount = data['count']);
+        if (mounted) setState(() => applicantCount = data['count']);
       }
     } catch (e) {
       print('❌ 지원자 수 조회 오류: $e');
@@ -485,7 +484,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       final url = Uri.parse('$baseUrl/api/job/profile/${widget.job.clientId}');
       final res = await http.get(url);
       if (res.statusCode == 200) {
-        setState(() => clientProfile = jsonDecode(res.body));
+        if (mounted) setState(() => clientProfile = jsonDecode(res.body));
       } else {
         print('❌ 클라이언트 프로필 응답 실패: ${res.statusCode}');
       }
@@ -525,7 +524,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
       );
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        setState(() {
+        if (mounted) setState(() {
           viewCount = data['views'] ?? 0;
           bookmarkCount = data['bookmarks'] ?? 0;
         });
@@ -1072,8 +1071,8 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
     Navigator.pushNamed(context, '/signup-choice');
   }
 
+  // 지원 버튼은 공고 본문 요청(isLoading)을 기다리지 않는다 — 쓰는 값이 지원·차단·정지 상태뿐(#410)
   Widget _buildApplyButton() {
-    if (isLoading) return const SizedBox();
 
     // 대행 공고도 앱 지원을 받는다. 예전엔 지원·채팅을 막고 전화/이메일만 보여줬는데
     // 그 경로는 플랫폼 밖이라 결과를 알 수 없었다. 막힘이 새서(AI 검색에 is_agency 누락)
