@@ -58,7 +58,7 @@ class SupportScreen extends StatelessWidget {
                 icon: Icons.chat_bubble_outline_rounded,
                 label: '카카오톡 상담',
                 value: '알바일주 채널',
-                onTap: () => launchUrl(Uri.parse(kakaoChannelChatUrl), mode: LaunchMode.externalApplication),
+                onTap: () => launchUrl(Uri.parse(kakaoChannelChatUrl('app_support')), mode: LaunchMode.externalApplication),
               ),
             ],
           ),

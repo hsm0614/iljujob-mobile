@@ -16,5 +16,5 @@ const String vworldApiKey = '6F9CB6D9-FF03-3CD5-8140-D33D84A59E24';
 const String odCloudApiKeyEnc = "mzkQ7JJ9%2BK6GGApYVpbkfT15KKC1PIMcA4cmLmo0ZtgUKOYr%2FFekXGHmD3vdHd%2BtLHNwxY%2BsnjYhzkscBWS8Hg%3D%3D"; // URL 쿼리스트링에 사용
 const String odCloudApiKeyDec = "mzkQ7JJ9+K6GGApYVpbkfT15KKC1PIMcA4cmLmo0ZtgUKOYr/FekXGHmD3vdHd+tLHNwxY+snjYhzkscBWS8Hg==";           // 보통 미사용
 
-/// 카카오톡 채널(_xaJren) 1:1 채팅 — 공고 대행 접수 창구. 웹 `KAKAO_AGENCY_CHAT_URL`과 같은 값.
-const String kakaoChannelChatUrl = 'https://pf.kakao.com/_xaJren/chat';
+/// 카카오톡 채널(_xaJren) 1:1 채팅 — 공고 대행 접수 창구. 웹 `kakaoChatUrl`과 같이 /kakao?src=<자리>로 거쳐 자리별 클릭을 센다.
+String kakaoChannelChatUrl(String src) => 'https://albailju.co.kr/kakao?src=$src';

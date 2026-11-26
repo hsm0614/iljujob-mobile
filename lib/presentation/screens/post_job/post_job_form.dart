@@ -2148,7 +2148,7 @@ class _PostJobFormState extends State<PostJobForm>
         ),
         child: InkWell(
           borderRadius: BorderRadius.circular(AppRadius.lg),
-          onTap: () => launchUrl(Uri.parse(kakaoChannelChatUrl), mode: LaunchMode.externalApplication),
+          onTap: () => launchUrl(Uri.parse(kakaoChannelChatUrl('app_post_job')), mode: LaunchMode.externalApplication),
           child: const Padding(
             padding: EdgeInsets.fromLTRB(16, 14, 14, 14),
             child: Row(
