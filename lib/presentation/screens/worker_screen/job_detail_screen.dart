@@ -413,7 +413,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
     final res = await http.get(
       Uri.parse(
-        '$baseUrl/api/job/${widget.job.id}/block-status?userId=$userId',
+        '$baseUrl/api/user-block/job/${widget.job.id}/block-status?userId=$userId',
       ),
     );
 
