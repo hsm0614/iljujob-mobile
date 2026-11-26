@@ -997,11 +997,9 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
 
   Future<void> _callAgencyPhone(String phone) async {
     final uri = Uri.parse('tel:$phone');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else {
-      _showSnack('전화 앱을 열 수 없어요');
-    }
+    // canLaunchUrl은 iOS Info.plist에 tel이 없으면 false라 아이폰에서 전화가 안 걸렸다 — 바로 연다
+    final ok = await launchUrl(uri).catchError((_) => false);
+    if (!ok) _showSnack('전화 앱을 열 수 없어요');
   }
 
   Widget _buildGuestApplyBar() {
