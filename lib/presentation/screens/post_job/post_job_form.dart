@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:iljujob/widget/app_ui.dart';
+import 'package:iljujob/widget/job_share_sheet.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:io';
@@ -1092,6 +1093,23 @@ class _PostJobFormState extends State<PostJobForm>
                         isUrgent ? '긴급 호출 발송하기' : '내 공고 보러가기'),
                     ),
                   ),
+                  // 공고 퍼뜨리기(#462) — 공개된 공고만. 등록 완료 시트 위에 열고, 닫으면 이 시트로 돌아온다
+                  if (!isDelayed && jobId != null && userType == 'client') ...[
+                    const SizedBox(height: 4),
+                    TextButton.icon(
+                      onPressed: () async {
+                        final job = await JobService.fetchJobByIdWithToken(
+                          jobId,
+                          await AuthenticatedHttpClient.accessToken(),
+                        );
+                        if (job != null && sheetCtx.mounted) {
+                          await showJobShareSheet(sheetCtx, job, from: 'post_done');
+                        }
+                      },
+                      icon: const Icon(Icons.ios_share_rounded, size: 18),
+                      label: const Text('단골·동네에 공고 퍼뜨리기'),
+                    ),
+                  ],
                 ],
               ),
             ),

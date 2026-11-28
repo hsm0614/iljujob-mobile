@@ -605,6 +605,9 @@ Future<void> _openJobLink(Uri uri) async {
   if (uri.scheme != 'albailju' || uri.host != 'job') return;
   final id = int.tryParse(uri.pathSegments.isEmpty ? '' : uri.pathSegments.first);
   if (id == null) return;
+  // 사장님이 퍼뜨린 링크(#462) — 이 공고에 지원하면 apply_channel로 남긴다(로그인 뒤 열려도 유지)
+  final src = uri.queryParameters['src'] ?? '';
+  if (RegExp(r'^owner_share_[a-z]{1,12}$').hasMatch(src)) JobDetailScreen.linkSrc['$id'] = src;
   final token = await AuthenticatedHttpClient.accessToken();
   if (token.isEmpty) {
     _pendingJobLinkId = id;

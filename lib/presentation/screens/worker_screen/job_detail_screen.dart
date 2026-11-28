@@ -40,6 +40,10 @@ const kBrand = AppColors.primary;
 class JobDetailScreen extends StatefulWidget {
   final Job job;
 
+  /// 공고 id → 사장님이 퍼뜨린 링크의 src(owner_share_kakao …, #462). 앱이 켜져 있는 동안만.
+  /// ponytail: 메모리만 — 링크→설치→첫 실행 경로는 #463 Play referrer가 맡는다
+  static final Map<String, String> linkSrc = {};
+
   /// 목록의 '지원하기'로 열렸으면 true — 상세가 다 뜬 뒤 상세의 지원 흐름을 그대로 탄다
   /// (로그인·마감·차단·정지·외부 신청 판단을 한 곳에서만 한다)
   final bool autoApply;
@@ -795,6 +799,7 @@ class _JobDetailScreenState extends State<JobDetailScreen> {
         body: {
           'workerId': workerId,
           'jobId': widget.job.id, // int로 직접 전달
+          if (JobDetailScreen.linkSrc[widget.job.id] case final src?) 'channel': src,
         },
       );
 

@@ -20,6 +20,7 @@ import 'package:iljujob/widget/recommended_workers_sheet.dart';
 import 'package:iljujob/presentation/screens/worker_screen/job_insight_sheet.dart';
 import 'package:iljujob/presentation/screens/client_screen/wage_report_screen.dart';
 import 'package:iljujob/widget/app_ui.dart';
+import 'package:iljujob/widget/job_share_sheet.dart';
 import 'package:iljujob/widget/app_motion.dart';
 import 'package:iljujob/widget/job_list_tile.dart';
 import 'package:iljujob/config/app_theme.dart';
@@ -1518,6 +1519,8 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                     child: AppPrimaryButton(label: primary.$1, onPressed: () => Navigator.pop(ctx, primary.$2)),
                   ),
+                if (!isClosed && !reserved)
+                  line(Icons.ios_share_rounded, '공고 퍼뜨리기', 'share', sub: '카톡·문자·인스타 스토리·가게 앞 QR 포스터'),
                 const SizedBox(height: 8),
                 // 알바일주 주력 = AI 채용 — 매니저가 대신 하는 일을 한곳에
                 section('AI 일주 매니저'),
@@ -1548,6 +1551,9 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
     if (v == null || !mounted) return;
 
     switch (v) {
+      case 'share':
+        showJobShareSheet(context, job, from: 'menu');
+        break;
       case 'edit':
         Navigator.pushNamed(context, '/edit_job', arguments: job.id);
         break;
@@ -1988,6 +1994,14 @@ class _ClientHomeScreenState extends State<ClientHomeScreen>
                 Row(
                   children: [
                     Expanded(child: Wrap(spacing: 6, runSpacing: 6, children: chips)),
+                    // 공고 퍼뜨리기(#462) — 공개된 공고만(공개 전 링크는 열어도 안 보인다)
+                    if (!isClosed && !reserved)
+                      TextButton.icon(
+                        onPressed: () => showJobShareSheet(context, job, from: 'card'),
+                        style: TextButton.styleFrom(visualDensity: VisualDensity.compact, foregroundColor: AppColors.primaryDark),
+                        icon: const Icon(Icons.ios_share_rounded, size: 16),
+                        label: Text('퍼뜨리기', style: AppTextStyles.body2.copyWith(color: AppColors.primaryDark, fontWeight: FontWeight.w600)),
+                      ),
                     IconButton(
                       tooltip: '공고 관리',
                       onPressed: () => _openJobActions(job),

@@ -160,6 +160,8 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   in_app_review: ^2.0.12
+  share_plus: ^12.0.2
+  qr_flutter: ^4.1.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
